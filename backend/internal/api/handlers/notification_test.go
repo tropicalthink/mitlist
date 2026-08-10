@@ -38,6 +38,30 @@ func TestNotification_ListNotifications(t *testing.T) {
 	assert.Len(t, resp, 1)
 }
 
+func TestNotification_CountUnreadNotifications(t *testing.T) {
+	clearTables(t)
+	router, _ := newNotificationRouter(t)
+	user := createTestUser(t, "unreadnotif@example.com", "password123!")
+	token := generateTestToken(user.ID)
+
+	notificationRepo := newTestNotificationRepo()
+	require.NoError(t, notificationRepo.CreateNotification(context.Background(), &models.Notification{
+		ID:        uuid.New(),
+		UserID:    user.ID,
+		Type:      "test",
+		Title:     "Unread",
+		Body:      "One",
+		IsRead:    false,
+		CreatedAt: time.Now().UTC(),
+	}))
+
+	rec := execRequest(t, router, "GET", "/notifications/unread-count", nil, token)
+	requireStatus(t, rec, http.StatusOK)
+	var resp map[string]int
+	parseJSONResponse(t, rec, &resp)
+	assert.Equal(t, 1, resp["count"])
+}
+
 func TestNotification_GetNotification(t *testing.T) {
 	clearTables(t)
 	router, _ := newNotificationRouter(t)

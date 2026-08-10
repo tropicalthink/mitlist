@@ -293,15 +293,21 @@ func (r *AuthRepository) CreatePushSubscription(ctx context.Context, sub *models
 	query := `
 		INSERT INTO push_subscriptions (id, user_id, endpoint, p256dh, auth, created_at)
 		VALUES ($1, $2, $3, $4, $5, $6)
+		ON CONFLICT (endpoint) DO UPDATE SET
+			user_id = EXCLUDED.user_id,
+			p256dh = EXCLUDED.p256dh,
+			auth = EXCLUDED.auth,
+			created_at = EXCLUDED.created_at
+		RETURNING id, created_at
 	`
-	_, err := r.db.Exec(ctx, query,
+	err := r.db.QueryRow(ctx, query,
 		sub.ID,
 		sub.UserID,
 		sub.Endpoint,
 		sub.P256dh,
 		sub.Auth,
 		sub.CreatedAt,
-	)
+	).Scan(&sub.ID, &sub.CreatedAt)
 	if err != nil {
 		return err
 	}
@@ -391,7 +397,10 @@ func (r *AuthRepository) SaveDeviceToken(ctx context.Context, userID uuid.UUID, 
 	query := `
 		INSERT INTO device_tokens (user_id, platform, token)
 		VALUES ($1, $2, $3)
-		ON CONFLICT (user_id, token) DO UPDATE SET platform = EXCLUDED.platform
+		ON CONFLICT (token) DO UPDATE SET
+			user_id = EXCLUDED.user_id,
+			platform = EXCLUDED.platform,
+			created_at = NOW()
 		RETURNING id, user_id, platform, token, created_at
 	`
 	var dt models.DeviceToken

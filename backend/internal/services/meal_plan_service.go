@@ -21,12 +21,39 @@ type MealPlanService struct {
 	recipeRepo       repositories.RecipeRepoIface
 	listRepo         repositories.ListRepo
 	resolveCanonical CanonicalNameResolver
+	dispatcher       NotificationDispatcher
 }
 
 // SetCanonicalNameResolver enables immediate grocery linking for ingredients
 // generated into a shopping list.
 func (s *MealPlanService) SetCanonicalNameResolver(resolve CanonicalNameResolver) {
 	s.resolveCanonical = resolve
+}
+
+// SetDispatcher enables preference-aware in-app, push, and email notifications.
+func (s *MealPlanService) SetDispatcher(dispatcher NotificationDispatcher) {
+	s.dispatcher = dispatcher
+}
+
+func (s *MealPlanService) notifyChanged(ctx context.Context, userID uuid.UUID, mp *models.MealPlan) {
+	if s.dispatcher == nil {
+		return
+	}
+	payload := models.NotificationPayload{
+		Screen:     models.ScreenMealPlan,
+		EntityType: models.EntityTypeMealPlan,
+		ID:         mp.ID.String(),
+		GroupID:    mp.GroupID.String(),
+	}
+	_ = s.dispatcher.DispatchToGroup(
+		ctx,
+		mp.GroupID,
+		userID,
+		"meal_plan_changed",
+		"Meal plan updated",
+		"Your household meal plan changed",
+		payload,
+	)
 }
 
 // NewMealPlanService creates a new MealPlanService.
@@ -68,7 +95,11 @@ func (s *MealPlanService) CreateMealPlan(ctx context.Context, user *models.User,
 	if mp.Servings <= 0 {
 		mp.Servings = 1
 	}
-	return s.mealPlanRepo.CreateMealPlan(ctx, mp)
+	if err := s.mealPlanRepo.CreateMealPlan(ctx, mp); err != nil {
+		return err
+	}
+	s.notifyChanged(ctx, user.ID, mp)
+	return nil
 }
 
 // GetMealPlan returns a meal plan if the user is a member of the group.
@@ -112,7 +143,11 @@ func (s *MealPlanService) UpdateMealPlan(ctx context.Context, user *models.User,
 	if err := s.requireRecipeAccess(ctx, user.ID, mp.RecipeID); err != nil {
 		return err
 	}
-	return s.mealPlanRepo.UpdateMealPlan(ctx, mp)
+	if err := s.mealPlanRepo.UpdateMealPlan(ctx, mp); err != nil {
+		return err
+	}
+	s.notifyChanged(ctx, user.ID, mp)
+	return nil
 }
 
 // DeleteMealPlan removes a meal plan.
@@ -127,7 +162,11 @@ func (s *MealPlanService) DeleteMealPlan(ctx context.Context, user *models.User,
 	if err := s.requireMembership(ctx, user.ID, mp.GroupID); err != nil {
 		return err
 	}
-	return s.mealPlanRepo.DeleteMealPlan(ctx, mealPlanID)
+	if err := s.mealPlanRepo.DeleteMealPlan(ctx, mealPlanID); err != nil {
+		return err
+	}
+	s.notifyChanged(ctx, user.ID, mp)
+	return nil
 }
 
 // GenerateShoppingList creates a shopping list from meal plans in a date range.

@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -19,6 +20,7 @@ func TestNotificationRepository_CreateNotification(t *testing.T) {
 
 	n := &models.Notification{
 		UserID:    fixedUUID(),
+		GroupID:   fixedUUID(),
 		Type:      "info",
 		Title:     "Hello",
 		Body:      "World",
@@ -28,11 +30,11 @@ func TestNotificationRepository_CreateNotification(t *testing.T) {
 		CreatedAt: fixedTime(),
 	}
 
-	rows := pgxmock.NewRows([]string{"id", "user_id", "type", "title", "body", "data", "is_read", "read_at", "created_at"}).
-		AddRow(fixedUUID(), n.UserID, n.Type, n.Title, n.Body, n.Data, false, nil, fixedTime())
+	rows := pgxmock.NewRows([]string{"id", "user_id", "group_id", "type", "title", "body", "data", "is_read", "read_at", "created_at"}).
+		AddRow(fixedUUID(), n.UserID, n.GroupID, n.Type, n.Title, n.Body, n.Data, false, nil, fixedTime())
 
 	mock.ExpectQuery("INSERT INTO notifications").
-		WithArgs(pgxmock.AnyArg(), n.UserID, n.Type, n.Title, n.Body, n.Data, false, pgxmock.AnyArg(), pgxmock.AnyArg()).
+		WithArgs(pgxmock.AnyArg(), n.UserID, n.GroupID, n.Type, n.Title, n.Body, n.Data, false, pgxmock.AnyArg(), pgxmock.AnyArg()).
 		WillReturnRows(rows)
 
 	err := repo.CreateNotification(context.Background(), n)
@@ -46,8 +48,8 @@ func TestNotificationRepository_GetNotificationByID(t *testing.T) {
 	repo := NewNotificationRepository(mock)
 	id := fixedUUID()
 
-	rows := pgxmock.NewRows([]string{"id", "user_id", "type", "title", "body", "data", "is_read", "read_at", "created_at"}).
-		AddRow(id, fixedUUID(), "info", "Hello", "World", []byte(`{}`), false, nil, fixedTime())
+	rows := pgxmock.NewRows([]string{"id", "user_id", "group_id", "type", "title", "body", "data", "is_read", "read_at", "created_at"}).
+		AddRow(id, fixedUUID(), fixedUUID(), "info", "Hello", "World", []byte(`{}`), false, nil, fixedTime())
 
 	mock.ExpectQuery("SELECT .* FROM notifications WHERE id = .*").
 		WithArgs(id).
@@ -80,8 +82,8 @@ func TestNotificationRepository_ListNotificationsByUser(t *testing.T) {
 	repo := NewNotificationRepository(mock)
 	uid := fixedUUID()
 
-	rows := pgxmock.NewRows([]string{"id", "user_id", "type", "title", "body", "data", "is_read", "read_at", "created_at"}).
-		AddRow(fixedUUID(), uid, "info", "Hello", "World", []byte(`{}`), false, nil, fixedTime())
+	rows := pgxmock.NewRows([]string{"id", "user_id", "group_id", "type", "title", "body", "data", "is_read", "read_at", "created_at"}).
+		AddRow(fixedUUID(), uid, fixedUUID(), "info", "Hello", "World", []byte(`{}`), false, nil, fixedTime())
 
 	mock.ExpectQuery("SELECT .* FROM notifications WHERE user_id = .*").
 		WithArgs(uid, 50, 0).
@@ -90,6 +92,42 @@ func TestNotificationRepository_ListNotificationsByUser(t *testing.T) {
 	notifications, err := repo.ListNotificationsByUser(context.Background(), uid, 0, 0)
 	require.NoError(t, err)
 	assert.Len(t, notifications, 1)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestNotificationRepository_ListNotificationsByUserBefore(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewNotificationRepository(mock)
+	uid := fixedUUID()
+	beforeID := uuid.New()
+	before := fixedTime()
+
+	rows := pgxmock.NewRows([]string{"id", "user_id", "group_id", "type", "title", "body", "data", "is_read", "read_at", "created_at"}).
+		AddRow(uuid.New(), uid, fixedUUID(), "info", "Older", "World", []byte(`{}`), false, nil, before.Add(-time.Second))
+
+	mock.ExpectQuery("SELECT .* FROM notifications WHERE user_id = .* AND \\(created_at, id\\) < .* ORDER BY created_at DESC, id DESC LIMIT").
+		WithArgs(uid, before, beforeID, 25).
+		WillReturnRows(rows)
+
+	notifications, err := repo.ListNotificationsByUserBefore(context.Background(), uid, before, beforeID, 25)
+	require.NoError(t, err)
+	assert.Len(t, notifications, 1)
+	assert.Equal(t, "Older", notifications[0].Title)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestNotificationRepository_CountUnreadNotifications(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewNotificationRepository(mock)
+	uid := fixedUUID()
+
+	mock.ExpectQuery("SELECT COUNT\\(\\*\\) FROM notifications WHERE user_id = .* AND is_read = false").
+		WithArgs(uid).
+		WillReturnRows(pgxmock.NewRows([]string{"count"}).AddRow(7))
+
+	count, err := repo.CountUnreadNotifications(context.Background(), uid)
+	require.NoError(t, err)
+	assert.Equal(t, 7, count)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
@@ -236,7 +274,7 @@ func TestNotificationRepository_CreateNotificationsBatch(t *testing.T) {
 	uid := fixedUUID()
 
 	mock.ExpectExec("INSERT INTO notifications").
-		WithArgs(pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg()).
+		WithArgs(pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg()).
 		WillReturnResult(pgxmock.NewResult("INSERT", 1))
 
 	err := repo.CreateNotificationsBatch(context.Background(), []models.Notification{{

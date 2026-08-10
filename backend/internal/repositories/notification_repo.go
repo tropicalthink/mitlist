@@ -25,25 +25,25 @@ func NewNotificationRepository(db DBTX) *NotificationRepository {
 // CreateNotification inserts a new notification and returns it with generated fields.
 func (r *NotificationRepository) CreateNotification(ctx context.Context, n *models.Notification) error {
 	query := `
-		INSERT INTO notifications (id, user_id, type, title, body, data, is_read, read_at, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		RETURNING id, user_id, type, title, body, data, is_read, read_at, created_at
+		INSERT INTO notifications (id, user_id, group_id, type, title, body, data, is_read, read_at, created_at)
+		VALUES ($1, $2, NULLIF($3, '00000000-0000-0000-0000-000000000000'::uuid), $4, $5, $6, $7, $8, $9, $10)
+		RETURNING id, user_id, COALESCE(group_id, '00000000-0000-0000-0000-000000000000'::uuid), type, title, body, data, is_read, read_at, created_at
 	`
 	return r.db.QueryRow(ctx, query,
-		n.ID, n.UserID, n.Type, n.Title, n.Body, n.Data, n.IsRead, n.ReadAt, n.CreatedAt,
-	).Scan(&n.ID, &n.UserID, &n.Type, &n.Title, &n.Body, &n.Data, &n.IsRead, &n.ReadAt, &n.CreatedAt)
+		n.ID, n.UserID, n.GroupID, n.Type, n.Title, n.Body, n.Data, n.IsRead, n.ReadAt, n.CreatedAt,
+	).Scan(&n.ID, &n.UserID, &n.GroupID, &n.Type, &n.Title, &n.Body, &n.Data, &n.IsRead, &n.ReadAt, &n.CreatedAt)
 }
 
 // GetNotificationByID retrieves a notification by its ID.
 func (r *NotificationRepository) GetNotificationByID(ctx context.Context, id uuid.UUID) (*models.Notification, error) {
 	query := `
-		SELECT id, user_id, type, title, body, data, is_read, read_at, created_at
+		SELECT id, user_id, COALESCE(group_id, '00000000-0000-0000-0000-000000000000'::uuid), type, title, body, data, is_read, read_at, created_at
 		FROM notifications
 		WHERE id = $1
 	`
 	var n models.Notification
 	err := r.db.QueryRow(ctx, query, id).Scan(
-		&n.ID, &n.UserID, &n.Type, &n.Title, &n.Body, &n.Data, &n.IsRead, &n.ReadAt, &n.CreatedAt,
+		&n.ID, &n.UserID, &n.GroupID, &n.Type, &n.Title, &n.Body, &n.Data, &n.IsRead, &n.ReadAt, &n.CreatedAt,
 	)
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -63,7 +63,7 @@ func (r *NotificationRepository) ListNotificationsByUser(ctx context.Context, us
 		limit = 500
 	}
 	query := `
-		SELECT id, user_id, type, title, body, data, is_read, read_at, created_at
+		SELECT id, user_id, COALESCE(group_id, '00000000-0000-0000-0000-000000000000'::uuid), type, title, body, data, is_read, read_at, created_at
 		FROM notifications
 		WHERE user_id = $1
 		ORDER BY created_at DESC, id DESC
@@ -79,7 +79,7 @@ func (r *NotificationRepository) ListNotificationsByUser(ctx context.Context, us
 	for rows.Next() {
 		var n models.Notification
 		if err := rows.Scan(
-			&n.ID, &n.UserID, &n.Type, &n.Title, &n.Body, &n.Data, &n.IsRead, &n.ReadAt, &n.CreatedAt,
+			&n.ID, &n.UserID, &n.GroupID, &n.Type, &n.Title, &n.Body, &n.Data, &n.IsRead, &n.ReadAt, &n.CreatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -89,6 +89,51 @@ func (r *NotificationRepository) ListNotificationsByUser(ctx context.Context, us
 		return nil, err
 	}
 	return notifications, nil
+}
+
+// ListNotificationsByUserBefore performs stable keyset pagination. The ID
+// tie-breaker prevents skips when multiple rows have the same created_at.
+func (r *NotificationRepository) ListNotificationsByUserBefore(ctx context.Context, userID uuid.UUID, before time.Time, beforeID uuid.UUID, limit int) ([]models.Notification, error) {
+	if limit <= 0 {
+		limit = 50
+	}
+	if limit > 500 {
+		limit = 500
+	}
+	rows, err := r.db.Query(ctx, `
+		SELECT id, user_id, COALESCE(group_id, '00000000-0000-0000-0000-000000000000'::uuid), type, title, body, data, is_read, read_at, created_at
+		FROM notifications
+		WHERE user_id = $1 AND (created_at, id) < ($2, $3)
+		ORDER BY created_at DESC, id DESC
+		LIMIT $4
+	`, userID, before, beforeID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var notifications []models.Notification
+	for rows.Next() {
+		var n models.Notification
+		if err := rows.Scan(
+			&n.ID, &n.UserID, &n.GroupID, &n.Type, &n.Title, &n.Body, &n.Data, &n.IsRead, &n.ReadAt, &n.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		notifications = append(notifications, n)
+	}
+	return notifications, rows.Err()
+}
+
+// CountUnreadNotifications returns the canonical unread inbox count for a user.
+func (r *NotificationRepository) CountUnreadNotifications(ctx context.Context, userID uuid.UUID) (int, error) {
+	var count int
+	err := r.db.QueryRow(ctx, `
+		SELECT COUNT(*)
+		FROM notifications
+		WHERE user_id = $1 AND is_read = false
+	`, userID).Scan(&count)
+	return count, err
 }
 
 // MarkAsRead marks a single notification as read.
@@ -225,6 +270,7 @@ func (r *NotificationRepository) CreateNotificationsBatch(ctx context.Context, n
 	}
 	ids := make([]uuid.UUID, len(notifications))
 	userIDs := make([]uuid.UUID, len(notifications))
+	groupIDs := make([]uuid.UUID, len(notifications))
 	types := make([]string, len(notifications))
 	titles := make([]string, len(notifications))
 	bodies := make([]string, len(notifications))
@@ -242,6 +288,7 @@ func (r *NotificationRepository) CreateNotificationsBatch(ctx context.Context, n
 		n.IsRead = false
 		ids[i] = n.ID
 		userIDs[i] = n.UserID
+		groupIDs[i] = n.GroupID
 		types[i] = n.Type
 		titles[i] = n.Title
 		bodies[i] = n.Body
@@ -250,12 +297,12 @@ func (r *NotificationRepository) CreateNotificationsBatch(ctx context.Context, n
 		createdAt[i] = n.CreatedAt
 	}
 	_, err := r.db.Exec(ctx, `
-		INSERT INTO notifications (id, user_id, type, title, body, data, is_read, read_at, created_at)
-		SELECT id, user_id, type, title, body, data, is_read, NULL::timestamptz, created_at
-		FROM unnest($1::uuid[], $2::uuid[], $3::text[], $4::text[], $5::text[], $6::jsonb[], $7::bool[], $8::timestamptz[]) AS t(
-			id, user_id, type, title, body, data, is_read, created_at
+		INSERT INTO notifications (id, user_id, group_id, type, title, body, data, is_read, read_at, created_at)
+		SELECT id, user_id, NULLIF(group_id, '00000000-0000-0000-0000-000000000000'::uuid), type, title, body, data, is_read, NULL::timestamptz, created_at
+		FROM unnest($1::uuid[], $2::uuid[], $3::uuid[], $4::text[], $5::text[], $6::text[], $7::jsonb[], $8::bool[], $9::timestamptz[]) AS t(
+			id, user_id, group_id, type, title, body, data, is_read, created_at
 		)
-	`, ids, userIDs, types, titles, bodies, data, isRead, createdAt)
+	`, ids, userIDs, groupIDs, types, titles, bodies, data, isRead, createdAt)
 	if err != nil {
 		return fmt.Errorf("create notification batch: %w", err)
 	}

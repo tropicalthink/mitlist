@@ -156,9 +156,10 @@ func TestAuthRepository_CreatePushSubscription(t *testing.T) {
 		Auth:     "auth",
 	}
 
-	mock.ExpectExec("INSERT INTO push_subscriptions").
+	createdAt := fixedTime()
+	mock.ExpectQuery("INSERT INTO push_subscriptions").
 		WithArgs(pgxmock.AnyArg(), sub.UserID, sub.Endpoint, sub.P256dh, sub.Auth, pgxmock.AnyArg()).
-		WillReturnResult(pgxmock.NewResult("INSERT", 1))
+		WillReturnRows(pgxmock.NewRows([]string{"id", "created_at"}).AddRow(fixedUUID(), createdAt))
 
 	err := repo.CreatePushSubscription(context.Background(), sub)
 	require.NoError(t, err)

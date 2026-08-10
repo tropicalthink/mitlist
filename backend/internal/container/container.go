@@ -506,6 +506,7 @@ func (c *Container) MealPlanService() *services.MealPlanService {
 	c.mealPlanServiceOnce.Do(func() {
 		c.mealPlanService = services.NewMealPlanService(c.MealPlanRepo(), c.GroupRepo(), c.RecipeRepo(), c.ListRepo())
 		c.mealPlanService.SetCanonicalNameResolver(c.GroceryService().ResolveIngredientName)
+		c.mealPlanService.SetDispatcher(c.NotificationService())
 	})
 	return c.mealPlanService
 }
@@ -527,6 +528,7 @@ func (c *Container) NotificationService() *services.NotificationService {
 			c.NotificationRepo(), c.ActivityRepo(), c.GroupRepo(), c.Push(), c.Mail(),
 		)
 		c.notificationService.SetHub(c.SSEHub())
+		c.notificationService.SetLogger(c.logger)
 	})
 	return c.notificationService
 }

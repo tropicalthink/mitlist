@@ -244,6 +244,8 @@ type NotificationRepo interface {
 	CreateNotification(ctx context.Context, n *models.Notification) error
 	GetNotificationByID(ctx context.Context, id uuid.UUID) (*models.Notification, error)
 	ListNotificationsByUser(ctx context.Context, userID uuid.UUID, limit, offset int) ([]models.Notification, error)
+	ListNotificationsByUserBefore(ctx context.Context, userID uuid.UUID, before time.Time, beforeID uuid.UUID, limit int) ([]models.Notification, error)
+	CountUnreadNotifications(ctx context.Context, userID uuid.UUID) (int, error)
 	MarkAsRead(ctx context.Context, id uuid.UUID) error
 	MarkAllAsRead(ctx context.Context, userID uuid.UUID) error
 	DeleteNotification(ctx context.Context, id uuid.UUID) error

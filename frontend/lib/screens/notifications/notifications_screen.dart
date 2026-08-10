@@ -18,6 +18,7 @@ import '../../utils/active_group_context.dart';
 import '../../utils/friendly_error.dart';
 import '../../utils/haptics.dart';
 import '../../utils/latest_request_guard.dart';
+import '../../utils/notification_navigation.dart';
 import '../../providers/group_provider.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
@@ -144,6 +145,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         _hasMore = data.length == _pageLimit;
         _isLoading = false;
       });
+      ref.invalidate(unreadNotificationCountProvider);
     } catch (e) {
       if (!mounted || !_loadGuard.isCurrent(request)) return;
       if (hadContent) {
@@ -163,7 +165,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   Future<void> _loadMore() async {
     if (_isLoadingMore || !_hasMore || _isLoading) return;
     final request = _pageGuard.begin();
-    final offset = _items.length;
+    final cursor = _items.last;
     final l10n = AppLocalizations.of(context)!;
     setState(() {
       _isLoadingMore = true;
@@ -172,8 +174,11 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
 
     try {
       final service = await ref.read(notificationServiceProviderAsync.future);
-      final data =
-          await service.listNotifications(limit: _pageLimit, offset: offset);
+      final data = await service.listNotifications(
+        limit: _pageLimit,
+        beforeCreatedAt: cursor.createdAt,
+        beforeId: cursor.id,
+      );
       if (!mounted || !_pageGuard.isCurrent(request)) return;
       setState(() {
         final existingIds = _items.map((item) => item.id).toSet();
@@ -193,6 +198,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   NotificationModel _asRead(NotificationModel n) => NotificationModel(
         id: n.id,
         userId: n.userId,
+        groupId: n.groupId,
         type: n.type,
         title: n.title,
         body: n.body,
@@ -217,6 +223,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     try {
       final service = await ref.read(notificationServiceProviderAsync.future);
       await service.markAllAsRead();
+      ref.invalidate(unreadNotificationCountProvider);
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -240,6 +247,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         final idx = _items.indexWhere((x) => x.id == n.id);
         if (idx >= 0) _items[idx] = _asRead(n);
       });
+      ref.invalidate(unreadNotificationCountProvider);
     } catch (_) {
       if (!mounted) return;
       setState(() => _error = l10n.notificationsFailedMarkRead);
@@ -256,6 +264,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     try {
       final service = await ref.read(notificationServiceProviderAsync.future);
       await service.deleteNotification(n.id);
+      if (!n.isRead) ref.invalidate(unreadNotificationCountProvider);
     } catch (e) {
       if (!mounted) return;
       unawaited(Haptics.failure());
@@ -268,47 +277,28 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     }
   }
 
-  void _handleNotificationTap(NotificationModel n) {
+  Future<void> _handleNotificationTap(NotificationModel n) async {
     unawaited(Haptics.light());
-    _markRead(n);
+    unawaited(_markRead(n));
 
     if (n.data == null) return;
     final payload = _parsePayload(n.data);
     if (payload == null) return;
-
-    final screen = payload['screen'] as String?;
-    final id = payload['id'] as String?;
-    final groupId = payload['group_id'] as String?;
-
-    switch (screen) {
-      case 'choreDetail':
-        context.pushNamed('chores');
-      case 'expenseDetail':
-        context.pushNamed('money');
-      case 'listDetail':
-        if (id != null && id.isNotEmpty) {
-          // Push (like every sibling case) so back returns to the inbox,
-          // instead of go which replaced it.
-          context.pushNamed('listDetail', pathParameters: {'listId': id});
-        }
-      case 'recipeDetail':
-        context.pushNamed('recipes');
-      case 'mealPlan':
-        context.pushNamed('mealPlan');
-      case 'householdHub':
-        if (groupId != null && groupId.isNotEmpty) {
-          context.goNamed('householdHub', pathParameters: {'groupId': groupId});
-        }
-      case 'recurringExpenses':
-        context.pushNamed('recurringExpenses');
-      case 'settlements':
-        // Settlement approvals live in the Settlements tab of the money screen.
-        context.pushNamed('money');
+    if (n.groupId != null && !payload.containsKey('group_id')) {
+      payload['group_id'] = n.groupId;
     }
+
+    await navigateNotificationPayload(
+      GoRouter.of(context),
+      payload,
+      preserveInbox: true,
+      switchGroup: (groupId) =>
+          ref.read(currentGroupIdProvider.notifier).set(groupId),
+    );
   }
 
   Map<String, dynamic>? _parsePayload(dynamic data) {
-    if (data is Map<String, dynamic>) return data;
+    if (data is Map<String, dynamic>) return Map<String, dynamic>.from(data);
     if (data is String) {
       try {
         return jsonDecode(data) as Map<String, dynamic>;
@@ -320,6 +310,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   }
 
   String _sectionFor(DateTime t, AppLocalizations l10n) {
+    t = t.toLocal();
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final day = DateTime(t.year, t.month, t.day);
@@ -330,6 +321,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   }
 
   String _relativeTime(DateTime t, AppLocalizations l10n) {
+    t = t.toLocal();
     final diff = DateTime.now().difference(t);
     if (diff.inMinutes < 1) return l10n.notificationsTimeNow;
     if (diff.inHours < 1) return l10n.notificationsTimeMinutes(diff.inMinutes);
@@ -356,7 +348,10 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
-    final unreadCount = _items.where((n) => !n.isRead).length;
+    final loadedUnreadCount = _items.where((n) => !n.isRead).length;
+    final unreadCount =
+        ref.watch(unreadNotificationCountProvider).valueOrNull ??
+            loadedUnreadCount;
 
     return Scaffold(
       appBar: MitlistAppBar(

@@ -375,6 +375,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
         pinwallReminder:
             field == 'pinwall_reminder' ? value : pref.pinwallReminder,
         pushEnabled: field == 'push_enabled' ? value : pref.pushEnabled,
+        emailEnabled: field == 'email_enabled' ? value : pref.emailEnabled,
       );
       await svc.updatePreference(updated);
       if (!mounted) return;
@@ -420,6 +421,8 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
           const AppDivider(),
           _notifToggle(l10n.notifPrefPushNotifications, pref.pushEnabled,
               'push_enabled'),
+          _notifToggle(l10n.notifPrefEmailNotifications, pref.emailEnabled,
+              'email_enabled'),
         ],
       ),
     );

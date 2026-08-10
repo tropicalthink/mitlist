@@ -2744,6 +2744,13 @@ class AppLocalizationsNl extends AppLocalizations {
       'Ontvang notificaties op dit apparaat';
 
   @override
+  String get notifPrefEmailNotifications => 'E-mailmeldingen';
+
+  @override
+  String get notifPrefEmailNotificationsDesc =>
+      'Belangrijke herinneringen per e-mail ontvangen';
+
+  @override
   String get shoppingTripAppBarTitle => 'Boodschappentocht';
 
   @override

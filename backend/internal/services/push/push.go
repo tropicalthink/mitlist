@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"sync"
 	"time"
@@ -74,6 +76,12 @@ func (s *Service) SendToUser(userID uuid.UUID, payload string) error {
 			for _, dt := range tokens {
 				if err := s.sendFCM(ctx, dt.Token, payload); err != nil {
 					s.log.Warn().Err(err).Str("user_id", userID.String()).Str("token", dt.Token[:min(8, len(dt.Token))]).Msg("FCM send failed")
+					var permanent *permanentFCMError
+					if errors.As(err, &permanent) {
+						if delErr := s.authRepo.DeleteDeviceToken(ctx, userID, dt.ID); delErr != nil {
+							s.log.Warn().Err(delErr).Str("token_id", dt.ID.String()).Msg("failed to prune invalid FCM token")
+						}
+					}
 				}
 			}
 		}
@@ -146,6 +154,12 @@ func (s *Service) broadcastExcluding(groupID, excludeUserID uuid.UUID, payload s
 		for _, dt := range tokensByUser[userID] {
 			if err := s.sendFCM(ctx, dt.Token, payload); err != nil {
 				s.log.Warn().Err(err).Str("user_id", userID.String()).Str("token", dt.Token[:min(8, len(dt.Token))]).Msg("FCM send failed")
+				var permanent *permanentFCMError
+				if errors.As(err, &permanent) {
+					if delErr := s.authRepo.DeleteDeviceToken(ctx, userID, dt.ID); delErr != nil {
+						s.log.Warn().Err(delErr).Str("token_id", dt.ID.String()).Msg("failed to prune invalid FCM token")
+					}
+				}
 			}
 		}
 	}
@@ -155,7 +169,7 @@ func (s *Service) broadcastExcluding(groupID, excludeUserID uuid.UUID, payload s
 // sendWebPush sends a single web-push notification and prunes the subscription on 404/410.
 func (s *Service) sendWebPush(ctx context.Context, sub models.PushSubscription, payload string) {
 	if err := ValidatePushEndpoint(sub.Endpoint); err != nil {
-		s.log.Warn().Err(err).Str("endpoint", sub.Endpoint).Msg("web push endpoint failed send-time validation")
+		s.log.Warn().Err(err).Str("sub_id", sub.ID.String()).Msg("web push endpoint failed send-time validation")
 		return
 	}
 	resp, err := webpush.SendNotificationWithContext(
@@ -177,7 +191,7 @@ func (s *Service) sendWebPush(ctx context.Context, sub models.PushSubscription, 
 		},
 	)
 	if err != nil {
-		s.log.Warn().Err(err).Str("endpoint", sub.Endpoint).Msg("web push failed")
+		s.log.Warn().Err(err).Str("sub_id", sub.ID.String()).Msg("web push failed")
 		if resp != nil {
 			_ = resp.Body.Close()
 		}
@@ -193,7 +207,7 @@ func (s *Service) sendWebPush(ctx context.Context, sub models.PushSubscription, 
 		return
 	}
 	if resp.StatusCode >= 400 {
-		s.log.Warn().Int("status", resp.StatusCode).Str("endpoint", sub.Endpoint).Msg("web push non-2xx")
+		s.log.Warn().Int("status", resp.StatusCode).Str("sub_id", sub.ID.String()).Msg("web push non-2xx")
 	}
 }
 
@@ -222,6 +236,14 @@ type fcmMessage struct {
 type fcmNotification struct {
 	Title string `json:"title"`
 	Body  string `json:"body"`
+}
+
+type permanentFCMError struct {
+	status int
+}
+
+func (e *permanentFCMError) Error() string {
+	return fmt.Sprintf("FCM HTTP %d (device token is no longer registered)", e.status)
 }
 
 func (s *Service) sendFCM(ctx context.Context, deviceToken, rawPayload string) error {
@@ -284,6 +306,21 @@ func (s *Service) sendFCM(ctx context.Context, deviceToken, rawPayload string) e
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 400 {
+		responseBody, _ := io.ReadAll(io.LimitReader(resp.Body, 64*1024))
+		var providerError struct {
+			Error struct {
+				Status  string `json:"status"`
+				Details []struct {
+					ErrorCode string `json:"errorCode"`
+				} `json:"details"`
+			} `json:"error"`
+		}
+		_ = json.Unmarshal(responseBody, &providerError)
+		for _, detail := range providerError.Error.Details {
+			if detail.ErrorCode == "UNREGISTERED" {
+				return &permanentFCMError{status: resp.StatusCode}
+			}
+		}
 		return fmt.Errorf("FCM HTTP %d", resp.StatusCode)
 	}
 	return nil

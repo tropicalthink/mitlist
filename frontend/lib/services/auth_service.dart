@@ -9,6 +9,7 @@ import '../models/auth_models.dart';
 import 'api_client.dart';
 import 'api_error_mapper.dart';
 import 'fcm_service.dart';
+import 'push_subscription_service.dart';
 import 'token_store.dart';
 import 'dio_platform.dart';
 import 'token_refresh_coordinator.dart';
@@ -171,7 +172,6 @@ class AuthService {
   Future<void> logout() async {
     final accessToken = await _tokenStore.getAccessToken();
     final refreshToken = await _tokenStore.getRefreshToken();
-    await clearLocalSession();
     try {
       await FcmService.reset().timeout(const Duration(seconds: 2));
     } catch (e) {
@@ -195,6 +195,7 @@ class AuthService {
     try {
       await Future.wait<void>([
         FcmService.unregisterToken(cleanupDio),
+        PushSubscriptionService(_tokenStore).unsubscribe(),
         if (refreshToken != null || kIsWeb)
           cleanupDio.post<void>('/auth/logout',
               data: {'refresh_token': refreshToken ?? ''}),
@@ -205,6 +206,7 @@ class AuthService {
       if (kDebugMode) _logger.e('Logout cleanup failed (${e.runtimeType})');
     } finally {
       cleanupDio.close(force: true);
+      await clearLocalSession();
     }
   }
 

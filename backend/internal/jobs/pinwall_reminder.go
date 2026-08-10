@@ -208,13 +208,27 @@ func (r *pinwallReminderRepoImpl) ListDueReminders(ctx context.Context, before t
 		limit = 200
 	}
 	rows, err := r.db.Query(ctx, `
+		WITH due AS (
+			SELECT id
+			FROM pinwall_posts
+			WHERE remind_at IS NOT NULL
+			  AND reminder_sent_at IS NULL
+			  AND remind_at <= $1
+			  AND (reminder_claimed_at IS NULL OR reminder_claimed_at < NOW() - INTERVAL '5 minutes')
+			ORDER BY remind_at ASC
+			FOR UPDATE SKIP LOCKED
+			LIMIT $2
+		), claimed AS (
+			UPDATE pinwall_posts AS post
+			SET reminder_claimed_at = NOW()
+			FROM due
+			WHERE post.id = due.id
+			RETURNING post.id, post.group_id, post.user_id, post.content,
+				post.created_at, post.remind_at, post.reminder_sent_at
+		)
 		SELECT id, group_id, user_id, content, created_at, remind_at, reminder_sent_at
-		FROM pinwall_posts
-		WHERE remind_at IS NOT NULL
-		  AND reminder_sent_at IS NULL
-		  AND remind_at <= $1
+		FROM claimed
 		ORDER BY remind_at ASC
-		LIMIT $2
 	`, before, limit)
 	if err != nil {
 		return nil, fmt.Errorf("query due reminders: %w", err)
@@ -284,7 +298,7 @@ func (r *pinwallReminderRepoImpl) CreateNotificationsBatch(ctx context.Context, 
 func (r *pinwallReminderRepoImpl) MarkReminderSent(ctx context.Context, postID uuid.UUID, sentAt time.Time) (bool, error) {
 	ct, err := r.db.Exec(ctx, `
 		UPDATE pinwall_posts
-		SET reminder_sent_at = $2
+		SET reminder_sent_at = $2, reminder_claimed_at = NULL
 		WHERE id = $1 AND reminder_sent_at IS NULL
 	`, postID, sentAt)
 	if err != nil {

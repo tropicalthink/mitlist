@@ -4845,6 +4845,18 @@ abstract class AppLocalizations {
   /// **'Receive notifications on this device'**
   String get notifPrefPushNotificationsDesc;
 
+  /// Toggle label for email notifications
+  ///
+  /// In en, this message translates to:
+  /// **'Email notifications'**
+  String get notifPrefEmailNotifications;
+
+  /// Toggle subtitle for email notifications
+  ///
+  /// In en, this message translates to:
+  /// **'Receive important reminders by email'**
+  String get notifPrefEmailNotificationsDesc;
+
   /// AppBar title for shopping trip
   ///
   /// In en, this message translates to:

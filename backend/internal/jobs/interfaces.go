@@ -33,6 +33,7 @@ type choreReminderRepo interface {
 	GetChoreName(ctx context.Context, choreID uuid.UUID) (string, error)
 	GetChoreGroupID(ctx context.Context, choreID uuid.UUID) (uuid.UUID, error)
 	GetUserPreference(ctx context.Context, userID, groupID uuid.UUID) (*models.NotificationPreference, error)
+	MarkReminderSent(ctx context.Context, assignmentID uuid.UUID, sentAt time.Time) error
 }
 
 type recurringExpenseRepo interface {

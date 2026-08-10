@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -22,12 +23,29 @@ func NewNotificationHandler(service *services.NotificationService) *Notification
 
 func (h *NotificationHandler) RegisterRoutes(r chi.Router) {
 	r.Get("/notifications", h.ListNotifications)
+	r.Get("/notifications/unread-count", h.CountUnreadNotifications)
 	r.Get("/notifications/{id}", h.GetNotification)
 	r.Patch("/notifications/{id}/read", h.MarkAsRead)
 	r.Patch("/notifications/read-all", h.MarkAllAsRead)
 	r.Delete("/notifications/{id}", h.DeleteNotification)
 	r.Get("/notifications/preferences", h.GetPreferences)
 	r.Patch("/notifications/preferences", h.UpdatePreferences)
+}
+
+func (h *NotificationHandler) CountUnreadNotifications(w http.ResponseWriter, r *http.Request) {
+	userID, err := currentUserID(r)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+
+	count, err := h.service.CountUnreadNotifications(r.Context(), userID)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+
+	api.RespondJSON(w, http.StatusOK, map[string]int{"count": count})
 }
 
 func (h *NotificationHandler) ListNotifications(w http.ResponseWriter, r *http.Request) {
@@ -38,7 +56,28 @@ func (h *NotificationHandler) ListNotifications(w http.ResponseWriter, r *http.R
 	}
 
 	limit, offset := parsePagination(r)
-	notifications, err := h.service.ListNotifications(r.Context(), userID, limit, offset)
+	beforeCreatedAt := r.URL.Query().Get("before_created_at")
+	beforeIDRaw := r.URL.Query().Get("before_id")
+	var notifications []models.Notification
+	if beforeCreatedAt != "" || beforeIDRaw != "" {
+		if beforeCreatedAt == "" || beforeIDRaw == "" {
+			api.RespondError(w, &api.ValidationError{Field: "cursor", Message: "before_created_at and before_id must be provided together"})
+			return
+		}
+		before, parseErr := time.Parse(time.RFC3339Nano, beforeCreatedAt)
+		if parseErr != nil {
+			api.RespondError(w, &api.ValidationError{Field: "before_created_at", Message: "invalid timestamp"})
+			return
+		}
+		beforeID, parseErr := uuid.Parse(beforeIDRaw)
+		if parseErr != nil {
+			api.RespondError(w, &api.ValidationError{Field: "before_id", Message: "invalid UUID"})
+			return
+		}
+		notifications, err = h.service.ListNotificationsBefore(r.Context(), userID, before, beforeID, limit)
+	} else {
+		notifications, err = h.service.ListNotifications(r.Context(), userID, limit, offset)
+	}
 	if err != nil {
 		api.RespondError(w, err)
 		return

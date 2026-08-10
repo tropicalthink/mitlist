@@ -18,10 +18,19 @@ class NotificationService {
   }
 
   Future<List<NotificationModel>> listNotifications(
-      {int limit = 50, int offset = 0}) async {
+      {int limit = 50,
+      int offset = 0,
+      DateTime? beforeCreatedAt,
+      String? beforeId}) async {
     try {
-      final r = await _dio.get('/notifications',
-          queryParameters: {'limit': limit, 'offset': offset});
+      final query = <String, dynamic>{'limit': limit};
+      if (beforeCreatedAt != null && beforeId != null) {
+        query['before_created_at'] = beforeCreatedAt.toUtc().toIso8601String();
+        query['before_id'] = beforeId;
+      } else {
+        query['offset'] = offset;
+      }
+      final r = await _dio.get('/notifications', queryParameters: query);
       final data = (r.data as List).cast<dynamic>();
       return data
           .map((e) =>
@@ -31,6 +40,11 @@ class NotificationService {
       _logger.e('List notifications failed: ${e.response?.data}');
       rethrow;
     }
+  }
+
+  Future<int> countUnreadNotifications() async {
+    final r = await _dio.get('/notifications/unread-count');
+    return (r.data as Map<String, dynamic>)['count'] as int? ?? 0;
   }
 
   Future<NotificationModel> getNotification(String id) async {
