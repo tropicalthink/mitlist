@@ -269,6 +269,7 @@ func TestFinanceRepo_CreateSettlement(t *testing.T) {
 		FromUserID: fixedUUID(),
 		ToUserID:   fixedUUID(),
 		Amount:     500,
+		CreatedBy:  fixedUUID(),
 	}
 
 	mock.ExpectBegin()
@@ -276,7 +277,7 @@ func TestFinanceRepo_CreateSettlement(t *testing.T) {
 		WithArgs(s.GroupID).
 		WillReturnResult(pgxmock.NewResult("SELECT", 0))
 	mock.ExpectExec("INSERT INTO settlements").
-		WithArgs(pgxmock.AnyArg(), s.GroupID, s.FromUserID, s.ToUserID, s.Amount, pgxmock.AnyArg()).
+		WithArgs(pgxmock.AnyArg(), s.GroupID, s.FromUserID, s.ToUserID, s.Amount, models.SettlementStatusPending, s.CreatedBy, pgxmock.AnyArg()).
 		WillReturnResult(pgxmock.NewResult("INSERT", 1))
 	mock.ExpectCommit()
 
@@ -291,8 +292,8 @@ func TestFinanceRepo_ListSettlementsByGroup(t *testing.T) {
 	repo := NewFinanceRepo(mock)
 	gid := fixedUUID()
 
-	cols := []string{"id", "group_id", "from_user_id", "to_user_id", "amount", "created_at"}
-	rows := pgxmock.NewRows(cols).AddRow(fixedUUID(), gid, fixedUUID(), fixedUUID(), 500, fixedTime())
+	cols := []string{"id", "group_id", "from_user_id", "to_user_id", "amount", "status", "created_by", "responded_at", "created_at"}
+	rows := pgxmock.NewRows(cols).AddRow(fixedUUID(), gid, fixedUUID(), fixedUUID(), 500, models.SettlementStatusPending, fixedUUID(), nil, fixedTime())
 
 	mock.ExpectQuery("SELECT .* FROM settlements WHERE group_id = .*").
 		WithArgs(gid, 50, 0).
@@ -509,8 +510,8 @@ func TestFinanceRepo_GetSettlementByID(t *testing.T) {
 	repo := NewFinanceRepo(mock)
 	id := fixedUUID()
 
-	rows := pgxmock.NewRows([]string{"id", "group_id", "from_user_id", "to_user_id", "amount", "created_at"}).
-		AddRow(id, fixedUUID(), fixedUUID(), fixedUUID(), 500, fixedTime())
+	rows := pgxmock.NewRows([]string{"id", "group_id", "from_user_id", "to_user_id", "amount", "status", "created_by", "responded_at", "created_at"}).
+		AddRow(id, fixedUUID(), fixedUUID(), fixedUUID(), 500, models.SettlementStatusConfirmed, fixedUUID(), nil, fixedTime())
 
 	mock.ExpectQuery("SELECT .* FROM settlements WHERE id = .*").
 		WithArgs(id).

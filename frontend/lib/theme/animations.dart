@@ -19,6 +19,14 @@ class MitlistAnimations {
   // Ambient loop for breathing / floating idle animations.
   static const Duration breatheLoop = Duration(milliseconds: 2400);
 
+  // Bottom-nav selection slab travelling between tabs. Long enough to read as
+  // one object moving, short enough that the tap still feels instant.
+  static const Duration navSlab = Duration(milliseconds: 200);
+
+  // Incoming shell branch after a tab switch. Deliberately shorter than the
+  // slab: the destination should arrive before the indicator finishes.
+  static const Duration navBranch = Duration(milliseconds: 180);
+
   // Staggered entrance — total window for a screen to settle.
   static const Duration entrance = Duration(milliseconds: 600);
 

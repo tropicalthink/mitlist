@@ -67,8 +67,12 @@ func (c *GoogleClient) AllowRedirect(redirectURI string) bool {
 // callback (RedirectURI). It does not consult the allowlist: the callback is
 // operator-configured, not client-supplied, so it must not be filtered by the
 // client redirect allowlist.
-func (c *GoogleClient) AuthURL(state string) string {
-	return c.config.AuthCodeURL(state, oauth2.AccessTypeOnline)
+func (c *GoogleClient) AuthURL(state string, verifier ...string) string {
+	options := []oauth2.AuthCodeOption{oauth2.AccessTypeOnline}
+	if len(verifier) > 0 && verifier[0] != "" {
+		options = append(options, oauth2.S256ChallengeOption(verifier[0]))
+	}
+	return c.config.AuthCodeURL(state, options...)
 }
 
 // RedirectURI returns the configured provider callback URI used for server-side exchanges.
@@ -82,11 +86,15 @@ func (c *GoogleClient) Configured() bool {
 }
 
 // ExchangeCode exchanges an authorization code for an OAuth2 token.
-func (c *GoogleClient) ExchangeCode(code string) (*oauth2.Token, error) {
+func (c *GoogleClient) ExchangeCode(code string, verifier ...string) (*oauth2.Token, error) {
 	if c.config.ClientID == "" || c.config.ClientSecret == "" {
 		return nil, fmt.Errorf("google oauth not fully configured")
 	}
-	return c.config.Exchange(context.Background(), code)
+	options := []oauth2.AuthCodeOption{}
+	if len(verifier) > 0 && verifier[0] != "" {
+		options = append(options, oauth2.VerifierOption(verifier[0]))
+	}
+	return c.config.Exchange(context.Background(), code, options...)
 }
 
 // GetUserInfo fetches the user's profile from Google using the provided token.

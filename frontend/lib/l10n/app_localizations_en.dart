@@ -261,6 +261,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get choreAppBarTitle => 'Chores';
 
   @override
+  String get choreManageZones => 'Manage zones';
+
+  @override
   String get choreAddChore => 'Add chore';
 
   @override
@@ -1646,10 +1649,48 @@ class AppLocalizationsEn extends AppLocalizations {
       'This will permanently delete this expense and all associated receipts. This cannot be undone.';
 
   @override
-  String get expenseSettlementRecorded => 'Settlement recorded';
+  String get expenseSettlementRecorded =>
+      'Settlement recorded — awaiting confirmation';
 
   @override
   String get expenseSettlementFailed => 'Couldn\'t record settlement.';
+
+  @override
+  String get expenseSettlementNeedsYou => 'Needs your confirmation';
+
+  @override
+  String get expenseSettlementWaiting => 'Waiting for confirmation';
+
+  @override
+  String get expenseSettlementHistory => 'Recent settlements';
+
+  @override
+  String expenseSettlementRow(String from, String to) {
+    return '$from paid $to';
+  }
+
+  @override
+  String get expenseSettlementConfirmAction => 'Confirm';
+
+  @override
+  String get expenseSettlementDeclineAction => 'Decline';
+
+  @override
+  String get expenseSettlementCancelAction => 'Cancel request';
+
+  @override
+  String get expenseSettlementStatusConfirmed => 'Confirmed';
+
+  @override
+  String get expenseSettlementStatusDeclined => 'Declined';
+
+  @override
+  String get expenseSettlementResponseFailed =>
+      'Couldn\'t update the settlement.';
+
+  @override
+  String get expenseSettlementCancelFailed =>
+      'Couldn\'t cancel the settlement.';
 
   @override
   String get expenseSuggestedPaymentsTitle => 'Suggested payments';
@@ -2394,7 +2435,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accountPasswordMinLength =>
-      'New password must be at least 6 characters.';
+      'New password must be at least 12 characters.';
 
   @override
   String get accountPasswordsMismatch => 'New passwords do not match.';
@@ -3767,7 +3808,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authSignupPassword => 'Password';
 
   @override
-  String get authSignupPasswordHint => 'At least 6 characters';
+  String get authSignupPasswordHint => 'At least 12 characters';
 
   @override
   String get authSignupCreateAccount => 'Create account';
@@ -3786,7 +3827,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authSignupPasswordMinLength =>
-      'Password must be at least 6 characters.';
+      'Password must be at least 12 characters.';
 
   @override
   String get authSignupJoinTitle => 'Join household';
@@ -3924,6 +3965,41 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authOnboardingHomeIconSemantic => 'Household home icon';
+
+  @override
+  String get welcomePillarsSemantic =>
+      'Shared lists, money, chores, and kitchen. All in one place.';
+
+  @override
+  String get authOnboardingNameTitle => 'Name your household';
+
+  @override
+  String get authOnboardingNameBody =>
+      'Write it on the note. You can change it later.';
+
+  @override
+  String get authOnboardingPinIt => 'Pin it to the board';
+
+  @override
+  String get authOnboardingInviteTitle => 'Bring in your flatmates';
+
+  @override
+  String get authOnboardingInviteBody =>
+      'Share this code. Anyone who enters it joins your household.';
+
+  @override
+  String get authOnboardingGoToBoard => 'Go to your board';
+
+  @override
+  String get hubChecklistTitle => 'Get the house going';
+
+  @override
+  String get hubChecklistDone => 'Done';
+
+  @override
+  String hubChecklistProgress(int done, int total) {
+    return '$done of $total done';
+  }
 
   @override
   String get hubStatsChores => 'Chores';
@@ -4873,4 +4949,186 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get householdStorageProgressLabel => 'Household storage used';
+
+  @override
+  String get accountSendFeedback => 'Send feedback';
+
+  @override
+  String get feedbackCardTitle => 'Help shape mitlist';
+
+  @override
+  String get feedbackCardBody =>
+      'Request a feature, report a bug, or share an idea — it goes straight to the team.';
+
+  @override
+  String get feedbackSheetTitle => 'Send feedback';
+
+  @override
+  String get feedbackSheetIntro =>
+      'Request a feature, report a bug, or tell us what could work better — we read every message.';
+
+  @override
+  String get feedbackFieldLabel => 'Your message';
+
+  @override
+  String get feedbackFieldHint => 'I wish mitlist could…';
+
+  @override
+  String get feedbackSend => 'Send';
+
+  @override
+  String get feedbackSending => 'Sending…';
+
+  @override
+  String get feedbackSent => 'Thanks — your request was sent!';
+
+  @override
+  String get feedbackEmpty => 'Please write a short message first.';
+
+  @override
+  String get feedbackFailed =>
+      'Couldn\'t send your request right now. Please try again later.';
+
+  @override
+  String get accountOcrTrainingTitle => 'Improve offline handwriting OCR';
+
+  @override
+  String get accountOcrTrainingDescription =>
+      'Manually reviewed line crops stay on this device until you export or delete them. Nothing is uploaded.';
+
+  @override
+  String get accountOcrTrainingExport => 'Export OCR training data';
+
+  @override
+  String accountOcrTrainingSamples(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count corrected lines',
+      one: '1 corrected line',
+      zero: 'No corrected lines',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get accountOcrTrainingClear => 'Delete OCR training data';
+
+  @override
+  String get accountOcrTrainingExportEmpty =>
+      'There are no corrected OCR lines to export yet.';
+
+  @override
+  String get accountOcrTrainingClearTitle => 'Delete OCR training data?';
+
+  @override
+  String get accountOcrTrainingClearBody =>
+      'This permanently removes every saved line crop from this device.';
+
+  @override
+  String get billingPremiumTitle => 'mitlist premium';
+
+  @override
+  String get billingLimitReachedTitle => 'This household is full';
+
+  @override
+  String billingLimitReachedBody(num limit, num next) {
+    return 'Households of up to $limit people are free. To add a ${next}th member, one person needs premium — and it covers everyone here.';
+  }
+
+  @override
+  String get billingCoversOneHousehold =>
+      'Premium applies to one household at a time. You choose which, and you can move it whenever you like.';
+
+  @override
+  String billingCoveredBy(String name) {
+    return 'Premium on this household, paid by $name.';
+  }
+
+  @override
+  String get billingPremiumActive => 'Premium is active here';
+
+  @override
+  String get billingMoveHereTitle => 'Move your premium here';
+
+  @override
+  String get billingMoveHereBody =>
+      'You already have premium on another household. Move it here instead of paying twice — the other household keeps everyone it already has, it just can\'t add more.';
+
+  @override
+  String get billingMoveHereAction => 'Move premium here';
+
+  @override
+  String get billingMoved => 'Premium now covers this household.';
+
+  @override
+  String get billingMoveFailed =>
+      'Could not move your premium. Please try again.';
+
+  @override
+  String get billingChooseHousehold => 'Choose your premium household';
+
+  @override
+  String get billingMonthly => 'Monthly';
+
+  @override
+  String get billingYearly => 'Yearly';
+
+  @override
+  String get billingYearlyBadge => 'Best value';
+
+  @override
+  String get billingSubscribe => 'Get premium';
+
+  @override
+  String get billingOpeningCheckout => 'Opening checkout...';
+
+  @override
+  String get billingCheckoutFailed =>
+      'Could not start checkout. Please try again.';
+
+  @override
+  String get billingManage => 'Manage subscription';
+
+  @override
+  String get billingPortalFailed => 'Could not open the billing portal.';
+
+  @override
+  String get billingReturnHint =>
+      'Finish in your browser, then come back — premium activates automatically.';
+
+  @override
+  String get billingAccountCardTitle => 'Premium';
+
+  @override
+  String billingAccountCardFree(num limit) {
+    return 'You\'re on the free plan. Households of up to $limit people are free.';
+  }
+
+  @override
+  String billingAccountCardActive(String household) {
+    return 'Premium is active on $household.';
+  }
+
+  @override
+  String get billingAccountCardUnassigned =>
+      'Premium is active but not assigned to a household yet.';
+
+  @override
+  String billingRenewsOn(String date) {
+    return 'Renews $date';
+  }
+
+  @override
+  String billingEndsOn(String date) {
+    return 'Ends $date';
+  }
+
+  @override
+  String billingMemberUsage(num count, num limit) {
+    return '$count of $limit free places used';
+  }
+
+  @override
+  String get billingUnlimitedMembers => 'Unlimited members';
 }

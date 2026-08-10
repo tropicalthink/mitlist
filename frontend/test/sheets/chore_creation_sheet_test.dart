@@ -8,6 +8,7 @@ import 'package:mitlist/providers/chore_provider.dart';
 import 'package:mitlist/providers/group_provider.dart';
 import 'package:mitlist/providers/grocery_provider.dart';
 import 'package:mitlist/providers/list_provider.dart' show grocerySeedProvider;
+import 'package:mitlist/repositories/chore_repository.dart';
 import 'package:mitlist/services/chore_service.dart';
 import 'package:mitlist/services/group_service.dart';
 import 'package:mitlist/services/scan/grocery_suggestion_service.dart';
@@ -42,6 +43,11 @@ void main() {
             (ref) async => _FakeGroupService(),
           ),
           choreServiceProviderAsync.overrideWith((ref) async => chores),
+          // The sheet creates through the repository now (offline-first), so
+          // that is where the request is captured. The repository→service leg
+          // is covered by chore_repository_offline_test.
+          choreRepositoryProvider
+              .overrideWith((ref) async => _FakeChoreRepository(chores)),
           grocerySeedProvider.overrideWith((ref) async {}),
           grocerySuggestionServiceProvider.overrideWithValue(
             GrocerySuggestionService(groceryDb),
@@ -87,6 +93,28 @@ class _FakeGroupService implements GroupService {
   @override
   Future<List<GroupMemberProfile>> listMembers(String groupId) async =>
       const [];
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+/// Captures the create request the sheet builds, delegating to the fake
+/// service so the assertion below still reads it from one place.
+class _FakeChoreRepository implements ChoreRepository {
+  _FakeChoreRepository(this._chores);
+
+  final _FakeChoreService _chores;
+
+  @override
+  Future<ChoreCreateResult> createOfflineFirst(
+    CreateChoreRequest req, {
+    Duration syncWindow = Duration.zero,
+  }) async {
+    return ChoreCreateResult(
+      chore: await _chores.createChore(req),
+      synced: true,
+    );
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();

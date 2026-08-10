@@ -8,6 +8,7 @@ import '../../providers/recipe_provider.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../utils/friendly_error.dart';
+import '../../utils/latest_request_guard.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_dialog.dart';
@@ -29,6 +30,7 @@ class _CookbooksScreenState extends ConsumerState<CookbooksScreen> {
   String? _error;
   final List<RecipeCollection> _items = [];
   String? _submittingId;
+  final LatestRequestGuard _loadGuard = LatestRequestGuard();
 
   @override
   void initState() {
@@ -36,24 +38,40 @@ class _CookbooksScreenState extends ConsumerState<CookbooksScreen> {
     _load();
   }
 
+  @override
+  void dispose() {
+    _loadGuard.dispose();
+    super.dispose();
+  }
+
   Future<void> _load() async {
+    final request = _loadGuard.begin();
+    final hadContent = _items.isNotEmpty;
     setState(() {
-      _isLoading = true;
+      _isLoading = !hadContent;
       _error = null;
     });
     try {
       final svc = await ref.read(recipeServiceProviderAsync.future);
       final items = await svc.listCollections(limit: 100);
-      if (!mounted) return;
+      if (!mounted || !_loadGuard.isCurrent(request)) return;
       setState(() {
         _items.clear();
         _items.addAll(items);
         _isLoading = false;
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || !_loadGuard.isCurrent(request)) return;
+      final message = friendlyErrorMessage(e, AppLocalizations.of(context)!);
+      if (hadContent) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+        return;
+      }
       setState(() {
-        _error = friendlyErrorMessage(e, AppLocalizations.of(context)!);
+        _error = message;
         _isLoading = false;
       });
     }

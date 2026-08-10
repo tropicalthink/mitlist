@@ -17,7 +17,7 @@ import (
 func TestFinance_CreateExpense(t *testing.T) {
 	clearTables(t)
 	router, _ := newFinanceRouter(t)
-	user := createTestUser(t, "fin@example.com", "password123")
+	user := createTestUser(t, "fin@example.com", "password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()
@@ -53,7 +53,7 @@ func TestFinance_CreateExpense(t *testing.T) {
 func TestFinance_CreateExpense_ForeignCurrency(t *testing.T) {
 	clearTables(t)
 	router, _ := newFinanceRouter(t)
-	user := createTestUser(t, "fx@example.com", "password123")
+	user := createTestUser(t, "fx@example.com", "password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()
@@ -188,7 +188,7 @@ func TestFinance_SplitInvariant(t *testing.T) {
 			groupRepo := newTestGroupRepo()
 
 			// Payer/creator is the authenticated user.
-			payer := createTestUser(t, "split-"+tc.name+"-0@example.com", "password123")
+			payer := createTestUser(t, "split-"+tc.name+"-0@example.com", "password123!")
 			token := generateTestToken(payer.ID)
 
 			group := &models.Group{
@@ -208,7 +208,7 @@ func TestFinance_SplitInvariant(t *testing.T) {
 				GroupID: group.ID, UserID: payer.ID, Role: "admin",
 			}))
 			for i := 1; i < tc.participants; i++ {
-				u := createTestUser(t, fmt.Sprintf("split-%s-%d@example.com", tc.name, i), "password123")
+				u := createTestUser(t, fmt.Sprintf("split-%s-%d@example.com", tc.name, i), "password123!")
 				require.NoError(t, groupRepo.CreateMembership(context.Background(), &models.GroupMembership{
 					GroupID: group.ID, UserID: u.ID, Role: "member",
 				}))
@@ -252,7 +252,7 @@ func TestFinance_SplitInvariant(t *testing.T) {
 func TestFinance_ListExpenses(t *testing.T) {
 	clearTables(t)
 	router, _ := newFinanceRouter(t)
-	user := createTestUser(t, "lsfin@example.com", "password123")
+	user := createTestUser(t, "lsfin@example.com", "password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()
@@ -290,7 +290,7 @@ func TestFinance_ListExpenses(t *testing.T) {
 func TestFinance_GetExpense_NotFound(t *testing.T) {
 	clearTables(t)
 	router, _ := newFinanceRouter(t)
-	user := createTestUser(t, "nffin@example.com", "password123")
+	user := createTestUser(t, "nffin@example.com", "password123!")
 	token := generateTestToken(user.ID)
 
 	rec := execRequest(t, router, "GET", "/api/v1/expenses/"+uuid.New().String(), nil, token)
@@ -300,7 +300,7 @@ func TestFinance_GetExpense_NotFound(t *testing.T) {
 func TestFinance_DeleteExpense(t *testing.T) {
 	clearTables(t)
 	router, _ := newFinanceRouter(t)
-	user := createTestUser(t, "delfin@example.com", "password123")
+	user := createTestUser(t, "delfin@example.com", "password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()
@@ -332,10 +332,75 @@ func TestFinance_DeleteExpense(t *testing.T) {
 	requireStatus(t, rec, http.StatusNoContent)
 }
 
+// Optimistic concurrency on expense update. Without this an offline edit that
+// drains after somebody else's edit silently overwrites it — and unlike a list
+// item, a clobbered expense costs somebody money.
+func TestFinance_UpdateExpense_OptimisticConcurrency(t *testing.T) {
+	clearTables(t)
+	router, _ := newFinanceRouter(t)
+	user := createTestUser(t, "occfin@example.com", "password123!")
+	token := generateTestToken(user.ID)
+
+	groupRepo := newTestGroupRepo()
+	group := &models.Group{
+		ID:        uuid.New(),
+		Name:      "G",
+		CreatedBy: user.ID,
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
+	}
+	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
+
+	financeRepo := newTestFinanceRepo()
+	updatedAt := time.Now().UTC()
+	expense := &models.Expense{
+		ID:          uuid.New(),
+		GroupID:     group.ID,
+		PayerID:     user.ID,
+		Amount:      5000,
+		Description: "Groceries",
+		Category:    "Food",
+		Currency:    "USD",
+		Date:        time.Now().UTC(),
+		CreatedAt:   updatedAt,
+		UpdatedAt:   updatedAt,
+	}
+	require.NoError(t, financeRepo.CreateExpense(context.Background(), expense))
+
+	url := "/api/v1/expenses/" + expense.ID.String()
+
+	// Stale base (someone else edited since) -> 409 carrying the server's row,
+	// which is what the client's conflict sheet renders as "theirs".
+	rec := execRequest(t, router, "PATCH", url, map[string]any{
+		"amount":              9900,
+		"expected_updated_at": updatedAt.Add(-time.Hour),
+	}, token)
+	requireStatus(t, rec, http.StatusConflict)
+	var conflict map[string]any
+	parseJSONResponse(t, rec, &conflict)
+	assert.Equal(t, "conflict", conflict["error"])
+	assert.NotNil(t, conflict["current"], "409 must carry the current expense")
+
+	// Correct base truncated to the second -> succeeds. Same regression guard as
+	// the list-item case: Drift stores DateTime as unix SECONDS, so the base the
+	// client sends back has lost its sub-second component and must not 409.
+	rec = execRequest(t, router, "PATCH", url, map[string]any{
+		"amount":              9900,
+		"expected_updated_at": updatedAt.Truncate(time.Second),
+	}, token)
+	requireStatus(t, rec, http.StatusOK)
+
+	// Omitting the base entirely stays last-write-wins, so existing clients and
+	// non-offline callers are unaffected.
+	rec = execRequest(t, router, "PATCH", url, map[string]any{"amount": 12300}, token)
+	requireStatus(t, rec, http.StatusOK)
+}
+
 func TestFinance_CreateSplit(t *testing.T) {
 	clearTables(t)
 	router, _ := newFinanceRouter(t)
-	user := createTestUser(t, "split@example.com", "password123")
+	user := createTestUser(t, "split@example.com", "password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()
@@ -371,7 +436,7 @@ func TestFinance_CreateSplit(t *testing.T) {
 func TestFinance_CreateSettlement(t *testing.T) {
 	clearTables(t)
 	router, _ := newFinanceRouter(t)
-	user := createTestUser(t, "settle@example.com", "password123")
+	user := createTestUser(t, "settle@example.com", "password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()
@@ -384,7 +449,7 @@ func TestFinance_CreateSettlement(t *testing.T) {
 	}
 	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
 	addTestMembership(t, group.ID, user.ID, "admin")
-	member := createTestUser(t, "settle-member@example.com", "password123")
+	member := createTestUser(t, "settle-member@example.com", "password123!")
 	addTestMembership(t, group.ID, member.ID, "member")
 	financeRepo := newTestFinanceRepo()
 	expense := &models.Expense{
@@ -413,7 +478,7 @@ func TestFinance_CreateSettlement(t *testing.T) {
 func TestFinance_CreateRecurringExpense(t *testing.T) {
 	clearTables(t)
 	router, _ := newFinanceRouter(t)
-	user := createTestUser(t, "rec@example.com", "password123")
+	user := createTestUser(t, "rec@example.com", "password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()
@@ -448,7 +513,7 @@ func TestFinance_CreateRecurringExpense(t *testing.T) {
 func TestFinance_ListRecurringExpenses(t *testing.T) {
 	clearTables(t)
 	router, _ := newFinanceRouter(t)
-	user := createTestUser(t, "lsrec@example.com", "password123")
+	user := createTestUser(t, "lsrec@example.com", "password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()

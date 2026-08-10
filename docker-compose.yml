@@ -28,7 +28,7 @@ services:
     environment:
       DATABASE_URL: postgres://mitlist:mitlist@db:5432/mitlist?sslmode=disable
       SECRET_KEY: dev-only-insecure-key-do-not-use-in-prod
-      SESSION_SECRET_KEY: dev-only-insecure-key-do-not-use-in-prod
+      SESSION_SECRET_KEY: dev-only-insecure-session-key-not-for-prod
       ENVIRONMENT: development
       FRONTEND_URL: http://localhost:5173
       API_PREFIX: /api

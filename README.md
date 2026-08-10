@@ -8,67 +8,92 @@ Lists, chores, money, meal plans — all in one place. Built for flatmates who w
 
 ## Why mitlist
 
-You're already paying rent. Why pay another subscription just to split expenses or track chores?
+You're already paying rent. Most of these apps have a usable free tier — but the
+free tiers come with ads, daily limits, or the features you actually wanted
+sitting behind a subscription. mitlist has one tier, and it's the whole thing.
+
+> **How to read these tables.** ✅ = yes · ⚠️ = partial, see the note · ❌ = no ·
+> ? = we couldn't verify it. Competitor facts were checked on **2026-07-27**
+> against each vendor's own pages (linked below); prices are list prices in the
+> currency the vendor quotes and change often. Where a rival's behaviour was
+> unclear we marked it `?` rather than `❌` — an unverified guess in our own
+> favour is worse than an empty cell. Found a mistake? Open an issue; we'd
+> rather fix the table than win with it.
 
 ### vs Paid alternatives
 
-| | mitlist | Splitwise Pro | Flatastic | Bring! |
+| | mitlist | [Splitwise](https://www.splitwise.com/pro) | [Flatastic](https://flatastic-app.com) | [Bring!](https://www.getbring.com) |
 |---|---|---|---|---|
-| **Expense splitting** (equal, exact, %, shares) | ✅ | ✅ | ❌ | ❌ |
-| **Settlement tracking** | ✅ | ✅ | ❌ | ❌ |
-| **Recurring expenses** | ✅ | ✅ | ❌ | ❌ |
-| **Chores** (rotating, cron, subtasks) | ✅ | ❌ | ✅ | ❌ |
-| **Shopping lists** (shared, cost tracking) | ✅ | ❌ | ✅ | ✅ |
-| **Meal plans + recipes** | ✅ | ❌ | ❌ | ❌ |
+| **Install it today from a store** | ❌ build it yourself | ✅ | ✅ | ✅ |
+| **Price** | Free, no tiers, no ads | Free tier (ads + daily expense cap); Pro $4.99/mo or $39.99/yr | Free tier; Premium $1.99/mo · $18.49/yr solo, $6.49/mo · $34.99/yr household | Free tier (ads); Premium $1.99/mo or $8.99/yr |
+| **Expense splitting** (equal, exact, %, shares) | ✅ | ✅ | ⚠️ tracks who paid what and the resulting balances | ❌ |
+| **Settlement tracking** | ✅ counterparty must confirm | ✅ | ⚠️ balances + monthly overview | ❌ |
+| **Recurring expenses** | ✅ | ✅ | ? | ❌ |
+| **Multi-currency** | ✅ manual rate, or opt-in feed | ⚠️ Pro only | ? | ❌ |
+| **Bank / card import** | ❌ | ⚠️ Pro only | ❌ | ❌ |
+| **Receipt handling** | ⚠️ attach a photo; no parsing | ⚠️ Pro scans + itemises receipts | ? | ❌ |
+| **Expense search, charts, itemisation** | ❌ | ⚠️ Pro only | ? | ❌ |
+| **Chores** (rotating, cron, subtasks) | ✅ | ❌ | ✅ + a points system | ❌ |
+| **Shopping lists** (shared, cost tracking) | ✅ | ❌ | ✅ | ✅ the category leader |
+| **Barcode scanning, store deals, Alexa/Watch** | ❌ | ❌ | ❌ | ✅ |
+| **Meal plans + recipes** | ✅ | ❌ | ❌ | ⚠️ recipes + ingredient import, no planner |
 | **Calendar** (all-in-one) | ✅ | ❌ | ❌ | ❌ |
-| **Offline mode** | ✅ | ❌ | ❌ | ❌ |
-| **Data export** | ✅ | Pro only | ❌ | ❌ |
-| **Native mobile app** | ✅ iOS + Android | ✅ | ✅ | ✅ |
+| **Household board / chat** | ⚠️ pinwall notices, no chat | ⚠️ per-expense comment threads | ✅ pinboard + chat | ❌ |
+| **Offline use** | ✅ full read/write, queued sync | ✅ add/remove in existing groups, syncs later | ? | ? |
+| **Data export** | ⚠️ expenses (CSV/JSON) + calendar (iCal) — not chores or lists | ✅ per-group CSV free; full JSON backup is Pro | ⚠️ Premium | ? |
 | **Self-hostable** | ✅ | ❌ | ❌ | ❌ |
-| **Open source** | ✅ | ❌ | ❌ | ❌ |
-| **Price** | **Free** | €5/mo | €4/mo | €2.50/mo |
+| **Open source** | ✅ AGPL-3.0 | ❌ | ❌ | ❌ |
 
-### vs Open source alternatives
+### vs Self-hostable alternatives
 
 | | mitlist | [Grocy](https://grocy.info) | [Homechart](https://homechart.app) | [IHateMoney](https://ihatemoney.org) | [Actual Budget](https://actualbudget.org) |
 |---|---|---|---|---|---|
+| **License** | AGPL-3.0 | MIT | ❌ proprietary ² | BSD | MIT |
+| **Price** | Free | Free | Free solo; household $4.99/mo · $49.99/yr · $149.99 lifetime | Free | Free |
+| **Install it today from a store** | ❌ build it yourself | ⚠️ community apps ³ | ✅ official iOS + Android | ❌ web only | ⚠️ iOS app shipped; Android on the roadmap |
 | **Expense splitting** | ✅ | ❌ | ✅ | ✅ | ❌ ¹ |
 | **Chore rotation** | ✅ | ✅ | ✅ | ❌ | ❌ |
 | **Shopping lists** | ✅ | ✅ | ✅ | ❌ | ❌ |
 | **Meal plans + recipes** | ✅ | ✅ | ✅ | ❌ | ❌ |
-| **Unified calendar** | ✅ | ❌ | ✅ | ❌ | ❌ |
-| **On-device scanner (OCR)** | ✅ | ❌ | ❌ | ❌ | ❌ |
-| **Offline-first** | ✅ | ❌ | ❌ | ❌ | ✅ |
-| **Native mobile app** | ✅ Flutter | ❌ PWA only | ❌ Web only | ❌ Web only | ❌ Desktop/web |
+| **Unified calendar** | ✅ + iCal | ✅ + iCal | ✅ | ❌ | ❌ |
+| **Inventory / pantry** | ❌ | ✅ best in class | ✅ | ❌ | ❌ |
+| **Barcode + product lookup** | ❌ ⁴ | ✅ | ? | ❌ | ❌ |
+| **Bank sync** | ❌ | ❌ | ? | ❌ | ✅ |
+| **On-device OCR** (incl. handwriting) | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **Offline-first client** | ✅ | ❌ PWA, no offline use | ? | ❌ | ✅ |
 | **Multi-household** | ✅ | ❌ | ✅ | ✅ | ❌ ¹ |
-| **Data export** | ✅ CSV, JSON | ✅ API | ✅ | ✅ JSON | ✅ |
-| **Docker compose** | ✅ 5 min | ✅ | ✅ | ✅ | ✅ |
-| **License** | AGPL-3.0 | MIT | AGPL-3.0 | BSD | MIT |
-| **GitHub stars** | – | 9.1k | 238 | 1.4k | 26.9k |
+| **Data export** | ⚠️ expenses + iCal | ✅ full REST API | ✅ | ✅ JSON/CSV | ✅ |
+| **Docker compose** | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **GitHub stars** (Jul 2026) | – ⁵ | 9.3k | n/a ² | 1.4k | 27.7k |
 
 ¹ Actual Budget is personal finance (envelope budgeting), not shared household expense splitting.
+² Homechart is self-hostable but **not open source**. Its vendor states plainly that its products are not open source, promising an MPL-2.0 release only if a product goes six months without a major update; the public `candiddev/homechart` repo (239★) holds the README, translations, and issue tracker, not the source. An earlier version of this table listed it as AGPL-3.0 — that was our error.
+³ Grocy ships a PWA and describes it as having no offline capability; the well-regarded Android and iOS clients are community projects, not official.
+⁴ mitlist has a barcode *field* you can type into on a product record. Nothing scans it and nothing resolves it to a product.
+⁵ mitlist's canonical repo is self-hosted git, so there is no star count to compare — read that as "unproven", not "modest".
 
-**mitlist's bet: it's the only one of these that combines money, chores, shopping, and meals in a single offline-first mobile app — with an on-device scanner and real-time sync — and self-hosts in one `docker compose`. The trade-off is that it's younger and you have to run it yourself (see [Where mitlist is still rough](#where-mitlist-is-still-rough)).**
+**mitlist's honest pitch: among the tools that are free, open source, and self-hosted, it's the one that covers money, chores, shopping, and meals in a single offline-first app, with a fully on-device scanner and an offline grocery catalog. Homechart covers a similar spread with better-polished, actually-installable apps — it just isn't open source and charges for household use. And every app in both tables has one thing mitlist doesn't: you can install it right now (see [Where mitlist is still rough](#where-mitlist-is-still-rough)).**
 
 ### What each does better than us
 
-#### Open source
+#### Self-hostable
 
 | App | Does better |
 |-----|-------------|
-| **Actual Budget** | Bank sync (Plaid/GoCardless), envelope budgeting, spending reports, net worth tracking, scheduled transactions, CRDT-based sync. The gold standard for personal finance. |
-| **Grocy** | Inventory/pantry tracking with expiry dates, barcode scanning with product lookup (Open Food Facts), recipe ingredient scaling, equipment management, keyboard shortcuts, plugins ecosystem. Unmatched for kitchen inventory. |
-| **Homechart** | Budget categories per group, store/shop integration, multilingual (8 languages), extended/blended family features. |
+| **Actual Budget** | Bank sync (Plaid/GoCardless), envelope budgeting, spending reports, net worth tracking, scheduled transactions, CRDT-based sync, and ~27k stars' worth of contributors. The gold standard for personal finance. |
+| **Grocy** | Inventory/pantry tracking with expiry dates, barcode scanning with product lookup, recipe ingredient scaling, equipment and battery tracking, a full REST API, keyboard shortcuts. Nearly a decade of kitchen-ERP depth we don't have. |
+| **Homechart** | Published iOS and Android apps that work against your own server, inventory, SSO, encrypted backups, and paid support from someone whose job it is to answer you. |
 | **IHateMoney** | Extreme simplicity. No accounts needed for invitees — just share a link. Battle-tested since 2011. If you ONLY need expense splitting, it's lighter. |
 
 #### Closed source
 
 | App | Does better |
 |-----|-------------|
-| **Splitwise** | Bank/credit card import, per-expense comment threads, and a longer track record of edge cases. (mitlist now matches it on opt-in live FX rates, per-expense receipt photos, and email notifications.) |
+| **Splitwise** | Bank/card import, receipt scanning and itemisation, expense search, charts, per-expense comment threads, and a decade of edge cases worked out. (mitlist matches it on opt-in live FX rates, receipt photos, and email notifications — and doesn't cap your expenses or show you ads.) |
+| **Flatastic** | A real chat plus pinboard for the flat, a points system that makes chore fairness visible, and a published app your least technical flatmate can install in a minute. |
 | **Paprika** | Best-in-class recipe clipping (dedicated site parsers, not just AI), cook mode (full-screen step-by-step with timers), pantry management, nutritional auto-calculation, grocery aisle ordering. The gold standard for recipes. |
 | **Tody** | Gamification (streaks, effort levels), room-by-room chore views, visual progress. Makes chores feel like a game. |
-| **Bring! / AnyList** | Barcode scanning with a product database, store aisle organization, Apple Watch + Siri integration, and a polished published app you can install today. |
+| **Bring! / AnyList** | Barcode scanning with a product database, store deals and loyalty cards, Apple Watch, Alexa and voice input, and the most polished shared shopping list anywhere. Bring! does the one thing mitlist's list screen does — and does it better. |
 
 ---
 
@@ -122,6 +147,10 @@ leave on). Point the Flutter app at your server and you're done.
 
 See [backend/README.md](backend/README.md) for full configuration reference, including how to [enable optional crash reporting](backend/README.md#enable-error-reporting-optional) (off by default — set `SENTRY_DSN` for the backend and the `GLITCHTIP_DSN_WEB` CI secret for the web PWA).
 
+For production releases, follow the [deployment checklist](docs/DEPLOYMENT.md).
+It includes PlanetScale migration checks, the Redis-free cutover, rollback
+guidance, and the automated post-deploy smoke command.
+
 ### Hosted database: PlanetScale Postgres
 
 The planned official service uses PlanetScale Postgres instead of operating a
@@ -142,19 +171,22 @@ stores their metadata, household quota counters, and refresh sessions.
 | Backend | Go (chi router, pgx) |
 | Database | PostgreSQL 16 |
 | File storage | S3 / Cloudflare R2 |
+| On-device storage | SQLite via Drift (offline outbox + bundled grocery reference DB) |
+| On-device ML | PP-OCRv6 detection + recognition on ONNX Runtime; TFLite grocery classifier |
 
 ---
 
 ## Features
 
-- **Expense splitting** — Equal, exact amounts, percentages, or shares. Settlement tracking with reimbursement suggestions.
+- **Expense splitting** — Equal, exact amounts, percentages, or shares. Settlement tracking with reimbursement suggestions; a settlement only moves balances once the counterparty confirms it.
 - **Chore rotation** — Round-robin, fixed assignment, or cron schedules. Subtasks, skip reasons, undo, reschedule.
 - **Shopping lists** — Shared lists with item claiming, cost tracking, and automatic expense generation.
 - **Meal plans + recipes** — Weekly planner, recipe clipping via AI, auto-generate shopping lists from meal plans.
 - **Pinwall** — Corkboard-style household notices with reminders and entity linking.
 - **Calendar** — Unified view of chores, meal plans, expenses, and reminders.
 - **Offline-first** — Works without internet. Edits queue in an outbox and sync when you're back online; live updates stream over SSE when connected.
-- **Scanner** — On-device ML Kit OCR for grocery lists, with an on-device classifier and review flow.
+- **Scanner** — Photograph a handwritten or printed shopping list and it becomes list items. Detection and recognition both run locally with bundled PP-OCRv6 models on ONNX Runtime — no cloud OCR, no network needed — followed by an on-device classifier and a review step before anything is added. Crossed-out lines are detected and skipped.
+- **Grocery brain** — An offline catalog of ~3,200 canonical grocery items and ~277k multilingual aliases ships with the app, so autocomplete, aisle ordering, and scan matching work with no server. It also learns the words your household actually uses, on the device.
 - **Notifications** — Push to mobile (FCM) and web (VAPID), plus in-app notifications for chores, expenses, and reminders.
 - **Multi-currency** — Record expenses in any currency; balances settle in the group's base currency. Enter the FX rate by hand, or enable an opt-in live rate feed that prefills it.
 - **Multi-household** — Switch between households. One account, many groups.
@@ -168,6 +200,7 @@ stores their metadata, household quota counters, and refresh sessions.
 - **Your server, your data** — Connect the app directly to your instance. Guest mode means you can start without handing over an email.
 - **Export everything** — Download expenses as CSV or JSON anytime from the app.
 - **No lock-in** — Delete your account and your data is gone from the server. Export first if you want it.
+- **Scans stay on the device** — OCR runs entirely on your phone; list photos are never uploaded for recognition. Correcting a scan can optionally save the corrected line crops locally to improve handwriting recognition — that's off by default, stores no account, household, or list identifiers, and the samples only leave the device if you export them yourself.
 - **No telemetry by default** — mitlist collects no usage data or analytics and never phones home. Crash reporting is **opt-in**: an operator can enable it by configuring a Sentry/GlitchTip DSN (off unless set; point it at a self-hosted GlitchTip to keep crash data on your own infrastructure). See [PRIVACY.md](PRIVACY.md).
 
 ---
@@ -183,6 +216,10 @@ Store builds aren't published yet — the way to run mitlist today is to self-ho
 | Web | Flutter Web PWA — build and serve, or point at your instance |
 | Self-host | `docker compose --profile prod up -d` |
 
+> The mobile app bundles ~117 MB of assets — the OCR models and the grocery
+> reference database — so that scanning and autocomplete work offline. Build
+> split-per-ABI APKs or an app bundle; a fat APK is much larger than you want.
+
 ---
 
 ## Where mitlist is still rough
@@ -193,8 +230,12 @@ Being honest about what the comparison tables don't show:
 - **Live FX is opt-in.** A self-hosted instance can enable a live rate feed (`FX_RATE_API_URL`) that prefills each expense's exchange rate; without it, you enter the rate by hand. The prefilled rate is advisory, not a bank-grade per-expense rate lock.
 - **No bank import.** Expenses are entered by hand (or scanned via OCR), with optional receipt photos attached per expense. No Plaid/GoCardless bank or card sync.
 - **No pantry/inventory tracking.** Unlike Grocy, mitlist doesn't track what's in your fridge or expiry dates.
-- **No barcode product lookup.** The scanner reads text; it won't resolve a barcode to a product database.
-- **No per-expense comments.** There's a household activity feed, but you can't comment on or discuss an individual expense in-app yet.
+- **Handwriting recognition is good, not solved.** On the current test set the local models read ~98% of legible lines and get ~38% of them exactly right, with messy German handwriting still the weak spot. That's why the scan review screen exists — you check the result before it lands on the list.
+- **No barcode product lookup.** The scanner reads text — printed and handwritten — but it won't resolve a barcode to a product. The bundled grocery catalog matches names, not barcodes.
+- **The app is big.** Shipping the OCR models and the grocery catalog offline costs ~117 MB of assets. That's the price of the scanner working on a plane.
+- **No per-expense comments, search, or charts.** There's a household activity feed, but you can't discuss an individual expense, search your expense history, or see a spending chart. Splitwise Pro does all three.
+- **No chat.** The pinwall is a notice board, not a conversation. Flatastic gives a flat an actual chat; mitlist assumes you already have a group chat somewhere else.
+- **The web app is the junior sibling.** The PWA covers the household, but the scanner is mobile-only — OCR needs the on-device runtime and is unavailable on web.
 - **Recipe clipping is AI-only.** No dedicated per-site parsers like Paprika, so import quality varies by source.
 - **Younger and less battle-tested.** Splitwise, IHateMoney, and Actual Budget have years of edge cases worked out. mitlist doesn't yet.
 
@@ -212,7 +253,9 @@ costs explained publicly on the landing site's transparency page.
 
 Ways to help, in order of usefulness:
 
-1. **Run a household on it** and report the bugs you hit.
+1. **Run a household on it** and report the bugs you hit. Official builds carry
+   an in-app "Send feedback" sheet that posts to the request tracker; it's
+   hidden in builds without a tracker key, so self-hosted clients send nothing.
 2. **Star the repo** and tell the next flat that's drowning in group-chat math.
 3. **Self-host it** — costs the project nothing, gives you everything.
 4. **Chip in for server costs** — donations are opening soon and will be

@@ -16,6 +16,7 @@ const (
 	ScreenMealPlan          = "mealPlan"
 	ScreenHouseholdHub      = "householdHub"
 	ScreenRecurringExpenses = "recurringExpenses"
+	ScreenSettlements       = "settlements"
 )
 
 const (
@@ -26,4 +27,5 @@ const (
 	EntityTypeMealPlan         = "meal_plan"
 	EntityTypeRecurringExpense = "recurring_expense"
 	EntityTypePinwallPost      = "pinwall_post"
+	EntityTypeSettlement       = "settlement"
 )

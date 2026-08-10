@@ -62,8 +62,26 @@ class ApiConfig {
   static const int requestTimeoutSeconds = 30;
 
   /// The timeout for API requests as a Duration.
+  ///
+  /// This is the *response* budget — how long a reachable server is allowed to
+  /// take. It is deliberately generous (slow uplinks, cold self-hosted
+  /// instances) and must not be used as the connect budget.
   static const Duration requestTimeout =
       Duration(seconds: requestTimeoutSeconds);
+
+  /// How long to wait to establish a connection before declaring the server
+  /// unreachable.
+  ///
+  /// Separate from [requestTimeout], and much shorter, because the two answer
+  /// different questions. Failing to open a socket in 5s means there is nothing
+  /// there; waiting the full 30s to conclude that froze every screen on cold
+  /// start whenever the interface was up but the server was not reachable —
+  /// the normal case for a self-hosted instance accessed away from home.
+  ///
+  /// Note this only bites when the connection *times out* (a filtered host that
+  /// silently drops packets). DNS failure or a refused connection already
+  /// failed fast.
+  static const Duration connectTimeout = Duration(seconds: 5);
 
   /// The header name for the authorization token.
   static const String authorizationHeader = 'Authorization';

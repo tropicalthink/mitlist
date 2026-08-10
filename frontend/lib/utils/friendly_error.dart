@@ -3,8 +3,24 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 
 import '../l10n/app_localizations.dart';
+import '../services/api_error_mapper.dart';
 
 String friendlyErrorMessage(Object error, AppLocalizations l10n) {
+  // Services wrap transport errors in ApiException. Surface the backend's
+  // specific message when it sent one ("invite expired", "already a member
+  // of this group", ...) instead of collapsing to the generic fallback.
+  if (error is ApiException) {
+    final server = error.serverMessage;
+    if (server != null && server.isNotEmpty) {
+      return _sentenceCase(server);
+    }
+    final cause = error.cause;
+    if (cause != null) {
+      return friendlyErrorMessage(cause, l10n);
+    }
+    return l10n.errorGenericRetry;
+  }
+
   if (error is DioException) {
     final response = error.response;
     final statusCode = response?.statusCode;
@@ -43,4 +59,9 @@ String friendlyErrorMessage(Object error, AppLocalizations l10n) {
   }
 
   return l10n.errorGenericRetry;
+}
+
+String _sentenceCase(String message) {
+  if (message.isEmpty) return message;
+  return message[0].toUpperCase() + message.substring(1);
 }

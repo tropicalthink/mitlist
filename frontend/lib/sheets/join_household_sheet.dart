@@ -21,6 +21,8 @@ import '../widgets/app_button.dart';
 import '../l10n/app_localizations.dart';
 import '../widgets/app_input.dart';
 
+import '../widgets/app_toast.dart';
+
 enum _Phase { entry, joining, success }
 
 class JoinHouseholdSheet extends ConsumerStatefulWidget {
@@ -119,7 +121,11 @@ class _JoinHouseholdSheetState extends ConsumerState<JoinHouseholdSheet>
       // resolves its active group against it — without this the joined group
       // is missing from the cache and the home screen lands on "no household"
       // until an app restart.
-      ref.invalidate(cachedGroupsProvider);
+      // Seed the cache with the household the server just handed us, then
+      // refresh. Seeding first means the new household is present even if the
+      // refetch fails — no screen should land on "no household" for one that
+      // demonstrably exists.
+      await refreshCachedGroups(ref, ensure: group);
       if (!mounted) return;
 
       setState(() {
@@ -176,9 +182,7 @@ class _JoinHouseholdSheetState extends ConsumerState<JoinHouseholdSheet>
     final code = data?.text == null ? null : extractInviteCode(data!.text!);
     if (code == null) {
       unawaited(Haptics.failure());
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.joinPasteNoCode)),
-      );
+      AppToast.info(context, l10n.joinPasteNoCode);
       return;
     }
     _codeController.value = TextEditingValue(
@@ -187,9 +191,7 @@ class _JoinHouseholdSheetState extends ConsumerState<JoinHouseholdSheet>
     );
     unawaited(Haptics.light());
     setState(() => _error = null);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.joinPasteFilled)),
-    );
+    AppToast.success(context, l10n.joinPasteFilled);
   }
 
   Widget _buildEntry() {

@@ -30,6 +30,16 @@ class MealPlanService {
     required String from,
     required String to,
   }) async {
+    return parseMealPlans(await listMealPlansRaw(groupId, from: from, to: to));
+  }
+
+  /// The server's raw meal-plan array, undecoded — see
+  /// `CalendarService.getCalendarRaw` for why the cache stores this shape.
+  Future<List<dynamic>> listMealPlansRaw(
+    String groupId, {
+    required String from,
+    required String to,
+  }) async {
     ensureValidGroupId(groupId);
     try {
       final r = await _dio.get('/meal-plans', queryParameters: {
@@ -38,12 +48,19 @@ class MealPlanService {
         'to': to,
       });
       final data = r.data;
-      if (data is! List) return [];
-      return data.map((j) => MealPlan.fromJson(j)).toList();
+      if (data is! List) return const [];
+      return data;
     } on DioException catch (e) {
       _logger.e('List meal plans failed: ${e.response?.data}');
       throw apiException(e);
     }
+  }
+
+  static List<MealPlan> parseMealPlans(List<dynamic> raw) {
+    return raw
+        .whereType<Map>()
+        .map((j) => MealPlan.fromJson(j.cast<String, dynamic>()))
+        .toList();
   }
 
   Future<MealPlan> getMealPlan(String id) async {

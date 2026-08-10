@@ -56,7 +56,7 @@ func TestMealPlanHandler_ListMealPlans_RequiresGroupID(t *testing.T) {
 	}
 	clearTables(t)
 
-	user := createTestUser(t, "mp-list@test.com", "password123")
+	user := createTestUser(t, "mp-list@test.com", "password123!")
 
 	_, h := newMealPlanRouter(t)
 
@@ -74,7 +74,7 @@ func TestMealPlanHandler_ListMealPlans_ReturnsEmpty(t *testing.T) {
 	}
 	clearTables(t)
 
-	user := createTestUser(t, "mp-empty@test.com", "password123")
+	user := createTestUser(t, "mp-empty@test.com", "password123!")
 	group := &models.Group{
 		ID:        uuid.New(),
 		Name:      "Test Household",
@@ -106,7 +106,7 @@ func TestMealPlanHandler_UpdateMealPlan_InvalidDate(t *testing.T) {
 	}
 	clearTables(t)
 
-	user := createTestUser(t, "mp-update@test.com", "password123")
+	user := createTestUser(t, "mp-update@test.com", "password123!")
 	token := generateTestToken(user.ID)
 
 	_, h := newMealPlanRouter(t)
@@ -128,7 +128,7 @@ func TestMealPlanHandler_DeleteMealPlan_NotFound(t *testing.T) {
 	}
 	clearTables(t)
 
-	user := createTestUser(t, "mp-delete@test.com", "password123")
+	user := createTestUser(t, "mp-delete@test.com", "password123!")
 	token := generateTestToken(user.ID)
 
 	router, _ := newMealPlanRouter(t)

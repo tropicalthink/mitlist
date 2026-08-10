@@ -14,6 +14,7 @@ import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../utils/friendly_error.dart';
 import '../../utils/haptics.dart';
+import '../../utils/latest_request_guard.dart';
 import '../../utils/safe_launch.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
@@ -41,6 +42,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
   bool _isLoading = true;
   bool _hasError = false;
   bool _isDeleting = false;
+  final LatestRequestGuard _loadGuard = LatestRequestGuard();
 
   @override
   void initState() {
@@ -48,9 +50,31 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
     _load();
   }
 
+  @override
+  void didUpdateWidget(covariant RecipeDetailScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.recipeId == widget.recipeId) return;
+    _loadGuard.invalidate();
+    _recipe = null;
+    _ingredients = const [];
+    _steps = const [];
+    _hasError = false;
+    _isDeleting = false;
+    _isLoading = true;
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _loadGuard.dispose();
+    super.dispose();
+  }
+
   Future<void> _load() async {
+    final request = _loadGuard.begin();
+    final hadContent = _recipe != null;
     setState(() {
-      _isLoading = true;
+      _isLoading = !hadContent;
       _hasError = false;
     });
     try {
@@ -64,7 +88,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
       try {
         steps = await service.getRecipeSteps(widget.recipeId);
       } catch (_) {}
-      if (!mounted) return;
+      if (!mounted || !_loadGuard.isCurrent(request)) return;
       setState(() {
         _recipe = recipe;
         _ingredients = ingredients;
@@ -72,7 +96,15 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
         _isLoading = false;
       });
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted || !_loadGuard.isCurrent(request)) return;
+      if (hadContent) {
+        setState(() => _isLoading = false);
+        final l10n = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.recipeDetailCouldNotLoad)),
+        );
+        return;
+      }
       setState(() {
         _isLoading = false;
         _hasError = true;

@@ -309,6 +309,10 @@
   "@groupsCreateHousehold": {
     "description": "Button to create first household"
   },
+  "choreManageZones": "Gestionar zonas",
+  "@choreManageZones": {
+    "description": "Menu item / button that opens the chore zones editor"
+  },
   "choreAppBarTitle": "Tareas",
   "@choreAppBarTitle": {
     "description": "AppBar title for chores screen"
@@ -1929,11 +1933,22 @@
   "@expenseDeleteBody": {
     "description": "Dialog body for expense deletion"
   },
-  "expenseSettlementRecorded": "Liquidación registrada",
+  "expenseSettlementRecorded": "Liquidación registrada: esperando confirmación",
   "@expenseSettlementRecorded": {
     "description": "Snackbar when settlement is saved"
   },
   "expenseSettlementFailed": "No se pudo registrar la liquidación.",
+  "expenseSettlementNeedsYou": "Necesita tu confirmación",
+  "expenseSettlementWaiting": "Esperando confirmación",
+  "expenseSettlementHistory": "Liquidaciones recientes",
+  "expenseSettlementRow": "{from} pagó a {to}",
+  "expenseSettlementConfirmAction": "Confirmar",
+  "expenseSettlementDeclineAction": "Rechazar",
+  "expenseSettlementCancelAction": "Cancelar solicitud",
+  "expenseSettlementStatusConfirmed": "Confirmada",
+  "expenseSettlementStatusDeclined": "Rechazada",
+  "expenseSettlementResponseFailed": "No se pudo actualizar la liquidación.",
+  "expenseSettlementCancelFailed": "No se pudo cancelar la liquidación.",
   "@expenseSettlementFailed": {
     "description": "Snackbar when settlement fails"
   },
@@ -2909,7 +2924,7 @@
   "@accountFillPasswordFields": {
     "description": "Validation: all password fields required"
   },
-  "accountPasswordMinLength": "La nueva contraseña debe tener al menos 6 caracteres.",
+  "accountPasswordMinLength": "La nueva contraseña debe tener al menos 12 caracteres.",
   "@accountPasswordMinLength": {
     "description": "Validation: password too short"
   },
@@ -4386,6 +4401,16 @@
     "description": "Invite code prompt"
   },
   "authOnboardingHomeIconSemantic": "Icono de inicio del hogar",
+  "welcomePillarsSemantic": "Listas, dinero, tareas y cocina compartidos. Todo en un solo lugar.",
+  "authOnboardingNameTitle": "Ponle nombre a tu hogar",
+  "authOnboardingNameBody": "Escríbelo en la nota. Puedes cambiarlo más tarde.",
+  "authOnboardingPinIt": "Fíjalo en el tablero",
+  "authOnboardingInviteTitle": "Trae a tus compañeros",
+  "authOnboardingInviteBody": "Comparte este código. Quien lo introduzca se unirá a tu hogar.",
+  "authOnboardingGoToBoard": "Ir a tu tablero",
+  "hubChecklistTitle": "Pon la casa en marcha",
+  "hubChecklistDone": "Hecho",
+  "hubChecklistProgress": "{done} de {total} hechos",
   "@authOnboardingHomeIconSemantic": {
     "description": "Semantic label for home icon"
   },
@@ -4481,11 +4506,11 @@
   "@authSignupPassword": {
     "description": "Password input label"
   },
-  "authSignupPasswordHint": "Al menos 6 caracteres",
+  "authSignupPasswordHint": "Al menos 12 caracteres",
   "@authSignupPasswordHint": {
     "description": "Password hint text"
   },
-  "authSignupPasswordMinLength": "La contraseña debe tener al menos 6 caracteres.",
+  "authSignupPasswordMinLength": "La contraseña debe tener al menos 12 caracteres.",
   "@authSignupPasswordMinLength": {
     "description": "Password too short validation"
   },
@@ -5665,5 +5690,55 @@
   "householdStorageUsedOf": "{used} de {limit} usados",
   "householdStorageUsedUnlimited": "{used} usados · sin límite",
   "householdStoragePending": "{pending} están reservados para cargas en curso.",
-  "householdStorageProgressLabel": "Almacenamiento del hogar usado"
+  "householdStorageProgressLabel": "Almacenamiento del hogar usado",
+  "accountSendFeedback": "Enviar comentarios",
+  "feedbackCardTitle": "Ayuda a mejorar mitlist",
+  "feedbackCardBody": "Pide una función, informa de un error o comparte una idea — llega directo al equipo.",
+  "feedbackSheetTitle": "Enviar comentarios",
+  "feedbackSheetIntro": "Pide una función, informa de un error o dinos qué podría funcionar mejor — leemos todos los mensajes.",
+  "feedbackFieldLabel": "Tu mensaje",
+  "feedbackFieldHint": "Me gustaría que mitlist pudiera…",
+  "feedbackSend": "Enviar",
+  "feedbackSending": "Enviando…",
+  "feedbackSent": "¡Gracias! Tu solicitud ha sido enviada.",
+  "feedbackEmpty": "Escribe primero un mensaje breve.",
+  "feedbackFailed": "No se pudo enviar tu solicitud ahora mismo. Inténtalo de nuevo más tarde.",
+  "accountOcrTrainingTitle": "Mejorar el OCR manuscrito sin conexión",
+  "accountOcrTrainingDescription": "Los recortes de líneas revisados manualmente permanecen en este dispositivo hasta que los exportes o elimines. No se sube nada.",
+  "accountOcrTrainingExport": "Exportar datos de entrenamiento OCR",
+  "accountOcrTrainingSamples": "{count, plural, =0{Ninguna línea corregida} =1{1 línea corregida} other{{count} líneas corregidas}}",
+  "accountOcrTrainingClear": "Eliminar datos de entrenamiento OCR",
+  "accountOcrTrainingExportEmpty": "Todavía no hay líneas OCR corregidas para exportar.",
+  "accountOcrTrainingClearTitle": "¿Eliminar los datos de entrenamiento OCR?",
+  "accountOcrTrainingClearBody": "Esto elimina permanentemente todos los recortes de líneas guardados en este dispositivo.",
+
+  "billingPremiumTitle": "mitlist premium",
+  "billingLimitReachedTitle": "Esta casa está completa",
+  "billingLimitReachedBody": "Las casas de hasta {limit} personas son gratuitas. Para añadir a la {next}.ª persona, alguien necesita premium, y cubre a todos los de aquí.",
+  "billingCoversOneHousehold": "Premium se aplica a una casa a la vez. Tú eliges cuál y puedes cambiarla cuando quieras.",
+  "billingCoveredBy": "Premium en esta casa, pagado por {name}.",
+  "billingPremiumActive": "Premium está activo aquí",
+  "billingMoveHereTitle": "Mueve tu premium aquí",
+  "billingMoveHereBody": "Ya tienes premium en otra casa. Muévelo aquí en lugar de pagar dos veces: la otra casa conserva a todos sus miembros, pero no podrá añadir más.",
+  "billingMoveHereAction": "Mover premium aquí",
+  "billingMoved": "Premium ya cubre esta casa.",
+  "billingMoveFailed": "No se pudo mover tu premium. Inténtalo de nuevo.",
+  "billingChooseHousehold": "Elige tu casa premium",
+  "billingMonthly": "Mensual",
+  "billingYearly": "Anual",
+  "billingYearlyBadge": "Mejor precio",
+  "billingSubscribe": "Obtener premium",
+  "billingOpeningCheckout": "Abriendo el pago...",
+  "billingCheckoutFailed": "No se pudo iniciar el pago. Inténtalo de nuevo.",
+  "billingManage": "Gestionar suscripción",
+  "billingPortalFailed": "No se pudo abrir el portal de facturación.",
+  "billingReturnHint": "Termina en el navegador y vuelve: premium se activa automáticamente.",
+  "billingAccountCardTitle": "Premium",
+  "billingAccountCardFree": "Estás en el plan gratuito. Las casas de hasta {limit} personas son gratuitas.",
+  "billingAccountCardActive": "Premium está activo en {household}.",
+  "billingAccountCardUnassigned": "Premium está activo pero aún no está asignado a ninguna casa.",
+  "billingRenewsOn": "Se renueva el {date}",
+  "billingEndsOn": "Termina el {date}",
+  "billingMemberUsage": "{count} de {limit} plazas gratuitas usadas",
+  "billingUnlimitedMembers": "Miembros ilimitados"
 }

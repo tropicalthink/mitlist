@@ -19,6 +19,8 @@ import 'services/fcm_service.dart';
 import 'services/push_subscription_service.dart';
 import 'widgets/offline_banner.dart';
 
+import 'widgets/app_toast.dart';
+
 class MitlistApp extends ConsumerStatefulWidget {
   const MitlistApp({super.key});
 
@@ -68,24 +70,15 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
         final title = message.notification?.title;
         final body = message.notification?.body;
         if (title == null && body == null) return;
-        _scaffoldMessengerKey.currentState
-          ?..clearSnackBars()
-          ..showSnackBar(
-            SnackBar(
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (title != null)
-                    Text(title,
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
-                  if (body != null) Text(body),
-                ],
-              ),
-              behavior: SnackBarBehavior.floating,
-              duration: const Duration(seconds: 5),
-            ),
-          );
+        final messenger = _scaffoldMessengerKey.currentState;
+        if (messenger == null) return;
+        AppToast.notification(
+          messenger,
+          // A push with only a title has nothing to put underneath it, so the
+          // title becomes the body rather than being printed twice.
+          title: body == null ? null : title,
+          body: body ?? title!,
+        );
       });
 
       _fcmTapSub = FcmService.onNotificationTap.listen(_handleNotificationTap);
@@ -127,11 +120,18 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      // Whatever the connectivity service believes right now was learned before
+      // we lost the foreground, when the OS may have been holding our network
+      // down. Clear it first so the drain below decides on a fresh probe.
+      ref.read(connectivityServiceProvider).reset();
       final coordinator = ref.read(outboxCoordinatorProvider).valueOrNull;
       coordinator?.drain();
       // Force-reconnect SSE — the OS may have silently killed the connection
       // while the app was backgrounded.
       ref.read(sseServiceProvider).reconnect();
+      // Re-run the banner state now rather than waiting out the poll interval,
+      // so a stale offline bar never survives into the first visible frame.
+      ref.invalidate(outboxStateProvider);
     }
   }
 

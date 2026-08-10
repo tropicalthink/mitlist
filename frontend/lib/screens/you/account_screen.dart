@@ -11,6 +11,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
 
 import '../../config/api_config.dart';
+import '../../config/feedback_config.dart';
 import '../../models/auth_models.dart';
 import '../../models/group_models.dart';
 import '../../providers/auth_provider.dart'
@@ -23,6 +24,10 @@ import '../../providers/list_provider.dart' show appDatabaseProvider;
 import '../../providers/finance_provider.dart';
 import '../../providers/calendar_provider.dart';
 import '../../router.dart' show currentGroupIdProvider;
+import '../../services/scan/ocr_training_data_service.dart';
+import '../../providers/billing_provider.dart';
+import '../../sheets/feedback_sheet.dart';
+import '../../sheets/premium_sheet.dart';
 import '../../theme/spacing.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_bottom_sheet.dart';
@@ -36,6 +41,9 @@ import '../../widgets/mitlist_app_bar.dart';
 import '../../widgets/skeleton.dart';
 import '../../l10n/app_localizations.dart';
 import '../../utils/friendly_error.dart';
+import '../../utils/active_group_context.dart';
+
+import '../../widgets/app_toast.dart';
 
 const String _appVersion = '1.0.0';
 
@@ -47,17 +55,30 @@ class AccountScreen extends ConsumerStatefulWidget {
 }
 
 class _AccountScreenState extends ConsumerState<AccountScreen> {
+  final OcrTrainingDataService _ocrTrainingData = OcrTrainingDataService();
   bool _isLoading = true;
   bool _isSaving = false;
   String? _error;
 
   String _name = '';
   String _email = '';
+  String? _userId;
   bool _isGuest = false;
   bool _isEditingName = false;
   bool _isExporting = false;
+  bool _ocrTrainingEnabled = false;
+  bool _isOcrTrainingBusy = false;
+  int _ocrTrainingSamples = 0;
   List<Group> _households = [];
-  String? _activeHouseholdId;
+
+  /// The household this screen's actions apply to — exports, the danger zone,
+  /// and the tick in the household card.
+  ///
+  /// Derived from [currentGroupIdProvider] rather than stored, because a copy
+  /// captured at load time goes stale the moment the group is switched from
+  /// anywhere else (the hub, the groups list, a deep link).
+  String? get _activeHouseholdId =>
+      resolveActiveGroupId(_households, ref.read(currentGroupIdProvider));
 
   late final TextEditingController _nameController;
   late final FocusNode _nameFocusNode;
@@ -107,15 +128,31 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       // Households are optional for this screen.
     }
 
+    // Make sure the active group has been hydrated from SharedPreferences
+    // before anything reads it, or the first build falls back to households
+    // .first and shows the wrong household as selected.
+    await ref.read(currentGroupIdProvider.notifier).ensureLoaded();
+
+    var ocrTrainingEnabled = false;
+    var ocrTrainingSamples = 0;
+    try {
+      ocrTrainingEnabled = await _ocrTrainingData.isEnabled(user.id);
+      ocrTrainingSamples = await _ocrTrainingData.sampleCount(user.id);
+    } catch (_) {
+      // Local training collection is optional and must not block the profile.
+    }
+
     if (!mounted) return;
     setState(() {
       _name = user!.fullName;
       _email = user.email;
+      _userId = user.id;
       _isGuest = user.isGuest;
       _households = households;
-      _activeHouseholdId = households.isNotEmpty ? households.first.id : null;
       _isLoading = false;
       _error = null;
+      _ocrTrainingEnabled = ocrTrainingEnabled;
+      _ocrTrainingSamples = ocrTrainingSamples;
     });
   }
 
@@ -182,7 +219,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               setSheetState(() => error = l10n.accountFillPasswordFields);
               return;
             }
-            if (newPassword.length < 6) {
+            if (newPassword.length < 12) {
               setSheetState(() => error = l10n.accountPasswordMinLength);
               return;
             }
@@ -207,9 +244,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               );
               if (!mounted || !context.mounted) return;
               Navigator.of(context).pop();
-              ScaffoldMessenger.of(this.context).showSnackBar(
-                SnackBar(content: Text(l10n.accountPasswordChanged)),
-              );
+              AppToast.success(this.context, l10n.accountPasswordChanged);
             } catch (e) {
               setSheetState(() {
                 isSaving = false;
@@ -285,6 +320,9 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     if (_isSaving) return;
     _isSaving = true;
     try {
+      if (_userId != null) await _ocrTrainingData.clear(_userId!);
+    } catch (_) {}
+    try {
       final authService = await ref.read(authServiceProviderAsync.future);
       await authService.logout();
       await ref.read(appDatabaseProvider).clearAllUserData();
@@ -324,6 +362,9 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       return;
     }
     try {
+      if (_userId != null) await _ocrTrainingData.clear(_userId!);
+    } catch (_) {}
+    try {
       final authService = await ref.read(authServiceProviderAsync.future);
       await authService.deleteMe();
       await ref.read(appDatabaseProvider).clearAllUserData();
@@ -335,11 +376,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       context.goNamed('welcome');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content:
-                Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
-      );
+      AppToast.error(
+          context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
     } finally {
       _isSaving = false;
     }
@@ -448,6 +486,9 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     if (_households.length < 2) {
       return const SizedBox.shrink();
     }
+    // Watched, not read, so the tick follows a switch made anywhere else.
+    final activeId =
+        resolveActiveGroupId(_households, ref.watch(currentGroupIdProvider));
 
     return AppCard(
       child: Column(
@@ -459,14 +500,19 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           ),
           const SizedBox(height: MitlistSpacing.sm),
           ..._households.map((h) {
-            final isActive = h.id == _activeHouseholdId;
+            final isActive = h.id == activeId;
             return Semantics(
               button: true,
               label: l10n.accountSwitchToHousehold(h.name),
               child: InkWell(
-                onTap: () {
-                  setState(() => _activeHouseholdId = h.id);
-                  ref.read(currentGroupIdProvider.notifier).set(h.id);
+                onTap: () async {
+                  // Await the switch before navigating. `set` only publishes
+                  // the new id after persisting it, and the hub reads the
+                  // provider once on entry — navigating first means it reads
+                  // the *previous* household and then writes that back over
+                  // this selection.
+                  await ref.read(currentGroupIdProvider.notifier).set(h.id);
+                  if (!mounted) return;
                   context.goNamed('home');
                 },
                 borderRadius: BorderRadius.zero,
@@ -624,6 +670,162 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     );
   }
 
+  /// Premium status and its entry points.
+  ///
+  /// Hidden entirely when the server has no payment provider configured — a
+  /// self-hosted instance never shows billing, mirroring the feedback card.
+  Widget _buildPremiumCard() {
+    final l10n = AppLocalizations.of(context)!;
+    final status = ref.watch(billingStatusProvider).valueOrNull;
+    if (status == null || !status.enabled) return const SizedBox.shrink();
+
+    final sub = status.subscription;
+    final theme = Theme.of(context);
+
+    // Name the covered household when we can resolve it; a subscription can
+    // also be live with no household chosen yet.
+    String body;
+    if (sub == null) {
+      body = l10n.billingAccountCardFree(status.freeLimit);
+    } else if (sub.primaryGroupId == null) {
+      body = l10n.billingAccountCardUnassigned;
+    } else {
+      final household = _households
+          .where((h) => h.id == sub.primaryGroupId)
+          .map((h) => h.name)
+          .firstOrNull;
+      body = household == null
+          ? l10n.billingAccountCardUnassigned
+          : l10n.billingAccountCardActive(household);
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
+      child: AppCard(
+        variant: AppCardVariant.filled,
+        padding: AppCardPadding.md,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                AppIcon(name: 'star', color: theme.colorScheme.primary),
+                const SizedBox(width: MitlistSpacing.sm),
+                Expanded(
+                  child: Text(
+                    l10n.billingAccountCardTitle,
+                    style: theme.textTheme.titleMedium,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: MitlistSpacing.sm),
+            Text(
+              body,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            if (sub?.currentPeriodEnd != null) ...[
+              const SizedBox(height: MitlistSpacing.xs),
+              Text(
+                sub!.cancelAtPeriodEnd
+                    ? l10n.billingEndsOn(_formatDate(sub.currentPeriodEnd!))
+                    : l10n.billingRenewsOn(_formatDate(sub.currentPeriodEnd!)),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+            const SizedBox(height: MitlistSpacing.md),
+            SizedBox(
+              width: double.infinity,
+              child: AppButton(
+                text: sub == null ? l10n.billingSubscribe : l10n.billingManage,
+                variant: AppButtonVariant.solid,
+                color: AppButtonColor.primary,
+                onPressed: sub == null ? _openPremiumSheet : _openBillingPortal,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) =>
+      MaterialLocalizations.of(context).formatMediumDate(date.toLocal());
+
+  /// Opens the premium sheet for the active household. Without one there is
+  /// nothing to make premium, so the sheet is skipped.
+  void _openPremiumSheet() {
+    final groupId = _activeHouseholdId;
+    if (groupId == null) return;
+    showPremiumSheet(context, ref, groupId: groupId);
+  }
+
+  Future<void> _openBillingPortal() async {
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      final service = await ref.read(billingServiceProvider.future);
+      final url = await service.openPortal();
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    } catch (_) {
+      if (!mounted) return;
+      AppToast.error(context, l10n.billingPortalFailed);
+    }
+  }
+
+  Widget _buildFeedbackCard() {
+    final l10n = AppLocalizations.of(context)!;
+    if (!FeedbackConfig.isConfigured) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
+      child: AppCard(
+        variant: AppCardVariant.filled,
+        padding: AppCardPadding.md,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                AppIcon(
+                  name: 'chatBubbleLeftRight',
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: MitlistSpacing.sm),
+                Expanded(
+                  child: Text(
+                    l10n.feedbackCardTitle,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: MitlistSpacing.sm),
+            Text(
+              l10n.feedbackCardBody,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+            const SizedBox(height: MitlistSpacing.md),
+            SizedBox(
+              width: double.infinity,
+              child: AppButton(
+                text: l10n.accountSendFeedback,
+                variant: AppButtonVariant.solid,
+                color: AppButtonColor.primary,
+                onPressed: () => showFeedbackSheet(context, ref),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _openSupportPage() async {
     await launchUrl(
       Uri.parse('https://mitlist.me/#support'),
@@ -649,6 +851,84 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _setOcrTrainingEnabled(bool enabled) async {
+    final userId = _userId;
+    if (userId == null || _isOcrTrainingBusy) return;
+    setState(() => _isOcrTrainingBusy = true);
+    try {
+      await _ocrTrainingData.setEnabled(userId, enabled);
+      if (mounted) setState(() => _ocrTrainingEnabled = enabled);
+    } catch (e) {
+      if (!mounted) return;
+      AppToast.error(
+          context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
+    } finally {
+      if (mounted) setState(() => _isOcrTrainingBusy = false);
+    }
+  }
+
+  Future<void> _exportOcrTrainingData() async {
+    final userId = _userId;
+    if (userId == null || _isOcrTrainingBusy) return;
+    setState(() => _isOcrTrainingBusy = true);
+    try {
+      final archive = await _ocrTrainingData.exportArchive(userId);
+      if (!mounted) return;
+      if (archive == null) {
+        AppToast.info(context,
+            AppLocalizations.of(context)!.accountOcrTrainingExportEmpty);
+        return;
+      }
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(archive.path, mimeType: 'application/zip')],
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      AppToast.error(
+          context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
+    } finally {
+      if (mounted) setState(() => _isOcrTrainingBusy = false);
+    }
+  }
+
+  Future<void> _clearOcrTrainingData() async {
+    final userId = _userId;
+    if (userId == null || _isOcrTrainingBusy) return;
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showAppDialog<bool>(
+      context: context,
+      title: l10n.accountOcrTrainingClearTitle,
+      body: Text(l10n.accountOcrTrainingClearBody),
+      actions: [
+        AppButton(
+          text: l10n.commonCancel,
+          variant: AppButtonVariant.outline,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        const SizedBox(width: MitlistSpacing.sm),
+        AppButton(
+          text: l10n.commonDelete,
+          color: AppButtonColor.error,
+          onPressed: () => Navigator.of(context).pop(true),
+        ),
+      ],
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _isOcrTrainingBusy = true);
+    try {
+      await _ocrTrainingData.clear(userId);
+      if (!mounted) return;
+      setState(() {
+        _ocrTrainingEnabled = false;
+        _ocrTrainingSamples = 0;
+      });
+    } finally {
+      if (mounted) setState(() => _isOcrTrainingBusy = false);
+    }
   }
 
   Future<void> _exportExpenses(String format) async {
@@ -685,11 +965,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content:
-                Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
-      );
+      AppToast.error(
+          context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
     } finally {
       if (mounted) setState(() => _isExporting = false);
     }
@@ -718,11 +995,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content:
-                Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
-      );
+      AppToast.error(
+          context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
     } finally {
       if (mounted) setState(() => _isExporting = false);
     }
@@ -741,16 +1015,11 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       await Clipboard.setData(ClipboardData(text: json));
       if (!mounted) return;
       unawaited(Haptics.light());
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.accountJSONCopied)),
-      );
+      AppToast.success(context, l10n.accountJSONCopied);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content:
-                Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
-      );
+      AppToast.error(
+          context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
     }
   }
 
@@ -790,9 +1059,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             if (ctx.mounted) Navigator.of(ctx).pop();
             if (mounted) {
               ref.read(authStateProvider.notifier).state = true;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(l10n.accountCreatedWelcome)),
-              );
+              AppToast.success(context, l10n.accountCreatedWelcome);
             }
           } catch (e) {
             setLocal(() {
@@ -962,6 +1229,47 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     );
   }
 
+  Widget _buildOcrTrainingCard() {
+    final l10n = AppLocalizations.of(context)!;
+    return AppCard(
+      child: Column(
+        children: [
+          _MenuRow(
+            icon: const AppIcon(name: 'documentScanner'),
+            label: l10n.accountOcrTrainingTitle,
+            value: l10n.accountOcrTrainingDescription,
+            onTap: _userId == null || _isOcrTrainingBusy
+                ? null
+                : () => _setOcrTrainingEnabled(!_ocrTrainingEnabled),
+            trailing: Switch.adaptive(
+              value: _ocrTrainingEnabled,
+              onChanged: _userId == null || _isOcrTrainingBusy
+                  ? null
+                  : _setOcrTrainingEnabled,
+            ),
+          ),
+          Divider(color: Theme.of(context).colorScheme.outlineVariant),
+          _MenuRow(
+            icon: const AppIcon(name: 'arrowDownTray'),
+            label: l10n.accountOcrTrainingExport,
+            value: l10n.accountOcrTrainingSamples(_ocrTrainingSamples),
+            onTap: _isOcrTrainingBusy || _ocrTrainingSamples == 0
+                ? null
+                : _exportOcrTrainingData,
+          ),
+          if (_ocrTrainingSamples > 0) ...[
+            Divider(color: Theme.of(context).colorScheme.outlineVariant),
+            _MenuRow(
+              icon: const AppIcon(name: 'trashOutline'),
+              label: l10n.accountOcrTrainingClear,
+              onTap: _isOcrTrainingBusy ? null : _clearOcrTrainingData,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildDangerZone() {
     final l10n = AppLocalizations.of(context)!;
     return Column(
@@ -1028,6 +1336,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             _buildGuestUpgradeCard(),
             _buildPreferencesCard(),
             const SizedBox(height: MitlistSpacing.md),
+            _buildPremiumCard(),
+            _buildFeedbackCard(),
             if (!_isGuest) ...[
               _buildSecurityCard(),
               const SizedBox(height: MitlistSpacing.md),
@@ -1035,6 +1345,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             _buildAboutCard(),
             const SizedBox(height: MitlistSpacing.md),
             _buildDataCard(),
+            const SizedBox(height: MitlistSpacing.md),
+            _buildOcrTrainingCard(),
             const SizedBox(height: MitlistSpacing.md),
             _buildDangerZone(),
           ],

@@ -43,6 +43,8 @@ func TestLogIntegrationStatus(t *testing.T) {
 			GoogleClientID:         "google-client-id.apps.googleusercontent.com",
 			SentryDSN:              "https://abc@o123.ingest.sentry.io/456",
 			FxRateAPIURL:           "https://api.frankfurter.dev",
+			PolarAccessToken:       "polar_at_test",
+			PolarWebhookSecret:     "whsec_test",
 		}
 		out := captureLog(cfg.LogIntegrationStatus)
 		if !strings.Contains(out, `"email":true`) {
@@ -120,5 +122,16 @@ func TestSetFieldFloat64(t *testing.T) {
 				t.Errorf("got %v, want %v", f, tc.want)
 			}
 		})
+	}
+}
+
+func TestValidateRejectsSharedTokenSigningKey(t *testing.T) {
+	cfg := &Config{
+		Environment:      "development",
+		SecretKey:        "same-key-value",
+		SessionSecretKey: "same-key-value",
+	}
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("expected identical access and refresh signing keys to be rejected")
 	}
 }

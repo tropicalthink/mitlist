@@ -15,6 +15,8 @@ import '../utils/friendly_error.dart';
 import '../l10n/app_localizations.dart';
 import '../widgets/chip.dart';
 
+import '../widgets/app_toast.dart';
+
 enum _ListType { shopping, todo, custom }
 
 class CreateListSheet extends ConsumerStatefulWidget {
@@ -155,9 +157,7 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
 
       if (!mounted) return;
       Navigator.of(context).pop(true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.createListCreated)),
-      );
+      AppToast.success(context, l10n.createListCreated);
     } catch (e) {
       if (!mounted) return;
       setState(() {

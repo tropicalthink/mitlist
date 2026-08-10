@@ -7,6 +7,7 @@ import '../../models/recipe_models.dart';
 import '../../providers/recipe_provider.dart';
 import '../../theme/spacing.dart';
 import '../../utils/friendly_error.dart';
+import '../../utils/latest_request_guard.dart';
 import '../../widgets/animated_check_toggle.dart';
 import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_button.dart';
@@ -36,6 +37,7 @@ class _CookbookDetailScreenState extends ConsumerState<CookbookDetailScreen> {
   String? _error;
   final List<Recipe> _recipes = [];
   String? _submittingId;
+  final LatestRequestGuard _loadGuard = LatestRequestGuard();
 
   @override
   void initState() {
@@ -43,25 +45,53 @@ class _CookbookDetailScreenState extends ConsumerState<CookbookDetailScreen> {
     _load();
   }
 
+  @override
+  void didUpdateWidget(covariant CookbookDetailScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.collectionId == widget.collectionId) return;
+    _loadGuard.invalidate();
+    _recipes.clear();
+    _error = null;
+    _submittingId = null;
+    _isLoading = true;
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _loadGuard.dispose();
+    super.dispose();
+  }
+
   Future<void> _load() async {
+    final request = _loadGuard.begin();
+    final hadContent = _recipes.isNotEmpty;
     setState(() {
-      _isLoading = true;
+      _isLoading = !hadContent;
       _error = null;
     });
     try {
       final svc = await ref.read(recipeServiceProviderAsync.future);
       final recipes =
           await svc.getCollectionRecipes(widget.collectionId, limit: 200);
-      if (!mounted) return;
+      if (!mounted || !_loadGuard.isCurrent(request)) return;
       setState(() {
         _recipes.clear();
         _recipes.addAll(recipes);
         _isLoading = false;
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || !_loadGuard.isCurrent(request)) return;
+      final message = friendlyErrorMessage(e, AppLocalizations.of(context)!);
+      if (hadContent) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+        return;
+      }
       setState(() {
-        _error = friendlyErrorMessage(e, AppLocalizations.of(context)!);
+        _error = message;
         _isLoading = false;
       });
     }
@@ -304,8 +334,8 @@ class _AddRecipesSheetState extends ConsumerState<_AddRecipesSheet> {
       setState(() {
         _available
           ..clear()
-          ..addAll(recipes
-              .where((r) => !widget.excludedRecipeIds.contains(r.id)));
+          ..addAll(
+              recipes.where((r) => !widget.excludedRecipeIds.contains(r.id)));
         _isLoading = false;
       });
     } catch (e) {

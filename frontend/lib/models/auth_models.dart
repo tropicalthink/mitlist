@@ -72,7 +72,7 @@ class TokenPair {
   factory TokenPair.fromJson(Map<String, dynamic> json) {
     return TokenPair(
       accessToken: json['access_token'] as String,
-      refreshToken: json['refresh_token'] as String,
+      refreshToken: json['refresh_token'] as String? ?? '',
       user: json['user'] != null ? User.fromJson(json['user']) : null,
     );
   }
@@ -83,6 +83,23 @@ class TokenPair {
       'refresh_token': refreshToken,
       if (user != null) 'user': user!.toJson(),
     };
+  }
+}
+
+class RegistrationResult {
+  final User user;
+  final bool verificationRequired;
+
+  const RegistrationResult({
+    required this.user,
+    required this.verificationRequired,
+  });
+
+  factory RegistrationResult.fromJson(Map<String, dynamic> json) {
+    return RegistrationResult(
+      user: User.fromJson(json['user'] as Map<String, dynamic>),
+      verificationRequired: json['verification_required'] as bool? ?? true,
+    );
   }
 }
 

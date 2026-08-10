@@ -243,8 +243,7 @@ class _LiveSmartCaptureScreenState extends State<LiveSmartCaptureScreen>
   Future<SmartCaptureResult?> _reviewFile(String path,
       {CaptureCropHint? cropHint}) async {
     final originalBytes = Uint8List.fromList(await File(path).readAsBytes());
-    final processed =
-        const CapturePreprocessorService().preprocess(originalBytes);
+    final processed = await preprocessCaptureInBackground(originalBytes);
     if (!mounted) return null;
     return Navigator.of(context).push<SmartCaptureResult>(
       MaterialPageRoute(

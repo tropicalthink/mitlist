@@ -263,6 +263,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get choreAppBarTitle => 'Tareas';
 
   @override
+  String get choreManageZones => 'Gestionar zonas';
+
+  @override
   String get choreAddChore => 'Añadir tarea';
 
   @override
@@ -1652,10 +1655,48 @@ class AppLocalizationsEs extends AppLocalizations {
       'Esto eliminará permanentemente este gasto y todos los recibos asociados. No se puede deshacer.';
 
   @override
-  String get expenseSettlementRecorded => 'Liquidación registrada';
+  String get expenseSettlementRecorded =>
+      'Liquidación registrada: esperando confirmación';
 
   @override
   String get expenseSettlementFailed => 'No se pudo registrar la liquidación.';
+
+  @override
+  String get expenseSettlementNeedsYou => 'Necesita tu confirmación';
+
+  @override
+  String get expenseSettlementWaiting => 'Esperando confirmación';
+
+  @override
+  String get expenseSettlementHistory => 'Liquidaciones recientes';
+
+  @override
+  String expenseSettlementRow(String from, String to) {
+    return '$from pagó a $to';
+  }
+
+  @override
+  String get expenseSettlementConfirmAction => 'Confirmar';
+
+  @override
+  String get expenseSettlementDeclineAction => 'Rechazar';
+
+  @override
+  String get expenseSettlementCancelAction => 'Cancelar solicitud';
+
+  @override
+  String get expenseSettlementStatusConfirmed => 'Confirmada';
+
+  @override
+  String get expenseSettlementStatusDeclined => 'Rechazada';
+
+  @override
+  String get expenseSettlementResponseFailed =>
+      'No se pudo actualizar la liquidación.';
+
+  @override
+  String get expenseSettlementCancelFailed =>
+      'No se pudo cancelar la liquidación.';
 
   @override
   String get expenseSuggestedPaymentsTitle => 'Pagos sugeridos';
@@ -2403,7 +2444,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get accountPasswordMinLength =>
-      'La nueva contraseña debe tener al menos 6 caracteres.';
+      'La nueva contraseña debe tener al menos 12 caracteres.';
 
   @override
   String get accountPasswordsMismatch => 'Las nuevas contraseñas no coinciden.';
@@ -3787,7 +3828,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get authSignupPassword => 'Contraseña';
 
   @override
-  String get authSignupPasswordHint => 'Al menos 6 caracteres';
+  String get authSignupPasswordHint => 'Al menos 12 caracteres';
 
   @override
   String get authSignupCreateAccount => 'Crear cuenta';
@@ -3806,7 +3847,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get authSignupPasswordMinLength =>
-      'La contraseña debe tener al menos 6 caracteres.';
+      'La contraseña debe tener al menos 12 caracteres.';
 
   @override
   String get authSignupJoinTitle => 'Unirse al hogar';
@@ -3946,6 +3987,41 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get authOnboardingHomeIconSemantic => 'Icono de inicio del hogar';
+
+  @override
+  String get welcomePillarsSemantic =>
+      'Listas, dinero, tareas y cocina compartidos. Todo en un solo lugar.';
+
+  @override
+  String get authOnboardingNameTitle => 'Ponle nombre a tu hogar';
+
+  @override
+  String get authOnboardingNameBody =>
+      'Escríbelo en la nota. Puedes cambiarlo más tarde.';
+
+  @override
+  String get authOnboardingPinIt => 'Fíjalo en el tablero';
+
+  @override
+  String get authOnboardingInviteTitle => 'Trae a tus compañeros';
+
+  @override
+  String get authOnboardingInviteBody =>
+      'Comparte este código. Quien lo introduzca se unirá a tu hogar.';
+
+  @override
+  String get authOnboardingGoToBoard => 'Ir a tu tablero';
+
+  @override
+  String get hubChecklistTitle => 'Pon la casa en marcha';
+
+  @override
+  String get hubChecklistDone => 'Hecho';
+
+  @override
+  String hubChecklistProgress(int done, int total) {
+    return '$done de $total hechos';
+  }
 
   @override
   String get hubStatsChores => 'Tareas';
@@ -4908,4 +4984,189 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get householdStorageProgressLabel => 'Almacenamiento del hogar usado';
+
+  @override
+  String get accountSendFeedback => 'Enviar comentarios';
+
+  @override
+  String get feedbackCardTitle => 'Ayuda a mejorar mitlist';
+
+  @override
+  String get feedbackCardBody =>
+      'Pide una función, informa de un error o comparte una idea — llega directo al equipo.';
+
+  @override
+  String get feedbackSheetTitle => 'Enviar comentarios';
+
+  @override
+  String get feedbackSheetIntro =>
+      'Pide una función, informa de un error o dinos qué podría funcionar mejor — leemos todos los mensajes.';
+
+  @override
+  String get feedbackFieldLabel => 'Tu mensaje';
+
+  @override
+  String get feedbackFieldHint => 'Me gustaría que mitlist pudiera…';
+
+  @override
+  String get feedbackSend => 'Enviar';
+
+  @override
+  String get feedbackSending => 'Enviando…';
+
+  @override
+  String get feedbackSent => '¡Gracias! Tu solicitud ha sido enviada.';
+
+  @override
+  String get feedbackEmpty => 'Escribe primero un mensaje breve.';
+
+  @override
+  String get feedbackFailed =>
+      'No se pudo enviar tu solicitud ahora mismo. Inténtalo de nuevo más tarde.';
+
+  @override
+  String get accountOcrTrainingTitle =>
+      'Mejorar el OCR manuscrito sin conexión';
+
+  @override
+  String get accountOcrTrainingDescription =>
+      'Los recortes de líneas revisados manualmente permanecen en este dispositivo hasta que los exportes o elimines. No se sube nada.';
+
+  @override
+  String get accountOcrTrainingExport => 'Exportar datos de entrenamiento OCR';
+
+  @override
+  String accountOcrTrainingSamples(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count líneas corregidas',
+      one: '1 línea corregida',
+      zero: 'Ninguna línea corregida',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get accountOcrTrainingClear => 'Eliminar datos de entrenamiento OCR';
+
+  @override
+  String get accountOcrTrainingExportEmpty =>
+      'Todavía no hay líneas OCR corregidas para exportar.';
+
+  @override
+  String get accountOcrTrainingClearTitle =>
+      '¿Eliminar los datos de entrenamiento OCR?';
+
+  @override
+  String get accountOcrTrainingClearBody =>
+      'Esto elimina permanentemente todos los recortes de líneas guardados en este dispositivo.';
+
+  @override
+  String get billingPremiumTitle => 'mitlist premium';
+
+  @override
+  String get billingLimitReachedTitle => 'Esta casa está completa';
+
+  @override
+  String billingLimitReachedBody(num limit, num next) {
+    return 'Las casas de hasta $limit personas son gratuitas. Para añadir a la $next.ª persona, alguien necesita premium, y cubre a todos los de aquí.';
+  }
+
+  @override
+  String get billingCoversOneHousehold =>
+      'Premium se aplica a una casa a la vez. Tú eliges cuál y puedes cambiarla cuando quieras.';
+
+  @override
+  String billingCoveredBy(String name) {
+    return 'Premium en esta casa, pagado por $name.';
+  }
+
+  @override
+  String get billingPremiumActive => 'Premium está activo aquí';
+
+  @override
+  String get billingMoveHereTitle => 'Mueve tu premium aquí';
+
+  @override
+  String get billingMoveHereBody =>
+      'Ya tienes premium en otra casa. Muévelo aquí en lugar de pagar dos veces: la otra casa conserva a todos sus miembros, pero no podrá añadir más.';
+
+  @override
+  String get billingMoveHereAction => 'Mover premium aquí';
+
+  @override
+  String get billingMoved => 'Premium ya cubre esta casa.';
+
+  @override
+  String get billingMoveFailed =>
+      'No se pudo mover tu premium. Inténtalo de nuevo.';
+
+  @override
+  String get billingChooseHousehold => 'Elige tu casa premium';
+
+  @override
+  String get billingMonthly => 'Mensual';
+
+  @override
+  String get billingYearly => 'Anual';
+
+  @override
+  String get billingYearlyBadge => 'Mejor precio';
+
+  @override
+  String get billingSubscribe => 'Obtener premium';
+
+  @override
+  String get billingOpeningCheckout => 'Abriendo el pago...';
+
+  @override
+  String get billingCheckoutFailed =>
+      'No se pudo iniciar el pago. Inténtalo de nuevo.';
+
+  @override
+  String get billingManage => 'Gestionar suscripción';
+
+  @override
+  String get billingPortalFailed =>
+      'No se pudo abrir el portal de facturación.';
+
+  @override
+  String get billingReturnHint =>
+      'Termina en el navegador y vuelve: premium se activa automáticamente.';
+
+  @override
+  String get billingAccountCardTitle => 'Premium';
+
+  @override
+  String billingAccountCardFree(num limit) {
+    return 'Estás en el plan gratuito. Las casas de hasta $limit personas son gratuitas.';
+  }
+
+  @override
+  String billingAccountCardActive(String household) {
+    return 'Premium está activo en $household.';
+  }
+
+  @override
+  String get billingAccountCardUnassigned =>
+      'Premium está activo pero aún no está asignado a ninguna casa.';
+
+  @override
+  String billingRenewsOn(String date) {
+    return 'Se renueva el $date';
+  }
+
+  @override
+  String billingEndsOn(String date) {
+    return 'Termina el $date';
+  }
+
+  @override
+  String billingMemberUsage(num count, num limit) {
+    return '$count de $limit plazas gratuitas usadas';
+  }
+
+  @override
+  String get billingUnlimitedMembers => 'Miembros ilimitados';
 }

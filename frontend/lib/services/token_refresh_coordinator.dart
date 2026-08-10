@@ -4,6 +4,7 @@ import 'package:logger/logger.dart';
 
 import '../config/api_config.dart';
 import 'token_store.dart';
+import 'dio_platform.dart';
 
 /// Result of a successful token refresh.
 class TokenPairResult {
@@ -67,19 +68,26 @@ class TokenRefreshCoordinator {
   /// refresh call can never recurse back into a token-refresh interceptor).
   static final TokenRefreshCoordinator shared = TokenRefreshCoordinator(
     SecureTokenStore.shared,
-    Dio(
+    _createRefreshDio(),
+  );
+
+  static Dio _createRefreshDio() {
+    final dio = Dio(
       BaseOptions(
         baseUrl: '${ApiConfig.baseUrl}${ApiConfig.apiPrefix}',
-        connectTimeout: ApiConfig.requestTimeout,
+        connectTimeout: ApiConfig.connectTimeout,
         receiveTimeout: ApiConfig.requestTimeout,
         sendTimeout: ApiConfig.requestTimeout,
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
+          if (kIsWeb) 'X-Mitlist-Client': 'web',
         },
       ),
-    ),
-  );
+    );
+    configureDioForPlatform(dio);
+    return dio;
+  }
 
   /// Refresh the token pair, coalescing concurrent callers onto one request.
   ///
@@ -107,21 +115,43 @@ class TokenRefreshCoordinator {
 
   Future<TokenRefreshOutcome> _run() async {
     final refreshToken = await _store.getRefreshToken();
-    if (refreshToken == null) return const TokenRefreshOutcome.authRejected();
+    if (refreshToken == null && !kIsWeb) {
+      return const TokenRefreshOutcome.authRejected();
+    }
+
+    final attemptedRefresh = refreshToken ?? '';
 
     try {
       final response = await _dio.post(
         '/auth/token/refresh',
-        data: {'refresh_token': refreshToken},
+        data: {'refresh_token': attemptedRefresh},
       );
       final data = response.data;
       if (response.statusCode == 200 && data is Map<String, dynamic>) {
         final access = data['access_token'];
         final refresh = data['refresh_token'];
-        if (access is String && refresh is String) {
-          await _store.save(accessToken: access, refreshToken: refresh);
+        if (access is String && (refresh is String || kIsWeb)) {
+          final current = await _store.getRefreshToken();
+          if (!kIsWeb && current != attemptedRefresh) {
+            return const TokenRefreshOutcome.authRejected();
+          }
+          final rotatedRefresh = refresh is String ? refresh : '';
+          if (kIsWeb && _store is SecureTokenStore) {
+            await _store.saveEphemeral(
+              accessToken: access,
+              refreshToken: rotatedRefresh,
+            );
+          } else {
+            await _store.save(
+              accessToken: access,
+              refreshToken: rotatedRefresh,
+            );
+          }
           return TokenRefreshOutcome.success(
-            TokenPairResult(accessToken: access, refreshToken: refresh),
+            TokenPairResult(
+              accessToken: access,
+              refreshToken: rotatedRefresh,
+            ),
           );
         }
       }

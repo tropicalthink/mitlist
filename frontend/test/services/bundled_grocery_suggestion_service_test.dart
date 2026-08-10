@@ -23,4 +23,13 @@ void main() {
     // multi-second full-seed decode/isolate path.
     expect(stopwatch.elapsed, lessThan(const Duration(seconds: 1)));
   });
+
+  test('nearest tolerates a wrong first character from handwriting OCR',
+      () async {
+    final matches = await BundledGrocerySuggestionService().nearest('Aliverol');
+
+    expect(matches, isNotEmpty);
+    expect(matches.first.canonicalItemId, 'olive_oil');
+    expect(matches.first.similarity, greaterThanOrEqualTo(0.65));
+  });
 }

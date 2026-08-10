@@ -249,11 +249,7 @@ func (s *RecipeService) AddToCollection(ctx context.Context, userID, collectionI
 	if err := s.requireCollectionOwner(collection, userID); err != nil {
 		return err
 	}
-	_, err = s.recipeRepo.GetRecipeByID(ctx, recipeID)
-	if err != nil {
-		if err.Error() == "recipe not found" {
-			return api.ErrNotFound
-		}
+	if _, err = s.GetRecipe(ctx, userID, recipeID); err != nil {
 		return err
 	}
 	cr := &models.CollectionRecipe{

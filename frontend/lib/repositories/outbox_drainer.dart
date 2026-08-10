@@ -17,8 +17,10 @@ class OutboxDrainer {
     required List<String> types,
     required Map<String, OutboxOpHandler> handlers,
     int limit = 25,
+    Duration minBackoff = const Duration(seconds: 5),
   }) async {
-    final batch = await _db.getOutboxBatchByTypes(types, limit: limit);
+    final batch = await _db.getOutboxBatchByTypes(types,
+        limit: limit, minBackoff: minBackoff);
     if (batch.isEmpty) return;
     for (final op in batch) {
       final fresh = await _db.getOutboxOpById(op.id);
@@ -44,6 +46,17 @@ class OutboxDrainer {
         switch (classifyOutboxError(e)) {
           case OutboxErrorDisposition.transient:
             await _db.markOutboxAttempt(op.id, error: message);
+            return;
+          case OutboxErrorDisposition.unreachable:
+            // Stamp the backoff but spend no attempt: the server never saw
+            // this op, so it has earned no evidence of being bad. Stop the
+            // pass either way — if one op can't reach the server, neither can
+            // the rest, and per-entity ordering must hold.
+            await _db.markOutboxAttempt(
+              op.id,
+              error: message,
+              countsTowardFailure: false,
+            );
             return;
           case OutboxErrorDisposition.permanent:
             await _db.markOutboxPermanentFailure(op.id,

@@ -19,7 +19,7 @@ func TestAttachments_UploadIntent_HappyPath_ReturnsPresignedPutURL(t *testing.T)
 	clearTables(t)
 
 	// Arrange: user + group + membership
-	user := createTestUser(t, "attach@example.com", "password123")
+	user := createTestUser(t, "attach@example.com", "password123!")
 
 	groupRepo := newTestGroupRepo()
 	group := &models.Group{Name: "Test Group", CreatedBy: user.ID}

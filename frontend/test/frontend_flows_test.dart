@@ -57,6 +57,7 @@ import 'package:mitlist/services/notification_service.dart';
 import 'package:mitlist/services/recipe_service.dart';
 import 'package:mitlist/storage/app_database.dart' hide FinanceSummary;
 import 'package:mitlist/widgets/app_button.dart';
+import 'package:mitlist/widgets/mitlist_bottom_nav.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -630,19 +631,19 @@ void main() {
     expect(find.text('My Households'), findsOneWidget);
     expect(find.text('Test Household'), findsOneWidget);
 
-    await tester.tap(find.text('Lists'));
+    await tester.tap(_navTab('Lists'));
     await _pumpUi(tester);
     expect(find.text('Lists'), findsAtLeast(1));
 
-    await tester.tap(find.text('Chores'));
+    await tester.tap(_navTab('Chores'));
     await _pumpUi(tester);
     expect(find.text('Chores'), findsAtLeast(1));
 
-    await tester.tap(find.text('Money'));
+    await tester.tap(_navTab('Money'));
     await _pumpUi(tester);
     expect(find.text('Money'), findsAtLeast(1));
 
-    await tester.tap(find.text('Home'));
+    await tester.tap(_navTab('Home'));
     await _pumpUi(tester);
 
     expect(find.text('My Households'), findsOneWidget);
@@ -1170,6 +1171,16 @@ Future<void> _setLargeSurface(WidgetTester tester) async {
   addTearDown(() => tester.binding.setSurfaceSize(null));
 }
 
+/// A tab in the bottom nav, scoped so it never collides with the same word on
+/// the page behind it. MitlistBottomNav draws its row twice — once muted, once
+/// in ink clipped to the selection slab — so a bare find.text is ambiguous.
+Finder _navTab(String label) => find
+    .descendant(
+      of: find.byType(MitlistBottomNav),
+      matching: find.text(label),
+    )
+    .first;
+
 Future<void> _pumpUi(WidgetTester tester) async {
   await tester.pump();
   await tester.pump(const Duration(seconds: 1));
@@ -1645,6 +1656,15 @@ class FakeChoreRepository implements ChoreRepository {
   }
 
   @override
+  Future<ChoreCreateResult> createOfflineFirst(
+    CreateChoreRequest req, {
+    Duration syncWindow = Duration.zero,
+  }) async {
+    final created = await _service.createChore(req);
+    return ChoreCreateResult(chore: created, synced: true);
+  }
+
+  @override
   Future<List<CurrentChore>> getCurrentChoresOnce(String groupId) async {
     final chores = await _service.listChores(groupId);
     return _toCurrent(chores);
@@ -1865,6 +1885,56 @@ class FakeFinanceRepository implements FinanceRepository {
   Stream<FinanceSummary?> watchSummaryByGroup(String groupId) => Stream.value(
         FinanceSummary(balances: const [], reimbursements: const []),
       ).asBroadcastStream();
+
+  // Settlements are cache-backed on the real repository; these flows don't
+  // exercise them, so an in-memory list is enough to satisfy the interface.
+  final List<Settlement> _settlements = [];
+
+  @override
+  Stream<List<Settlement>> watchSettlements(String groupId) =>
+      Stream.value(_settlements);
+
+  @override
+  Future<List<Settlement>> getSettlementsOnce(String groupId) async =>
+      _settlements;
+
+  @override
+  Future<List<Settlement>> loadSettlements(String groupId) async =>
+      _settlements;
+
+  @override
+  Future<Settlement> recordSettlementOfflineFirst({
+    required String groupId,
+    required CreateSettlementRequest req,
+    required String createdBy,
+  }) async {
+    final local = Settlement(
+      id: 'local-flows-${_settlements.length}',
+      groupId: groupId,
+      fromUserId: req.fromUserId,
+      toUserId: req.toUserId,
+      amount: req.amount,
+      status: SettlementStatus.pending,
+      createdBy: createdBy,
+      createdAt: DateTime.now(),
+    );
+    _settlements.add(local);
+    return local;
+  }
+
+  @override
+  Future<void> cancelLocalSettlement(
+      String groupId, String settlementId) async {
+    _settlements.removeWhere((s) => s.id == settlementId);
+  }
+
+  // Conflict resolution is exercised in finance_repository_test; these screen
+  // flows never reach it.
+  @override
+  Future<void> resolveConflictAcceptServer(Conflict conflict) async {}
+
+  @override
+  Future<void> resolveConflictKeepLocal(Conflict conflict) async {}
 
   @override
   Future<int> refreshGroup(String groupId,

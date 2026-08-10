@@ -97,6 +97,14 @@ func main() {
 	})
 	srv.Router().Mount("/internal/health", healthHandler)
 
+	// Polar billing webhook. Public (signature-verified, not JWT-gated) since
+	// Polar calls this directly.
+	polarWebhookHandler, err := handlers.NewPolarWebhookHandler(cfg, cnt.BillingService(), log)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to initialize polar webhook handler")
+	}
+	polarWebhookHandler.RegisterRoutes(srv.Router())
+
 	// Operational endpoints, admin-guarded (IP allowlist via DEBUG_ALLOWLIST or
 	// HTTP Basic via ADMIN_USER/ADMIN_PASS). pprof and debug wrap AdminGuard
 	// internally; metrics is wrapped here.
@@ -131,6 +139,7 @@ func main() {
 		r.Get("/oauth/apple", oauthHandler.GetApple)
 		r.Get("/oauth/apple/callback", oauthHandler.GetAppleCallback)
 		r.Post("/oauth/apple/callback", oauthHandler.PostAppleCallback)
+		r.Post("/oauth/handoff/exchange", oauthHandler.ExchangeHandoff)
 
 		// SSE (Server-Sent Events) — auth handled inside the handler to skip UserRateLimit
 		sseHandler := handlers.NewSSEHandler(cnt.SSEHub(), cnt.JWT(), cnt.UserService(), cnt.GroupRepo())
@@ -163,6 +172,10 @@ func main() {
 			// Groups
 			groupHandler := handlers.NewGroupHandler(cnt.GroupService())
 			groupHandler.RegisterRoutes(r)
+
+			// Billing (household premium)
+			billingHandler := handlers.NewBillingHandler(cnt.BillingService())
+			billingHandler.RegisterRoutes(r)
 
 			// Lists
 			listHandler := handlers.NewListHandler(cnt.ListService(), cnt.FinanceService())

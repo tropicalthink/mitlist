@@ -1,0 +1,7 @@
+# Flutter-generated desktop plugin registrars are checked in but get rewritten
+# on every `flutter pub get` / build. Running Flutter on Windows rewrites them
+# with CRLF, which churns the diff even though the content is unchanged. Pin
+# them to LF so git normalizes the line endings and the noise disappears.
+frontend/**/generated_plugin_registrant.*   text eol=lf
+frontend/**/generated_plugins.cmake         text eol=lf
+frontend/**/GeneratedPluginRegistrant.swift text eol=lf

@@ -87,6 +87,8 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
   // then kept in sync with the realtime stream (see _syncPosts).
   late List<PinwallPost> _posts;
   late final Map<String, Offset> _positions;
+  late final Map<String, Offset> _persistedPositions;
+  final Map<String, int> _positionGenerations = {};
   // Pinned hub-summary cards are draggable too, so they get their own state.
   Offset _statsPos = const Offset(_kMargin, _kMargin);
   Offset _tonightPos =
@@ -118,6 +120,7 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
       for (var i = 0; i < widget.posts.length; i++)
         widget.posts[i].id: _positionFor(widget.posts[i], i),
     };
+    _persistedPositions = Map.of(_positions);
 
     _staggerCtrl = AnimationController(
       vsync: this,
@@ -203,14 +206,19 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
     for (final p in incoming) {
       if (!_positions.containsKey(p.id)) {
         _positions[p.id] = _positionFor(p, _positions.length);
+        _persistedPositions[p.id] = _positions[p.id]!;
         added.add(p.id);
       } else if (p.id != _activeId && p.posX != null && p.posY != null) {
         // Adopt a placement made on another device (or the server's confirmed
         // value), but never yank a card the user is actively dragging.
-        _positions[p.id] = _clamp(Offset(p.posX!, p.posY!), _kCardW, _kCardH);
+        final confirmed = _clamp(Offset(p.posX!, p.posY!), _kCardW, _kCardH);
+        _positions[p.id] = confirmed;
+        _persistedPositions[p.id] = confirmed;
       }
     }
     _positions.removeWhere((id, _) => !incomingIds.contains(id));
+    _persistedPositions.removeWhere((id, _) => !incomingIds.contains(id));
+    _positionGenerations.removeWhere((id, _) => !incomingIds.contains(id));
 
     // The stream only emits on real cache writes, so always adopt the new list.
     setState(() {
@@ -315,10 +323,19 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
     // positions and stay local; only real notes persist + sync to the household.
     if (id == _statsId || id == _tonightId) return;
     final pos = _positions[id];
-    if (pos != null) unawaited(_persistPosition(id, pos));
+    if (pos != null) {
+      final previous = _persistedPositions[id] ?? pos;
+      unawaited(_persistPosition(id, pos, previous));
+    }
   }
 
-  Future<void> _persistPosition(String postId, Offset pos) async {
+  Future<void> _persistPosition(
+    String postId,
+    Offset pos,
+    Offset previous,
+  ) async {
+    final generation = (_positionGenerations[postId] ?? 0) + 1;
+    _positionGenerations[postId] = generation;
     try {
       final repo = await ref.read(pinwallRepositoryProvider.future);
       await repo.updatePostPositionOfflineFirst(
@@ -327,8 +344,27 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
         pos.dx,
         pos.dy,
       );
+      // Sync now, the way creates and deletes already do. Nothing else arms a
+      // drain after an enqueue — the coordinator only schedules a retry once a
+      // drain has already run and found work left over — so without this the
+      // move sits in the outbox, and on the sync banner, until connectivity
+      // flips or the app is resumed.
+      unawaited(repo.drainOutboxOnce().catchError((_) {}));
+      if (mounted && _positionGenerations[postId] == generation) {
+        _persistedPositions[postId] = pos;
+      }
     } catch (_) {
-      // Best-effort: the move stays on screen and the outbox retries the sync.
+      if (!mounted || _positionGenerations[postId] != generation) return;
+      unawaited(Haptics.failure());
+      setState(() {
+        _positions[postId] = previous;
+        _persistedPositions[postId] = previous;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.commonSomethingWentWrong),
+        ),
+      );
     }
   }
 

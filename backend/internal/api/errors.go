@@ -16,6 +16,7 @@ var (
 	ErrValidation       = errors.New("validation failed")
 	ErrConflict         = errors.New("resource conflict")
 	ErrUnauthorized     = errors.New("unauthorized")
+	ErrPaymentRequired  = errors.New("payment required")
 )
 
 // NotFoundError indicates a requested resource does not exist.
@@ -98,6 +99,23 @@ func (e *ConflictError) Unwrap() error {
 	return ErrConflict
 }
 
+// PaymentRequiredError indicates the action needs a premium subscription.
+// It is not a permission problem: the caller may retry after paying.
+type PaymentRequiredError struct {
+	Message string
+}
+
+func (e *PaymentRequiredError) Error() string {
+	if e.Message != "" {
+		return e.Message
+	}
+	return "payment required"
+}
+
+func (e *PaymentRequiredError) Unwrap() error {
+	return ErrPaymentRequired
+}
+
 // ErrorResponse is the standard JSON shape returned for errors.
 type ErrorResponse struct {
 	Error   string `json:"error"`
@@ -127,6 +145,10 @@ func CodeForError(err error) string {
 	if errors.As(err, &ce) || errors.Is(err, ErrConflict) {
 		return "conflict"
 	}
+	var pr *PaymentRequiredError
+	if errors.As(err, &pr) || errors.Is(err, ErrPaymentRequired) {
+		return "payment_required"
+	}
 	if errors.Is(err, ErrUnauthorized) {
 		return "unauthorized"
 	}
@@ -153,6 +175,10 @@ func HTTPStatusForError(err error) int {
 	var ce *ConflictError
 	if errors.As(err, &ce) || errors.Is(err, ErrConflict) {
 		return http.StatusConflict
+	}
+	var pr *PaymentRequiredError
+	if errors.As(err, &pr) || errors.Is(err, ErrPaymentRequired) {
+		return http.StatusPaymentRequired
 	}
 	if errors.Is(err, ErrUnauthorized) {
 		return http.StatusUnauthorized

@@ -17,10 +17,18 @@ import (
 	"github.com/mitlist-app/mitlist/pkg/validation"
 )
 
+// memberGate decides whether a household may grow past the free member limit.
+// Implemented by BillingService; left nil on servers with billing switched off,
+// where every household grows without limit.
+type memberGate interface {
+	EnsureCanAddMember(ctx context.Context, groupID uuid.UUID) error
+}
+
 // GroupService provides business logic for group and membership management.
 type GroupService struct {
 	groupRepo repositories.GroupRepo
 	userRepo  repositories.UserRepo
+	billing   memberGate
 }
 
 // NewGroupService creates a new GroupService.
@@ -29,6 +37,21 @@ func NewGroupService(groupRepo repositories.GroupRepo, userRepo repositories.Use
 		groupRepo: groupRepo,
 		userRepo:  userRepo,
 	}
+}
+
+// SetMemberGate installs the premium gate applied before a household grows.
+// Without it, household size is unlimited — which is what a self-hosted
+// instance with no billing configured should do.
+func (s *GroupService) SetMemberGate(gate memberGate) {
+	s.billing = gate
+}
+
+// ensureCanAddMember applies the premium gate, if one is installed.
+func (s *GroupService) ensureCanAddMember(ctx context.Context, groupID uuid.UUID) error {
+	if s.billing == nil {
+		return nil
+	}
+	return s.billing.EnsureCanAddMember(ctx, groupID)
 }
 
 // CreateGroupInput holds fields for creating a group.
@@ -175,8 +198,8 @@ func (s *GroupService) InviteMember(ctx context.Context, userID, groupID uuid.UU
 	if role == "" {
 		role = "member"
 	}
-	if role != "admin" && role != "member" {
-		return nil, &api.ValidationError{Message: "role must be admin or member"}
+	if role != "member" {
+		return nil, &api.ValidationError{Message: "invites can only grant the member role"}
 	}
 
 	// Generate short, human-friendly codes. Retry on rare uniqueness collisions.
@@ -217,9 +240,6 @@ func (s *GroupService) JoinGroup(ctx context.Context, userID uuid.UUID, code str
 		return nil, err
 	}
 
-	if invite.UsedBy != nil {
-		return nil, &api.ValidationError{Message: "invite already used"}
-	}
 	if time.Now().UTC().After(invite.ExpiresAt) {
 		return nil, &api.ValidationError{Message: "invite expired"}
 	}
@@ -229,16 +249,18 @@ func (s *GroupService) JoinGroup(ctx context.Context, userID uuid.UUID, code str
 		return nil, &api.ConflictError{Message: "already a member of this group"}
 	}
 
+	if err := s.ensureCanAddMember(ctx, invite.GroupID); err != nil {
+		return nil, err
+	}
+
 	membership := &models.GroupMembership{
 		GroupID: invite.GroupID,
 		UserID:  userID,
 		Role:    "member",
 	}
 	if err := s.groupRepo.WithTx(ctx, func(txRepo repositories.GroupRepo) error {
-		if err := txRepo.ClaimInvite(ctx, invite.ID, userID); err != nil {
-			if errors.Is(err, pgx.ErrNoRows) {
-				return &api.ValidationError{Message: "invite already used"}
-			}
+		// Invites are reusable until they expire; record the latest redemption.
+		if err := txRepo.ConsumeInvite(ctx, invite.ID, userID); err != nil {
 			return err
 		}
 		return txRepo.CreateMembership(ctx, membership)
@@ -251,83 +273,90 @@ func (s *GroupService) JoinGroup(ctx context.Context, userID uuid.UUID, code str
 
 // LeaveGroup removes the user's membership. The last admin cannot leave.
 func (s *GroupService) LeaveGroup(ctx context.Context, userID, groupID uuid.UUID) error {
-	membership, err := s.groupRepo.GetMembership(ctx, groupID, userID)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) || isNotFound(err) {
-			return &api.NotFoundError{Resource: "membership"}
-		}
-		return err
-	}
-
-	if membership.Role == "admin" {
-		isLast, err := s.isLastAdmin(ctx, groupID, userID)
-		if err != nil {
+	return s.groupRepo.WithTx(ctx, func(repo repositories.GroupRepo) error {
+		if err := repo.LockGroup(ctx, groupID); err != nil {
 			return err
 		}
-		if isLast {
-			return &api.ValidationError{Message: "cannot leave group as the last admin"}
+		membership, err := repo.GetMembership(ctx, groupID, userID)
+		if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) || isNotFound(err) {
+				return &api.NotFoundError{Resource: "membership"}
+			}
+			return err
 		}
-	}
-
-	return s.groupRepo.DeleteMembership(ctx, membership.ID)
+		if membership.Role == "admin" {
+			isLast, err := isLastAdmin(ctx, repo, groupID, userID)
+			if err != nil {
+				return err
+			}
+			if isLast {
+				return &api.ValidationError{Message: "cannot leave group as the last admin"}
+			}
+		}
+		return repo.DeleteMembership(ctx, membership.ID)
+	})
 }
 
 // UpdateMemberRole changes a member's role. Only admins may do so.
 func (s *GroupService) UpdateMemberRole(ctx context.Context, userID, groupID, targetUserID uuid.UUID, role string) error {
-	if err := s.requireAdmin(ctx, userID, groupID); err != nil {
-		return err
-	}
 	if role != "admin" && role != "member" {
 		return &api.ValidationError{Message: "role must be admin or member"}
 	}
-
-	membership, err := s.groupRepo.GetMembership(ctx, groupID, targetUserID)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) || isNotFound(err) {
-			return &api.NotFoundError{Resource: "membership"}
-		}
-		return err
-	}
-
-	if membership.Role == "admin" && role == "member" {
-		isLast, err := s.isLastAdmin(ctx, groupID, targetUserID)
-		if err != nil {
+	return s.groupRepo.WithTx(ctx, func(repo repositories.GroupRepo) error {
+		if err := repo.LockGroup(ctx, groupID); err != nil {
 			return err
 		}
-		if isLast {
-			return &api.ValidationError{Message: "cannot demote the last admin"}
+		if err := requireAdmin(ctx, repo, userID, groupID); err != nil {
+			return err
 		}
-	}
-
-	membership.Role = role
-	return s.groupRepo.UpdateMembership(ctx, membership)
+		membership, err := repo.GetMembership(ctx, groupID, targetUserID)
+		if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) || isNotFound(err) {
+				return &api.NotFoundError{Resource: "membership"}
+			}
+			return err
+		}
+		if membership.Role == "admin" && role == "member" {
+			isLast, err := isLastAdmin(ctx, repo, groupID, targetUserID)
+			if err != nil {
+				return err
+			}
+			if isLast {
+				return &api.ValidationError{Message: "cannot demote the last admin"}
+			}
+		}
+		membership.Role = role
+		return repo.UpdateMembership(ctx, membership)
+	})
 }
 
 // RemoveMember removes a member from the group. Only admins may do so.
 func (s *GroupService) RemoveMember(ctx context.Context, userID, groupID, targetUserID uuid.UUID) error {
-	if err := s.requireAdmin(ctx, userID, groupID); err != nil {
-		return err
-	}
-
-	membership, err := s.groupRepo.GetMembership(ctx, groupID, targetUserID)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) || isNotFound(err) {
-			return &api.NotFoundError{Resource: "membership"}
-		}
-		return err
-	}
-
-	if membership.Role == "admin" {
-		isLast, err := s.isLastAdmin(ctx, groupID, targetUserID)
-		if err != nil {
+	return s.groupRepo.WithTx(ctx, func(repo repositories.GroupRepo) error {
+		if err := repo.LockGroup(ctx, groupID); err != nil {
 			return err
 		}
-		if isLast {
-			return &api.ValidationError{Message: "cannot remove the last admin"}
+		if err := requireAdmin(ctx, repo, userID, groupID); err != nil {
+			return err
 		}
-	}
-
-	return s.groupRepo.DeleteMembership(ctx, membership.ID)
+		membership, err := repo.GetMembership(ctx, groupID, targetUserID)
+		if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) || isNotFound(err) {
+				return &api.NotFoundError{Resource: "membership"}
+			}
+			return err
+		}
+		if membership.Role == "admin" {
+			isLast, err := isLastAdmin(ctx, repo, groupID, targetUserID)
+			if err != nil {
+				return err
+			}
+			if isLast {
+				return &api.ValidationError{Message: "cannot remove the last admin"}
+			}
+		}
+		return repo.DeleteMembership(ctx, membership.ID)
+	})
 }
 
 // GetPendingClaims returns all pending claims for a group. Admins only.
@@ -362,6 +391,10 @@ func (s *GroupService) ApproveClaim(ctx context.Context, userID, groupID, claimI
 	existing, _ := s.groupRepo.GetMembership(ctx, groupID, *claim.ClaimedBy)
 	if existing != nil {
 		return s.groupRepo.DeletePendingClaim(ctx, claimID)
+	}
+
+	if err := s.ensureCanAddMember(ctx, groupID); err != nil {
+		return err
 	}
 
 	membership := &models.GroupMembership{
@@ -413,7 +446,11 @@ func (s *GroupService) requireMembership(ctx context.Context, userID, groupID uu
 
 // requireAdmin returns permission denied if the user is not a group admin.
 func (s *GroupService) requireAdmin(ctx context.Context, userID, groupID uuid.UUID) error {
-	m, err := s.groupRepo.GetMembership(ctx, groupID, userID)
+	return requireAdmin(ctx, s.groupRepo, userID, groupID)
+}
+
+func requireAdmin(ctx context.Context, repo repositories.GroupRepo, userID, groupID uuid.UUID) error {
+	m, err := repo.GetMembership(ctx, groupID, userID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) || isNotFound(err) {
 			return &api.PermissionDeniedError{Message: "not a member of this group"}
@@ -428,7 +465,11 @@ func (s *GroupService) requireAdmin(ctx context.Context, userID, groupID uuid.UU
 
 // isLastAdmin reports whether userID is the only admin in the group.
 func (s *GroupService) isLastAdmin(ctx context.Context, groupID, userID uuid.UUID) (bool, error) {
-	memberships, err := s.groupRepo.ListMembershipsByGroup(ctx, groupID)
+	return isLastAdmin(ctx, s.groupRepo, groupID, userID)
+}
+
+func isLastAdmin(ctx context.Context, repo repositories.GroupRepo, groupID, userID uuid.UUID) (bool, error) {
+	memberships, err := repo.ListMembershipsByGroup(ctx, groupID)
 	if err != nil {
 		return false, err
 	}

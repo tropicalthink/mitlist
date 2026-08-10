@@ -26,6 +26,13 @@ type AuthRepo interface {
 	CreatePasswordResetToken(ctx context.Context, token *models.PasswordResetToken) error
 	GetPasswordResetToken(ctx context.Context, token string) (*models.PasswordResetToken, error)
 	ConsumeToken(ctx context.Context, id uuid.UUID) error
+	ConsumePasswordReset(ctx context.Context, tokenHash, passwordHash string) (uuid.UUID, error)
+	UpdatePasswordAndRevokeSessions(ctx context.Context, userID uuid.UUID, passwordHash string) error
+	CreateUnverifiedUser(ctx context.Context, user *models.User, tokenHash string, expiresAt time.Time) error
+	CreateEmailVerification(ctx context.Context, userID uuid.UUID, tokenHash string, expiresAt time.Time) error
+	ConsumeEmailVerification(ctx context.Context, tokenHash string) (uuid.UUID, error)
+	ReserveLoginAttempt(ctx context.Context, identifier string, limit int, window time.Duration) (bool, error)
+	ClearLoginAttempts(ctx context.Context, identifier string) error
 	CreatePushSubscription(ctx context.Context, sub *models.PushSubscription) error
 	ListPushSubscriptionsByUser(ctx context.Context, userID uuid.UUID) ([]models.PushSubscription, error)
 	ListPushSubscriptionsByUserIDs(ctx context.Context, userIDs []uuid.UUID) (map[uuid.UUID][]models.PushSubscription, error)
@@ -34,11 +41,27 @@ type AuthRepo interface {
 	ListDeviceTokensByUser(ctx context.Context, userID uuid.UUID) ([]models.DeviceToken, error)
 	ListDeviceTokensByUserIDs(ctx context.Context, userIDs []uuid.UUID) (map[uuid.UUID][]models.DeviceToken, error)
 	DeleteDeviceToken(ctx context.Context, userID, id uuid.UUID) error
+	CreateOAuthHandoff(ctx context.Context, codeHash string, userID uuid.UUID, expiresAt time.Time) error
+	ConsumeOAuthHandoff(ctx context.Context, codeHash string) (uuid.UUID, error)
+}
+
+// BillingRepo is the interface for premium subscription operations.
+type BillingRepo interface {
+	UpsertSubscription(ctx context.Context, s *models.BillingSubscription) (*models.BillingSubscription, error)
+	GetSubscriptionByProviderID(ctx context.Context, provider, providerSubscriptionID string) (*models.BillingSubscription, error)
+	ListSubscriptionsByUser(ctx context.Context, userID uuid.UUID) ([]models.BillingSubscription, error)
+	GetLiveSubscriptionForUser(ctx context.Context, userID uuid.UUID) (*models.BillingSubscription, error)
+	SetPrimaryGroupForUser(ctx context.Context, userID, groupID uuid.UUID) (*models.BillingSubscription, error)
+	GetGroupCoverage(ctx context.Context, groupID uuid.UUID) (bool, *string, error)
+	CountGroupMembers(ctx context.Context, groupID uuid.UUID) (int, error)
+	MarkWebhookEventProcessed(ctx context.Context, id, provider, eventType string) (bool, error)
+	DeleteWebhookEventsBefore(ctx context.Context, cutoff time.Time) (int64, error)
 }
 
 // GroupRepo is the interface for group repository operations.
 type GroupRepo interface {
 	WithTx(ctx context.Context, fn func(txRepo GroupRepo) error) error
+	LockGroup(ctx context.Context, groupID uuid.UUID) error
 	CreateGroup(ctx context.Context, group *models.Group) error
 	GetGroupByID(ctx context.Context, id uuid.UUID) (*models.Group, error)
 	ListGroupsByUser(ctx context.Context, userID uuid.UUID, limit, offset int) ([]models.Group, error)
@@ -51,7 +74,6 @@ type GroupRepo interface {
 	CreateInvite(ctx context.Context, invite *models.GroupInvite) error
 	GetInviteByCode(ctx context.Context, code string) (*models.GroupInvite, error)
 	ConsumeInvite(ctx context.Context, inviteID, userID uuid.UUID) error
-	ClaimInvite(ctx context.Context, inviteID, userID uuid.UUID) error
 	CreatePendingClaim(ctx context.Context, claim *models.PendingClaim) error
 	GetPendingClaimByCode(ctx context.Context, code string) (*models.PendingClaim, error)
 	GetPendingClaimByID(ctx context.Context, id uuid.UUID) (*models.PendingClaim, error)
@@ -73,7 +95,7 @@ type ListRepo interface {
 	ListItemPreviewLinesByListIDs(ctx context.Context, listIDs []uuid.UUID, perList int) (map[uuid.UUID][]string, error)
 	UpdateList(ctx context.Context, list *models.List) error
 	HardDeleteList(ctx context.Context, id uuid.UUID) error
-	SetListArchived(ctx context.Context, id uuid.UUID, archived bool) error
+	SetListArchived(ctx context.Context, id, actorID uuid.UUID, archived bool) error
 	CreateItem(ctx context.Context, item *models.ListItem) error
 	CreateItems(ctx context.Context, items []models.ListItem) error
 	BulkMarkItemsChecked(ctx context.Context, userID uuid.UUID, itemIDs []uuid.UUID) (int64, error)
@@ -86,8 +108,8 @@ type ListRepo interface {
 	SoftDeleteItem(ctx context.Context, id uuid.UUID) error
 	SoftDeleteItemsByList(ctx context.Context, listID uuid.UUID, onlyChecked bool) (int64, error)
 	BatchUpdateItemPositions(ctx context.Context, items []models.ListItem) error
-	ClaimItem(ctx context.Context, id uuid.UUID, userID uuid.UUID) error
-	UnclaimItem(ctx context.Context, id uuid.UUID) error
+	ClaimItem(ctx context.Context, listID, id, userID uuid.UUID) error
+	UnclaimItem(ctx context.Context, listID, id, actorID uuid.UUID) error
 	CreateShoppingLocation(ctx context.Context, location *models.ShoppingLocation) error
 	ListShoppingLocationsByGroup(ctx context.Context, groupID uuid.UUID) ([]models.ShoppingLocation, error)
 	CreateProduct(ctx context.Context, product *models.Product) error
@@ -171,6 +193,7 @@ type FinanceRepoIface interface {
 	CreateSettlement(ctx context.Context, s *models.Settlement) error
 	ListSettlementsByGroup(ctx context.Context, groupID uuid.UUID, limit, offset int) ([]models.Settlement, error)
 	ListAllSettlementsByGroup(ctx context.Context, groupID uuid.UUID) ([]models.Settlement, error)
+	UpdateSettlementStatus(ctx context.Context, id uuid.UUID, status models.SettlementStatus, respondedAt time.Time) error
 	DeleteSettlement(ctx context.Context, id uuid.UUID) error
 	ListSplitsByGroup(ctx context.Context, groupID uuid.UUID) ([]models.Split, error)
 	CreateRecurringExpense(ctx context.Context, re *models.RecurringExpense) error

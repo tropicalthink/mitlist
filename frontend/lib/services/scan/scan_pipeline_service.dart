@@ -7,7 +7,6 @@ import 'canonical_resolver_service.dart';
 import 'confidence_service.dart';
 import 'correction_memory_service.dart';
 import 'document_rectifier_service.dart';
-import 'enhancement_service.dart';
 import 'extraction_service.dart';
 import 'grocery_classifier_service.dart';
 import 'ocr_service.dart';
@@ -18,10 +17,9 @@ const _uuid = Uuid();
 
 /// Single entry point for the grocery scan pipeline.
 ///
-/// Flow: rectify → enhance → OCR → extract → resolve → aisle → confidence
+/// Flow: portable crop → PP-OCRv6 → extract → resolve → aisle → confidence
 class ScanPipelineService {
   final AppDatabase _db;
-  final EnhancementService _enhancement;
   final OcrService _ocr;
   final ExtractionService _extraction;
   final CanonicalResolverService _resolver;
@@ -32,7 +30,6 @@ class ScanPipelineService {
     required AppDatabase db,
     CanonicalResolverService? resolver,
   })  : _db = db,
-        _enhancement = EnhancementService(),
         _ocr = OcrService(),
         _extraction = ExtractionService(),
         _resolver = resolver ??
@@ -60,20 +57,13 @@ class ScanPipelineService {
     bool isOnline = true,
     CaptureCropHint? cropHint,
   }) async {
-    // 1. Perspective rectify — find document quad and warp to flat rectangle.
-    //    Runs on a worker isolate to avoid janking the UI.
-    //    When kEnableBoundaryCrop is true and the quad detector finds nothing,
-    //    falls back to the live-detected boundary crop via rectifyWithHint.
-    final rectified =
+    // 1. Apply the optional live-boundary crop using portable Dart code.
+    final cropped =
         await compute(_rectifyIsolate, _RectifyRequest(imageBytes, cropHint));
 
-    // 2. OCR — uses the non-binarized image so the neural OCR engine (ML Kit)
-    //     receives a natural photograph rather than an adaptive-thresholded
-    //     binary image (which is out-of-distribution for modern neural models).
-    //     The binarized preview is produced in the capture UI (smart_capture_launcher),
-    //     not here.
-    final forOcr = await _enhancement.enhanceForOcr(rectified);
-    final lines = await _ocr.recognise(forOcr);
+    // 2. PP-OCRv6 receives the natural color image and performs its own exact
+    //    model normalization. Preview enhancement is deliberately separate.
+    final lines = await _ocr.recognise(cropped);
 
     // 3. Extract qty / unit / price / name.
     final parsed = _extraction.extractAll(lines);
@@ -92,12 +82,35 @@ class ScanPipelineService {
     );
 
     for (final item in parsed) {
-      final resolved = await _resolver.resolve(
+      var resolved = await _resolver.resolve(
         item.itemName,
         groupId,
         listContext: listContextCanonicalIds,
         context: resolutionContext,
       );
+      final primaryAutoThreshold = resolved.autoThreshold ?? 0.85;
+      if (resolved.score < primaryAutoThreshold) {
+        for (final alternative in item.alternatives) {
+          if (alternative.text.isEmpty || alternative.relativeScore < 0.05) {
+            continue;
+          }
+          final candidate = await _resolver.resolve(
+            alternative.text,
+            groupId,
+            listContext: listContextCanonicalIds,
+            context: resolutionContext,
+          );
+          final candidateAutoThreshold = candidate.autoThreshold ?? 0.85;
+          // Beam readings may influence the result only when local grocery and
+          // household evidence can auto-accept one and it is materially better
+          // than the greedy reading. Otherwise the original OCR remains the
+          // reviewable result instead of being silently dictionary-corrected.
+          if (candidate.score >= candidateAutoThreshold &&
+              candidate.score >= resolved.score + 0.10) {
+            resolved = candidate;
+          }
+        }
+      }
 
       // 5. Aisle assignment. With a store selected, use its shipped layout
       //    (shopping-path sort order); otherwise fall back to the item's
@@ -136,6 +149,7 @@ class ScanPipelineService {
           id: _uuid.v4(),
           rawText: item.rawText,
           displayName: resolved.displayName,
+          bbox: item.bbox,
           canonicalItemId: resolved.canonicalItemId,
           quantity: item.quantity,
           unit: item.unit,
@@ -166,16 +180,19 @@ class ScanPipelineService {
     );
 
     return GroceryScanResult(
-      imageBytes: imageBytes,
+      // OCR boxes are expressed in this rectified image's coordinate space.
+      // Keeping the matching bytes lets the optional local training collector
+      // extract exact line crops without retaining the full original capture.
+      imageBytes: cropped,
       items: predictions,
       ignored: ignored,
-      engine: 'mlkit',
+      engine: 'ppocrv6-small-det-medium-rec-ctc-beam-onnx',
       needsReview: needsReview,
     );
   }
 }
 
-/// Isolate-sendable request for perspective rectification.
+/// Isolate-sendable request for the optional live-boundary crop.
 class _RectifyRequest {
   const _RectifyRequest(this.bytes, this.hint);
 
@@ -183,11 +200,9 @@ class _RectifyRequest {
   final CaptureCropHint? hint;
 }
 
-/// Top-level function used by [compute()] to run perspective rectification on
-/// a worker isolate without blocking the UI thread.
-///
-/// Uses [DocumentRectifierService.rectifyWithHint] so the boundary-crop
-/// fallback is available (it is inert while [kEnableBoundaryCrop] is false).
+/// Top-level function used by [compute()] to run the portable boundary crop on
+/// a worker isolate without blocking the UI thread. It is inert while
+/// [kEnableBoundaryCrop] is false.
 Uint8List _rectifyIsolate(_RectifyRequest req) {
   try {
     return const DocumentRectifierService()

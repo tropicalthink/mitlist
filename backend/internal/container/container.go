@@ -13,6 +13,7 @@ import (
 	mailservice "github.com/mitlist-app/mitlist/internal/services/mail"
 	oauthclient "github.com/mitlist-app/mitlist/internal/services/oauth"
 	passwordservice "github.com/mitlist-app/mitlist/internal/services/password"
+	polarsvc "github.com/mitlist-app/mitlist/internal/services/polar"
 	pushservice "github.com/mitlist-app/mitlist/internal/services/push"
 	storagesvc "github.com/mitlist-app/mitlist/internal/services/storage"
 	"github.com/mitlist-app/mitlist/internal/sse"
@@ -159,6 +160,15 @@ type Container struct {
 
 	fxServiceOnce sync.Once
 	fxService     *fxsvc.RateService
+
+	billingRepoOnce sync.Once
+	billingRepo     *repositories.BillingRepository
+
+	polarClientOnce sync.Once
+	polarClient     *polarsvc.Client
+
+	billingServiceOnce sync.Once
+	billingService     *services.BillingService
 
 	sseHub *sse.Hub
 }
@@ -364,8 +374,50 @@ func (c *Container) UserService() *services.UserService {
 func (c *Container) GroupService() *services.GroupService {
 	c.groupServiceOnce.Do(func() {
 		c.groupService = services.NewGroupService(c.GroupRepo(), c.UserRepo())
+		// Only gate household growth when billing is actually configured; a
+		// self-hosted instance without it keeps unlimited households.
+		if c.BillingService().Enabled() {
+			c.groupService.SetMemberGate(c.BillingService())
+		}
 	})
 	return c.groupService
+}
+
+// BillingRepo returns the singleton billing repository.
+func (c *Container) BillingRepo() *repositories.BillingRepository {
+	c.billingRepoOnce.Do(func() {
+		c.billingRepo = repositories.NewBillingRepository(c.db)
+	})
+	return c.billingRepo
+}
+
+// PolarClient returns the singleton Polar API client. It is created in a
+// disabled state when POLAR_ACCESS_TOKEN is unset and makes no outbound calls.
+func (c *Container) PolarClient() *polarsvc.Client {
+	c.polarClientOnce.Do(func() {
+		c.polarClient = polarsvc.New(c.cfg.PolarBaseURL, c.cfg.PolarAccessToken)
+	})
+	return c.polarClient
+}
+
+// BillingService returns the singleton premium entitlement service.
+func (c *Container) BillingService() *services.BillingService {
+	c.billingServiceOnce.Do(func() {
+		c.billingService = services.NewBillingService(
+			c.BillingRepo(),
+			c.GroupRepo(),
+			c.UserRepo(),
+			c.PolarClient(),
+			services.BillingConfig{
+				FreeMemberLimit:    c.cfg.FreeMemberLimit,
+				ProductIDMonthly:   c.cfg.PolarProductIDMonthly,
+				ProductIDYearly:    c.cfg.PolarProductIDYearly,
+				DefaultDiscountID:  c.cfg.PolarDefaultDiscountID,
+				CheckoutSuccessURL: c.cfg.CheckoutSuccessURL,
+			},
+		)
+	})
+	return c.billingService
 }
 
 // GoogleClient returns the singleton Google OAuth client.
@@ -436,6 +488,7 @@ func (c *Container) FinanceService() *services.FinanceService {
 	c.financeServiceOnce.Do(func() {
 		c.financeService = services.NewFinanceService(c.FinanceRepo(), c.GroupRepo())
 		c.financeService.SetDispatcher(c.NotificationService())
+		c.financeService.SetHub(c.SSEHub())
 	})
 	return c.financeService
 }

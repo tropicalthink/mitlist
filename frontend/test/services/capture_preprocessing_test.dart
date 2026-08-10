@@ -70,10 +70,8 @@ void main() {
   // New B2–B4 tests
   // -------------------------------------------------------------------------
 
-  group('CV preprocessing pipeline', () {
-    test('preprocessor produces a binarised output smaller than original', () {
-      // A document image with sharp text should come out as a binary (or near-binary)
-      // image after adaptive thresholding.
+  group('portable preprocessing pipeline', () {
+    test('preprocessor produces a decodable enhanced preview', () {
       final bytes = _testDocumentImage();
       final result = const CapturePreprocessorService().preprocess(bytes);
 
@@ -86,7 +84,7 @@ void main() {
       expect(decoded.height, greaterThan(0));
     });
 
-    test('CV preprocessor gracefully handles a shadowed/tilted image', () {
+    test('preprocessor gracefully handles a shadowed/tilted image', () {
       // Create an image with uneven illumination (dark left, bright right).
       final bytes = _shadowedDocumentImage();
       final result = const CapturePreprocessorService().preprocess(bytes);
@@ -162,14 +160,14 @@ void main() {
     });
 
     // -------------------------------------------------------------------------
-    // Plan 016 — Mat lifecycle hardening tests
+    // Plan 016 — repeat-call and fail-soft hardening tests
     // -------------------------------------------------------------------------
 
     test('preprocessor fail-softs on truly invalid bytes (plan 016)', () {
       final garbage = Uint8List.fromList([1, 2, 3, 4]);
       final result = const CapturePreprocessorService().preprocess(garbage);
 
-      // CV unavailable or imdecode empty → falls back; must not throw.
+      // Decode failure falls back to the original bytes and must not throw.
       expect(result.enhanced, isFalse);
       expect(result.processedBytes, garbage);
       expect(result.originalBytes, garbage);

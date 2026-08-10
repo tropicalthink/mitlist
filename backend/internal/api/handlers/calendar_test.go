@@ -47,7 +47,7 @@ func TestCalendarHandler_GetCalendar_InvalidGroupID(t *testing.T) {
 		t.Skip("test database not connected")
 	}
 
-	user := createTestUser(t, "cal-invalid@test.com", "password123")
+	user := createTestUser(t, "cal-invalid@test.com", "password123!")
 	token := generateTestToken(user.ID)
 
 	_, h := newCalendarRouter(t)
@@ -65,7 +65,7 @@ func TestCalendarHandler_GetCalendar_MissingDates(t *testing.T) {
 		t.Skip("test database not connected")
 	}
 
-	user := createTestUser(t, "cal-dates@test.com", "password123")
+	user := createTestUser(t, "cal-dates@test.com", "password123!")
 	token := generateTestToken(user.ID)
 
 	_, h := newCalendarRouter(t)

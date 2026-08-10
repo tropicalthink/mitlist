@@ -10,6 +10,7 @@ import '../../services/group_id_validator.dart';
 import '../../theme/spacing.dart';
 import '../../utils/active_group_context.dart';
 import '../../utils/friendly_error.dart';
+import '../../utils/latest_request_guard.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_input.dart';
 import '../../widgets/app_card.dart';
@@ -32,6 +33,7 @@ class _ShoppingLocationsScreenState
   String? _error;
   bool _hasHousehold = true;
   final List<ShoppingLocation> _items = [];
+  final LatestRequestGuard _loadGuard = LatestRequestGuard();
 
   @override
   void initState() {
@@ -39,9 +41,17 @@ class _ShoppingLocationsScreenState
     _load();
   }
 
+  @override
+  void dispose() {
+    _loadGuard.dispose();
+    super.dispose();
+  }
+
   Future<void> _load() async {
+    final request = _loadGuard.begin();
+    final hadContent = _items.isNotEmpty;
     setState(() {
-      _isLoading = true;
+      _isLoading = !hadContent;
       _error = null;
     });
     try {
@@ -51,7 +61,9 @@ class _ShoppingLocationsScreenState
         ref.read(currentGroupIdProvider),
       );
       if (!isValidGroupId(groupId)) {
+        if (!mounted || !_loadGuard.isCurrent(request)) return;
         setState(() {
+          _items.clear();
           _hasHousehold = false;
           _isLoading = false;
         });
@@ -59,14 +71,25 @@ class _ShoppingLocationsScreenState
       }
       final service = await ref.read(listServiceProviderAsync.future);
       final items = await service.listShoppingLocations(groupId!);
+      if (!mounted || !_loadGuard.isCurrent(request)) return;
       setState(() {
         _items.clear();
         _items.addAll(items);
+        _hasHousehold = true;
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted || !_loadGuard.isCurrent(request)) return;
+      final message = friendlyErrorMessage(e, AppLocalizations.of(context)!);
+      if (hadContent) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+        return;
+      }
       setState(() {
-        _error = friendlyErrorMessage(e, AppLocalizations.of(context)!);
+        _error = message;
         _isLoading = false;
       });
     }

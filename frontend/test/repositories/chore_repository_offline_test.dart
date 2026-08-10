@@ -4,6 +4,7 @@ import 'package:drift/native.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:mitlist/models/chore_models.dart';
 import 'package:mitlist/repositories/chore_repository.dart';
 import 'package:mitlist/storage/app_database.dart';
 
@@ -94,6 +95,128 @@ void main() {
           DateTime.parse(assignment['due_date'] as String).day, tomorrow.day);
       // Tomorrow is no longer overdue.
       expect(_firstDueStatus(row.choresJson), isNot('overdue'));
+    });
+  });
+
+  group('ChoreRepository offline create —', () {
+    late AppDatabase db;
+    late FakeChoreService remote;
+    late ChoreRepository repo;
+    const groupId = 'g1';
+
+    setUp(() {
+      db = _memoryDb();
+      remote = FakeChoreService();
+      repo = ChoreRepository(db: db, remote: remote);
+    });
+
+    tearDown(() => db.close());
+
+    CreateChoreRequest req([String name = 'Water plants']) =>
+        CreateChoreRequest(groupId: groupId, name: name, frequency: 'weekly');
+
+    test('shows the chore immediately and queues it', () async {
+      final result = await repo.createOfflineFirst(req());
+
+      expect(result.synced, isFalse);
+      expect(result.chore.id, startsWith('local-'),
+          reason: 'unsynced chore keeps its local id');
+
+      final entries = jsonDecode(
+        (await db.getCurrentChoresOnce(groupId))!.choresJson,
+      ) as List;
+      expect(entries, hasLength(1));
+      expect((entries.single as Map)['chore']['name'], 'Water plants');
+      expect((entries.single as Map)['pending_assignment'], isNull,
+          reason: 'the server owns rotation; offline there is no assignee');
+      expect(await db.outboxCount(), equals(1));
+    });
+
+    // THE regression test for this pass. A refresh is a wholesale blob
+    // overwrite, so without the re-splice an SSE event or a sibling refresh
+    // landing before the drain makes the new chore visibly disappear.
+    test('a server refresh does not erase a still-queued create', () async {
+      await repo.createOfflineFirst(req());
+      // Server knows nothing about it yet.
+      remote.currentChores = const [];
+
+      await repo.refreshCurrentChores(groupId);
+
+      final entries = jsonDecode(
+        (await db.getCurrentChoresOnce(groupId))!.choresJson,
+      ) as List;
+      expect(entries, hasLength(1),
+          reason: 'the queued chore must survive a server snapshot');
+      expect((entries.single as Map)['chore']['name'], 'Water plants');
+    });
+
+    test('the re-splice stops once the server returns the chore', () async {
+      final result = await repo.createOfflineFirst(req());
+      final localId = result.chore.id;
+
+      // Drain it: the op is consumed and ids are rewritten.
+      remote.createdChoreId = 'server-1';
+      await repo.drainOutboxOnce();
+      expect(await db.outboxCount(), equals(0));
+
+      remote.currentChores = [
+        CurrentChore(
+          chore: Chore(
+            id: 'server-1',
+            groupId: groupId,
+            name: 'Water plants',
+            rotationType: 'none',
+            frequency: 'weekly',
+            isActive: true,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+          dueStatus: 'later',
+          assignedToMe: false,
+        ),
+      ];
+      await repo.refreshCurrentChores(groupId);
+
+      final entries = jsonDecode(
+        (await db.getCurrentChoresOnce(groupId))!.choresJson,
+      ) as List;
+      expect(entries, hasLength(1), reason: 'no duplicate after the create syncs');
+      expect((entries.single as Map)['chore']['id'], 'server-1');
+      expect(entries.map((e) => (e as Map)['chore']['id']), isNot(contains(localId)));
+    });
+
+    test('a complete queued against the local id retargets the server id',
+        () async {
+      final result = await repo.createOfflineFirst(req());
+      final localId = result.chore.id;
+
+      // User completes the chore before the create has synced.
+      await repo.completeOfflineFirst(localId);
+
+      remote.createdChoreId = 'server-1';
+      await repo.drainOutboxOnce();
+
+      // The create is gone; the complete now points at the server id.
+      final remaining = await db.getOutboxOpsByType('completeChore');
+      expect(remaining, hasLength(1));
+      final payload =
+          jsonDecode(remaining.single.payloadJson) as Map<String, dynamic>;
+      expect(payload['choreId'], 'server-1',
+          reason: 'rewriteOutboxPayloadIds must retarget the queued complete');
+    });
+
+    test('discarding a dead-lettered create removes the phantom chore',
+        () async {
+      final result = await repo.createOfflineFirst(req());
+      final localId = result.chore.id;
+
+      await db.deleteLocalEntity('chore', localId);
+
+      final entries = jsonDecode(
+        (await db.getCurrentChoresOnce(groupId))!.choresJson,
+      ) as List;
+      expect(entries, isEmpty,
+          reason: 'blob-backed creates must be spliced out, not left behind');
     });
   });
 }

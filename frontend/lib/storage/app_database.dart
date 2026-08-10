@@ -102,6 +102,11 @@ class ExpensesTable extends Table {
   DateTimeColumn get date => dateTime()();
   DateTimeColumn get createdAt => dateTime().named('created_at')();
 
+  /// Server last-modified stamp, kept as the optimistic-concurrency base for
+  /// offline edits. Nullable: rows created locally have no server version yet,
+  /// and rows cached before this column existed have none either.
+  DateTimeColumn get updatedAt => dateTime().named('updated_at').nullable()();
+
   @override
   Set<Column<Object>>? get primaryKey => {id};
 }
@@ -169,6 +174,45 @@ class GroupsCaches extends Table {
 
   @override
   Set<Column<Object>>? get primaryKey => {cacheKey};
+}
+
+/// Cached settlements per household (the payload of
+/// `FinanceService.listSettlements`), so the Settlements tab renders offline
+/// and an offline-recorded settlement has somewhere to live until it syncs.
+class SettlementsCaches extends Table {
+  TextColumn get groupId => text().named('group_id')();
+  TextColumn get settlementsJson => text().named('settlements_json')();
+  DateTimeColumn get updatedAt => dateTime().named('updated_at')();
+
+  @override
+  Set<Column<Object>>? get primaryKey => {groupId};
+}
+
+/// Cached calendar events, keyed by household *and* the requested window.
+///
+/// Calendar and meal-plan reads are range queries, so a single row per group
+/// would thrash as the user pages between months. [rangeKey] is derived from
+/// the from/to pair; old rows are pruned per group so browsing does not grow
+/// the database without bound.
+class CalendarCaches extends Table {
+  TextColumn get groupId => text().named('group_id')();
+  TextColumn get rangeKey => text().named('range_key')();
+  TextColumn get eventsJson => text().named('events_json')();
+  DateTimeColumn get updatedAt => dateTime().named('updated_at')();
+
+  @override
+  Set<Column<Object>>? get primaryKey => {groupId, rangeKey};
+}
+
+/// Cached meal plans, keyed by household and window. See [CalendarCaches].
+class MealPlanCaches extends Table {
+  TextColumn get groupId => text().named('group_id')();
+  TextColumn get rangeKey => text().named('range_key')();
+  TextColumn get plansJson => text().named('plans_json')();
+  DateTimeColumn get updatedAt => dateTime().named('updated_at')();
+
+  @override
+  Set<Column<Object>>? get primaryKey => {groupId, rangeKey};
 }
 
 class HubActivityCaches extends Table {
@@ -301,7 +345,8 @@ class ScanArtifactsTable extends Table {
   TextColumn get userId => text().named('user_id').nullable()();
   TextColumn get imageRef =>
       text().named('image_ref').withDefault(const Constant(''))();
-  TextColumn get engine => text().withDefault(const Constant('mlkit'))();
+  TextColumn get engine =>
+      text().withDefault(const Constant('ppocrv6-small-det-medium-rec-onnx'))();
   TextColumn get rawJson => text().named('raw_json').nullable()();
   TextColumn get resolvedJson => text().named('resolved_json').nullable()();
   IntColumn get version => integer().withDefault(const Constant(0))();
@@ -360,6 +405,9 @@ class LocalItemSignalsTable extends Table {
     HubGroupCaches,
     HubActivityCaches,
     GroupsCaches,
+    SettlementsCaches,
+    CalendarCaches,
+    MealPlanCaches,
     OutboxOps,
     Conflicts,
     CanonicalItemsTable,
@@ -377,7 +425,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 14;
 
   /// The prebuilt read-only global grocery brain (canonical items, seed/OFF
   /// aliases + FTS, store aisles). Attached by [GroceryReferenceInstaller] once
@@ -677,6 +725,22 @@ FROM list_items_table;
             await customStatement(
                 'CREATE INDEX IF NOT EXISTS idx_local_item_signals_group_id ON local_item_signals_table(group_id);');
           }
+          if (from < 13) {
+            // Offline coverage for the three features that shipped after the
+            // offline pass: settlements gain a cache (so a queued one has
+            // somewhere to live), and calendar/meal plans gain range-keyed
+            // read caches so they render something offline instead of nothing.
+            await m.createTable(settlementsCaches);
+            await m.createTable(calendarCaches);
+            await m.createTable(mealPlanCaches);
+          }
+          if (from < 14) {
+            // Expense optimistic concurrency needs the server's updated_at as a
+            // base. Nullable with no backfill: existing cached rows genuinely
+            // have no known server version, and a null base means the edit
+            // falls back to last-write-wins rather than conflicting falsely.
+            await m.addColumn(expensesTable, expensesTable.updatedAt);
+          }
         },
         beforeOpen: (details) async {
           await customStatement('pragma foreign_keys = ON;');
@@ -808,6 +872,19 @@ FROM list_items_table;
     return (select(outboxOps)..where((t) => t.id.equals(id))).getSingleOrNull();
   }
 
+  /// All queued ops of [type], oldest first.
+  ///
+  /// Used by blob-backed refreshes to re-splice optimistic rows after
+  /// overwriting a cache with server state: unlike the row-backed tables there
+  /// is no per-entity merge, so a refresh that lands before the drain would
+  /// otherwise erase a create the user can still see queued.
+  Future<List<OutboxOp>> getOutboxOpsByType(String type) {
+    return (select(outboxOps)
+          ..where((t) => t.type.equals(type))
+          ..orderBy([(t) => OrderingTerm(expression: t.createdAt)]))
+        .get();
+  }
+
   /// Number of queued ops of [type] already targeting [entityId]. Used to skip
   /// the optimistic-concurrency base when an edit chains onto an unsynced one
   /// (the chain is all ours, so there's no reliable server base to compare).
@@ -829,7 +906,18 @@ FROM list_items_table;
     return rows.map((r) => r.entityId).whereType<String>().toSet();
   }
 
-  Future<void> markOutboxAttempt(String id, {String? error}) async {
+  /// Records a failed drain attempt.
+  ///
+  /// [countsTowardFailure] must be false when the request never reached the
+  /// server (offline, connection refused). Such an attempt still stamps
+  /// `lastAttemptAt` so the 5s backoff applies, but it must not advance
+  /// `attempt_count` — that counter gates [getOutboxBatchByTypes], so counting
+  /// offline attempts dead-letters valid ops that the server never saw.
+  Future<void> markOutboxAttempt(
+    String id, {
+    String? error,
+    bool countsTowardFailure = true,
+  }) async {
     await (update(outboxOps)..where((t) => t.id.equals(id))).write(
       OutboxOpsCompanion(
         lastAttemptAt: Value(DateTime.now()),
@@ -837,6 +925,7 @@ FROM list_items_table;
         lastError: Value(error),
       ),
     );
+    if (!countsTowardFailure) return;
     await customUpdate(
       'UPDATE outbox_ops SET attempt_count = attempt_count + 1 WHERE id = ?',
       variables: [Variable<String>(id)],
@@ -871,6 +960,62 @@ FROM list_items_table;
         await (delete(expensesTable)..where((t) => t.id.equals(entityId))).go();
       case 'recipe':
         await (delete(recipesTable)..where((t) => t.id.equals(entityId))).go();
+      // Blob-backed entities have no row to delete — splice them out of the
+      // cached JSON instead. Without this, discarding a dead-lettered create
+      // leaves a phantom the server will never have and the user can never
+      // remove.
+      case 'chore':
+        await _spliceFromBlobCaches(
+          entityId,
+          idOf: (entry) =>
+              entry['chore'] is Map ? entry['chore']['id'] as String? : null,
+        );
+      case 'settlement':
+        await _spliceFromSettlementsCaches(entityId);
+    }
+  }
+
+  /// Removes any entry identified by [idOf] == [entityId] from every cached
+  /// current-chores blob. Group-agnostic: the outbox op carries only the entity
+  /// id, and a household count is small enough to scan.
+  Future<void> _spliceFromBlobCaches(
+    String entityId, {
+    required String? Function(Map entry) idOf,
+  }) async {
+    final rows = await select(currentChoresCaches).get();
+    for (final row in rows) {
+      try {
+        final decoded = jsonDecode(row.choresJson);
+        if (decoded is! List) continue;
+        final kept =
+            decoded.where((e) => !(e is Map && idOf(e) == entityId)).toList();
+        if (kept.length == decoded.length) continue;
+        await upsertCurrentChores(
+          groupId: row.groupId,
+          choresJson: jsonEncode(kept),
+        );
+      } catch (_) {
+        // Best-effort cleanup; a later refresh reconciles.
+      }
+    }
+  }
+
+  Future<void> _spliceFromSettlementsCaches(String entityId) async {
+    final rows = await select(settlementsCaches).get();
+    for (final row in rows) {
+      try {
+        final decoded = jsonDecode(row.settlementsJson);
+        if (decoded is! List) continue;
+        final kept =
+            decoded.where((e) => !(e is Map && e['id'] == entityId)).toList();
+        if (kept.length == decoded.length) continue;
+        await upsertSettlements(
+          groupId: row.groupId,
+          settlementsJson: jsonEncode(kept),
+        );
+      } catch (_) {
+        // Best-effort cleanup; a later refresh reconciles.
+      }
     }
   }
 
@@ -1115,6 +1260,107 @@ FROM list_items_table;
   }
 
   // ---------------------------------------------------------------------------
+  // Settlements cache
+  // ---------------------------------------------------------------------------
+
+  Stream<SettlementsCache?> watchSettlements(String groupId) {
+    return (select(settlementsCaches)..where((t) => t.groupId.equals(groupId)))
+        .watchSingleOrNull();
+  }
+
+  Future<SettlementsCache?> getSettlementsOnce(String groupId) {
+    return (select(settlementsCaches)..where((t) => t.groupId.equals(groupId)))
+        .getSingleOrNull();
+  }
+
+  Future<void> upsertSettlements({
+    required String groupId,
+    required String settlementsJson,
+  }) async {
+    await into(settlementsCaches).insert(
+      SettlementsCachesCompanion(
+        groupId: Value(groupId),
+        settlementsJson: Value(settlementsJson),
+        updatedAt: Value(DateTime.now()),
+      ),
+      mode: InsertMode.insertOrReplace,
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Calendar / meal-plan range caches
+  // ---------------------------------------------------------------------------
+
+  /// How many windows to retain per household. Paging a year back and forth
+  /// should be instant without letting the cache grow unbounded.
+  static const int kRangeCacheRetained = 24;
+
+  Future<CalendarCache?> getCalendarRange(String groupId, String rangeKey) {
+    return (select(calendarCaches)
+          ..where(
+              (t) => t.groupId.equals(groupId) & t.rangeKey.equals(rangeKey)))
+        .getSingleOrNull();
+  }
+
+  Future<void> upsertCalendarRange({
+    required String groupId,
+    required String rangeKey,
+    required String eventsJson,
+  }) async {
+    await into(calendarCaches).insert(
+      CalendarCachesCompanion(
+        groupId: Value(groupId),
+        rangeKey: Value(rangeKey),
+        eventsJson: Value(eventsJson),
+        updatedAt: Value(DateTime.now()),
+      ),
+      mode: InsertMode.insertOrReplace,
+    );
+    await _pruneRangeCache('calendar_caches', groupId);
+  }
+
+  Future<MealPlanCache?> getMealPlanRange(String groupId, String rangeKey) {
+    return (select(mealPlanCaches)
+          ..where(
+              (t) => t.groupId.equals(groupId) & t.rangeKey.equals(rangeKey)))
+        .getSingleOrNull();
+  }
+
+  Future<void> upsertMealPlanRange({
+    required String groupId,
+    required String rangeKey,
+    required String plansJson,
+  }) async {
+    await into(mealPlanCaches).insert(
+      MealPlanCachesCompanion(
+        groupId: Value(groupId),
+        rangeKey: Value(rangeKey),
+        plansJson: Value(plansJson),
+        updatedAt: Value(DateTime.now()),
+      ),
+      mode: InsertMode.insertOrReplace,
+    );
+    await _pruneRangeCache('meal_plan_caches', groupId);
+  }
+
+  /// Drops all but the [kRangeCacheRetained] most recently written windows for
+  /// [groupId]. Table name is a compile-time constant from the two callers
+  /// above, never user input.
+  Future<void> _pruneRangeCache(String table, String groupId) async {
+    await customUpdate(
+      'DELETE FROM $table WHERE group_id = ? AND range_key NOT IN '
+      '(SELECT range_key FROM $table WHERE group_id = ? '
+      'ORDER BY updated_at DESC LIMIT ?)',
+      variables: [
+        Variable<String>(groupId),
+        Variable<String>(groupId),
+        Variable<int>(kRangeCacheRetained),
+      ],
+      updates: {calendarCaches, mealPlanCaches},
+    );
+  }
+
+  // ---------------------------------------------------------------------------
   // Recipes cache
   // ---------------------------------------------------------------------------
 
@@ -1255,6 +1501,9 @@ FROM list_items_table;
       await delete(groupsCaches).go();
       await delete(pinwallPostsCaches).go();
       await delete(currentChoresCaches).go();
+      await delete(settlementsCaches).go();
+      await delete(calendarCaches).go();
+      await delete(mealPlanCaches).go();
       await delete(financeSummaries).go();
       await delete(expensesTable).go();
       await delete(listItemsTable).go();

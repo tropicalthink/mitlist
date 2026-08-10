@@ -16,6 +16,8 @@ import '../app_bottom_sheet.dart';
 import '../app_icon.dart';
 import '../spinner.dart';
 
+import '../app_toast.dart';
+
 /// Picks an image, runs the on-device grocery scan pipeline, and opens
 /// [ScanReviewScreen] with [listId] as the target list (skips list picker).
 ///
@@ -90,12 +92,8 @@ Future<int?> launchListScan(
     final isOnline = await connectivity.isOnline();
 
     final result = await pipeline.run(
-      // Feed the ORIGINAL capture, not the preview-binarized bytes: the
-      // pipeline's first two steps are perspective-rectify (needs the clean
-      // photo to find the document quad) and enhance/binarize. Passing the
-      // already-binarized preview defeated rectification (Canny on a dithered
-      // binary finds no quad → no crop) and double-binarized the frame, which
-      // is what produced garbage OCR. processedBytes stays for the preview UI.
+      // Feed the original color capture. PP-OCRv6 performs its own exact
+      // normalization; processedBytes is preview-only.
       imageBytes: capture.originalBytes,
       groupId: groupId,
       storeId: ref.read(selectedStoreIdProvider),
@@ -118,14 +116,12 @@ Future<int?> launchListScan(
         ),
       ),
     );
-  } catch (_) {
+  } catch (e, stack) {
+    // Keep the user-facing copy generic, but never lose the real cause.
+    debugPrint('list scan failed: $e\n$stack');
     if (!context.mounted) return null;
     Navigator.of(context).pop(); // dismiss loading
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(l10n.scanCouldNotProcess),
-      ),
-    );
+    AppToast.error(context, l10n.scanCouldNotProcess);
     return null;
   }
 }

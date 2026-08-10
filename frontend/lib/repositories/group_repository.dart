@@ -1,3 +1,4 @@
+import 'dart:async' show unawaited;
 import 'dart:convert';
 
 import '../models/group_models.dart';
@@ -31,20 +32,66 @@ class GroupRepository {
     return _decode(row?.groupsJson);
   }
 
-  /// Cache-first load with background-style refresh semantics: fetches from the
-  /// network, persists the result, and returns it. If the network call fails
-  /// but a cache exists, returns the cache (no throw) so the app keeps working
-  /// offline. Rethrows only when there is nothing cached to fall back to.
-  Future<List<Group>> loadGroups({int limit = 50}) async {
+  /// Genuinely cache-first: returns the cached households immediately and
+  /// refreshes in the background, so no screen waits on the network to resolve
+  /// its active group.
+  ///
+  /// Every screen's `_resolveGroupId()` awaits this, so awaiting the network
+  /// here stalled the entire app behind one request — 30s before the connect
+  /// timeout was split out, and still a full round-trip after. The cached list
+  /// is almost always correct (households change rarely), and the background
+  /// refresh repaints anything watching [watchGroups] when it lands.
+  ///
+  /// [forceRefresh] restores the blocking behaviour and is **required** after
+  /// creating or joining a household: those flows need the new group present in
+  /// the returned list, and a stale cache would not have it. It also rethrows,
+  /// because "you just joined but we can't confirm it" must not read as success.
+  ///
+  /// With no cache there is nothing to be first with, so the network is awaited
+  /// and errors propagate.
+  Future<List<Group>> loadGroups({
+    int limit = 50,
+    bool forceRefresh = false,
+  }) async {
     final cached = await getGroupsOnce();
-    try {
-      final fresh = await _groups.listGroups(limit: limit);
-      await _persist(fresh);
-      return fresh;
-    } catch (_) {
-      if (cached.isNotEmpty) return cached;
-      rethrow;
+
+    if (forceRefresh || cached.isEmpty) {
+      try {
+        final fresh = await _groups.listGroups(limit: limit);
+        await _persist(fresh);
+        return fresh;
+      } catch (_) {
+        if (!forceRefresh && cached.isNotEmpty) return cached;
+        rethrow;
+      }
     }
+
+    // Fire-and-forget refresh. Failures are swallowed: we already have an
+    // answer, and the outbox/connectivity layer owns retrying.
+    unawaited(() async {
+      try {
+        await _persist(await _groups.listGroups(limit: limit));
+      } catch (_) {}
+    }());
+
+    return cached;
+  }
+
+  /// Inserts (or replaces) [group] in the cached list.
+  ///
+  /// Used right after creating or joining a household: the server already
+  /// accepted it and handed us the row, so the cache can be made correct
+  /// without a round-trip. That matters because the alternative — relying on a
+  /// refetch — fails exactly when the network is flaky, leaving the user
+  /// looking at an error for a household that genuinely exists.
+  Future<void> cacheGroup(Group group) async {
+    final current = await getGroupsOnce();
+    final merged = [
+      for (final g in current)
+        if (g.id != group.id) g,
+      group,
+    ];
+    await _persist(merged);
   }
 
   /// Forces a network refresh and updates the cache. Returns the fresh list.

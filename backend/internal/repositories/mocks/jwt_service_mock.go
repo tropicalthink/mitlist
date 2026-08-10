@@ -1,6 +1,7 @@
 package mocks
 
 import (
+	"github.com/google/uuid"
 	"github.com/mitlist-app/mitlist/internal/services/jwt"
 	"github.com/stretchr/testify/mock"
 )
@@ -8,6 +9,11 @@ import (
 // MockJWTService is a mock implementation of the JWT service.
 type MockJWTService struct {
 	mock.Mock
+}
+
+func (m *MockJWTService) RevokeUserSessions(userID uuid.UUID) error {
+	args := m.Called(userID)
+	return args.Error(0)
 }
 
 func (m *MockJWTService) GenerateTokenPair(userID string, roles []string) (string, string, error) {

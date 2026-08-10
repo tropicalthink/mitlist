@@ -17,6 +17,8 @@ import '../widgets/app_icon.dart';
 import '../l10n/app_localizations.dart';
 import '../widgets/alert.dart';
 
+import '../widgets/app_toast.dart';
+
 class ExpenseDetailSheet extends ConsumerStatefulWidget {
   const ExpenseDetailSheet({
     super.key,
@@ -117,9 +119,7 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
         setState(() => _loadingSplits = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.expenseDetailCouldNotLoadSplits)),
-        );
+        AppToast.error(context, l10n.expenseDetailCouldNotLoadSplits);
       }
     }
   }
@@ -145,9 +145,7 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
       setState(() {
         _loadingReceipts = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.expenseDetailCouldNotLoadReceipts)),
-      );
+      AppToast.error(context, l10n.expenseDetailCouldNotLoadReceipts);
     }
   }
 
@@ -237,9 +235,7 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
       setState(() {
         _removing = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.expenseDetailCouldNotRemoveReceipt)),
-      );
+      AppToast.error(context, l10n.expenseDetailCouldNotRemoveReceipt);
     }
   }
 

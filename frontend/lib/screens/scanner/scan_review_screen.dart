@@ -11,9 +11,11 @@ import '../../providers/store_provider.dart';
 import '../../repositories/grocery_repository.dart';
 import '../../l10n/app_localizations.dart';
 import '../../services/scan/canonical_resolver_service.dart';
+import '../../services/scan/ocr_training_data_service.dart';
 import '../../services/scan/scan_models.dart';
 import '../../services/scan/suggestion_service.dart';
 import '../../theme/colors.dart';
+import '../../utils/friendly_error.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../widgets/app_bottom_sheet.dart';
@@ -24,6 +26,8 @@ import '../../widgets/app_dropdown.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/app_input.dart';
 import '../../widgets/mitlist_app_bar.dart';
+
+import '../../widgets/app_toast.dart';
 
 const _uuid = Uuid();
 const _newListSentinel = '__new__';
@@ -70,9 +74,11 @@ class ScanReviewScreen extends ConsumerStatefulWidget {
 }
 
 class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
+  final OcrTrainingDataService _ocrTrainingData = OcrTrainingDataService();
   late List<GroceryPrediction> _items;
   late List<GroceryPrediction> _ignored;
   bool _isAdding = false;
+  bool _ocrTrainingCaptureEnabled = false;
 
   // Phase 5: store picker
   String? _activeStoreId;
@@ -88,6 +94,12 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
     _activeStoreId = ref.read(selectedStoreIdProvider);
     if (_activeStoreId != null) unawaited(_refreshAisles(_activeStoreId!));
     _loadSuggestions();
+    unawaited(_loadOcrTrainingCapture());
+  }
+
+  Future<void> _loadOcrTrainingCapture() async {
+    final enabled = await _ocrTrainingData.isEnabled(widget.userId);
+    if (mounted) setState(() => _ocrTrainingCaptureEnabled = enabled);
   }
 
   // ---------------------------------------------------------------------------
@@ -316,37 +328,59 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
 
     final targetListId = listId;
 
-    final correctionSvc = ref.read(correctionMemoryProvider);
-    final groceryRepo = await ref.read(groceryRepositoryProvider.future);
-    final repo = await ref.read(listRepositoryProvider.future);
+    try {
+      final correctionSvc = ref.read(correctionMemoryProvider);
+      final groceryRepo = await ref.read(groceryRepositoryProvider.future);
+      final repo = await ref.read(listRepositoryProvider.future);
 
-    for (final item in _items) {
-      if (item.userConfirmed &&
-          item.canonicalItemId != null &&
-          item.rawText.toLowerCase() != item.displayName.toLowerCase()) {
-        await correctionSvc.recordAlias(
-          groupId: widget.groupId,
-          userId: widget.userId,
-          rawText: item.rawText,
-          canonicalItemId: item.canonicalItemId!,
-        );
-        unawaited(groceryRepo.uploadCorrection(
-          groupId: widget.groupId,
-          rawText: item.rawText,
-          canonicalItemId: item.canonicalItemId!,
-        ));
+      for (final item in _items) {
+        if (item.userConfirmed &&
+            item.canonicalItemId != null &&
+            item.rawText.toLowerCase() != item.displayName.toLowerCase()) {
+          await correctionSvc.recordAlias(
+            groupId: widget.groupId,
+            userId: widget.userId,
+            rawText: item.rawText,
+            canonicalItemId: item.canonicalItemId!,
+          );
+          unawaited(groceryRepo.uploadCorrection(
+            groupId: widget.groupId,
+            rawText: item.rawText,
+            canonicalItemId: item.canonicalItemId!,
+          ));
+        }
       }
-    }
 
-    await Future.wait(_items.map((p) => repo.createItemOfflineFirst(
-          targetListId,
-          CreateListItemRequest(
-            name: p.displayName,
-            quantity: p.quantity,
-            unit: p.unit,
-            canonicalItemId: p.canonicalItemId,
-          ),
-        )));
+      await Future.wait(_items.map((p) => repo.createItemOfflineFirst(
+            targetListId,
+            CreateListItemRequest(
+              name: p.displayName,
+              quantity: p.quantity,
+              unit: p.unit,
+              canonicalItemId: p.canonicalItemId,
+            ),
+          )));
+
+      // This is deliberately best-effort and local-only. A collector failure
+      // must never prevent the user's list from being created.
+      final sourceBytes = widget.scanResult.imageBytes;
+      if (sourceBytes != null) {
+        try {
+          await _ocrTrainingData.recordReviewedLines(
+            userId: widget.userId,
+            imageBytes: sourceBytes,
+            engine: widget.scanResult.engine,
+            items: _items,
+          );
+        } catch (_) {}
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isAdding = false);
+      AppToast.error(
+          context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
+      return;
+    }
 
     if (mounted) {
       setState(() => _isAdding = false);
@@ -527,6 +561,7 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
                     key: ValueKey('i_${entry.prediction!.id}'),
                     index: itemIdx,
                     prediction: entry.prediction!,
+                    allowReview: _ocrTrainingCaptureEnabled,
                     onChanged: (u) => _updateItem(itemIdx, u),
                     onRemove: () => _removeItem(itemIdx),
                   );
@@ -759,6 +794,7 @@ class _SuggestionRow extends StatelessWidget {
 class _PredictionTile extends StatelessWidget {
   final int index;
   final GroceryPrediction prediction;
+  final bool allowReview;
   final ValueChanged<GroceryPrediction> onChanged;
   final VoidCallback onRemove;
 
@@ -766,6 +802,7 @@ class _PredictionTile extends StatelessWidget {
     super.key,
     required this.index,
     required this.prediction,
+    this.allowReview = false,
     required this.onChanged,
     required this.onRemove,
   });
@@ -798,7 +835,7 @@ class _PredictionTile extends StatelessWidget {
       child: AppCard(
         padding: AppCardPadding.none,
         child: InkWell(
-          onTap: needsAction ? () => _openEditor(context) : null,
+          onTap: needsAction || allowReview ? () => _openEditor(context) : null,
           borderRadius: BorderRadius.circular(12),
           child: Container(
             decoration: BoxDecoration(
@@ -911,7 +948,7 @@ class _PredictionTile extends StatelessWidget {
                   ),
                 ),
 
-                if (needsAction)
+                if (needsAction || allowReview)
                   AppIcon(name: 'editOutline', size: 18, color: stateColor)
                 else
                   AppIcon(
@@ -1055,6 +1092,7 @@ class _ItemEditorSheetState extends State<_ItemEditorSheet> {
       unit: _unitCtrl.text.trim(),
       confidenceLevel: ConfidenceLevel.autoAccept,
       confidenceScore: 1.0,
+      userConfirmed: true,
     ));
     Navigator.of(context).pop();
   }

@@ -309,6 +309,10 @@
   "@groupsCreateHousehold": {
     "description": "Button to create first household"
   },
+  "choreManageZones": "Zones beheren",
+  "@choreManageZones": {
+    "description": "Menu item / button that opens the chore zones editor"
+  },
   "choreAppBarTitle": "Klusjes",
   "@choreAppBarTitle": {
     "description": "AppBar title for chores screen"
@@ -1929,11 +1933,22 @@
   "@expenseDeleteBody": {
     "description": "Dialog body for expense deletion"
   },
-  "expenseSettlementRecorded": "Vereffening vastgelegd",
+  "expenseSettlementRecorded": "Vereffening vastgelegd – wacht op bevestiging",
   "@expenseSettlementRecorded": {
     "description": "Snackbar when settlement is saved"
   },
   "expenseSettlementFailed": "Kon vereffening niet vastleggen.",
+  "expenseSettlementNeedsYou": "Wacht op jouw bevestiging",
+  "expenseSettlementWaiting": "Wacht op bevestiging",
+  "expenseSettlementHistory": "Recente vereffeningen",
+  "expenseSettlementRow": "{from} heeft {to} betaald",
+  "expenseSettlementConfirmAction": "Bevestigen",
+  "expenseSettlementDeclineAction": "Afwijzen",
+  "expenseSettlementCancelAction": "Verzoek intrekken",
+  "expenseSettlementStatusConfirmed": "Bevestigd",
+  "expenseSettlementStatusDeclined": "Afgewezen",
+  "expenseSettlementResponseFailed": "Vereffening kon niet worden bijgewerkt.",
+  "expenseSettlementCancelFailed": "Vereffening kon niet worden ingetrokken.",
   "@expenseSettlementFailed": {
     "description": "Snackbar when settlement fails"
   },
@@ -4386,6 +4401,16 @@
     "description": "Invite code prompt"
   },
   "authOnboardingHomeIconSemantic": "Huishouden-startpictogram",
+  "welcomePillarsSemantic": "Gedeelde lijsten, geld, klusjes en keuken. Alles op één plek.",
+  "authOnboardingNameTitle": "Geef je huishouden een naam",
+  "authOnboardingNameBody": "Schrijf hem op het briefje. Je kunt hem later aanpassen.",
+  "authOnboardingPinIt": "Prik hem op het prikbord",
+  "authOnboardingInviteTitle": "Haal je huisgenoten erbij",
+  "authOnboardingInviteBody": "Deel deze code. Wie hem invoert, komt bij je huishouden.",
+  "authOnboardingGoToBoard": "Naar je prikbord",
+  "hubChecklistTitle": "Breng het huis op gang",
+  "hubChecklistDone": "Klaar",
+  "hubChecklistProgress": "{done} van {total} klaar",
   "@authOnboardingHomeIconSemantic": {
     "description": "Semantic label for home icon"
   },
@@ -5665,5 +5690,55 @@
   "householdStorageUsedOf": "{used} van {limit} gebruikt",
   "householdStorageUsedUnlimited": "{used} gebruikt · geen limiet",
   "householdStoragePending": "{pending} is gereserveerd voor lopende uploads.",
-  "householdStorageProgressLabel": "Gebruikte huishoudopslag"
+  "householdStorageProgressLabel": "Gebruikte huishoudopslag",
+  "accountSendFeedback": "Feedback sturen",
+  "feedbackCardTitle": "Help mitlist vormgeven",
+  "feedbackCardBody": "Vraag een functie aan, meld een bug of deel een idee — het gaat direct naar het team.",
+  "feedbackSheetTitle": "Feedback sturen",
+  "feedbackSheetIntro": "Vraag een functie aan, meld een bug of vertel ons wat beter kan — we lezen elk bericht.",
+  "feedbackFieldLabel": "Je bericht",
+  "feedbackFieldHint": "Ik zou willen dat mitlist…",
+  "feedbackSend": "Versturen",
+  "feedbackSending": "Wordt verstuurd…",
+  "feedbackSent": "Bedankt — je verzoek is verstuurd!",
+  "feedbackEmpty": "Schrijf eerst een kort bericht.",
+  "feedbackFailed": "Je verzoek kon nu niet worden verstuurd. Probeer het later opnieuw.",
+  "accountOcrTrainingTitle": "Offline handschrift-OCR verbeteren",
+  "accountOcrTrainingDescription": "Handmatig gecontroleerde regeluitsneden blijven op dit apparaat totdat je ze exporteert of verwijdert. Er wordt niets geüpload.",
+  "accountOcrTrainingExport": "OCR-trainingsgegevens exporteren",
+  "accountOcrTrainingSamples": "{count, plural, =0{Geen gecorrigeerde regels} =1{1 gecorrigeerde regel} other{{count} gecorrigeerde regels}}",
+  "accountOcrTrainingClear": "OCR-trainingsgegevens verwijderen",
+  "accountOcrTrainingExportEmpty": "Er zijn nog geen gecorrigeerde OCR-regels om te exporteren.",
+  "accountOcrTrainingClearTitle": "OCR-trainingsgegevens verwijderen?",
+  "accountOcrTrainingClearBody": "Hiermee worden alle opgeslagen regeluitsneden permanent van dit apparaat verwijderd.",
+
+  "billingPremiumTitle": "mitlist premium",
+  "billingLimitReachedTitle": "Dit huishouden is vol",
+  "billingLimitReachedBody": "Huishoudens tot {limit} personen zijn gratis. Om een {next}e lid toe te voegen heeft één persoon premium nodig — en dat geldt voor iedereen hier.",
+  "billingCoversOneHousehold": "Premium geldt voor één huishouden tegelijk. Jij kiest welke en kunt altijd wisselen.",
+  "billingCoveredBy": "Premium op dit huishouden, betaald door {name}.",
+  "billingPremiumActive": "Premium is hier actief",
+  "billingMoveHereTitle": "Verplaats je premium hierheen",
+  "billingMoveHereBody": "Je hebt al premium op een ander huishouden. Verplaats het hierheen in plaats van dubbel te betalen — het andere huishouden houdt iedereen die er al is, maar kan er niemand meer bij nemen.",
+  "billingMoveHereAction": "Premium hierheen verplaatsen",
+  "billingMoved": "Premium geldt nu voor dit huishouden.",
+  "billingMoveFailed": "Je premium kon niet worden verplaatst. Probeer het opnieuw.",
+  "billingChooseHousehold": "Kies je premium-huishouden",
+  "billingMonthly": "Maandelijks",
+  "billingYearly": "Jaarlijks",
+  "billingYearlyBadge": "Beste prijs",
+  "billingSubscribe": "Premium nemen",
+  "billingOpeningCheckout": "Afrekenen wordt geopend...",
+  "billingCheckoutFailed": "Afrekenen kon niet worden gestart. Probeer het opnieuw.",
+  "billingManage": "Abonnement beheren",
+  "billingPortalFailed": "Het facturatieportaal kon niet worden geopend.",
+  "billingReturnHint": "Rond het af in je browser en kom terug — premium wordt automatisch geactiveerd.",
+  "billingAccountCardTitle": "Premium",
+  "billingAccountCardFree": "Je gebruikt het gratis abonnement. Huishoudens tot {limit} personen zijn gratis.",
+  "billingAccountCardActive": "Premium is actief op {household}.",
+  "billingAccountCardUnassigned": "Premium is actief maar nog niet aan een huishouden toegewezen.",
+  "billingRenewsOn": "Verlengt op {date}",
+  "billingEndsOn": "Eindigt op {date}",
+  "billingMemberUsage": "{count} van {limit} gratis plekken gebruikt",
+  "billingUnlimitedMembers": "Onbeperkt aantal leden"
 }

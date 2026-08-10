@@ -20,11 +20,10 @@ func TestAuthRepository_CreateOAuthAccount(t *testing.T) {
 		UserID:         fixedUUID(),
 		Provider:       "google",
 		ProviderUserID: "google123",
-		AccessToken:    strPtr("token"),
 	}
 
 	mock.ExpectExec("INSERT INTO oauth_accounts").
-		WithArgs(pgxmock.AnyArg(), account.UserID, account.Provider, account.ProviderUserID, account.AccessToken, pgxmock.AnyArg(), pgxmock.AnyArg()).
+		WithArgs(pgxmock.AnyArg(), account.UserID, account.Provider, account.ProviderUserID).
 		WillReturnResult(pgxmock.NewResult("INSERT", 1))
 
 	err := repo.CreateOAuthAccount(context.Background(), account)
@@ -37,8 +36,8 @@ func TestAuthRepository_GetOAuthByProviderID(t *testing.T) {
 	repo := NewAuthRepository(mock)
 
 	id := fixedUUID()
-	rows := pgxmock.NewRows([]string{"id", "user_id", "provider", "provider_user_id", "access_token", "refresh_token", "expires_at"}).
-		AddRow(id, fixedUUID(), "google", "google123", nil, nil, nil)
+	rows := pgxmock.NewRows([]string{"id", "user_id", "provider", "provider_user_id"}).
+		AddRow(id, fixedUUID(), "google", "google123")
 
 	mock.ExpectQuery("SELECT .* FROM oauth_accounts WHERE provider = .* AND provider_user_id = .*").
 		WithArgs("google", "google123").
@@ -89,10 +88,10 @@ func TestAuthRepository_GetPasswordResetToken(t *testing.T) {
 	repo := NewAuthRepository(mock)
 
 	id := fixedUUID()
-	rows := pgxmock.NewRows([]string{"id", "user_id", "token", "expires_at", "used_at"}).
+	rows := pgxmock.NewRows([]string{"id", "user_id", "token_hash", "expires_at", "used_at"}).
 		AddRow(id, fixedUUID(), "abc123", fixedTime(), nil)
 
-	mock.ExpectQuery("SELECT .* FROM password_reset_tokens WHERE token = .*").
+	mock.ExpectQuery("SELECT .* FROM password_reset_tokens WHERE token_hash = .*").
 		WithArgs("abc123").
 		WillReturnRows(rows)
 
@@ -106,7 +105,7 @@ func TestAuthRepository_GetPasswordResetToken_NotFound(t *testing.T) {
 	mock := newMockDB(t)
 	repo := NewAuthRepository(mock)
 
-	mock.ExpectQuery("SELECT .* FROM password_reset_tokens WHERE token = .*").
+	mock.ExpectQuery("SELECT .* FROM password_reset_tokens WHERE token_hash = .*").
 		WithArgs("missing").
 		WillReturnError(pgx.ErrNoRows)
 

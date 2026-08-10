@@ -2,28 +2,44 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../models/group_models.dart';
 import '../../providers/group_provider.dart';
 import '../../router.dart' show currentGroupIdProvider;
-import '../../sheets/create_household_sheet.dart';
-import '../../sheets/invite_household_sheet.dart';
 import '../../sheets/join_household_sheet.dart';
 import '../../theme/animations.dart';
 import '../../theme/colors.dart';
-import '../../theme/shadows.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
+import '../../utils/friendly_error.dart';
 import '../../utils/haptics.dart';
+import '../../utils/invite_link.dart';
+import '../../widgets/alert.dart';
+import '../../widgets/app_button.dart';
+import '../../widgets/app_currency_dropdown.dart';
+import '../../widgets/app_icon.dart';
+import '../../widgets/app_input.dart';
+import '../../widgets/board/cork_board.dart';
 
-/// First-run choice, staged as the app's own metaphor: a cork board.
+/// First run, staged as the app's own metaphor: one cork board, three beats.
 ///
-/// "Create a household" is a fresh sticky note; "join with invite" is a torn
-/// paper slip. Both drop onto the board and settle with a spring wobble, the
-/// same physical language the pinwall uses once the household exists. Under
-/// reduced motion the board is simply already dressed.
+/// 1. Choose — a fresh sticky note ("create") and a torn paper slip ("join")
+///    drop onto the board and settle with a spring wobble.
+/// 2. Name — the household name is written directly on the sticky note and
+///    pinned to the board. No detour through a generic form sheet.
+/// 3. Invite — a slip with the invite code (and its QR) is torn off for the
+///    rest of the house; the board the user just dressed becomes their hub.
+///
+/// Under reduced motion every beat is simply already in place.
+enum _Stage { choose, name, invite }
+
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -49,6 +65,22 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
   bool _joinLanded = false;
   bool _didStart = false;
 
+  _Stage _stage = _Stage.choose;
+
+  // Name beat.
+  final _nameController = TextEditingController();
+  String? _currency;
+  bool _isCreating = false;
+  String? _createError;
+
+  // Invite beat.
+  Group? _createdGroup;
+  GroupInvite? _invite;
+  bool _inviteLoading = false;
+  String? _inviteError;
+  bool _copied = false;
+  Timer? _copiedTimer;
+
   @override
   void initState() {
     super.initState();
@@ -63,11 +95,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     );
     _createT = CurvedAnimation(
       parent: _controller,
-      curve: const Interval(0.12, 0.72, curve: _SettleCurve()),
+      curve: const Interval(0.12, 0.72, curve: SettleCurve()),
     );
     _joinT = CurvedAnimation(
       parent: _controller,
-      curve: const Interval(0.30, 0.90, curve: _SettleCurve()),
+      curve: const Interval(0.30, 0.90, curve: SettleCurve()),
     );
 
     _controller.addListener(_onTick);
@@ -97,9 +129,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
           .read(cachedGroupsProvider.future)
           .timeout(const Duration(seconds: 10));
       if (!mounted) return;
-      // Only skip onboarding when the user already belongs to a shared household.
+      // Only skip onboarding when the user already belongs to a shared
+      // household, and only while they haven't started dressing the board.
       final hasHousehold = groups.any((g) => g.isPersonal == false);
-      if (hasHousehold) {
+      if (hasHousehold && _stage == _Stage.choose) {
         context.goNamed('home');
       }
     } catch (_) {
@@ -121,28 +154,29 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
 
   @override
   void dispose() {
+    _copiedTimer?.cancel();
+    _nameController.dispose();
     _controller.dispose();
     super.dispose();
   }
 
-  Future<void> _onCreateHousehold() async {
-    await Haptics.light();
-    if (!mounted) return;
-    final group = await CreateHouseholdSheet.show(context);
-    if (group == null || !mounted) return;
-    unawaited(ref.read(currentGroupIdProvider.notifier).set(group.id));
-    // A one-person household is an empty product. The moment right after
-    // creation is the highest-value time to invite the rest of the house, so
-    // offer the invite code here (still on the board) — dismissing it lands
-    // on the hub either way.
-    await InviteHouseholdSheet.show(context, groupId: group.id);
-    if (!mounted) return;
-    context.goNamed('home');
+  // ── Stage transitions ──────────────────────────────────────────────────────
+
+  bool get _reduceMotion => MediaQuery.of(context).disableAnimations;
+
+  void _toStage(_Stage stage) {
+    if (_stage == stage) return;
+    setState(() => _stage = stage);
+  }
+
+  void _onCreateHousehold() {
+    unawaited(Haptics.light());
+    _currency ??= _defaultCurrency(context);
+    _toStage(_Stage.name);
   }
 
   Future<void> _onJoinHousehold() async {
-    await Haptics.light();
-    if (!mounted) return;
+    unawaited(Haptics.light());
     final group = await JoinHouseholdSheet.show(context);
     if (group != null && mounted) {
       unawaited(ref.read(currentGroupIdProvider.notifier).set(group.id));
@@ -150,44 +184,134 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     }
   }
 
-  /// Fade + drop + settle-into-tilt for one board object. The spring curve
-  /// overshoots past 1.0, which reads as the note dipping past its rest
-  /// position and tipping past its final tilt before settling: the landing.
-  Widget _boardDrop({
-    required Animation<double> t,
-    required double tilt,
-    required Widget child,
-  }) {
-    return AnimatedBuilder(
-      animation: t,
-      child: child,
-      builder: (context, child) {
-        final v = t.value;
-        return Opacity(
-          opacity: (v * 2.5).clamp(0.0, 1.0),
-          child: Transform.translate(
-            offset: Offset(0, (1 - v) * -120),
-            child: Transform.rotate(angle: tilt * v, child: child),
-          ),
-        );
-      },
-    );
+  /// Best-guess currency from the device locale, clamped to the supported set.
+  String _defaultCurrency(BuildContext context) {
+    const supported = {
+      'USD',
+      'EUR',
+      'GBP',
+      'JPY',
+      'CAD',
+      'AUD',
+      'CHF',
+      'SEK',
+      'NOK',
+      'DKK',
+      'PLN',
+      'CZK',
+      'HUF',
+    };
+    try {
+      final locale = Localizations.localeOf(context).toString();
+      final code = NumberFormat.simpleCurrency(locale: locale).currencyName;
+      if (code != null && supported.contains(code)) return code;
+    } catch (_) {}
+    return 'USD';
   }
+
+  bool get _canPin => _nameController.text.trim().isNotEmpty && !_isCreating;
+
+  Future<void> _pinHousehold() async {
+    if (!_canPin) return;
+    final l10n = AppLocalizations.of(context)!;
+    setState(() {
+      _isCreating = true;
+      _createError = null;
+    });
+
+    try {
+      final service = await ref.read(groupServiceProviderAsync.future);
+      final group = await service.createGroup(CreateGroupRequest(
+        name: _nameController.text.trim(),
+        currency: _currency ?? 'USD',
+      ));
+      // The cached household list must be refetched before any screen
+      // resolves its active group against it — without this the new group is
+      // missing from the cache and the hub lands on "no household".
+      // Seed the cache with the household the server just handed us, then
+      // refresh. Seeding first means the new household is present even if the
+      // refetch fails — no screen should land on "no household" for one that
+      // demonstrably exists.
+      await refreshCachedGroups(ref, ensure: group);
+      if (!mounted) return;
+      unawaited(ref.read(currentGroupIdProvider.notifier).set(group.id));
+      unawaited(Haptics.success());
+      setState(() {
+        _isCreating = false;
+        _createdGroup = group;
+      });
+      _toStage(_Stage.invite);
+      unawaited(_generateInvite());
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isCreating = false;
+        _createError = friendlyErrorMessage(e, l10n);
+      });
+    }
+  }
+
+  Future<void> _generateInvite() async {
+    final group = _createdGroup;
+    if (group == null) return;
+    setState(() {
+      _inviteLoading = true;
+      _inviteError = null;
+      _copied = false;
+    });
+    try {
+      final svc = await ref.read(groupServiceProviderAsync.future);
+      final invite = await svc.inviteMember(
+        group.id,
+        const InviteMemberRequest(role: 'member'),
+      );
+      if (!mounted) return;
+      setState(() {
+        _invite = invite;
+        _inviteLoading = false;
+      });
+      unawaited(Haptics.light());
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _inviteError = friendlyErrorMessage(e, AppLocalizations.of(context)!);
+        _inviteLoading = false;
+      });
+    }
+  }
+
+  Future<void> _copyCode() async {
+    final code = _invite?.code;
+    if (code == null || code.trim().isEmpty || _copied) return;
+    try {
+      await Clipboard.setData(ClipboardData(text: code.trim()));
+    } catch (_) {
+      return; // Clipboard unavailable; silently ignore.
+    }
+    if (!mounted) return;
+    setState(() => _copied = true);
+    _copiedTimer?.cancel();
+    _copiedTimer = Timer(const Duration(milliseconds: 1800), () {
+      if (mounted) setState(() => _copied = false);
+    });
+  }
+
+  void _goToBoard() {
+    unawaited(Haptics.light());
+    context.goNamed('home');
+  }
+
+  // ── Build ──────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final dark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Boundary keeps the grain from re-rasterizing on every frame of
-          // the entrance animation above it.
-          RepaintBoundary(
-            child: CustomPaint(painter: _CorkBoardPainter(dark: dark)),
-          ),
+          const CorkBoardBackground(),
           SafeArea(
             child: LayoutBuilder(
               builder: (context, constraints) {
@@ -203,56 +327,45 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            _boardDrop(
+                            BoardDrop(
                               t: _headerT,
                               tilt: 0.010,
                               child: Center(
                                 child: ConstrainedBox(
                                   constraints:
                                       const BoxConstraints(maxWidth: 440),
-                                  child: _TapedHeader(l10n: l10n),
+                                  child: _header(l10n),
                                 ),
                               ),
                             ),
                             const SizedBox(height: MitlistSpacing.space8),
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: SizedBox(
-                                width: noteWidth,
-                                child: _boardDrop(
-                                  t: _createT,
-                                  tilt: -0.040,
-                                  child: _Pressable(
-                                    semanticLabel:
-                                        l10n.authOnboardingCreateHousehold,
-                                    onTap: _onCreateHousehold,
-                                    child: _StickyNote(
-                                      dark: dark,
-                                      title: l10n.authOnboardingCreateHousehold,
-                                      body: l10n.authOnboardingCreateDesc,
-                                    ),
+                            AnimatedSwitcher(
+                              duration: _reduceMotion
+                                  ? Duration.zero
+                                  : MitlistAnimations.medium,
+                              switchInCurve: MitlistAnimations.easeEnter,
+                              switchOutCurve: MitlistAnimations.easeExit,
+                              transitionBuilder: (child, animation) {
+                                return FadeTransition(
+                                  opacity: animation,
+                                  child: SlideTransition(
+                                    position: Tween<Offset>(
+                                      begin: const Offset(0, -0.05),
+                                      end: Offset.zero,
+                                    ).animate(animation),
+                                    child: child,
                                   ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: MitlistSpacing.space7),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: SizedBox(
-                                width: noteWidth,
-                                child: _boardDrop(
-                                  t: _joinT,
-                                  tilt: 0.032,
-                                  child: _Pressable(
-                                    semanticLabel:
-                                        l10n.authOnboardingJoinSemantic,
-                                    onTap: _onJoinHousehold,
-                                    child: _TornSlip(
-                                      title: l10n.authOnboardingJoinInvite,
-                                      body: l10n.authOnboardingJoinDesc,
-                                    ),
-                                  ),
-                                ),
+                                );
+                              },
+                              child: KeyedSubtree(
+                                key: ValueKey(_stage),
+                                child: switch (_stage) {
+                                  _Stage.choose =>
+                                    _chooseStage(l10n, noteWidth),
+                                  _Stage.name => _nameStage(l10n, noteWidth),
+                                  _Stage.invite =>
+                                    _inviteStage(l10n, noteWidth),
+                                },
                               ),
                             ),
                           ],
@@ -268,247 +381,395 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
       ),
     );
   }
-}
 
-// ─── Motion ───────────────────────────────────────────────────────────────────
+  /// The headline, written on a strip of paper taped to the board. The paper
+  /// stays; the words on it are rewritten as the beats advance.
+  Widget _header(AppLocalizations l10n) {
+    final (title, body) = switch (_stage) {
+      _Stage.choose => (
+          l10n.authOnboardingSetupHome,
+          l10n.authOnboardingCreateOrJoin,
+        ),
+      _Stage.name => (
+          l10n.authOnboardingNameTitle,
+          l10n.authOnboardingNameBody,
+        ),
+      _Stage.invite => (
+          l10n.authOnboardingInviteTitle,
+          l10n.authOnboardingInviteBody,
+        ),
+    };
 
-/// Underdamped spring response as a curve: rises, overshoots ~8%, settles.
-/// Expressed as a curve (not a SpringSimulation) so several elements can share
-/// one master controller and stagger via [Interval] without pending timers.
-class _SettleCurve extends Curve {
-  const _SettleCurve();
-
-  static const double _zeta = 0.62;
-  static const double _omega = 5.9;
-
-  @override
-  double transformInternal(double t) {
-    final omegaD = _omega * math.sqrt(1 - _zeta * _zeta);
-    final decay = math.exp(-_zeta * _omega * t);
-    return 1 -
-        decay *
-            (math.cos(omegaD * t) +
-                (_zeta * _omega / omegaD) * math.sin(omegaD * t));
-  }
-}
-
-// ─── Board objects ────────────────────────────────────────────────────────────
-
-/// Press affordance shared by both notes: the object lifts slightly under the
-/// finger (scale down against its hard shadow reads as being pressed onto the
-/// board), then triggers.
-class _Pressable extends StatefulWidget {
-  const _Pressable({
-    required this.semanticLabel,
-    required this.onTap,
-    required this.child,
-  });
-
-  final String semanticLabel;
-  final VoidCallback onTap;
-  final Widget child;
-
-  @override
-  State<_Pressable> createState() => _PressableState();
-}
-
-class _PressableState extends State<_Pressable> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: widget.semanticLabel,
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTapDown: (_) => setState(() => _pressed = true),
-          onTapUp: (_) => setState(() => _pressed = false),
-          onTapCancel: () => setState(() => _pressed = false),
-          onTap: widget.onTap,
-          child: AnimatedScale(
-            scale: _pressed ? 0.975 : 1.0,
-            duration: MitlistAnimations.micro,
-            curve: MitlistAnimations.easeExit,
-            child: widget.child,
-          ),
+    return TapedPaper(
+      padding: const EdgeInsets.fromLTRB(
+        MitlistSpacing.lg,
+        MitlistSpacing.space5,
+        MitlistSpacing.lg,
+        MitlistSpacing.lg,
+      ),
+      child: AnimatedSwitcher(
+        duration: _reduceMotion ? Duration.zero : MitlistAnimations.medium,
+        child: Column(
+          key: ValueKey(_stage),
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    color: MitlistColors.textPrimary,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.5,
+                    height: 1.05,
+                  ),
+            ),
+            const SizedBox(height: MitlistSpacing.space2),
+            Text(
+              body,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: MitlistColors.textPrimary.withValues(alpha: 0.72),
+                    height: 1.4,
+                  ),
+            ),
+          ],
         ),
       ),
     );
   }
-}
 
-/// The headline, written on a strip of paper taped to the board.
-class _TapedHeader extends StatelessWidget {
-  const _TapedHeader({required this.l10n});
+  // ── Beat 1: choose ─────────────────────────────────────────────────────────
 
-  final AppLocalizations l10n;
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      clipBehavior: Clip.none,
+  Widget _chooseStage(AppLocalizations l10n, double noteWidth) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(
-            MitlistSpacing.lg,
-            MitlistSpacing.space5,
-            MitlistSpacing.lg,
-            MitlistSpacing.lg,
-          ),
-          decoration: BoxDecoration(
-            color: MitlistColors.surfacePrimary,
-            border: Border.all(color: MitlistColors.borderPrimary, width: 2),
-            boxShadow: MitlistShadows.shadowMedium,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l10n.authOnboardingSetupHome,
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: MitlistColors.textPrimary,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.5,
-                      height: 1.05,
-                    ),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: SizedBox(
+            width: noteWidth,
+            child: BoardDrop(
+              t: _createT,
+              tilt: -0.040,
+              child: BoardPressable(
+                semanticLabel: l10n.authOnboardingCreateHousehold,
+                onTap: _onCreateHousehold,
+                child: _ChoiceNote(
+                  title: l10n.authOnboardingCreateHousehold,
+                  body: l10n.authOnboardingCreateDesc,
+                ),
               ),
-              const SizedBox(height: MitlistSpacing.space2),
-              Text(
-                l10n.authOnboardingCreateOrJoin,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: MitlistColors.textPrimary.withValues(alpha: 0.72),
-                      height: 1.4,
-                    ),
-              ),
-            ],
+            ),
           ),
         ),
-        const _Tape(left: 18, angle: -0.35),
-        const _Tape(right: 18, angle: 0.30),
+        const SizedBox(height: MitlistSpacing.space7),
+        Align(
+          alignment: Alignment.centerRight,
+          child: SizedBox(
+            width: noteWidth,
+            child: BoardDrop(
+              t: _joinT,
+              tilt: 0.032,
+              child: BoardPressable(
+                semanticLabel: l10n.authOnboardingJoinSemantic,
+                onTap: _onJoinHousehold,
+                child: _JoinSlip(
+                  title: l10n.authOnboardingJoinInvite,
+                  body: l10n.authOnboardingJoinDesc,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Beat 2: name ───────────────────────────────────────────────────────────
+
+  Widget _nameStage(AppLocalizations l10n, double noteWidth) {
+    final ink = stickyNoteInk(context);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Align(
+          alignment: Alignment.center,
+          child: SizedBox(
+            width: math.max(noteWidth, 320.0),
+            child: Transform.rotate(
+              angle: -0.018,
+              child: StickyNoteSurface(
+                padding: const EdgeInsets.fromLTRB(
+                  MitlistSpacing.lg,
+                  MitlistSpacing.space6,
+                  MitlistSpacing.lg,
+                  MitlistSpacing.lg,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    AppInput(
+                      label: l10n.sheetCreateHouseholdName,
+                      hint: l10n.sheetCreateHouseholdNameHint,
+                      controller: _nameController,
+                      textInputAction: TextInputAction.done,
+                      maxLength: 80,
+                      onChanged: (_) => setState(() {}),
+                      onSubmitted: (_) => _pinHousehold(),
+                    ),
+                    const SizedBox(height: MitlistSpacing.space3),
+                    AppCurrencyDropdown(
+                      value: _currency ?? 'USD',
+                      onChanged: _isCreating
+                          ? null
+                          : (v) {
+                              if (v != null) setState(() => _currency = v);
+                            },
+                    ),
+                    const SizedBox(height: MitlistSpacing.space4),
+                    if (_createError != null) ...[
+                      AppAlert(
+                        type: AppAlertType.error,
+                        message: _createError!,
+                      ),
+                      const SizedBox(height: MitlistSpacing.space3),
+                    ],
+                    AppButton(
+                      variant: AppButtonVariant.solid,
+                      color: AppButtonColor.primary,
+                      size: AppButtonSize.lg,
+                      text: l10n.authOnboardingPinIt,
+                      isLoading: _isCreating,
+                      onPressed: _canPin ? _pinHousehold : null,
+                    ),
+                    const SizedBox(height: MitlistSpacing.space2),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child:
+                          Icon(Icons.push_pin_outlined, size: 18, color: ink),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: MitlistSpacing.space4),
+        AppButton(
+          variant: AppButtonVariant.ghost,
+          color: AppButtonColor.neutral,
+          text: l10n.commonBack,
+          onPressed: _isCreating ? null : () => _toStage(_Stage.choose),
+        ),
+      ],
+    );
+  }
+
+  // ── Beat 3: invite ─────────────────────────────────────────────────────────
+
+  Widget _inviteStage(AppLocalizations l10n, double noteWidth) {
+    final code = _invite?.code ?? '';
+    final parts =
+        code.trim().isEmpty ? const <String>[] : code.trim().split('-');
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Align(
+          alignment: Alignment.center,
+          child: SizedBox(
+            width: math.max(noteWidth, 320.0),
+            child: Transform.rotate(
+              angle: 0.022,
+              child: TornSlip(
+                padding: const EdgeInsets.fromLTRB(
+                  MitlistSpacing.lg,
+                  MitlistSpacing.space6,
+                  MitlistSpacing.lg,
+                  MitlistSpacing.lg,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (_createdGroup != null) ...[
+                      Text(
+                        _createdGroup!.name,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              color: MitlistColors.textPrimary,
+                              fontWeight: FontWeight.w800,
+                              height: 1.1,
+                            ),
+                      ),
+                      const SizedBox(height: MitlistSpacing.space4),
+                    ],
+                    if (_inviteError != null) ...[
+                      AppAlert(
+                        type: AppAlertType.error,
+                        message: _inviteError!,
+                      ),
+                      const SizedBox(height: MitlistSpacing.space3),
+                      AppButton(
+                        variant: AppButtonVariant.outline,
+                        color: AppButtonColor.neutral,
+                        text: l10n.commonRetry,
+                        onPressed: _generateInvite,
+                      ),
+                    ] else ...[
+                      Center(
+                        child: _inviteLoading && _invite == null
+                            ? const Padding(
+                                padding: EdgeInsets.symmetric(
+                                  vertical: MitlistSpacing.xl,
+                                ),
+                                child: CircularProgressIndicator(),
+                              )
+                            : Semantics(
+                                label: l10n.inviteCodeLabel(code.trim()),
+                                child: Wrap(
+                                  spacing: MitlistSpacing.space2,
+                                  runSpacing: MitlistSpacing.space2,
+                                  alignment: WrapAlignment.center,
+                                  children: [
+                                    for (final part in parts)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: MitlistSpacing.space3,
+                                          vertical: MitlistSpacing.space2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: MitlistColors.surfaceSecondary,
+                                          border: Border.all(
+                                            color: MitlistColors.borderPrimary,
+                                            width: 2,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          part.toUpperCase(),
+                                          style: MitlistTypography.monoBody(
+                                            color: MitlistColors.textPrimary,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                      ),
+                      if (code.isNotEmpty) ...[
+                        const SizedBox(height: MitlistSpacing.space4),
+                        Center(
+                          child: Semantics(
+                            label: l10n.inviteQrSemantic,
+                            child: QrImageView(
+                              data: buildWebInviteLink(code),
+                              version: QrVersions.auto,
+                              size: 132,
+                              backgroundColor: Colors.transparent,
+                              eyeStyle: const QrEyeStyle(
+                                color: MitlistColors.textPrimary,
+                              ),
+                              dataModuleStyle: const QrDataModuleStyle(
+                                color: MitlistColors.textPrimary,
+                              ),
+                              errorCorrectionLevel: QrErrorCorrectLevel.M,
+                              errorStateBuilder: (context, _) =>
+                                  const SizedBox.shrink(),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: MitlistSpacing.space4),
+                        AppButton(
+                          variant: AppButtonVariant.solid,
+                          color: AppButtonColor.primary,
+                          text: l10n.sheetInviteShare,
+                          icon: const AppIcon(name: 'share', size: 18),
+                          onPressed: () => SharePlus.instance.share(
+                            ShareParams(
+                              text: inviteShareText(code, l10n),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: MitlistSpacing.space2),
+                        AppButton(
+                          key: ValueKey(_copied),
+                          text: _copied
+                              ? l10n.sheetInviteCopied
+                              : l10n.sheetInviteCopy,
+                          icon: _copied
+                              ? const AppIcon(name: 'checkCircle', size: 18)
+                              : const AppIcon(name: 'copy', size: 18),
+                          onPressed: _copyCode,
+                          variant: _copied
+                              ? AppButtonVariant.solid
+                              : AppButtonVariant.outline,
+                          color: _copied
+                              ? AppButtonColor.success
+                              : AppButtonColor.neutral,
+                        ),
+                      ],
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: MitlistSpacing.space6),
+        AppButton(
+          variant: AppButtonVariant.solid,
+          color: AppButtonColor.primary,
+          size: AppButtonSize.lg,
+          text: l10n.authOnboardingGoToBoard,
+          onPressed: _goToBoard,
+        ),
       ],
     );
   }
 }
 
-/// A piece of translucent tape crossing the paper's top edge.
-class _Tape extends StatelessWidget {
-  const _Tape({this.left, this.right, required this.angle});
-
-  final double? left;
-  final double? right;
-  final double angle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned(
-      top: -8,
-      left: left,
-      right: right,
-      child: Transform.rotate(
-        angle: angle,
-        child: Container(
-          width: 52,
-          height: 18,
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.45),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.65),
-              width: 1,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
+// ─── Choose-beat board objects ────────────────────────────────────────────────
 
 /// "Create a household": a fresh sticky note held by a pushpin.
-class _StickyNote extends StatelessWidget {
-  const _StickyNote({
-    required this.dark,
-    required this.title,
-    required this.body,
-  });
+class _ChoiceNote extends StatelessWidget {
+  const _ChoiceNote({required this.title, required this.body});
 
-  final bool dark;
   final String title;
   final String body;
 
   @override
   Widget build(BuildContext context) {
-    final noteColor =
-        dark ? MitlistColors.noteYellowDark : MitlistColors.noteYellow;
-    final ink = dark ? MitlistColors.neutral50 : MitlistColors.textPrimary;
+    final ink = stickyNoteInk(context);
 
-    return Stack(
-      clipBehavior: Clip.none,
-      alignment: Alignment.topCenter,
-      children: [
-        Container(
-          width: double.infinity,
-          margin: const EdgeInsets.only(top: MitlistSpacing.space2),
-          padding: const EdgeInsets.fromLTRB(
-            MitlistSpacing.lg,
-            MitlistSpacing.space6,
-            MitlistSpacing.lg,
-            MitlistSpacing.lg,
+    return StickyNoteSurface(
+      padding: const EdgeInsets.fromLTRB(
+        MitlistSpacing.lg,
+        MitlistSpacing.space6,
+        MitlistSpacing.lg,
+        MitlistSpacing.lg,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: ink,
+                  fontWeight: FontWeight.w800,
+                  height: 1.1,
+                ),
           ),
-          decoration: BoxDecoration(
-            color: noteColor,
-            border: Border.all(color: MitlistColors.borderPrimary, width: 2),
-            boxShadow: MitlistShadows.shadowStrong,
+          const SizedBox(height: MitlistSpacing.space2),
+          Text(
+            body,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: ink.withValues(alpha: 0.82),
+                  height: 1.4,
+                ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: ink,
-                      fontWeight: FontWeight.w800,
-                      height: 1.1,
-                    ),
-              ),
-              const SizedBox(height: MitlistSpacing.space2),
-              Text(
-                body,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: ink.withValues(alpha: 0.82),
-                      height: 1.4,
-                    ),
-              ),
-              const SizedBox(height: MitlistSpacing.space3),
-              Align(
-                alignment: Alignment.centerRight,
-                child: Icon(Icons.arrow_forward, size: 20, color: ink),
-              ),
-            ],
+          const SizedBox(height: MitlistSpacing.space3),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Icon(Icons.arrow_forward, size: 20, color: ink),
           ),
-        ),
-        // The pushpin holding the note to the board.
-        Positioned(top: 0, child: _PushPin()),
-      ],
-    );
-  }
-}
-
-class _PushPin extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 20,
-      height: 20,
-      decoration: const BoxDecoration(
-        shape: BoxShape.circle,
-        color: MitlistColors.primary500,
-        border: Border.fromBorderSide(
-          BorderSide(color: MitlistColors.borderPrimary, width: 2),
-        ),
-        boxShadow: MitlistShadows.shadowSoft,
+        ],
       ),
     );
   }
@@ -516,213 +777,70 @@ class _PushPin extends StatelessWidget {
 
 /// "Join with invite": a slip of paper torn off a note, pinned at one corner,
 /// with a blank code field waiting to be filled.
-class _TornSlip extends StatelessWidget {
-  const _TornSlip({required this.title, required this.body});
+class _JoinSlip extends StatelessWidget {
+  const _JoinSlip({required this.title, required this.body});
 
   final String title;
   final String body;
 
   @override
   Widget build(BuildContext context) {
-    // Paper stays paper-white in both themes, like the invite code chips on
-    // the welcome screen, so ink contrast is constant.
+    // Paper stays paper-white in both themes so ink contrast is constant.
     const ink = MitlistColors.textPrimary;
 
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        CustomPaint(
-          painter: const _TornPaperPainter(),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              MitlistSpacing.lg,
-              MitlistSpacing.space6,
-              MitlistSpacing.lg,
-              MitlistSpacing.lg,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: ink,
-                        fontWeight: FontWeight.w800,
-                        height: 1.1,
-                      ),
+    return TornSlip(
+      padding: const EdgeInsets.fromLTRB(
+        MitlistSpacing.lg,
+        MitlistSpacing.space6,
+        MitlistSpacing.lg,
+        MitlistSpacing.lg,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: ink,
+                  fontWeight: FontWeight.w800,
+                  height: 1.1,
                 ),
-                const SizedBox(height: MitlistSpacing.space2),
-                Text(
-                  body,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: ink.withValues(alpha: 0.72),
-                        height: 1.4,
-                      ),
-                ),
-                const SizedBox(height: MitlistSpacing.space4),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: MitlistSpacing.space3,
-                        vertical: MitlistSpacing.space2,
-                      ),
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: ink.withValues(alpha: 0.45),
-                          width: 2,
-                        ),
-                      ),
-                      child: Text(
-                        '····-····',
-                        style: MitlistTypography.monoBody(
-                          color: ink.withValues(alpha: 0.55),
-                        ),
-                      ),
-                    ),
-                    const Spacer(),
-                    const Icon(Icons.arrow_forward, size: 20, color: ink),
-                  ],
-                ),
-              ],
-            ),
           ),
-        ),
-        // Pinned by one corner, so the slip hangs slightly askew.
-        const Positioned(top: -6, right: 26, child: _CornerPin()),
-      ],
-    );
-  }
-}
-
-class _CornerPin extends StatelessWidget {
-  const _CornerPin();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 18,
-      height: 18,
-      decoration: const BoxDecoration(
-        shape: BoxShape.circle,
-        color: MitlistColors.primary500,
-        border: Border.fromBorderSide(
-          BorderSide(color: MitlistColors.borderPrimary, width: 2),
-        ),
-        boxShadow: MitlistShadows.shadowSoft,
+          const SizedBox(height: MitlistSpacing.space2),
+          Text(
+            body,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: ink.withValues(alpha: 0.72),
+                  height: 1.4,
+                ),
+          ),
+          const SizedBox(height: MitlistSpacing.space4),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: MitlistSpacing.space3,
+                  vertical: MitlistSpacing.space2,
+                ),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: ink.withValues(alpha: 0.45),
+                    width: 2,
+                  ),
+                ),
+                child: Text(
+                  '····-····',
+                  style: MitlistTypography.monoBody(
+                    color: ink.withValues(alpha: 0.55),
+                  ),
+                ),
+              ),
+              const Spacer(),
+              const Icon(Icons.arrow_forward, size: 20, color: ink),
+            ],
+          ),
+        ],
       ),
     );
-  }
-}
-
-/// Paper with a torn top edge, drawn with the brand's hard offset shadow so
-/// the border can follow the tear (a clipped Container's border can't).
-class _TornPaperPainter extends CustomPainter {
-  const _TornPaperPainter();
-
-  Path _paperPath(Size size) {
-    final path = Path()..moveTo(0, 12);
-    // Deterministic tear: fixed jitter heights so the edge never dances
-    // between repaints.
-    const teeth = [4.0, 13.0, 7.0, 15.0, 5.0, 11.0, 3.0, 14.0, 8.0];
-    for (var i = 0; i < teeth.length; i++) {
-      final x = size.width * (i + 1) / teeth.length;
-      path.lineTo(x, teeth[i]);
-    }
-    path
-      ..lineTo(size.width, size.height)
-      ..lineTo(0, size.height)
-      ..close();
-    return path;
-  }
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paper = _paperPath(size);
-
-    // Hard offset shadow, same idiom as MitlistShadows.
-    canvas.save();
-    canvas.translate(6, 6);
-    canvas.drawPath(paper, Paint()..color = MitlistColors.neutral950);
-    canvas.restore();
-
-    canvas.drawPath(paper, Paint()..color = MitlistColors.surfacePrimary);
-    canvas.drawPath(
-      paper,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2
-        ..color = MitlistColors.borderPrimary,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_TornPaperPainter oldDelegate) => false;
-}
-
-// ─── The board itself ─────────────────────────────────────────────────────────
-
-/// Full-bleed cork with grain flecks and an edge vignette: the same surface
-/// the pinwall board is made of, so the first screen and the household's
-/// board are recognizably one material.
-class _CorkBoardPainter extends CustomPainter {
-  const _CorkBoardPainter({required this.dark});
-
-  final bool dark;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final cork =
-        dark ? MitlistColors.pinwallBoardDark : MitlistColors.pinwallBoard;
-    final grain = dark
-        ? MitlistColors.pinwallBoardBorderDark
-        : MitlistColors.pinwallBoardBorder;
-
-    canvas.drawRect(Offset.zero & size, Paint()..color = cork);
-
-    final rng = _LCG(seed: 42);
-    final grainPaint = Paint()
-      ..color = grain.withValues(alpha: dark ? 0.18 : 0.12)
-      ..strokeWidth = 1.2
-      ..strokeCap = StrokeCap.round;
-
-    for (var i = 0; i < 500; i++) {
-      final x = rng.nextDouble() * size.width;
-      final y = rng.nextDouble() * size.height;
-      final len = 8 + rng.nextDouble() * 24;
-      final drift = (rng.nextDouble() - 0.5) * 0.4;
-      canvas.drawLine(
-        Offset(x, y),
-        Offset(
-          x + len * (1 + drift),
-          y + len * 0.15 * (rng.nextDouble() - 0.5),
-        ),
-        grainPaint,
-      );
-    }
-
-    final vignette = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          Colors.transparent,
-          (dark ? Colors.black : MitlistColors.pinwallBoardBorder)
-              .withValues(alpha: dark ? 0.28 : 0.14),
-        ],
-        stops: const [0.55, 1.0],
-      ).createShader(Offset.zero & size);
-    canvas.drawRect(Offset.zero & size, vignette);
-  }
-
-  @override
-  bool shouldRepaint(_CorkBoardPainter oldDelegate) => oldDelegate.dark != dark;
-}
-
-// Deterministic pseudo-random (LCG), matching the pinwall's grain generator.
-class _LCG {
-  _LCG({required int seed}) : _s = seed;
-  int _s;
-  double nextDouble() {
-    _s = (_s * 1664525 + 1013904223) & 0xFFFFFFFF;
-    return (_s & 0x7FFFFFFF) / 0x7FFFFFFF;
   }
 }

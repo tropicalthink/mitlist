@@ -129,22 +129,27 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
     return _loadInitialGroups();
   }
 
-  void _navigateToHub(String groupId) {
-    ref.read(currentGroupIdProvider.notifier).set(groupId);
+  Future<void> _navigateToHub(String groupId) async {
+    // Await the switch before navigating. `set` publishes the new id only
+    // after persisting it, and the hub reads the provider once on entry — so
+    // navigating first sends it to the *previous* household, which it then
+    // writes back over this selection.
+    await ref.read(currentGroupIdProvider.notifier).set(groupId);
+    if (!mounted) return;
     context.goNamed('home');
   }
 
   Future<void> _openJoinSheet() async {
     final group = await JoinHouseholdSheet.show(context);
     if (group != null && mounted) {
-      _navigateToHub(group.id);
+      await _navigateToHub(group.id);
     }
   }
 
   Future<void> _openCreateSheet() async {
     final group = await CreateHouseholdSheet.show(context);
     if (group != null && mounted) {
-      _navigateToHub(group.id);
+      await _navigateToHub(group.id);
     }
   }
 

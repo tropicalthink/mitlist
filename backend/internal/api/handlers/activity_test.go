@@ -48,7 +48,7 @@ func TestActivityHandler_List_MissingGroupID(t *testing.T) {
 		t.Skip("test database not connected")
 	}
 
-	user := createTestUser(t, "activity-list@test.com", "password123")
+	user := createTestUser(t, "activity-list@test.com", "password123!")
 	token := generateTestToken(user.ID)
 
 	_, h := newActivityRouter(t)
@@ -66,7 +66,7 @@ func TestActivityHandler_List_InvalidGroupID(t *testing.T) {
 		t.Skip("test database not connected")
 	}
 
-	user := createTestUser(t, "activity-invalid@test.com", "password123")
+	user := createTestUser(t, "activity-invalid@test.com", "password123!")
 	token := generateTestToken(user.ID)
 
 	_, h := newActivityRouter(t)
@@ -85,7 +85,7 @@ func TestActivityHandler_List_ReturnsEmpty(t *testing.T) {
 	}
 	clearTables(t)
 
-	user := createTestUser(t, "activity-empty@test.com", "password123")
+	user := createTestUser(t, "activity-empty@test.com", "password123!")
 	token := generateTestToken(user.ID)
 
 	group := &models.Group{
