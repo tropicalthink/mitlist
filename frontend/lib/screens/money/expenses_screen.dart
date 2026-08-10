@@ -26,6 +26,7 @@ import 'widgets/expense_settlements_body.dart';
 import 'widgets/expense_states.dart';
 import 'widgets/expense_timeline_body.dart';
 
+import '../../widgets/app_toast.dart';
 // ---------------------------------------------------------------------------
 // Screen
 // ---------------------------------------------------------------------------
@@ -155,11 +156,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     } catch (e) {
       if (!mounted) return;
       unawaited(Haptics.failure());
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content:
-                Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
-      );
+      AppToast.error(context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
     }
   }
 
@@ -204,15 +201,11 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       if (!mounted) return;
       unawaited(Haptics.success());
       final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.expenseSettlementRecorded)),
-      );
+      AppToast.success(context, l10n.expenseSettlementRecorded);
     } catch (e) {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.expenseSettlementFailed)),
-      );
+      AppToast.error(context, l10n.expenseSettlementFailed);
     }
   }
 
@@ -228,9 +221,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     } catch (e) {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.expenseSettlementResponseFailed)),
-      );
+      AppToast.error(context, l10n.expenseSettlementResponseFailed);
     }
   }
 
@@ -242,9 +233,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     } catch (e) {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.expenseSettlementCancelFailed)),
-      );
+      AppToast.error(context, l10n.expenseSettlementCancelFailed);
     }
   }
 

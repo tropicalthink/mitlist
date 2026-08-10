@@ -40,6 +40,7 @@ import '../../widgets/mitlist_app_bar.dart';
 import '../../widgets/odometer.dart';
 import '../../l10n/app_localizations.dart';
 
+import '../../widgets/app_toast.dart';
 enum _ChoreMenuAction { manageZones }
 
 class ChoresScreen extends ConsumerStatefulWidget {
@@ -492,19 +493,10 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
           ? l10n.choreDoneBackSnackbar(chore.title,
               _formatDate(_fallbackDueDate(DateTime.now(), chore.frequency)))
           : l10n.choreDoneSnackbar(chore.title);
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            backLabel,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          action: SnackBarAction(
-            label: l10n.commonUndo,
-            onPressed: () => _undoComplete(id),
-          ),
-        ),
+      AppToast.undo(
+        context,
+        message: backLabel,
+        onUndo: () => _undoComplete(id),
       );
     } catch (e) {
       if (!mounted) return;
@@ -641,9 +633,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       final choreSvc = await ref.read(choreServiceProviderAsync.future);
       await choreSvc.addSuppliesToList(choreId, selectedList);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_l10n.choreSuppliesAdded)),
-      );
+      AppToast.success(context, _l10n.choreSuppliesAdded);
     } catch (e) {
       if (!mounted) return;
       _showChoreActionError(_l10n.choreFailedAddSupplies);
@@ -723,9 +713,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   }
 
   void _showChoreActionError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    AppToast.error(context, message);
   }
 
   List<_Chore> get _filteredChores {

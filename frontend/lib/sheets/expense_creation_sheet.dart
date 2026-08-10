@@ -31,6 +31,7 @@ import '../utils/friendly_error.dart';
 import '../widgets/chip.dart';
 import '../widgets/skeleton.dart';
 
+import '../widgets/app_toast.dart';
 class ExpenseCreationSheet extends ConsumerStatefulWidget {
   final String? initialDescription;
   final String? initialAmount;
@@ -390,9 +391,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
       );
       if (groupId == null) {
         setState(() => _isSaving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.choreCreationJoinFirst)),
-        );
+        AppToast.info(context, l10n.choreCreationJoinFirst);
         return;
       }
 
@@ -437,11 +436,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
           );
         } catch (e) {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(l10n.expenseCreationReceiptUploadFailed),
-              ),
-            );
+            AppToast.error(context, l10n.expenseCreationReceiptUploadFailed);
           }
         }
       }
@@ -449,18 +444,12 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
       if (!mounted) return;
       widget.dirtyNotifier?.value = false;
       Navigator.of(context).pop(true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.expenseCreationExpenseAdded)),
-      );
+      AppToast.success(context, l10n.expenseCreationExpenseAdded);
       unawaited(Haptics.success());
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSaving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content:
-                Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
-      );
+      AppToast.error(context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
     }
   }
 

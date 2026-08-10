@@ -13,6 +13,7 @@ import '../widgets/app_button.dart';
 import '../widgets/app_card.dart';
 import '../widgets/app_icon.dart';
 
+import '../widgets/app_toast.dart';
 /// Opens the premium sheet for [groupId].
 ///
 /// It renders one of three states, decided by the household's entitlement:
@@ -106,9 +107,11 @@ class _PremiumSheetBodyState extends ConsumerState<_PremiumSheetBody> {
       await service.setPremiumHousehold(widget.groupId);
       invalidateBilling(ref);
       if (!mounted) return;
-      final messenger = ScaffoldMessenger.of(context);
-      Navigator.of(context).pop();
-      messenger.showSnackBar(SnackBar(content: Text(l10n.billingMoved)));
+      final navigator = Navigator.of(context);
+      final message = l10n.billingMoved;
+      navigator.pop();
+      if (!mounted) return;
+      AppToast.success(context, message);
     } catch (_) {
       if (!mounted) return;
       setState(() {

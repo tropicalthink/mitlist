@@ -33,6 +33,7 @@ import '../../widgets/list_entrance.dart';
 import '../../widgets/mitlist_app_bar.dart';
 import 'list_detail_screen.dart';
 
+import '../../widgets/app_toast.dart';
 enum _SortOption { newest, oldest, az, mostItems }
 
 enum _FilterOption { all, shopping, todo, custom }
@@ -1017,9 +1018,7 @@ class _ListCard extends ConsumerWidget {
     } catch (_) {
       if (context.mounted) {
         unawaited(Haptics.failure());
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.listCouldNotRename)),
-        );
+        AppToast.error(context, l10n.listCouldNotRename);
       }
     }
   }
@@ -1053,9 +1052,7 @@ class _ListCard extends ConsumerWidget {
     } catch (_) {
       if (context.mounted) {
         unawaited(Haptics.failure());
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.listCouldNotDelete)),
-        );
+        AppToast.error(context, l10n.listCouldNotDelete);
       }
     }
   }

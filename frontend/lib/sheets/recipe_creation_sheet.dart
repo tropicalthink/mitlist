@@ -13,6 +13,7 @@ import '../widgets/app_button.dart';
 import '../utils/friendly_error.dart';
 import '../widgets/app_input.dart';
 
+import '../widgets/app_toast.dart';
 class RecipeCreationSheet extends ConsumerStatefulWidget {
   final String? initialTitle;
   final String? initialIngredients;
@@ -89,18 +90,12 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
 
       if (!mounted) return;
       Navigator.of(context).pop(true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.recipeCreationCreated)),
-      );
+      AppToast.success(context, l10n.recipeCreationCreated);
       unawaited(Haptics.success());
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSaving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content:
-                Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
-      );
+      AppToast.error(context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
     }
   }
 
