@@ -309,6 +309,70 @@ func (r *NotificationRepository) CreateNotificationsBatch(ctx context.Context, n
 	return nil
 }
 
+// CreateNotificationsBatchIdempotent persists scheduled notification rows by
+// their user/type/dedupe_key tuple. Existing rows are updated with the latest
+// copy/body and their canonical IDs are copied back into notifications so a
+// retry can deliver the same inbox item instead of creating another one.
+func (r *NotificationRepository) CreateNotificationsBatchIdempotent(ctx context.Context, notifications []models.Notification) error {
+	if len(notifications) == 0 {
+		return nil
+	}
+	ids := make([]uuid.UUID, len(notifications))
+	userIDs := make([]uuid.UUID, len(notifications))
+	groupIDs := make([]uuid.UUID, len(notifications))
+	types := make([]string, len(notifications))
+	titles := make([]string, len(notifications))
+	bodies := make([]string, len(notifications))
+	data := make([][]byte, len(notifications))
+	isRead := make([]bool, len(notifications))
+	createdAt := make([]time.Time, len(notifications))
+	for i := range notifications {
+		n := &notifications[i]
+		if n.ID == uuid.Nil {
+			n.ID = uuid.New()
+		}
+		if n.CreatedAt.IsZero() {
+			n.CreatedAt = time.Now().UTC()
+		}
+		n.IsRead = false
+		ids[i], userIDs[i], groupIDs[i] = n.ID, n.UserID, n.GroupID
+		types[i], titles[i], bodies[i], data[i] = n.Type, n.Title, n.Body, n.Data
+		isRead[i], createdAt[i] = n.IsRead, n.CreatedAt
+	}
+	rows, err := r.db.Query(ctx, `
+		INSERT INTO notifications (id, user_id, group_id, type, title, body, data, is_read, read_at, created_at)
+		SELECT id, user_id, NULLIF(group_id, '00000000-0000-0000-0000-000000000000'::uuid), type, title, body, data, is_read, NULL::timestamptz, created_at
+		FROM unnest($1::uuid[], $2::uuid[], $3::uuid[], $4::text[], $5::text[], $6::text[], $7::jsonb[], $8::bool[], $9::timestamptz[]) AS t(
+			id, user_id, group_id, type, title, body, data, is_read, created_at
+		)
+		ON CONFLICT (user_id, type, (data->>'dedupe_key'))
+			WHERE data->>'dedupe_key' IS NOT NULL
+		DO UPDATE SET title = EXCLUDED.title, body = EXCLUDED.body, data = EXCLUDED.data
+		RETURNING id, user_id
+	`, ids, userIDs, groupIDs, types, titles, bodies, data, isRead, createdAt)
+	if err != nil {
+		return fmt.Errorf("create idempotent notification batch: %w", err)
+	}
+	defer rows.Close()
+	canonicalIDs := make(map[uuid.UUID]uuid.UUID, len(notifications))
+	for rows.Next() {
+		var id, userID uuid.UUID
+		if err := rows.Scan(&id, &userID); err != nil {
+			return fmt.Errorf("scan idempotent notification: %w", err)
+		}
+		canonicalIDs[userID] = id
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("idempotent notification rows: %w", err)
+	}
+	for i := range notifications {
+		if id, ok := canonicalIDs[notifications[i].UserID]; ok {
+			notifications[i].ID = id
+		}
+	}
+	return nil
+}
+
 // QueueListItemNotification coalesces rapid additions by the same person to the
 // same list. A busy stream is capped at two minutes so a digest cannot be
 // postponed indefinitely.

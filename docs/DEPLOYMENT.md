@@ -20,10 +20,9 @@ the repository root unless a step says otherwise.
 - [ ] Build an immutable backend image from the release commit; do not deploy a
       moving `latest` tag without also recording its digest.
 
-Existing refresh tokens were stored in Redis and cannot be migrated. Users
-will need to sign in again after this release. Existing access tokens remain
-valid only until their configured expiry; new deployments default to 15
-minutes.
+Refresh sessions are PostgreSQL-backed. Keep `SECRET_KEY` and
+`SESSION_SECRET_KEY` stable during a normal deploy so existing sessions remain
+valid.
 
 ## 2. Database preflight
 
@@ -34,16 +33,11 @@ cd backend
 DATABASE_URL="$DATABASE_URL" go run ./cmd/migrate version
 ```
 
-The expected pre-release version is `33`, clean. Version 33 is pinwall
-positioning. Migration 34 adds attachment quota accounting; migration 35 adds
-PostgreSQL refresh sessions; migration 36 adds settlement approval; migrations
-37 and 38 add household premium billing.
-
-Migration 37 only creates new tables (`billing_subscriptions`,
-`billing_webhook_events`) and touches nothing existing, and migration 38 only
-adds a nullable `primary_group_id` column to the first of those, so the
-currently deployed backend keeps running against a database that has them
-applied. Billing stays dormant until `POLAR_ACCESS_TOKEN` is set.
+The release artifact and database must agree on their migration head. This
+checkout's head is `53`. Migrations 39–47 harden authentication and push-device
+ownership; 48–51 add reminder delivery state, notification group scoping and
+list notification batching; 52 adds authenticated request replay protection;
+53 deduplicates scheduled notification retries.
 
 If the database reports `dirty: true`, stop. Take a backup and inspect the
 failed migration before using `force`; never force a production version merely
@@ -56,11 +50,13 @@ DATABASE_URL="$DATABASE_URL" go run ./cmd/migrate up
 DATABASE_URL="$DATABASE_URL" go run ./cmd/migrate version
 ```
 
-- [ ] The resulting version is `38`, `dirty: false`.
+- [ ] The resulting version is `53`, `dirty: false`.
 - [ ] `groups.storage_used_bytes` and `groups.storage_reserved_bytes` exist.
 - [ ] `auth_sessions` exists.
 - [ ] `billing_subscriptions` and `billing_webhook_events` exist.
 - [ ] `billing_subscriptions.primary_group_id` exists and is nullable.
+- [ ] `request_idempotency` exists.
+- [ ] `idx_notifications_scheduled_dedupe` exists.
 
 ## 3. Cut over the API
 
@@ -69,7 +65,7 @@ DATABASE_URL="$DATABASE_URL" go run ./cmd/migrate version
       runtime configuration. They are no longer read.
 - [ ] Start one API replica first.
 - [ ] Confirm startup logs show a successful database connection and migration
-      version 38, with no panic or repeated connection retries.
+      version 53, with no panic or repeated connection retries.
 - [ ] Keep coarse IP abuse protection enabled at the edge. Fine-grained API
       rate-limit buckets are process-local, so replicas do not share them.
 
@@ -90,8 +86,8 @@ go run ./cmd/smoke -base-url https://your-api.example.com
 ```
 
 Then run the disposable full journey. This performs one real tiny object upload,
-removes the object, list, and household, and soft-deletes the account through
-the normal product endpoint afterward:
+removes the object, list, and household, and deletes/anonymizes the account
+through the normal product endpoint afterward:
 
 ```bash
 go run ./cmd/smoke \
@@ -121,19 +117,21 @@ The application, tests, CI, and Compose stack no longer require Redis.
 
 ## Rollback
 
-Migrations 34 and 35 are additive, so prefer an application rollback without
-rolling the database down. The previous backend image still requires its Redis
-service; restoring that image therefore also requires temporarily restoring its
-matching Redis configuration.
+Prefer an application rollback without rolling the database down. Before
+rollback, verify that the previous image tolerates schema version 53; migrations
+40, 45, and 47 include destructive security cleanup and cannot be reversed into
+the deleted credentials or duplicate device ownership records.
 
 If the full smoke fails before normal traffic:
 
 1. Remove the new API replica from traffic.
 2. Capture its logs and the smoke command's failing step.
 3. Restore the previous image and its matching runtime services.
-4. Leave migrations 34 and 35 in place unless they are proven to be the cause.
+4. Leave migrations in place unless a tested rollback procedure proves one is
+   the cause and its down migration is data-safe.
 5. Re-run the previous release's health checks.
 
 Do not run `migrate down` as a routine rollback. Dropping `auth_sessions` logs
-out every session created by the new release, and reversing storage accounting
-without reconciling attachment rows can make quota data misleading.
+out every session created by the new release; dropping idempotency state can
+allow queued mutations to execute twice; reversing storage accounting without
+reconciling attachment rows can make quota data misleading.

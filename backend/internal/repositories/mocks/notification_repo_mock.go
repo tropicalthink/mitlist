@@ -92,6 +92,11 @@ func (m *MockNotificationRepo) CreateNotificationsBatch(ctx context.Context, not
 	return args.Error(0)
 }
 
+func (m *MockNotificationRepo) CreateNotificationsBatchIdempotent(ctx context.Context, notifications []models.Notification) error {
+	args := m.Called(ctx, notifications)
+	return args.Error(0)
+}
+
 func (m *MockNotificationRepo) QueueListItemNotification(ctx context.Context, groupID, actorID, listID uuid.UUID, actorName, listName, itemName string) error {
 	args := m.Called(ctx, groupID, actorID, listID, actorName, listName, itemName)
 	return args.Error(0)
