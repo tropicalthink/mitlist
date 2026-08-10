@@ -235,18 +235,24 @@ func (r *GroupRepository) GetInviteByCode(ctx context.Context, code string) (*mo
 	return &i, nil
 }
 
-// ConsumeInvite records the most recent redemption of an invite.
-// Invites are reusable until they expire, so this never rejects a
-// previously-redeemed invite; used_by/used_at track the latest joiner.
+// ConsumeInvite atomically consumes a one-use invite. The used_at predicate is
+// intentional: two simultaneous join requests can both read an unused invite,
+// but only one transaction may mark it consumed.
 func (r *GroupRepository) ConsumeInvite(ctx context.Context, inviteID, userID uuid.UUID) error {
 	now := time.Now().UTC()
 	query := `
 		UPDATE group_invites
 		SET used_by = $1, used_at = $2
-		WHERE id = $3
+		WHERE id = $3 AND used_at IS NULL
 	`
-	_, err := r.pool.Exec(ctx, query, userID, now, inviteID)
-	return err
+	result, err := r.pool.Exec(ctx, query, userID, now, inviteID)
+	if err != nil {
+		return err
+	}
+	if result.RowsAffected() != 1 {
+		return ErrInviteAlreadyUsed
+	}
+	return nil
 }
 
 // CreatePendingClaim inserts a new pending claim.

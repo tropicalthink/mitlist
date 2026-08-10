@@ -2,11 +2,16 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/mitlist-app/mitlist/internal/models"
 )
+
+// ErrInviteAlreadyUsed is returned when a concurrent or repeated redemption
+// attempts to consume a one-use invite.
+var ErrInviteAlreadyUsed = errors.New("invite already used")
 
 // UserRepo is the interface for user repository operations.
 type UserRepo interface {

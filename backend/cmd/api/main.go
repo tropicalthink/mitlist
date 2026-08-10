@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"net/http"
+	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -112,15 +114,17 @@ func main() {
 	srv.Router().Mount("/debug/pprof", handlers.NewPprofHandler())
 	srv.Router().Mount("/internal/debug", handlers.NewDebugHandler(cfg, srv.Router()).Routes())
 
-	// Web → app redirect: browsers open this URL, server redirects to the deep link.
-	// Shared links use https://mitlist.me/join/<code>; this makes them tappable.
+	// Canonicalize legacy/API invite URLs to the Flutter web app. The app host
+	// serves the same /join/<code> route to browsers and is covered by the native
+	// association files for Android App Links and iOS Universal Links.
 	srv.Router().Get("/join/{code}", func(w http.ResponseWriter, r *http.Request) {
 		code := chi.URLParam(r, "code")
 		if len(code) < 4 {
 			http.Error(w, "invalid invite code", http.StatusBadRequest)
 			return
 		}
-		http.Redirect(w, r, "mitlist:///join/"+code, http.StatusFound)
+		target := strings.TrimRight(cfg.FrontendURL, "/") + "/join/" + url.PathEscape(code)
+		http.Redirect(w, r, target, http.StatusFound)
 	})
 
 	authHandler := handlers.NewAuthHandler(cfg, cnt.UserService(), cnt.GuestService(), cnt.OAuthService(), cnt.JWT())
