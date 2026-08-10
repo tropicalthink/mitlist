@@ -6,7 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'providers/auth_provider.dart';
 import 'providers/group_provider.dart' show cachedGroupsProvider;
-import 'widgets/app_icon.dart';
+import 'widgets/mitlist_bottom_nav.dart';
+import 'widgets/shell_branch_switcher.dart';
 import 'providers/nav_badge_provider.dart';
 import 'providers/grocery_provider.dart' show groceryGraphSyncProvider;
 import 'theme/animations.dart';
@@ -453,6 +454,11 @@ class _BottomNavScaffoldState extends ConsumerState<BottomNavScaffold> {
   static const _lastTabKey = 'nav_last_tab_index';
   bool _restored = false;
 
+  /// Nav motion stays off until the tab the user left on has been restored and
+  /// painted. Otherwise every cold start opens on Home and then slides across
+  /// to wherever they actually were, which is choreography nobody asked for.
+  bool _navMotionArmed = false;
+
   @override
   void initState() {
     super.initState();
@@ -472,10 +478,27 @@ class _BottomNavScaffoldState extends ConsumerState<BottomNavScaffold> {
       widget.navigationShell.goBranch(saved);
       markShellTabVisited(ref, saved);
     }
+    _armNavMotion();
+  }
+
+  /// Arms nav motion one frame after the restore, so the restored tab paints
+  /// in place first and only genuine navigation animates.
+  void _armNavMotion() {
+    if (_navMotionArmed) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _navMotionArmed) return;
+      setState(() => _navMotionArmed = true);
+    });
   }
 
   void _onTap(int index) {
-    if (index == widget.navigationShell.currentIndex) return;
+    // Tapping the tab you're already on pops that branch back to its root —
+    // the standard escape hatch out of a detail page, and the only thing that
+    // makes the press feedback on an active tab mean something.
+    if (index == widget.navigationShell.currentIndex) {
+      widget.navigationShell.goBranch(index, initialLocation: true);
+      return;
+    }
     markShellTabVisited(ref, index);
     widget.navigationShell.goBranch(index);
     SharedPreferences.getInstance().then((p) => p.setInt(_lastTabKey, index));
@@ -488,18 +511,6 @@ class _BottomNavScaffoldState extends ConsumerState<BottomNavScaffold> {
       ref.watch(groceryGraphSyncProvider(groupId));
     }
     final badgeData = ref.watch(navBadgeCountsProvider);
-
-    Widget makeBadgeIcon(Widget icon, {int count = 0}) {
-      if (count <= 0) return icon;
-      return Badge(
-        isLabelVisible: count > 0,
-        label: Text(
-          count > 99 ? '99+' : '$count',
-          style: const TextStyle(fontSize: 10),
-        ),
-        child: icon,
-      );
-    }
 
     final l10n = AppLocalizations.of(context)!;
 
@@ -516,42 +527,30 @@ class _BottomNavScaffoldState extends ConsumerState<BottomNavScaffold> {
         _onTap(0);
       },
       child: Scaffold(
-        body: widget.navigationShell,
-        bottomNavigationBar: Container(
-          decoration: BoxDecoration(
-            border: Border(
-              top: BorderSide(
-                color: Theme.of(context).colorScheme.outline,
-                width: 2,
-              ),
+        body: ShellBranchSwitcher(
+          index: widget.navigationShell.currentIndex,
+          animate: _navMotionArmed,
+          child: widget.navigationShell,
+        ),
+        bottomNavigationBar: MitlistBottomNav(
+          currentIndex: widget.navigationShell.currentIndex,
+          animate: _navMotionArmed,
+          onTap: _onTap,
+          items: [
+            MitlistNavItem(iconName: 'home', label: l10n.navHome),
+            MitlistNavItem(
+              iconName: 'clipboardDocumentList',
+              label: l10n.navChores,
+              badgeCount: badgeData.choreCount,
             ),
-          ),
-          child: BottomNavigationBar(
-            currentIndex: widget.navigationShell.currentIndex,
-            onTap: _onTap,
-            items: [
-              BottomNavigationBarItem(
-                  icon: const AppIcon(name: 'home'), label: l10n.navHome),
-              BottomNavigationBarItem(
-                  icon: makeBadgeIcon(
-                    const AppIcon(name: 'clipboardDocumentList'),
-                    count: badgeData.choreCount,
-                  ),
-                  label: l10n.navChores),
-              BottomNavigationBarItem(
-                  icon: const AppIcon(name: 'queueList'),
-                  label: l10n.navKitchen),
-              BottomNavigationBarItem(
-                  icon: makeBadgeIcon(
-                    const AppIcon(name: 'banknotes'),
-                    count: badgeData.settlementCount,
-                  ),
-                  label: l10n.navMoney),
-              BottomNavigationBarItem(
-                  icon: const AppIcon(name: 'listBullet'),
-                  label: l10n.navLists),
-            ],
-          ),
+            MitlistNavItem(iconName: 'queueList', label: l10n.navKitchen),
+            MitlistNavItem(
+              iconName: 'banknotes',
+              label: l10n.navMoney,
+              badgeCount: badgeData.settlementCount,
+            ),
+            MitlistNavItem(iconName: 'listBullet', label: l10n.navLists),
+          ],
         ),
       ),
     );
