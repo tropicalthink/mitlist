@@ -40,6 +40,11 @@ class ConnectivityService {
   int _consecutiveFailures = 0;
   bool _reported = true;
 
+  /// Whether any probe has produced a verdict yet in this process. Used only to
+  /// suppress a spurious "changed" event for the very first verdict, which has
+  /// no prior value to differ from.
+  bool _hasVerdict = false;
+
   ConnectivityService({
     Connectivity? connectivity,
     Future<bool> Function()? reachabilityProbe,
@@ -154,12 +159,29 @@ class ConnectivityService {
   /// clear the streak on the first success but need [_failureThreshold]
   /// failures in a row to flip the other way.
   bool _record(bool reachable) {
+    final previous = _reported;
     if (reachable) {
       _consecutiveFailures = 0;
-      return _reported = true;
+      _reported = true;
+    } else {
+      _consecutiveFailures++;
+      _reported = _consecutiveFailures < _failureThreshold;
     }
-    _consecutiveFailures++;
-    return _reported = _consecutiveFailures < _failureThreshold;
+    final settled = _hasVerdict;
+    _hasVerdict = true;
+
+    // Announce a verdict *flip*, not just an interface change.
+    //
+    // Previously the only source of `onStatusChange` events was the OS
+    // interface state, so the server coming back while the interface stayed up
+    // — the normal self-hosted recovery — emitted nothing at all, and the
+    // outbox sat unsynced until the app was resumed or the user happened to
+    // make another write. The banner poll was already probing every 3s and
+    // throwing the answer away; this turns it into the recovery signal.
+    if (settled && _reported != previous && !_controller.isClosed) {
+      _controller.add(_reported);
+    }
+    return _reported;
   }
 
   /// Drops the cached probe result and the failure streak, so the next

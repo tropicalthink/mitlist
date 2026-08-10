@@ -307,6 +307,98 @@ void main() {
       expect(deleteOps.first.lastError, isNotNull);
     });
   });
+
+  group('FinanceRepository settlements —', () {
+    late AppDatabase db;
+    late FakeFinanceService remote;
+    late FinanceRepository repo;
+    const groupId = 'group-1';
+
+    setUp(() {
+      db = _memoryDb();
+      remote = FakeFinanceService();
+      repo = FinanceRepository(db: db, remote: remote, autoSync: false);
+    });
+
+    tearDown(() => db.close());
+
+    Future<Settlement> record() => repo.recordSettlementOfflineFirst(
+          groupId: groupId,
+          req: const CreateSettlementRequest(
+            fromUserId: 'me',
+            toUserId: 'them',
+            amount: 2500,
+          ),
+          createdBy: 'me',
+        );
+
+    test('recording queues it and shows it as pending immediately', () async {
+      final local = await record();
+
+      expect(local.isLocal, isTrue);
+      expect(local.status, SettlementStatus.pending,
+          reason: 'a recorded settlement is unconfirmed until the '
+              'counterparty responds — offline changes nothing about that');
+
+      final cached = await repo.getSettlementsOnce(groupId);
+      expect(cached, hasLength(1));
+      expect(cached.single.id, local.id);
+      expect(await db.outboxCount(), equals(1));
+    });
+
+    test('offline load falls back to the cache instead of throwing', () async {
+      await record();
+      // remote.settlements stays null → listSettlements throws.
+
+      final loaded = await repo.loadSettlements(groupId);
+
+      expect(loaded, hasLength(1), reason: 'the tab must still render offline');
+    });
+
+    test('a server refresh does not erase a still-queued settlement', () async {
+      final local = await record();
+      remote.settlements = const [];
+
+      final loaded = await repo.loadSettlements(groupId);
+
+      expect(loaded.map((s) => s.id), contains(local.id));
+    });
+
+    test('draining replaces the local row with the server one', () async {
+      final local = await record();
+
+      await repo.drainOutboxOnce();
+
+      final cached = await repo.getSettlementsOnce(groupId);
+      expect(cached, hasLength(1), reason: 'no duplicate after sync');
+      expect(cached.single.id, 'server-settlement-1');
+      expect(cached.single.isLocal, isFalse,
+          reason: 'only a server id makes confirm/decline reachable');
+      expect(cached.map((s) => s.id), isNot(contains(local.id)));
+      expect(await db.outboxCount(), equals(0));
+    });
+
+    test('cancelling an unsynced settlement drops the op without a request',
+        () async {
+      final local = await record();
+
+      await repo.cancelLocalSettlement(groupId, local.id);
+
+      expect(await repo.getSettlementsOnce(groupId), isEmpty);
+      expect(await db.outboxCount(), equals(0));
+      expect(remote.settlementCreateCalls, isEmpty,
+          reason: 'there is nothing on the server to cancel');
+    });
+
+    test('discarding a dead-lettered settlement removes the phantom row',
+        () async {
+      final local = await record();
+
+      await db.deleteLocalEntity('settlement', local.id);
+
+      expect(await repo.getSettlementsOnce(groupId), isEmpty);
+    });
+  });
 }
 
 // ---------------------------------------------------------------------------

@@ -26,7 +26,7 @@ class PushSubscriptionService {
     try {
       final vapidDio = Dio(BaseOptions(
         baseUrl: '${ApiConfig.baseUrl}${ApiConfig.apiPrefix}',
-        connectTimeout: ApiConfig.requestTimeout,
+        connectTimeout: ApiConfig.connectTimeout,
         receiveTimeout: ApiConfig.requestTimeout,
       ));
       final vapidResp = await vapidDio.get('/vapid');
@@ -46,7 +46,7 @@ class PushSubscriptionService {
 
       final authDio = Dio(BaseOptions(
         baseUrl: '${ApiConfig.baseUrl}${ApiConfig.apiPrefix}',
-        connectTimeout: ApiConfig.requestTimeout,
+        connectTimeout: ApiConfig.connectTimeout,
         receiveTimeout: ApiConfig.requestTimeout,
         headers: {
           'Content-Type': 'application/json',
@@ -98,7 +98,7 @@ class PushSubscriptionService {
   Future<void> _deleteServerSubscription(String endpoint) async {
     final authDio = Dio(BaseOptions(
       baseUrl: '${ApiConfig.baseUrl}${ApiConfig.apiPrefix}',
-      connectTimeout: ApiConfig.requestTimeout,
+      connectTimeout: ApiConfig.connectTimeout,
       receiveTimeout: ApiConfig.requestTimeout,
       headers: {
         'Content-Type': 'application/json',

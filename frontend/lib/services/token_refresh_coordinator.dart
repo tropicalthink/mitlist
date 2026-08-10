@@ -70,7 +70,7 @@ class TokenRefreshCoordinator {
     Dio(
       BaseOptions(
         baseUrl: '${ApiConfig.baseUrl}${ApiConfig.apiPrefix}',
-        connectTimeout: ApiConfig.requestTimeout,
+        connectTimeout: ApiConfig.connectTimeout,
         receiveTimeout: ApiConfig.requestTimeout,
         sendTimeout: ApiConfig.requestTimeout,
         headers: {

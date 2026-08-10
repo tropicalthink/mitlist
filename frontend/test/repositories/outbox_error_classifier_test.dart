@@ -35,12 +35,39 @@ void main() {
       }
     });
 
-    test('DioException with connectionError type is transient', () {
-      final e = DioException(
-        requestOptions: RequestOptions(path: '/'),
-        type: DioExceptionType.connectionError,
-      );
-      expect(classifyOutboxError(e), equals(OutboxErrorDisposition.transient));
+    test('transport failures are unreachable, not transient', () {
+      // Both retry, but only `transient` spends an attempt. A request that
+      // never reached a server is evidence about the network, not the op —
+      // counting it dead-letters good writes made offline.
+      for (final type in [
+        DioExceptionType.connectionError,
+        DioExceptionType.connectionTimeout,
+        DioExceptionType.cancel,
+      ]) {
+        expect(
+          classifyOutboxError(
+            DioException(requestOptions: RequestOptions(path: '/'), type: type),
+          ),
+          equals(OutboxErrorDisposition.unreachable),
+          reason: '$type never reached the server',
+        );
+      }
+    });
+
+    test('stalls after the server was reached stay transient', () {
+      // We connected, so the server saw the request; that is real evidence.
+      for (final type in [
+        DioExceptionType.sendTimeout,
+        DioExceptionType.receiveTimeout,
+      ]) {
+        expect(
+          classifyOutboxError(
+            DioException(requestOptions: RequestOptions(path: '/'), type: type),
+          ),
+          equals(OutboxErrorDisposition.transient),
+          reason: '$type happened after a connection was established',
+        );
+      }
     });
 
     test('non-Dio exception is permanent', () {

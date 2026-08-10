@@ -222,6 +222,57 @@ class FakeFinanceRepository implements FinanceRepository {
         const FinanceSummary(balances: [], reimbursements: []),
       ).asBroadcastStream();
 
+  // Settlements are cache-backed; this fake just proxies the service so the
+  // screen tests keep exercising whatever the fake service returns.
+  final List<Settlement> settlements = [];
+
+  @override
+  Stream<List<Settlement>> watchSettlements(String groupId) =>
+      Stream.value(settlements);
+
+  @override
+  Future<List<Settlement>> getSettlementsOnce(String groupId) async =>
+      settlements;
+
+  @override
+  Future<List<Settlement>> loadSettlements(String groupId) async {
+    try {
+      final fresh = await _service.listSettlements(groupId);
+      settlements
+        ..clear()
+        ..addAll(fresh);
+    } catch (_) {
+      // Offline: keep whatever we have, same as the real repository.
+    }
+    return settlements;
+  }
+
+  @override
+  Future<Settlement> recordSettlementOfflineFirst({
+    required String groupId,
+    required CreateSettlementRequest req,
+    required String createdBy,
+  }) async {
+    final local = Settlement(
+      id: 'local-test-${settlements.length}',
+      groupId: groupId,
+      fromUserId: req.fromUserId,
+      toUserId: req.toUserId,
+      amount: req.amount,
+      status: SettlementStatus.pending,
+      createdBy: createdBy,
+      createdAt: DateTime.now(),
+    );
+    settlements.add(local);
+    return local;
+  }
+
+  @override
+  Future<void> cancelLocalSettlement(
+      String groupId, String settlementId) async {
+    settlements.removeWhere((s) => s.id == settlementId);
+  }
+
   @override
   Future<int> refreshGroup(String groupId,
       {int limit = 50, int offset = 0}) async {

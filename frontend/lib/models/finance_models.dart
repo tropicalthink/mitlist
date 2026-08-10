@@ -113,6 +113,23 @@ class Settlement {
             : DateTime.parse(json['responded_at'] as String),
         createdAt: DateTime.parse(json['created_at'] as String),
       );
+
+  /// Inverse of [fromJson], for the offline settlements cache.
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'group_id': groupId,
+        'from_user_id': fromUserId,
+        'to_user_id': toUserId,
+        'amount': amount,
+        'status': status.name,
+        'created_by': createdBy,
+        'responded_at': respondedAt?.toIso8601String(),
+        'created_at': createdAt.toIso8601String(),
+      };
+
+  /// True while this settlement exists only in the local outbox. Such a row
+  /// must never be sent to the server by id — there is nothing there yet.
+  bool get isLocal => id.startsWith('local-');
 }
 
 class BalanceEntry {

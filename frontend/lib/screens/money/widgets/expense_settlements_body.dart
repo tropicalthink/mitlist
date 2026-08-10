@@ -428,6 +428,18 @@ class _WaitingSettlementRow extends StatelessWidget {
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
+                // Distinguish "the other person hasn't answered yet" from
+                // "this hasn't left your device yet" — otherwise an unsynced
+                // settlement looks like it is already awaiting a reply.
+                if (settlement.isPendingSync) ...[
+                  const SizedBox(height: MitlistSpacing.xs),
+                  Text(
+                    l10n.offlineBannerStatusPending,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                ],
               ],
             ),
           ),

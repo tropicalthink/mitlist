@@ -94,6 +94,12 @@ class SettlementDisplay {
 
   final DateTime createdAt;
 
+  /// True while this settlement is only in the local outbox. The server has
+  /// never seen it, so any action needing a server id must be withheld — and
+  /// the row should say it is waiting rather than look like a normal pending
+  /// settlement the counterparty could already act on.
+  final bool isPendingSync;
+
   const SettlementDisplay({
     required this.id,
     required this.fromLabel,
@@ -103,6 +109,7 @@ class SettlementDisplay {
     required this.needsMyResponse,
     required this.isMine,
     required this.createdAt,
+    this.isPendingSync = false,
   });
 }
 
@@ -235,9 +242,13 @@ class ExpensesController extends ChangeNotifier {
               toLabel: _userLabels[s.toUserId] ?? s.toUserId,
               amount: s.amount / 100.0,
               status: s.status,
-              needsMyResponse: me != null && s.counterpartyId == me,
+              // An unsynced settlement can never need my response: I recorded
+              // it, and the counterparty cannot see it until it syncs.
+              needsMyResponse:
+                  !s.isLocal && me != null && s.counterpartyId == me,
               isMine: me != null && s.createdBy == me,
               createdAt: s.createdAt,
+              isPendingSync: s.isLocal,
             ))
         .toList();
   }
@@ -304,14 +315,9 @@ class ExpensesController extends ChangeNotifier {
           : await repo.watchSummaryByGroup(validGroupId).first;
 
       if (validGroupId != null) {
-        // Settlement list is online-only; keep the last known list on failure.
-        try {
-          final financeService =
-              await ref.read(financeServiceProviderAsync.future);
-          _settlements = await financeService.listSettlements(validGroupId);
-        } catch (e) {
-          _logger.w('Settlement list refresh failed', error: e);
-        }
+        // Cache-backed: refreshes from the network, falls back to the stored
+        // list offline, and keeps still-queued local settlements spliced in.
+        _settlements = await repo.loadSettlements(validGroupId);
       } else {
         _settlements = [];
       }
@@ -562,14 +568,18 @@ class ExpensesController extends ChangeNotifier {
     _isSettling = true;
     _notify();
     try {
-      final financeService = await ref.read(financeServiceProviderAsync.future);
-      await financeService.createGroupSettlement(
-        groupId,
-        CreateSettlementRequest(
+      // Offline-first: recording asserts something that already happened, so
+      // it queues and shows as pending immediately. Pending settlements do not
+      // move the balance either way, so nothing is misreported while it syncs.
+      final repo = await ref.read(financeRepositoryProvider.future);
+      await repo.recordSettlementOfflineFirst(
+        groupId: groupId,
+        req: CreateSettlementRequest(
           fromUserId: suggestion.from,
           toUserId: suggestion.to,
           amount: (suggestion.amount * 100).round(),
         ),
+        createdBy: _currentUserId ?? '',
       );
       await load(l10n);
     } finally {
@@ -593,6 +603,12 @@ class ExpensesController extends ChangeNotifier {
     AppLocalizations l10n,
   ) async {
     if (_isRespondingToSettlement) return;
+    // Approval stays online. Confirming a counterparty's money transfer is an
+    // assertion about the world right now, not a record of something already
+    // done — queuing it could land against a settlement that was cancelled or
+    // already declined in the meantime. And a `local-` id does not exist on the
+    // server at all, so there is nothing to respond to yet.
+    if (isLocalSettlement(settlementId)) return;
     _isRespondingToSettlement = true;
     _notify();
     try {
@@ -614,8 +630,22 @@ class ExpensesController extends ChangeNotifier {
   /// Cancels the current user's own pending settlement.
   Future<void> cancelSettlement(
       String settlementId, AppLocalizations l10n) async {
+    final groupId = _groupId;
+    // Cancelling one that never synced just drops the queued op — there is
+    // nothing on the server to delete, and POSTing a local id would 404.
+    if (isLocalSettlement(settlementId) && groupId != null) {
+      final repo = await ref.read(financeRepositoryProvider.future);
+      await repo.cancelLocalSettlement(groupId, settlementId);
+      await load(l10n);
+      return;
+    }
     final service = await ref.read(financeServiceProviderAsync.future);
     await service.cancelSettlement(settlementId);
     await load(l10n);
   }
+
+  /// Whether [settlementId] exists only in the local outbox. Actions that need
+  /// a server id must be withheld for these.
+  static bool isLocalSettlement(String settlementId) =>
+      settlementId.startsWith('local-');
 }

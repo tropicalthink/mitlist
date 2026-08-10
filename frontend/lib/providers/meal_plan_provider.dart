@@ -3,7 +3,9 @@ import 'package:intl/intl.dart';
 import '../models/meal_plan_models.dart';
 import '../models/recipe_models.dart';
 import '../providers/recipe_provider.dart';
+import '../repositories/meal_plan_repository.dart';
 import '../services/meal_plan_service.dart';
+import 'list_provider.dart' show appDatabaseProvider;
 
 final mealPlanServiceProviderAsync =
     FutureProvider<MealPlanService>((ref) async {
@@ -16,14 +18,23 @@ typedef WeekMealPlanSummary = ({String day, String slot, String title});
 
 const _weekDayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
+final mealPlanRepositoryProvider =
+    FutureProvider<MealPlanRepository>((ref) async {
+  final db = ref.watch(appDatabaseProvider);
+  final service = await ref.read(mealPlanServiceProviderAsync.future);
+  return MealPlanRepository(db: db, remote: service);
+});
+
 final todayMealPlansProvider =
     FutureProvider.family<List<TodayMeal>, String>((ref, groupId) async {
   ref.keepAlive();
   final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-  final mealPlanSvc = await ref.read(mealPlanServiceProviderAsync.future);
-  final plans =
-      await mealPlanSvc.listMealPlans(groupId, from: today, to: today);
+  final repo = await ref.read(mealPlanRepositoryProvider.future);
+  final plans = await repo.load(groupId, from: today, to: today);
 
+  // Recipe lookups stay best-effort and per-plan: a null recipe already
+  // degrades gracefully, so an offline miss shows the plan without its title
+  // rather than failing the whole card.
   final recipeSvc = await ref.read(recipeServiceProviderAsync.future);
   final recipes = await Future.wait(
     plans.map((plan) async {
@@ -49,8 +60,8 @@ final weekMealPlansSummaryProvider =
   final now = DateTime.now();
   final weekStart = now.subtract(Duration(days: now.weekday - 1));
   final weekEnd = weekStart.add(const Duration(days: 6));
-  final mealPlanSvc = await ref.read(mealPlanServiceProviderAsync.future);
-  final plans = await mealPlanSvc.listMealPlans(
+  final repo = await ref.read(mealPlanRepositoryProvider.future);
+  final plans = await repo.load(
     groupId,
     from: DateFormat('yyyy-MM-dd').format(weekStart),
     to: DateFormat('yyyy-MM-dd').format(weekEnd),
