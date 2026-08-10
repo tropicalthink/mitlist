@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:drift/native.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter_test/flutter_test.dart';
@@ -258,6 +259,51 @@ void main() {
 
       final ops = await db.getOutboxBatch(limit: 10);
       expect(ops.first.attemptCount, equals(kOutboxMaxAttempts));
+    });
+
+    // -------------------------------------------------------------------------
+    // Plan 006 — offline drains must not dead-letter a valid op.
+    //
+    // Every write kicks an immediate drainOutboxOnce(), so editing while
+    // offline used to spend one attempt per write against the head-of-queue
+    // op. With kOutboxMaxAttempts == 10 that permanently dead-lettered a
+    // perfectly good change the server had never seen — surfaced to the user
+    // as "Failed to save" for having used the app on a train.
+    // -------------------------------------------------------------------------
+    test('offline attempts stamp backoff but never spend an attempt', () async {
+      await db.enqueueOutbox(
+        id: 'op-offline',
+        type: 'doThing',
+        payload: {'k': 'v'},
+      );
+
+      for (var i = 0; i < kOutboxMaxAttempts + 5; i++) {
+        await OutboxDrainer(db).drain(
+          types: const ['doThing'],
+          handlers: {
+            'doThing': (op, payload) async {
+              throw DioException(
+                requestOptions: RequestOptions(path: '/'),
+                type: DioExceptionType.connectionError,
+              );
+            },
+          },
+          // The production 5s backoff would gate all but the first attempt;
+          // drop it so the counter is what's under test, not the clock.
+          minBackoff: Duration.zero,
+        );
+      }
+
+      final op = await db.getOutboxOpById('op-offline');
+      expect(op, isNotNull, reason: 'op must survive being offline');
+      expect(op!.attemptCount, equals(0),
+          reason: 'unreachable server spends no attempts');
+      expect(op.lastAttemptAt, isNotNull,
+          reason: 'backoff is still stamped so we do not hot-loop');
+      expect(await db.outboxFailedCount(), equals(0),
+          reason: 'being offline must never dead-letter a write');
+      expect(await db.outboxPendingCount(), equals(1),
+          reason: 'op stays pending and will drain when the server returns');
     });
 
     // -------------------------------------------------------------------------

@@ -6,9 +6,8 @@ import 'capture_preprocessor_service.dart';
 
 /// Applies image enhancement before OCR.
 ///
-/// The heavy preprocessing (illumination normalisation, adaptive threshold,
-/// deskew via OpenCV) runs on a worker isolate via [compute()] so the UI
-/// thread stays responsive during capture.
+/// Portable preview enhancement runs on a worker isolate so the UI thread
+/// stays responsive during capture.
 ///
 /// Returns the original bytes unchanged if decoding or enhancement fails.
 class EnhancementService {
@@ -41,10 +40,8 @@ class EnhancementService {
 
   /// Returns a natural (non-binarized) image suitable for neural OCR engines.
   ///
-  /// ML Kit and similar modern OCR models are trained on natural photographs;
-  /// feeding them an adaptive-thresholded binary image degrades recognition
-  /// quality. Use this method to obtain the image that should be passed to
-  /// OCR, and use [enhance] only for the human-facing enhanced preview.
+  /// PP-OCRv6 is trained on natural photographs. Use this method for OCR and
+  /// [enhance] only for the human-facing preview.
   Future<Uint8List> enhanceForOcr(Uint8List bytes) async {
     try {
       return await compute(_enhanceForOcrIsolate, bytes);

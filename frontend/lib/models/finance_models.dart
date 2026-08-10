@@ -14,6 +14,13 @@ class Expense {
   final DateTime date;
   final DateTime createdAt;
 
+  /// Server's last-modified stamp, kept so an offline edit can send the base it
+  /// was made against (`expected_updated_at`) and the server can reject a
+  /// clobber instead of silently accepting it. Null for a row created locally
+  /// that the server has not confirmed yet — there is no server version to
+  /// conflict with.
+  final DateTime? updatedAt;
+
   const Expense({
     required this.id,
     required this.groupId,
@@ -27,6 +34,7 @@ class Expense {
     this.notes = '',
     required this.date,
     required this.createdAt,
+    this.updatedAt,
   });
 
   factory Expense.fromJson(Map<String, dynamic> json) => Expense(
@@ -44,6 +52,9 @@ class Expense {
         notes: json['notes'] as String? ?? '',
         date: DateTime.parse(json['date'] as String),
         createdAt: DateTime.parse(json['created_at'] as String),
+        updatedAt: json['updated_at'] == null
+            ? null
+            : DateTime.parse(json['updated_at'] as String),
       );
 
   Map<String, dynamic> toJson() => {
@@ -59,6 +70,19 @@ class Expense {
         'notes': notes,
         'date': date.toIso8601String(),
         'created_at': createdAt.toIso8601String(),
+        if (updatedAt != null) 'updated_at': updatedAt!.toIso8601String(),
+      };
+}
+
+enum SettlementStatus {
+  pending,
+  confirmed,
+  declined;
+
+  static SettlementStatus fromApi(String? value) => switch (value) {
+        'confirmed' => SettlementStatus.confirmed,
+        'declined' => SettlementStatus.declined,
+        _ => SettlementStatus.pending,
       };
 }
 
@@ -68,6 +92,9 @@ class Settlement {
   final String fromUserId;
   final String toUserId;
   final int amount;
+  final SettlementStatus status;
+  final String createdBy;
+  final DateTime? respondedAt;
   final DateTime createdAt;
 
   const Settlement({
@@ -76,8 +103,14 @@ class Settlement {
     required this.fromUserId,
     required this.toUserId,
     required this.amount,
+    required this.status,
+    required this.createdBy,
+    this.respondedAt,
     required this.createdAt,
   });
+
+  /// The participant who must approve — the one who didn't record it.
+  String get counterpartyId => createdBy == fromUserId ? toUserId : fromUserId;
 
   factory Settlement.fromJson(Map<String, dynamic> json) => Settlement(
         id: json['id'] as String,
@@ -85,8 +118,30 @@ class Settlement {
         fromUserId: json['from_user_id'] as String,
         toUserId: json['to_user_id'] as String,
         amount: parseJsonInt64(json['amount'], fieldName: 'amount'),
+        status: SettlementStatus.fromApi(json['status'] as String?),
+        createdBy: (json['created_by'] as String?) ?? '',
+        respondedAt: json['responded_at'] == null
+            ? null
+            : DateTime.parse(json['responded_at'] as String),
         createdAt: DateTime.parse(json['created_at'] as String),
       );
+
+  /// Inverse of [fromJson], for the offline settlements cache.
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'group_id': groupId,
+        'from_user_id': fromUserId,
+        'to_user_id': toUserId,
+        'amount': amount,
+        'status': status.name,
+        'created_by': createdBy,
+        'responded_at': respondedAt?.toIso8601String(),
+        'created_at': createdAt.toIso8601String(),
+      };
+
+  /// True while this settlement exists only in the local outbox. Such a row
+  /// must never be sent to the server by id — there is nothing there yet.
+  bool get isLocal => id.startsWith('local-');
 }
 
 class BalanceEntry {
@@ -263,6 +318,12 @@ class UpdateExpenseRequest {
   final String? notes;
   final DateTime? date;
 
+  /// The server `updated_at` this edit was based on. When present the server
+  /// returns 409 (with its current row) rather than overwriting a change made
+  /// by someone else while this edit sat in the outbox. Omitted for a chained
+  /// edit on an already-queued change — that chain is all ours.
+  final DateTime? expectedUpdatedAt;
+
   const UpdateExpenseRequest({
     this.payerId,
     this.amount,
@@ -273,6 +334,7 @@ class UpdateExpenseRequest {
     this.currency,
     this.notes,
     this.date,
+    this.expectedUpdatedAt,
   });
 
   Map<String, dynamic> toJson() {
@@ -286,6 +348,9 @@ class UpdateExpenseRequest {
     if (currency != null) m['currency'] = currency;
     if (notes != null) m['notes'] = notes;
     if (date != null) m['date'] = date!.toIso8601String();
+    if (expectedUpdatedAt != null) {
+      m['expected_updated_at'] = expectedUpdatedAt!.toUtc().toIso8601String();
+    }
     return m;
   }
 }

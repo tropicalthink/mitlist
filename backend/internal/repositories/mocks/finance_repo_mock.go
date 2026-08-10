@@ -105,6 +105,11 @@ func (m *MockFinanceRepo) ListAllSettlementsByGroup(ctx context.Context, groupID
 	return nil, args.Error(1)
 }
 
+func (m *MockFinanceRepo) UpdateSettlementStatus(ctx context.Context, id uuid.UUID, status models.SettlementStatus, respondedAt time.Time) error {
+	args := m.Called(ctx, id, status, respondedAt)
+	return args.Error(0)
+}
+
 func (m *MockFinanceRepo) DeleteSettlement(ctx context.Context, id uuid.UUID) error {
 	args := m.Called(ctx, id)
 	return args.Error(0)

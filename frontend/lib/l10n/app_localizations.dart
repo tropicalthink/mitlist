@@ -560,6 +560,12 @@ abstract class AppLocalizations {
   /// **'Chores'**
   String get choreAppBarTitle;
 
+  /// Menu item / button that opens the chore zones editor
+  ///
+  /// In en, this message translates to:
+  /// **'Manage zones'**
+  String get choreManageZones;
+
   /// FAB text and tooltip to add a chore
   ///
   /// In en, this message translates to:
@@ -2913,10 +2919,10 @@ abstract class AppLocalizations {
   /// **'This will permanently delete this expense and all associated receipts. This cannot be undone.'**
   String get expenseDeleteBody;
 
-  /// Snackbar when settlement is saved
+  /// Snackbar when settlement is saved and pending counterparty approval
   ///
   /// In en, this message translates to:
-  /// **'Settlement recorded'**
+  /// **'Settlement recorded — awaiting confirmation'**
   String get expenseSettlementRecorded;
 
   /// Snackbar when settlement fails
@@ -2924,6 +2930,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t record settlement.'**
   String get expenseSettlementFailed;
+
+  /// Section title for settlements awaiting the current user's response
+  ///
+  /// In en, this message translates to:
+  /// **'Needs your confirmation'**
+  String get expenseSettlementNeedsYou;
+
+  /// Section title for the user's own pending settlements
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for confirmation'**
+  String get expenseSettlementWaiting;
+
+  /// Section title for resolved settlements
+  ///
+  /// In en, this message translates to:
+  /// **'Recent settlements'**
+  String get expenseSettlementHistory;
+
+  /// Settlement row label
+  ///
+  /// In en, this message translates to:
+  /// **'{from} paid {to}'**
+  String expenseSettlementRow(String from, String to);
+
+  /// Button to confirm a settlement
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get expenseSettlementConfirmAction;
+
+  /// Button to decline a settlement
+  ///
+  /// In en, this message translates to:
+  /// **'Decline'**
+  String get expenseSettlementDeclineAction;
+
+  /// Button to cancel own pending settlement
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel request'**
+  String get expenseSettlementCancelAction;
+
+  /// Status label: confirmed settlement
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmed'**
+  String get expenseSettlementStatusConfirmed;
+
+  /// Status label: declined settlement
+  ///
+  /// In en, this message translates to:
+  /// **'Declined'**
+  String get expenseSettlementStatusDeclined;
+
+  /// Snackbar when confirm/decline fails
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t update the settlement.'**
+  String get expenseSettlementResponseFailed;
+
+  /// Snackbar when cancelling a settlement fails
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t cancel the settlement.'**
+  String get expenseSettlementCancelFailed;
 
   /// Section title for suggested settlements
   ///
@@ -4254,7 +4326,7 @@ abstract class AppLocalizations {
   /// Validation: password too short
   ///
   /// In en, this message translates to:
-  /// **'New password must be at least 6 characters.'**
+  /// **'New password must be at least 12 characters.'**
   String get accountPasswordMinLength;
 
   /// Validation: passwords don't match
@@ -6672,7 +6744,7 @@ abstract class AppLocalizations {
   /// Password hint text
   ///
   /// In en, this message translates to:
-  /// **'At least 6 characters'**
+  /// **'At least 12 characters'**
   String get authSignupPasswordHint;
 
   /// Submit button for signup
@@ -6708,7 +6780,7 @@ abstract class AppLocalizations {
   /// Password too short validation
   ///
   /// In en, this message translates to:
-  /// **'Password must be at least 6 characters.'**
+  /// **'Password must be at least 12 characters.'**
   String get authSignupPasswordMinLength;
 
   /// Signup screen title when joining via invite
@@ -6950,6 +7022,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Household home icon'**
   String get authOnboardingHomeIconSemantic;
+
+  /// Semantic label for the welcome screen collage of pillar scraps
+  ///
+  /// In en, this message translates to:
+  /// **'Shared lists, money, chores, and kitchen. All in one place.'**
+  String get welcomePillarsSemantic;
+
+  /// Inline create stage title on the sticky note
+  ///
+  /// In en, this message translates to:
+  /// **'Name your household'**
+  String get authOnboardingNameTitle;
+
+  /// Inline create stage helper text
+  ///
+  /// In en, this message translates to:
+  /// **'Write it on the note. You can change it later.'**
+  String get authOnboardingNameBody;
+
+  /// Create household submit button on the sticky note
+  ///
+  /// In en, this message translates to:
+  /// **'Pin it to the board'**
+  String get authOnboardingPinIt;
+
+  /// Invite stage title on the torn slip
+  ///
+  /// In en, this message translates to:
+  /// **'Bring in your flatmates'**
+  String get authOnboardingInviteTitle;
+
+  /// Invite stage body on the torn slip
+  ///
+  /// In en, this message translates to:
+  /// **'Share this code. Anyone who enters it joins your household.'**
+  String get authOnboardingInviteBody;
+
+  /// CTA leaving onboarding for the hub
+  ///
+  /// In en, this message translates to:
+  /// **'Go to your board'**
+  String get authOnboardingGoToBoard;
+
+  /// Hub first-run checklist heading
+  ///
+  /// In en, this message translates to:
+  /// **'Get the house going'**
+  String get hubChecklistTitle;
+
+  /// Stamp on completed checklist notes
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get hubChecklistDone;
+
+  /// Checklist progress summary
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total} done'**
+  String hubChecklistProgress(int done, int total);
 
   /// Stats grid: chores label
   ///
@@ -8564,6 +8696,300 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Household storage used'**
   String get householdStorageProgressLabel;
+
+  /// Account screen row that opens the feedback sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Send feedback'**
+  String get accountSendFeedback;
+
+  /// Title of the promoted feedback card on the account screen
+  ///
+  /// In en, this message translates to:
+  /// **'Help shape mitlist'**
+  String get feedbackCardTitle;
+
+  /// Body of the promoted feedback card on the account screen
+  ///
+  /// In en, this message translates to:
+  /// **'Request a feature, report a bug, or share an idea — it goes straight to the team.'**
+  String get feedbackCardBody;
+
+  /// Title of the feedback bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Send feedback'**
+  String get feedbackSheetTitle;
+
+  /// Intro text of the feedback bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Request a feature, report a bug, or tell us what could work better — we read every message.'**
+  String get feedbackSheetIntro;
+
+  /// Label of the feedback message field
+  ///
+  /// In en, this message translates to:
+  /// **'Your message'**
+  String get feedbackFieldLabel;
+
+  /// Hint of the feedback message field
+  ///
+  /// In en, this message translates to:
+  /// **'I wish mitlist could…'**
+  String get feedbackFieldHint;
+
+  /// Feedback sheet submit button
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get feedbackSend;
+
+  /// Feedback sheet submit button while sending
+  ///
+  /// In en, this message translates to:
+  /// **'Sending…'**
+  String get feedbackSending;
+
+  /// Snackbar after a feedback submission succeeded
+  ///
+  /// In en, this message translates to:
+  /// **'Thanks — your request was sent!'**
+  String get feedbackSent;
+
+  /// Validation error when the feedback field is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Please write a short message first.'**
+  String get feedbackEmpty;
+
+  /// Error when the feedback submission failed
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t send your request right now. Please try again later.'**
+  String get feedbackFailed;
+
+  /// Opt-in local OCR training-data collection title
+  ///
+  /// In en, this message translates to:
+  /// **'Improve offline handwriting OCR'**
+  String get accountOcrTrainingTitle;
+
+  /// Privacy explanation for OCR training-data collection
+  ///
+  /// In en, this message translates to:
+  /// **'Manually reviewed line crops stay on this device until you export or delete them. Nothing is uploaded.'**
+  String get accountOcrTrainingDescription;
+
+  /// Exports local corrected OCR line crops
+  ///
+  /// In en, this message translates to:
+  /// **'Export OCR training data'**
+  String get accountOcrTrainingExport;
+
+  /// Number of locally collected OCR training lines
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No corrected lines} =1{1 corrected line} other{{count} corrected lines}}'**
+  String accountOcrTrainingSamples(int count);
+
+  /// Deletes locally collected OCR training data
+  ///
+  /// In en, this message translates to:
+  /// **'Delete OCR training data'**
+  String get accountOcrTrainingClear;
+
+  /// Shown when OCR training export is empty
+  ///
+  /// In en, this message translates to:
+  /// **'There are no corrected OCR lines to export yet.'**
+  String get accountOcrTrainingExportEmpty;
+
+  /// OCR training data deletion dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Delete OCR training data?'**
+  String get accountOcrTrainingClearTitle;
+
+  /// OCR training data deletion dialog body
+  ///
+  /// In en, this message translates to:
+  /// **'This permanently removes every saved line crop from this device.'**
+  String get accountOcrTrainingClearBody;
+
+  /// Title of the premium paywall sheet
+  ///
+  /// In en, this message translates to:
+  /// **'mitlist premium'**
+  String get billingPremiumTitle;
+
+  /// Paywall title when a household hit the free member limit
+  ///
+  /// In en, this message translates to:
+  /// **'This household is full'**
+  String get billingLimitReachedTitle;
+
+  /// Paywall explanation of the free member limit
+  ///
+  /// In en, this message translates to:
+  /// **'Households of up to {limit} people are free. To add a {next}th member, one person needs premium — and it covers everyone here.'**
+  String billingLimitReachedBody(num limit, num next);
+
+  /// Explains the single-household (primary) model
+  ///
+  /// In en, this message translates to:
+  /// **'Premium applies to one household at a time. You choose which, and you can move it whenever you like.'**
+  String get billingCoversOneHousehold;
+
+  /// Shown when another member's subscription covers this household
+  ///
+  /// In en, this message translates to:
+  /// **'Premium on this household, paid by {name}.'**
+  String billingCoveredBy(String name);
+
+  /// Status line when the current household is premium
+  ///
+  /// In en, this message translates to:
+  /// **'Premium is active here'**
+  String get billingPremiumActive;
+
+  /// Title of the move-premium action
+  ///
+  /// In en, this message translates to:
+  /// **'Move your premium here'**
+  String get billingMoveHereTitle;
+
+  /// Explains moving premium between households
+  ///
+  /// In en, this message translates to:
+  /// **'You already have premium on another household. Move it here instead of paying twice — the other household keeps everyone it already has, it just can\'t add more.'**
+  String get billingMoveHereBody;
+
+  /// Button that reassigns the subscription to this household
+  ///
+  /// In en, this message translates to:
+  /// **'Move premium here'**
+  String get billingMoveHereAction;
+
+  /// Confirmation after moving premium
+  ///
+  /// In en, this message translates to:
+  /// **'Premium now covers this household.'**
+  String get billingMoved;
+
+  /// Error after a failed premium move
+  ///
+  /// In en, this message translates to:
+  /// **'Could not move your premium. Please try again.'**
+  String get billingMoveFailed;
+
+  /// Prompt when a subscriber has not picked a household yet
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your premium household'**
+  String get billingChooseHousehold;
+
+  /// Monthly billing interval option
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly'**
+  String get billingMonthly;
+
+  /// Yearly billing interval option
+  ///
+  /// In en, this message translates to:
+  /// **'Yearly'**
+  String get billingYearly;
+
+  /// Badge highlighting the yearly plan
+  ///
+  /// In en, this message translates to:
+  /// **'Best value'**
+  String get billingYearlyBadge;
+
+  /// Button that starts checkout
+  ///
+  /// In en, this message translates to:
+  /// **'Get premium'**
+  String get billingSubscribe;
+
+  /// Loading label while the checkout URL is fetched
+  ///
+  /// In en, this message translates to:
+  /// **'Opening checkout...'**
+  String get billingOpeningCheckout;
+
+  /// Error when checkout cannot be started
+  ///
+  /// In en, this message translates to:
+  /// **'Could not start checkout. Please try again.'**
+  String get billingCheckoutFailed;
+
+  /// Opens the provider's billing portal
+  ///
+  /// In en, this message translates to:
+  /// **'Manage subscription'**
+  String get billingManage;
+
+  /// Error when the billing portal cannot be opened
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the billing portal.'**
+  String get billingPortalFailed;
+
+  /// Tells the user checkout continues in a browser
+  ///
+  /// In en, this message translates to:
+  /// **'Finish in your browser, then come back — premium activates automatically.'**
+  String get billingReturnHint;
+
+  /// Title of the billing card on the account screen
+  ///
+  /// In en, this message translates to:
+  /// **'Premium'**
+  String get billingAccountCardTitle;
+
+  /// Account card body for a non-subscriber
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re on the free plan. Households of up to {limit} people are free.'**
+  String billingAccountCardFree(num limit);
+
+  /// Account card body naming the covered household
+  ///
+  /// In en, this message translates to:
+  /// **'Premium is active on {household}.'**
+  String billingAccountCardActive(String household);
+
+  /// Account card body when no household is chosen
+  ///
+  /// In en, this message translates to:
+  /// **'Premium is active but not assigned to a household yet.'**
+  String get billingAccountCardUnassigned;
+
+  /// Next renewal date
+  ///
+  /// In en, this message translates to:
+  /// **'Renews {date}'**
+  String billingRenewsOn(String date);
+
+  /// End date for a subscription set to cancel
+  ///
+  /// In en, this message translates to:
+  /// **'Ends {date}'**
+  String billingEndsOn(String date);
+
+  /// Member count against the free limit
+  ///
+  /// In en, this message translates to:
+  /// **'{count} of {limit} free places used'**
+  String billingMemberUsage(num count, num limit);
+
+  /// Member allowance for a premium household
+  ///
+  /// In en, this message translates to:
+  /// **'Unlimited members'**
+  String get billingUnlimitedMembers;
 }
 
 class _AppLocalizationsDelegate

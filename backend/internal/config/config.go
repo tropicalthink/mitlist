@@ -25,6 +25,8 @@ type Config struct {
 	Port                     string `env:"PORT" default:"8000"`
 	APIPrefix                string `env:"API_PREFIX" default:"/api"`
 	AccessTokenExpireMinutes int    `env:"ACCESS_TOKEN_EXPIRE_MINUTES" default:"15"`
+	TokenIssuer              string `env:"TOKEN_ISSUER" default:"mitlist"`
+	TokenAudience            string `env:"TOKEN_AUDIENCE" default:"mitlist-api"`
 	RunMigrationsOnStartup   bool   `env:"RUN_MIGRATIONS_ON_STARTUP" default:"true"`
 	LogLevel                 string `env:"LOG_LEVEL" default:"WARNING"`
 
@@ -104,6 +106,26 @@ type Config struct {
 	// If your provider requires authentication, set FX_RATE_API_KEY as well.
 	FxRateAPIURL string `env:"FX_RATE_API_URL"`
 	FxRateAPIKey string `env:"FX_RATE_API_KEY"`
+
+	// Polar (household premium billing, opt-in). Leave POLAR_ACCESS_TOKEN empty
+	// to keep billing disabled — households then grow without limit, which is
+	// the correct behaviour for a self-hosted instance.
+	PolarAccessToken      string `env:"POLAR_ACCESS_TOKEN"`
+	PolarWebhookSecret    string `env:"POLAR_WEBHOOK_SECRET"`
+	PolarProductIDMonthly string `env:"POLAR_PRODUCT_ID_MONTHLY"`
+	PolarProductIDYearly  string `env:"POLAR_PRODUCT_ID_YEARLY"`
+	// PolarBaseURL points at the sandbox (https://sandbox-api.polar.sh) when
+	// testing. Defaults to production.
+	PolarBaseURL string `env:"POLAR_BASE_URL" default:"https://api.polar.sh"`
+	// PolarDefaultDiscountID auto-applies a discount to every new checkout —
+	// a launch promo, for instance. Customers can still enter their own code.
+	PolarDefaultDiscountID string `env:"POLAR_DEFAULT_DISCOUNT_ID"`
+	// CheckoutSuccessURL is where Polar returns the customer after paying.
+	CheckoutSuccessURL string `env:"CHECKOUT_SUCCESS_URL" default:"https://mitlist.me/billing/success"`
+
+	// FreeMemberLimit is the largest household size that stays free. Only
+	// enforced when billing is configured.
+	FreeMemberLimit int `env:"FREE_MEMBER_LIMIT" default:"4"`
 }
 
 // Load reads the .env file (if it exists) and populates a Config from the environment.
@@ -175,6 +197,7 @@ func (c *Config) LogIntegrationStatus() {
 	errorReportingOn := c.SentryDSN != ""
 	errorTracingOn := errorReportingOn && c.SentryTracesSampleRate > 0
 	fxOn := c.FxRateAPIURL != ""
+	billingOn := c.PolarAccessToken != ""
 
 	log.Info().
 		Bool("email", emailOn).
@@ -185,6 +208,7 @@ func (c *Config) LogIntegrationStatus() {
 		Bool("error_reporting", errorReportingOn).
 		Bool("error_tracing", errorTracingOn).
 		Bool("fx_rates", fxOn).
+		Bool("billing", billingOn).
 		Msg("integration status")
 
 	var disabled []string
@@ -196,6 +220,9 @@ func (c *Config) LogIntegrationStatus() {
 	}
 	if !storageOn {
 		disabled = append(disabled, "file_storage (set S3_BUCKET_NAME and AWS_* credentials)")
+	}
+	if !billingOn {
+		disabled = append(disabled, "billing (set POLAR_ACCESS_TOKEN and POLAR_WEBHOOK_SECRET; households grow without limit until then)")
 	}
 	if len(disabled) > 0 {
 		log.Warn().Strs("disabled_integrations", disabled).
@@ -218,6 +245,8 @@ func (c Config) MaskSecrets() Config {
 	masked.BrevoSMTPPass = mask(masked.BrevoSMTPPass)
 	masked.SentryDSN = mask(masked.SentryDSN)
 	masked.AWSSecretAccessKey = mask(masked.AWSSecretAccessKey)
+	masked.PolarAccessToken = mask(masked.PolarAccessToken)
+	masked.PolarWebhookSecret = mask(masked.PolarWebhookSecret)
 	return masked
 }
 
@@ -233,6 +262,9 @@ func (c *Config) Validate() error {
 	}
 	if c.Environment == "production" && (c.SecretKey == "dev-only-insecure-key-do-not-use-in-prod" || c.SessionSecretKey == "dev-only-insecure-key-do-not-use-in-prod") {
 		return fmt.Errorf("refusing to start in production with default dev secret keys — set SECRET_KEY and SESSION_SECRET_KEY in environment")
+	}
+	if c.SecretKey != "" && c.SecretKey == c.SessionSecretKey {
+		return fmt.Errorf("SECRET_KEY and SESSION_SECRET_KEY must be different")
 	}
 	return nil
 }

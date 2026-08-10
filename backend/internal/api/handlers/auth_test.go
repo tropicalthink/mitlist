@@ -14,7 +14,7 @@ func TestAuth_Register(t *testing.T) {
 
 	body := map[string]any{
 		"email":      "auth@example.com",
-		"password":   "password123",
+		"password":   "password123!",
 		"first_name": "Auth",
 		"last_name":  "Test",
 	}
@@ -23,8 +23,9 @@ func TestAuth_Register(t *testing.T) {
 
 	var resp map[string]any
 	parseJSONResponse(t, rec, &resp)
-	require.NotNil(t, resp["access_token"])
-	require.NotNil(t, resp["refresh_token"])
+	require.Equal(t, true, resp["verification_required"])
+	require.Nil(t, resp["access_token"])
+	require.Nil(t, resp["refresh_token"])
 }
 
 func TestAuth_Register_DuplicateEmail(t *testing.T) {
@@ -33,7 +34,7 @@ func TestAuth_Register_DuplicateEmail(t *testing.T) {
 
 	body := map[string]any{
 		"email":      "dup@example.com",
-		"password":   "password123",
+		"password":   "password123!",
 		"first_name": "Dup",
 		"last_name":  "Test",
 	}
@@ -47,11 +48,11 @@ func TestAuth_Register_DuplicateEmail(t *testing.T) {
 func TestAuth_Login(t *testing.T) {
 	clearTables(t)
 	router, _ := newAuthRouter(t)
-	createTestUser(t, "login@example.com", "password123")
+	createTestUser(t, "login@example.com", "password123!")
 
 	body := map[string]any{
 		"email":    "login@example.com",
-		"password": "password123",
+		"password": "password123!",
 	}
 	rec := execRequest(t, router, "POST", "/api/v1/auth/login", body, "")
 	requireStatus(t, rec, http.StatusOK)
@@ -64,7 +65,7 @@ func TestAuth_Login(t *testing.T) {
 func TestAuth_Login_InvalidCredentials(t *testing.T) {
 	clearTables(t)
 	router, _ := newAuthRouter(t)
-	createTestUser(t, "bad@example.com", "password123")
+	createTestUser(t, "bad@example.com", "password123!")
 
 	body := map[string]any{
 		"email":    "bad@example.com",
@@ -77,7 +78,7 @@ func TestAuth_Login_InvalidCredentials(t *testing.T) {
 func TestAuth_GetMe(t *testing.T) {
 	clearTables(t)
 	router, _ := newAuthRouter(t)
-	user := createTestUser(t, "me@example.com", "password123")
+	user := createTestUser(t, "me@example.com", "password123!")
 	token := generateTestToken(user.ID)
 
 	rec := execRequest(t, router, "GET", "/api/v1/auth/me", nil, token)
@@ -99,7 +100,7 @@ func TestAuth_GetMe_Unauthorized(t *testing.T) {
 func TestAuth_UpdateMe(t *testing.T) {
 	clearTables(t)
 	router, _ := newAuthRouter(t)
-	user := createTestUser(t, "update@example.com", "password123")
+	user := createTestUser(t, "update@example.com", "password123!")
 	token := generateTestToken(user.ID)
 
 	body := map[string]any{"first_name": "Updated"}
@@ -114,7 +115,7 @@ func TestAuth_UpdateMe(t *testing.T) {
 func TestAuth_DeleteMe(t *testing.T) {
 	clearTables(t)
 	router, _ := newAuthRouter(t)
-	user := createTestUser(t, "delete@example.com", "password123")
+	user := createTestUser(t, "delete@example.com", "password123!")
 	token := generateTestToken(user.ID)
 
 	rec := execRequest(t, router, "DELETE", "/api/v1/auth/me", nil, token)
@@ -129,19 +130,19 @@ func TestAuth_DeleteMe(t *testing.T) {
 func TestAuth_ChangePassword(t *testing.T) {
 	clearTables(t)
 	router, _ := newAuthRouter(t)
-	user := createTestUser(t, "changepw@example.com", "oldpassword")
+	user := createTestUser(t, "changepw@example.com", "oldpassword12!")
 	token := generateTestToken(user.ID)
 
 	body := map[string]any{
-		"old_password": "oldpassword",
-		"new_password": "newpassword123",
+		"old_password": "oldpassword12!",
+		"new_password": "newpassword123!",
 	}
 	rec := execRequest(t, router, "POST", "/api/v1/auth/change-password", body, token)
 	requireStatus(t, rec, http.StatusOK)
 
 	loginBody := map[string]any{
 		"email":    "changepw@example.com",
-		"password": "newpassword123",
+		"password": "newpassword123!",
 	}
 	rec = execRequest(t, router, "POST", "/api/v1/auth/login", loginBody, "")
 	requireStatus(t, rec, http.StatusOK)
@@ -150,7 +151,7 @@ func TestAuth_ChangePassword(t *testing.T) {
 func TestAuth_PasswordReset(t *testing.T) {
 	clearTables(t)
 	router, _ := newAuthRouter(t)
-	createTestUser(t, "reset@example.com", "password123")
+	createTestUser(t, "reset@example.com", "password123!")
 
 	body := map[string]any{"email": "reset@example.com"}
 	rec := execRequest(t, router, "POST", "/api/v1/auth/password-reset", body, "")
@@ -174,7 +175,7 @@ func TestAuth_Guest(t *testing.T) {
 func TestAuth_Refresh(t *testing.T) {
 	clearTables(t)
 	router, _ := newAuthRouter(t)
-	user := createTestUser(t, "refresh@example.com", "password123")
+	user := createTestUser(t, "refresh@example.com", "password123!")
 	_, refresh, err := testJWT.GenerateTokenPair(user.ID.String(), nil)
 	require.NoError(t, err)
 
@@ -190,7 +191,7 @@ func TestAuth_Refresh(t *testing.T) {
 func TestAuth_Refresh_RotatesToken(t *testing.T) {
 	clearTables(t)
 	router, _ := newAuthRouter(t)
-	user := createTestUser(t, "refresh-rotate@example.com", "password123")
+	user := createTestUser(t, "refresh-rotate@example.com", "password123!")
 	_, refresh, err := testJWT.GenerateTokenPair(user.ID.String(), nil)
 	require.NoError(t, err)
 
@@ -211,7 +212,7 @@ func TestAuth_Refresh_RotatesToken(t *testing.T) {
 func TestAuth_Logout(t *testing.T) {
 	clearTables(t)
 	router, _ := newAuthRouter(t)
-	user := createTestUser(t, "logout@example.com", "password123")
+	user := createTestUser(t, "logout@example.com", "password123!")
 	_, refresh, err := testJWT.GenerateTokenPair(user.ID.String(), nil)
 	require.NoError(t, err)
 

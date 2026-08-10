@@ -30,7 +30,11 @@ func (h *FinanceHandler) RegisterRoutes(r chi.Router) {
 	r.Get("/finance/summary", h.GetFinanceSummary)
 	r.Get("/finance/export/json", h.ExportExpensesJSON)
 	r.Get("/finance/export/csv", h.ExportExpensesCSV)
+	r.Get("/finance/settlements", h.ListSettlements)
 	r.Post("/finance/settlements", h.CreateGroupSettlement)
+	r.Post("/finance/settlements/{id}/confirm", h.ConfirmSettlement)
+	r.Post("/finance/settlements/{id}/decline", h.DeclineSettlement)
+	r.Delete("/finance/settlements/{id}", h.DeleteSettlement)
 	r.Post("/expenses", h.CreateExpense)
 	r.Get("/expenses", h.ListExpenses)
 	r.Get("/expenses/{id}", h.GetExpense)
@@ -40,8 +44,6 @@ func (h *FinanceHandler) RegisterRoutes(r chi.Router) {
 	r.Get("/expenses/{id}/splits", h.ListExpenseSplits)
 	r.Patch("/expenses/{id}/splits/{split_id}", h.UpdateSplit)
 	r.Delete("/expenses/{id}/splits/{split_id}", h.DeleteSplit)
-	r.Post("/expenses/{id}/settle", h.CreateSettlement)
-	r.Delete("/expenses/{id}/settle/{settlement_id}", h.DeleteSettlement)
 	r.Post("/recurring-expenses", h.CreateRecurringExpense)
 	r.Get("/recurring-expenses", h.ListRecurringExpenses)
 	r.Get("/recurring-expenses/{id}", h.GetRecurringExpense)
@@ -221,6 +223,13 @@ func (h *FinanceHandler) UpdateExpense(w http.ResponseWriter, r *http.Request) {
 		Currency    *string    `json:"currency,omitempty"`
 		Notes       *string    `json:"notes,omitempty"`
 		Date        *time.Time `json:"date,omitempty"`
+		// ExpectedUpdatedAt enables optimistic concurrency: the client sends the
+		// updated_at it based its edit on. If the server's row has moved on since
+		// (another member edited it), we return 409 with the current expense
+		// instead of silently clobbering their change. Mirrors the list-item
+		// contract in list.go — an expense is the one entity where a silent
+		// last-write-wins clobber costs somebody money.
+		ExpectedUpdatedAt *time.Time `json:"expected_updated_at,omitempty"`
 	}
 	if err := decodeJSON(r, &req); err != nil {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
@@ -230,6 +239,21 @@ func (h *FinanceHandler) UpdateExpense(w http.ResponseWriter, r *http.Request) {
 	existing, err := h.service.GetExpense(r.Context(), userID, id)
 	if err != nil {
 		api.RespondError(w, err)
+		return
+	}
+
+	// Compared at second granularity: the client stores updated_at in Drift,
+	// whose default DateTime storage is unix SECONDS, so the round-tripped base
+	// loses sub-second precision. Truncating both sides avoids a false conflict
+	// on every edit while still catching genuine concurrent ones.
+	if req.ExpectedUpdatedAt != nil &&
+		existing.UpdatedAt.Truncate(time.Second).
+			After(req.ExpectedUpdatedAt.Truncate(time.Second)) {
+		api.RespondJSON(w, http.StatusConflict, map[string]any{
+			"error":   "conflict",
+			"message": "This expense was changed by someone else.",
+			"current": existing,
+		})
 		return
 	}
 
@@ -541,51 +565,65 @@ func (h *FinanceHandler) CreateGroupSettlement(w http.ResponseWriter, r *http.Re
 	api.RespondJSON(w, http.StatusCreated, settlement)
 }
 
-// CreateSettlement POST /api/v1/expenses/{id}/settle
-func (h *FinanceHandler) CreateSettlement(w http.ResponseWriter, r *http.Request) {
+// ListSettlements GET /api/v1/finance/settlements?group_id=&limit=&offset=
+func (h *FinanceHandler) ListSettlements(w http.ResponseWriter, r *http.Request) {
 	userID, ok := h.userID(r)
 	if !ok {
 		api.RespondError(w, api.ErrUnauthorized)
 		return
 	}
 
-	expenseID, err := uuid.Parse(chi.URLParam(r, "id"))
+	groupID, err := uuid.Parse(r.URL.Query().Get("group_id"))
 	if err != nil {
-		api.RespondError(w, &api.ValidationError{Field: "id", Message: "invalid expense id"})
+		api.RespondError(w, &api.ValidationError{Field: "group_id", Message: "invalid group id"})
 		return
 	}
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
 
-	// Resolve group_id from the expense for REST consistency.
-	expense, err := h.service.GetExpense(r.Context(), userID, expenseID)
+	settlements, err := h.service.ListSettlements(r.Context(), userID, groupID, limit, offset)
 	if err != nil {
 		api.RespondError(w, err)
 		return
 	}
-
-	var req struct {
-		FromUserID uuid.UUID `json:"from_user_id"`
-		ToUserID   uuid.UUID `json:"to_user_id"`
-		Amount     int64     `json:"amount"`
+	if settlements == nil {
+		settlements = []models.Settlement{}
 	}
-	if err := decodeJSON(r, &req); err != nil {
-		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
-		return
-	}
-
-	settlement := &models.Settlement{
-		GroupID:    expense.GroupID,
-		FromUserID: req.FromUserID,
-		ToUserID:   req.ToUserID,
-		Amount:     req.Amount,
-	}
-	if err := h.service.CreateSettlement(r.Context(), userID, settlement); err != nil {
-		api.RespondError(w, err)
-		return
-	}
-	api.RespondJSON(w, http.StatusCreated, settlement)
+	api.RespondJSON(w, http.StatusOK, settlements)
 }
 
-// DeleteSettlement DELETE /api/v1/expenses/{id}/settle/{settlement_id}
+// ConfirmSettlement POST /api/v1/finance/settlements/{id}/confirm
+func (h *FinanceHandler) ConfirmSettlement(w http.ResponseWriter, r *http.Request) {
+	h.respondToSettlement(w, r, true)
+}
+
+// DeclineSettlement POST /api/v1/finance/settlements/{id}/decline
+func (h *FinanceHandler) DeclineSettlement(w http.ResponseWriter, r *http.Request) {
+	h.respondToSettlement(w, r, false)
+}
+
+func (h *FinanceHandler) respondToSettlement(w http.ResponseWriter, r *http.Request, approve bool) {
+	userID, ok := h.userID(r)
+	if !ok {
+		api.RespondError(w, api.ErrUnauthorized)
+		return
+	}
+
+	settlementID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		api.RespondError(w, &api.ValidationError{Field: "id", Message: "invalid settlement id"})
+		return
+	}
+
+	settlement, err := h.service.RespondToSettlement(r.Context(), userID, settlementID, approve)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	api.RespondJSON(w, http.StatusOK, settlement)
+}
+
+// DeleteSettlement DELETE /api/v1/finance/settlements/{id}
 func (h *FinanceHandler) DeleteSettlement(w http.ResponseWriter, r *http.Request) {
 	userID, ok := h.userID(r)
 	if !ok {
@@ -593,14 +631,9 @@ func (h *FinanceHandler) DeleteSettlement(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	_, err := uuid.Parse(chi.URLParam(r, "id"))
+	settlementID, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
-		api.RespondError(w, &api.ValidationError{Field: "id", Message: "invalid expense id"})
-		return
-	}
-	settlementID, err := uuid.Parse(chi.URLParam(r, "settlement_id"))
-	if err != nil {
-		api.RespondError(w, &api.ValidationError{Field: "settlement_id", Message: "invalid settlement id"})
+		api.RespondError(w, &api.ValidationError{Field: "id", Message: "invalid settlement id"})
 		return
 	}
 

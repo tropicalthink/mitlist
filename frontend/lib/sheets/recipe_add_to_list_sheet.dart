@@ -21,6 +21,8 @@ import '../widgets/app_icon.dart';
 import '../l10n/app_localizations.dart';
 import '../widgets/empty_state.dart';
 
+import '../widgets/app_toast.dart';
+
 class RecipeAddToListSheet extends ConsumerStatefulWidget {
   final String recipeId;
   final String recipeTitle;
@@ -133,19 +135,13 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
       if (mounted) {
         Navigator.of(context).pop();
         final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(l10n
-                  .sheetRecipeAddToListAdded(_selectedIngredientIds.length))),
-        );
+        AppToast.success(context,
+            l10n.sheetRecipeAddToListAdded(_selectedIngredientIds.length));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content:
-                  Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
-        );
+        AppToast.error(
+            context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
       }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -167,17 +163,12 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
       if (mounted) {
         Navigator.of(context).pop();
         final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.recipeAddMissingAdded(added))),
-        );
+        AppToast.success(context, l10n.recipeAddMissingAdded(added));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content:
-                  Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
-        );
+        AppToast.error(
+            context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
       }
     } finally {
       if (mounted) setState(() => _isSubmittingMissing = false);

@@ -22,6 +22,11 @@ func (m *MockGroupRepo) WithTx(ctx context.Context, fn func(txRepo repositories.
 	return fn(m)
 }
 
+func (m *MockGroupRepo) LockGroup(ctx context.Context, groupID uuid.UUID) error {
+	args := m.Called(ctx, groupID)
+	return args.Error(0)
+}
+
 func (m *MockGroupRepo) CreateGroup(ctx context.Context, group *models.Group) error {
 	args := m.Called(ctx, group)
 	return args.Error(0)
@@ -90,11 +95,6 @@ func (m *MockGroupRepo) GetInviteByCode(ctx context.Context, code string) (*mode
 }
 
 func (m *MockGroupRepo) ConsumeInvite(ctx context.Context, inviteID, userID uuid.UUID) error {
-	args := m.Called(ctx, inviteID, userID)
-	return args.Error(0)
-}
-
-func (m *MockGroupRepo) ClaimInvite(ctx context.Context, inviteID, userID uuid.UUID) error {
 	args := m.Called(ctx, inviteID, userID)
 	return args.Error(0)
 }

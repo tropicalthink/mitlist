@@ -17,6 +17,7 @@ import '../../services/sse_service.dart';
 import '../../utils/active_group_context.dart';
 import '../../utils/friendly_error.dart';
 import '../../utils/haptics.dart';
+import '../../utils/latest_request_guard.dart';
 import '../../providers/group_provider.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
@@ -56,6 +57,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   String? _error;
   final List<NotificationModel> _items = [];
   final ScrollController _scrollController = ScrollController();
+  final LatestRequestGuard _loadGuard = LatestRequestGuard();
+  final LatestRequestGuard _pageGuard = LatestRequestGuard();
   StreamSubscription<SseEvent>? _sseSub;
 
   @override
@@ -72,6 +75,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
 
   @override
   void dispose() {
+    _loadGuard.dispose();
+    _pageGuard.dispose();
     _sseSub?.cancel();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
@@ -104,19 +109,24 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   }
 
   Future<void> _load() async {
+    final request = _loadGuard.begin();
+    _pageGuard.invalidate();
+    final hadContent = _items.isNotEmpty;
     final l10n = AppLocalizations.of(context)!;
     setState(() {
-      _isLoading = true;
+      _isLoading = !hadContent;
+      _isLoadingMore = false;
       _error = null;
       _hasMore = true;
     });
 
     try {
       final groups = await ref.read(cachedGroupsProvider.future);
-      if (!mounted) return;
+      if (!mounted || !_loadGuard.isCurrent(request)) return;
       if (groups.isEmpty) {
         setState(() {
           _hasHousehold = false;
+          _items.clear();
           _isLoading = false;
         });
         return;
@@ -125,8 +135,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
       final service = await ref.read(notificationServiceProviderAsync.future);
       final data =
           await service.listNotifications(limit: _pageLimit, offset: 0);
-      if (!mounted) return;
+      if (!mounted || !_loadGuard.isCurrent(request)) return;
       setState(() {
+        _hasHousehold = true;
         _items
           ..clear()
           ..addAll(data);
@@ -134,16 +145,25 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         _isLoading = false;
       });
     } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = l10n.notificationsFailedLoad;
-        _isLoading = false;
-      });
+      if (!mounted || !_loadGuard.isCurrent(request)) return;
+      if (hadContent) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.notificationsFailedLoad)),
+        );
+      } else {
+        setState(() {
+          _error = l10n.notificationsFailedLoad;
+          _isLoading = false;
+        });
+      }
     }
   }
 
   Future<void> _loadMore() async {
     if (_isLoadingMore || !_hasMore || _isLoading) return;
+    final request = _pageGuard.begin();
+    final offset = _items.length;
     final l10n = AppLocalizations.of(context)!;
     setState(() {
       _isLoadingMore = true;
@@ -152,16 +172,17 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
 
     try {
       final service = await ref.read(notificationServiceProviderAsync.future);
-      final data = await service.listNotifications(
-          limit: _pageLimit, offset: _items.length);
-      if (!mounted) return;
+      final data =
+          await service.listNotifications(limit: _pageLimit, offset: offset);
+      if (!mounted || !_pageGuard.isCurrent(request)) return;
       setState(() {
-        _items.addAll(data);
+        final existingIds = _items.map((item) => item.id).toSet();
+        _items.addAll(data.where((item) => existingIds.add(item.id)));
         _hasMore = data.length == _pageLimit;
         _isLoadingMore = false;
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || !_pageGuard.isCurrent(request)) return;
       setState(() {
         _error = l10n.notificationsFailedLoadMore;
         _isLoadingMore = false;
@@ -239,7 +260,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
       if (!mounted) return;
       unawaited(Haptics.failure());
       setState(() {
-        _items.insert(idx.clamp(0, _items.length), n);
+        if (!_items.any((item) => item.id == n.id)) {
+          _items.insert(idx.clamp(0, _items.length), n);
+        }
         _error = friendlyErrorMessage(e, AppLocalizations.of(context)!);
       });
     }
@@ -278,6 +301,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         }
       case 'recurringExpenses':
         context.pushNamed('recurringExpenses');
+      case 'settlements':
+        // Settlement approvals live in the Settlements tab of the money screen.
+        context.pushNamed('money');
     }
   }
 
@@ -484,8 +510,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                 label: l10n.commonDelete,
                 child: Container(
                   alignment: Alignment.centerRight,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: MitlistSpacing.md),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: MitlistSpacing.md),
                   color: Theme.of(context).colorScheme.error,
                   child: AppIcon(
                     name: 'trashOutline',
@@ -497,9 +523,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
               child: _NotificationTile(
                 notification: n,
                 timeLabel: _relativeTime(n.createdAt, l10n),
-                semanticLabel: n.isRead
-                    ? n.title
-                    : l10n.notificationsUnreadLabel(n.title),
+                semanticLabel:
+                    n.isRead ? n.title : l10n.notificationsUnreadLabel(n.title),
                 onTap: () => _handleNotificationTap(n),
               ),
             ),
@@ -523,36 +548,28 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     case 'chore_due_day_of':
       return (
         icon: 'cleaningServices',
-        background:
-            light ? MitlistColors.success100 : MitlistColors.success900,
-        foreground:
-            light ? MitlistColors.success700 : MitlistColors.success300,
+        background: light ? MitlistColors.success100 : MitlistColors.success900,
+        foreground: light ? MitlistColors.success700 : MitlistColors.success300,
       );
     case 'list_item_added':
       return (
         icon: 'shoppingCartOutline',
-        background:
-            light ? MitlistColors.primary100 : MitlistColors.primary900,
-        foreground:
-            light ? MitlistColors.primary700 : MitlistColors.primary300,
+        background: light ? MitlistColors.primary100 : MitlistColors.primary900,
+        foreground: light ? MitlistColors.primary700 : MitlistColors.primary300,
       );
     case 'expense_created':
       return (
         icon: 'banknotes',
-        background:
-            light ? MitlistColors.warning100 : MitlistColors.warning900,
-        foreground:
-            light ? MitlistColors.warning700 : MitlistColors.warning300,
+        background: light ? MitlistColors.warning100 : MitlistColors.warning900,
+        foreground: light ? MitlistColors.warning700 : MitlistColors.warning300,
       );
     case 'meal_plan_changed':
       return (
         icon: 'restaurantOutline',
-        background: light
-            ? MitlistColors.noteLavender
-            : MitlistColors.noteLavenderDark,
-        foreground: light
-            ? MitlistColors.noteLavenderDark
-            : MitlistColors.noteLavender,
+        background:
+            light ? MitlistColors.noteLavender : MitlistColors.noteLavenderDark,
+        foreground:
+            light ? MitlistColors.noteLavenderDark : MitlistColors.noteLavender,
       );
     case 'weekly_digest':
       return (
@@ -571,10 +588,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     default:
       return (
         icon: 'bellOutline',
-        background:
-            light ? MitlistColors.neutral200 : MitlistColors.neutral800,
-        foreground:
-            light ? MitlistColors.neutral700 : MitlistColors.neutral300,
+        background: light ? MitlistColors.neutral200 : MitlistColors.neutral800,
+        foreground: light ? MitlistColors.neutral700 : MitlistColors.neutral300,
       );
   }
 }

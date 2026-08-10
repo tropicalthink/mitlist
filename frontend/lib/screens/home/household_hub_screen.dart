@@ -28,8 +28,10 @@ import '../../widgets/alert.dart';
 import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_icon.dart';
+import '../../providers/onboarding_provider.dart';
 import '../../widgets/hub/activity_wall.dart';
 import '../../widgets/hub/hub_skeleton.dart';
+import '../../widgets/hub/onboarding_card.dart';
 import '../../widgets/hub/pinwall_section.dart';
 import '../../widgets/hub/quick_add_sheet.dart';
 import '../../providers/meal_plan_provider.dart';
@@ -282,7 +284,10 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
     } catch (_) {}
     try {
       final pinRepo = await ref.read(pinwallRepositoryProvider.future);
-      await pinRepo.refreshPosts(_resolvedGroupId!, limit: 20, offset: 0);
+      // Deliberately the default limit: the hub only renders the first handful
+      // of notes, but it shares one cache blob with the board, so refreshing a
+      // short page here would drop the board's remaining notes.
+      await pinRepo.refreshPosts(_resolvedGroupId!);
     } catch (_) {}
   }
 
@@ -290,7 +295,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
     await Haptics.light();
     var groups = _households;
     try {
-      ref.invalidate(cachedGroupsProvider);
+      await refreshCachedGroups(ref);
       groups = await ref.read(cachedGroupsProvider.future);
       if (mounted) setState(() => _households = groups);
     } catch (_) {}
@@ -306,7 +311,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
     Future<void> onCreateResult(Group? group) async {
       if (group == null || !mounted) return;
       try {
-        ref.invalidate(cachedGroupsProvider);
+        await refreshCachedGroups(ref, ensure: group);
         final after = await ref.read(cachedGroupsProvider.future);
         if (!mounted) return;
         setState(() => _households = after);
@@ -319,7 +324,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
     Future<void> onJoinResult(Group? group) async {
       if (group == null || !mounted) return;
       try {
-        ref.invalidate(cachedGroupsProvider);
+        await refreshCachedGroups(ref, ensure: group);
         final after = await ref.read(cachedGroupsProvider.future);
         if (!mounted) return;
         setState(() => _households = after);
@@ -395,7 +400,8 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                       label: AppLocalizations.of(context)!
                           .hubSwitchToHousehold(h.name),
                       child: Padding(
-                        padding: const EdgeInsets.only(bottom: MitlistSpacing.xs),
+                        padding:
+                            const EdgeInsets.only(bottom: MitlistSpacing.xs),
                         child: Material(
                           color: isActive
                               ? cs.surfaceContainerHighest
@@ -564,7 +570,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
     final group = await JoinHouseholdSheet.show(context);
     if (group == null || !mounted) return;
     try {
-      ref.invalidate(cachedGroupsProvider);
+      await refreshCachedGroups(ref, ensure: group);
       final groups = await ref.read(cachedGroupsProvider.future);
       if (!mounted) return;
       setState(() => _households = groups);
@@ -577,7 +583,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
   Future<void> _onHouseholdResult(Group? group) async {
     if (group == null || !mounted) return;
     try {
-      ref.invalidate(cachedGroupsProvider);
+      await refreshCachedGroups(ref, ensure: group);
       final groups = await ref.read(cachedGroupsProvider.future);
       if (!mounted) return;
       setState(() => _households = groups);
@@ -796,6 +802,18 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                                     const EdgeInsets.all(MitlistSpacing.md),
                                 sliver: SliverList(
                                   delegate: SliverChildListDelegate([
+                                    if (!(ref
+                                            .watch(
+                                                hubQuickStartDismissedProvider)
+                                            .valueOrNull ??
+                                        true)) ...[
+                                      HubQuickStart(
+                                        groupId: _resolvedGroupId!,
+                                        onDismiss: () => ref.invalidate(
+                                            hubQuickStartDismissedProvider),
+                                      ),
+                                      const SizedBox(height: MitlistSpacing.lg),
+                                    ],
                                     PinwallSection(
                                         groupId: _resolvedGroupId!, me: _me),
                                     const SizedBox(height: MitlistSpacing.lg),

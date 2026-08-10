@@ -2,6 +2,7 @@ package mocks
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/mitlist-app/mitlist/internal/models"
@@ -11,6 +12,41 @@ import (
 // MockAuthRepo is a mock implementation of repositories.AuthRepo.
 type MockAuthRepo struct {
 	mock.Mock
+}
+
+func (m *MockAuthRepo) CreateUnverifiedUser(ctx context.Context, user *models.User, tokenHash string, expiresAt time.Time) error {
+	args := m.Called(ctx, user, tokenHash, expiresAt)
+	return args.Error(0)
+}
+
+func (m *MockAuthRepo) CreateEmailVerification(ctx context.Context, userID uuid.UUID, tokenHash string, expiresAt time.Time) error {
+	args := m.Called(ctx, userID, tokenHash, expiresAt)
+	return args.Error(0)
+}
+
+func (m *MockAuthRepo) ConsumeEmailVerification(ctx context.Context, tokenHash string) (uuid.UUID, error) {
+	args := m.Called(ctx, tokenHash)
+	return args.Get(0).(uuid.UUID), args.Error(1)
+}
+
+func (m *MockAuthRepo) ReserveLoginAttempt(ctx context.Context, identifier string, limit int, window time.Duration) (bool, error) {
+	args := m.Called(ctx, identifier, limit, window)
+	return args.Bool(0), args.Error(1)
+}
+
+func (m *MockAuthRepo) ClearLoginAttempts(ctx context.Context, identifier string) error {
+	args := m.Called(ctx, identifier)
+	return args.Error(0)
+}
+
+func (m *MockAuthRepo) CreateOAuthHandoff(ctx context.Context, codeHash string, userID uuid.UUID, expiresAt time.Time) error {
+	args := m.Called(ctx, codeHash, userID, expiresAt)
+	return args.Error(0)
+}
+
+func (m *MockAuthRepo) ConsumeOAuthHandoff(ctx context.Context, codeHash string) (uuid.UUID, error) {
+	args := m.Called(ctx, codeHash)
+	return args.Get(0).(uuid.UUID), args.Error(1)
 }
 
 func (m *MockAuthRepo) CreateOAuthAccount(ctx context.Context, account *models.OAuthAccount) error {
@@ -41,6 +77,16 @@ func (m *MockAuthRepo) GetPasswordResetToken(ctx context.Context, token string) 
 
 func (m *MockAuthRepo) ConsumeToken(ctx context.Context, id uuid.UUID) error {
 	args := m.Called(ctx, id)
+	return args.Error(0)
+}
+
+func (m *MockAuthRepo) ConsumePasswordReset(ctx context.Context, tokenHash, passwordHash string) (uuid.UUID, error) {
+	args := m.Called(ctx, tokenHash, passwordHash)
+	return args.Get(0).(uuid.UUID), args.Error(1)
+}
+
+func (m *MockAuthRepo) UpdatePasswordAndRevokeSessions(ctx context.Context, userID uuid.UUID, passwordHash string) error {
+	args := m.Called(ctx, userID, passwordHash)
 	return args.Error(0)
 }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mitlist/l10n/app_localizations.dart';
+import 'package:mitlist/theme/spacing.dart';
 import 'package:mitlist/widgets/app_button.dart';
 import 'package:mitlist/widgets/app_card.dart';
 import 'package:mitlist/widgets/app_dialog.dart';
@@ -245,6 +246,51 @@ void main() {
       expect(find.text('CONFIRM'), findsOneWidget);
       expect(find.text('CANCEL'), findsOneWidget);
       expect(find.text('DELETE'), findsOneWidget);
+    });
+
+    testWidgets('actions wrap on narrow screens with large text',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(280, 600));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: MediaQuery(
+          data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+          child: Scaffold(
+            body: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () => showAppDialog<void>(
+                  context: context,
+                  title: 'Responsive actions',
+                  body: const Text('The dialog remains usable.'),
+                  actions: [
+                    AppButton(
+                      text: 'Keep editing',
+                      variant: AppButtonVariant.outline,
+                      onPressed: () {},
+                    ),
+                    const SizedBox(width: MitlistSpacing.sm),
+                    AppButton(
+                      text: 'Discard changes',
+                      onPressed: () {},
+                    ),
+                  ],
+                ),
+                child: const Text('Show'),
+              ),
+            ),
+          ),
+        ),
+      ));
+
+      await tester.tap(find.text('Show'));
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('KEEP EDITING'), findsOneWidget);
+      expect(find.text('DISCARD CHANGES'), findsOneWidget);
     });
 
     testWidgets('Cancel action pops with false', (tester) async {

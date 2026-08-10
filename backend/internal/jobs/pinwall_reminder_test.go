@@ -80,6 +80,9 @@ func TestPinwallReminder_Run_CachesGroupMembersAndPreferences(t *testing.T) {
 	}, nil).Once()
 	repo.On("CreateNotificationsBatch", mock.Anything, mock.AnythingOfType("[]models.Notification")).Return(nil).Twice()
 	repo.On("MarkReminderSent", mock.Anything, mock.AnythingOfType("uuid.UUID"), mock.AnythingOfType("time.Time")).Return(true, nil).Twice()
+	// Author has no stored prefs and falls back to the all-on default, so they
+	// receive their own reminder alongside the other member.
+	pusher.On("SendToUser", authorID, mock.AnythingOfType("string")).Return(nil).Twice()
 	pusher.On("SendToUser", memberID, mock.AnythingOfType("string")).Return(nil).Twice()
 
 	job := &PinwallReminder{repo: repo, log: log, push: pusher}
@@ -91,7 +94,7 @@ func TestPinwallReminder_Run_CachesGroupMembersAndPreferences(t *testing.T) {
 	pusher.AssertExpectations(t)
 }
 
-func TestPinwallReminder_sendForPost_SkipsAuthorAndOptedOutMembers(t *testing.T) {
+func TestPinwallReminder_sendForPost_IncludesAuthorSkipsOptedOut(t *testing.T) {
 	log := logger.New("test")
 	repo := new(mockPinwallReminderRepo)
 	pusher := new(mockPusher)
@@ -106,15 +109,24 @@ func TestPinwallReminder_sendForPost_SkipsAuthorAndOptedOutMembers(t *testing.T)
 	cache := &groupReminderCache{
 		members: []uuid.UUID{authorID, memberID, optedOutID},
 		prefs: map[uuid.UUID]*models.NotificationPreference{
+			authorID:   {PushEnabled: true, PinwallReminder: true},
 			memberID:   {PushEnabled: true, PinwallReminder: true},
 			optedOutID: {PushEnabled: true, PinwallReminder: false},
 		},
 	}
 
 	repo.On("CreateNotificationsBatch", mock.Anything, mock.MatchedBy(func(notifications []models.Notification) bool {
-		return len(notifications) == 1 && notifications[0].UserID == memberID
+		if len(notifications) != 2 {
+			return false
+		}
+		recipients := map[uuid.UUID]bool{}
+		for _, n := range notifications {
+			recipients[n.UserID] = true
+		}
+		return recipients[authorID] && recipients[memberID]
 	})).Return(nil)
 	repo.On("MarkReminderSent", mock.Anything, post.ID, mock.AnythingOfType("time.Time")).Return(true, nil)
+	pusher.On("SendToUser", authorID, mock.AnythingOfType("string")).Return(nil)
 	pusher.On("SendToUser", memberID, mock.AnythingOfType("string")).Return(nil)
 
 	job := &PinwallReminder{repo: repo, log: log, push: pusher}

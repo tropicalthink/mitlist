@@ -178,10 +178,36 @@ Returns events from 4 sources:
 
 ```bash
 go build ./...                      # Compile
-go test ./...                       # All tests (some pre-existing failures)
+go test ./...                       # All tests
 go test ./internal/services/        # Service-layer tests
 go test ./internal/api/handlers/    # Handler integration tests
 ```
+
+### Deployed API smoke test
+
+The smoke command defaults to safe, read-only health checks:
+
+```bash
+go run ./cmd/smoke -base-url https://api.example.com
+```
+
+Full mode creates a unique disposable account and household, then verifies
+register/login/refresh/logout, a list write, an actual object upload, storage
+quota reservation/finalization/release, and cleanup. Writes require an explicit
+second flag to prevent accidental production mutations:
+
+```bash
+go run ./cmd/smoke \
+  -base-url https://api.example.com \
+  -mode full \
+  -allow-writes
+```
+
+Set `MITLIST_SMOKE_BASE_URL` instead of `-base-url` when running it from CI.
+Use `-email-domain your-domain.example` if the production email validator or
+provider rejects the default `example.invalid` domain. The command never prints
+the generated password or tokens and attempts cleanup if a step fails. Account
+cleanup uses the product's normal soft-delete endpoint.
 
 ### Test Status
 
@@ -191,9 +217,9 @@ go test ./internal/api/handlers/    # Handler integration tests
 | `internal/db` | ✅ Pass | Database utilities |
 | `internal/middleware` | ✅ Pass | Auth/CORS/logging |
 | `pkg/validation` | ✅ Pass | Validation utilities |
-| `internal/api/handlers` | ❌ Build failure | Pre-existing (stale mocks/test conflicts) |
-| `internal/repositories` | ❌ Fails | Pre-existing (arg count mismatch) |
-| `internal/jobs` | ❌ Fails | Pre-existing (assertion failures) |
+| `internal/api/handlers` | ✅ Pass | HTTP handler integration tests |
+| `internal/repositories` | ✅ Pass | Repository tests |
+| `internal/jobs` | ✅ Pass | Scheduled job tests |
 
 ## Project Layout
 

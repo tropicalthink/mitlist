@@ -46,7 +46,7 @@ func TestE2E_ListToExpenseFlow(t *testing.T) {
 	r.Get("/api/v1/expenses", financeHandler.ListExpenses)
 
 	// Create user and group
-	user := createTestUser(t, "e2e@example.com", "password123")
+	user := createTestUser(t, "e2e@example.com", "password123!")
 	token := generateTestToken(user.ID)
 
 	group := &models.Group{

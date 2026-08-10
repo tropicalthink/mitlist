@@ -18,6 +18,7 @@ import '../../widgets/app_icon.dart';
 import '../../widgets/chip.dart';
 import '../../widgets/empty_state.dart';
 
+import '../../widgets/app_toast.dart';
 // ---------------------------------------------------------------------------
 // Screen entry point
 // ---------------------------------------------------------------------------
@@ -209,9 +210,7 @@ class _CookModeScreenState extends ConsumerState<CookModeScreen> {
     unawaited(Haptics.success());
     final disableAnimations = MediaQuery.of(context).disableAnimations;
     if (disableAnimations) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.cookModeTimerDone)),
-      );
+      AppToast.info(context, l10n.cookModeTimerDone);
     } else {
       _flashScreen();
     }
@@ -227,9 +226,7 @@ class _CookModeScreenState extends ConsumerState<CookModeScreen> {
         onDone: () {
           entry.remove();
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(l10n.cookModeTimerDone)),
-            );
+            AppToast.info(context, l10n.cookModeTimerDone);
           }
         },
       ),

@@ -68,8 +68,14 @@ class PinwallRepository {
     return _decode(row?.postsJson);
   }
 
+  /// Replaces the cached post list for [groupId] with the server's.
+  ///
+  /// [limit] matches the server's own default. It must not be lowered per
+  /// caller: the cache is a single shared blob, so a smaller refresh doesn't
+  /// just fetch less — it overwrites the cache and drops every note past the
+  /// limit for the board too.
   Future<void> refreshPosts(String groupId,
-      {int limit = 20, int offset = 0}) async {
+      {int limit = 50, int offset = 0}) async {
     final posts =
         await _remote.listPosts(groupId, limit: limit, offset: offset);
     await _db.upsertPinwallPosts(

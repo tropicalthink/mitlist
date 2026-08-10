@@ -143,6 +143,32 @@ class CreateChoreRequest {
         'supplies': supplies,
         if (category != null) 'category': category,
       };
+
+  /// Inverse of [toJson], so a queued offline create can be rebuilt from its
+  /// durable outbox payload when it finally drains.
+  factory CreateChoreRequest.fromJson(Map<String, dynamic> json) =>
+      CreateChoreRequest(
+        groupId: json['group_id'] as String,
+        name: json['name'] as String,
+        description: json['description'] as String?,
+        rotationType: json['rotation_type'] as String? ?? 'none',
+        frequency: json['frequency'] as String? ?? 'daily',
+        periodInterval: (json['period_interval'] as num?)?.toInt() ?? 1,
+        periodConfig: _stringList(json['period_config']),
+        startDate: json['start_date'] == null
+            ? null
+            : DateTime.parse(json['start_date'] as String),
+        trackDateOnly: json['track_date_only'] as bool? ?? false,
+        rollover: json['rollover'] as bool? ?? false,
+        assignmentType: json['assignment_type'] as String? ?? 'round-robin',
+        assignmentConfig: _stringList(json['assignment_config']),
+        isActive: json['is_active'] as bool? ?? true,
+        supplies: _stringList(json['supplies']),
+        category: json['category'] as String?,
+      );
+
+  static List<String> _stringList(Object? raw) =>
+      raw is List ? raw.whereType<String>().toList() : const [];
 }
 
 class UpdateChoreRequest {

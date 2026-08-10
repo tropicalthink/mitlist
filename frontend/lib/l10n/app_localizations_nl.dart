@@ -262,6 +262,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get choreAppBarTitle => 'Klusjes';
 
   @override
+  String get choreManageZones => 'Zones beheren';
+
+  @override
   String get choreAddChore => 'Klus toevoegen';
 
   @override
@@ -1660,10 +1663,48 @@ class AppLocalizationsNl extends AppLocalizations {
       'Dit verwijdert deze uitgave en alle bijbehorende bonnen permanent. Dit kan niet ongedaan worden gemaakt.';
 
   @override
-  String get expenseSettlementRecorded => 'Vereffening vastgelegd';
+  String get expenseSettlementRecorded =>
+      'Vereffening vastgelegd – wacht op bevestiging';
 
   @override
   String get expenseSettlementFailed => 'Kon vereffening niet vastleggen.';
+
+  @override
+  String get expenseSettlementNeedsYou => 'Wacht op jouw bevestiging';
+
+  @override
+  String get expenseSettlementWaiting => 'Wacht op bevestiging';
+
+  @override
+  String get expenseSettlementHistory => 'Recente vereffeningen';
+
+  @override
+  String expenseSettlementRow(String from, String to) {
+    return '$from heeft $to betaald';
+  }
+
+  @override
+  String get expenseSettlementConfirmAction => 'Bevestigen';
+
+  @override
+  String get expenseSettlementDeclineAction => 'Afwijzen';
+
+  @override
+  String get expenseSettlementCancelAction => 'Verzoek intrekken';
+
+  @override
+  String get expenseSettlementStatusConfirmed => 'Bevestigd';
+
+  @override
+  String get expenseSettlementStatusDeclined => 'Afgewezen';
+
+  @override
+  String get expenseSettlementResponseFailed =>
+      'Vereffening kon niet worden bijgewerkt.';
+
+  @override
+  String get expenseSettlementCancelFailed =>
+      'Vereffening kon niet worden ingetrokken.';
 
   @override
   String get expenseSuggestedPaymentsTitle => 'Voorgestelde betalingen';
@@ -3958,6 +3999,41 @@ class AppLocalizationsNl extends AppLocalizations {
   String get authOnboardingHomeIconSemantic => 'Huishouden-startpictogram';
 
   @override
+  String get welcomePillarsSemantic =>
+      'Gedeelde lijsten, geld, klusjes en keuken. Alles op één plek.';
+
+  @override
+  String get authOnboardingNameTitle => 'Geef je huishouden een naam';
+
+  @override
+  String get authOnboardingNameBody =>
+      'Schrijf hem op het briefje. Je kunt hem later aanpassen.';
+
+  @override
+  String get authOnboardingPinIt => 'Prik hem op het prikbord';
+
+  @override
+  String get authOnboardingInviteTitle => 'Haal je huisgenoten erbij';
+
+  @override
+  String get authOnboardingInviteBody =>
+      'Deel deze code. Wie hem invoert, komt bij je huishouden.';
+
+  @override
+  String get authOnboardingGoToBoard => 'Naar je prikbord';
+
+  @override
+  String get hubChecklistTitle => 'Breng het huis op gang';
+
+  @override
+  String get hubChecklistDone => 'Klaar';
+
+  @override
+  String hubChecklistProgress(int done, int total) {
+    return '$done van $total klaar';
+  }
+
+  @override
   String get hubStatsChores => 'Klussen';
 
   @override
@@ -4918,4 +4994,188 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get householdStorageProgressLabel => 'Gebruikte huishoudopslag';
+
+  @override
+  String get accountSendFeedback => 'Feedback sturen';
+
+  @override
+  String get feedbackCardTitle => 'Help mitlist vormgeven';
+
+  @override
+  String get feedbackCardBody =>
+      'Vraag een functie aan, meld een bug of deel een idee — het gaat direct naar het team.';
+
+  @override
+  String get feedbackSheetTitle => 'Feedback sturen';
+
+  @override
+  String get feedbackSheetIntro =>
+      'Vraag een functie aan, meld een bug of vertel ons wat beter kan — we lezen elk bericht.';
+
+  @override
+  String get feedbackFieldLabel => 'Je bericht';
+
+  @override
+  String get feedbackFieldHint => 'Ik zou willen dat mitlist…';
+
+  @override
+  String get feedbackSend => 'Versturen';
+
+  @override
+  String get feedbackSending => 'Wordt verstuurd…';
+
+  @override
+  String get feedbackSent => 'Bedankt — je verzoek is verstuurd!';
+
+  @override
+  String get feedbackEmpty => 'Schrijf eerst een kort bericht.';
+
+  @override
+  String get feedbackFailed =>
+      'Je verzoek kon nu niet worden verstuurd. Probeer het later opnieuw.';
+
+  @override
+  String get accountOcrTrainingTitle => 'Offline handschrift-OCR verbeteren';
+
+  @override
+  String get accountOcrTrainingDescription =>
+      'Handmatig gecontroleerde regeluitsneden blijven op dit apparaat totdat je ze exporteert of verwijdert. Er wordt niets geüpload.';
+
+  @override
+  String get accountOcrTrainingExport => 'OCR-trainingsgegevens exporteren';
+
+  @override
+  String accountOcrTrainingSamples(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count gecorrigeerde regels',
+      one: '1 gecorrigeerde regel',
+      zero: 'Geen gecorrigeerde regels',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get accountOcrTrainingClear => 'OCR-trainingsgegevens verwijderen';
+
+  @override
+  String get accountOcrTrainingExportEmpty =>
+      'Er zijn nog geen gecorrigeerde OCR-regels om te exporteren.';
+
+  @override
+  String get accountOcrTrainingClearTitle =>
+      'OCR-trainingsgegevens verwijderen?';
+
+  @override
+  String get accountOcrTrainingClearBody =>
+      'Hiermee worden alle opgeslagen regeluitsneden permanent van dit apparaat verwijderd.';
+
+  @override
+  String get billingPremiumTitle => 'mitlist premium';
+
+  @override
+  String get billingLimitReachedTitle => 'Dit huishouden is vol';
+
+  @override
+  String billingLimitReachedBody(num limit, num next) {
+    return 'Huishoudens tot $limit personen zijn gratis. Om een ${next}e lid toe te voegen heeft één persoon premium nodig — en dat geldt voor iedereen hier.';
+  }
+
+  @override
+  String get billingCoversOneHousehold =>
+      'Premium geldt voor één huishouden tegelijk. Jij kiest welke en kunt altijd wisselen.';
+
+  @override
+  String billingCoveredBy(String name) {
+    return 'Premium op dit huishouden, betaald door $name.';
+  }
+
+  @override
+  String get billingPremiumActive => 'Premium is hier actief';
+
+  @override
+  String get billingMoveHereTitle => 'Verplaats je premium hierheen';
+
+  @override
+  String get billingMoveHereBody =>
+      'Je hebt al premium op een ander huishouden. Verplaats het hierheen in plaats van dubbel te betalen — het andere huishouden houdt iedereen die er al is, maar kan er niemand meer bij nemen.';
+
+  @override
+  String get billingMoveHereAction => 'Premium hierheen verplaatsen';
+
+  @override
+  String get billingMoved => 'Premium geldt nu voor dit huishouden.';
+
+  @override
+  String get billingMoveFailed =>
+      'Je premium kon niet worden verplaatst. Probeer het opnieuw.';
+
+  @override
+  String get billingChooseHousehold => 'Kies je premium-huishouden';
+
+  @override
+  String get billingMonthly => 'Maandelijks';
+
+  @override
+  String get billingYearly => 'Jaarlijks';
+
+  @override
+  String get billingYearlyBadge => 'Beste prijs';
+
+  @override
+  String get billingSubscribe => 'Premium nemen';
+
+  @override
+  String get billingOpeningCheckout => 'Afrekenen wordt geopend...';
+
+  @override
+  String get billingCheckoutFailed =>
+      'Afrekenen kon niet worden gestart. Probeer het opnieuw.';
+
+  @override
+  String get billingManage => 'Abonnement beheren';
+
+  @override
+  String get billingPortalFailed =>
+      'Het facturatieportaal kon niet worden geopend.';
+
+  @override
+  String get billingReturnHint =>
+      'Rond het af in je browser en kom terug — premium wordt automatisch geactiveerd.';
+
+  @override
+  String get billingAccountCardTitle => 'Premium';
+
+  @override
+  String billingAccountCardFree(num limit) {
+    return 'Je gebruikt het gratis abonnement. Huishoudens tot $limit personen zijn gratis.';
+  }
+
+  @override
+  String billingAccountCardActive(String household) {
+    return 'Premium is actief op $household.';
+  }
+
+  @override
+  String get billingAccountCardUnassigned =>
+      'Premium is actief maar nog niet aan een huishouden toegewezen.';
+
+  @override
+  String billingRenewsOn(String date) {
+    return 'Verlengt op $date';
+  }
+
+  @override
+  String billingEndsOn(String date) {
+    return 'Eindigt op $date';
+  }
+
+  @override
+  String billingMemberUsage(num count, num limit) {
+    return '$count van $limit gratis plekken gebruikt';
+  }
+
+  @override
+  String get billingUnlimitedMembers => 'Onbeperkt aantal leden';
 }

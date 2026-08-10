@@ -18,6 +18,63 @@ class _FakeConnectivity implements Connectivity {
 }
 
 void main() {
+  // Plan 006. The outbox coordinator drains on `onStatusChange`, but that only
+  // ever fired on OS *interface* changes. A self-hosted server coming back
+  // while wifi stayed up therefore emitted nothing, and queued writes sat
+  // unsynced until app resume or the user's next edit — the "sync is
+  // unreliable" symptom. Probe verdicts now drive the stream too.
+  group('ConnectivityService.onStatusChange', () {
+    test('emits when the server recovers with the interface still up',
+        () async {
+      var reachable = true;
+      final svc = ConnectivityService(
+        connectivity: _FakeConnectivity([ConnectivityResult.wifi]),
+        reachabilityProbe: () async => reachable,
+        cacheTtl: Duration.zero,
+      );
+      addTearDown(svc.dispose);
+
+      final events = <bool>[];
+      svc.onStatusChange.listen(events.add);
+
+      await svc.isOnline(); // establish an online verdict
+      reachable = false;
+      await svc.isOnline(); // damped by hysteresis — still reported online
+      await svc.isOnline(); // second failure flips the verdict
+      await pumpEventQueue();
+
+      expect(events, equals([false]),
+          reason: 'the offline flip is announced exactly once');
+
+      reachable = true;
+      await svc.isOnline();
+      await pumpEventQueue();
+
+      expect(events, equals([false, true]),
+          reason: 'recovery must emit so the outbox coordinator drains');
+    });
+
+    test('does not emit while the verdict is unchanged', () async {
+      final svc = ConnectivityService(
+        connectivity: _FakeConnectivity([ConnectivityResult.wifi]),
+        reachabilityProbe: () async => true,
+        cacheTtl: Duration.zero,
+      );
+      addTearDown(svc.dispose);
+
+      final events = <bool>[];
+      svc.onStatusChange.listen(events.add);
+
+      await svc.isOnline();
+      await svc.isOnline();
+      await svc.isOnline();
+      await pumpEventQueue();
+
+      expect(events, isEmpty,
+          reason: 'a steady connection must not spam drains');
+    });
+  });
+
   group('ConnectivityService.isOnline', () {
     test('offline when no interface, without probing', () async {
       var probed = false;
@@ -41,10 +98,76 @@ void main() {
       final svc = ConnectivityService(
         connectivity: _FakeConnectivity([ConnectivityResult.wifi]),
         reachabilityProbe: () async => false,
+        cacheTtl: Duration.zero,
+      );
+      addTearDown(svc.dispose);
+
+      await svc.isOnline();
+      expect(await svc.isOnline(), isFalse);
+    });
+
+    test('a single probe failure does not flip to offline', () async {
+      final svc = ConnectivityService(
+        connectivity: _FakeConnectivity([ConnectivityResult.wifi]),
+        reachabilityProbe: () async => false,
+        cacheTtl: Duration.zero,
+      );
+      addTearDown(svc.dispose);
+
+      expect(await svc.isOnline(), isTrue,
+          reason: 'one failed probe is soft evidence — a cold radio or a '
+              'backgrounded app fails it just as readily as a dead uplink');
+    });
+
+    test('one success clears a pending failure streak', () async {
+      var reachable = false;
+      final svc = ConnectivityService(
+        connectivity: _FakeConnectivity([ConnectivityResult.wifi]),
+        reachabilityProbe: () async => reachable,
+        cacheTtl: Duration.zero,
+      );
+      addTearDown(svc.dispose);
+
+      await svc.isOnline(); // failure 1 of 2
+      reachable = true;
+      expect(await svc.isOnline(), isTrue);
+
+      // Streak was cleared, so the next failure starts counting from zero.
+      reachable = false;
+      expect(await svc.isOnline(), isTrue);
+    });
+
+    test('reset() clears a verdict reached while backgrounded', () async {
+      var reachable = false;
+      final svc = ConnectivityService(
+        connectivity: _FakeConnectivity([ConnectivityResult.wifi]),
+        reachabilityProbe: () async => reachable,
+        cacheTtl: const Duration(seconds: 60),
+        failureThreshold: 1,
       );
       addTearDown(svc.dispose);
 
       expect(await svc.isOnline(), isFalse);
+
+      // The network is fine again. This is the resume case: without reset()
+      // the cached false is replayed for the rest of the TTL, which is what
+      // painted a stale offline bar over a working app.
+      reachable = true;
+      svc.reset();
+      expect(await svc.isOnline(), isTrue);
+    });
+
+    test('no interface reads as offline immediately, without damping',
+        () async {
+      final svc = ConnectivityService(
+        connectivity: _FakeConnectivity([ConnectivityResult.none]),
+        reachabilityProbe: () async => true,
+      );
+      addTearDown(svc.dispose);
+
+      expect(await svc.isOnline(), isFalse,
+          reason: 'interface state is hard evidence from the OS — airplane '
+              'mode should show the banner on the first observation');
     });
 
     test('interface up and server reachable reads as online', () async {

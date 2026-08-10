@@ -3,17 +3,49 @@ import 'package:dio/dio.dart';
 /// Exception that carries a clean, user-facing message.
 class ApiException implements Exception {
   final String message;
-  const ApiException(this.message);
+
+  /// The verbatim message the backend sent in its error payload, if any.
+  /// UI-layer mappers prefer this over a generic fallback.
+  final String? serverMessage;
+
+  /// The underlying transport error, so UI-layer mappers can still
+  /// localize network/status failures.
+  final DioException? cause;
+
+  const ApiException(this.message, {this.serverMessage, this.cause});
+
+  /// True when the backend refused because the household needs premium
+  /// (HTTP 402). Callers show the premium sheet instead of a plain error.
+  bool get isPaymentRequired => cause?.response?.statusCode == 402;
+
   @override
   String toString() => message;
 }
 
-Exception apiException(DioException e) =>
-    ApiException(ApiErrorMapper.fromDio(e));
+Exception apiException(DioException e) => ApiException(
+      ApiErrorMapper.fromDio(e),
+      serverMessage: ApiErrorMapper.serverMessage(e),
+      cause: e,
+    );
 
 /// Maps backend error responses and network failures into stable,
 /// user-facing error messages.
 class ApiErrorMapper {
+  /// The backend's specific plain-language message, or null when the
+  /// response carried none (e.g. pure network failures). Limited to 4xx:
+  /// 5xx bodies say "internal server error", which is worse than the
+  /// localized fallback.
+  static String? serverMessage(DioException e) {
+    final status = e.response?.statusCode;
+    if (status == null || status >= 500) return null;
+    final data = e.response?.data;
+    if (data is Map<String, dynamic>) {
+      final message = data['message']?.toString();
+      if (message != null && message.isNotEmpty) return message;
+    }
+    return null;
+  }
+
   static String fromDio(DioException e) {
     // 1. Try backend error response first.
     final data = e.response?.data;
@@ -38,6 +70,8 @@ class ApiErrorMapper {
         return 'Invalid request';
       case 401:
         return 'Your session expired. Please sign in again.';
+      case 402:
+        return 'This household needs premium to add more members.';
       case 403:
         return 'You don\'t have permission to do that.';
       case 404:

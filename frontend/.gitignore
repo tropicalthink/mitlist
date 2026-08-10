@@ -48,6 +48,13 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+/android/.kotlin/
+
+# Local OCR evaluation payload. Generated from private sample photos and
+# compiled only into a connected-device evaluation build.
+/test/fixtures/ocr_eval.local.json
+/test/fixtures/ocr_eval.local.*.json
+/integration_test/ocr_eval_test.local.dart
 
 # Firebase config (download from Firebase Console; do not commit)
 /android/app/google-services.json

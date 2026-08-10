@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../services/connectivity_service.dart';
@@ -136,6 +137,14 @@ final outboxStateProvider = StreamProvider<OutboxState>((ref) async* {
 
   await for (final _ in Stream.periodic(const Duration(seconds: 3))) {
     if (ref.state.hasError) break;
+    // Skip while backgrounded. The OS can suspend our network without touching
+    // the interface state (Xiaomi's HyperOS is aggressive about this), so a
+    // probe run now would fail for reasons that say nothing about real
+    // connectivity — and that false "offline" would be the state still on
+    // screen when the user comes back. Holding the last foreground verdict is
+    // strictly better than sampling something we cannot trust.
+    final lifecycle = WidgetsBinding.instance.lifecycleState;
+    if (lifecycle != null && lifecycle != AppLifecycleState.resumed) continue;
     yield await computeState();
   }
 });

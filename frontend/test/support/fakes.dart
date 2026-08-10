@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:mitlist/models/finance_models.dart' as finance;
 import 'package:mitlist/models/group_models.dart';
 import 'package:mitlist/models/list_models.dart';
+import 'package:mitlist/models/chore_models.dart';
 import 'package:mitlist/services/chore_service.dart';
 import 'package:mitlist/services/connectivity_service.dart';
 import 'package:mitlist/services/finance_service.dart';
@@ -39,6 +40,11 @@ class FakeConnectivityService implements ConnectivityService {
   @override
   Future<bool> isOnline({bool forceProbe = false}) async => _online;
 
+  /// No-op: the fake has no cache or failure streak to clear, and tests drive
+  /// the state directly through [setOnline].
+  @override
+  void reset() {}
+
   @override
   void dispose() {
     _controller.close();
@@ -54,6 +60,41 @@ class FakeFinanceService implements FinanceService {
   final List<finance.CreateExpenseRequest> createCalls = [];
   final List<UpdateExpenseCall> updateCalls = [];
   final List<String> deleteCalls = [];
+
+  /// Settlements the server will return. Null keeps [listSettlements]
+  /// throwing, which is how the offline paths are exercised.
+  List<finance.Settlement>? settlements;
+
+  /// Server id handed back by [createGroupSettlement].
+  String serverSettlementId = 'server-settlement-1';
+  final List<finance.CreateSettlementRequest> settlementCreateCalls = [];
+
+  @override
+  Future<List<finance.Settlement>> listSettlements(
+    String groupId, {
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    final s = settlements;
+    if (s == null) throw StateError('offline: listSettlements');
+    return s;
+  }
+
+  @override
+  Future<finance.Settlement> createGroupSettlement(
+      String groupId, finance.CreateSettlementRequest req) async {
+    settlementCreateCalls.add(req);
+    return finance.Settlement(
+      id: serverSettlementId,
+      groupId: groupId,
+      fromUserId: req.fromUserId,
+      toUserId: req.toUserId,
+      amount: req.amount,
+      status: finance.SettlementStatus.pending,
+      createdBy: req.fromUserId,
+      createdAt: DateTime.utc(2026, 1, 1),
+    );
+  }
 
   /// When non-null, the next [createExpense] call will throw this exception.
   Exception? throwOnCreate;
@@ -362,9 +403,15 @@ class FakeGroupService implements GroupService {
   /// The list returned by [listGroups] when not throwing.
   List<Group> listResult = const [];
 
+  /// Full override of [listGroups]'s result, for tests that need to control
+  /// *timing* rather than content — e.g. a request that never completes, which
+  /// is how a cache-first read proves it is not waiting on the network.
+  Future<List<Group>> Function()? listOverride;
+
   @override
   Future<List<Group>> listGroups({int limit = 50, int offset = 0}) async {
     listCalls++;
+    if (listOverride != null) return listOverride!();
     if (throwOnList != null) throw throwOnList!;
     return listResult;
   }
@@ -394,6 +441,55 @@ class FakeGroupService implements GroupService {
 /// optimistic cache patches must survive (the swallowed drain/refresh can't
 /// overwrite them).
 class FakeChoreService implements ChoreService {
+  /// Chores the server will return from [listCurrentChores]. Left null to keep
+  /// the "everything throws" offline behaviour the older tests rely on.
+  List<CurrentChore>? currentChores;
+
+  /// When set, [createChore] succeeds and returns a chore carrying this id.
+  String? createdChoreId;
+
+  final List<CreateChoreRequest> createCalls = [];
+
+  @override
+  Future<List<CurrentChore>> listCurrentChores(
+    String groupId, {
+    int limit = 100,
+    int offset = 0,
+    int dueSoonDays = 7,
+  }) async {
+    final chores = currentChores;
+    if (chores == null) throw StateError('offline: listCurrentChores');
+    return chores;
+  }
+
+  @override
+  Future<Chore> createChore(CreateChoreRequest req) async {
+    final id = createdChoreId;
+    if (id == null) throw StateError('offline: createChore');
+    createCalls.add(req);
+    final now = DateTime.now();
+    return Chore(
+      id: id,
+      groupId: req.groupId,
+      name: req.name,
+      description: req.description,
+      rotationType: req.rotationType,
+      frequency: req.frequency,
+      periodInterval: req.periodInterval,
+      periodConfig: req.periodConfig,
+      startDate: req.startDate,
+      trackDateOnly: req.trackDateOnly,
+      rollover: req.rollover,
+      assignmentType: req.assignmentType,
+      assignmentConfig: req.assignmentConfig,
+      isActive: req.isActive,
+      supplies: req.supplies,
+      category: req.category,
+      createdAt: now,
+      updatedAt: now,
+    );
+  }
+
   @override
   dynamic noSuchMethod(Invocation invocation) =>
       throw StateError('offline: ${invocation.memberName}');

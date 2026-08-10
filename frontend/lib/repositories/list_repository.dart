@@ -47,8 +47,7 @@ class ListRepository {
         _remote = remote,
         _uuid = uuid ?? const Uuid(),
         _autoSync = autoSync,
-        _promotionService =
-            promotionService ?? LocalItemPromotionService(db),
+        _promotionService = promotionService ?? LocalItemPromotionService(db),
         _groceryRepo = groceryRepo;
 
   Stream<List<ItemList>> watchListsByGroup(String groupId) {

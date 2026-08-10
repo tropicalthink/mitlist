@@ -26,6 +26,7 @@ import 'widgets/expense_settlements_body.dart';
 import 'widgets/expense_states.dart';
 import 'widgets/expense_timeline_body.dart';
 
+import '../../widgets/app_toast.dart';
 // ---------------------------------------------------------------------------
 // Screen
 // ---------------------------------------------------------------------------
@@ -155,11 +156,8 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     } catch (e) {
       if (!mounted) return;
       unawaited(Haptics.failure());
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content:
-                Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
-      );
+      AppToast.error(
+          context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
     }
   }
 
@@ -204,15 +202,39 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       if (!mounted) return;
       unawaited(Haptics.success());
       final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.expenseSettlementRecorded)),
-      );
+      AppToast.success(context, l10n.expenseSettlementRecorded);
     } catch (e) {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.expenseSettlementFailed)),
-      );
+      AppToast.error(context, l10n.expenseSettlementFailed);
+    }
+  }
+
+  Future<void> _respondToSettlement(
+      SettlementDisplay settlement, bool approve) async {
+    if (_controller.isRespondingToSettlement) return;
+    unawaited(Haptics.light());
+    try {
+      await _controller.respondToSettlement(
+          settlement.id, approve, AppLocalizations.of(context)!);
+      if (!mounted) return;
+      if (approve) unawaited(Haptics.success());
+    } catch (e) {
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
+      AppToast.error(context, l10n.expenseSettlementResponseFailed);
+    }
+  }
+
+  Future<void> _cancelSettlement(SettlementDisplay settlement) async {
+    unawaited(Haptics.light());
+    try {
+      await _controller.cancelSettlement(
+          settlement.id, AppLocalizations.of(context)!);
+    } catch (e) {
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
+      AppToast.error(context, l10n.expenseSettlementCancelFailed);
     }
   }
 
@@ -319,13 +341,23 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                               )
                             : ExpenseSettlementsBody(
                                 suggestions: _controller.suggestions,
+                                needsMyResponse:
+                                    _controller.settlementsNeedingMyResponse,
+                                awaitingOthers:
+                                    _controller.settlementsAwaitingOthers,
+                                recentSettlements:
+                                    _controller.recentSettlements,
                                 balances: _controller.balances,
                                 currency: _controller.groupCurrency,
                                 isSettling: _controller.isSettling,
+                                isResponding:
+                                    _controller.isRespondingToSettlement,
                                 confettiController: _confettiController,
                                 onRefresh: () => _controller
                                     .load(AppLocalizations.of(context)!),
                                 onRecordSettlement: _recordSettlement,
+                                onRespondSettlement: _respondToSettlement,
+                                onCancelSettlement: _cancelSettlement,
                               ),
           ),
         ],

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../models/auth_models.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/spacing.dart';
 import '../../widgets/alert.dart';
@@ -40,6 +39,7 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
     final idToken = params['id_token'];
     final accessToken = params['access_token'];
     final refreshToken = params['refresh_token'];
+    final handoff = params['handoff'];
     final oauthError = params['error'];
 
     if (oauthError != null && oauthError.isNotEmpty) {
@@ -47,8 +47,12 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
       return;
     }
 
+    if (accessToken != null || refreshToken != null) {
+      setState(() => _error = l10n.oauthMissingParams);
+      return;
+    }
     if (provider == null || code == null || state == null) {
-      if (accessToken == null || refreshToken == null) {
+      if (handoff == null || handoff.isEmpty) {
         setState(() => _error = l10n.oauthMissingParams);
         return;
       }
@@ -57,12 +61,9 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
     try {
       final authService = await ref.read(authServiceProviderAsync.future);
       final rememberMe = await authService.consumePendingOAuthRememberMe();
-      if (accessToken != null && refreshToken != null) {
-        await authService.saveTokenPair(
-          TokenPair(
-            accessToken: accessToken,
-            refreshToken: refreshToken,
-          ),
+      if (handoff != null && handoff.isNotEmpty) {
+        await authService.exchangeOAuthHandoff(
+          handoff,
           rememberMe: rememberMe,
         );
       } else {
@@ -99,7 +100,8 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
   /// mobile tokens in the fragment; Android deep links only surface queries.
   Map<String, String> _callbackParams(Uri uri) {
     final params = Map<String, String>.from(uri.queryParameters);
-    if (params.containsKey('access_token') ||
+    if (params.containsKey('handoff') ||
+        params.containsKey('access_token') ||
         params.containsKey('code') ||
         params.containsKey('error')) {
       return params;

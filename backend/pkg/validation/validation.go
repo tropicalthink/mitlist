@@ -18,7 +18,7 @@ const (
 	MaxListNameLength    = 100
 	MaxItemNameLength    = 200
 	MaxGroupNameLength   = 100
-	MinPasswordLength    = 6
+	MinPasswordLength    = 12
 )
 
 // NewFieldError creates a validation error for a specific field.
@@ -50,10 +50,17 @@ func Email(s string) error {
 	return nil
 }
 
+// NormalizeEmail returns the canonical identity used for storage, lookup, and
+// throttling. Domain and local-part casing are treated case-insensitively by
+// mitlist to avoid duplicate and rate-limit-bypass identities.
+func NormalizeEmail(s string) string {
+	return strings.ToLower(strings.TrimSpace(s))
+}
+
 // Password validates password length constraints.
 func Password(s string) error {
 	if len(s) < MinPasswordLength {
-		return NewFieldError("password", "password must be at least 6 characters")
+		return NewFieldError("password", "password must be at least 12 characters")
 	}
 	if len(s) > MaxPasswordLength {
 		return NewFieldError("password", "password too long")

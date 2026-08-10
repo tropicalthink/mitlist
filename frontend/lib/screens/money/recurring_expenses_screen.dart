@@ -18,6 +18,7 @@ import '../../utils/active_group_context.dart';
 import '../../utils/expense_categories.dart';
 import '../../utils/format_currency.dart';
 import '../../utils/friendly_error.dart';
+import '../../utils/latest_request_guard.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_input.dart';
 import '../../widgets/app_card.dart';
@@ -44,6 +45,7 @@ class _RecurringExpensesScreenState
   final List<RecurringExpense> _items = [];
   Map<String, String> _userLabels = {};
   String? _submittingId;
+  final LatestRequestGuard _loadGuard = LatestRequestGuard();
 
   @override
   void initState() {
@@ -51,9 +53,17 @@ class _RecurringExpensesScreenState
     _load();
   }
 
+  @override
+  void dispose() {
+    _loadGuard.dispose();
+    super.dispose();
+  }
+
   Future<void> _load() async {
+    final request = _loadGuard.begin();
+    final hadContent = _items.isNotEmpty;
     setState(() {
-      _isLoading = true;
+      _isLoading = !hadContent;
       _error = null;
     });
     try {
@@ -63,7 +73,9 @@ class _RecurringExpensesScreenState
         ref.read(currentGroupIdProvider),
       );
       if (!isValidGroupId(groupId)) {
+        if (!mounted || !_loadGuard.isCurrent(request)) return;
         setState(() {
+          _items.clear();
           _hasHousehold = false;
           _isLoading = false;
         });
@@ -72,17 +84,28 @@ class _RecurringExpensesScreenState
       final financeService = await ref.read(financeServiceProviderAsync.future);
       final items = await financeService.listRecurringExpenses(groupId!);
       final summary = await financeService.getFinanceSummary(groupId);
+      if (!mounted || !_loadGuard.isCurrent(request)) return;
       setState(() {
         _items.clear();
         _items.addAll(items);
         _userLabels = {
           for (final e in summary.balances) e.userId: e.displayName,
         };
+        _hasHousehold = true;
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted || !_loadGuard.isCurrent(request)) return;
+      final message = friendlyErrorMessage(e, AppLocalizations.of(context)!);
+      if (hadContent) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+        return;
+      }
       setState(() {
-        _error = friendlyErrorMessage(e, AppLocalizations.of(context)!);
+        _error = message;
         _isLoading = false;
       });
     }

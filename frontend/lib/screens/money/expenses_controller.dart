@@ -78,6 +78,41 @@ class SettlementSuggestionDisplay {
   });
 }
 
+/// A settlement mapped for display: labels resolved, amount in major units.
+class SettlementDisplay {
+  final String id;
+  final String fromLabel;
+  final String toLabel;
+  final double amount;
+  final SettlementStatus status;
+
+  /// True when the current user must confirm/decline this settlement.
+  final bool needsMyResponse;
+
+  /// True when the current user recorded it and is waiting on the other party.
+  final bool isMine;
+
+  final DateTime createdAt;
+
+  /// True while this settlement is only in the local outbox. The server has
+  /// never seen it, so any action needing a server id must be withheld — and
+  /// the row should say it is waiting rather than look like a normal pending
+  /// settlement the counterparty could already act on.
+  final bool isPendingSync;
+
+  const SettlementDisplay({
+    required this.id,
+    required this.fromLabel,
+    required this.toLabel,
+    required this.amount,
+    required this.status,
+    required this.needsMyResponse,
+    required this.isMine,
+    required this.createdAt,
+    this.isPendingSync = false,
+  });
+}
+
 class BalanceDisplayEntry {
   final String userId;
   final String name;
@@ -141,6 +176,8 @@ class ExpensesController extends ChangeNotifier {
   List<ExpenseGroupDisplay> _timelineGroups = [];
   List<SettlementSuggestionDisplay> _suggestions = [];
   List<BalanceDisplayEntry> _balances = [];
+  List<Settlement> _settlements = [];
+  bool _isRespondingToSettlement = false;
 
   bool _listenersSetUp = false;
   String? _currentUserId;
@@ -162,8 +199,60 @@ class ExpensesController extends ChangeNotifier {
   String get groupCurrency => _groupCurrency;
   Map<String, String> get userLabels => _userLabels;
   List<ExpenseGroupDisplay> get timelineGroups => _timelineGroups;
-  List<SettlementSuggestionDisplay> get suggestions => _suggestions;
   List<BalanceDisplayEntry> get balances => _balances;
+  bool get isRespondingToSettlement => _isRespondingToSettlement;
+
+  /// Suggestions, minus pairs that already have a pending settlement recorded
+  /// in the same direction — prevents double-settling while one awaits
+  /// confirmation.
+  List<SettlementSuggestionDisplay> get suggestions {
+    final pendingPairs = {
+      for (final s in _settlements)
+        if (s.status == SettlementStatus.pending)
+          '${s.fromUserId}>${s.toUserId}',
+    };
+    return _suggestions
+        .where((sug) => !pendingPairs.contains('${sug.from}>${sug.to}'))
+        .toList();
+  }
+
+  /// Pending settlements the current user must confirm or decline.
+  List<SettlementDisplay> get settlementsNeedingMyResponse =>
+      _settlementDisplays()
+          .where(
+              (s) => s.status == SettlementStatus.pending && s.needsMyResponse)
+          .toList();
+
+  /// Pending settlements the current user recorded, awaiting the other party.
+  List<SettlementDisplay> get settlementsAwaitingOthers => _settlementDisplays()
+      .where((s) => s.status == SettlementStatus.pending && s.isMine)
+      .toList();
+
+  /// Recently resolved settlements (confirmed or declined), newest first.
+  List<SettlementDisplay> get recentSettlements => _settlementDisplays()
+      .where((s) => s.status != SettlementStatus.pending)
+      .take(10)
+      .toList();
+
+  List<SettlementDisplay> _settlementDisplays() {
+    final me = _currentUserId;
+    return _settlements
+        .map((s) => SettlementDisplay(
+              id: s.id,
+              fromLabel: _userLabels[s.fromUserId] ?? s.fromUserId,
+              toLabel: _userLabels[s.toUserId] ?? s.toUserId,
+              amount: s.amount / 100.0,
+              status: s.status,
+              // An unsynced settlement can never need my response: I recorded
+              // it, and the counterparty cannot see it until it syncs.
+              needsMyResponse:
+                  !s.isLocal && me != null && s.counterpartyId == me,
+              isMine: me != null && s.createdBy == me,
+              createdAt: s.createdAt,
+              isPendingSync: s.isLocal,
+            ))
+        .toList();
+  }
 
   @override
   void dispose() {
@@ -225,6 +314,14 @@ class ExpensesController extends ChangeNotifier {
       final summary = validGroupId == null
           ? null
           : await repo.watchSummaryByGroup(validGroupId).first;
+
+      if (validGroupId != null) {
+        // Cache-backed: refreshes from the network, falls back to the stored
+        // list offline, and keeps still-queued local settlements spliced in.
+        _settlements = await repo.loadSettlements(validGroupId);
+      } else {
+        _settlements = [];
+      }
 
       if (_disposed) return;
 
@@ -472,14 +569,18 @@ class ExpensesController extends ChangeNotifier {
     _isSettling = true;
     _notify();
     try {
-      final financeService = await ref.read(financeServiceProviderAsync.future);
-      await financeService.createGroupSettlement(
-        groupId,
-        CreateSettlementRequest(
+      // Offline-first: recording asserts something that already happened, so
+      // it queues and shows as pending immediately. Pending settlements do not
+      // move the balance either way, so nothing is misreported while it syncs.
+      final repo = await ref.read(financeRepositoryProvider.future);
+      await repo.recordSettlementOfflineFirst(
+        groupId: groupId,
+        req: CreateSettlementRequest(
           fromUserId: suggestion.from,
           toUserId: suggestion.to,
           amount: (suggestion.amount * 100).round(),
         ),
+        createdBy: _currentUserId ?? '',
       );
       await load(l10n);
     } finally {
@@ -495,4 +596,57 @@ class ExpensesController extends ChangeNotifier {
     await service.deleteExpense(expenseId);
     await load(l10n);
   }
+
+  /// Confirms or declines a settlement awaiting the current user's response.
+  Future<void> respondToSettlement(
+    String settlementId,
+    bool approve,
+    AppLocalizations l10n,
+  ) async {
+    if (_isRespondingToSettlement) return;
+    // Approval stays online. Confirming a counterparty's money transfer is an
+    // assertion about the world right now, not a record of something already
+    // done — queuing it could land against a settlement that was cancelled or
+    // already declined in the meantime. And a `local-` id does not exist on the
+    // server at all, so there is nothing to respond to yet.
+    if (isLocalSettlement(settlementId)) return;
+    _isRespondingToSettlement = true;
+    _notify();
+    try {
+      final service = await ref.read(financeServiceProviderAsync.future);
+      if (approve) {
+        await service.confirmSettlement(settlementId);
+      } else {
+        await service.declineSettlement(settlementId);
+      }
+      await load(l10n);
+    } finally {
+      if (!_disposed) {
+        _isRespondingToSettlement = false;
+        _notify();
+      }
+    }
+  }
+
+  /// Cancels the current user's own pending settlement.
+  Future<void> cancelSettlement(
+      String settlementId, AppLocalizations l10n) async {
+    final groupId = _groupId;
+    // Cancelling one that never synced just drops the queued op — there is
+    // nothing on the server to delete, and POSTing a local id would 404.
+    if (isLocalSettlement(settlementId) && groupId != null) {
+      final repo = await ref.read(financeRepositoryProvider.future);
+      await repo.cancelLocalSettlement(groupId, settlementId);
+      await load(l10n);
+      return;
+    }
+    final service = await ref.read(financeServiceProviderAsync.future);
+    await service.cancelSettlement(settlementId);
+    await load(l10n);
+  }
+
+  /// Whether [settlementId] exists only in the local outbox. Actions that need
+  /// a server id must be withheld for these.
+  static bool isLocalSettlement(String settlementId) =>
+      settlementId.startsWith('local-');
 }

@@ -16,7 +16,7 @@ import (
 func TestList_CreateList(t *testing.T) {
 	clearTables(t)
 	router, _ := newListRouter(t)
-	user := createTestUser(t, "list@example.com", "password123")
+	user := createTestUser(t, "list@example.com", "password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()
@@ -51,7 +51,7 @@ func TestList_CreateList_Unauthorized(t *testing.T) {
 func TestList_GetList(t *testing.T) {
 	clearTables(t)
 	router, _ := newListRouter(t)
-	user := createTestUser(t, "getlist@example.com", "password123")
+	user := createTestUser(t, "getlist@example.com", "password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()
@@ -86,7 +86,7 @@ func TestList_GetList(t *testing.T) {
 func TestList_GetList_NotFound(t *testing.T) {
 	clearTables(t)
 	router, _ := newListRouter(t)
-	user := createTestUser(t, "nflist@example.com", "password123")
+	user := createTestUser(t, "nflist@example.com", "password123!")
 	token := generateTestToken(user.ID)
 
 	rec := execRequest(t, router, "GET", "/api/v1/lists/"+uuid.New().String(), nil, token)
@@ -96,7 +96,7 @@ func TestList_GetList_NotFound(t *testing.T) {
 func TestList_UpdateList(t *testing.T) {
 	clearTables(t)
 	router, _ := newListRouter(t)
-	user := createTestUser(t, "updatelist@example.com", "password123")
+	user := createTestUser(t, "updatelist@example.com", "password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()
@@ -132,7 +132,7 @@ func TestList_UpdateList(t *testing.T) {
 func TestList_DeleteList(t *testing.T) {
 	clearTables(t)
 	router, _ := newListRouter(t)
-	user := createTestUser(t, "dellist@example.com", "password123")
+	user := createTestUser(t, "dellist@example.com", "password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()
@@ -166,7 +166,7 @@ func TestList_DeleteList(t *testing.T) {
 func TestList_CreateItem(t *testing.T) {
 	clearTables(t)
 	router, _ := newListRouter(t)
-	user := createTestUser(t, "item@example.com", "password123")
+	user := createTestUser(t, "item@example.com", "password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()
@@ -202,7 +202,7 @@ func TestList_CreateItem(t *testing.T) {
 func TestList_ListItems(t *testing.T) {
 	clearTables(t)
 	router, _ := newListRouter(t)
-	user := createTestUser(t, "listitems@example.com", "password123")
+	user := createTestUser(t, "listitems@example.com", "password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()
@@ -247,7 +247,7 @@ func TestList_ListItems(t *testing.T) {
 func TestList_UpdateItem(t *testing.T) {
 	clearTables(t)
 	router, _ := newListRouter(t)
-	user := createTestUser(t, "upditem@example.com", "password123")
+	user := createTestUser(t, "upditem@example.com", "password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()
@@ -293,7 +293,7 @@ func TestList_UpdateItem(t *testing.T) {
 func TestList_UpdateItem_OptimisticConcurrency(t *testing.T) {
 	clearTables(t)
 	router, _ := newListRouter(t)
-	user := createTestUser(t, "concitem@example.com", "password123")
+	user := createTestUser(t, "concitem@example.com", "password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()
@@ -349,7 +349,7 @@ func TestList_UpdateItem_OptimisticConcurrency(t *testing.T) {
 func TestList_DeleteItem(t *testing.T) {
 	clearTables(t)
 	router, _ := newListRouter(t)
-	user := createTestUser(t, "delitem@example.com", "password123")
+	user := createTestUser(t, "delitem@example.com", "password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()
@@ -390,7 +390,7 @@ func TestList_DeleteItem(t *testing.T) {
 func TestList_AddRemoveAndClearItems(t *testing.T) {
 	clearTables(t)
 	router, _ := newListRouter(t)
-	user := createTestUser(t, "listops@example.com", "password123")
+	user := createTestUser(t, "listops@example.com", "password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()
@@ -442,7 +442,7 @@ func TestList_AddRemoveAndClearItems(t *testing.T) {
 func TestList_ReorderItems(t *testing.T) {
 	clearTables(t)
 	router, _ := newListRouter(t)
-	user := createTestUser(t, "reorder@example.com", "password123")
+	user := createTestUser(t, "reorder@example.com", "password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()

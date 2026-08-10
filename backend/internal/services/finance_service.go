@@ -2,10 +2,13 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"math"
 	"sort"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -13,6 +16,7 @@ import (
 	"github.com/mitlist-app/mitlist/internal/api"
 	"github.com/mitlist-app/mitlist/internal/models"
 	"github.com/mitlist-app/mitlist/internal/repositories"
+	"github.com/mitlist-app/mitlist/internal/sse"
 )
 
 // FinanceService implements business logic for expenses, splits, settlements
@@ -21,6 +25,7 @@ type FinanceService struct {
 	financeRepo repositories.FinanceRepoIface
 	groupRepo   repositories.GroupRepo
 	dispatcher  NotificationDispatcher // optional; nil disables persist+push dispatch
+	hub         *sse.Hub               // optional; nil disables SSE broadcasts
 }
 
 // ExpenseSplitInput describes one requested participant share for an expense.
@@ -41,6 +46,9 @@ func NewFinanceService(financeRepo repositories.FinanceRepoIface, groupRepo repo
 
 // SetDispatcher injects the notification dispatcher for persist+push broadcasts.
 func (s *FinanceService) SetDispatcher(d NotificationDispatcher) { s.dispatcher = d }
+
+// SetHub injects the SSE hub for real-time event broadcasts.
+func (s *FinanceService) SetHub(h *sse.Hub) { s.hub = h }
 
 func (s *FinanceService) requireMember(ctx context.Context, groupID, userID uuid.UUID) error {
 	return requireGroupMember(ctx, s.groupRepo, groupID, userID)
@@ -411,8 +419,9 @@ func (s *FinanceService) DeleteSplit(ctx context.Context, userID, splitID uuid.U
 // Settlements
 // ------------------------------------------------------------------
 
-// CreateSettlement records a settlement. The repository uses SELECT FOR UPDATE
-// to prevent race conditions.
+// CreateSettlement records a pending settlement. Only a participant (payer or
+// receiver) may record it, and the counterparty must confirm it before it
+// affects balances. The repository uses SELECT FOR UPDATE to prevent races.
 func (s *FinanceService) CreateSettlement(ctx context.Context, userID uuid.UUID, settlement *models.Settlement) error {
 	if err := s.requireMember(ctx, settlement.GroupID, userID); err != nil {
 		return err
@@ -423,16 +432,97 @@ func (s *FinanceService) CreateSettlement(ctx context.Context, userID uuid.UUID,
 	if settlement.FromUserID == settlement.ToUserID {
 		return &api.ValidationError{Message: "settlement must be between two different members"}
 	}
+	if userID != settlement.FromUserID && userID != settlement.ToUserID {
+		return &api.ValidationError{Message: "only the payer or the receiver can record a settlement"}
+	}
 	if err := s.requireMember(ctx, settlement.GroupID, settlement.FromUserID); err != nil {
 		return &api.ValidationError{Message: "from user must be a group member"}
 	}
 	if err := s.requireMember(ctx, settlement.GroupID, settlement.ToUserID); err != nil {
 		return &api.ValidationError{Message: "to user must be a group member"}
 	}
-	return s.financeRepo.CreateSettlement(ctx, settlement)
+	settlement.CreatedBy = userID
+	settlement.Status = models.SettlementStatusPending
+	if err := s.financeRepo.CreateSettlement(ctx, settlement); err != nil {
+		return err
+	}
+
+	if s.dispatcher != nil {
+		creatorName := s.memberDisplayName(ctx, settlement.GroupID, settlement.CreatedBy)
+		amount := s.formatGroupAmount(ctx, settlement.GroupID, settlement.Amount)
+		var body string
+		if settlement.CreatedBy == settlement.FromUserID {
+			body = creatorName + " says they paid you " + amount + " — confirm to update balances"
+		} else {
+			body = creatorName + " says you paid them " + amount + " — confirm to update balances"
+		}
+		_ = s.dispatcher.DispatchToUsers(ctx, []uuid.UUID{settlement.Counterparty()}, settlement.GroupID,
+			"settlement_requested", "Settlement to confirm", body, s.settlementPayload(settlement))
+	}
+	s.publishSettlement("settlement:created", settlement.GroupID, settlement.ID)
+	return nil
 }
 
-// DeleteSettlement removes a settlement (admin only).
+// ListSettlements returns paginated settlements for a group.
+func (s *FinanceService) ListSettlements(ctx context.Context, userID, groupID uuid.UUID, limit, offset int) ([]models.Settlement, error) {
+	if err := s.requireMember(ctx, groupID, userID); err != nil {
+		return nil, err
+	}
+	return s.financeRepo.ListSettlementsByGroup(ctx, groupID, limit, offset)
+}
+
+// RespondToSettlement lets the counterparty confirm or decline a pending
+// settlement. Only the participant who did not record it may respond.
+func (s *FinanceService) RespondToSettlement(ctx context.Context, userID, settlementID uuid.UUID, approve bool) (*models.Settlement, error) {
+	settlement, err := s.financeRepo.GetSettlementByID(ctx, settlementID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, api.ErrNotFound
+		}
+		return nil, err
+	}
+	if err := s.requireMember(ctx, settlement.GroupID, userID); err != nil {
+		return nil, err
+	}
+	if userID != settlement.Counterparty() {
+		return nil, &api.PermissionDeniedError{}
+	}
+	if settlement.Status != models.SettlementStatusPending {
+		return nil, api.ErrConflict
+	}
+
+	status := models.SettlementStatusDeclined
+	if approve {
+		status = models.SettlementStatusConfirmed
+	}
+	now := time.Now().UTC()
+	if err := s.financeRepo.UpdateSettlementStatus(ctx, settlementID, status, now); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			// Lost a race with a concurrent response or cancellation.
+			return nil, api.ErrConflict
+		}
+		return nil, err
+	}
+	settlement.Status = status
+	settlement.RespondedAt = &now
+
+	if s.dispatcher != nil {
+		responderName := s.memberDisplayName(ctx, settlement.GroupID, userID)
+		amount := s.formatGroupAmount(ctx, settlement.GroupID, settlement.Amount)
+		nType, title, verb := "settlement_confirmed", "Settlement confirmed", "confirmed"
+		if !approve {
+			nType, title, verb = "settlement_declined", "Settlement declined", "declined"
+		}
+		body := responderName + " " + verb + " your settlement of " + amount
+		_ = s.dispatcher.DispatchToUsers(ctx, []uuid.UUID{settlement.CreatedBy}, settlement.GroupID,
+			nType, title, body, s.settlementPayload(settlement))
+	}
+	s.publishSettlement("settlement:updated", settlement.GroupID, settlement.ID)
+	return settlement, nil
+}
+
+// DeleteSettlement removes a settlement. The creator can cancel their own
+// pending settlement; anything else requires a group admin.
 func (s *FinanceService) DeleteSettlement(ctx context.Context, userID, settlementID uuid.UUID) error {
 	settlement, err := s.financeRepo.GetSettlementByID(ctx, settlementID)
 	if err != nil {
@@ -441,10 +531,67 @@ func (s *FinanceService) DeleteSettlement(ctx context.Context, userID, settlemen
 		}
 		return err
 	}
-	if err := s.requireAdmin(ctx, settlement.GroupID, userID); err != nil {
+	creatorCancel := settlement.Status == models.SettlementStatusPending && settlement.CreatedBy == userID
+	if !creatorCancel {
+		if err := s.requireAdmin(ctx, settlement.GroupID, userID); err != nil {
+			return err
+		}
+	}
+	if err := s.financeRepo.DeleteSettlement(ctx, settlementID); err != nil {
 		return err
 	}
-	return s.financeRepo.DeleteSettlement(ctx, settlementID)
+	s.publishSettlement("settlement:deleted", settlement.GroupID, settlement.ID)
+	return nil
+}
+
+// settlementPayload builds the deep-link payload for settlement notifications.
+func (s *FinanceService) settlementPayload(settlement *models.Settlement) models.NotificationPayload {
+	return models.NotificationPayload{
+		Screen:     models.ScreenSettlements,
+		EntityType: models.EntityTypeSettlement,
+		ID:         settlement.ID.String(),
+		GroupID:    settlement.GroupID.String(),
+	}
+}
+
+// memberDisplayName resolves a member's display name, falling back to
+// "A group member" so notification bodies never show raw UUIDs.
+func (s *FinanceService) memberDisplayName(ctx context.Context, groupID, userID uuid.UUID) string {
+	profiles, err := s.groupRepo.ListMemberProfilesByGroup(ctx, groupID)
+	if err == nil {
+		for _, p := range profiles {
+			if p.UserID == userID && strings.TrimSpace(p.DisplayName) != "" {
+				return p.DisplayName
+			}
+		}
+	}
+	return "A group member"
+}
+
+// formatGroupAmount renders an integer minor-unit amount in the group currency.
+func (s *FinanceService) formatGroupAmount(ctx context.Context, groupID uuid.UUID, amount int64) string {
+	currency := ""
+	if group, err := s.groupRepo.GetGroupByID(ctx, groupID); err == nil {
+		currency = group.Currency
+	}
+	value := strconv.FormatFloat(float64(amount)/100, 'f', 2, 64)
+	if currency == "" {
+		return value
+	}
+	return value + " " + currency
+}
+
+// publishSettlement emits an SSE event for a settlement state change.
+func (s *FinanceService) publishSettlement(eventType string, groupID, settlementID uuid.UUID) {
+	if s.hub == nil {
+		return
+	}
+	data, _ := json.Marshal(map[string]string{"settlement_id": settlementID.String()})
+	s.hub.Publish(groupID.String(), sse.Event{
+		Type:    eventType,
+		GroupID: groupID.String(),
+		Payload: data,
+	})
 }
 
 // ------------------------------------------------------------------
@@ -593,6 +740,9 @@ func calculateBalances(expenses []models.Expense, splits []models.Split, settlem
 		balance.Owed += split.Amount
 	}
 	for _, settlement := range settlements {
+		if settlement.Status != models.SettlementStatusConfirmed {
+			continue
+		}
 		from := ensure(settlement.FromUserID)
 		to := ensure(settlement.ToUserID)
 		from.Paid += settlement.Amount

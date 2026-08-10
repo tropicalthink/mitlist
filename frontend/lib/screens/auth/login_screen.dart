@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -9,7 +10,6 @@ import '../../models/auth_models.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/oauth_provider.dart';
 import '../../services/api_client.dart';
-import '../../theme/shadows.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../utils/browser_redirect.dart';
@@ -21,6 +21,7 @@ import '../../widgets/animated_check_toggle.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/app_input.dart';
+import '../../widgets/board/cork_board.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -178,7 +179,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               setSheetState(() => error = l10n.authLoginResetFillAllFields);
               return;
             }
-            if (newPassword.length < 6) {
+            if (newPassword.length < 12) {
               setSheetState(
                 () => error = l10n.authSignupPasswordMinLength,
               );
@@ -294,6 +295,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         builder: (context, setSheetState) {
           Future<void> apply(String? url) async {
             final navigator = Navigator.of(context);
+            final authService = await ref.read(authServiceProviderAsync.future);
+            await authService.clearLocalSession();
+            ref.read(authStateProvider.notifier).state = false;
             final prefs = await SharedPreferences.getInstance();
             if (url == null) {
               await prefs.remove(ApiConfig.serverUrlKey);
@@ -326,6 +330,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             if (uri == null ||
                 !(uri.scheme == 'http' || uri.scheme == 'https') ||
                 uri.host.isEmpty) {
+              setSheetState(() => error = l10n.authServerUrlInvalid);
+              return;
+            }
+            if (uri.scheme != 'https' &&
+                !(kDebugMode &&
+                    (uri.host == 'localhost' ||
+                        uri.host == '127.0.0.1' ||
+                        uri.host == '10.0.2.2'))) {
               setSheetState(() => error = l10n.authServerUrlInvalid);
               return;
             }
@@ -461,174 +473,174 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         (google: false, apple: false);
 
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(MitlistSpacing.md),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: 400),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'mitlist',
-                    style: MitlistTypography.logo(
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: MitlistSpacing.space8),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      border: Border.all(
-                        color: Theme.of(context).colorScheme.outline,
-                        width: MitlistSpacing.space1 / 2,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const CorkBoardBackground(),
+          SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(MitlistSpacing.md),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: 400),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'mitlist',
+                        style: MitlistTypography.logo(
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
                       ),
-                      borderRadius: BorderRadius.zero,
-                      boxShadow: MitlistShadows.shadowMedium,
-                    ),
-                    padding: const EdgeInsets.all(MitlistSpacing.space6),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        AppInput(
-                          label: l10n.authLoginEmail,
-                          hint: l10n.authLoginYouExample,
-                          controller: _emailController,
-                          focusNode: _emailFocus,
-                          keyboardType: TextInputType.emailAddress,
-                          textInputAction: TextInputAction.next,
-                          autofillHints: const [AutofillHints.email],
-                          onSubmitted: (_) => _passwordFocus.requestFocus(),
-                          errorText: _emailError,
-                        ),
-                        const SizedBox(height: MitlistSpacing.space3),
-                        AppInput(
-                          label: l10n.authLoginPassword,
-                          hint: '••••••••',
-                          controller: _passwordController,
-                          focusNode: _passwordFocus,
-                          obscureText: true,
-                          textInputAction: TextInputAction.done,
-                          autofillHints: const [AutofillHints.password],
-                          onSubmitted: (_) => _submit(),
-                          errorText: _passwordError,
-                        ),
-                        const SizedBox(height: MitlistSpacing.space3),
-                        if (_errorMessage != null) ...[
-                          AppAlert(
-                            type: AppAlertType.error,
-                            message: _errorMessage!,
-                          ),
-                          const SizedBox(height: MitlistSpacing.space3),
-                        ],
-                        SizedBox(
-                          width: double.infinity,
-                          child: AppButton(
-                            text: l10n.welcomeSignIn,
-                            variant: AppButtonVariant.solid,
-                            color: AppButtonColor.primary,
-                            size: AppButtonSize.lg,
-                            isLoading: _isLoading,
-                            isSuccess: _isSuccess,
-                            onPressed:
-                                (_isLoading || _isSuccess) ? null : _submit,
-                          ),
-                        ),
-                        const SizedBox(height: MitlistSpacing.space3),
-                        InkWell(
-                          onTap: (_isLoading || _isSuccess)
-                              ? null
-                              : () =>
-                                  setState(() => _rememberMe = !_rememberMe),
-                          borderRadius: BorderRadius.zero,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: MitlistSpacing.sm),
-                            child: Row(
-                              children: [
-                                AnimatedCheckToggle(
-                                  value: _rememberMe,
-                                  onChanged: (_isLoading || _isSuccess)
-                                      ? null
-                                      : (value) {
-                                          setState(() => _rememberMe = value);
-                                        },
-                                  semanticLabelOn: l10n.authLoginRememberMeOn,
-                                  semanticLabelOff: l10n.authLoginRememberMeOff,
+                      const SizedBox(height: MitlistSpacing.space8),
+                      TapedPanel(
+                        padding: const EdgeInsets.all(MitlistSpacing.space6),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            AppInput(
+                              label: l10n.authLoginEmail,
+                              hint: l10n.authLoginYouExample,
+                              controller: _emailController,
+                              focusNode: _emailFocus,
+                              keyboardType: TextInputType.emailAddress,
+                              textInputAction: TextInputAction.next,
+                              autofillHints: const [AutofillHints.email],
+                              onSubmitted: (_) => _passwordFocus.requestFocus(),
+                              errorText: _emailError,
+                            ),
+                            const SizedBox(height: MitlistSpacing.space3),
+                            AppInput(
+                              label: l10n.authLoginPassword,
+                              hint: '••••••••',
+                              controller: _passwordController,
+                              focusNode: _passwordFocus,
+                              obscureText: true,
+                              textInputAction: TextInputAction.done,
+                              autofillHints: const [AutofillHints.password],
+                              onSubmitted: (_) => _submit(),
+                              errorText: _passwordError,
+                            ),
+                            const SizedBox(height: MitlistSpacing.space3),
+                            if (_errorMessage != null) ...[
+                              AppAlert(
+                                type: AppAlertType.error,
+                                message: _errorMessage!,
+                              ),
+                              const SizedBox(height: MitlistSpacing.space3),
+                            ],
+                            SizedBox(
+                              width: double.infinity,
+                              child: AppButton(
+                                text: l10n.welcomeSignIn,
+                                variant: AppButtonVariant.solid,
+                                color: AppButtonColor.primary,
+                                size: AppButtonSize.lg,
+                                isLoading: _isLoading,
+                                isSuccess: _isSuccess,
+                                onPressed:
+                                    (_isLoading || _isSuccess) ? null : _submit,
+                              ),
+                            ),
+                            const SizedBox(height: MitlistSpacing.space3),
+                            InkWell(
+                              onTap: (_isLoading || _isSuccess)
+                                  ? null
+                                  : () => setState(
+                                      () => _rememberMe = !_rememberMe),
+                              borderRadius: BorderRadius.zero,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: MitlistSpacing.sm),
+                                child: Row(
+                                  children: [
+                                    AnimatedCheckToggle(
+                                      value: _rememberMe,
+                                      onChanged: (_isLoading || _isSuccess)
+                                          ? null
+                                          : (value) {
+                                              setState(
+                                                  () => _rememberMe = value);
+                                            },
+                                      semanticLabelOn:
+                                          l10n.authLoginRememberMeOn,
+                                      semanticLabelOff:
+                                          l10n.authLoginRememberMeOff,
+                                    ),
+                                    const SizedBox(width: MitlistSpacing.sm),
+                                    Text(l10n.authLoginRememberMe),
+                                  ],
                                 ),
-                                const SizedBox(width: MitlistSpacing.sm),
-                                Text(l10n.authLoginRememberMe),
+                              ),
+                            ),
+                            const SizedBox(height: MitlistSpacing.space4),
+                            if (oauthProviders.google) ...[
+                              AppButton(
+                                text: l10n.authLoginGoogle,
+                                icon: const AppIcon(name: 'login', size: 20),
+                                variant: AppButtonVariant.outline,
+                                color: AppButtonColor.neutral,
+                                onPressed: (_isLoading || _isSuccess)
+                                    ? null
+                                    : () => _startOAuth('google'),
+                              ),
+                              const SizedBox(height: MitlistSpacing.space3),
+                            ],
+                            if (oauthProviders.apple) ...[
+                              AppButton(
+                                text: l10n.authLoginApple,
+                                icon: const AppIcon(name: 'apple', size: 20),
+                                variant: AppButtonVariant.outline,
+                                color: AppButtonColor.neutral,
+                                onPressed: (_isLoading || _isSuccess)
+                                    ? null
+                                    : () => _startOAuth('apple'),
+                              ),
+                              const SizedBox(height: MitlistSpacing.space3),
+                            ],
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                AppButton(
+                                  variant: AppButtonVariant.ghost,
+                                  color: AppButtonColor.primary,
+                                  text: l10n.authSignupCreateAccount,
+                                  onPressed: () => context.goNamed('signup'),
+                                ),
                               ],
                             ),
-                          ),
-                        ),
-                        const SizedBox(height: MitlistSpacing.space4),
-                        if (oauthProviders.google) ...[
-                          AppButton(
-                            text: l10n.authLoginGoogle,
-                            icon: const AppIcon(name: 'login', size: 20),
-                            variant: AppButtonVariant.outline,
-                            color: AppButtonColor.neutral,
-                            onPressed: (_isLoading || _isSuccess)
-                                ? null
-                                : () => _startOAuth('google'),
-                          ),
-                          const SizedBox(height: MitlistSpacing.space3),
-                        ],
-                        if (oauthProviders.apple) ...[
-                          AppButton(
-                            text: l10n.authLoginApple,
-                            icon: const AppIcon(name: 'apple', size: 20),
-                            variant: AppButtonVariant.outline,
-                            color: AppButtonColor.neutral,
-                            onPressed: (_isLoading || _isSuccess)
-                                ? null
-                                : () => _startOAuth('apple'),
-                          ),
-                          const SizedBox(height: MitlistSpacing.space3),
-                        ],
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            AppButton(
-                              variant: AppButtonVariant.ghost,
-                              color: AppButtonColor.primary,
-                              text: l10n.authSignupCreateAccount,
-                              onPressed: () => context.goNamed('signup'),
+                            const SizedBox(height: MitlistSpacing.space2),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                AppButton(
+                                  variant: AppButtonVariant.ghost,
+                                  color: AppButtonColor.neutral,
+                                  text: l10n.authLoginForgotPassword,
+                                  onPressed: _showPasswordResetSheet,
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                        const SizedBox(height: MitlistSpacing.space2),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            AppButton(
-                              variant: AppButtonVariant.ghost,
-                              color: AppButtonColor.neutral,
-                              text: l10n.authLoginForgotPassword,
-                              onPressed: _showPasswordResetSheet,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: MitlistSpacing.space4),
+                      AppButton(
+                        variant: AppButtonVariant.ghost,
+                        color: AppButtonColor.neutral,
+                        size: AppButtonSize.sm,
+                        text: l10n.authServerLink,
+                        onPressed: (_isLoading || _isSuccess)
+                            ? null
+                            : _showServerSheet,
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: MitlistSpacing.space4),
-                  AppButton(
-                    variant: AppButtonVariant.ghost,
-                    color: AppButtonColor.neutral,
-                    size: AppButtonSize.sm,
-                    text: l10n.authServerLink,
-                    onPressed:
-                        (_isLoading || _isSuccess) ? null : _showServerSheet,
-                  ),
-                ],
+                ),
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

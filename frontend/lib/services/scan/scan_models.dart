@@ -23,33 +23,67 @@ class OcrBBox {
   const OcrBBox(this.left, this.top, this.width, this.height);
 }
 
+/// Another transcription supported by the same recognizer logits.
+///
+/// Alternatives are produced locally by CTC beam decoding. They are evidence
+/// for the grocery resolver, not extra detected lines and not cloud guesses.
+class OcrAlternative {
+  final String text;
+
+  /// Probability relative to the strongest beam (1.0 is the strongest).
+  final double relativeScore;
+
+  const OcrAlternative({required this.text, required this.relativeScore});
+}
+
 /// One OCR-recognised line from the recognition engine.
 class OcrLine {
   final String text;
 
   /// Pixel bounding box within the original image. Null if engine did not
-  /// provide position data (e.g. CrofAI text fallback).
+  /// provide position data.
   final OcrBBox? bbox;
 
-  const OcrLine({required this.text, this.bbox});
+  /// Recognition-engine confidence when the engine exposes one. Null means
+  /// unavailable, not zero confidence.
+  final double? confidence;
+
+  /// Visual state detected from the source pixels. This is separate from the
+  /// recognized text because strikethrough strokes are not transcript tokens.
+  final MarkStatus markStatus;
+
+  /// Other transcriptions from the same pixels, strongest first.
+  final List<OcrAlternative> alternatives;
+
+  const OcrLine({
+    required this.text,
+    this.bbox,
+    this.confidence,
+    this.markStatus = MarkStatus.normal,
+    this.alternatives = const [],
+  });
 }
 
 /// Structured extraction output for one raw line.
 class ParsedItem {
   final String rawText;
   final String itemName;
+  final OcrBBox? bbox;
   final double quantity;
   final String unit;
   final int? priceCents;
   final MarkStatus markStatus;
+  final List<OcrAlternative> alternatives;
 
   const ParsedItem({
     required this.rawText,
     required this.itemName,
+    this.bbox,
     this.quantity = 1,
     this.unit = '',
     this.priceCents,
     this.markStatus = MarkStatus.normal,
+    this.alternatives = const [],
   });
 }
 
@@ -58,6 +92,7 @@ class GroceryPrediction {
   final String id;
   final String rawText;
   final String displayName;
+  final OcrBBox? bbox;
   final String? canonicalItemId;
   final double quantity;
   final String unit;
@@ -74,6 +109,7 @@ class GroceryPrediction {
     required this.id,
     required this.rawText,
     required this.displayName,
+    this.bbox,
     this.canonicalItemId,
     this.quantity = 1,
     this.unit = '',
@@ -103,6 +139,7 @@ class GroceryPrediction {
       id: id,
       rawText: rawText,
       displayName: displayName ?? this.displayName,
+      bbox: bbox,
       canonicalItemId: canonicalItemId ?? this.canonicalItemId,
       quantity: quantity ?? this.quantity,
       unit: unit ?? this.unit,
@@ -130,7 +167,7 @@ class GroceryScanResult {
     this.imageBytes,
     required this.items,
     this.ignored = const [],
-    this.engine = 'mlkit',
+    this.engine = 'ppocrv6-small-det-medium-rec-onnx',
     this.needsReview = false,
   });
 }

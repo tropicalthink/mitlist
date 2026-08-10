@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/rs/zerolog/log"
 
 	"github.com/mitlist-app/mitlist/internal/api"
 	"github.com/mitlist-app/mitlist/internal/models"
@@ -26,6 +28,10 @@ type UserService struct {
 	password PasswordService
 	mail     MailService
 }
+
+// A fixed bcrypt hash ensures unknown-email logins perform the same expensive
+// password comparison as known accounts, reducing account-enumeration timing.
+const dummyPasswordHash = "$2b$12$gJZj6I3Qm7va1CXdAY2VHe5QWxOlueQEP0li/hhhjIy.HF9LJhLF."
 
 // NewUserService creates a new UserService.
 func NewUserService(
@@ -52,8 +58,10 @@ type RegisterInput struct {
 	LastName  string
 }
 
-// Register creates a new verified user account with a hashed password.
+// Register creates an inactive-login account and sends a one-time email
+// verification credential. Sessions are issued only after verification.
 func (s *UserService) Register(ctx context.Context, input RegisterInput) (*models.User, error) {
+	input.Email = validation.NormalizeEmail(input.Email)
 	if err := validation.Email(input.Email); err != nil {
 		return nil, &api.ValidationError{Field: "email", Message: err.Error()}
 	}
@@ -91,27 +99,94 @@ func (s *UserService) Register(ctx context.Context, input RegisterInput) (*model
 		FirstName:    input.FirstName,
 		LastName:     input.LastName,
 		IsActive:     true,
-		IsVerified:   true,
+		IsVerified:   false,
 		IsGuest:      false,
 	}
 
-	if err := s.userRepo.Create(ctx, user); err != nil {
+	rawToken, tokenHash, expiresAt, err := newEmailVerificationToken()
+	if err != nil {
 		return nil, err
+	}
+	if err := s.authRepo.CreateUnverifiedUser(ctx, user, tokenHash, expiresAt); err != nil {
+		return nil, err
+	}
+	if err := s.mail.Send(user.Email, "Verify your mitlist account", fmt.Sprintf("Your email verification code is: %s", rawToken), false); err != nil {
+		log.Error().Err(err).Str("user_id", user.ID.String()).Msg("registration verification delivery failed")
 	}
 
 	return user, nil
 }
 
+func newEmailVerificationToken() (raw, hash string, expiresAt time.Time, err error) {
+	tokenBytes := make([]byte, 32)
+	if _, err = rand.Read(tokenBytes); err != nil {
+		return "", "", time.Time{}, err
+	}
+	raw = hex.EncodeToString(tokenBytes)
+	return raw, resetTokenHash(raw), time.Now().UTC().Add(30 * time.Minute), nil
+}
+
+// VerifyEmail atomically consumes a verification credential and returns the
+// newly verified account.
+func (s *UserService) VerifyEmail(ctx context.Context, token string) (*models.User, error) {
+	if token == "" {
+		return nil, &api.ValidationError{Field: "token", Message: "verification code is required"}
+	}
+	userID, err := s.authRepo.ConsumeEmailVerification(ctx, resetTokenHash(token))
+	if err != nil {
+		return nil, &api.ValidationError{Message: "invalid or expired verification code"}
+	}
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+// ResendEmailVerification intentionally returns no account-existence signal.
+func (s *UserService) ResendEmailVerification(ctx context.Context, email string) error {
+	email = validation.NormalizeEmail(email)
+	user, err := s.userRepo.GetByEmail(ctx, email)
+	if err != nil || user.IsVerified || !user.IsActive {
+		return nil
+	}
+	raw, hash, expiresAt, err := newEmailVerificationToken()
+	if err != nil {
+		return err
+	}
+	if err = s.authRepo.CreateEmailVerification(ctx, user.ID, hash, expiresAt); err != nil {
+		return err
+	}
+	if err = s.mail.Send(user.Email, "Verify your mitlist account", fmt.Sprintf("Your email verification code is: %s", raw), false); err != nil {
+		return fmt.Errorf("send verification email: %w", err)
+	}
+	return nil
+}
+
 // Login validates credentials and returns the user with an access/refresh token pair.
 func (s *UserService) Login(ctx context.Context, email, password string) (*models.User, string, string, error) {
+	email = validation.NormalizeEmail(email)
+	if s.authRepo != nil {
+		allowed, err := s.authRepo.ReserveLoginAttempt(ctx, email, 5, 5*time.Minute)
+		if err != nil {
+			return nil, "", "", err
+		}
+		if !allowed {
+			return nil, "", "", &api.ValidationError{Message: "too many attempts, please wait and try again"}
+		}
+	}
 	user, err := s.userRepo.GetByEmail(ctx, email)
 	if err != nil {
 		if isNotFound(err) {
+			s.password.Compare(dummyPasswordHash, password)
 			return nil, "", "", &api.ValidationError{Message: "invalid email or password"}
 		}
 		return nil, "", "", err
 	}
 
+	if !s.password.Compare(user.PasswordHash, password) {
+		return nil, "", "", &api.ValidationError{Message: "invalid email or password"}
+	}
 	if !user.IsActive {
 		return nil, "", "", &api.ValidationError{Message: "account is inactive"}
 	}
@@ -119,10 +194,11 @@ func (s *UserService) Login(ctx context.Context, email, password string) (*model
 		return nil, "", "", &api.ValidationError{Message: "account is not verified"}
 	}
 
-	if !s.password.Compare(user.PasswordHash, password) {
-		return nil, "", "", &api.ValidationError{Message: "invalid email or password"}
+	if s.authRepo != nil {
+		if err := s.authRepo.ClearLoginAttempts(ctx, email); err != nil {
+			return nil, "", "", err
+		}
 	}
-
 	access, refresh, err := s.jwt.GenerateTokenPair(user.ID.String(), []string{})
 	if err != nil {
 		return nil, "", "", err
@@ -247,8 +323,7 @@ func (s *UserService) ChangePassword(ctx context.Context, userID uuid.UUID, oldP
 	if err != nil {
 		return err
 	}
-	user.PasswordHash = hash
-	if err := s.userRepo.Update(ctx, user); err != nil {
+	if err := s.authRepo.UpdatePasswordAndRevokeSessions(ctx, userID, hash); err != nil {
 		return err
 	}
 	return nil
@@ -257,6 +332,7 @@ func (s *UserService) ChangePassword(ctx context.Context, userID uuid.UUID, oldP
 // RequestPasswordReset generates a reset token and sends it via email.
 // To prevent email enumeration, it always returns nil when the email is not found.
 func (s *UserService) RequestPasswordReset(ctx context.Context, email string) error {
+	email = validation.NormalizeEmail(email)
 	user, err := s.userRepo.GetByEmail(ctx, email)
 	if err != nil {
 		return nil
@@ -273,7 +349,7 @@ func (s *UserService) RequestPasswordReset(ctx context.Context, email string) er
 
 	resetToken := &models.PasswordResetToken{
 		UserID:    user.ID,
-		Token:     tokenStr,
+		Token:     resetTokenHash(tokenStr),
 		ExpiresAt: time.Now().UTC().Add(24 * time.Hour),
 	}
 
@@ -281,7 +357,9 @@ func (s *UserService) RequestPasswordReset(ctx context.Context, email string) er
 		return err
 	}
 
-	s.mail.Send(user.Email, "Password Reset", fmt.Sprintf("Your password reset code is: %s", tokenStr), false)
+	if err := s.mail.Send(user.Email, "Password Reset", fmt.Sprintf("Your password reset code is: %s", tokenStr), false); err != nil {
+		return fmt.Errorf("send password reset email: %w", err)
+	}
 	return nil
 }
 
@@ -291,43 +369,19 @@ func (s *UserService) ConfirmPasswordReset(ctx context.Context, token, newPasswo
 		return &api.ValidationError{Field: "new_password", Message: err.Error()}
 	}
 
-	resetToken, err := s.authRepo.GetPasswordResetToken(ctx, token)
-	if err != nil {
-		if isNotFound(err) {
-			return &api.ValidationError{Message: "invalid or expired token"}
-		}
-		return err
-	}
-
-	if resetToken.UsedAt != nil {
-		return &api.ValidationError{Message: "token already used"}
-	}
-	if time.Now().UTC().After(resetToken.ExpiresAt) {
-		return &api.ValidationError{Message: "token expired"}
-	}
-
-	user, err := s.userRepo.GetByID(ctx, resetToken.UserID)
-	if err != nil {
-		if isNotFound(err) {
-			return &api.NotFoundError{Resource: "user"}
-		}
-		return err
-	}
-
 	hash, err := s.password.Hash(newPassword)
 	if err != nil {
 		return err
 	}
-	user.PasswordHash = hash
-
-	if err := s.userRepo.Update(ctx, user); err != nil {
-		return err
-	}
-
-	if err := s.authRepo.ConsumeToken(ctx, resetToken.ID); err != nil {
-		return err
+	if _, err := s.authRepo.ConsumePasswordReset(ctx, resetTokenHash(token), hash); err != nil {
+		return &api.ValidationError{Message: "invalid or expired token"}
 	}
 	return nil
+}
+
+func resetTokenHash(token string) string {
+	digest := sha256.Sum256([]byte(token))
+	return hex.EncodeToString(digest[:])
 }
 
 // ClaimAccountInput holds fields for claiming a pre-created or guest account.
@@ -377,6 +431,9 @@ func (s *UserService) ClaimAccount(ctx context.Context, userID uuid.UUID, input 
 	user.IsGuest = false
 
 	if err := s.userRepo.Update(ctx, user); err != nil {
+		return nil, err
+	}
+	if err := s.jwt.RevokeUserSessions(user.ID); err != nil {
 		return nil, err
 	}
 	return user, nil

@@ -23,6 +23,8 @@ import '../mitlist_app_bar.dart';
 import '../pinwall_link_chip.dart';
 import '../hub/pinned_memo_card.dart';
 
+import '../app_toast.dart';
+
 const _kNotePalette = MitlistColors.notePalette;
 const _kNotePaletteDark = MitlistColors.notePaletteDark;
 
@@ -49,6 +51,7 @@ class PinwallNoteCard extends ConsumerWidget {
     required this.me,
     required this.post,
     required this.onOpenLinkedEntity,
+    this.width,
   });
 
   final PinwallNoteCardVariant variant;
@@ -56,6 +59,15 @@ class PinwallNoteCard extends ConsumerWidget {
   final String groupId;
   final User? me;
   final PinwallPost post;
+
+  /// Overrides the variant's default card width.
+  ///
+  /// The hub computes this from the width actually available so a whole number
+  /// of cards fills each row. A fixed width can't do that: once the viewport is
+  /// narrower than two cards plus spacing — which happens on ordinary phones
+  /// once the system display-size setting is raised — the wrap breaks to one
+  /// card per row and leaves the rest of the row empty.
+  final double? width;
 
   /// Navigates to the entity this post is linked to. Each surface owns its
   /// own navigation (the hub and the board route slightly differently), so
@@ -65,14 +77,7 @@ class PinwallNoteCard extends ConsumerWidget {
   bool get _isHub => variant == PinwallNoteCardVariant.hub;
 
   void _showErrorSnack(BuildContext context, String message) {
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.hideCurrentSnackBar();
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    AppToast.error(context, message);
   }
 
   void _openMediaViewer(BuildContext context, PinwallMediaItem m) {
@@ -274,8 +279,10 @@ class PinwallNoteCard extends ConsumerWidget {
         : DateFormat('MMM d · h:mm a').format(remindAt.toLocal());
 
     // ── Variant-tuned card dimensions/chrome ──────────────────────────────
-    final double cardWidth = _isHub ? 160 : 180;
-    final BoxConstraints? cardConstraints = _isHub
+    final double cardWidth = width ?? (_isHub ? 160 : 180);
+    // The screen-relative clamp only guards the fixed fallback width; an
+    // explicit width is already derived from the available space.
+    final BoxConstraints? cardConstraints = (_isHub && width == null)
         ? BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.7)
         : null;
     final double borderRadius = _isHub ? 6 : MitlistTheme.radiusSm;
@@ -462,17 +469,23 @@ class PinwallNoteCard extends ConsumerWidget {
                   context: context,
                   title: l10n.pinwallDeletePin,
                   body: Text(l10n.pinwallDeletePinBody),
+                  // The dialog is pushed on the root navigator, but the hub
+                  // sits inside a shell branch with its own — popping the
+                  // nearest one would tear the hub off its branch and leave
+                  // the dialog stranded instead of answering it.
                   actions: [
                     AppButton(
                       text: l10n.commonCancel,
                       variant: AppButtonVariant.outline,
-                      onPressed: () => Navigator.of(context).pop(false),
+                      onPressed: () =>
+                          Navigator.of(context, rootNavigator: true).pop(false),
                     ),
                     const SizedBox(width: MitlistSpacing.sm),
                     AppButton(
                       text: l10n.commonDelete,
                       color: AppButtonColor.error,
-                      onPressed: () => Navigator.of(context).pop(true),
+                      onPressed: () =>
+                          Navigator.of(context, rootNavigator: true).pop(true),
                     ),
                   ],
                 );
