@@ -25,8 +25,6 @@ const (
 	authIdentifierRefillRate = 5.0 / 300.0
 	guestIPCapacity          = 3
 	guestIPRefillRate        = 3.0 / 600.0
-	guestIdentityCapacity    = 2
-	guestIdentityRefillRate  = 2.0 / 3600.0
 )
 
 type userContextKey struct{}
@@ -140,14 +138,9 @@ func RateLimit(apiPrefix string) func(next http.Handler) http.Handler {
 					writeRateLimitError(w)
 					return
 				}
-				if identity := strings.TrimSpace(r.Header.Get("X-Mitlist-Install-ID")); identity != "" {
-					digest := sha256.Sum256([]byte(identity))
-					identityKey := "ratelimit:guest:install:" + hex.EncodeToString(digest[:])
-					if !defaultLimiter.Allow(identityKey, guestIdentityCapacity, guestIdentityRefillRate, now) {
-						writeRateLimitError(w)
-						return
-					}
-				}
+				// Do not rate-limit guest creation by X-Mitlist-Install-ID. It is a
+				// caller-controlled header and can be rotated or spoofed. The handler
+				// applies the durable identity budget using verified App Check claims.
 			}
 			next.ServeHTTP(w, r)
 		})

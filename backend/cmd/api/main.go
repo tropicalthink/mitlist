@@ -19,6 +19,7 @@ import (
 	"github.com/mitlist-app/mitlist/internal/observability"
 	"github.com/mitlist-app/mitlist/internal/server"
 	"github.com/mitlist-app/mitlist/internal/services"
+	appcheckservice "github.com/mitlist-app/mitlist/internal/services/appcheck"
 	"github.com/mitlist-app/mitlist/pkg/logger"
 )
 
@@ -127,7 +128,11 @@ func main() {
 		http.Redirect(w, r, target, http.StatusFound)
 	})
 
-	authHandler := handlers.NewAuthHandler(cfg, cnt.UserService(), cnt.GuestService(), cnt.OAuthService(), cnt.JWT())
+	appCheckVerifier, err := appcheckservice.New(cfg)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to initialize Firebase App Check verifier")
+	}
+	authHandler := handlers.NewAuthHandler(cfg, cnt.UserService(), cnt.GuestService(), cnt.OAuthService(), cnt.JWT(), appCheckVerifier)
 	srv.Router().Route(cfg.APIPrefix+"/v1", func(r chi.Router) {
 		authHandler.RegisterRoutes(r)
 

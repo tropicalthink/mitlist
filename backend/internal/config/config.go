@@ -55,8 +55,14 @@ type Config struct {
 	// Firebase / FCM (mobile push)
 	// Set FIREBASE_PROJECT_ID and FIREBASE_SERVICE_ACCOUNT_JSON (raw JSON string)
 	// to enable FCM push to Android and iOS devices.
-	FirebaseProjectID      string `env:"FIREBASE_PROJECT_ID"`
-	FirebaseServiceAccount string `env:"FIREBASE_SERVICE_ACCOUNT_JSON"`
+	FirebaseProjectID string `env:"FIREBASE_PROJECT_ID"`
+	// App Check JWTs use the numeric Firebase project number for issuer and
+	// audience validation. It is separate from FirebaseProjectID, which is
+	// sufficient for FCM but not for verifying App Check tokens.
+	FirebaseProjectNumber         string `env:"FIREBASE_PROJECT_NUMBER"`
+	FirebaseAppCheckRequired      bool   `env:"FIREBASE_APP_CHECK_REQUIRED" default:"false"`
+	FirebaseAppCheckAllowedAppIDs string `env:"FIREBASE_APP_CHECK_ALLOWED_APP_IDS"`
+	FirebaseServiceAccount        string `env:"FIREBASE_SERVICE_ACCOUNT_JSON"`
 
 	// Email
 	ResendAPIKey    string `env:"RESEND_API_KEY"`
@@ -194,6 +200,7 @@ func (c *Config) LogIntegrationStatus() {
 	emailOn := c.ResendAPIKey != "" || c.SendGridSMTPUser != "" || c.BrevoSMTPUser != ""
 	webPushOn := c.VapidPublicKey != "" && c.VapidPrivateKey != ""
 	mobilePushOn := c.FirebaseProjectID != "" && c.FirebaseServiceAccount != ""
+	appCheckOn := c.FirebaseAppCheckRequired
 	storageOn := c.S3BucketName != ""
 	oauthOn := c.GoogleClientID != "" || c.AppleClientID != ""
 	errorReportingOn := c.SentryDSN != ""
@@ -205,6 +212,7 @@ func (c *Config) LogIntegrationStatus() {
 		Bool("email", emailOn).
 		Bool("web_push", webPushOn).
 		Bool("mobile_push", mobilePushOn).
+		Bool("firebase_app_check", appCheckOn).
 		Bool("file_storage", storageOn).
 		Bool("oauth", oauthOn).
 		Bool("error_reporting", errorReportingOn).
@@ -277,6 +285,12 @@ func (c *Config) Validate() error {
 		if ip := net.ParseIP(host); ip != nil && ip.IsLoopback() {
 			return fmt.Errorf("FRONTEND_URL must not use a loopback address in production")
 		}
+	}
+	if c.FirebaseAppCheckRequired && strings.TrimSpace(c.FirebaseProjectNumber) == "" {
+		return fmt.Errorf("FIREBASE_PROJECT_NUMBER is required when Firebase App Check is enabled")
+	}
+	if c.FirebaseAppCheckRequired && strings.TrimSpace(c.FirebaseAppCheckAllowedAppIDs) == "" {
+		return fmt.Errorf("FIREBASE_APP_CHECK_ALLOWED_APP_IDS is required when Firebase App Check is enabled")
 	}
 	if c.SecretKey != "" && c.SecretKey == c.SessionSecretKey {
 		return fmt.Errorf("SECRET_KEY and SESSION_SECRET_KEY must be different")

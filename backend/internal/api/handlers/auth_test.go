@@ -6,6 +6,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	appcheckservice "github.com/mitlist-app/mitlist/internal/services/appcheck"
 )
 
 func TestAuth_Register(t *testing.T) {
@@ -172,6 +174,19 @@ func TestAuth_Guest(t *testing.T) {
 	require.NotNil(t, resp["access_token"])
 	require.NotNil(t, resp["user"])
 	assert.True(t, resp["user"].(map[string]any)["is_guest"].(bool))
+}
+
+func TestAuth_GuestRejectsMissingRequiredAppCheckToken(t *testing.T) {
+	clearTables(t)
+	router, handler := newAuthRouter(t)
+	handler.appCheck = appcheckservice.NewForTesting(
+		"1234567890",
+		"https://jwks.test",
+		nil,
+	)
+
+	rec := execRequest(t, router, "POST", "/api/v1/auth/guest", nil, "")
+	requireStatus(t, rec, http.StatusUnauthorized)
 }
 
 func TestAuth_Refresh(t *testing.T) {

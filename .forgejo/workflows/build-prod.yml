@@ -1,0 +1,130 @@
+# Build production images and push them to tropicalthink's own registry.
+#
+# Migrated from .gitea/workflows/deploy-prod.yml. Both exist during the
+# transition; retire the Gitea one after mitlist is cut over to anansi so
+# nobody pushes to vinylnostalgia out of habit.
+#
+# What changed, and why:
+#   - runs-on: dind — our runner has no `ubuntu-latest`. The `dind` label maps
+#     to docker:28-cli. `docker` maps to node:22, which has no docker CLI.
+#   - DOCKER_HOST is the default gateway. Job containers are created by the
+#     dind daemon, so they cannot resolve the compose service name.
+#   - Registry auth uses REGISTRY_USER/REGISTRY_TOKEN, org-level secrets for
+#     the ci-publisher account. The auto-injected token logs in successfully
+#     and then fails the push with "unauthorized: reqPackageAccess".
+#   - No docker/setup-buildx-action: third-party actions resolve through
+#     Forgejo's proxy and fail confusingly when they are not mirrored.
+#   - Images are tagged with the commit SHA. The old workflow used a
+#     date-and-short-sha string; SHA alone is what hosts/anansi/stacks/mitlist
+#     pins via MITLIST_TAG, and it makes rollback a tag change.
+#
+# Every `test -n` gate below is carried over deliberately. The official image
+# must never fall back to an unauthenticated App Check provider.
+name: build-prod
+
+on:
+  push:
+    branches: [prod]
+  workflow_dispatch:
+
+env:
+  REGISTRY: git.tropicalthink.com
+  IMAGE_PREFIX: git.tropicalthink.com/tropicalthink/mitlist
+
+jobs:
+  build:
+    runs-on: dind
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Point at the dind daemon
+        run: |
+          set -eu
+          echo "DOCKER_HOST=tcp://$(ip route | awk '/default/{print $3}'):2375" >> "$GITHUB_ENV"
+
+      - name: Log in to the registry
+        run: |
+          set -eu
+          echo "${{ secrets.REGISTRY_TOKEN }}" \
+            | docker login "$REGISTRY" -u "${{ secrets.REGISTRY_USER }}" --password-stdin
+
+      - name: Build and push the API
+        run: |
+          set -eu
+          docker build \
+            --build-arg VERSION="${{ github.sha }}" \
+            -f backend/Dockerfile.prod \
+            -t "$IMAGE_PREFIX-backend:${{ github.sha }}" \
+            backend
+          docker push "$IMAGE_PREFIX-backend:${{ github.sha }}"
+
+      - name: Build and push the PWA
+        env:
+          API_BASE_URL: ${{ secrets.PRODUCTION_API_BASE_URL }}
+          GLITCHTIP_DSN: ${{ secrets.GLITCHTIP_DSN_WEB }}
+          REQTRACK_APP_KEY: ${{ secrets.REQTRACK_APP_KEY }}
+          REQTRACK_URL: ${{ secrets.REQTRACK_URL }}
+          ANDROID_APP_LINK_SHA256: ${{ secrets.ANDROID_APP_LINK_SHA256 }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APP_CHECK_ENABLED: "true"
+          FIREBASE_PROJECT_ID: ${{ secrets.PRODUCTION_FIREBASE_PROJECT_ID }}
+          FIREBASE_PROJECT_NUMBER: ${{ secrets.PRODUCTION_FIREBASE_PROJECT_NUMBER }}
+          FIREBASE_APP_CHECK_REQUIRED: ${{ secrets.PRODUCTION_FIREBASE_APP_CHECK_REQUIRED }}
+          FIREBASE_API_KEY: ${{ secrets.PRODUCTION_FIREBASE_API_KEY }}
+          FIREBASE_APP_ID: ${{ secrets.PRODUCTION_FIREBASE_APP_ID }}
+          FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.PRODUCTION_FIREBASE_MESSAGING_SENDER_ID }}
+          APP_CHECK_WEB_RECAPTCHA_SITE_KEY: ${{ secrets.PRODUCTION_APP_CHECK_WEB_RECAPTCHA_SITE_KEY }}
+        run: |
+          set -eu
+          test -n "$API_BASE_URL"
+          test -n "$ANDROID_APP_LINK_SHA256"
+          test -n "$APPLE_TEAM_ID"
+          test "$APP_CHECK_ENABLED" = "true"
+          test -n "$FIREBASE_PROJECT_ID"
+          test -n "$FIREBASE_PROJECT_NUMBER"
+          test "$FIREBASE_APP_CHECK_REQUIRED" = "true"
+          test -n "$FIREBASE_API_KEY"
+          test -n "$FIREBASE_APP_ID"
+          test -n "$FIREBASE_MESSAGING_SENDER_ID"
+          test -n "$APP_CHECK_WEB_RECAPTCHA_SITE_KEY"
+          case "$FIREBASE_PROJECT_ID" in
+            ''|*[!a-z0-9-]*) echo "FIREBASE_PROJECT_ID has invalid characters" >&2; exit 1 ;;
+          esac
+          case "$FIREBASE_PROJECT_NUMBER" in
+            ''|*[!0-9]*) echo "FIREBASE_PROJECT_NUMBER must be numeric" >&2; exit 1 ;;
+          esac
+
+          sed -i "s/__PLAY_APP_SIGNING_SHA256__/$ANDROID_APP_LINK_SHA256/g" \
+            frontend/web/.well-known/assetlinks.json
+          sed -i "s/__APPLE_TEAM_ID__/$APPLE_TEAM_ID/g" \
+            frontend/web/.well-known/apple-app-site-association
+          if grep -R '__[A-Z0-9_]*__' frontend/web/.well-known; then
+            echo "Unresolved app-link association placeholder" >&2
+            exit 1
+          fi
+
+          DOCKER_BUILDKIT=1 docker build \
+            --build-arg API_BASE_URL="$API_BASE_URL" \
+            --build-arg GLITCHTIP_DSN="$GLITCHTIP_DSN" \
+            --build-arg ENVIRONMENT=production \
+            --build-arg REQTRACK_APP_KEY="$REQTRACK_APP_KEY" \
+            --build-arg REQTRACK_URL="$REQTRACK_URL" \
+            --build-arg APP_CHECK_ENABLED="$APP_CHECK_ENABLED" \
+            --build-arg FIREBASE_PROJECT_ID="$FIREBASE_PROJECT_ID" \
+            --build-arg FIREBASE_API_KEY="$FIREBASE_API_KEY" \
+            --build-arg FIREBASE_APP_ID="$FIREBASE_APP_ID" \
+            --build-arg FIREBASE_MESSAGING_SENDER_ID="$FIREBASE_MESSAGING_SENDER_ID" \
+            --build-arg APP_CHECK_WEB_RECAPTCHA_SITE_KEY="$APP_CHECK_WEB_RECAPTCHA_SITE_KEY" \
+            -f frontend/Dockerfile.prod \
+            -t "$IMAGE_PREFIX-frontend:${{ github.sha }}" \
+            frontend
+          docker push "$IMAGE_PREFIX-frontend:${{ github.sha }}"
+
+      - name: Tell us what to pin
+        run: |
+          echo "Deploy by setting MITLIST_TAG=${{ github.sha }} in"
+          echo "  infra: hosts/anansi/stacks/mitlist/secrets.sops.env"
+
+      - name: Log out
+        if: always()
+        run: docker logout "$REGISTRY" || true

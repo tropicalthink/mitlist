@@ -15,6 +15,10 @@ the repository root unless a step says otherwise.
       either during this release would invalidate more sessions than intended.
 - [ ] Confirm `MAX_STORAGE_PER_GROUP_GB=1` and
       `MAX_FILE_SIZE_BYTES=10485760` for official hosting.
+- [ ] Confirm `FIREBASE_APP_CHECK_REQUIRED=true` for the official API and
+      that `FIREBASE_PROJECT_NUMBER` identifies the same Firebase project used
+      by the released mobile clients. The
+      official service must reject missing or invalid App Check tokens.
 - [ ] Confirm the database can accommodate the API pool. One API process opens
       at most 20 PostgreSQL connections today.
 - [ ] Build an immutable backend image from the release commit; do not deploy a
@@ -70,6 +74,38 @@ DATABASE_URL="$DATABASE_URL" go run ./cmd/migrate version
       version 54, with no panic or repeated connection retries.
 - [ ] Keep coarse IP abuse protection enabled at the edge. Fine-grained API
       rate-limit buckets are process-local, so replicas do not share them.
+
+### App Check enforcement
+
+The official hosted service runs with Firebase App Check required. Configure
+the API runtime before admitting traffic:
+
+```dotenv
+ENVIRONMENT=production
+FIREBASE_PROJECT_ID=your-firebase-project
+FIREBASE_PROJECT_NUMBER=123456789012
+FIREBASE_APP_CHECK_REQUIRED=true
+FIREBASE_APP_CHECK_ALLOWED_APP_IDS=1:...:android:...,1:...:ios:...,1:...:web:...
+# Required separately only when FCM push is enabled:
+FIREBASE_SERVICE_ACCOUNT_JSON={...}
+```
+
+The Firebase project must contain the exact Android (`me.mitlist`) and iOS
+(`me.mitlist`) apps shipped by the beta/production workflows. Android release
+builds use Play Integrity, iOS release builds use App Attest, and the
+production web app must be registered with the reCAPTCHA provider and its
+generated web app ID. Do not put a
+Firebase App Check debug token in a production secret or artifact. If the
+project number, or required flag is absent, stop the cutover — a
+hosted API must not silently accept unauthenticated mobile traffic.
+For the official service, populate `FIREBASE_APP_CHECK_ALLOWED_APP_IDS` with
+the exact Android, iOS, and web App IDs from Firebase Console. The API refuses
+to start with App Check required and an empty allowlist.
+
+Self-hosted instances are intentionally opt-in: `FIREBASE_APP_CHECK_REQUIRED`
+defaults to `false` in `backend/.env.example`. Operators enabling it must use
+their own Firebase project and register their own application IDs; they should
+build a matching client with `--dart-define=APP_CHECK_ENABLED=true`.
 
 The production Compose profile accepts a complete `DATABASE_URL` from the root
 `.env`. When it is present, it overrides the bundled Postgres URL:
