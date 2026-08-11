@@ -3,9 +3,14 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 
 import '../l10n/app_localizations.dart';
+import '../services/app_check_service.dart';
 import '../services/api_error_mapper.dart';
 
 String friendlyErrorMessage(Object error, AppLocalizations l10n) {
+  if (error is AppCheckUnavailableException) {
+    return _sentenceCase(error.message);
+  }
+
   // Services wrap transport errors in ApiException. Surface the backend's
   // specific message when it sent one ("invite expired", "already a member
   // of this group", ...) instead of collapsing to the generic fallback.

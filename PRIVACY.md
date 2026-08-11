@@ -29,6 +29,28 @@ When enabled, crash reports contain stack traces and basic context (OS version, 
 
 Reports are sent to whatever endpoint the operator configures in the DSN. We recommend pointing this at a **self-hosted GlitchTip** instance so crash data stays on the operator's own infrastructure and is not sent to a third party.
 
+## Official-service abuse prevention (Firebase App Check)
+
+The official mobile builds use Firebase App Check to attest that requests come
+from an unmodified mitlist app: Play Integrity on Android and App Attest on
+iOS. The official API verifies the attestation and rejects missing or invalid
+tokens. This is an abuse-prevention signal, not analytics, advertising, or a
+household-content feed. Firebase/Google and Apple may receive device/app
+integrity signals needed to issue the attestation token; mitlist receives only
+the verification result and does not use it to build a user profile.
+
+App Check is an attestation signal, not a persistent unique-device
+fingerprint. Tokens rotate; the service combines verified app attestation with
+an app-generated installation identifier used only
+for short-lived abuse quotas; the service does not turn that value into a
+cross-service identity or advertising profile.
+
+App Check is disabled by default for independently self-hosted deployments.
+A self-hoster who opts in is responsible for configuring their own Firebase
+project, reviewing that provider's privacy terms, and disclosing it to their
+users. Debug App Check providers and debug tokens are never appropriate for a
+released official artifact.
+
 ---
 
 ## Account controls
@@ -51,6 +73,7 @@ Each of the following is optional and disabled unless the operator provides cred
 | PlanetScale | Managed PostgreSQL for the official service | `DATABASE_URL` |
 | SendGrid / Brevo SMTP | Transactional email (SMTP fallback) | `SENDGRID_SMTP_*` / `BREVO_SMTP_*` |
 | Firebase / FCM | Mobile push notifications | `FIREBASE_PROJECT_ID` + `FIREBASE_SERVICE_ACCOUNT_JSON` |
+| Firebase App Check | Mobile app/device attestation for official-service abuse prevention | `FIREBASE_APP_CHECK_REQUIRED=true` + `FIREBASE_PROJECT_NUMBER` + Firebase project credentials |
 | Web Push (VAPID) | Browser push notifications | `VAPID_PRIVATE_KEY` + `VAPID_PUBLIC_KEY` |
 | AWS S3 / Cloudflare R2 | File and photo storage | `AWS_ACCESS_KEY_ID` + `S3_BUCKET_NAME` |
 | FX rate feed | Live exchange rates for expenses | `FX_RATE_API_URL` |

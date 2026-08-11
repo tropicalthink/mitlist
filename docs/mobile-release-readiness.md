@@ -54,7 +54,7 @@ plan was written.
 | CODE_SIGN_IDENTITY (device) | `iPhone Developer` (not `iPhone Distribution`) | `project.pbxproj` lines 335, 456, 513 |
 | DEVELOPMENT_TEAM | **Not set** — no `DEVELOPMENT_TEAM` key in pbxproj | Grep confirmed absent |
 | PROVISIONING_PROFILE | **Not set** | Grep confirmed absent |
-| Entitlements | Associated domains and production APNs are declared | `Runner/Runner.entitlements` |
+| Entitlements | Associated domains, APNs, and production App Attest are declared | `Runner/Runner.entitlements` |
 | `GoogleService-Info.plist` | Not tracked, not present on disk | `git ls-files` confirmed absent |
 | APNs configuration | Push entitlement and remote-notification background mode are declared; credentials remain protected CI inputs | entitlements + `Info.plist` |
 | Podfile | Standard Flutter Podfile; no explicit `platform :ios` line (inherits from Flutter) | `frontend/ios/Podfile` |
@@ -74,6 +74,36 @@ plan was written.
 - Sentry only initialises when a `GLITCHTIP_DSN` dart-define is injected at build time (`frontend/lib/main.dart` lines 27–42). If the define is absent (the default), Sentry is never started — **opt-in by the operator, not the user**.
 - `tracesSampleRate = 0.0` — no performance tracing data sent.
 - No PII or user-identity fields are set.
+
+### Firebase App Check / attestation
+
+Official beta and production artifacts are fail-closed: the release workflows
+force `APP_CHECK_ENABLED=true` and require the Firebase project values before
+Flutter is invoked. Android must use Play Integrity and iOS must use App
+Attest (DeviceCheck is the compatibility fallback only when explicitly
+approved for the target); debug providers and debug tokens must never be
+included in a store artifact. The same Firebase project must own the native
+configuration files, registered Android/iOS apps, and App Check enforcement.
+Before release, register all three providers in Firebase: Android package
+`me.mitlist` with Play Integrity, iOS bundle `me.mitlist` with App Attest, and
+the production web app whose generated Firebase app ID is supplied as
+`PRODUCTION_FIREBASE_APP_ID`. The web provider uses the configured reCAPTCHA
+site key. Keep the provider registrations and API allowlist aligned with the
+apps actually shipped.
+
+App Check is an attestation signal, not a persistent unique-device fingerprint.
+Tokens rotate. Guest quotas bind the app's local installation UUID to a
+verified app identity and never use that value as a cross-service identity.
+
+The API deployment must independently reject requests without a valid App
+Check token when it is running the official hosted service. Set
+`FIREBASE_APP_CHECK_REQUIRED=true` and `FIREBASE_PROJECT_NUMBER` in the
+production runtime. App Check verification uses Firebase's public signing
+keys; `FIREBASE_SERVICE_ACCOUNT_JSON` remains a separate FCM push requirement.
+A self-hosted deployment
+defaults to App Check off and may opt in by setting this flag and its own
+Firebase project credentials; a self-host must not reuse the official hosted
+project or release artifacts.
 
 ### Store listing assets
 
@@ -113,6 +143,10 @@ plan was written.
 - [ ] **Keystore custody + backup plan** — losing the upload keystore permanently locks the app off of future Play updates (unless Play App Signing is enrolled before first upload).
 - [ ] **Play App Signing decision** — enroll at first upload to delegate key custody to Google; strongly recommended for new apps. Must be decided before the first AAB upload.
 - [ ] **`google-services.json`** — must be created in Firebase Console (one project per target environment), dropped into `android/app/` at build time (CI secret or local file), and **never committed**.
+- [ ] **Firebase App Check registration** — register `me.mitlist` in the
+  beta/production Firebase project, enable Play Integrity, and create the
+  Android App Check enforcement policy before distributing a beta AAB. Keep
+  debug tokens out of release builds.
 - [ ] **`com.google.gms.google-services` Gradle plugin** — must be added to `android/app/build.gradle` (plugin block) before Firebase works at runtime. This is a build-config change, deferred to the implementation plan.
 - [ ] **Store listing completion**:
   - [ ] Feature graphic (1024×500 px PNG, no alpha)
@@ -123,6 +157,9 @@ plan was written.
 - [ ] **Content rating** — IARC questionnaire in Play Console (household/productivity app, no objectionable content expected; should be "Everyone").
 - [ ] **Data safety form** — must disclose:
   - Firebase Messaging (device identifiers — FCM token — are sent to Google; declared under "Device or other IDs").
+  - Firebase App Check / Play Integrity (Android) and App Attest (iOS) —
+    device/app integrity signals are processed to prevent abuse; disclose the
+    provider processing in the store forms for the official build.
   - Sentry/GlitchTip crash reporting: only active when operator injects `GLITCHTIP_DSN` at build time; if the Play Store build omits the DSN define, this is not collected. Decide whether the published binary includes the DSN.
   - Expense CSV export: user-initiated, no automatic data collection.
   - No location, contacts, microphone (camera used for OCR only, no upload to third parties).
@@ -137,11 +174,16 @@ plan was written.
 - [ ] **Signing certificate + provisioning profile** — generate a Distribution certificate and App Store provisioning profile for `me.mitlist`; configure in Xcode or via Fastlane `match`.
   - Currently `CODE_SIGN_IDENTITY` is `iPhone Developer` (development only) and `DEVELOPMENT_TEAM` is not set. Must be updated before an App Store build compiles.
 - [ ] **`GoogleService-Info.plist`** — create in Firebase Console, drop into `ios/Runner/` at build time; never commit.
+- [ ] **Firebase App Check registration** — enable App Attest (with
+  DeviceCheck only as an explicitly approved fallback) for `me.mitlist` and
+  enforce it for the official API before TestFlight distribution.
 - [ ] **APNs key** — generate an APNs Authentication Key (.p8) in the Apple Developer portal; upload to Firebase Console so FCM can deliver to iOS devices.
 - [ ] **Push Notifications + Background Modes capabilities** — must be enabled in Xcode for the `me.mitlist` App ID (`fcm_service.dart` line 28 notes this requirement).
 - [ ] **App Store Connect app record** — create the app in App Store Connect (bundle ID, name, primary language, SKU).
 - [ ] **App Privacy "nutrition label"** — declare data collected:
   - Firebase Messaging (Device ID — used for push delivery — "not linked to identity" unless you link it).
+  - Firebase App Check / Play Integrity / App Attest — integrity signals used
+    for fraud and abuse prevention, not advertising or analytics.
   - Sentry/GlitchTip (Crash Data — if DSN baked into the IPA; decide before submission).
   - No location, no contacts, no camera upload to third parties.
   - User-initiated data export doesn't trigger a disclosure.
@@ -170,12 +212,33 @@ The on-demand closed-beta workflow requires these Gitea secrets:
   signing/Firebase inputs.
 - `GLITCHTIP_DSN_BETA` — optional crash-reporting DSN. `BETA_ENVIRONMENT` is
   also optional and defaults to `beta`.
+- `APP_CHECK_ENABLED` is forced to `true` by the beta workflow. The workflow
+  refuses to build unless the official Firebase project values are present;
+  debug providers and debug tokens are never accepted for these artifacts.
+- `BETA_FIREBASE_PROJECT_ID` — **required** Firebase project ID. It is baked
+  into both mobile artifacts alongside `APP_CHECK_ENABLED=true`.
+  The native Firebase files and the App Check registrations must belong to
+  this same project.
+- `BETA_FIREBASE_PROJECT_NUMBER` — **required** numeric Firebase project
+  number. The official API uses it to validate the App Check token issuer and
+  audience.
 
 Both artifacts receive the same numeric `${{ gitea.run_number }}` as their
 Flutter build number, so successive workflow runs produce increasing Android
 version codes and iOS bundle versions. The URL, DSN, and signing material are
 only passed through protected workflow environment variables; they are never
 written to artifacts or repository files.
+
+The production PWA workflow forces `APP_CHECK_ENABLED=true` and requires
+`PRODUCTION_FIREBASE_PROJECT_ID`, `PRODUCTION_FIREBASE_API_KEY`,
+`PRODUCTION_FIREBASE_APP_ID`, `PRODUCTION_FIREBASE_MESSAGING_SENDER_ID`, and
+`PRODUCTION_FIREBASE_PROJECT_NUMBER`, and
+`PRODUCTION_APP_CHECK_WEB_RECAPTCHA_SITE_KEY` to be non-empty, and
+`PRODUCTION_FIREBASE_APP_CHECK_REQUIRED` to equal `true`. Its build is
+rejected before Docker starts if any check fails.
+The production API must separately set `FIREBASE_APP_CHECK_REQUIRED=true` at
+runtime (see [the deployment runbook](DEPLOYMENT.md)); a build-time client flag
+alone is not an access-control boundary.
 
 ### Android (no macOS required)
 
@@ -184,6 +247,8 @@ Trigger: `workflow_dispatch` or push of a `v*` tag.
 ```
 flutter build appbundle --release \
   --dart-define=ENVIRONMENT=production \
+  --dart-define=APP_CHECK_ENABLED=true \
+  --dart-define=FIREBASE_PROJECT_ID=your-firebase-project \
   # omit GLITCHTIP_DSN if the published binary should not phone home
 ```
 
@@ -206,7 +271,9 @@ Trigger: same `workflow_dispatch` / `v*` tag.
 
 ```
 flutter build ipa --release \
-  --dart-define=ENVIRONMENT=production
+  --dart-define=ENVIRONMENT=production \
+  --dart-define=APP_CHECK_ENABLED=true \
+  --dart-define=FIREBASE_PROJECT_ID=your-firebase-project
 ```
 
 CI secrets required:
@@ -314,7 +381,7 @@ Mobile release is done when ALL of the following hold:
 | `frontend/android/.gitignore` | `key.properties`, `**/*.keystore`, `**/*.jks` all ignored |
 | `frontend/android/app/proguard-rules.pro` | Flutter + TFLite + Play Core rules present |
 | `frontend/ios/Runner.xcodeproj/project.pbxproj` | Bundle ID `me.mitlist`, `CODE_SIGN_STYLE=Automatic`, no `DEVELOPMENT_TEAM` |
-| `frontend/ios/Runner/Runner.entitlements` | `applinks:app.mitlist.me` associated domain only |
+| `frontend/ios/Runner/Runner.entitlements` | Associated domain, APNs, and production App Attest entitlements |
 | `frontend/pubspec.yaml` | `version: 1.0.0+1`, `firebase_messaging: ^15.2.5`, `sentry_flutter: ^8.14.2` |
 | `frontend/lib/main.dart` | Sentry opt-in via `GLITCHTIP_DSN` dart-define; Firebase init without `firebase_options.dart` |
 | `frontend/lib/services/fcm_service.dart` | FCM init wrapped in try/catch; documents `google-services.json` requirement |

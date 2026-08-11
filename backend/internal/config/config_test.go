@@ -165,3 +165,36 @@ func TestValidateProductionFrontendURL(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateAppCheckRequiresProjectAndAppAllowlist(t *testing.T) {
+	tests := []struct {
+		name          string
+		projectNumber string
+		allowedAppIDs string
+		wantErr       bool
+	}{
+		{name: "disabled needs no Firebase config"},
+		{name: "missing project number", allowedAppIDs: "1:123:android:abc", wantErr: true},
+		{name: "missing app allowlist", projectNumber: "123", wantErr: true},
+		{name: "fully configured", projectNumber: "123", allowedAppIDs: "1:123:android:abc,1:123:ios:def"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := &Config{
+				Environment:                   "development",
+				SecretKey:                     "access-secret",
+				SessionSecretKey:              "refresh-secret",
+				FirebaseAppCheckRequired:      tc.name != "disabled needs no Firebase config",
+				FirebaseProjectNumber:         tc.projectNumber,
+				FirebaseAppCheckAllowedAppIDs: tc.allowedAppIDs,
+			}
+			err := cfg.Validate()
+			if tc.wantErr && err == nil {
+				t.Fatal("expected validation error")
+			}
+			if !tc.wantErr && err != nil {
+				t.Fatalf("unexpected validation error: %v", err)
+			}
+		})
+	}
+}

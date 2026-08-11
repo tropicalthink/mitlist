@@ -12,6 +12,12 @@ ARG ENVIRONMENT=production
 # "Send feedback" card is hidden. See lib/config/feedback_config.dart.
 ARG REQTRACK_APP_KEY=
 ARG REQTRACK_URL=
+ARG APP_CHECK_ENABLED=false
+ARG FIREBASE_PROJECT_ID=
+ARG FIREBASE_API_KEY=
+ARG FIREBASE_APP_ID=
+ARG FIREBASE_MESSAGING_SENDER_ID=
+ARG APP_CHECK_WEB_RECAPTCHA_SITE_KEY=
 # Flutter does not compile web/drift_worker.dart — compile it for Drift WASM.
 RUN dart compile js -O4 web/drift_worker.dart -o web/drift_worker.dart.js
 RUN flutter build web --release \
@@ -20,7 +26,13 @@ RUN flutter build web --release \
     --dart-define=GLITCHTIP_DSN=${GLITCHTIP_DSN} \
     --dart-define=ENVIRONMENT=${ENVIRONMENT} \
     --dart-define=REQTRACK_APP_KEY=${REQTRACK_APP_KEY} \
-    --dart-define=REQTRACK_URL=${REQTRACK_URL}
+    --dart-define=REQTRACK_URL=${REQTRACK_URL} \
+    --dart-define=APP_CHECK_ENABLED=${APP_CHECK_ENABLED} \
+    --dart-define=FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID} \
+    --dart-define=FIREBASE_API_KEY=${FIREBASE_API_KEY} \
+    --dart-define=FIREBASE_APP_ID=${FIREBASE_APP_ID} \
+    --dart-define=FIREBASE_MESSAGING_SENDER_ID=${FIREBASE_MESSAGING_SENDER_ID} \
+    --dart-define=APP_CHECK_WEB_RECAPTCHA_SITE_KEY=${APP_CHECK_WEB_RECAPTCHA_SITE_KEY}
 
 FROM nginx:1.29-alpine
 COPY --from=build /app/build/web /usr/share/nginx/html

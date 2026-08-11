@@ -13,6 +13,7 @@ import (
 	"github.com/mitlist-app/mitlist/internal/middleware"
 	"github.com/mitlist-app/mitlist/internal/models"
 	"github.com/mitlist-app/mitlist/internal/services"
+	appcheckservice "github.com/mitlist-app/mitlist/internal/services/appcheck"
 	jwtservice "github.com/mitlist-app/mitlist/internal/services/jwt"
 )
 
@@ -23,6 +24,7 @@ type AuthHandler struct {
 	guestService *services.GuestService
 	oauthService *services.OAuthService
 	jwtService   *jwtservice.Service
+	appCheck     *appcheckservice.Verifier
 }
 
 // NewAuthHandler creates an AuthHandler with explicit dependencies.
@@ -32,13 +34,19 @@ func NewAuthHandler(
 	guestService *services.GuestService,
 	oauthService *services.OAuthService,
 	jwtService *jwtservice.Service,
+	appCheck ...*appcheckservice.Verifier,
 ) *AuthHandler {
+	var verifier *appcheckservice.Verifier
+	if len(appCheck) > 0 {
+		verifier = appCheck[0]
+	}
 	return &AuthHandler{
 		cfg:          cfg,
 		userService:  userService,
 		guestService: guestService,
 		oauthService: oauthService,
 		jwtService:   jwtService,
+		appCheck:     verifier,
 	}
 }
 
@@ -460,8 +468,20 @@ func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) CreateGuest(w http.ResponseWriter, r *http.Request) {
+	// App Check is deliberately enforced at the guest boundary only. When it
+	// is enabled, the caller-controlled install ID can only supplement (not
+	// replace) the verified token identity used for quota enforcement.
+	installIdentity := ""
+	if h.appCheck != nil && h.appCheck.Enabled() {
+		claims, err := h.appCheck.Verify(r.Context(), r.Header.Get("X-Firebase-AppCheck"))
+		if err != nil {
+			api.RespondError(w, api.ErrUnauthorized)
+			return
+		}
+		installIdentity = claims.QuotaIdentity(r.Header.Get("X-Mitlist-Install-ID"))
+	}
 	user, access, refresh, err := h.guestService.CreateGuestForIdentity(
-		r.Context(), middleware.ExtractIP(r), r.Header.Get("X-Mitlist-Install-ID"),
+		r.Context(), middleware.ExtractIP(r), installIdentity,
 	)
 	if err != nil {
 		if errors.Is(err, services.ErrGuestCreationLimit) {

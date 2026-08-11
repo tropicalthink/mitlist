@@ -9,6 +9,7 @@ import '../config/api_config.dart';
 import '../models/auth_models.dart';
 import 'api_client.dart';
 import 'api_error_mapper.dart';
+import 'app_check_service.dart';
 import 'fcm_service.dart';
 import 'push_subscription_service.dart';
 import 'token_store.dart';
@@ -30,6 +31,7 @@ class AuthService {
   final Logger _logger = Logger();
   final SharedPreferences _prefs;
   final TokenStore _tokenStore;
+  final AppCheckTokenProvider _appCheck;
 
   void _logFailure(String operation, DioException error) {
     if (!kDebugMode) return;
@@ -42,8 +44,9 @@ class AuthService {
   final Future<void> Function()? _wipeLocalData;
 
   AuthService._(this._dio, this._prefs, this._tokenStore,
-      {Future<void> Function()? wipeLocalData})
-      : _wipeLocalData = wipeLocalData;
+      {Future<void> Function()? wipeLocalData, AppCheckTokenProvider? appCheck})
+      : _wipeLocalData = wipeLocalData,
+        _appCheck = appCheck ?? FirebaseAppCheckService.instance;
 
   /// Test-only constructor that accepts all dependencies directly.
   @visibleForTesting
@@ -52,7 +55,9 @@ class AuthService {
     SharedPreferences prefs,
     TokenStore tokenStore, {
     Future<void> Function()? wipeLocalData,
-  }) : this._(dio, prefs, tokenStore, wipeLocalData: wipeLocalData);
+    AppCheckTokenProvider? appCheck,
+  }) : this._(dio, prefs, tokenStore,
+            wipeLocalData: wipeLocalData, appCheck: appCheck);
 
   static Future<AuthService> create([Ref? ref]) async {
     final prefs = await SharedPreferences.getInstance();
@@ -336,7 +341,19 @@ class AuthService {
   /// Returns a [TokenPair] with access and refresh tokens.
   Future<TokenPair> createGuest({bool rememberMe = true}) async {
     try {
-      final response = await _dio.post('/auth/guest');
+      // App Check is intentionally scoped to this unauthenticated, abuse-
+      // sensitive endpoint. Fetch immediately before the request so expired
+      // tokens are refreshed by Firebase rather than cached in Dio headers.
+      final appCheckToken = await _appCheck.getToken();
+      final response = await _dio.post(
+        '/auth/guest',
+        options: Options(
+          headers: {
+            if (appCheckToken != null && appCheckToken.isNotEmpty)
+              'X-Firebase-AppCheck': appCheckToken,
+          },
+        ),
+      );
 
       final tokenPair = TokenPair.fromJson(response.data);
       await _saveTokens(tokenPair, persistSession: rememberMe);
