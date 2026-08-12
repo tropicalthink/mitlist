@@ -5101,6 +5101,15 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get restockReasonDue => 'Toca reponer';
+
+  @override
+  String get restockReasonUsual => 'Compra habitual';
+
+  @override
+  String get restockReasonGoesWith => 'Va con esta lista';
+
+  @override
   String get householdStorageTitle => 'Almacenamiento del hogar';
 
   @override

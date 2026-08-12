@@ -4386,7 +4386,7 @@ abstract class AppLocalizations {
   /// Dialog body for account deletion
   ///
   /// In en, this message translates to:
-  /// **'This will permanently delete your account and all associated data. This cannot be undone.'**
+  /// **'This permanently removes your account, revokes all sessions, deletes credentials, and anonymizes your shared household history. This cannot be undone.'**
   String get accountDeleteAccountBody;
 
   /// Button to log out
@@ -8859,6 +8859,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{days}d ago'**
   String runningLowDaysAgo(num days);
+
+  /// Reason shown when a household suggestion is due based on purchase cadence
+  ///
+  /// In en, this message translates to:
+  /// **'Due again'**
+  String get restockReasonDue;
+
+  /// Reason shown when a household suggestion is a familiar recurring purchase
+  ///
+  /// In en, this message translates to:
+  /// **'Usual buy'**
+  String get restockReasonUsual;
+
+  /// Reason shown when a household suggestion commonly occurs with current list items
+  ///
+  /// In en, this message translates to:
+  /// **'Goes with this list'**
+  String get restockReasonGoesWith;
 
   /// Household settings storage section title
   ///

@@ -5126,6 +5126,15 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get restockReasonDue => 'À racheter';
+
+  @override
+  String get restockReasonUsual => 'Achat habituel';
+
+  @override
+  String get restockReasonGoesWith => 'Va avec cette liste';
+
+  @override
   String get householdStorageTitle => 'Stockage du foyer';
 
   @override

@@ -5066,6 +5066,15 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get restockReasonDue => 'Due again';
+
+  @override
+  String get restockReasonUsual => 'Usual buy';
+
+  @override
+  String get restockReasonGoesWith => 'Goes with this list';
+
+  @override
   String get householdStorageTitle => 'Household storage';
 
   @override

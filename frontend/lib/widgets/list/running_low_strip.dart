@@ -4,12 +4,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/grocery_provider.dart';
 import '../../services/restock_service.dart';
+import '../../theme/list_tile_accent.dart';
 import '../../theme/spacing.dart';
-import '../../theme/theme.dart';
+import '../../theme/typography.dart';
+import '../app_card.dart';
 import '../app_icon.dart';
 
-/// A horizontal strip shown above the list items when the household has
-/// groceries it is due to rebuy (inferred from on-device purchase cadence).
+/// A horizontal shelf shown above shopping-list items when the household prior
+/// has useful additions. Each card explains whether it is due, familiar, or
+/// associated with the current list instead of presenting every signal as
+/// "running low".
 ///
 /// Renders [SizedBox.shrink] while loading, on error, or when there are no
 /// suggestions after filtering out [currentItemNames] — never shows spinners
@@ -77,14 +81,16 @@ class _RunningLowStripContent extends StatelessWidget {
         color: colorScheme.surfaceContainerLow,
         border: Border(
           bottom: BorderSide(
-            color: colorScheme.outlineVariant,
-            width: 1,
+            color: colorScheme.outline,
+            width: 2,
           ),
         ),
       ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: MitlistSpacing.md,
-        vertical: MitlistSpacing.sm,
+      padding: const EdgeInsets.fromLTRB(
+        MitlistSpacing.md,
+        MitlistSpacing.md,
+        MitlistSpacing.md,
+        MitlistSpacing.md,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -92,24 +98,43 @@ class _RunningLowStripContent extends StatelessWidget {
         children: [
           Row(
             children: [
-              AppIcon(
-                name: 'shoppingCart',
-                size: 13,
-                color: colorScheme.onSurfaceVariant,
+              Container(
+                width: MitlistSpacing.space8,
+                height: MitlistSpacing.space8,
+                color: colorScheme.primary,
+                child: Center(
+                  child: AppIcon(
+                    name: 'bolt',
+                    size: MitlistSpacing.space4,
+                    color: colorScheme.onPrimary,
+                  ),
+                ),
               ),
-              const SizedBox(width: MitlistSpacing.xs),
+              const SizedBox(width: MitlistSpacing.sm),
+              Expanded(
+                child: Text(
+                  l10n.scanReviewYouMightNeed,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.titleMedium?.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
               Text(
-                l10n.runningLowHeading,
-                style: textTheme.labelSmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
+                '${suggestions.length}',
+                style: MitlistTypography.monoBody(
+                  color: colorScheme.primary,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: MitlistSpacing.xs),
+          const SizedBox(height: MitlistSpacing.sm),
           SizedBox(
-            height: 44,
+            height: MitlistSpacing.space20 + MitlistSpacing.sm,
             child: ListView.separated(
+              clipBehavior: Clip.none,
               scrollDirection: Axis.horizontal,
               itemCount: suggestions.length,
               separatorBuilder: (_, __) =>
@@ -143,51 +168,78 @@ class _RestockChip extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final accent = ListTileAccent.fromSeed(
+      suggestion.canonicalItemId,
+      Theme.of(context).brightness,
+    );
+    final reason = switch (suggestion.reason) {
+      RestockReason.due => (l10n.restockReasonDue, 'clockOutline'),
+      RestockReason.usual => (l10n.restockReasonUsual, 'repeat'),
+      RestockReason.goesWith => (l10n.restockReasonGoesWith, 'link'),
+    };
+    final daysAgo = l10n.runningLowDaysAgo(suggestion.daysSince);
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: MitlistSpacing.sm,
-          vertical: MitlistSpacing.xs,
-        ),
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius:
-              const BorderRadius.all(Radius.circular(MitlistTheme.radiusMd)),
-          border: Border.fromBorderSide(
-            BorderSide(color: colorScheme.outline, width: 1),
-          ),
-        ),
+    return SizedBox(
+      width: MitlistSpacing.space20 * 2,
+      child: AppCard(
+        interactive: true,
+        animated: true,
+        padding: AppCardPadding.sm,
+        backgroundColor: accent.tileBackground,
+        semanticLabel: '${suggestion.name}. ${reason.$1}. $daysAgo',
+        onTap: onTap,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Row(
-              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  suggestion.name,
-                  style: textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurface,
-                    fontWeight: FontWeight.w500,
-                  ),
+                AppIcon(
+                  name: reason.$2,
+                  size: MitlistSpacing.space4,
+                  color: accent.iconColor,
                 ),
                 const SizedBox(width: MitlistSpacing.xs),
-                AppIcon(
-                  name: 'plus',
-                  size: 12,
-                  color: colorScheme.primary,
+                Expanded(
+                  child: Text(
+                    reason.$1,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: textTheme.labelSmall?.copyWith(
+                      color: accent.snippetOnTile,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
               ],
             ),
             Text(
-              l10n.runningLowDaysAgo(suggestion.daysSince),
-              style: textTheme.labelSmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-                fontSize: 10,
+              suggestion.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: textTheme.titleMedium?.copyWith(
+                color: accent.titleColor,
+                fontWeight: FontWeight.w700,
               ),
+            ),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    daysAgo,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: textTheme.labelSmall?.copyWith(
+                      color: accent.snippetOnTile,
+                    ),
+                  ),
+                ),
+                AppIcon(
+                  name: 'plus',
+                  size: MitlistSpacing.space4,
+                  color: colorScheme.primary,
+                ),
+              ],
             ),
           ],
         ),

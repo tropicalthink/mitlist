@@ -72,6 +72,9 @@ class ListDetailController extends ChangeNotifier {
   final Set<String> _photoLoadAttempted = {};
   bool _batchPhotosSupported = true;
   bool _canonicalBackfillStarted = false;
+  final Map<String, String> _categoryByCanonicalId = {};
+  final Set<String> _resolvedCategoryIds = {};
+  final Set<String> _categoryIdsInFlight = {};
 
   /// Max in-flight photo-metadata requests while hydrating a list's
   /// thumbnails (see [_loadPhotosForItems]).
@@ -82,7 +85,7 @@ class ListDetailController extends ChangeNotifier {
   int _suggestGeneration = 0;
 
   /// Bumped instead of [notifyListeners] when only the composer suggestions
-  /// change, so a keystroke rebuilds the suggestion chips without rebuilding
+  /// change, so a keystroke rebuilds the suggestion cards without rebuilding
   /// the item list. The screen wraps the composer in a [ValueListenableBuilder]
   /// on this; the body keeps listening to the controller itself.
   final ValueNotifier<int> suggestionsRevision = ValueNotifier<int>(0);
@@ -119,6 +122,11 @@ class ListDetailController extends ChangeNotifier {
   List<HouseholdSuggestion> get suggestions => _suggestionEngine.suggestions;
 
   List<ListItemPhoto>? photosFor(String itemId) => _photosByItemId[itemId];
+  String? categoryFor(ListItem item) {
+    final canonicalId = item.canonicalItemId;
+    return canonicalId == null ? null : _categoryByCanonicalId[canonicalId];
+  }
+
   bool isCollapsing(String itemId) => _collapsing.contains(itemId);
 
   /// True once the initial load has resolved the list service — guards actions
@@ -203,6 +211,7 @@ class ListDetailController extends ChangeNotifier {
         }
         _notify();
         unawaited(_loadPhotosForItems(items));
+        unawaited(_ensureGroceryCategories());
       });
 
       final cached = await repo.getItemsByListOnce(listId);
@@ -220,6 +229,9 @@ class ListDetailController extends ChangeNotifier {
       if (cachedGroupId != null) _groupId = cachedGroupId;
       _listType = cachedListType;
       _notify();
+      if (_listType == 'shopping') {
+        unawaited(_ensureGroceryCategories());
+      }
 
       // Refresh list + items in background; stream will update.
       await repo.refreshListDetail(listId);
@@ -240,10 +252,10 @@ class ListDetailController extends ChangeNotifier {
       // Grocery graph shares the same SSE stream: corrections/aisles from
       // other members invalidate the local graph live.
       try {
-        final groceryRepo = await ref.read(groceryRepositoryProvider.future);
+        await _ensureGroceryCategories();
+        final groceryRepo = _groceryRepo;
         if (!_disposed) {
-          _groceryRepo = groceryRepo;
-          groceryRepo.attachSse(sseService, list.groupId);
+          groceryRepo?.attachSse(sseService, list.groupId);
         }
       } catch (_) {}
       try {
@@ -270,6 +282,50 @@ class ListDetailController extends ChangeNotifier {
       _hasError = !hasUsableContent;
       _refreshFailed = hasUsableContent;
       _notify();
+    }
+  }
+
+  Future<void> _ensureGroceryCategories() async {
+    if (_disposed || _listType != 'shopping') return;
+    if (!_items.any((item) => item.canonicalItemId != null)) return;
+    try {
+      await ref.read(grocerySeedProvider.future);
+      if (_disposed) return;
+      _groceryRepo ??= await ref.read(groceryRepositoryProvider.future);
+      if (_disposed) return;
+      await _loadGroceryCategories(_items);
+    } catch (_) {
+      // The visual category layer must never block cached/offline list data.
+    }
+  }
+
+  Future<void> _loadGroceryCategories(List<ListItem> items) async {
+    final groceryRepo = _groceryRepo;
+    if (groceryRepo == null || _listType != 'shopping') return;
+
+    final ids = items
+        .map((item) => item.canonicalItemId)
+        .whereType<String>()
+        .where((id) =>
+            !_resolvedCategoryIds.contains(id) &&
+            !_categoryIdsInFlight.contains(id))
+        .toSet();
+    if (ids.isEmpty) return;
+    _categoryIdsInFlight.addAll(ids);
+
+    try {
+      final categories = await groceryRepo.getCanonicalCategories(ids);
+      if (_disposed) return;
+      _resolvedCategoryIds.addAll(ids);
+      if (categories.isNotEmpty) {
+        _categoryByCanonicalId.addAll(categories);
+        _notify();
+      }
+    } catch (_) {
+      // Category decoration is fail-soft. Leave these ids retryable after a
+      // transient reference-database failure; the list itself remains usable.
+    } finally {
+      _categoryIdsInFlight.removeAll(ids);
     }
   }
 

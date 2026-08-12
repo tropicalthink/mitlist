@@ -366,6 +366,21 @@ class GroceryRepository {
     }
   }
 
+  /// Resolves the canonical grocery categories needed by the list facade in
+  /// one local query. Unknown ids and uncategorised household items are left
+  /// out so callers can render their neutral fallback without inventing data.
+  Future<Map<String, String>> getCanonicalCategories(
+    Iterable<String> canonicalItemIds,
+  ) async {
+    final ids = canonicalItemIds.toSet();
+    if (ids.isEmpty) return const {};
+    final rows = await _db.getCanonicalItemsByIds(ids);
+    return {
+      for (final row in rows)
+        if (row.category.trim().isNotEmpty) row.id: row.category.trim(),
+    };
+  }
+
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
