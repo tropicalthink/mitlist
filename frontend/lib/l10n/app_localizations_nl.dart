@@ -5111,6 +5111,15 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get restockReasonDue => 'Weer nodig';
+
+  @override
+  String get restockReasonUsual => 'Vaste aankoop';
+
+  @override
+  String get restockReasonGoesWith => 'Past bij deze lijst';
+
+  @override
   String get householdStorageTitle => 'Huishoudopslag';
 
   @override

@@ -1,11 +1,13 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mitlist/models/list_models.dart';
 import 'package:mitlist/providers/grocery_provider.dart';
 import 'package:mitlist/providers/list_provider.dart';
+import 'package:mitlist/repositories/grocery_repository.dart';
 import 'package:mitlist/repositories/list_repository.dart';
 import 'package:mitlist/screens/lists/list_detail_controller.dart';
 import 'package:mitlist/services/household_prior_service.dart';
@@ -436,6 +438,9 @@ void main() {
         listServiceProviderAsync
             .overrideWith((ref) async => _UnusedListService()),
         listRepositoryProvider.overrideWith((ref) async => repo),
+        groceryRepositoryProvider.overrideWith(
+          (ref) async => GroceryRepository(db: db, dio: Dio()),
+        ),
         grocerySuggestionServiceProvider.overrideWithValue(grocery),
         restockServiceProvider.overrideWithValue(restock),
         bundledGrocerySuggestionServiceProvider.overrideWithValue(
