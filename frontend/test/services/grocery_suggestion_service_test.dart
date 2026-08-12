@@ -1,6 +1,10 @@
+import 'dart:typed_data';
+
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mitlist/services/household_prior_service.dart';
 import 'package:mitlist/services/scan/grocery_suggestion_service.dart';
+import 'package:mitlist/services/scan/static_embedding_service.dart';
 import 'package:mitlist/storage/app_database.dart';
 import 'package:mitlist/storage/grocery_reference_database.dart';
 
@@ -20,6 +24,7 @@ void main() {
 
   final canonical = <RefCanonical>[];
   final aliases = <RefAlias>[];
+  final testNow = DateTime(2026, 8, 12, 12);
 
   void rebuildRef() {
     ref?.close();
@@ -51,9 +56,23 @@ void main() {
     await db.close();
   });
 
-  Future<List<String>> ids(String q) async {
-    final svc = GrocerySuggestionService(db); // no embedder
-    final r = await svc.suggest(q, '__global__');
+  Future<List<String>> ids(
+    String q, {
+    int limit = 8,
+    GrocerySuggestionContext context = GrocerySuggestionContext.shoppingList,
+    StaticEmbeddingService? embedder,
+  }) async {
+    final svc = GrocerySuggestionService(
+      db,
+      prior: HouseholdPriorService(db, clock: () => testNow),
+      embedder: embedder,
+    ); // no embedder
+    final r = await svc.suggest(
+      q,
+      '__global__',
+      suggestionContext: context,
+      limit: limit,
+    );
     return r.map((s) => s.canonicalItemId).toList();
   }
 
@@ -80,8 +99,7 @@ void main() {
     expect(result.first, 'tomato');
   });
 
-  test('household prior bubbles frequently-bought items up within a tier',
-      () async {
+  test('household prior can reorder lexical candidates continuously', () async {
     item('tofu', 'Tofu', 'Tofu', []);
     // Both Tomate and Tofu prefix-match "to" (same tier). Record purchases of
     // tofu so the household prior should float it above tomato.
@@ -90,7 +108,7 @@ void main() {
             PurchaseHistoryTableCompanion.insert(
               id: 'ph$i',
               groupId: '__global__',
-              purchasedAt: DateTime(2024, 1, i + 1),
+              purchasedAt: testNow.subtract(Duration(days: i)),
               canonicalItemId: const Value('tofu'),
             ),
           );
@@ -101,7 +119,7 @@ void main() {
         reason: 'frequently-bought tofu should rank above tomato');
   });
 
-  test('prior does NOT let a fuzzy/lower-tier item jump a clean prefix hit',
+  test('an unrelated familiar item is not injected into textual retrieval',
       () async {
     // Buy banana a lot, then type "tomat" (a clean prefix hit for tomato).
     // banana is at best a fuzzy/none match for "tomat"; tomato must still lead.
@@ -110,7 +128,7 @@ void main() {
             PurchaseHistoryTableCompanion.insert(
               id: 'pb$i',
               groupId: '__global__',
-              purchasedAt: DateTime(2024, 2, i + 1),
+              purchasedAt: testNow.subtract(Duration(days: i)),
               canonicalItemId: const Value('banana'),
             ),
           );
@@ -162,5 +180,118 @@ void main() {
     // so it should still appear in results (Tier 0) regardless of FTS.
     final result = await ids('ban');
     expect(result, contains('banana'));
+  });
+
+  test('saturated prefix retrieval still retrieves and promotes a fuzzy staple',
+      () async {
+    for (var i = 0; i < 8; i++) {
+      item('prefix-$i', 'Tomcat $i', 'Tomcat $i', ['tomcat$i']);
+    }
+    item('staple', 'Weekly staple', 'Weekly staple', ['toom']);
+    for (var i = 0; i < 10; i++) {
+      await db.into(db.purchaseHistoryTable).insert(
+            PurchaseHistoryTableCompanion.insert(
+              id: 'staple-purchase-$i',
+              groupId: '__global__',
+              canonicalItemId: const Value('staple'),
+              purchasedAt: testNow.subtract(Duration(hours: i)),
+            ),
+          );
+    }
+
+    final result = await ids('tom', limit: 8);
+    expect(result, hasLength(8));
+    expect(result.first, 'staple',
+        reason: 'fuzzy retrieval and continuous prior ranking must cross');
+  });
+
+  test('with equal prior a clean prefix stays ahead of a fuzzy candidate',
+      () async {
+    item('prefix-equal', 'Tomato sauce', 'Tomato sauce', ['tomato sauce']);
+    item('fuzzy-equal', 'Pantry item', 'Pantry item', ['toom']);
+
+    final result = await ids(
+      'tom',
+      context: GrocerySuggestionContext.nonShoppingList,
+    );
+    expect(result.indexOf('prefix-equal'),
+        lessThan(result.indexOf('fuzzy-equal')));
+  });
+
+  test('prefix and semantic evidence are retained when candidates merge',
+      () async {
+    item('lexical-rival', 'Toma', 'Toma', ['toma']);
+    item('merged-target', 'Tomxxxx', 'Tomxxxx', ['tomxxxx']);
+    final embedder = StaticEmbeddingService()
+      ..seedForTest(
+        vocab: const ['tom'],
+        vocabVectors: [
+          Float32List.fromList(const [1, 0])
+        ],
+        itemIds: const ['merged-target', 'lexical-rival'],
+        catalogVectors: [
+          Float32List.fromList(const [1, 0]),
+          Float32List.fromList(const [0, 1]),
+        ],
+      );
+    addTearDown(embedder.dispose);
+
+    final result = await ids(
+      'tom',
+      context: GrocerySuggestionContext.nonShoppingList,
+      embedder: embedder,
+    );
+    expect(result.first, 'merged-target');
+  });
+
+  test('full alias is pinned ahead of a heavily familiar near-match', () async {
+    item('potato-chips', 'Potato Chips', 'Potato Chips', ['pringles']);
+    item('familiar-near-alias', 'Familiar crisps', 'Familiar crisps', [
+      'pringless',
+    ]);
+    for (var i = 0; i < 12; i++) {
+      await db.into(db.purchaseHistoryTable).insert(
+            PurchaseHistoryTableCompanion.insert(
+              id: 'alias-competitor-$i',
+              groupId: '__global__',
+              canonicalItemId: const Value('familiar-near-alias'),
+              purchasedAt: testNow.subtract(Duration(hours: i)),
+            ),
+          );
+    }
+
+    expect((await ids('Pringles')).first, 'potato-chips');
+  });
+
+  test('full canonical name is pinned ahead of a familiar near-match',
+      () async {
+    item(
+      'hazelnut-spread',
+      'Haselnusscreme',
+      'Hazelnut Spread',
+      const [],
+    );
+    item(
+      'familiar-near-name',
+      'Familiar spread',
+      'Familiar spread',
+      const ['hazelnut spreads'],
+    );
+    for (var i = 0; i < 12; i++) {
+      await db.into(db.purchaseHistoryTable).insert(
+            PurchaseHistoryTableCompanion.insert(
+              id: 'name-competitor-$i',
+              groupId: '__global__',
+              canonicalItemId: const Value('familiar-near-name'),
+              purchasedAt: testNow.subtract(Duration(hours: i)),
+            ),
+          );
+    }
+
+    expect((await ids('Hazelnut Spread')).first, 'hazelnut-spread');
+  });
+
+  test('an absent embedder remains fail-soft for lexical results', () async {
+    expect(await ids('banan'), contains('banana'));
   });
 }

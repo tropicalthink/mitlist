@@ -1,14 +1,30 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
+
 import '../../storage/app_database.dart';
 import '../canonical_display.dart';
+import '../household_prior_service.dart';
+import 'resolution/string_sim.dart';
 import 'static_embedding_service.dart';
+
+enum GrocerySuggestionContext {
+  shoppingList,
+  nonShoppingList,
+  recipe,
+  product,
+  choreSupply,
+}
+
+extension on GrocerySuggestionContext {
+  bool get usesPrior => this != GrocerySuggestionContext.nonShoppingList;
+}
 
 /// A canonical grocery item surfaced as a typed-entry autocomplete suggestion.
 class GrocerySuggestion {
   final String canonicalItemId;
-  final String name; // display name (German preferred, first market)
-  final String category; // coarse aisle label
+  final String name;
+  final String category;
   final String unit;
 
   const GrocerySuggestion({
@@ -21,214 +37,286 @@ class GrocerySuggestion {
 
 /// Local, offline autocomplete over the canonical grocery graph.
 ///
-/// Matches the typed prefix against the alias table (which carries handwriting
-/// shorthand, OCR confusions and typos from the seed), so "mlch" resolves to
-/// Milch without a network call. Results are de-duplicated to one row per
-/// canonical item and ranked so that canonical-name matches lead alias matches.
+/// Retrieval is a bounded union of exact, prefix, fuzzy, and warm-semantic
+/// candidates. One continuous scorer then combines lexical evidence with the
+/// household's cached purchase prior; exact aliases and names are pinned first.
 class GrocerySuggestionService {
+  GrocerySuggestionService(
+    this._db, {
+    required HouseholdPriorService prior,
+    StaticEmbeddingService? embedder,
+  })  : _prior = prior,
+        _embedder = embedder;
+
   final AppDatabase _db;
+  final HouseholdPriorService _prior;
   final StaticEmbeddingService? _embedder;
 
-  /// Minimum cosine for a semantic (embedder) match to be surfaced. Real
-  /// in-catalog queries score ~0.7–1.0; this floor drops weakly-related items
-  /// while keeping genuine synonym/spelling matches. Tune in one place.
   static const double _semanticFloor = 0.5;
-
-  /// Minimum edit-distance similarity for a fuzzy alias match. 0.6 tolerates a
-  /// typo or two in a full word ("banann" → Banane) without surfacing
-  /// unrelated items. Tune in one place.
   static const double _fuzzyFloor = 0.6;
 
-  /// Creates a suggestion service.
-  ///
-  /// The optional [embedder] argument enables semantic blending when alias-prefix
-  /// matching yields few results. Existing call sites that omit it keep compiling
-  /// and behave exactly as before.
-  GrocerySuggestionService(this._db, {StaticEmbeddingService? embedder})
-      : _embedder = embedder;
-
-  // Purchase-history frequency cache — avoids a DB round-trip on every
-  // keystroke. Invalidated per group and after 5 minutes.
-  Map<String, int>? _freqCache;
-  String? _freqCacheGroupId;
-  DateTime? _freqCacheTime;
-
-  Future<Map<String, int>> _purchaseFreq(String groupId) async {
-    final now = DateTime.now();
-    if (_freqCache != null &&
-        _freqCacheGroupId == groupId &&
-        _freqCacheTime != null &&
-        now.difference(_freqCacheTime!).inSeconds < 300) {
-      return _freqCache!;
-    }
-    final history = await _db.getGroupPurchaseHistory(groupId: groupId);
-    final freq = <String, int>{};
-    for (final r in history) {
-      final id = r.canonicalItemId;
-      if (id != null) freq[id] = (freq[id] ?? 0) + 1;
-    }
-    _freqCache = freq;
-    _freqCacheGroupId = groupId;
-    _freqCacheTime = now;
-    return freq;
-  }
+  @visibleForTesting
+  HouseholdPriorService get priorService => _prior;
 
   Future<List<GrocerySuggestion>> suggest(
     String query,
     String groupId, {
+    required GrocerySuggestionContext suggestionContext,
+    List<String> listContextIds = const [],
     int limit = 8,
   }) async {
-    final q = query.toLowerCase().trim();
-    if (q.length < 2) return const [];
-
-    // Run both prefix searches in parallel — they're independent DB reads.
-    final prefixResults = await Future.wait([
-      _db.searchAliasPrefix(groupId: groupId, query: q, limit: limit * 6),
-      _db.searchAliasWordPrefix(groupId: groupId, query: q, limit: limit * 8),
-    ]);
-    final aliases = prefixResults[0];
-    final wordAliases = prefixResults[1];
-
-    // Keep the first matching alias per canonical item; its language decides
-    // which name we label the suggestion with (so "milch" → Milch, "milk" →
-    // Milk for the same canonical item).
-    // Collapse alias hits to distinct canonical items, preserving order.
-    // Whole-string prefix results lead (Tier 0), word-prefix supplements (Tier 0b).
-    final orderedIds = <String>[];
-    final seen = <String>{};
-    for (final a in aliases) {
-      if (seen.add(a.canonicalItemId)) orderedIds.add(a.canonicalItemId);
-    }
-    // Word-prefix hits that aren't already in prefix results.
-    final wordOnlyIds = <String>[];
-    for (final a in wordAliases) {
-      if (!seen.contains(a.canonicalItemId)) {
-        if (seen.add(a.canonicalItemId)) wordOnlyIds.add(a.canonicalItemId);
+    final q = normaliseText(query);
+    if (q.isEmpty || limit <= 0) return const [];
+    if (q.length == 1) {
+      if (suggestionContext != GrocerySuggestionContext.shoppingList) {
+        return const [];
       }
+      return _suggestFromRepertoire(
+        q,
+        groupId,
+        listContextIds: listContextIds,
+        limit: limit,
+      );
     }
 
-    final ranked = <_RankedSuggestion>[];
-    final seenIds = <String>{};
+    final priorContextFuture = suggestionContext.usesPrior
+        ? _prior.baseContext(groupId)
+        : Future<HouseholdPriorContext?>.value(null);
 
-    // Adds the given canonical ids (in order) at the given relevance [tier],
-    // skipping any already collected. Records insertion order for stable sort.
-    Future<void> addByIds(List<String> ids, int tier) async {
-      final fresh = ids.where((id) => !seenIds.contains(id)).toList();
-      if (fresh.isEmpty) return;
-      final items = await _db.getCanonicalItemsByIds(fresh);
-      final byId = {for (final it in items) it.id: it};
-      for (final id in fresh) {
-        final it = byId[id];
-        if (it == null) continue;
-        if (!seenIds.add(it.id)) continue;
-        ranked.add(_RankedSuggestion(
-          GrocerySuggestion(
-            canonicalItemId: it.id,
-            name: _displayName(it, q),
-            category: it.category,
-            unit: it.defaultUnit,
-          ),
-          tier,
-          ranked.length,
-        ));
-      }
-    }
-
-    // Tier 0 — literal whole-string alias/name prefix (partial typing).
-    await addByIds(orderedIds, 0);
-    // Tier 0 (word) — word-level FTS5 prefix that the whole-string pass missed.
-    // Same tier as literal prefix so clean word hits still lead fuzzy hits.
-    await addByIds(wordOnlyIds, 0);
-
-    // Tier 1 — fuzzy alias: catch typos the prefix misses ("banann" → Banane,
-    // "tomaden" → Tomaten). SAME indexed first-char + length-window prefilter as
-    // the scanner's resolver, ranked by edit-distance similarity.
-    if (ranked.length < limit) {
-      final fuzzy =
-          await _db.getAliasFuzzyCandidates(groupId: groupId, query: q);
-      final bestSim = <String, double>{};
-      for (final a in fuzzy) {
-        if (seenIds.contains(a.canonicalItemId)) continue;
-        final sim = _similarity(q, a.aliasText);
-        if (sim < _fuzzyFloor) continue;
-        final cur = bestSim[a.canonicalItemId];
-        if (cur == null || sim > cur) bestSim[a.canonicalItemId] = sim;
-      }
-      final fuzzyIds = bestSim.keys.toList()
-        ..sort((x, y) => bestSim[y]!.compareTo(bestSim[x]!));
-      await addByIds(fuzzyIds, 1);
-    }
-
-    // Tier 2 — semantic: when alias prefix/fuzzy are sparse and an embedder is
-    // wired, pad with nearest-neighbour matches (synonyms, differently-spelled
-    // terms). Below [_semanticFloor] cosine is dropped so weak items never show.
-    //
-    // The embedder's first load decodes a multi-megabyte bundle, so we never
-    // block a keystroke on a cold one: blend semantics only when it is already
-    // warm, otherwise kick off a background warm-up and let a later keystroke
-    // pick up the semantic tier once it is ready.
+    Future<List<EmbedMatch>> semanticFuture = Future.value(const []);
     final embedder = _embedder;
-    if (embedder != null && ranked.length < limit) {
+    if (embedder != null) {
       if (embedder.isReady) {
-        // Best-effort: the semantic tier must never block or break the alias /
-        // product results that are already ranked. [nearest] is itself bounded
-        // by a timeout, and any failure is swallowed here.
-        try {
-          final embedMatches = await embedder.nearest(q, topK: limit * 2);
-          final missingIds = embedMatches
-              .where((m) => m.score >= _semanticFloor)
-              .map((m) => m.itemId)
-              .where((id) => !seenIds.contains(id))
-              .toList();
-          await addByIds(missingIds, 2);
-        } catch (_) {}
+        semanticFuture = embedder
+            .nearest(q, topK: limit * 4)
+            .catchError((_) => const <EmbedMatch>[]);
       } else {
         unawaited(embedder.warmUp());
       }
     }
 
-    if (ranked.isEmpty) return const [];
+    final results = await Future.wait<Object?>([
+      _db.findAlias(groupId: groupId, aliasText: q),
+      _db.searchAliasPrefix(groupId: groupId, query: q, limit: limit * 6),
+      _db.searchAliasWordPrefix(
+        groupId: groupId,
+        query: q,
+        limit: limit * 8,
+      ),
+      _db.getAliasFuzzyCandidates(
+        groupId: groupId,
+        query: q,
+        maxCandidates: 400,
+      ),
+      semanticFuture,
+      priorContextFuture,
+    ]);
 
-    // Prior-aware ranking: WITHIN each relevance tier, bubble up what THIS
-    // household actually buys (purchase-history frequency), then exact
-    // name-prefix, then original recall order. Tiers never cross — a fuzzy or
-    // semantic match never outranks a clean prefix hit, however frequent.
-    final freq = await _purchaseFreq(groupId);
-    ranked.sort((a, b) {
-      if (a.tier != b.tier) return a.tier.compareTo(b.tier);
-      final fa = freq[a.suggestion.canonicalItemId] ?? 0;
-      final fb = freq[b.suggestion.canonicalItemId] ?? 0;
-      if (fa != fb) return fb.compareTo(fa); // more-bought leads
-      final pa = a.suggestion.name.toLowerCase().startsWith(q) ? 0 : 1;
-      final pb = b.suggestion.name.toLowerCase().startsWith(q) ? 0 : 1;
-      if (pa != pb) return pa.compareTo(pb);
-      return a.idx.compareTo(b.idx); // stable: preserve recall order
-    });
-    return ranked.take(limit).map((r) => r.suggestion).toList();
+    final exactAlias = results[0] as ItemAliasesTableData?;
+    final prefixAliases = results[1] as List<ItemAliasesTableData>;
+    final wordAliases = results[2] as List<ItemAliasesTableData>;
+    final fuzzyAliases = results[3] as List<ItemAliasesTableData>;
+    final semanticMatches = results[4] as List<EmbedMatch>;
+    final priorContext = results[5] as HouseholdPriorContext?;
+
+    var nextIndex = 0;
+    final candidates = <String, _CandidateEvidence>{};
+    _CandidateEvidence candidate(String id) => candidates.putIfAbsent(
+          id,
+          () => _CandidateEvidence(id, nextIndex++),
+        );
+
+    void mergeAlias(ItemAliasesTableData alias) {
+      final evidence = candidate(alias.canonicalItemId);
+      final text = normaliseText(alias.aliasText);
+      if (text.isEmpty) return;
+      evidence.matchedAliases.add(text);
+      if (text == q) evidence.isExact = true;
+      if (text.startsWith(q)) evidence.lexPrefix = 1;
+      final similarity = stringSimilarity(q, text);
+      if (similarity > evidence.lexSim) evidence.lexSim = similarity;
+    }
+
+    if (exactAlias != null) mergeAlias(exactAlias);
+    for (final alias in prefixAliases) {
+      mergeAlias(alias);
+    }
+    for (final alias in wordAliases) {
+      mergeAlias(alias);
+    }
+
+    final bestFuzzy = <String, ({ItemAliasesTableData alias, double score})>{};
+    for (final alias in fuzzyAliases) {
+      final score = stringSimilarity(q, normaliseText(alias.aliasText));
+      if (score < _fuzzyFloor) continue;
+      final previous = bestFuzzy[alias.canonicalItemId];
+      if (previous == null || score > previous.score) {
+        bestFuzzy[alias.canonicalItemId] = (alias: alias, score: score);
+      }
+    }
+    final fuzzyBest = bestFuzzy.values.toList()
+      ..sort((a, b) => b.score.compareTo(a.score));
+    for (final match in fuzzyBest.take(limit * 8)) {
+      mergeAlias(match.alias);
+    }
+
+    for (final match in semanticMatches) {
+      if (match.score < _semanticFloor) continue;
+      final evidence = candidate(match.itemId);
+      final score = match.score.clamp(0.0, 1.0);
+      if (score > evidence.lexSemantic) evidence.lexSemantic = score;
+    }
+
+    if (candidates.isEmpty) return const [];
+    final items = await _db.getCanonicalItemsByIds(candidates.keys);
+    final itemsById = {for (final item in items) item.id: item};
+    candidates.removeWhere((id, _) => !itemsById.containsKey(id));
+    for (final entry in candidates.entries) {
+      final item = itemsById[entry.key]!;
+      for (final name in _canonicalNames(item)) {
+        final normalized = normaliseText(name);
+        if (normalized == q) entry.value.isExact = true;
+        if (normalized.startsWith(q)) entry.value.lexPrefix = 1;
+        final similarity = stringSimilarity(q, normalized);
+        if (similarity > entry.value.lexSim) {
+          entry.value.lexSim = similarity;
+        }
+      }
+    }
+
+    return _rankCandidates(
+      q,
+      candidates.values,
+      itemsById,
+      priorContext: priorContext,
+      listContextIds: listContextIds,
+      limit: limit,
+    );
   }
 
-  /// Labels a suggestion in the language the user typed. We can't trust the
-  /// matched alias's stored `lang` — the seed cross-links each item's name in
-  /// every shipped market (de/en/fr/es) under multiple languages — so we infer
-  /// intent directly from the query: whichever canonical name the typed text is
-  /// closest to wins. Ties break toward the user's locale, then English.
-  static String _displayName(CanonicalItemsTableData it, String query) {
-    final candidates = <String, String>{
-      'en': it.nameEn,
-      'de': it.nameDe,
-      'fr': it.nameFr,
-      'es': it.nameEs,
-    }..removeWhere((_, name) => name.isEmpty);
-    if (candidates.isEmpty) return _cap(it.id);
+  Future<List<GrocerySuggestion>> _suggestFromRepertoire(
+    String query,
+    String groupId, {
+    required List<String> listContextIds,
+    required int limit,
+  }) async {
+    final context = await _prior.baseContext(groupId);
+    if (context.repertoireIds.isEmpty) return const [];
+    final items = await _db.getCanonicalItemsByIds(context.repertoireIds);
+    final itemsById = {for (final item in items) item.id: item};
+    var index = 0;
+    final candidates = <_CandidateEvidence>[];
+    for (final item in items) {
+      final evidence = _CandidateEvidence(item.id, index++);
+      for (final name in _canonicalNames(item)) {
+        final normalized = normaliseText(name);
+        if (!normalized.startsWith(query)) continue;
+        evidence.lexPrefix = 1;
+        evidence.lexSim = evidence.lexSim > stringSimilarity(query, normalized)
+            ? evidence.lexSim
+            : stringSimilarity(query, normalized);
+        if (normalized == query) evidence.isExact = true;
+      }
+      if (evidence.lexPrefix > 0) candidates.add(evidence);
+    }
+    return _rankCandidates(
+      query,
+      candidates,
+      itemsById,
+      priorContext: context,
+      listContextIds: listContextIds,
+      limit: limit,
+    );
+  }
 
-    final q = query.toLowerCase();
+  List<GrocerySuggestion> _rankCandidates(
+    String query,
+    Iterable<_CandidateEvidence> candidates,
+    Map<String, CanonicalItemsTableData> itemsById, {
+    required HouseholdPriorContext? priorContext,
+    required List<String> listContextIds,
+    required int limit,
+  }) {
+    final exact = <_ScoredSuggestion>[];
+    final blended = <_ScoredSuggestion>[];
+    for (final evidence in candidates) {
+      final item = itemsById[evidence.canonicalItemId];
+      if (item == null) continue;
+      final priorFeatures = priorContext == null
+          ? const HouseholdPriorFeatures()
+          : _prior.featuresFor(
+              item.id,
+              priorContext,
+              listContextIds: listContextIds,
+            );
+      final score = _prior.scorer.score(GroceryRankingFeatures(
+        lexPrefix: evidence.lexPrefix,
+        lexSim: evidence.lexSim,
+        lexSemantic: evidence.lexSemantic,
+        prior: priorFeatures,
+      ));
+      final ranked = _ScoredSuggestion(
+        suggestion: GrocerySuggestion(
+          canonicalItemId: item.id,
+          name: _displayName(item, query),
+          category: item.category,
+          unit: item.defaultUnit,
+        ),
+        evidence: evidence,
+        score: score,
+        priorScore: _prior.priorOnlyScore(priorFeatures),
+      );
+      (evidence.isExact ? exact : blended).add(ranked);
+    }
+
+    int stableTie(_ScoredSuggestion a, _ScoredSuggestion b) {
+      final indexOrder = a.evidence.firstSeen.compareTo(b.evidence.firstSeen);
+      return indexOrder != 0
+          ? indexOrder
+          : a.suggestion.canonicalItemId
+              .compareTo(b.suggestion.canonicalItemId);
+    }
+
+    exact.sort((a, b) {
+      final priorOrder = b.priorScore.compareTo(a.priorScore);
+      return priorOrder != 0 ? priorOrder : stableTie(a, b);
+    });
+    blended.sort((a, b) {
+      final scoreOrder = b.score.compareTo(a.score);
+      return scoreOrder != 0 ? scoreOrder : stableTie(a, b);
+    });
+    return [...exact, ...blended]
+        .take(limit)
+        .map((entry) => entry.suggestion)
+        .toList(growable: false);
+  }
+
+  static Iterable<String> _canonicalNames(CanonicalItemsTableData item) sync* {
+    for (final name in [item.nameEn, item.nameDe, item.nameFr, item.nameEs]) {
+      if (name.isNotEmpty) yield name;
+    }
+  }
+
+  static String _displayName(CanonicalItemsTableData item, String query) {
+    final candidates = <String, String>{
+      'en': item.nameEn,
+      'de': item.nameDe,
+      'fr': item.nameFr,
+      'es': item.nameEs,
+    }..removeWhere((_, name) => name.isEmpty);
+    if (candidates.isEmpty) return _cap(item.id);
+
     String? bestLang;
     var bestScore = 1 << 30;
     for (final entry in candidates.entries) {
-      final score = _matchScore(q, entry.value.toLowerCase());
+      final name = normaliseText(entry.value);
+      final score = name.startsWith(query) || query.startsWith(name)
+          ? 0
+          : editDistance(query, name);
       final better = score < bestScore ||
           (score == bestScore &&
-              _localeRank(entry.key) < _localeRank(bestLang!));
+              (bestLang == null ||
+                  _localeRank(entry.key) < _localeRank(bestLang)));
       if (better) {
         bestScore = score;
         bestLang = entry.key;
@@ -237,81 +325,53 @@ class GrocerySuggestionService {
     return _cap(candidates[bestLang]!);
   }
 
-  /// Tie-break preference among equally-close names: the user's locale first,
-  /// then English, then any remaining market. Lower is preferred.
   static int _localeRank(String lang) {
     if (lang == groceryDisplayLang) return 0;
     if (lang == 'en') return 1;
     return 2;
   }
 
-  static int _matchScore(String query, String name) {
-    if (name.startsWith(query) || query.startsWith(name)) return 0;
-    return _levenshtein(query, name);
-  }
+  static String _cap(String value) =>
+      value.isEmpty ? value : value[0].toUpperCase() + value.substring(1);
 
-  /// Edit-distance similarity in [0, 1]: 1 - distance / max(len).
-  static double _similarity(String a, String b) {
-    if (a == b) return 1.0;
-    if (a.isEmpty || b.isEmpty) return 0.0;
-    final maxLen = a.length > b.length ? a.length : b.length;
-    return 1.0 - _levenshtein(a, b) / maxLen;
-  }
-
-  static int _levenshtein(String a, String b) {
-    if (a == b) return 0;
-    if (a.isEmpty) return b.length;
-    if (b.isEmpty) return a.length;
-    var prev = List<int>.generate(b.length + 1, (i) => i);
-    var curr = List<int>.filled(b.length + 1, 0);
-    for (var i = 0; i < a.length; i++) {
-      curr[0] = i + 1;
-      for (var j = 0; j < b.length; j++) {
-        final cost = a[i] == b[j] ? 0 : 1;
-        curr[j + 1] = [
-          curr[j] + 1,
-          prev[j + 1] + 1,
-          prev[j] + cost,
-        ].reduce((m, e) => e < m ? e : m);
-      }
-      final tmp = prev;
-      prev = curr;
-      curr = tmp;
-    }
-    return prev[b.length];
-  }
-
-  static String _cap(String s) =>
-      s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
-
-  /// Chooses the list-item label when a suggestion is tapped.
-  ///
-  /// The brand the user typed is preserved when it's a distinct, well-formed
-  /// token — e.g. "Pringles" stays "Pringles" while the canonical "Chips" is
-  /// linked underneath for aisle/dedupe/restock intelligence. It is replaced by
-  /// the canonical [canonicalName] only when the typed text reads as a fragment
-  /// or typo of it (e.g. "mlch" → "Milch", "banann" → "Banane"), so
-  /// autocomplete still cleans up sloppy input. Casing of the typed brand is
-  /// preserved (only the first letter is upper-cased).
   static String labelForSelection(String typed, String canonicalName) {
-    final t = typed.trim();
-    if (t.isEmpty) return canonicalName;
-    final lt = t.toLowerCase();
-    final lc = canonicalName.toLowerCase();
-    if (lt == lc) return canonicalName; // identical → canonical casing
-    if (lc.startsWith(lt)) return canonicalName; // a prefix → a correction
-    final dist = _levenshtein(lt, lc);
-    final maxLen = lt.length > lc.length ? lt.length : lc.length;
-    if (dist <= (maxLen <= 5 ? 1 : 2)) return canonicalName; // close typo
-    return _cap(t); // distinct word/brand → keep what the user typed
+    final value = typed.trim();
+    if (value.isEmpty) return canonicalName;
+    final normalizedTyped = value.toLowerCase();
+    final normalizedCanonical = canonicalName.toLowerCase();
+    if (normalizedTyped == normalizedCanonical) return canonicalName;
+    if (normalizedCanonical.startsWith(normalizedTyped)) return canonicalName;
+    final distance = editDistance(normalizedTyped, normalizedCanonical);
+    final maxLength = normalizedTyped.length > normalizedCanonical.length
+        ? normalizedTyped.length
+        : normalizedCanonical.length;
+    if (distance <= (maxLength <= 5 ? 1 : 2)) return canonicalName;
+    return _cap(value);
   }
 }
 
-/// A suggestion plus its relevance [tier] (0 prefix, 1 fuzzy, 2 semantic) and
-/// insertion order, used to rank by the household prior within tiers.
-class _RankedSuggestion {
+class _CandidateEvidence {
+  _CandidateEvidence(this.canonicalItemId, this.firstSeen);
+
+  final String canonicalItemId;
+  final int firstSeen;
+  final Set<String> matchedAliases = {};
+  double lexPrefix = 0;
+  double lexSim = 0;
+  double lexSemantic = 0;
+  bool isExact = false;
+}
+
+class _ScoredSuggestion {
+  const _ScoredSuggestion({
+    required this.suggestion,
+    required this.evidence,
+    required this.score,
+    required this.priorScore,
+  });
+
   final GrocerySuggestion suggestion;
-  final int tier;
-  final int idx;
-  _RankedSuggestion(this.suggestion, this.tier, this.idx);
+  final _CandidateEvidence evidence;
+  final double score;
+  final double priorScore;
 }

@@ -11,10 +11,31 @@ import 'package:mitlist/providers/list_provider.dart' show grocerySeedProvider;
 import 'package:mitlist/repositories/chore_repository.dart';
 import 'package:mitlist/services/chore_service.dart';
 import 'package:mitlist/services/group_service.dart';
+import 'package:mitlist/services/household_prior_service.dart';
 import 'package:mitlist/services/scan/grocery_suggestion_service.dart';
 import 'package:mitlist/sheets/chore_creation_sheet.dart';
+import 'package:mitlist/storage/app_database.dart';
 
 import '../support/grocery_seed_test_helper.dart';
+
+class _CapturingSuggestions extends GrocerySuggestionService {
+  _CapturingSuggestions(AppDatabase db)
+      : super(db, prior: HouseholdPriorService(db));
+
+  GrocerySuggestionContext? context;
+
+  @override
+  Future<List<GrocerySuggestion>> suggest(
+    String query,
+    String groupId, {
+    required GrocerySuggestionContext suggestionContext,
+    List<String> listContextIds = const [],
+    int limit = 8,
+  }) async {
+    context = suggestionContext;
+    return const [];
+  }
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -33,6 +54,7 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final groceryDb = memoryDb();
     addTearDown(groceryDb.close);
+    final suggestions = _CapturingSuggestions(groceryDb);
     final chores = _FakeChoreService();
 
     await tester.pumpWidget(
@@ -50,7 +72,7 @@ void main() {
               .overrideWith((ref) async => _FakeChoreRepository(chores)),
           grocerySeedProvider.overrideWith((ref) async {}),
           grocerySuggestionServiceProvider.overrideWithValue(
-            GrocerySuggestionService(groceryDb),
+            suggestions,
           ),
         ],
         child: const MaterialApp(
@@ -77,6 +99,7 @@ void main() {
     await tester.tap(find.text('ADD'));
     await tester.pump();
     expect(find.text('Dish soap'), findsOneWidget);
+    expect(suggestions.context, GrocerySuggestionContext.choreSupply);
 
     await tester.ensureVisible(find.text('ADD CHORE'));
     await tester.pump();

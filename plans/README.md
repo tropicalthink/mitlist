@@ -100,6 +100,7 @@ traceability.
 | 043 | Widget test for the pinwall board screen | P3 | M | — | DONE ✓v |
 | 044 | Archive completed plan sets (001–019, frontend/plans) | P3 | S | 001–019 DONE | DONE ✓v |
 | 045 | SPIKE: household dashboard as primary landing surface | P3 | L | — | DONE ✓v |
+| 046 | Rank grocery suggestions with one shared household prior | P2 | M–L | — | DONE |
 
 ## Reconcile log — 2026-07-04 (HEAD `eca86757`, Batch-2 work uncommitted in working tree)
 

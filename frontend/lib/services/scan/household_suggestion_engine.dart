@@ -33,12 +33,12 @@ class HouseholdSuggestion {
 /// Async source loading stays outside this class; callers progressively replace
 /// source snapshots and read one stable, deduplicated candidate list.
 class HouseholdSuggestionEngine {
-  String _query = '';
   final Map<HouseholdSuggestionSource, List<_SourceSuggestion>> _sources = {};
+  bool _emptyQuery = true;
 
   void beginQuery(String query) {
-    _query = normaliseText(query);
     _sources.clear();
+    _emptyQuery = normaliseText(query).isEmpty;
   }
 
   void setGrocerySuggestions(
@@ -114,9 +114,6 @@ class HouseholdSuggestionEngine {
     }
 
     merged.sort((a, b) {
-      final queryRankA = _queryRank(a);
-      final queryRankB = _queryRank(b);
-      if (queryRankA != queryRankB) return queryRankA.compareTo(queryRankB);
       final sourceRankA = _sourceRank(a);
       final sourceRankB = _sourceRank(b);
       if (sourceRankA != sourceRankB) return sourceRankA.compareTo(sourceRankB);
@@ -138,20 +135,15 @@ class HouseholdSuggestionEngine {
         .toList(growable: false);
   }
 
-  int _queryRank(_MergedSuggestion candidate) {
-    if (_query.isEmpty) {
-      return candidate.sources.contains(HouseholdSuggestionSource.restock)
-          ? 0
-          : 1;
+  int _sourceRank(_MergedSuggestion candidate) {
+    if (_emptyQuery &&
+        candidate.sources.contains(HouseholdSuggestionSource.restock)) {
+      return 0;
     }
-    return normaliseText(candidate.name).startsWith(_query) ? 0 : 1;
-  }
-
-  static int _sourceRank(_MergedSuggestion candidate) {
-    if (candidate.sources.contains(HouseholdSuggestionSource.restock)) return 0;
     if (candidate.sources.contains(HouseholdSuggestionSource.catalog)) return 1;
     if (candidate.sources.contains(HouseholdSuggestionSource.bundled)) return 2;
-    return 3;
+    if (candidate.sources.contains(HouseholdSuggestionSource.product)) return 3;
+    return 4;
   }
 }
 
