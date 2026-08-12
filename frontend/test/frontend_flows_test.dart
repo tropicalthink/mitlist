@@ -1857,6 +1857,9 @@ class FakeListRepository implements ListRepository {
   Future<String?> getGroupId(String listId) async => null;
 
   @override
+  Future<String?> getListType(String listId) async => null;
+
+  @override
   Future<ListItem> addItemAmountOfflineFirst(
     String listId, {
     required String name,

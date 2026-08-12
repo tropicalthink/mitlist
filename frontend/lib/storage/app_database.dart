@@ -774,6 +774,12 @@ FROM list_items_table;
     return row?.groupId;
   }
 
+  Future<String?> getListType(String listId) async {
+    final row = await (select(listsTable)..where((t) => t.id.equals(listId)))
+        .getSingleOrNull();
+    return row?.type;
+  }
+
   Stream<List<ListItemsTableData>> watchItemsByList(String listId) {
     return (select(listItemsTable)..where((t) => t.listId.equals(listId)))
         .watch();
@@ -2107,6 +2113,82 @@ INSERT INTO item_aliases_table
         .get();
   }
 
+  /// Bounded history for the household-prior scorer.
+  ///
+  /// The recent window supplies decay and weekday features. The per-item tail
+  /// retains enough older observations to estimate sparse or quarterly cadence
+  /// without loading the household's unbounded event history.
+  Future<List<PurchaseHistoryTableData>> getGroupPurchaseHistoryForPrior({
+    required String groupId,
+    required DateTime since,
+    int recentLimit = 5000,
+    int cadencePerItemLimit = 10,
+  }) async {
+    final recent = await (select(purchaseHistoryTable)
+          ..where((t) =>
+              t.groupId.equals(groupId) &
+              t.canonicalItemId.isNotNull() &
+              t.purchasedAt.isBiggerOrEqualValue(since))
+          ..orderBy([
+            (t) => OrderingTerm.desc(t.purchasedAt),
+            (t) => OrderingTerm.desc(t.id),
+          ])
+          ..limit(recentLimit))
+        .get();
+
+    final cadenceRows = await customSelect(
+      '''SELECT id, group_id, canonical_item_id, list_item_id, quantity, unit,
+                version, purchased_at
+           FROM (
+             SELECT ph.*,
+                    ROW_NUMBER() OVER (
+                      PARTITION BY canonical_item_id
+                      ORDER BY purchased_at DESC, id DESC
+                    ) AS prior_row_number
+               FROM purchase_history_table ph
+              WHERE group_id = ? AND canonical_item_id IS NOT NULL
+           ) ranked
+          WHERE prior_row_number <= ?
+          ORDER BY purchased_at DESC, id DESC''',
+      variables: [
+        Variable.withString(groupId),
+        Variable.withInt(cadencePerItemLimit),
+      ],
+      readsFrom: {purchaseHistoryTable},
+    ).get();
+
+    final byId = <String, PurchaseHistoryTableData>{
+      for (final row in recent) row.id: row,
+    };
+    for (final row in cadenceRows) {
+      final purchase = purchaseHistoryTable.map(row.data);
+      byId.putIfAbsent(purchase.id, () => purchase);
+    }
+    final merged = byId.values.toList()
+      ..sort((a, b) {
+        final dateOrder = b.purchasedAt.compareTo(a.purchasedAt);
+        return dateOrder != 0 ? dateOrder : b.id.compareTo(a.id);
+      });
+    return merged;
+  }
+
+  Future<Map<String, int>> getGroupPurchaseCountsForPrior({
+    required String groupId,
+  }) async {
+    final rows = await customSelect(
+      '''SELECT canonical_item_id, COUNT(*) AS purchase_count
+           FROM purchase_history_table
+          WHERE group_id = ? AND canonical_item_id IS NOT NULL
+          GROUP BY canonical_item_id''',
+      variables: [Variable.withString(groupId)],
+      readsFrom: {purchaseHistoryTable},
+    ).get();
+    return {
+      for (final row in rows)
+        row.read<String>('canonical_item_id'): row.read<int>('purchase_count'),
+    };
+  }
+
   // ---------------------------------------------------------------------------
   // Grocery graph — cooccurrence
   // ---------------------------------------------------------------------------
@@ -2129,6 +2211,23 @@ INSERT INTO item_aliases_table
               t.groupId.equals(groupId) &
               (t.itemAId.equals(itemId) | t.itemBId.equals(itemId)))
           ..orderBy([(t) => OrderingTerm.desc(t.count)])
+          ..limit(limit))
+        .get();
+  }
+
+  /// Strongest bounded co-occurrence rows for one household.
+  Future<List<ItemCooccurrenceTableData>> getGroupCooccurrences({
+    required String groupId,
+    int limit = 2000,
+  }) {
+    return (select(itemCooccurrenceTable)
+          ..where((t) => t.groupId.equals(groupId))
+          ..orderBy([
+            (t) => OrderingTerm.desc(t.count),
+            (t) => OrderingTerm.desc(t.lastSeenAt),
+            (t) => OrderingTerm.asc(t.itemAId),
+            (t) => OrderingTerm.asc(t.itemBId),
+          ])
           ..limit(limit))
         .get();
   }

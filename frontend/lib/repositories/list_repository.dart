@@ -206,6 +206,8 @@ class ListRepository {
 
   Future<String?> getGroupId(String listId) => _db.getListGroupId(listId);
 
+  Future<String?> getListType(String listId) => _db.getListType(listId);
+
   // ---------------------------------------------------------------------------
   // Offline-first writes (optimistic local + outbox)
   // ---------------------------------------------------------------------------

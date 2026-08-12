@@ -8,6 +8,7 @@ import '../models/chore_models.dart';
 import '../providers/chore_provider.dart';
 import '../providers/group_provider.dart';
 import '../router.dart' show currentGroupIdProvider;
+import '../services/scan/grocery_suggestion_service.dart';
 import '../theme/spacing.dart';
 import '../utils/active_group_context.dart';
 import '../utils/haptics.dart';
@@ -778,6 +779,8 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
                                 controller: _supplyController,
                                 focusNode: _supplyFocusNode,
                                 groupId: _groupId!,
+                                suggestionContext:
+                                    GrocerySuggestionContext.choreSupply,
                                 label: l10n.choreDetailSupplies,
                                 onSubmitted: _addSupply,
                                 submitOnSelect: true,
