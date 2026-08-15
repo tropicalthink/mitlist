@@ -35,7 +35,18 @@ jobs:
   build:
     runs-on: dind
     steps:
-      - uses: actions/checkout@v4
+      # Not actions/checkout@v4: that is a Node action, and the `dind` label
+      # maps to docker:28-cli, which ships git but no node. Fetching the exact
+      # SHA by hand also drops the dependency on Forgejo's action proxy and is
+      # reproducible in a way that cloning a branch is not.
+      - name: checkout
+        run: |
+          set -eu
+          git init -q .
+          git remote add origin \
+            "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@git.tropicalthink.com/${{ github.repository }}.git"
+          git fetch -q --depth 1 origin "${{ github.sha }}"
+          git checkout -q FETCH_HEAD
 
       - name: Point at the dind daemon
         run: |
