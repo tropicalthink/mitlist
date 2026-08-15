@@ -116,9 +116,18 @@ void main() {
         0);
 
     // Household rows kept.
-    expect(await _count(db, "SELECT COUNT(*) FROM item_aliases_table WHERE group_id='g1'"), 1);
-    expect(await _count(db, "SELECT COUNT(*) FROM canonical_items_table WHERE group_id='g1'"), 1);
-    expect(await _count(db, "SELECT COUNT(*) FROM store_aisles_table WHERE group_id='g1'"), 1);
+    expect(
+        await _count(
+            db, "SELECT COUNT(*) FROM item_aliases_table WHERE group_id='g1'"),
+        1);
+    expect(
+        await _count(db,
+            "SELECT COUNT(*) FROM canonical_items_table WHERE group_id='g1'"),
+        1);
+    expect(
+        await _count(
+            db, "SELECT COUNT(*) FROM store_aisles_table WHERE group_id='g1'"),
+        1);
 
     // The now-unused main-DB FTS is dropped.
     expect(

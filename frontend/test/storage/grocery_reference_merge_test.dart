@@ -50,9 +50,11 @@ String _buildRefDb(Directory dir) {
       "INSERT INTO item_aliases_table (id,group_id,canonical_item_id,alias_text,lang,source,weight,created_at,updated_at) "
       "VALUES ('a1','__global__','chocolate_hazelnut_spread','nutella','en','seed',1,0,0),"
       "('a2','__global__','apple','green apple','en','seed',1,0,0)");
-  db.execute("INSERT INTO store_aisles_table (id,group_id,store_id,canonical_item_id,aisle,sort_order,created_at,updated_at) "
+  db.execute(
+      "INSERT INTO store_aisles_table (id,group_id,store_id,canonical_item_id,aisle,sort_order,created_at,updated_at) "
       "VALUES ('s1','__global__','de_rewe','apple','Obst & Gemüse',3,0,0)");
-  db.execute("INSERT INTO item_aliases_fts(item_aliases_fts) VALUES ('rebuild');");
+  db.execute(
+      "INSERT INTO item_aliases_fts(item_aliases_fts) VALUES ('rebuild');");
   db.execute('PRAGMA user_version = 1;');
   db.dispose();
   return path;
@@ -106,9 +108,9 @@ void main() {
   });
 
   test('FTS word-prefix search resolves through the reference DB', () async {
-    final rows =
-        await db.searchAliasWordPrefix(groupId: group, query: 'nutel');
-    expect(rows.map((r) => r.canonicalItemId), contains('chocolate_hazelnut_spread'));
+    final rows = await db.searchAliasWordPrefix(groupId: group, query: 'nutel');
+    expect(rows.map((r) => r.canonicalItemId),
+        contains('chocolate_hazelnut_spread'));
   });
 
   test('prefix autocomplete merges household + global', () async {
@@ -135,9 +137,10 @@ void main() {
   test('canonical lookups fall through to the reference DB', () async {
     final byId = await db.getCanonicalItemById('apple');
     expect(byId?.nameEn, 'Apple');
-    final byIds = await db.getCanonicalItemsByIds(['apple', 'chocolate_hazelnut_spread']);
-    expect(byIds.map((c) => c.id).toSet(),
-        {'apple', 'chocolate_hazelnut_spread'});
+    final byIds =
+        await db.getCanonicalItemsByIds(['apple', 'chocolate_hazelnut_spread']);
+    expect(
+        byIds.map((c) => c.id).toSet(), {'apple', 'chocolate_hazelnut_spread'});
   });
 
   test('store aisle: household override wins, else global reference', () async {
