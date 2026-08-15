@@ -11,7 +11,7 @@ import (
 func TestCoreJourney_HouseholdWorkflow(t *testing.T) {
 	clearTables(t)
 
-	authRouter, _ := newAuthRouter(t)
+	authRouter, _, mail := newAuthRouterWithMail(t)
 	groupRouter, _ := newGroupRouter(t)
 	listRouter, _ := newListRouter(t)
 	choreRouter, _ := newChoreRouter(t)
@@ -25,8 +25,15 @@ func TestCoreJourney_HouseholdWorkflow(t *testing.T) {
 		"first_name": "Journey",
 		"last_name":  "Tester",
 	}
+	// Registration is acknowledged without credentials — the journey only gets a
+	// session once the emailed code is verified.
 	rec := execRequest(t, authRouter, "POST", "/api/v1/auth/register", registerBody, "")
-	requireStatus(t, rec, http.StatusCreated)
+	requireStatus(t, rec, http.StatusAccepted)
+
+	rec = execRequest(t, authRouter, "POST", "/api/v1/auth/verify-email", map[string]any{
+		"token": mail.verificationCodeFor(t, "journey@example.com"),
+	}, "")
+	requireStatus(t, rec, http.StatusOK)
 
 	var authResp map[string]any
 	parseJSONResponse(t, rec, &authResp)
