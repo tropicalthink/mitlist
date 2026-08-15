@@ -128,8 +128,13 @@ func (s *UserService) Register(ctx context.Context, input RegisterInput) (*model
 		return nil, err
 	}
 	if err := s.mail.Send(user.Email, "Verify your mitlist account", verificationMessage(rawToken, s.frontendURL), false); err != nil {
+		// Deliberately not fatal. The account is already persisted above, so
+		// failing here told the caller registration failed while leaving a real
+		// pending account behind — and the retry then looked like a duplicate.
+		// Registration answers 202 either way; the caller recovers through
+		// verify-email/resend, which the register handler already routes a
+		// repeat attempt into.
 		log.Error().Err(err).Str("user_id", user.ID.String()).Msg("registration verification delivery failed")
-		return nil, fmt.Errorf("send verification email: %w", err)
 	}
 
 	return user, nil
@@ -182,7 +187,12 @@ func (s *UserService) ResendEmailVerification(ctx context.Context, email string)
 		return err
 	}
 	if err = s.mail.Send(user.Email, "Verify your mitlist account", verificationMessage(raw, s.frontendURL), false); err != nil {
-		return fmt.Errorf("send verification email: %w", err)
+		// Same reasoning as Register, plus an enumeration one: this call only
+		// reaches a send for an address that exists and is unverified, so
+		// surfacing the failure would answer 500 for real addresses and nil for
+		// unknown ones — the account-existence signal this function promises
+		// not to give.
+		log.Error().Err(err).Str("user_id", user.ID.String()).Msg("verification resend delivery failed")
 	}
 	return nil
 }
