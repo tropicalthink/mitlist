@@ -78,7 +78,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
+      # Full URL, not the bare `subosito/flutter-action@v2`: the runner resolves
+      # bare refs against data.forgejo.org, which only mirrors the `actions/*`
+      # namespace, so a third-party action 404s at clone time.
+      - uses: https://github.com/subosito/flutter-action@v2
         with:
           channel: stable
       - name: Pub get
