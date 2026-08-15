@@ -314,11 +314,57 @@ func parseErrorResponse(t *testing.T, rec *httptest.ResponseRecorder) map[string
 // Router helpers
 // ---------------------------------------------------------------------------
 
+// captureMailService records messages instead of delivering them. The real mail
+// service has no SMTP configuration under test, so every send fails; capturing
+// also lets a test read the verification code, which exists nowhere else (the
+// database stores only its hash).
+type captureMailService struct {
+	messages []capturedMail
+}
+
+type capturedMail struct{ to, subject, body string }
+
+func (m *captureMailService) Send(to, subject, body string, isHTML bool) error {
+	m.messages = append(m.messages, capturedMail{to: to, subject: subject, body: body})
+	return nil
+}
+
+func (m *captureMailService) SendTemplate(to, subject, tmplStr string, data any) error {
+	return m.Send(to, subject, tmplStr, false)
+}
+
+// verificationCodeFor returns the code from the most recent message sent to the
+// address, matching the "code is: XXXXXXXX" line built by verificationMessage.
+func (m *captureMailService) verificationCodeFor(t *testing.T, to string) string {
+	t.Helper()
+	const marker = "verification code is: "
+	for i := len(m.messages) - 1; i >= 0; i-- {
+		msg := m.messages[i]
+		if msg.to != to {
+			continue
+		}
+		idx := strings.Index(msg.body, marker)
+		require.GreaterOrEqual(t, idx, 0, "no verification code in message to %s", to)
+		code := msg.body[idx+len(marker):]
+		if nl := strings.IndexAny(code, "\r\n"); nl >= 0 {
+			code = code[:nl]
+		}
+		return strings.TrimSpace(code)
+	}
+	t.Fatalf("no message captured for %s", to)
+	return ""
+}
+
 func newAuthRouter(t *testing.T) (chi.Router, *AuthHandler) {
+	r, h, _ := newAuthRouterWithMail(t)
+	return r, h
+}
+
+func newAuthRouterWithMail(t *testing.T) (chi.Router, *AuthHandler, *captureMailService) {
 	userRepo := newTestUserRepo()
 	authRepo := newTestAuthRepo()
 	ps := newTestPasswordService()
-	ms := newTestMailService()
+	ms := &captureMailService{}
 	jwtSvc := testJWT
 
 	userSvc := services.NewUserService(userRepo, authRepo, jwtSvc, ps, ms)
@@ -330,6 +376,10 @@ func newAuthRouter(t *testing.T) (chi.Router, *AuthHandler) {
 	r := chi.NewRouter()
 	r.Route("/api/v1/auth", func(r chi.Router) {
 		r.Post("/register", h.Register)
+		// Mounted like the real router: registration hands back no tokens, so a
+		// test that needs an authenticated user has to complete verification.
+		r.Post("/verify-email", h.VerifyEmail)
+		r.Post("/verify-email/resend", h.ResendEmailVerification)
 		r.Post("/login", h.Login)
 		r.Post("/token/refresh", h.Refresh)
 		r.Post("/logout", h.Logout)
@@ -346,7 +396,7 @@ func newAuthRouter(t *testing.T) (chi.Router, *AuthHandler) {
 			r.Post("/claim-account", h.ClaimAccount)
 		})
 	})
-	return r, h
+	return r, h, ms
 }
 
 func newGroupRouter(t *testing.T) (chi.Router, *GroupHandler) {
