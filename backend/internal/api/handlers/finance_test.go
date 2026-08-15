@@ -343,8 +343,14 @@ func TestFinance_UpdateExpense_OptimisticConcurrency(t *testing.T) {
 
 	groupRepo := newTestGroupRepo()
 	group := &models.Group{
-		ID:        uuid.New(),
-		Name:      "G",
+		ID:   uuid.New(),
+		Name: "G",
+		// Currency must be set explicitly. CreateGroup inserts the field rather
+		// than omitting it, so the column's 'USD' default never applies and the
+		// group lands on ''. The expense would then be treated as foreign
+		// currency and rejected for a missing fx_rate — a 400, not the 200 or
+		// 409 this test is about. GroupService defaults it; the repo does not.
+		Currency:  "USD",
 		CreatedBy: user.ID,
 		CreatedAt: time.Now().UTC(),
 		UpdatedAt: time.Now().UTC(),
@@ -466,12 +472,16 @@ func TestFinance_CreateSettlement(t *testing.T) {
 	}
 	require.NoError(t, financeRepo.CreateExpense(context.Background(), expense))
 
+	// Settlements are recorded against the household, not a single expense —
+	// there has never been a POST /expenses/{id}/settle route, so this test was
+	// asserting against chi's 404 page.
 	body := map[string]any{
+		"group_id":     group.ID.String(),
 		"from_user_id": member.ID.String(),
 		"to_user_id":   user.ID.String(),
 		"amount":       5000,
 	}
-	rec := execRequest(t, router, "POST", "/api/v1/expenses/"+expense.ID.String()+"/settle", body, token)
+	rec := execRequest(t, router, "POST", "/api/v1/finance/settlements", body, token)
 	requireStatus(t, rec, http.StatusCreated)
 }
 

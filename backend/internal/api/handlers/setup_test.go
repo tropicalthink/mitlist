@@ -543,7 +543,9 @@ func newRecipeRouter(t *testing.T) (chi.Router, *RecipeHandler) {
 func newNotificationRouter(t *testing.T) (chi.Router, *NotificationHandler) {
 	notificationRepo := newTestNotificationRepo()
 	pushSvc := newTestPushService()
-	svc := services.NewNotificationService(notificationRepo, nil, nil, pushSvc)
+	// Real activity and group repos, not nil: GetPreferences reads the caller's
+	// groups to fill in defaults, so a nil groupRepo panics rather than 500s.
+	svc := services.NewNotificationService(notificationRepo, newTestActivityRepo(), newTestGroupRepo(), pushSvc)
 	h := NewNotificationHandler(svc)
 
 	r := chi.NewRouter()
