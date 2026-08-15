@@ -18,15 +18,17 @@ jobs:
           POSTGRES_USER: mitlist
           POSTGRES_PASSWORD: mitlist
           POSTGRES_DB: mitlist_test
-        ports:
-          - 5432:5432
         options: >-
           --health-cmd "pg_isready -U mitlist"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
     env:
-      TEST_DATABASE_URL: postgres://mitlist:mitlist@localhost:5432/mitlist_test?sslmode=disable
+      # `postgres`, not `localhost`: jobs run inside a container and the runner
+      # attaches services to the job network under their service key. A `ports:`
+      # mapping would publish on the runner host, which the job cannot reach —
+      # and would collide when two runs overlap.
+      TEST_DATABASE_URL: postgres://mitlist:mitlist@postgres:5432/mitlist_test?sslmode=disable
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -83,6 +85,10 @@ jobs:
       # namespace, so a third-party action 404s at clone time.
       - uses: https://github.com/subosito/flutter-action@v2
         with:
+          # Pinned, not bare `channel: stable`: an unpinned SDK re-resolved 15
+          # dependencies against the committed pubspec.lock, so codegen and
+          # tests would run on different package versions than we develop on.
+          flutter-version: '3.41.9'
           channel: stable
       - name: Pub get
         run: cd frontend && flutter pub get
