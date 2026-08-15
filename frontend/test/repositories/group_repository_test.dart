@@ -97,7 +97,8 @@ void main() {
 
         final groups = await repo.loadGroups().timeout(
               const Duration(seconds: 2),
-              onTimeout: () => throw StateError('loadGroups blocked on network'),
+              onTimeout: () =>
+                  throw StateError('loadGroups blocked on network'),
             );
 
         expect(groups.map((g) => g.id), ['g1']);

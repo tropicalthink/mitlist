@@ -79,7 +79,8 @@ String buildTestRefDb({
     insAlias.execute(['ra${i++}', kGlobalGroup, a.$1, a.$2, a.$3, a.$4]);
   }
   insAlias.dispose();
-  db.execute("INSERT INTO item_aliases_fts(item_aliases_fts) VALUES ('rebuild');");
+  db.execute(
+      "INSERT INTO item_aliases_fts(item_aliases_fts) VALUES ('rebuild');");
   db.execute('PRAGMA user_version = 1;');
   db.dispose();
   return path;

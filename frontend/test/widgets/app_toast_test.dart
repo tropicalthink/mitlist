@@ -173,7 +173,9 @@ void main() {
       await _fire(tester, (c) => AppToast.success(c, 'Saved'), theme: theme);
       await tester.pumpAndSettle();
 
-      final body = tester.widgetList<Container>(find.byType(Container)).firstWhere(
+      final body = tester
+          .widgetList<Container>(find.byType(Container))
+          .firstWhere(
             (w) =>
                 w.decoration is BoxDecoration &&
                 (w.decoration as BoxDecoration).boxShadow?.isNotEmpty == true &&
@@ -203,8 +205,8 @@ void main() {
     // SnackBar declares its content a live region and merges the subtree, so
     // the toast announces as one node carrying the message and the action it
     // offers, and that node is activatable.
-    final data = tester.getSemantics(find.text('Upload failed'))
-        .getSemanticsData();
+    final data =
+        tester.getSemantics(find.text('Upload failed')).getSemanticsData();
     expect(data.label, 'Upload failed\nRetry upload');
     expect(data.flagsCollection.isLiveRegion, isTrue);
     expect(data.hasAction(SemanticsAction.tap), isTrue);

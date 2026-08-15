@@ -83,7 +83,8 @@ void main() {
         postsJson: jsonEncode([post.toJson()]),
       );
 
-      await repo.updatePostPositionOfflineFirst(groupId, 'server-1', 120.0, 340.0);
+      await repo.updatePostPositionOfflineFirst(
+          groupId, 'server-1', 120.0, 340.0);
 
       final posts = await repo.getPostsOnce(groupId);
       expect(posts.single.posX, 120.0);
