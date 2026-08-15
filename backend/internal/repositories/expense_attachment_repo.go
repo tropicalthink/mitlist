@@ -45,7 +45,8 @@ func (r *ExpenseAttachmentRepository) Remove(ctx context.Context, expenseID, att
 
 func (r *ExpenseAttachmentRepository) ListReadyAttachmentsByExpense(ctx context.Context, expenseID uuid.UUID) ([]models.Attachment, error) {
 	const q = `
-		SELECT a.id, a.group_id, a.user_id, a.purpose, a.object_key, a.content_type, a.byte_size, a.status, a.created_at
+		SELECT a.id, a.group_id, a.user_id, a.purpose, a.object_key, a.content_type, a.byte_size, a.status, a.created_at,
+		       a.reservation_expires_at
 		FROM expense_attachments ea
 		JOIN attachments a ON a.id = ea.attachment_id
 		WHERE ea.expense_id = $1 AND a.status = 'ready'

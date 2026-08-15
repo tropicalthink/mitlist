@@ -45,7 +45,8 @@ func (r *PinwallAttachmentRepository) Remove(ctx context.Context, postID, attach
 
 func (r *PinwallAttachmentRepository) ListReadyAttachmentsByPost(ctx context.Context, postID uuid.UUID) ([]models.Attachment, error) {
 	const q = `
-		SELECT a.id, a.group_id, a.user_id, a.purpose, a.object_key, a.content_type, a.byte_size, a.status, a.created_at
+		SELECT a.id, a.group_id, a.user_id, a.purpose, a.object_key, a.content_type, a.byte_size, a.status, a.created_at,
+		       a.reservation_expires_at
 		FROM pinwall_post_attachments pa
 		JOIN attachments a ON a.id = pa.attachment_id
 		WHERE pa.pinwall_post_id = $1 AND a.status = 'ready'
