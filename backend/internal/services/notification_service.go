@@ -504,14 +504,32 @@ func (s *NotificationService) ListNotifications(ctx context.Context, userID uuid
 	return s.notificationRepo.ListNotificationsByUser(ctx, userID, limit, offset)
 }
 
+// ListNotificationsForGroups lists only notifications belonging to the
+// supplied household allow-list. It is used by long-lived integration
+// credentials, whose owning user may belong to additional households.
+func (s *NotificationService) ListNotificationsForGroups(ctx context.Context, userID uuid.UUID, groupIDs []uuid.UUID, limit, offset int) ([]models.Notification, error) {
+	return s.notificationRepo.ListNotificationsByUserAndGroups(ctx, userID, groupIDs, limit, offset)
+}
+
 // ListNotificationsBefore lists an older page using a stable cursor.
 func (s *NotificationService) ListNotificationsBefore(ctx context.Context, userID uuid.UUID, before time.Time, beforeID uuid.UUID, limit int) ([]models.Notification, error) {
 	return s.notificationRepo.ListNotificationsByUserBefore(ctx, userID, before, beforeID, limit)
 }
 
+// ListNotificationsBeforeForGroups is the scoped keyset-pagination variant.
+func (s *NotificationService) ListNotificationsBeforeForGroups(ctx context.Context, userID uuid.UUID, groupIDs []uuid.UUID, before time.Time, beforeID uuid.UUID, limit int) ([]models.Notification, error) {
+	return s.notificationRepo.ListNotificationsByUserAndGroupsBefore(ctx, userID, groupIDs, before, beforeID, limit)
+}
+
 // CountUnreadNotifications returns the user's unread inbox count.
 func (s *NotificationService) CountUnreadNotifications(ctx context.Context, userID uuid.UUID) (int, error) {
 	return s.notificationRepo.CountUnreadNotifications(ctx, userID)
+}
+
+// CountUnreadNotificationsForGroups counts unread rows inside an integration
+// credential's household allow-list.
+func (s *NotificationService) CountUnreadNotificationsForGroups(ctx context.Context, userID uuid.UUID, groupIDs []uuid.UUID) (int, error) {
+	return s.notificationRepo.CountUnreadNotificationsByGroups(ctx, userID, groupIDs)
 }
 
 // MarkAsRead marks a single notification as read.
@@ -532,6 +550,12 @@ func (s *NotificationService) MarkAsRead(ctx context.Context, userID, notificati
 // MarkAllAsRead marks all notifications for a user as read.
 func (s *NotificationService) MarkAllAsRead(ctx context.Context, userID uuid.UUID) error {
 	return s.notificationRepo.MarkAllAsRead(ctx, userID)
+}
+
+// MarkAllAsReadForGroups marks only notifications inside the supplied
+// household allow-list.
+func (s *NotificationService) MarkAllAsReadForGroups(ctx context.Context, userID uuid.UUID, groupIDs []uuid.UUID) error {
+	return s.notificationRepo.MarkAllAsReadByGroups(ctx, userID, groupIDs)
 }
 
 // DeleteNotification deletes a notification.
@@ -569,6 +593,27 @@ func (s *NotificationService) GetPreferences(ctx context.Context, userID uuid.UU
 			result = append(result, pref)
 		} else {
 			result = append(result, *models.DefaultNotificationPreference(userID, group.ID))
+		}
+	}
+	return result, nil
+}
+
+// GetPreferencesForGroups returns preferences only for allowed households.
+// Filtering after canonical preference/default construction keeps behavior
+// identical to the interactive client without exposing other group records.
+func (s *NotificationService) GetPreferencesForGroups(ctx context.Context, userID uuid.UUID, groupIDs []uuid.UUID) ([]models.NotificationPreference, error) {
+	prefs, err := s.GetPreferences(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	allowed := make(map[uuid.UUID]struct{}, len(groupIDs))
+	for _, groupID := range groupIDs {
+		allowed[groupID] = struct{}{}
+	}
+	result := make([]models.NotificationPreference, 0, len(groupIDs))
+	for _, pref := range prefs {
+		if _, ok := allowed[pref.GroupID]; ok {
+			result = append(result, pref)
 		}
 	}
 	return result, nil

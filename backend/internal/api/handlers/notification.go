@@ -7,6 +7,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/mitlist-app/mitlist/internal/api"
+	"github.com/mitlist-app/mitlist/internal/middleware"
 	"github.com/mitlist-app/mitlist/internal/models"
 	"github.com/mitlist-app/mitlist/internal/services"
 )
@@ -52,7 +53,12 @@ func (h *NotificationHandler) CountUnreadNotifications(w http.ResponseWriter, r 
 		return
 	}
 
-	count, err := h.service.CountUnreadNotifications(r.Context(), userID)
+	var count int
+	if identity, integration := middleware.IntegrationCredentialFromContext(r.Context()); integration {
+		count, err = h.service.CountUnreadNotificationsForGroups(r.Context(), userID, identity.GroupIDs)
+	} else {
+		count, err = h.service.CountUnreadNotifications(r.Context(), userID)
+	}
 	if err != nil {
 		api.RespondError(w, err)
 		return
@@ -87,9 +93,17 @@ func (h *NotificationHandler) ListNotifications(w http.ResponseWriter, r *http.R
 			api.RespondError(w, &api.ValidationError{Field: "before_id", Message: "invalid UUID"})
 			return
 		}
-		notifications, err = h.service.ListNotificationsBefore(r.Context(), userID, before, beforeID, limit)
+		if identity, integration := middleware.IntegrationCredentialFromContext(r.Context()); integration {
+			notifications, err = h.service.ListNotificationsBeforeForGroups(r.Context(), userID, identity.GroupIDs, before, beforeID, limit)
+		} else {
+			notifications, err = h.service.ListNotificationsBefore(r.Context(), userID, before, beforeID, limit)
+		}
 	} else {
-		notifications, err = h.service.ListNotifications(r.Context(), userID, limit, offset)
+		if identity, integration := middleware.IntegrationCredentialFromContext(r.Context()); integration {
+			notifications, err = h.service.ListNotificationsForGroups(r.Context(), userID, identity.GroupIDs, limit, offset)
+		} else {
+			notifications, err = h.service.ListNotifications(r.Context(), userID, limit, offset)
+		}
 	}
 	if err != nil {
 		api.RespondError(w, err)
@@ -117,6 +131,10 @@ func (h *NotificationHandler) GetNotification(w http.ResponseWriter, r *http.Req
 		api.RespondError(w, err)
 		return
 	}
+	if !middleware.CredentialAllowsGroup(r.Context(), n.GroupID) {
+		api.RespondError(w, &api.PermissionDeniedError{Action: "access notification"})
+		return
+	}
 
 	api.RespondJSON(w, http.StatusOK, n)
 }
@@ -130,6 +148,10 @@ func (h *NotificationHandler) MarkAsRead(w http.ResponseWriter, r *http.Request)
 
 	id, err := parseUUIDParam(r, "id")
 	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	if err := h.requireNotificationGroup(r, userID, id, "mark notification as read"); err != nil {
 		api.RespondError(w, err)
 		return
 	}
@@ -149,7 +171,12 @@ func (h *NotificationHandler) MarkAllAsRead(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if err := h.service.MarkAllAsRead(r.Context(), userID); err != nil {
+	if identity, integration := middleware.IntegrationCredentialFromContext(r.Context()); integration {
+		err = h.service.MarkAllAsReadForGroups(r.Context(), userID, identity.GroupIDs)
+	} else {
+		err = h.service.MarkAllAsRead(r.Context(), userID)
+	}
+	if err != nil {
 		api.RespondError(w, err)
 		return
 	}
@@ -166,6 +193,10 @@ func (h *NotificationHandler) DeleteNotification(w http.ResponseWriter, r *http.
 
 	id, err := parseUUIDParam(r, "id")
 	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	if err := h.requireNotificationGroup(r, userID, id, "delete notification"); err != nil {
 		api.RespondError(w, err)
 		return
 	}
@@ -192,6 +223,10 @@ func (h *NotificationHandler) GetPreferences(w http.ResponseWriter, r *http.Requ
 			api.RespondError(w, &api.ValidationError{Field: "group_id", Message: "invalid group_id"})
 			return
 		}
+		if !middleware.CredentialAllowsGroup(r.Context(), groupID) {
+			api.RespondError(w, &api.PermissionDeniedError{Action: "access notification preferences"})
+			return
+		}
 		pref, err := h.service.GetGroupPreference(r.Context(), userID, groupID)
 		if err != nil {
 			api.RespondError(w, err)
@@ -201,7 +236,12 @@ func (h *NotificationHandler) GetPreferences(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	prefs, err := h.service.GetPreferences(r.Context(), userID)
+	var prefs []models.NotificationPreference
+	if identity, integration := middleware.IntegrationCredentialFromContext(r.Context()); integration {
+		prefs, err = h.service.GetPreferencesForGroups(r.Context(), userID, identity.GroupIDs)
+	} else {
+		prefs, err = h.service.GetPreferences(r.Context(), userID)
+	}
 	if err != nil {
 		api.RespondError(w, err)
 		return
@@ -224,6 +264,10 @@ func (h *NotificationHandler) UpdatePreferences(w http.ResponseWriter, r *http.R
 	}
 	if req.GroupID == nil || *req.GroupID == uuid.Nil {
 		api.RespondError(w, &api.ValidationError{Field: "group_id", Message: "group_id is required"})
+		return
+	}
+	if !middleware.CredentialAllowsGroup(r.Context(), *req.GroupID) {
+		api.RespondError(w, &api.PermissionDeniedError{Action: "update notification preferences"})
 		return
 	}
 
@@ -253,4 +297,18 @@ func (h *NotificationHandler) UpdatePreferences(w http.ResponseWriter, r *http.R
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *NotificationHandler) requireNotificationGroup(r *http.Request, userID, notificationID uuid.UUID, action string) error {
+	if !middleware.IsIntegrationCredential(r.Context()) {
+		return nil
+	}
+	n, err := h.service.GetNotification(r.Context(), userID, notificationID)
+	if err != nil {
+		return err
+	}
+	if !middleware.CredentialAllowsGroup(r.Context(), n.GroupID) {
+		return &api.PermissionDeniedError{Action: action}
+	}
+	return nil
 }

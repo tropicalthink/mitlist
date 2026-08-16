@@ -109,6 +109,26 @@ func TestNotificationRepository_ListNotificationsByUser(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
+func TestNotificationRepository_ListNotificationsByUserAndGroups(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewNotificationRepository(mock)
+	uid := fixedUUID()
+	groupIDs := []uuid.UUID{uuid.New(), uuid.New()}
+
+	rows := pgxmock.NewRows([]string{"id", "user_id", "group_id", "type", "title", "body", "data", "is_read", "read_at", "created_at"}).
+		AddRow(uuid.New(), uid, groupIDs[0], "info", "Scoped", "Visible", []byte(`{}`), false, nil, fixedTime())
+
+	mock.ExpectQuery("SELECT .* FROM notifications WHERE user_id = .* AND group_id = ANY").
+		WithArgs(uid, groupIDs, 50, 0).
+		WillReturnRows(rows)
+
+	notifications, err := repo.ListNotificationsByUserAndGroups(context.Background(), uid, groupIDs, 0, 0)
+	require.NoError(t, err)
+	require.Len(t, notifications, 1)
+	assert.Equal(t, groupIDs[0], notifications[0].GroupID)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
 func TestNotificationRepository_ListNotificationsByUserBefore(t *testing.T) {
 	mock := newMockDB(t)
 	repo := NewNotificationRepository(mock)
@@ -130,6 +150,28 @@ func TestNotificationRepository_ListNotificationsByUserBefore(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
+func TestNotificationRepository_ListNotificationsByUserAndGroupsBefore(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewNotificationRepository(mock)
+	uid := fixedUUID()
+	groupIDs := []uuid.UUID{uuid.New()}
+	beforeID := uuid.New()
+	before := fixedTime()
+
+	rows := pgxmock.NewRows([]string{"id", "user_id", "group_id", "type", "title", "body", "data", "is_read", "read_at", "created_at"}).
+		AddRow(uuid.New(), uid, groupIDs[0], "info", "Scoped older", "Visible", []byte(`{}`), false, nil, before.Add(-time.Second))
+
+	mock.ExpectQuery("SELECT .* FROM notifications WHERE user_id = .* AND group_id = ANY.* AND \\(created_at, id\\) <").
+		WithArgs(uid, groupIDs, before, beforeID, 25).
+		WillReturnRows(rows)
+
+	notifications, err := repo.ListNotificationsByUserAndGroupsBefore(context.Background(), uid, groupIDs, before, beforeID, 25)
+	require.NoError(t, err)
+	require.Len(t, notifications, 1)
+	assert.Equal(t, "Scoped older", notifications[0].Title)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
 func TestNotificationRepository_CountUnreadNotifications(t *testing.T) {
 	mock := newMockDB(t)
 	repo := NewNotificationRepository(mock)
@@ -142,6 +184,22 @@ func TestNotificationRepository_CountUnreadNotifications(t *testing.T) {
 	count, err := repo.CountUnreadNotifications(context.Background(), uid)
 	require.NoError(t, err)
 	assert.Equal(t, 7, count)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestNotificationRepository_CountUnreadNotificationsByGroups(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewNotificationRepository(mock)
+	uid := fixedUUID()
+	groupIDs := []uuid.UUID{uuid.New(), uuid.New()}
+
+	mock.ExpectQuery("SELECT COUNT\\(\\*\\) FROM notifications WHERE user_id = .* AND group_id = ANY.* AND is_read = false").
+		WithArgs(uid, groupIDs).
+		WillReturnRows(pgxmock.NewRows([]string{"count"}).AddRow(4))
+
+	count, err := repo.CountUnreadNotificationsByGroups(context.Background(), uid, groupIDs)
+	require.NoError(t, err)
+	assert.Equal(t, 4, count)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
@@ -184,6 +242,21 @@ func TestNotificationRepository_MarkAllAsRead(t *testing.T) {
 		WillReturnResult(pgxmock.NewResult("UPDATE", 3))
 
 	err := repo.MarkAllAsRead(context.Background(), uid)
+	require.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestNotificationRepository_MarkAllAsReadByGroups(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewNotificationRepository(mock)
+	uid := fixedUUID()
+	groupIDs := []uuid.UUID{uuid.New()}
+
+	mock.ExpectExec("UPDATE notifications SET is_read = true, read_at = NOW\\(\\) WHERE user_id = .* AND group_id = ANY.* AND is_read = false").
+		WithArgs(uid, groupIDs).
+		WillReturnResult(pgxmock.NewResult("UPDATE", 2))
+
+	err := repo.MarkAllAsReadByGroups(context.Background(), uid, groupIDs)
 	require.NoError(t, err)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }

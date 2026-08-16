@@ -43,8 +43,29 @@ func (m *MockNotificationRepo) ListNotificationsByUser(ctx context.Context, user
 	return nil, args.Error(1)
 }
 
+func (m *MockNotificationRepo) ListNotificationsByUserAndGroups(ctx context.Context, userID uuid.UUID, groupIDs []uuid.UUID, limit, offset int) ([]models.Notification, error) {
+	args := m.Called(ctx, userID, groupIDs, limit, offset)
+	if n := args.Get(0); n != nil {
+		return n.([]models.Notification), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
+func (m *MockNotificationRepo) ListNotificationsByUserAndGroupsBefore(ctx context.Context, userID uuid.UUID, groupIDs []uuid.UUID, before time.Time, beforeID uuid.UUID, limit int) ([]models.Notification, error) {
+	args := m.Called(ctx, userID, groupIDs, before, beforeID, limit)
+	if n := args.Get(0); n != nil {
+		return n.([]models.Notification), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
 func (m *MockNotificationRepo) CountUnreadNotifications(ctx context.Context, userID uuid.UUID) (int, error) {
 	args := m.Called(ctx, userID)
+	return args.Int(0), args.Error(1)
+}
+
+func (m *MockNotificationRepo) CountUnreadNotificationsByGroups(ctx context.Context, userID uuid.UUID, groupIDs []uuid.UUID) (int, error) {
+	args := m.Called(ctx, userID, groupIDs)
 	return args.Int(0), args.Error(1)
 }
 
@@ -55,6 +76,11 @@ func (m *MockNotificationRepo) MarkAsRead(ctx context.Context, id uuid.UUID) err
 
 func (m *MockNotificationRepo) MarkAllAsRead(ctx context.Context, userID uuid.UUID) error {
 	args := m.Called(ctx, userID)
+	return args.Error(0)
+}
+
+func (m *MockNotificationRepo) MarkAllAsReadByGroups(ctx context.Context, userID uuid.UUID, groupIDs []uuid.UUID) error {
+	args := m.Called(ctx, userID, groupIDs)
 	return args.Error(0)
 }
 
