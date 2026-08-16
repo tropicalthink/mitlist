@@ -216,7 +216,7 @@
   },
   "welcomeInviteHeadline": "Vous êtes invité",
   "welcomeInviteSubtitle": "Rejoignez le foyer pour partager listes, tâches et dépenses.",
-  "welcomeGuestFootnote": "Pas de compte nécessaire. Essaie tout gratuitement pendant 30 jours.",
+  "welcomeGuestFootnote": "Pas d'inscription nécessaire. Crée un compte plus tard pour garder tes données.",
   "@welcomeGuestFootnote": {
     "description": "Footnote below the guest button explaining the trial"
   },
@@ -4413,6 +4413,11 @@
   "authOnboardingInviteTitle": "Fais venir tes colocs",
   "authOnboardingInviteBody": "Partage ce code. Qui le saisit rejoint ton foyer.",
   "authOnboardingGoToBoard": "Aller à ton tableau",
+  "authOnboardingResolving": "Ouverture de ton tableau…",
+  "hubQuickStartNextSemantic": "Étape suivante : {label}",
+  "hubQuickStartDismissedToast": "Démarrage rapide rangé. Tu le retrouves à tout moment dans Compte.",
+  "accountShowQuickStart": "Afficher le démarrage rapide sur le tableau",
+  "accountQuickStartRestored": "Le démarrage rapide est de retour sur ton tableau.",
   "hubChecklistTitle": "Mets la maison en route",
   "hubChecklistDone": "Fait",
   "hubChecklistProgress": "{done} sur {total} faits",

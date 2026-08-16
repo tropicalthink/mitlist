@@ -65,6 +65,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
   bool _joinLanded = false;
   bool _didStart = false;
 
+  // The board holds until we know whether this account already belongs to a
+  // household. Existing accounts go straight home without ever seeing the
+  // create/join notes; new ones get the full entrance. A hint appears only
+  // when the check is slow enough to feel like waiting.
+  bool _membershipResolved = false;
+  bool _showResolveHint = false;
+  Timer? _resolveHintTimer;
+
   _Stage _stage = _Stage.choose;
 
   // Name beat.
@@ -106,8 +114,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _startAnimation();
-      unawaited(_checkExistingGroups());
+      _resolveHintTimer = Timer(const Duration(milliseconds: 700), () {
+        if (mounted && !_membershipResolved) {
+          setState(() => _showResolveHint = true);
+        }
+      });
+      unawaited(_resolveMembership());
     });
   }
 
@@ -123,21 +135,50 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     }
   }
 
-  Future<void> _checkExistingGroups() async {
+  Future<void> _resolveMembership() async {
+    final pending = ref.read(cachedGroupsProvider.future);
     try {
-      final groups = await ref
-          .read(cachedGroupsProvider.future)
-          .timeout(const Duration(seconds: 10));
+      final groups = await pending.timeout(const Duration(seconds: 4));
       if (!mounted) return;
-      // Only skip onboarding when the user already belongs to a shared
-      // household, and only while they haven't started dressing the board.
+      if (groups.any((g) => g.isPersonal == false)) {
+        // Existing household: this screen was never for them.
+        context.goNamed('home');
+        return;
+      }
+      _revealChoose();
+    } catch (_) {
+      // Slow or offline — let the user proceed rather than hold the door.
+      if (!mounted) return;
+      _revealChoose();
+      unawaited(_skipIfLateResultHasHousehold(pending));
+    }
+  }
+
+  /// The 4s reveal timeout gave up on the fetch, but the fetch itself may
+  /// still land. If it eventually reports an existing household and the user
+  /// hasn't started dressing the board, skip home late rather than never.
+  Future<void> _skipIfLateResultHasHousehold(
+    Future<List<Group>> pending,
+  ) async {
+    try {
+      final groups = await pending;
+      if (!mounted) return;
       final hasHousehold = groups.any((g) => g.isPersonal == false);
       if (hasHousehold && _stage == _Stage.choose) {
         context.goNamed('home');
       }
     } catch (_) {
-      // API slow/unavailable — keep onboarding visible so the user can proceed.
+      // API unavailable — onboarding stays usable.
     }
+  }
+
+  void _revealChoose() {
+    _resolveHintTimer?.cancel();
+    setState(() {
+      _membershipResolved = true;
+      _showResolveHint = false;
+    });
+    _startAnimation();
   }
 
   void _startAnimation() {
@@ -154,6 +195,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
 
   @override
   void dispose() {
+    _resolveHintTimer?.cancel();
     _copiedTimer?.cancel();
     _nameController.dispose();
     _controller.dispose();
@@ -306,6 +348,41 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+
+    if (!_membershipResolved) {
+      // Membership check in flight: hold the bare board. The hint paper only
+      // appears once the check is slow enough to feel like waiting, so the
+      // common fast path is a beat of cork before the notes drop in.
+      return Scaffold(
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            const CorkBoardBackground(),
+            if (_showResolveHint)
+              SafeArea(
+                child: Center(
+                  child: Semantics(
+                    liveRegion: true,
+                    child: TapedPaper(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: MitlistSpacing.lg,
+                        vertical: MitlistSpacing.space5,
+                      ),
+                      child: Text(
+                        l10n.authOnboardingResolving,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: MitlistColors.textPrimary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      );
+    }
 
     return Scaffold(
       body: Stack(
@@ -764,10 +841,23 @@ class _ChoiceNote extends StatelessWidget {
                   height: 1.4,
                 ),
           ),
-          const SizedBox(height: MitlistSpacing.space3),
-          Align(
-            alignment: Alignment.centerRight,
-            child: Icon(Icons.arrow_forward, size: 20, color: ink),
+          const SizedBox(height: MitlistSpacing.space4),
+          // The blank name line the next beat asks you to write on — the same
+          // show-the-thing move as the join slip's empty code boxes.
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Icon(Icons.edit_outlined,
+                  size: 18, color: ink.withValues(alpha: 0.65)),
+              const SizedBox(width: MitlistSpacing.space2),
+              Container(
+                width: 120,
+                height: 2,
+                color: ink.withValues(alpha: 0.45),
+              ),
+              const Spacer(),
+              Icon(Icons.arrow_forward, size: 20, color: ink),
+            ],
           ),
         ],
       ),

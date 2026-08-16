@@ -190,7 +190,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get welcomeGuestFootnote =>
-      'Sin necesidad de cuenta. Prueba todo gratis durante 30 días.';
+      'Sin registro. Crea una cuenta más adelante para conservar tus datos.';
 
   @override
   String get hubAppBarTitle => 'Inicio';
@@ -4025,6 +4025,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get authOnboardingGoToBoard => 'Ir a tu tablero';
 
   @override
+  String get authOnboardingResolving => 'Abriendo tu tablero…';
+
+  @override
   String get hubChecklistTitle => 'Pon la casa en marcha';
 
   @override
@@ -4182,6 +4185,22 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get hubOnboardingTrackExpense => 'Registrar un gasto';
+
+  @override
+  String hubQuickStartNextSemantic(String label) {
+    return 'Siguiente paso: $label';
+  }
+
+  @override
+  String get hubQuickStartDismissedToast =>
+      'Inicio rápido guardado. Recupéralo cuando quieras desde Cuenta.';
+
+  @override
+  String get accountShowQuickStart => 'Mostrar el inicio rápido en el tablero';
+
+  @override
+  String get accountQuickStartRestored =>
+      'El inicio rápido vuelve a estar en tu tablero.';
 
   @override
   String get appBottomSheetDiscardTitle => '¿Descartar cambios?';

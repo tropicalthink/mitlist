@@ -216,7 +216,7 @@
   },
   "welcomeInviteHeadline": "Je bent uitgenodigd",
   "welcomeInviteSubtitle": "Word lid van het huishouden om lijsten, taken en kosten te delen.",
-  "welcomeGuestFootnote": "Geen account nodig. Probeer alles 30 dagen gratis.",
+  "welcomeGuestFootnote": "Geen registratie nodig. Maak later een account aan om je gegevens te bewaren.",
   "@welcomeGuestFootnote": {
     "description": "Footnote below the guest button explaining the trial"
   },
@@ -4414,6 +4414,11 @@
   "authOnboardingInviteTitle": "Haal je huisgenoten erbij",
   "authOnboardingInviteBody": "Deel deze code. Wie hem invoert, komt bij je huishouden.",
   "authOnboardingGoToBoard": "Naar je prikbord",
+  "authOnboardingResolving": "Je prikbord wordt geopend…",
+  "hubQuickStartNextSemantic": "Volgende stap: {label}",
+  "hubQuickStartDismissedToast": "Snelstart opgeborgen. Je haalt hem altijd terug via Account.",
+  "accountShowQuickStart": "Snelstart op het prikbord tonen",
+  "accountQuickStartRestored": "De snelstart staat weer op je prikbord.",
   "hubChecklistTitle": "Breng het huis op gang",
   "hubChecklistDone": "Klaar",
   "hubChecklistProgress": "{done} van {total} klaar",

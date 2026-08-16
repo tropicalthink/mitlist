@@ -58,7 +58,8 @@ void main() {
   });
 
   group('OnboardingScreen', () {
-    testWidgets('shows create/join actions immediately', (tester) async {
+    testWidgets('holds the board until membership resolves, then shows choose',
+        (tester) async {
       final groupsCompleter = Completer<List<Group>>();
       addTearDown(() {
         if (!groupsCompleter.isCompleted) {
@@ -80,11 +81,21 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('Create a household'), findsOneWidget);
-      expect(find.text('Join with invite code'), findsOneWidget);
+      // Membership unknown: the bare board holds, no create/join flash that
+      // would have to be yanked away from an existing account.
+      expect(find.text('Create a household'), findsNothing);
+      expect(find.text('Join with invite code'), findsNothing);
+
+      // Slow check: the hint paper appears rather than dead cork.
+      await tester.pump(const Duration(milliseconds: 750));
+      expect(find.text('Opening your board…'), findsOneWidget);
 
       groupsCompleter.complete(const []);
-      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Opening your board…'), findsNothing);
+      expect(find.text('Create a household'), findsOneWidget);
+      expect(find.text('Join with invite code'), findsOneWidget);
     });
 
     testWidgets('redirects to home when user already has a household',

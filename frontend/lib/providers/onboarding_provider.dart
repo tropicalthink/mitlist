@@ -10,3 +10,11 @@ Future<void> dismissHubQuickStart() async {
   final prefs = await SharedPreferences.getInstance();
   await prefs.setBool('hub_quick_start_dismissed', true);
 }
+
+/// Undoes [dismissHubQuickStart]; the strip still retires itself once every
+/// step is genuinely done, so restoring an already-finished quick start is a
+/// no-op on screen.
+Future<void> restoreHubQuickStart() async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setBool('hub_quick_start_dismissed', false);
+}

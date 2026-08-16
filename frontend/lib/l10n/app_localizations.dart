@@ -422,10 +422,10 @@ abstract class AppLocalizations {
   /// **'Join the household to share lists, chores, and money.'**
   String get welcomeInviteSubtitle;
 
-  /// Footnote below the guest button explaining the trial
+  /// Footnote below the guest button: guest mode is the full app, an account is only needed to keep data long-term
   ///
   /// In en, this message translates to:
-  /// **'No account needed. Try everything free for 30 days.'**
+  /// **'No sign-up needed. Add an account later to keep your data.'**
   String get welcomeGuestFootnote;
 
   /// AppBar title for the household hub screen
@@ -7083,6 +7083,12 @@ abstract class AppLocalizations {
   /// **'Go to your board'**
   String get authOnboardingGoToBoard;
 
+  /// Hint shown while onboarding checks whether the account already belongs to a household
+  ///
+  /// In en, this message translates to:
+  /// **'Opening your board…'**
+  String get authOnboardingResolving;
+
   /// Hub first-run checklist heading
   ///
   /// In en, this message translates to:
@@ -7382,6 +7388,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Track an expense'**
   String get hubOnboardingTrackExpense;
+
+  /// Screen-reader label for the highlighted next quick start step
+  ///
+  /// In en, this message translates to:
+  /// **'Next step: {label}'**
+  String hubQuickStartNextSemantic(String label);
+
+  /// Toast after dismissing the hub quick start, pointing at the recovery path
+  ///
+  /// In en, this message translates to:
+  /// **'Quick start put away. Bring it back anytime from Account.'**
+  String get hubQuickStartDismissedToast;
+
+  /// Account row that restores the dismissed hub quick start
+  ///
+  /// In en, this message translates to:
+  /// **'Show quick start on the hub'**
+  String get accountShowQuickStart;
+
+  /// Toast after restoring the hub quick start from the account screen
+  ///
+  /// In en, this message translates to:
+  /// **'Quick start is back on your board.'**
+  String get accountQuickStartRestored;
 
   /// Discard changes dialog title
   ///

@@ -190,7 +190,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get welcomeGuestFootnote =>
-      'Kein Konto nötig. 30 Tage lang alles kostenlos testen.';
+      'Keine Anmeldung nötig. Leg später ein Konto an, um deine Daten zu behalten.';
 
   @override
   String get hubAppBarTitle => 'Start';
@@ -4061,6 +4061,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get authOnboardingGoToBoard => 'Zu deiner Pinnwand';
 
   @override
+  String get authOnboardingResolving => 'Deine Pinnwand wird geöffnet…';
+
+  @override
   String get hubChecklistTitle => 'So kommt der Haushalt in Gang';
 
   @override
@@ -4218,6 +4221,22 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get hubOnboardingTrackExpense => 'Ausgabe erfassen';
+
+  @override
+  String hubQuickStartNextSemantic(String label) {
+    return 'Nächster Schritt: $label';
+  }
+
+  @override
+  String get hubQuickStartDismissedToast =>
+      'Schnellstart weggelegt. Du findest ihn jederzeit unter Konto wieder.';
+
+  @override
+  String get accountShowQuickStart => 'Schnellstart auf der Pinnwand zeigen';
+
+  @override
+  String get accountQuickStartRestored =>
+      'Der Schnellstart ist zurück auf deiner Pinnwand.';
 
   @override
   String get appBottomSheetDiscardTitle => 'Änderungen verwerfen?';
