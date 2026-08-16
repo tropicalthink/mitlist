@@ -94,15 +94,7 @@ func (s *ChoreService) broadcastChorePush(ctx context.Context, groupID, choreID,
 
 // publishChore emits an SSE event for a chore state change.
 func (s *ChoreService) publishChore(eventType string, groupID, choreID uuid.UUID) {
-	if s.hub == nil {
-		return
-	}
-	data, _ := json.Marshal(map[string]string{"chore_id": choreID.String()})
-	s.hub.Publish(groupID.String(), sse.Event{
-		Type:    eventType,
-		GroupID: groupID.String(),
-		Payload: data,
-	})
+	publishDomainEvent(s.hub, eventType, groupID, map[string]string{"chore_id": choreID.String()})
 }
 
 func (s *ChoreService) requireActiveVerifiedUser(u *models.User) error {
@@ -173,6 +165,7 @@ func (s *ChoreService) CreateChore(ctx context.Context, user *models.User, chore
 			return fmt.Errorf("failed to advance initial rotation state: %w", err)
 		}
 	}
+	s.publishChore("chore:created", chore.GroupID, chore.ID)
 
 	return nil
 }
@@ -414,6 +407,7 @@ func (s *ChoreService) UpdateChore(ctx context.Context, user *models.User, chore
 	if err := s.choreRepo.UpdateChore(ctx, chore); err != nil {
 		return nil, fmt.Errorf("failed to update chore: %w", err)
 	}
+	s.publishChore("chore:updated", chore.GroupID, chore.ID)
 	return chore, nil
 }
 
@@ -432,7 +426,11 @@ func (s *ChoreService) DeleteChore(ctx context.Context, user *models.User, chore
 	if err := s.requireAdmin(ctx, user.ID, chore.GroupID); err != nil {
 		return err
 	}
-	return s.choreRepo.DeleteChore(ctx, choreID)
+	if err := s.choreRepo.DeleteChore(ctx, choreID); err != nil {
+		return err
+	}
+	s.publishChore("chore:deleted", chore.GroupID, chore.ID)
+	return nil
 }
 
 // RotateChore manually advances the chore rotation and creates the next assignment.
@@ -464,7 +462,11 @@ func (s *ChoreService) RotateChore(ctx context.Context, user *models.User, chore
 		return fmt.Errorf("failed to get rotation state: %w", err)
 	}
 
-	return s.rotateAndAssign(ctx, chore, state)
+	if err := s.rotateAndAssign(ctx, chore, state); err != nil {
+		return err
+	}
+	s.publishChore("chore:rotated", chore.GroupID, chore.ID)
+	return nil
 }
 
 // CompleteChore marks the current pending assignment as completed, records completion, and rotates.
@@ -1072,6 +1074,7 @@ func (s *ChoreService) CreateSubtask(ctx context.Context, user *models.User, sub
 	if err := s.choreRepo.CreateSubtask(ctx, subtask); err != nil {
 		return nil, fmt.Errorf("failed to create subtask: %w", err)
 	}
+	s.publishChore("chore:subtask_created", chore.GroupID, subtask.ChoreID)
 	return subtask, nil
 }
 
@@ -1104,6 +1107,7 @@ func (s *ChoreService) UpdateSubtask(ctx context.Context, user *models.User, sub
 	if err := s.choreRepo.UpdateSubtask(ctx, existing); err != nil {
 		return nil, fmt.Errorf("failed to update subtask: %w", err)
 	}
+	s.publishChore("chore:subtask_updated", chore.GroupID, existing.ChoreID)
 	return existing, nil
 }
 
@@ -1126,7 +1130,11 @@ func (s *ChoreService) DeleteSubtask(ctx context.Context, user *models.User, sub
 	if err := s.requireMembership(ctx, user.ID, chore.GroupID); err != nil {
 		return err
 	}
-	return s.choreRepo.DeleteSubtask(ctx, subtaskID)
+	if err := s.choreRepo.DeleteSubtask(ctx, subtaskID); err != nil {
+		return err
+	}
+	s.publishChore("chore:subtask_deleted", chore.GroupID, existing.ChoreID)
+	return nil
 }
 
 // FindDueChores returns pending assignments due within the given window.
@@ -1165,6 +1173,7 @@ func (s *ChoreService) ReorderSubtasks(ctx context.Context, user *models.User, c
 			return fmt.Errorf("failed to update subtask position: %w", err)
 		}
 	}
+	s.publishChore("chore:subtasks_reordered", chore.GroupID, choreID)
 	return nil
 }
 

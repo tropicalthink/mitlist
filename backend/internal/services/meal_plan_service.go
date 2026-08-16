@@ -11,6 +11,7 @@ import (
 	"github.com/mitlist-app/mitlist/internal/api"
 	"github.com/mitlist-app/mitlist/internal/models"
 	"github.com/mitlist-app/mitlist/internal/repositories"
+	"github.com/mitlist-app/mitlist/internal/sse"
 	"github.com/mitlist-app/mitlist/pkg/parsing"
 )
 
@@ -22,7 +23,11 @@ type MealPlanService struct {
 	listRepo         repositories.ListRepo
 	resolveCanonical CanonicalNameResolver
 	dispatcher       NotificationDispatcher
+	hub              *sse.Hub
 }
+
+// SetHub injects the SSE hub for household meal-plan changes.
+func (s *MealPlanService) SetHub(h *sse.Hub) { s.hub = h }
 
 // SetCanonicalNameResolver enables immediate grocery linking for ingredients
 // generated into a shopping list.
@@ -117,6 +122,7 @@ func (s *MealPlanService) CreateMealPlan(ctx context.Context, user *models.User,
 	if err := s.mealPlanRepo.CreateMealPlan(ctx, mp); err != nil {
 		return err
 	}
+	publishDomainEvent(s.hub, "meal_plan:created", mp.GroupID, map[string]string{"meal_plan_id": mp.ID.String()})
 	s.notifyChanged(ctx, user.ID, mp)
 	return nil
 }
@@ -165,6 +171,7 @@ func (s *MealPlanService) UpdateMealPlan(ctx context.Context, user *models.User,
 	if err := s.mealPlanRepo.UpdateMealPlan(ctx, mp); err != nil {
 		return err
 	}
+	publishDomainEvent(s.hub, "meal_plan:updated", existing.GroupID, map[string]string{"meal_plan_id": mp.ID.String()})
 	s.notifyChanged(ctx, user.ID, mp)
 	return nil
 }
@@ -184,6 +191,7 @@ func (s *MealPlanService) DeleteMealPlan(ctx context.Context, user *models.User,
 	if err := s.mealPlanRepo.DeleteMealPlan(ctx, mealPlanID); err != nil {
 		return err
 	}
+	publishDomainEvent(s.hub, "meal_plan:deleted", mp.GroupID, map[string]string{"meal_plan_id": mp.ID.String()})
 	s.notifyChanged(ctx, user.ID, mp)
 	return nil
 }
