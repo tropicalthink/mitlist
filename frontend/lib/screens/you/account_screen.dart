@@ -591,6 +591,13 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           ),
           Divider(color: Theme.of(context).colorScheme.outlineVariant),
           _MenuRow(
+            icon: const AppIcon(name: 'homeOutline'),
+            label: l10n.integrationsTitle,
+            value: l10n.homeAssistantTitle,
+            onTap: () => context.pushNamed('homeAssistantConnections'),
+          ),
+          Divider(color: Theme.of(context).colorScheme.outlineVariant),
+          _MenuRow(
             icon: const AppIcon(name: 'sun'),
             label: l10n.accountAppearance,
             trailing: DropdownButton<ThemeMode>(
@@ -1416,45 +1423,51 @@ class _MenuRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.zero,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
-        child: Row(
-          children: [
-            icon,
-            const SizedBox(width: MitlistSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (value != null)
+    return Semantics(
+      button: onTap != null,
+      enabled: onTap != null,
+      label: value == null ? label : '$label, $value',
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.zero,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
+          child: Row(
+            children: [
+              icon,
+              const SizedBox(width: MitlistSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text(
-                      value!,
+                      label,
+                      style: Theme.of(context).textTheme.bodyMedium,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
                     ),
-                ],
+                    if (value != null)
+                      Text(
+                        value!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
+                      ),
+                  ],
+                ),
               ),
-            ),
-            if (trailing != null)
-              trailing!
-            else if (onTap != null)
-              AppIcon(
-                  name: 'chevronRight',
-                  color: Theme.of(context).colorScheme.onSurfaceVariant),
-          ],
+              if (trailing != null)
+                trailing!
+              else if (onTap != null)
+                AppIcon(
+                    name: 'chevronRight',
+                    color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ],
+          ),
         ),
       ),
     );

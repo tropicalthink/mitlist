@@ -368,6 +368,168 @@ abstract class AppLocalizations {
   /// **'Loading members...'**
   String get commonLoadingMembers;
 
+  /// Account integrations page title
+  ///
+  /// In en, this message translates to:
+  /// **'Integrations'**
+  String get integrationsTitle;
+
+  /// Home Assistant integration name
+  ///
+  /// In en, this message translates to:
+  /// **'Home Assistant'**
+  String get homeAssistantTitle;
+
+  /// Home Assistant integration summary
+  ///
+  /// In en, this message translates to:
+  /// **'Connect your household to dashboards, voice control, and automations.'**
+  String get homeAssistantDescription;
+
+  /// Home Assistant connection list heading
+  ///
+  /// In en, this message translates to:
+  /// **'Connections'**
+  String get homeAssistantConnections;
+
+  /// Empty state for Home Assistant connections
+  ///
+  /// In en, this message translates to:
+  /// **'No Home Assistant connections yet.'**
+  String get homeAssistantNoConnections;
+
+  /// Create a Home Assistant credential button
+  ///
+  /// In en, this message translates to:
+  /// **'Create connection'**
+  String get homeAssistantCreateConnection;
+
+  /// Home Assistant connection name field
+  ///
+  /// In en, this message translates to:
+  /// **'Connection name'**
+  String get homeAssistantConnectionName;
+
+  /// Home Assistant connection name hint
+  ///
+  /// In en, this message translates to:
+  /// **'Home Assistant'**
+  String get homeAssistantConnectionNameHint;
+
+  /// Household permission selection heading
+  ///
+  /// In en, this message translates to:
+  /// **'Households'**
+  String get homeAssistantHouseholds;
+
+  /// Integration permissions heading
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions'**
+  String get homeAssistantPermissions;
+
+  /// Integration write permission toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Allow Home Assistant to make changes'**
+  String get homeAssistantWriteAccess;
+
+  /// Integration finance permission toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Include financial data'**
+  String get homeAssistantFinanceAccess;
+
+  /// One-time integration token dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Connection token'**
+  String get homeAssistantTokenTitle;
+
+  /// One-time integration token warning
+  ///
+  /// In en, this message translates to:
+  /// **'Copy this token into Home Assistant now. For security, mitlist cannot show it again.'**
+  String get homeAssistantTokenBody;
+
+  /// Confirmation after copying integration token
+  ///
+  /// In en, this message translates to:
+  /// **'Connection token copied'**
+  String get homeAssistantTokenCopied;
+
+  /// Revoke Home Assistant connection action
+  ///
+  /// In en, this message translates to:
+  /// **'Revoke connection'**
+  String get homeAssistantRevoke;
+
+  /// Revoke Home Assistant connection confirmation
+  ///
+  /// In en, this message translates to:
+  /// **'This immediately disconnects Home Assistant. You can create a new connection later.'**
+  String get homeAssistantRevokeConfirm;
+
+  /// Revoked integration credential status
+  ///
+  /// In en, this message translates to:
+  /// **'Revoked'**
+  String get homeAssistantRevoked;
+
+  /// Integration credential has not been used
+  ///
+  /// In en, this message translates to:
+  /// **'Never used'**
+  String get homeAssistantNeverUsed;
+
+  /// Integration credential last-use time
+  ///
+  /// In en, this message translates to:
+  /// **'Last used {date}'**
+  String homeAssistantLastUsed(String date);
+
+  /// Validation for Home Assistant household scopes
+  ///
+  /// In en, this message translates to:
+  /// **'Select at least one household.'**
+  String get homeAssistantSelectHousehold;
+
+  /// Successful Home Assistant credential creation
+  ///
+  /// In en, this message translates to:
+  /// **'Home Assistant connection created'**
+  String get homeAssistantCreated;
+
+  /// Successful Home Assistant credential revocation
+  ///
+  /// In en, this message translates to:
+  /// **'Home Assistant connection revoked'**
+  String get homeAssistantRevokedSuccess;
+
+  /// Home Assistant connection loading failure
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load Home Assistant connections.'**
+  String get homeAssistantLoadFailed;
+
+  /// Home Assistant connection creation failure
+  ///
+  /// In en, this message translates to:
+  /// **'Could not create the connection. Please try again.'**
+  String get homeAssistantSaveFailed;
+
+  /// Integration credential access summary
+  ///
+  /// In en, this message translates to:
+  /// **'Read only'**
+  String get homeAssistantReadOnly;
+
+  /// Integration credential access summary
+  ///
+  /// In en, this message translates to:
+  /// **'Read and write'**
+  String get homeAssistantReadWrite;
+
   /// Subtitle under the app name on the welcome screen
   ///
   /// In en, this message translates to:
