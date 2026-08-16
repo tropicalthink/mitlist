@@ -285,7 +285,62 @@ func (s *ChoreService) ListCurrentChores(ctx context.Context, user *models.User,
 		current[i].DueStatus = dueStatus(current[i].PendingAssignment, now, dueSoonDays)
 		current[i].AssignedToMe = current[i].PendingAssignment != nil && current[i].PendingAssignment.UserID == user.ID
 	}
+	s.fillNextAssignees(ctx, current)
 	return current, nil
+}
+
+// fillNextAssignees annotates chores whose rotation is deterministic with the
+// member who takes the turn after the pending one, so clients can render the
+// rotation as shape ("you → Sam"). Best-effort: a rotation-state read failure
+// leaves the field empty rather than failing the listing.
+func (s *ChoreService) fillNextAssignees(ctx context.Context, current []models.CurrentChore) {
+	choreIDs := make([]uuid.UUID, 0, len(current))
+	for i := range current {
+		if current[i].PendingAssignment != nil && isSequentialAssignment(current[i].Chore.AssignmentType) {
+			choreIDs = append(choreIDs, current[i].Chore.ID)
+		}
+	}
+	if len(choreIDs) == 0 {
+		return
+	}
+	states, err := s.choreRepo.GetRotationStatesByChoreIDs(ctx, choreIDs)
+	if err != nil {
+		return
+	}
+	stateByChoreID := make(map[uuid.UUID]models.ChoreRotationState, len(states))
+	for _, state := range states {
+		stateByChoreID[state.ChoreID] = state
+	}
+	for i := range current {
+		pending := current[i].PendingAssignment
+		if pending == nil || !isSequentialAssignment(current[i].Chore.AssignmentType) {
+			continue
+		}
+		state, ok := stateByChoreID[current[i].Chore.ID]
+		if !ok || len(state.MemberOrder) < 2 || state.CurrentIndex < 0 {
+			continue
+		}
+		// The persisted index already points one past the pending assignee
+		// (see rotateAndAssign / CreateChore's initial advance).
+		next := state.MemberOrder[state.CurrentIndex%len(state.MemberOrder)]
+		if next == pending.UserID {
+			// Manual reassignment drift: a wrong "next" is worse than none.
+			continue
+		}
+		nextID := next
+		current[i].NextAssigneeUserID = &nextID
+	}
+}
+
+// isSequentialAssignment reports whether the next turn is predictable from the
+// rotation state alone ("random" re-rolls, "who-least-did-first" depends on
+// completion counts at rotation time, "no-assignment" has no turns).
+func isSequentialAssignment(assignmentType string) bool {
+	switch assignmentType {
+	case "round-robin", "round_robin", "in-alphabetical-order", "alphabetical":
+		return true
+	}
+	return false
 }
 
 // UpdateChore updates a chore's details.

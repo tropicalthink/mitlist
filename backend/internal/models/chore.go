@@ -66,6 +66,11 @@ type CurrentChore struct {
 	LastAssignment    *ChoreAssignment `json:"last_assignment,omitempty"`
 	DueStatus         string           `json:"due_status"`
 	AssignedToMe      bool             `json:"assigned_to_me"`
+
+	// NextAssigneeUserID is who the turn passes to after the pending
+	// assignment, set only when the rotation is deterministic (sequential
+	// types). Lets clients render the rotation as shape: "you → Sam".
+	NextAssigneeUserID *uuid.UUID `json:"next_assignee_user_id,omitempty"`
 }
 
 // ChoreSubtask represents a subtask within a chore.

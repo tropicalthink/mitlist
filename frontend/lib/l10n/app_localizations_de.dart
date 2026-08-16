@@ -500,6 +500,25 @@ class AppLocalizationsDe extends AppLocalizations {
   String get choreHowItSplits => 'Verteilung';
 
   @override
+  String get choreHouseAllClear => 'Nichts überfällig im Haushalt';
+
+  @override
+  String choreHouseOverdue(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Aufgaben im Haushalt überfällig',
+      one: '1 Aufgabe im Haushalt überfällig',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String choreNextInRotation(String name) {
+    return 'danach $name';
+  }
+
+  @override
   String choreSupplySingular(num count) {
     return '$count Bedarf';
   }

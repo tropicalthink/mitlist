@@ -227,6 +227,50 @@ func TestChoreService_ListCurrentChores(t *testing.T) {
 	assert.NotEmpty(t, current[0].DueStatus)
 }
 
+func TestChoreService_ListCurrentChores_NextAssignee(t *testing.T) {
+	ctx := context.Background()
+	user := validUser()
+	groupID := uuid.New()
+	roundRobinID := uuid.New()
+	randomID := uuid.New()
+	otherUserID := uuid.New()
+	due := time.Now().UTC().Add(24 * time.Hour)
+
+	choreRepo := new(mocks.MockChoreRepo)
+	groupRepo := new(mocks.MockGroupRepo)
+	svc := NewChoreService(choreRepo, groupRepo, nil)
+
+	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
+	choreRepo.On("ListCurrentChoresByGroup", ctx, groupID, 50, 0).Return([]models.CurrentChore{
+		{
+			Chore: models.Chore{ID: roundRobinID, GroupID: groupID, Name: "Vacuum", AssignmentType: "round-robin"},
+			PendingAssignment: &models.ChoreAssignment{
+				ChoreID: roundRobinID, UserID: user.ID, Status: "pending",
+				DueDate: &due, AssignedAt: time.Now().UTC(),
+			},
+		},
+		{
+			// Random rotation is not predictable: no rotation-state lookup, no next.
+			Chore: models.Chore{ID: randomID, GroupID: groupID, Name: "Trash", AssignmentType: "random"},
+			PendingAssignment: &models.ChoreAssignment{
+				ChoreID: randomID, UserID: user.ID, Status: "pending",
+				DueDate: &due, AssignedAt: time.Now().UTC(),
+			},
+		},
+	}, nil)
+	// CurrentIndex points one past the pending assignee: the next turn is other.
+	choreRepo.On("GetRotationStatesByChoreIDs", ctx, []uuid.UUID{roundRobinID}).Return([]models.ChoreRotationState{
+		{ChoreID: roundRobinID, MemberOrder: []uuid.UUID{user.ID, otherUserID}, CurrentIndex: 1},
+	}, nil)
+
+	current, err := svc.ListCurrentChores(ctx, user, groupID, 50, 0, 7)
+	require.NoError(t, err)
+	require.Len(t, current, 2)
+	require.NotNil(t, current[0].NextAssigneeUserID)
+	assert.Equal(t, otherUserID, *current[0].NextAssigneeUserID)
+	assert.Nil(t, current[1].NextAssigneeUserID)
+}
+
 func TestChoreService_ListCurrentChores_RequiresMembership(t *testing.T) {
 	ctx := context.Background()
 	user := validUser()

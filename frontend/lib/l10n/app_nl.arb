@@ -530,6 +530,28 @@
   "@choreHowItSplits": {
     "description": "Fairness strip header text"
   },
+  "choreHouseAllClear": "Niets achterstallig in huis",
+  "@choreHouseAllClear": {
+    "description": "House-wide verdict in the hero when no chore is overdue"
+  },
+  "choreHouseOverdue": "{count, plural, =1{1 taak achterstallig in huis} other{{count} taken achterstallig in huis}}",
+  "@choreHouseOverdue": {
+    "description": "House-wide verdict in the hero counting overdue chores across all members",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "choreNextInRotation": "daarna {name}",
+  "@choreNextInRotation": {
+    "description": "Who the turn passes to after the current assignee, shown on rotating chores",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "choreSupplySingular": "{count} benodigdheid",
   "@choreSupplySingular": {
     "description": "Supply count label (1)",

@@ -530,6 +530,28 @@
   "@choreHowItSplits": {
     "description": "Fairness strip header text"
   },
+  "choreHouseAllClear": "Rien en retard dans la maison",
+  "@choreHouseAllClear": {
+    "description": "House-wide verdict in the hero when no chore is overdue"
+  },
+  "choreHouseOverdue": "{count, plural, =1{1 tâche en retard dans la maison} other{{count} tâches en retard dans la maison}}",
+  "@choreHouseOverdue": {
+    "description": "House-wide verdict in the hero counting overdue chores across all members",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "choreNextInRotation": "ensuite {name}",
+  "@choreNextInRotation": {
+    "description": "Who the turn passes to after the current assignee, shown on rotating chores",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "choreSupplySingular": "{count} fourniture",
   "@choreSupplySingular": {
     "description": "Supply count label (1)",
