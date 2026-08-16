@@ -497,6 +497,25 @@ class AppLocalizationsEs extends AppLocalizations {
   String get choreHowItSplits => 'Cómo se reparte';
 
   @override
+  String get choreHouseAllClear => 'Nada atrasado en la casa';
+
+  @override
+  String choreHouseOverdue(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tareas atrasadas en la casa',
+      one: '1 tarea atrasada en la casa',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String choreNextInRotation(String name) {
+    return 'después $name';
+  }
+
+  @override
   String choreSupplySingular(num count) {
     return '$count suministro';
   }

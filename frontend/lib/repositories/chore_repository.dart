@@ -593,5 +593,6 @@ class ChoreRepository {
               },
         'due_status': c.dueStatus,
         'assigned_to_me': c.assignedToMe,
+        'next_assignee_user_id': c.nextAssigneeUserId,
       };
 }

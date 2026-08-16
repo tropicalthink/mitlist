@@ -938,6 +938,24 @@ abstract class AppLocalizations {
   /// **'How it splits'**
   String get choreHowItSplits;
 
+  /// House-wide verdict in the hero when no chore is overdue
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing overdue in the house'**
+  String get choreHouseAllClear;
+
+  /// House-wide verdict in the hero counting overdue chores across all members
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 chore overdue in the house} other{{count} chores overdue in the house}}'**
+  String choreHouseOverdue(num count);
+
+  /// Who the turn passes to after the current assignee, shown on rotating chores
+  ///
+  /// In en, this message translates to:
+  /// **'then {name}'**
+  String choreNextInRotation(String name);
+
   /// Supply count label (1)
   ///
   /// In en, this message translates to:
