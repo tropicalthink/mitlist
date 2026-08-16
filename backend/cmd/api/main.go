@@ -133,6 +133,7 @@ func main() {
 		log.Fatal().Err(err).Msg("failed to initialize Firebase App Check verifier")
 	}
 	authHandler := handlers.NewAuthHandler(cfg, cnt.UserService(), cnt.GuestService(), cnt.OAuthService(), cnt.JWT(), appCheckVerifier)
+	authHandler.SetIntegrationCredentialService(cnt.IntegrationCredentialService())
 	srv.Router().Route(cfg.APIPrefix+"/v1", func(r chi.Router) {
 		authHandler.RegisterRoutes(r)
 
@@ -151,12 +152,12 @@ func main() {
 		r.Post("/oauth/handoff/exchange", oauthHandler.ExchangeHandoff)
 
 		// SSE (Server-Sent Events) — auth handled inside the handler to skip UserRateLimit
-		sseHandler := handlers.NewSSEHandler(cnt.SSEHub(), cnt.JWT(), cnt.UserService(), cnt.GroupRepo())
+		sseHandler := handlers.NewSSEHandler(cnt.SSEHub(), cnt.JWT(), cnt.UserService(), cnt.GroupRepo(), cnt.IntegrationCredentialService())
 		sseHandler.RegisterRoutes(r)
 
 		// Protected feature routes
 		r.Group(func(r chi.Router) {
-			r.Use(middleware.Auth(cnt.JWT(), cnt.UserService()))
+			r.Use(middleware.AuthWithCredentials(cnt.JWT(), cnt.UserService(), cnt.IntegrationCredentialService()))
 			r.Use(middleware.UserRateLimit())
 			r.Use(middleware.Idempotency(cnt.DB()))
 

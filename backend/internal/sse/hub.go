@@ -1,25 +1,60 @@
 package sse
 
 import (
+	"context"
 	"encoding/json"
 	"sync"
+	"time"
 )
 
 // Event is a message broadcast to SSE subscribers.
 type Event struct {
-	Type    string          `json:"type"`
-	GroupID string          `json:"group_id"`
-	Payload json.RawMessage `json:"payload"`
+	// ID is a globally ordered, durable stream cursor. It is encoded as a
+	// string on the wire so clients can persist it without numeric precision
+	// loss (notably JavaScript's 53-bit integer limit).
+	ID        string          `json:"id,omitempty"`
+	Version   int             `json:"version,omitempty"`
+	Origin    string          `json:"origin,omitempty"`
+	Time      time.Time       `json:"time,omitempty"`
+	Type      string          `json:"type"`
+	GroupID   string          `json:"group_id"`
+	Payload   json.RawMessage `json:"payload"`
+	Transient bool            `json:"-"`
+}
+
+// EventSchemaVersion is the version of the JSON envelope, independent from
+// the event ID cursor. Clients can use it to reject an envelope shape they do
+// not understand while still treating IDs as opaque replay cursors.
+const EventSchemaVersion = 1
+
+// Store is the durable portion of the event stream. Implementations must
+// return events ordered by their globally increasing ID and filter by group.
+// The hub intentionally keeps this small so deployments can use PostgreSQL
+// while tests and embedded callers can provide an in-memory implementation.
+type Store interface {
+	Append(ctx context.Context, event Event) (Event, error)
+	ListAfter(ctx context.Context, groupID, afterID string, limit int) ([]Event, error)
+}
+
+// Watcher is implemented by stores that can fan events written by another
+// process into this hub. It is deliberately optional so in-memory stores and
+// existing embedders retain the original, local-only behavior.
+type Watcher interface {
+	Watch(ctx context.Context) (<-chan Event, error)
 }
 
 // Hub manages per-group SSE client channels and derives presence from them.
 type Hub struct {
-	mu      sync.RWMutex
-	clients map[string]map[chan []byte]client // groupID -> (client channel -> metadata)
-	users   map[string]int                    // userID -> active connections
-	ips     map[string]int                    // client IP -> active connections
-	maxUser int
-	maxIP   int
+	mu          sync.RWMutex
+	clients     map[string]map[chan []byte]client // groupID -> (client channel -> metadata)
+	users       map[string]int                    // userID -> active connections
+	ips         map[string]int                    // client IP -> active connections
+	maxUser     int
+	maxIP       int
+	store       Store
+	watchCancel context.CancelFunc
+	seenMu      sync.Mutex
+	seen        map[string]struct{}
 }
 
 // These limits are deliberately small: an SSE stream is a long-lived
@@ -35,6 +70,52 @@ type client struct {
 	ip     string
 }
 
+// SetStore enables durable IDs and replay for events published by this hub.
+// It is safe to call before serving requests; changing stores while publishing
+// is not supported.
+func (h *Hub) SetStore(store Store) {
+	if h.watchCancel != nil {
+		h.watchCancel()
+		h.watchCancel = nil
+	}
+	h.store = store
+	watcher, ok := store.(Watcher)
+	if !ok {
+		return
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	h.watchCancel = cancel
+	go func() {
+		ch, err := watcher.Watch(ctx)
+		if err != nil {
+			return
+		}
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case event, open := <-ch:
+				if !open {
+					return
+				}
+				h.deliver(event)
+			}
+		}
+	}()
+}
+
+// Replay returns events after cursor for a group. A nil store simply reports
+// no replay, preserving the behavior of lightweight/test deployments.
+func (h *Hub) Replay(ctx context.Context, groupID, afterID string, limit int) ([]Event, error) {
+	if h.store == nil || afterID == "" {
+		return nil, nil
+	}
+	if limit <= 0 {
+		limit = 1000
+	}
+	return h.store.ListAfter(ctx, groupID, afterID, limit)
+}
+
 // New creates a ready-to-use Hub.
 func New() *Hub {
 	return &Hub{
@@ -43,6 +124,7 @@ func New() *Hub {
 		ips:     make(map[string]int),
 		maxUser: DefaultMaxConnectionsPerUser,
 		maxIP:   DefaultMaxConnectionsPerIP,
+		seen:    make(map[string]struct{}),
 	}
 }
 
@@ -139,14 +221,54 @@ func (h *Hub) Unsubscribe(groupID string, ch chan []byte) {
 // close a channel mid-send (which would panic). Sends are non-blocking, so the
 // lock is held only briefly.
 func (h *Hub) Publish(groupID string, event Event) {
+	if event.GroupID == "" {
+		event.GroupID = groupID
+	}
+	if event.Version == 0 {
+		event.Version = EventSchemaVersion
+	}
+	if h.store != nil && !event.Transient {
+		// Existing service hooks do not return an error from Publish. Persist
+		// before fan-out so every event delivered with a cursor is replayable;
+		// a database outage does not prevent legacy in-process subscribers from
+		// receiving the update.
+		if stored, err := h.store.Append(context.Background(), event); err == nil {
+			event = stored
+		}
+	}
+	h.deliver(event)
+}
+
+// deliver fans an already persisted event to local subscribers. IDs are
+// deduplicated because PostgreSQL NOTIFY also wakes the process that inserted
+// a row; without this guard that process would deliver its own event twice.
+func (h *Hub) deliver(event Event) {
 	data, err := json.Marshal(event)
 	if err != nil {
 		return
 	}
+	if event.ID != "" {
+		h.seenMu.Lock()
+		if _, exists := h.seen[event.ID]; exists {
+			h.seenMu.Unlock()
+			return
+		}
+		h.seen[event.ID] = struct{}{}
+		// Keep this bounded for long-running processes. A missed old ID is
+		// harmless: it can only cause a duplicate after a reconnect, and the
+		// client-side cursor still makes replay correct.
+		if len(h.seen) > 8192 {
+			for id := range h.seen {
+				delete(h.seen, id)
+				break
+			}
+		}
+		h.seenMu.Unlock()
+	}
 
 	h.mu.RLock()
 	defer h.mu.RUnlock()
-	for ch := range h.clients[groupID] {
+	for ch := range h.clients[event.GroupID] {
 		select {
 		case ch <- data:
 		default:
@@ -180,7 +302,7 @@ func (h *Hub) PresenceEvent(groupID string) (Event, error) {
 	if err != nil {
 		return Event{}, err
 	}
-	return Event{Type: "presence:state", GroupID: groupID, Payload: payload}, nil
+	return Event{Type: "presence:state", GroupID: groupID, Payload: payload, Transient: true}, nil
 }
 
 // BroadcastPresence publishes the current set of online user IDs to every

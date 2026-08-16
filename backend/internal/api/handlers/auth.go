@@ -19,12 +19,13 @@ import (
 
 // AuthHandler exposes authentication and user management endpoints.
 type AuthHandler struct {
-	cfg          *config.Config
-	userService  *services.UserService
-	guestService *services.GuestService
-	oauthService *services.OAuthService
-	jwtService   *jwtservice.Service
-	appCheck     *appcheckservice.Verifier
+	cfg               *config.Config
+	userService       *services.UserService
+	guestService      *services.GuestService
+	oauthService      *services.OAuthService
+	jwtService        *jwtservice.Service
+	appCheck          *appcheckservice.Verifier
+	credentialService *services.IntegrationCredentialService
 }
 
 // NewAuthHandler creates an AuthHandler with explicit dependencies.
@@ -48,6 +49,13 @@ func NewAuthHandler(
 		jwtService:   jwtService,
 		appCheck:     verifier,
 	}
+}
+
+// SetIntegrationCredentialService enables management of non-interactive,
+// scoped credentials without weakening the type-safe constructor used by
+// tests and embedded servers.
+func (h *AuthHandler) SetIntegrationCredentialService(service *services.IntegrationCredentialService) {
+	h.credentialService = service
 }
 
 // RegisterRoutes mounts all auth routes under the provided router.
@@ -81,6 +89,11 @@ func (h *AuthHandler) RegisterRoutes(r chi.Router) {
 			// Device tokens (FCM — mobile push)
 			r.Post("/device-tokens", h.CreateDeviceToken)
 			r.Delete("/device-tokens/{id}", h.DeleteDeviceToken)
+
+			if h.credentialService != nil {
+				credentialHandler := NewIntegrationCredentialHandler(h.credentialService)
+				credentialHandler.RegisterRoutes(r)
+			}
 		})
 	})
 }
