@@ -14,6 +14,7 @@ import (
 	"github.com/mitlist-app/mitlist/internal/api"
 	"github.com/mitlist-app/mitlist/internal/models"
 	"github.com/mitlist-app/mitlist/internal/repositories"
+	"github.com/mitlist-app/mitlist/internal/sse"
 	"github.com/mitlist-app/mitlist/pkg/validation"
 )
 
@@ -29,7 +30,11 @@ type GroupService struct {
 	groupRepo repositories.GroupRepo
 	userRepo  repositories.UserRepo
 	billing   memberGate
+	hub       *sse.Hub
 }
+
+// SetHub injects the household event hub for group and membership changes.
+func (s *GroupService) SetHub(h *sse.Hub) { s.hub = h }
 
 // NewGroupService creates a new GroupService.
 func NewGroupService(groupRepo repositories.GroupRepo, userRepo repositories.UserRepo) *GroupService {
@@ -98,6 +103,7 @@ func (s *GroupService) CreateGroup(ctx context.Context, userID uuid.UUID, input 
 	if err := s.groupRepo.CreateMembership(ctx, membership); err != nil {
 		return nil, err
 	}
+	publishDomainEvent(s.hub, "group:created", group.ID, map[string]string{"group_id": group.ID.String()})
 
 	return group, nil
 }
@@ -179,6 +185,7 @@ func (s *GroupService) UpdateGroup(ctx context.Context, userID, groupID uuid.UUI
 	if err := s.groupRepo.UpdateGroup(ctx, group); err != nil {
 		return nil, err
 	}
+	publishDomainEvent(s.hub, "group:updated", group.ID, map[string]string{"group_id": group.ID.String()})
 	return group, nil
 }
 
@@ -187,7 +194,11 @@ func (s *GroupService) DeleteGroup(ctx context.Context, userID, groupID uuid.UUI
 	if err := s.requireAdmin(ctx, userID, groupID); err != nil {
 		return err
 	}
-	return s.groupRepo.DeleteGroup(ctx, groupID)
+	if err := s.groupRepo.DeleteGroup(ctx, groupID); err != nil {
+		return err
+	}
+	publishDomainEvent(s.hub, "group:deleted", groupID, map[string]string{"group_id": groupID.String()})
+	return nil
 }
 
 // InviteMember creates a one-use invite code for the group.
@@ -273,12 +284,13 @@ func (s *GroupService) JoinGroup(ctx context.Context, userID uuid.UUID, code str
 		return nil, err
 	}
 
+	publishDomainEvent(s.hub, "member:joined", invite.GroupID, map[string]string{"user_id": userID.String()})
 	return s.groupRepo.GetGroupByID(ctx, invite.GroupID)
 }
 
 // LeaveGroup removes the user's membership. The last admin cannot leave.
 func (s *GroupService) LeaveGroup(ctx context.Context, userID, groupID uuid.UUID) error {
-	return s.groupRepo.WithTx(ctx, func(repo repositories.GroupRepo) error {
+	err := s.groupRepo.WithTx(ctx, func(repo repositories.GroupRepo) error {
 		if err := repo.LockGroup(ctx, groupID); err != nil {
 			return err
 		}
@@ -300,6 +312,10 @@ func (s *GroupService) LeaveGroup(ctx context.Context, userID, groupID uuid.UUID
 		}
 		return repo.DeleteMembership(ctx, membership.ID)
 	})
+	if err == nil {
+		publishDomainEvent(s.hub, "member:left", groupID, map[string]string{"user_id": userID.String()})
+	}
+	return err
 }
 
 // UpdateMemberRole changes a member's role. Only admins may do so.
@@ -307,7 +323,7 @@ func (s *GroupService) UpdateMemberRole(ctx context.Context, userID, groupID, ta
 	if role != "admin" && role != "member" {
 		return &api.ValidationError{Message: "role must be admin or member"}
 	}
-	return s.groupRepo.WithTx(ctx, func(repo repositories.GroupRepo) error {
+	err := s.groupRepo.WithTx(ctx, func(repo repositories.GroupRepo) error {
 		if err := repo.LockGroup(ctx, groupID); err != nil {
 			return err
 		}
@@ -333,11 +349,15 @@ func (s *GroupService) UpdateMemberRole(ctx context.Context, userID, groupID, ta
 		membership.Role = role
 		return repo.UpdateMembership(ctx, membership)
 	})
+	if err == nil {
+		publishDomainEvent(s.hub, "member:role_updated", groupID, map[string]string{"user_id": targetUserID.String()})
+	}
+	return err
 }
 
 // RemoveMember removes a member from the group. Only admins may do so.
 func (s *GroupService) RemoveMember(ctx context.Context, userID, groupID, targetUserID uuid.UUID) error {
-	return s.groupRepo.WithTx(ctx, func(repo repositories.GroupRepo) error {
+	err := s.groupRepo.WithTx(ctx, func(repo repositories.GroupRepo) error {
 		if err := repo.LockGroup(ctx, groupID); err != nil {
 			return err
 		}
@@ -362,6 +382,10 @@ func (s *GroupService) RemoveMember(ctx context.Context, userID, groupID, target
 		}
 		return repo.DeleteMembership(ctx, membership.ID)
 	})
+	if err == nil {
+		publishDomainEvent(s.hub, "member:removed", groupID, map[string]string{"user_id": targetUserID.String()})
+	}
+	return err
 }
 
 // GetPendingClaims returns all pending claims for a group. Admins only.
@@ -410,6 +434,7 @@ func (s *GroupService) ApproveClaim(ctx context.Context, userID, groupID, claimI
 	if err := s.groupRepo.CreateMembership(ctx, membership); err != nil {
 		return err
 	}
+	publishDomainEvent(s.hub, "member:joined", groupID, map[string]string{"user_id": claim.ClaimedBy.String()})
 
 	return s.groupRepo.DeletePendingClaim(ctx, claimID)
 }

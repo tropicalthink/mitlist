@@ -390,6 +390,7 @@ func (c *Container) UserService() *services.UserService {
 func (c *Container) GroupService() *services.GroupService {
 	c.groupServiceOnce.Do(func() {
 		c.groupService = services.NewGroupService(c.GroupRepo(), c.UserRepo())
+		c.groupService.SetHub(c.SSEHub())
 		// Only gate household growth when billing is actually configured; a
 		// self-hosted instance without it keeps unlimited households.
 		if c.BillingService().Enabled() {
@@ -529,6 +530,7 @@ func (c *Container) RecipeService() *services.RecipeService {
 func (c *Container) MealPlanService() *services.MealPlanService {
 	c.mealPlanServiceOnce.Do(func() {
 		c.mealPlanService = services.NewMealPlanService(c.MealPlanRepo(), c.GroupRepo(), c.RecipeRepo(), c.ListRepo())
+		c.mealPlanService.SetHub(c.SSEHub())
 		c.mealPlanService.SetCanonicalNameResolver(c.GroceryService().ResolveIngredientName)
 		c.mealPlanService.SetDispatcher(c.NotificationService())
 	})
@@ -578,6 +580,7 @@ func (c *Container) PinwallService() *services.PinwallService {
 func (c *Container) AttachmentService() *services.AttachmentService {
 	c.attachmentServiceOnce.Do(func() {
 		c.attachmentService = services.NewAttachmentService(c.cfg, c.AttachmentRepo(), c.GroupRepo(), c.Storage())
+		c.attachmentService.SetHub(c.SSEHub())
 	})
 	return c.attachmentService
 }
