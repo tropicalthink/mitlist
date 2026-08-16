@@ -5559,6 +5559,108 @@ abstract class AppLocalizations {
   /// **'Expense date. Tap to change.'**
   String get expenseCreationDateLabel;
 
+  /// Date button label for a recurring expense's first occurrence
+  ///
+  /// In en, this message translates to:
+  /// **'Starts {date}'**
+  String expenseCreationStartsOn(String date);
+
+  /// Semantics label for the recurring start date picker
+  ///
+  /// In en, this message translates to:
+  /// **'First occurrence. Tap to change.'**
+  String get expenseCreationNextDueLabel;
+
+  /// Semantics label for the repeat summary line
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat schedule. Tap to change.'**
+  String get expenseCreationEditRepeatSemantic;
+
+  /// Repeat summary line for a one-off expense
+  ///
+  /// In en, this message translates to:
+  /// **'Doesn\'t repeat'**
+  String get expenseCreationRepeatNever;
+
+  /// Repeat frequency chip meaning no repeat
+  ///
+  /// In en, this message translates to:
+  /// **'Never'**
+  String get expenseCreationRepeatNeverOption;
+
+  /// Repeat summary line
+  ///
+  /// In en, this message translates to:
+  /// **'Repeats daily'**
+  String get expenseCreationRepeatDaily;
+
+  /// Repeat summary line
+  ///
+  /// In en, this message translates to:
+  /// **'Repeats weekly'**
+  String get expenseCreationRepeatWeekly;
+
+  /// Repeat summary line
+  ///
+  /// In en, this message translates to:
+  /// **'Repeats every 2 weeks'**
+  String get expenseCreationRepeatBiweekly;
+
+  /// Repeat summary line
+  ///
+  /// In en, this message translates to:
+  /// **'Repeats monthly'**
+  String get expenseCreationRepeatMonthly;
+
+  /// Repeat summary line
+  ///
+  /// In en, this message translates to:
+  /// **'Repeats quarterly'**
+  String get expenseCreationRepeatQuarterly;
+
+  /// Repeat summary line
+  ///
+  /// In en, this message translates to:
+  /// **'Repeats yearly'**
+  String get expenseCreationRepeatYearly;
+
+  /// Explains why the currency selector is hidden for recurring expenses
+  ///
+  /// In en, this message translates to:
+  /// **'Repeating expenses are recorded in {currency}.'**
+  String expenseCreationRepeatCurrencyHint(String currency);
+
+  /// Sheet title when creating a recurring expense
+  ///
+  /// In en, this message translates to:
+  /// **'New recurring expense'**
+  String get expenseCreationRecurringTitle;
+
+  /// Sheet title when editing a recurring expense
+  ///
+  /// In en, this message translates to:
+  /// **'Edit recurring expense'**
+  String get expenseCreationRecurringEditTitle;
+
+  /// Toast after creating a recurring expense
+  ///
+  /// In en, this message translates to:
+  /// **'Recurring expense added'**
+  String get expenseCreationRecurringAdded;
+
+  /// Toast after updating a recurring expense
+  ///
+  /// In en, this message translates to:
+  /// **'Recurring expense updated'**
+  String get expenseCreationRecurringSaved;
+
+  /// Tooltip for editing a recurring expense
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get recurringEditTooltip;
+
   /// Button text for receipt scan
   ///
   /// In en, this message translates to:
@@ -7077,11 +7179,47 @@ abstract class AppLocalizations {
   /// **'Share this code. Anyone who enters it joins your household.'**
   String get authOnboardingInviteBody;
 
-  /// CTA leaving onboarding for the hub
+  /// CTA from the invite stage to the final orientation
   ///
   /// In en, this message translates to:
-  /// **'Go to your board'**
+  /// **'Continue'**
   String get authOnboardingGoToBoard;
+
+  /// Final onboarding orientation title
+  ///
+  /// In en, this message translates to:
+  /// **'Your household is ready'**
+  String get authOnboardingReadyTitle;
+
+  /// Final onboarding orientation description
+  ///
+  /// In en, this message translates to:
+  /// **'Three things to know. That’s the whole map.'**
+  String get authOnboardingReadyBody;
+
+  /// Explains the Home destination during final onboarding
+  ///
+  /// In en, this message translates to:
+  /// **'Home shows what needs attention'**
+  String get authOnboardingOrientationHome;
+
+  /// Explains feature tabs during final onboarding
+  ///
+  /// In en, this message translates to:
+  /// **'Tabs keep each part of the household in its place'**
+  String get authOnboardingOrientationTabs;
+
+  /// Explains the global add action during final onboarding
+  ///
+  /// In en, this message translates to:
+  /// **'The + button adds something from anywhere'**
+  String get authOnboardingOrientationAdd;
+
+  /// CTA entering the household after orientation
+  ///
+  /// In en, this message translates to:
+  /// **'Open {name}'**
+  String authOnboardingEnterHousehold(String name);
 
   /// Hint shown while onboarding checks whether the account already belongs to a household
   ///

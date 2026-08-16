@@ -11,13 +11,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:mitlist/l10n/app_localizations.dart';
 import 'package:mitlist/models/auth_models.dart';
+import 'package:mitlist/models/finance_models.dart';
 import 'package:mitlist/models/group_models.dart';
 import 'package:mitlist/providers/auth_provider.dart';
+import 'package:mitlist/providers/finance_provider.dart';
 import 'package:mitlist/providers/group_provider.dart';
 import 'package:mitlist/providers/grocery_provider.dart';
 import 'package:mitlist/providers/list_provider.dart' show grocerySeedProvider;
 import 'package:mitlist/sheets/expense_creation_sheet.dart';
 import 'package:mitlist/services/auth_service.dart';
+import 'package:mitlist/services/finance_service.dart';
 import 'package:mitlist/services/grocery_expense_category_service.dart';
 import 'package:mitlist/services/group_service.dart';
 import 'package:mitlist/widgets/chip.dart';
@@ -194,6 +197,53 @@ void main() {
     expect(transportChip.selected, isTrue);
     expect(groceriesChip.selected, isFalse);
   });
+
+  testWidgets('percent shares that cannot be written exactly still total 100%',
+      (tester) async {
+    final finance = FakeFinanceService();
+    await pumpSheet(
+      tester,
+      extraOverrides: [
+        financeServiceProviderAsync.overrideWith((ref) async => finance),
+      ],
+    );
+
+    final fields = find.byType(TextField);
+    await tester.enterText(fields.at(0), '100.00');
+    await tester.enterText(fields.at(1), 'Dinner');
+    await tester.pump();
+
+    // Unfold the split editor and switch to percentage.
+    await tester.tap(find.text('Paid by you · split equally'));
+    for (var i = 0; i < 4; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    await tester.ensureVisible(find.text('Percent'));
+    await tester.tap(find.text('Percent'));
+    await tester.pump();
+
+    // A two-way split of a third / two-thirds: 33.33 + 66.66 rounds to 9999
+    // basis points, which the server rejects as "must total 100%".
+    final percentFields = find.byType(TextField);
+    await tester.enterText(percentFields.at(2), '33.33');
+    await tester.enterText(percentFields.at(3), '66.66');
+    await tester.pump();
+
+    await tester.ensureVisible(find.text('ADD EXPENSE'));
+    await tester.pump();
+    await tester.tap(find.text('ADD EXPENSE'));
+    for (var i = 0; i < 6; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+
+    final request = finance.lastCreate;
+    expect(request, isNotNull,
+        reason: 'the submit should not have been blocked');
+    final points = request!.splits.map((s) => s.percentage ?? 0).toList();
+    expect(points.reduce((a, b) => a + b), 10000);
+    // The stray basis point lands on the larger share, and nobody drops to zero.
+    expect(points..sort(), [3333, 6667]);
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -227,6 +277,35 @@ class FakeAuthService implements AuthService {
 
   @override
   Future<User> getMe() async => currentUser;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+class FakeFinanceService implements FinanceService {
+  CreateExpenseRequest? lastCreate;
+
+  @override
+  Future<Expense> createExpense(
+    CreateExpenseRequest req, {
+    String? idempotencyKey,
+  }) async {
+    lastCreate = req;
+    return Expense(
+      id: '55555555-5555-5555-5555-555555555555',
+      groupId: req.groupId,
+      payerId: req.payerId,
+      amount: req.amount,
+      baseAmount: req.baseAmount,
+      fxRate: req.fxRate,
+      description: req.description,
+      category: req.category,
+      currency: req.currency,
+      date: req.date,
+      createdAt: DateTime.utc(2026, 1, 1),
+      updatedAt: DateTime.utc(2026, 1, 1),
+    );
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();

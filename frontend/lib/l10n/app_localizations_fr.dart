@@ -3181,6 +3181,64 @@ class AppLocalizationsFr extends AppLocalizations {
       'Date de la dépense. Appuie pour changer.';
 
   @override
+  String expenseCreationStartsOn(String date) {
+    return 'À partir du $date';
+  }
+
+  @override
+  String get expenseCreationNextDueLabel =>
+      'Première échéance. Appuie pour changer.';
+
+  @override
+  String get expenseCreationEditRepeatSemantic =>
+      'Récurrence. Appuie pour changer.';
+
+  @override
+  String get expenseCreationRepeatNever => 'Ne se répète pas';
+
+  @override
+  String get expenseCreationRepeatNeverOption => 'Jamais';
+
+  @override
+  String get expenseCreationRepeatDaily => 'Se répète chaque jour';
+
+  @override
+  String get expenseCreationRepeatWeekly => 'Se répète chaque semaine';
+
+  @override
+  String get expenseCreationRepeatBiweekly => 'Se répète toutes les 2 semaines';
+
+  @override
+  String get expenseCreationRepeatMonthly => 'Se répète chaque mois';
+
+  @override
+  String get expenseCreationRepeatQuarterly => 'Se répète chaque trimestre';
+
+  @override
+  String get expenseCreationRepeatYearly => 'Se répète chaque année';
+
+  @override
+  String expenseCreationRepeatCurrencyHint(String currency) {
+    return 'Les dépenses récurrentes sont enregistrées en $currency.';
+  }
+
+  @override
+  String get expenseCreationRecurringTitle => 'Nouvelle dépense récurrente';
+
+  @override
+  String get expenseCreationRecurringEditTitle =>
+      'Modifier la dépense récurrente';
+
+  @override
+  String get expenseCreationRecurringAdded => 'Dépense récurrente ajoutée';
+
+  @override
+  String get expenseCreationRecurringSaved => 'Dépense récurrente mise à jour';
+
+  @override
+  String get recurringEditTooltip => 'Modifier';
+
+  @override
   String get expenseCreationReceiptButton => 'Reçu';
 
   @override
@@ -4044,7 +4102,31 @@ class AppLocalizationsFr extends AppLocalizations {
       'Partage ce code. Qui le saisit rejoint ton foyer.';
 
   @override
-  String get authOnboardingGoToBoard => 'Aller à ton tableau';
+  String get authOnboardingGoToBoard => 'Continuer';
+
+  @override
+  String get authOnboardingReadyTitle => 'Ton foyer est prêt';
+
+  @override
+  String get authOnboardingReadyBody =>
+      'Trois choses à savoir. C’est toute la carte.';
+
+  @override
+  String get authOnboardingOrientationHome =>
+      'Accueil montre ce qui demande ton attention';
+
+  @override
+  String get authOnboardingOrientationTabs =>
+      'Les onglets rangent chaque partie du foyer';
+
+  @override
+  String get authOnboardingOrientationAdd =>
+      'Le bouton + ajoute quelque chose depuis partout';
+
+  @override
+  String authOnboardingEnterHousehold(String name) {
+    return 'Ouvrir $name';
+  }
 
   @override
   String get authOnboardingResolving => 'Ouverture de ton tableau…';

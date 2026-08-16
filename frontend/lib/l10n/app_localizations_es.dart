@@ -3161,6 +3161,62 @@ class AppLocalizationsEs extends AppLocalizations {
   String get expenseCreationDateLabel => 'Fecha del gasto. Toca para cambiar.';
 
   @override
+  String expenseCreationStartsOn(String date) {
+    return 'Empieza el $date';
+  }
+
+  @override
+  String get expenseCreationNextDueLabel => 'Primera vez. Toca para cambiar.';
+
+  @override
+  String get expenseCreationEditRepeatSemantic =>
+      'Repetición. Toca para cambiar.';
+
+  @override
+  String get expenseCreationRepeatNever => 'No se repite';
+
+  @override
+  String get expenseCreationRepeatNeverOption => 'Nunca';
+
+  @override
+  String get expenseCreationRepeatDaily => 'Se repite a diario';
+
+  @override
+  String get expenseCreationRepeatWeekly => 'Se repite cada semana';
+
+  @override
+  String get expenseCreationRepeatBiweekly => 'Se repite cada 2 semanas';
+
+  @override
+  String get expenseCreationRepeatMonthly => 'Se repite cada mes';
+
+  @override
+  String get expenseCreationRepeatQuarterly => 'Se repite cada trimestre';
+
+  @override
+  String get expenseCreationRepeatYearly => 'Se repite cada año';
+
+  @override
+  String expenseCreationRepeatCurrencyHint(String currency) {
+    return 'Los gastos recurrentes se registran en $currency.';
+  }
+
+  @override
+  String get expenseCreationRecurringTitle => 'Nuevo gasto recurrente';
+
+  @override
+  String get expenseCreationRecurringEditTitle => 'Editar gasto recurrente';
+
+  @override
+  String get expenseCreationRecurringAdded => 'Gasto recurrente añadido';
+
+  @override
+  String get expenseCreationRecurringSaved => 'Gasto recurrente actualizado';
+
+  @override
+  String get recurringEditTooltip => 'Editar';
+
+  @override
   String get expenseCreationReceiptButton => 'Recibo';
 
   @override
@@ -4022,7 +4078,31 @@ class AppLocalizationsEs extends AppLocalizations {
       'Comparte este código. Quien lo introduzca se unirá a tu hogar.';
 
   @override
-  String get authOnboardingGoToBoard => 'Ir a tu tablero';
+  String get authOnboardingGoToBoard => 'Continuar';
+
+  @override
+  String get authOnboardingReadyTitle => 'Tu hogar está listo';
+
+  @override
+  String get authOnboardingReadyBody =>
+      'Tres cosas que debes saber. Ese es todo el mapa.';
+
+  @override
+  String get authOnboardingOrientationHome =>
+      'Inicio muestra lo que necesita atención';
+
+  @override
+  String get authOnboardingOrientationTabs =>
+      'Las pestañas mantienen cada parte del hogar en su sitio';
+
+  @override
+  String get authOnboardingOrientationAdd =>
+      'El botón + añade algo desde cualquier lugar';
+
+  @override
+  String authOnboardingEnterHousehold(String name) {
+    return 'Abrir $name';
+  }
 
   @override
   String get authOnboardingResolving => 'Abriendo tu tablero…';
