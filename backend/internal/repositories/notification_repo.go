@@ -91,6 +91,40 @@ func (r *NotificationRepository) ListNotificationsByUser(ctx context.Context, us
 	return notifications, nil
 }
 
+// ListNotificationsByUserAndGroups applies the household allow-list carried by
+// a long-lived integration credential at the query boundary.
+func (r *NotificationRepository) ListNotificationsByUserAndGroups(ctx context.Context, userID uuid.UUID, groupIDs []uuid.UUID, limit, offset int) ([]models.Notification, error) {
+	if limit <= 0 {
+		limit = 50
+	}
+	if limit > 500 {
+		limit = 500
+	}
+	rows, err := r.db.Query(ctx, `
+		SELECT id, user_id, COALESCE(group_id, '00000000-0000-0000-0000-000000000000'::uuid), type, title, body, data, is_read, read_at, created_at
+		FROM notifications
+		WHERE user_id = $1 AND group_id = ANY($2::uuid[])
+		ORDER BY created_at DESC, id DESC
+		LIMIT $3 OFFSET $4
+	`, userID, groupIDs, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var notifications []models.Notification
+	for rows.Next() {
+		var n models.Notification
+		if err := rows.Scan(
+			&n.ID, &n.UserID, &n.GroupID, &n.Type, &n.Title, &n.Body, &n.Data, &n.IsRead, &n.ReadAt, &n.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		notifications = append(notifications, n)
+	}
+	return notifications, rows.Err()
+}
+
 // ListNotificationsByUserBefore performs stable keyset pagination. The ID
 // tie-breaker prevents skips when multiple rows have the same created_at.
 func (r *NotificationRepository) ListNotificationsByUserBefore(ctx context.Context, userID uuid.UUID, before time.Time, beforeID uuid.UUID, limit int) ([]models.Notification, error) {
@@ -125,6 +159,38 @@ func (r *NotificationRepository) ListNotificationsByUserBefore(ctx context.Conte
 	return notifications, rows.Err()
 }
 
+func (r *NotificationRepository) ListNotificationsByUserAndGroupsBefore(ctx context.Context, userID uuid.UUID, groupIDs []uuid.UUID, before time.Time, beforeID uuid.UUID, limit int) ([]models.Notification, error) {
+	if limit <= 0 {
+		limit = 50
+	}
+	if limit > 500 {
+		limit = 500
+	}
+	rows, err := r.db.Query(ctx, `
+		SELECT id, user_id, COALESCE(group_id, '00000000-0000-0000-0000-000000000000'::uuid), type, title, body, data, is_read, read_at, created_at
+		FROM notifications
+		WHERE user_id = $1 AND group_id = ANY($2::uuid[]) AND (created_at, id) < ($3, $4)
+		ORDER BY created_at DESC, id DESC
+		LIMIT $5
+	`, userID, groupIDs, before, beforeID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var notifications []models.Notification
+	for rows.Next() {
+		var n models.Notification
+		if err := rows.Scan(
+			&n.ID, &n.UserID, &n.GroupID, &n.Type, &n.Title, &n.Body, &n.Data, &n.IsRead, &n.ReadAt, &n.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		notifications = append(notifications, n)
+	}
+	return notifications, rows.Err()
+}
+
 // CountUnreadNotifications returns the canonical unread inbox count for a user.
 func (r *NotificationRepository) CountUnreadNotifications(ctx context.Context, userID uuid.UUID) (int, error) {
 	var count int
@@ -133,6 +199,16 @@ func (r *NotificationRepository) CountUnreadNotifications(ctx context.Context, u
 		FROM notifications
 		WHERE user_id = $1 AND is_read = false
 	`, userID).Scan(&count)
+	return count, err
+}
+
+func (r *NotificationRepository) CountUnreadNotificationsByGroups(ctx context.Context, userID uuid.UUID, groupIDs []uuid.UUID) (int, error) {
+	var count int
+	err := r.db.QueryRow(ctx, `
+		SELECT COUNT(*)
+		FROM notifications
+		WHERE user_id = $1 AND group_id = ANY($2::uuid[]) AND is_read = false
+	`, userID, groupIDs).Scan(&count)
 	return count, err
 }
 
@@ -161,6 +237,15 @@ func (r *NotificationRepository) MarkAllAsRead(ctx context.Context, userID uuid.
 		WHERE user_id = $1 AND is_read = false
 	`
 	_, err := r.db.Exec(ctx, query, userID)
+	return err
+}
+
+func (r *NotificationRepository) MarkAllAsReadByGroups(ctx context.Context, userID uuid.UUID, groupIDs []uuid.UUID) error {
+	_, err := r.db.Exec(ctx, `
+		UPDATE notifications
+		SET is_read = true, read_at = NOW()
+		WHERE user_id = $1 AND group_id = ANY($2::uuid[]) AND is_read = false
+	`, userID, groupIDs)
 	return err
 }
 
