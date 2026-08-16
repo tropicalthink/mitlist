@@ -354,6 +354,9 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       assignee: details?.pendingAssignment?.userId != null
           ? _shortUserLabel(details!.pendingAssignment!.userId)
           : chore.assigneeInitials,
+      nextAssignee: details?.nextAssigneeUserId != null
+          ? _shortUserLabel(details!.nextAssigneeUserId!)
+          : chore.nextTurnName,
       frequencyLabel: details != null
           ? _frequencyLabel(
               _l10n, details.chore.frequency, details.chore.periodInterval)

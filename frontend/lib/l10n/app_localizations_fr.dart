@@ -827,6 +827,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get choreDetailAssignee => 'À qui le tour';
 
   @override
+  String get choreDetailNextUp => 'Tour suivant';
+
+  @override
   String get choreDetailDue => 'Échéance';
 
   @override

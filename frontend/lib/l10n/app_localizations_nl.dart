@@ -829,6 +829,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get choreDetailAssignee => 'Wie is aan de beurt';
 
   @override
+  String get choreDetailNextUp => 'Daarna';
+
+  @override
   String get choreDetailDue => 'Vervalt';
 
   @override

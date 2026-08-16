@@ -107,4 +107,8 @@ type ChoreDetails struct {
 	Stats             ChoreStats       `json:"stats"`
 	DueStatus         string           `json:"due_status"`
 	AssignedToMe      bool             `json:"assigned_to_me"`
+
+	// NextAssigneeUserID mirrors CurrentChore's field: who the turn passes to
+	// after the pending assignment, set only for deterministic rotations.
+	NextAssigneeUserID *uuid.UUID `json:"next_assignee_user_id,omitempty"`
 }

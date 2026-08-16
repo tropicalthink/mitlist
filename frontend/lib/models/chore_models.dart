@@ -351,6 +351,10 @@ class ChoreDetails {
   final String dueStatus;
   final bool assignedToMe;
 
+  /// Who the turn passes to after the pending assignment; only set when the
+  /// rotation is deterministic (sequential assignment types).
+  final String? nextAssigneeUserId;
+
   const ChoreDetails({
     required this.chore,
     this.pendingAssignment,
@@ -358,6 +362,7 @@ class ChoreDetails {
     required this.stats,
     required this.dueStatus,
     required this.assignedToMe,
+    this.nextAssigneeUserId,
   });
 
   factory ChoreDetails.fromJson(Map<String, dynamic> json) => ChoreDetails(
@@ -376,6 +381,7 @@ class ChoreDetails {
             ChoreStats.fromJson((json['stats'] as Map).cast<String, dynamic>()),
         dueStatus: json['due_status'] as String? ?? 'unscheduled',
         assignedToMe: json['assigned_to_me'] as bool? ?? false,
+        nextAssigneeUserId: json['next_assignee_user_id'] as String?,
       );
 }
 

@@ -476,6 +476,8 @@
   "@choreDetailTitle": { "description": "Bottom sheet title for chore detail" },
   "choreDetailAssignee": "Whose turn",
   "@choreDetailAssignee": { "description": "Detail row: assigned to" },
+  "choreDetailNextUp": "Next up",
+  "@choreDetailNextUp": { "description": "Detail row: who the turn passes to after the current assignee" },
   "choreDetailDue": "Due",
   "@choreDetailDue": { "description": "Detail row: due date" },
   "choreDetailTracked": "Tracked",
