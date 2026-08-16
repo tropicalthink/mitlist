@@ -1,0 +1,124 @@
+create_list:
+  name: Create list
+  description: Create a Mitlist shopping or task list.
+  fields:
+    group_id: {required: true, selector: {text: {}}}
+    name: {required: true, selector: {text: {}}}
+    type: {selector: {text: {}}}
+    entry_id: {selector: {text: {}}}
+add_item:
+  name: Add item
+  description: Add an item to a Mitlist list.
+  fields:
+    list_id: {required: true, selector: {text: {}}}
+    name: {required: true, selector: {text: {}}}
+    quantity: {selector: {number: {min: 0, mode: box}}}
+    group_id: {selector: {text: {}}}
+    entry_id: {selector: {text: {}}}
+complete_chore:
+  name: Complete chore
+  description: Mark a Mitlist chore complete.
+  fields:
+    chore_id: {required: true, selector: {text: {}}}
+    group_id: {selector: {text: {}}}
+    entry_id: {selector: {text: {}}}
+skip_chore:
+  name: Skip chore
+  description: Skip a Mitlist chore.
+  fields:
+    chore_id: {required: true, selector: {text: {}}}
+    group_id: {selector: {text: {}}}
+    entry_id: {selector: {text: {}}}
+undo_chore:
+  name: Undo chore
+  description: Undo the most recent completion of a Mitlist chore.
+  fields:
+    chore_id: {required: true, selector: {text: {}}}
+    group_id: {selector: {text: {}}}
+    entry_id: {selector: {text: {}}}
+reschedule_chore:
+  name: Reschedule chore
+  description: Move a Mitlist chore to a new due date.
+  fields:
+    chore_id: {required: true, selector: {text: {}}}
+    due_date: {required: true, selector: {text: {}}}
+    group_id: {selector: {text: {}}}
+    entry_id: {selector: {text: {}}}
+add_chore_supplies:
+  name: Add chore supplies
+  description: Add the configured supplies for a chore to a list.
+  fields:
+    chore_id: {required: true, selector: {text: {}}}
+    list_id: {required: true, selector: {text: {}}}
+    group_id: {selector: {text: {}}}
+    entry_id: {selector: {text: {}}}
+generate_shopping_list:
+  name: Generate shopping list
+  description: Generate shopping items from meal plans in a date range.
+  fields:
+    group_id: {required: true, selector: {text: {}}}
+    from: {required: true, selector: {date: {}}}
+    to: {required: true, selector: {date: {}}}
+    list_id: {selector: {text: {}}}
+    entry_id: {selector: {text: {}}}
+add_recipe_to_list:
+  name: Add recipe to list
+  description: Add all ingredients from a recipe to a list.
+  fields:
+    recipe_id: {required: true, selector: {text: {}}}
+    list_id: {required: true, selector: {text: {}}}
+    group_id: {selector: {text: {}}}
+    entry_id: {selector: {text: {}}}
+add_missing_ingredients:
+  name: Add missing ingredients
+  description: Add only missing recipe ingredients to a list.
+  fields:
+    recipe_id: {required: true, selector: {text: {}}}
+    list_id: {required: true, selector: {text: {}}}
+    group_id: {selector: {text: {}}}
+    entry_id: {selector: {text: {}}}
+create_expense:
+  name: Create expense
+  description: Create and equally split a household expense.
+  fields:
+    group_id: {required: true, selector: {text: {}}}
+    payer_id: {required: true, selector: {text: {}}}
+    amount_cents: {required: true, selector: {number: {min: 1, mode: box}}}
+    description: {required: true, selector: {text: {}}}
+    currency: {required: true, selector: {text: {}}}
+    date: {required: true, selector: {date: {}}}
+    split_user_ids: {required: true, selector: {object: {}}}
+    category: {selector: {text: {}}}
+    entry_id: {selector: {text: {}}}
+confirm_settlement:
+  name: Confirm settlement
+  description: Confirm a pending household settlement.
+  fields:
+    group_id: {required: true, selector: {text: {}}}
+    settlement_id: {required: true, selector: {text: {}}}
+    entry_id: {selector: {text: {}}}
+decline_settlement:
+  name: Decline settlement
+  description: Decline a pending household settlement.
+  fields:
+    group_id: {required: true, selector: {text: {}}}
+    settlement_id: {required: true, selector: {text: {}}}
+    entry_id: {selector: {text: {}}}
+mark_notification_read:
+  name: Mark notification read
+  description: Mark one Mitlist notification as read.
+  fields:
+    group_id: {required: true, selector: {text: {}}}
+    notification_id: {required: true, selector: {text: {}}}
+    entry_id: {selector: {text: {}}}
+mark_all_notifications_read:
+  name: Mark all notifications read
+  description: Mark all notifications for the connected account as read.
+  fields:
+    group_id: {required: true, selector: {text: {}}}
+    entry_id: {selector: {text: {}}}
+refresh:
+  name: Refresh
+  description: Refresh Mitlist data immediately.
+  fields:
+    entry_id: {selector: {text: {}}}

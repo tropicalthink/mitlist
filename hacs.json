@@ -1,0 +1,7 @@
+{
+  "name": "Mitlist",
+  "zip_release": true,
+  "filename": "mitlist.zip",
+  "hide_default_branch": true,
+  "homeassistant": "2026.2.0"
+}
