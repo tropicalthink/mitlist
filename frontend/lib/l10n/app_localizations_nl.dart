@@ -189,7 +189,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get welcomeGuestFootnote =>
-      'Geen account nodig. Probeer alles 30 dagen gratis.';
+      'Geen registratie nodig. Maak later een account aan om je gegevens te bewaren.';
 
   @override
   String get hubAppBarTitle => 'Home';
@@ -4034,6 +4034,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get authOnboardingGoToBoard => 'Naar je prikbord';
 
   @override
+  String get authOnboardingResolving => 'Je prikbord wordt geopend…';
+
+  @override
   String get hubChecklistTitle => 'Breng het huis op gang';
 
   @override
@@ -4192,6 +4195,22 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get hubOnboardingTrackExpense => 'Uitgave bijhouden';
+
+  @override
+  String hubQuickStartNextSemantic(String label) {
+    return 'Volgende stap: $label';
+  }
+
+  @override
+  String get hubQuickStartDismissedToast =>
+      'Snelstart opgeborgen. Je haalt hem altijd terug via Account.';
+
+  @override
+  String get accountShowQuickStart => 'Snelstart op het prikbord tonen';
+
+  @override
+  String get accountQuickStartRestored =>
+      'De snelstart staat weer op je prikbord.';
 
   @override
   String get appBottomSheetDiscardTitle => 'Wijzigingen negeren?';

@@ -9,11 +9,11 @@ import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/animations.dart';
 import '../../theme/colors.dart';
-import '../../theme/shadows.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../utils/friendly_error.dart';
 import '../../widgets/app_button.dart';
+import '../../widgets/board/artifact_scraps.dart';
 import '../../widgets/board/cork_board.dart';
 
 import '../../widgets/app_toast.dart';
@@ -333,7 +333,7 @@ class _PillarCollage extends StatelessWidget {
                       t: anims[0],
                       tilt: -0.035,
                       dropHeight: 90,
-                      child: _ListScrap(label: l10n.navLists),
+                      child: ListScrap(label: l10n.navLists),
                     ),
                   ),
                   SizedBox(width: gap),
@@ -346,7 +346,7 @@ class _PillarCollage extends StatelessWidget {
                         t: anims[1],
                         tilt: 0.030,
                         dropHeight: 90,
-                        child: _ReceiptScrap(label: l10n.navMoney),
+                        child: ReceiptScrap(label: l10n.navMoney),
                       ),
                     ),
                   ),
@@ -365,7 +365,7 @@ class _PillarCollage extends StatelessWidget {
                         t: anims[2],
                         tilt: 0.026,
                         dropHeight: 90,
-                        child: _ChoreScrap(label: l10n.navChores),
+                        child: ChoreScrap(label: l10n.navChores),
                       ),
                     ),
                   ),
@@ -376,7 +376,7 @@ class _PillarCollage extends StatelessWidget {
                       t: anims[3],
                       tilt: -0.028,
                       dropHeight: 90,
-                      child: _RecipeScrap(label: l10n.navKitchen),
+                      child: RecipeScrap(label: l10n.navKitchen),
                     ),
                   ),
                 ],
@@ -384,291 +384,6 @@ class _PillarCollage extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// Greeked line of text: a soft bar standing in for handwriting.
-class _InkBar extends StatelessWidget {
-  const _InkBar({required this.width, this.color});
-
-  final double width;
-  final Color? color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: width,
-      height: 6,
-      color: color ?? MitlistColors.textPrimary.withValues(alpha: 0.22),
-    );
-  }
-}
-
-class _ScrapLabel extends StatelessWidget {
-  const _ScrapLabel(this.text, {this.color});
-
-  final String text;
-  final Color? color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            color: color ?? MitlistColors.textPrimary,
-            fontWeight: FontWeight.w800,
-          ),
-    );
-  }
-}
-
-/// White paper scrap pinned to the board; base for the list and receipt props.
-class _PaperScrap extends StatelessWidget {
-  const _PaperScrap({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      clipBehavior: Clip.none,
-      alignment: Alignment.topCenter,
-      children: [
-        Container(
-          width: double.infinity,
-          margin: const EdgeInsets.only(top: 7),
-          padding: const EdgeInsets.fromLTRB(
-            MitlistSpacing.space4,
-            MitlistSpacing.space4,
-            MitlistSpacing.space4,
-            MitlistSpacing.space4,
-          ),
-          decoration: const BoxDecoration(
-            color: MitlistColors.surfacePrimary,
-            border: Border.fromBorderSide(
-              BorderSide(color: MitlistColors.borderPrimary, width: 2),
-            ),
-            boxShadow: MitlistShadows.shadowMedium,
-          ),
-          child: child,
-        ),
-        const Positioned(top: 0, child: BoardPushPin(size: 16)),
-      ],
-    );
-  }
-}
-
-/// A scrap of shopping list: checkboxes, one already ticked.
-class _ListScrap extends StatelessWidget {
-  const _ListScrap({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    Widget row({required bool checked, required double barWidth}) {
-      return Row(
-        children: [
-          Container(
-            width: 14,
-            height: 14,
-            decoration: BoxDecoration(
-              color: checked ? MitlistColors.primary500 : Colors.transparent,
-              border: Border.all(color: MitlistColors.borderPrimary, width: 2),
-            ),
-            child: checked
-                ? const Icon(Icons.check, size: 10, color: Colors.white)
-                : null,
-          ),
-          const SizedBox(width: MitlistSpacing.space2),
-          _InkBar(width: barWidth),
-        ],
-      );
-    }
-
-    return _PaperScrap(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _ScrapLabel(label),
-          const SizedBox(height: MitlistSpacing.space3),
-          row(checked: true, barWidth: 52),
-          const SizedBox(height: MitlistSpacing.space2),
-          row(checked: false, barWidth: 68),
-          const SizedBox(height: MitlistSpacing.space2),
-          row(checked: false, barWidth: 44),
-        ],
-      ),
-    );
-  }
-}
-
-/// A scrap of receipt: two amounts and a settled total.
-class _ReceiptScrap extends StatelessWidget {
-  const _ReceiptScrap({required this.label});
-
-  final String label;
-
-  TextStyle get _mono => MitlistTypography.monoBody(
-        color: MitlistColors.textPrimary.withValues(alpha: 0.75),
-        weight: FontWeight.w700,
-      ).copyWith(fontSize: 11, height: 1.0);
-
-  @override
-  Widget build(BuildContext context) {
-    Widget amountRow(double barWidth, String amount) {
-      return Row(
-        children: [
-          _InkBar(width: barWidth),
-          const Spacer(),
-          Text(amount, style: _mono),
-        ],
-      );
-    }
-
-    return _PaperScrap(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _ScrapLabel(label),
-          const SizedBox(height: MitlistSpacing.space3),
-          amountRow(44, '4.20'),
-          const SizedBox(height: MitlistSpacing.space2),
-          amountRow(58, '7.80'),
-          const SizedBox(height: MitlistSpacing.space2),
-          Container(
-            height: 2,
-            color: MitlistColors.textPrimary.withValues(alpha: 0.30),
-          ),
-          const SizedBox(height: MitlistSpacing.space2),
-          Row(
-            children: [
-              const Spacer(),
-              Text(
-                '12.00',
-                style: MitlistTypography.monoBody(
-                  color: MitlistColors.primary600,
-                ).copyWith(fontSize: 12, height: 1.0),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// A chore note on mint: one done, the rota dots underneath.
-class _ChoreScrap extends StatelessWidget {
-  const _ChoreScrap({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final ink = dark ? MitlistColors.neutral50 : MitlistColors.textPrimary;
-
-    return StickyNoteSurface(
-      color: dark ? MitlistColors.noteMintDark : MitlistColors.noteMint,
-      padding: const EdgeInsets.all(MitlistSpacing.space4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _ScrapLabel(label, color: ink),
-          const SizedBox(height: MitlistSpacing.space3),
-          Row(
-            children: [
-              Container(
-                width: 16,
-                height: 16,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: MitlistColors.primary500,
-                  border: Border.fromBorderSide(
-                    BorderSide(color: MitlistColors.borderPrimary, width: 2),
-                  ),
-                ),
-                child: const Icon(Icons.check, size: 10, color: Colors.white),
-              ),
-              const SizedBox(width: MitlistSpacing.space2),
-              _InkBar(width: 56, color: ink.withValues(alpha: 0.28)),
-            ],
-          ),
-          const SizedBox(height: MitlistSpacing.space3),
-          Row(
-            children: [
-              for (var i = 0; i < 3; i++) ...[
-                Container(
-                  width: 10,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: i == 0
-                        ? ink.withValues(alpha: 0.55)
-                        : Colors.transparent,
-                    border: Border.all(
-                      color: ink.withValues(alpha: 0.55),
-                      width: 1.5,
-                    ),
-                  ),
-                ),
-                if (i < 2) const SizedBox(width: MitlistSpacing.space1),
-              ],
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// A recipe card on sky blue: title bar and dotted ingredient lines.
-class _RecipeScrap extends StatelessWidget {
-  const _RecipeScrap({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final ink = dark ? MitlistColors.neutral50 : MitlistColors.textPrimary;
-
-    Widget ingredient(double barWidth) {
-      return Row(
-        children: [
-          Container(
-            width: 5,
-            height: 5,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: ink.withValues(alpha: 0.45),
-            ),
-          ),
-          const SizedBox(width: MitlistSpacing.space2),
-          _InkBar(width: barWidth, color: ink.withValues(alpha: 0.28)),
-        ],
-      );
-    }
-
-    return StickyNoteSurface(
-      color: dark ? MitlistColors.noteSkyDark : MitlistColors.noteSky,
-      padding: const EdgeInsets.all(MitlistSpacing.space4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _ScrapLabel(label, color: ink),
-          const SizedBox(height: MitlistSpacing.space3),
-          _InkBar(width: 72, color: ink.withValues(alpha: 0.40)),
-          const SizedBox(height: MitlistSpacing.space3),
-          ingredient(48),
-          const SizedBox(height: MitlistSpacing.space2),
-          ingredient(60),
-        ],
       ),
     );
   }

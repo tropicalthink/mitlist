@@ -636,8 +636,30 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               },
             ),
           ),
+          // Recovery for a quick start dismissed too early. Only offered while
+          // it is actually dismissed; the strip still retires itself once the
+          // household is going, so restoring is always safe.
+          if (ref.watch(hubQuickStartDismissedProvider).valueOrNull ??
+              false) ...[
+            Divider(color: Theme.of(context).colorScheme.outlineVariant),
+            _MenuRow(
+              icon: const AppIcon(name: 'pushPinOutline'),
+              label: l10n.accountShowQuickStart,
+              onTap: _restoreQuickStart,
+            ),
+          ],
         ],
       ),
+    );
+  }
+
+  Future<void> _restoreQuickStart() async {
+    await restoreHubQuickStart();
+    ref.invalidate(hubQuickStartDismissedProvider);
+    if (!mounted) return;
+    AppToast.success(
+      context,
+      AppLocalizations.of(context)!.accountQuickStartRestored,
     );
   }
 

@@ -188,7 +188,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get welcomeGuestFootnote =>
-      'No account needed. Try everything free for 30 days.';
+      'No sign-up needed. Add an account later to keep your data.';
 
   @override
   String get hubAppBarTitle => 'Home';
@@ -4003,6 +4003,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authOnboardingGoToBoard => 'Go to your board';
 
   @override
+  String get authOnboardingResolving => 'Opening your board…';
+
+  @override
   String get hubChecklistTitle => 'Get the house going';
 
   @override
@@ -4160,6 +4163,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hubOnboardingTrackExpense => 'Track an expense';
+
+  @override
+  String hubQuickStartNextSemantic(String label) {
+    return 'Next step: $label';
+  }
+
+  @override
+  String get hubQuickStartDismissedToast =>
+      'Quick start put away. Bring it back anytime from Account.';
+
+  @override
+  String get accountShowQuickStart => 'Show quick start on the hub';
+
+  @override
+  String get accountQuickStartRestored => 'Quick start is back on your board.';
 
   @override
   String get appBottomSheetDiscardTitle => 'Discard changes?';
