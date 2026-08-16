@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/mitlist-app/mitlist/internal/api"
+	"github.com/mitlist-app/mitlist/internal/middleware"
 	"github.com/mitlist-app/mitlist/internal/services"
 )
 
@@ -72,6 +73,19 @@ func (h *GroupHandler) ListGroups(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		api.RespondError(w, err)
 		return
+	}
+	if identity, integration := middleware.IntegrationCredentialFromContext(r.Context()); integration {
+		allowed := make(map[uuid.UUID]struct{}, len(identity.GroupIDs))
+		for _, id := range identity.GroupIDs {
+			allowed[id] = struct{}{}
+		}
+		filtered := groups[:0]
+		for _, group := range groups {
+			if _, ok := allowed[group.ID]; ok {
+				filtered = append(filtered, group)
+			}
+		}
+		groups = filtered
 	}
 	api.RespondJSON(w, http.StatusOK, groups)
 }

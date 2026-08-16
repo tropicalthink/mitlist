@@ -1,6 +1,7 @@
 package sse
 
 import (
+	"context"
 	"encoding/json"
 	"sync"
 	"testing"
@@ -9,6 +10,25 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+type testEventStore struct {
+	watch chan Event
+	seen  []Event
+}
+
+func (s *testEventStore) Append(_ context.Context, event Event) (Event, error) {
+	if event.ID == "" {
+		event.ID = "1"
+	}
+	s.seen = append(s.seen, event)
+	return event, nil
+}
+
+func (s *testEventStore) ListAfter(_ context.Context, _, _ string, _ int) ([]Event, error) {
+	return append([]Event(nil), s.seen...), nil
+}
+
+func (s *testEventStore) Watch(_ context.Context) (<-chan Event, error) { return s.watch, nil }
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -56,6 +76,27 @@ func TestPublishDelivers(t *testing.T) {
 	got := recv(t, ch, time.Second)
 	assert.Equal(t, want.Type, got.Type)
 	assert.Equal(t, want.GroupID, got.GroupID)
+}
+
+func TestDurablePublishUsesEnvelopeVersionAndDeduplicatesWatch(t *testing.T) {
+	store := &testEventStore{watch: make(chan Event, 1)}
+	h := New()
+	h.SetStore(store)
+	ch := h.Subscribe("g", "u1")
+
+	h.Publish("g", Event{Type: "x", GroupID: "g"})
+	got := recv(t, ch, time.Second)
+	assert.Equal(t, EventSchemaVersion, got.Version)
+	assert.Len(t, store.seen, 1)
+
+	// PostgreSQL NOTIFY also reaches the writing process. The watcher must not
+	// deliver this same durable ID twice.
+	store.watch <- store.seen[0]
+	select {
+	case duplicate := <-ch:
+		t.Fatalf("durable event delivered twice: %s", duplicate)
+	case <-time.After(50 * time.Millisecond):
+	}
 }
 
 func TestPublishDeliversSameEncodedBytesToSubscribers(t *testing.T) {

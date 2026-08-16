@@ -52,6 +52,17 @@ type AuthRepo interface {
 	ConsumeOAuthHandoff(ctx context.Context, codeHash string) (uuid.UUID, error)
 }
 
+// IntegrationCredentialRepo is the persistence contract for revocable,
+// group-scoped bearer credentials.
+type IntegrationCredentialRepo interface {
+	Create(ctx context.Context, credential *models.IntegrationCredential, tokenHash string) error
+	ListByUser(ctx context.Context, userID uuid.UUID) ([]models.IntegrationCredential, error)
+	GetActiveByHash(ctx context.Context, tokenHash string) (*models.IntegrationCredential, error)
+	TouchLastUsed(ctx context.Context, id uuid.UUID, ip, userAgent string) error
+	Revoke(ctx context.Context, userID, id uuid.UUID) error
+	GetByID(ctx context.Context, userID, id uuid.UUID) (*models.IntegrationCredential, error)
+}
+
 // BillingRepo is the interface for premium subscription operations.
 type BillingRepo interface {
 	UpsertSubscription(ctx context.Context, s *models.BillingSubscription) (*models.BillingSubscription, error)

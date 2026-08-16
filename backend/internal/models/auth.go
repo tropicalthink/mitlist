@@ -32,3 +32,20 @@ type PushSubscription struct {
 	Auth      string    `json:"auth"`
 	CreatedAt time.Time `json:"created_at"`
 }
+
+// IntegrationCredential is a non-interactive, revocable credential issued to
+// an external integration (for example Home Assistant). The raw secret is
+// never persisted or returned after creation.
+type IntegrationCredential struct {
+	ID            uuid.UUID   `json:"id"`
+	UserID        uuid.UUID   `json:"user_id"`
+	Name          string      `json:"name"`
+	TokenPrefix   string      `json:"token_prefix"`
+	GroupIDs      []uuid.UUID `json:"group_ids"`
+	Scopes        []string    `json:"scopes"`
+	CreatedAt     time.Time   `json:"created_at"`
+	LastUsedAt    *time.Time  `json:"last_used_at,omitempty"`
+	RevokedAt     *time.Time  `json:"revoked_at,omitempty"`
+	LastUsedIP    string      `json:"-"`
+	LastUserAgent string      `json:"-"`
+}

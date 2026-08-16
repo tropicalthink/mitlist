@@ -47,6 +47,9 @@ type Container struct {
 	authRepoOnce sync.Once
 	authRepo     *repositories.AuthRepository
 
+	integrationCredentialRepoOnce sync.Once
+	integrationCredentialRepo     *repositories.IntegrationCredentialRepository
+
 	groupRepoOnce sync.Once
 	groupRepo     *repositories.GroupRepository
 
@@ -106,6 +109,9 @@ type Container struct {
 
 	oauthServiceOnce sync.Once
 	oauthService     *services.OAuthService
+
+	integrationCredentialServiceOnce sync.Once
+	integrationCredentialService     *services.IntegrationCredentialService
 
 	listServiceOnce sync.Once
 	listService     *services.ListService
@@ -170,7 +176,8 @@ type Container struct {
 	billingServiceOnce sync.Once
 	billingService     *services.BillingService
 
-	sseHub *sse.Hub
+	sseHubOnce sync.Once
+	sseHub     *sse.Hub
 }
 
 // New wires shared infrastructure into a dependency container.
@@ -251,6 +258,14 @@ func (c *Container) AuthRepo() *repositories.AuthRepository {
 		c.authRepo = repositories.NewAuthRepository(c.db)
 	})
 	return c.authRepo
+}
+
+// IntegrationCredentialRepo returns the singleton integration credential repository.
+func (c *Container) IntegrationCredentialRepo() *repositories.IntegrationCredentialRepository {
+	c.integrationCredentialRepoOnce.Do(func() {
+		c.integrationCredentialRepo = repositories.NewIntegrationCredentialRepository(c.db)
+	})
+	return c.integrationCredentialRepo
 }
 
 // GroupRepo returns the singleton group repository.
@@ -454,6 +469,13 @@ func (c *Container) OAuthService() *services.OAuthService {
 	return c.oauthService
 }
 
+func (c *Container) IntegrationCredentialService() *services.IntegrationCredentialService {
+	c.integrationCredentialServiceOnce.Do(func() {
+		c.integrationCredentialService = services.NewIntegrationCredentialService(c.IntegrationCredentialRepo(), c.GroupRepo())
+	})
+	return c.integrationCredentialService
+}
+
 // ListService returns the singleton list service.
 func (c *Container) ListService() *services.ListService {
 	c.listServiceOnce.Do(func() {
@@ -609,9 +631,15 @@ func (c *Container) ShareService() *services.ShareService {
 
 // SSEHub returns the singleton SSE hub for real-time broadcasts.
 func (c *Container) SSEHub() *sse.Hub {
-	if c.sseHub == nil {
+	c.sseHubOnce.Do(func() {
 		c.sseHub = sse.New()
-	}
+		// Keep unit-test and embedded containers (which often have no pool)
+		// local-only, while production instances get durable replay and
+		// PostgreSQL LISTEN/NOTIFY fan-out automatically.
+		if c.db != nil {
+			c.sseHub.SetStore(sse.NewPostgresStore(c.db, ""))
+		}
+	})
 	return c.sseHub
 }
 
