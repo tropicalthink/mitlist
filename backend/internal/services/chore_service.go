@@ -227,14 +227,24 @@ func (s *ChoreService) GetChoreDetails(ctx context.Context, user *models.User, c
 		return nil, err
 	}
 
+	// Best-effort, like the dashboard listing: a rotation-state read failure
+	// leaves the "next up" affordance empty rather than failing the details.
+	var nextAssignee *uuid.UUID
+	if pending != nil && isSequentialAssignment(chore.AssignmentType) {
+		if state, stateErr := s.choreRepo.GetRotationState(ctx, choreID); stateErr == nil {
+			nextAssignee = nextSequentialAssignee(chore.AssignmentType, state, pending)
+		}
+	}
+
 	now := time.Now().UTC()
 	return &models.ChoreDetails{
-		Chore:             *chore,
-		PendingAssignment: pending,
-		LastAssignment:    last,
-		Stats:             *stats,
-		DueStatus:         dueStatus(pending, now, dueSoonDays),
-		AssignedToMe:      pending != nil && pending.UserID == user.ID,
+		Chore:              *chore,
+		PendingAssignment:  pending,
+		LastAssignment:     last,
+		Stats:              *stats,
+		DueStatus:          dueStatus(pending, now, dueSoonDays),
+		AssignedToMe:       pending != nil && pending.UserID == user.ID,
+		NextAssigneeUserID: nextAssignee,
 	}, nil
 }
 
@@ -312,24 +322,30 @@ func (s *ChoreService) fillNextAssignees(ctx context.Context, current []models.C
 		stateByChoreID[state.ChoreID] = state
 	}
 	for i := range current {
-		pending := current[i].PendingAssignment
-		if pending == nil || !isSequentialAssignment(current[i].Chore.AssignmentType) {
-			continue
+		if state, ok := stateByChoreID[current[i].Chore.ID]; ok {
+			current[i].NextAssigneeUserID = nextSequentialAssignee(
+				current[i].Chore.AssignmentType, &state, current[i].PendingAssignment)
 		}
-		state, ok := stateByChoreID[current[i].Chore.ID]
-		if !ok || len(state.MemberOrder) < 2 || state.CurrentIndex < 0 {
-			continue
-		}
-		// The persisted index already points one past the pending assignee
-		// (see rotateAndAssign / CreateChore's initial advance).
-		next := state.MemberOrder[state.CurrentIndex%len(state.MemberOrder)]
-		if next == pending.UserID {
-			// Manual reassignment drift: a wrong "next" is worse than none.
-			continue
-		}
-		nextID := next
-		current[i].NextAssigneeUserID = &nextID
 	}
+}
+
+// nextSequentialAssignee returns who the turn passes to after the pending
+// assignment, or nil when the rotation isn't deterministic or has no
+// meaningful successor. The persisted index already points one past the
+// pending assignee (see rotateAndAssign / CreateChore's initial advance).
+func nextSequentialAssignee(assignmentType string, state *models.ChoreRotationState, pending *models.ChoreAssignment) *uuid.UUID {
+	if pending == nil || state == nil || !isSequentialAssignment(assignmentType) {
+		return nil
+	}
+	if len(state.MemberOrder) < 2 || state.CurrentIndex < 0 {
+		return nil
+	}
+	next := state.MemberOrder[state.CurrentIndex%len(state.MemberOrder)]
+	if next == pending.UserID {
+		// Manual reassignment drift: a wrong "next" is worse than none.
+		return nil
+	}
+	return &next
 }
 
 // isSequentialAssignment reports whether the next turn is predictable from the

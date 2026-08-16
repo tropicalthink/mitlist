@@ -193,6 +193,38 @@ func TestChoreService_GetChoreDetails(t *testing.T) {
 	assert.Equal(t, "completed", details.LastAssignment.Status)
 }
 
+func TestChoreService_GetChoreDetails_NextAssignee(t *testing.T) {
+	ctx := context.Background()
+	user := validUser()
+	choreID := uuid.New()
+	groupID := uuid.New()
+	otherUserID := uuid.New()
+	now := time.Now().UTC()
+	due := now.Add(24 * time.Hour)
+
+	choreRepo := new(mocks.MockChoreRepo)
+	groupRepo := new(mocks.MockGroupRepo)
+	svc := NewChoreService(choreRepo, groupRepo, nil)
+
+	choreRepo.On("GetChoreByID", ctx, choreID).Return(&models.Chore{
+		ID: choreID, GroupID: groupID, Name: "Clean counters", AssignmentType: "round-robin",
+	}, nil)
+	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
+	choreRepo.On("GetPendingAssignmentByChore", ctx, choreID).Return(&models.ChoreAssignment{
+		ChoreID: choreID, UserID: user.ID, Status: "pending", DueDate: &due, AssignedAt: now,
+	}, nil)
+	choreRepo.On("ListAssignments", ctx, choreID, 100, 0).Return([]models.ChoreAssignment{}, nil)
+	choreRepo.On("GetChoreStats", ctx, choreID).Return(&models.ChoreStats{}, nil)
+	choreRepo.On("GetRotationState", ctx, choreID).Return(&models.ChoreRotationState{
+		ChoreID: choreID, MemberOrder: []uuid.UUID{user.ID, otherUserID}, CurrentIndex: 1,
+	}, nil)
+
+	details, err := svc.GetChoreDetails(ctx, user, choreID, 7)
+	require.NoError(t, err)
+	require.NotNil(t, details.NextAssigneeUserID)
+	assert.Equal(t, otherUserID, *details.NextAssigneeUserID)
+}
+
 func TestChoreService_ListCurrentChores(t *testing.T) {
 	ctx := context.Background()
 	user := validUser()

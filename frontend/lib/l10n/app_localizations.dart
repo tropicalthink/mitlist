@@ -1508,6 +1508,12 @@ abstract class AppLocalizations {
   /// **'Whose turn'**
   String get choreDetailAssignee;
 
+  /// Detail row: who the turn passes to after the current assignee
+  ///
+  /// In en, this message translates to:
+  /// **'Next up'**
+  String get choreDetailNextUp;
+
   /// Detail row: due date
   ///
   /// In en, this message translates to:

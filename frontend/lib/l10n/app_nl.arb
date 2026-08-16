@@ -979,6 +979,10 @@
   "@choreDetailAssignee": {
     "description": "Detail row: assigned to"
   },
+  "choreDetailNextUp": "Daarna",
+  "@choreDetailNextUp": {
+    "description": "Detail row: who the turn passes to after the current assignee"
+  },
   "choreDetailDue": "Vervalt",
   "@choreDetailDue": {
     "description": "Detail row: due date"

@@ -234,6 +234,7 @@
   "choreDaySun": "So",
   "choreDetailTitle": "Aufgabendetails",
   "choreDetailAssignee": "Wer ist dran",
+  "choreDetailNextUp": "Danach dran",
   "choreDetailDue": "Fällig",
   "choreDetailTracked": "Verfolgt",
   "choreDetailLastDone": "Zuletzt erledigt",

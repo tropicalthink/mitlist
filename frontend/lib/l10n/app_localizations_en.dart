@@ -821,6 +821,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get choreDetailAssignee => 'Whose turn';
 
   @override
+  String get choreDetailNextUp => 'Next up';
+
+  @override
   String get choreDetailDue => 'Due';
 
   @override

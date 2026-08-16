@@ -979,6 +979,10 @@
   "@choreDetailAssignee": {
     "description": "Detail row: assigned to"
   },
+  "choreDetailNextUp": "Tour suivant",
+  "@choreDetailNextUp": {
+    "description": "Detail row: who the turn passes to after the current assignee"
+  },
   "choreDetailDue": "Échéance",
   "@choreDetailDue": {
     "description": "Detail row: due date"
