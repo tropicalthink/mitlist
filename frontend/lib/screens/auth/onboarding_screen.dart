@@ -28,17 +28,19 @@ import '../../widgets/app_icon.dart';
 import '../../widgets/app_input.dart';
 import '../../widgets/board/cork_board.dart';
 
-/// First run, staged as the app's own metaphor: one cork board, three beats.
+/// First run, staged as the app's own metaphor: one cork board, four beats.
 ///
 /// 1. Choose — a fresh sticky note ("create") and a torn paper slip ("join")
 ///    drop onto the board and settle with a spring wobble.
 /// 2. Name — the household name is written directly on the sticky note and
 ///    pinned to the board. No detour through a generic form sheet.
 /// 3. Invite — a slip with the invite code (and its QR) is torn off for the
-///    rest of the house; the board the user just dressed becomes their hub.
+///    rest of the house.
+/// 4. Ready — three navigation rules bridge into the real household hub
+///    without turning first run into a feature tour.
 ///
 /// Under reduced motion every beat is simply already in place.
-enum _Stage { choose, name, invite }
+enum _Stage { choose, name, invite, ready }
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -222,7 +224,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     final group = await JoinHouseholdSheet.show(context);
     if (group != null && mounted) {
       unawaited(ref.read(currentGroupIdProvider.notifier).set(group.id));
-      context.goNamed('home');
+      setState(() => _createdGroup = group);
+      _toStage(_Stage.ready);
     }
   }
 
@@ -343,6 +346,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     context.goNamed('home');
   }
 
+  void _showReady() {
+    unawaited(Haptics.light());
+    _toStage(_Stage.ready);
+  }
+
   // ── Build ──────────────────────────────────────────────────────────────────
 
   @override
@@ -442,6 +450,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                                   _Stage.name => _nameStage(l10n, noteWidth),
                                   _Stage.invite =>
                                     _inviteStage(l10n, noteWidth),
+                                  _Stage.ready => _readyStage(l10n, noteWidth),
                                 },
                               ),
                             ),
@@ -474,6 +483,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
       _Stage.invite => (
           l10n.authOnboardingInviteTitle,
           l10n.authOnboardingInviteBody,
+        ),
+      _Stage.ready => (
+          l10n.authOnboardingReadyTitle,
+          l10n.authOnboardingReadyBody,
         ),
     };
 
@@ -795,9 +808,138 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
           color: AppButtonColor.primary,
           size: AppButtonSize.lg,
           text: l10n.authOnboardingGoToBoard,
+          onPressed: _showReady,
+        ),
+      ],
+    );
+  }
+
+  // ── Final beat: the map ───────────────────────────────────────────────────
+
+  /// A ten-second handoff into the real shell. This is deliberately not a
+  /// feature tour: it names the three navigation rules and asks for no task.
+  Widget _readyStage(AppLocalizations l10n, double noteWidth) {
+    final groupName = _createdGroup?.name ?? l10n.hubAppBarTitle;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Align(
+          alignment: Alignment.center,
+          child: SizedBox(
+            width: math.max(noteWidth, 320.0),
+            child: Transform.rotate(
+              angle: -0.012,
+              child: TornSlip(
+                padding: const EdgeInsets.fromLTRB(
+                  MitlistSpacing.lg,
+                  MitlistSpacing.space6,
+                  MitlistSpacing.lg,
+                  MitlistSpacing.space5,
+                ),
+                child: Column(
+                  children: [
+                    _OrientationRow(
+                      icon: 'home',
+                      label: l10n.authOnboardingOrientationHome,
+                    ),
+                    const _OrientationRule(),
+                    _OrientationRow(
+                      icon: 'squares2x2',
+                      label: l10n.authOnboardingOrientationTabs,
+                    ),
+                    const _OrientationRule(),
+                    _OrientationRow(
+                      icon: 'plus',
+                      label: l10n.authOnboardingOrientationAdd,
+                      accent: true,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: MitlistSpacing.space6),
+        AppButton(
+          variant: AppButtonVariant.solid,
+          color: AppButtonColor.primary,
+          size: AppButtonSize.lg,
+          text: l10n.authOnboardingEnterHousehold(groupName),
+          icon: const AppIcon(name: 'arrowRight', size: 18),
           onPressed: _goToBoard,
         ),
       ],
+    );
+  }
+}
+
+class _OrientationRow extends StatelessWidget {
+  const _OrientationRow({
+    required this.icon,
+    required this.label,
+    this.accent = false,
+  });
+
+  final String icon;
+  final String label;
+  final bool accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final iconBackground =
+        accent ? MitlistColors.primary500 : MitlistColors.surfaceSecondary;
+    final iconColor = accent ? Colors.white : MitlistColors.textPrimary;
+
+    return Semantics(
+      label: label,
+      child: ExcludeSemantics(
+        child: Row(
+          children: [
+            Container(
+              width: MitlistSpacing.space12,
+              height: MitlistSpacing.space12,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: iconBackground,
+                border: Border.all(
+                  color: MitlistColors.borderPrimary,
+                  width: 2,
+                ),
+              ),
+              child: AppIcon(name: icon, size: 22, color: iconColor),
+            ),
+            const SizedBox(width: MitlistSpacing.space4),
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: MitlistColors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                      height: 1.25,
+                    ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _OrientationRule extends StatelessWidget {
+  const _OrientationRule();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.space3),
+      child: Container(
+        height: 2,
+        color: MitlistColors.borderPrimary.withValues(alpha: 0.18),
+      ),
     );
   }
 }

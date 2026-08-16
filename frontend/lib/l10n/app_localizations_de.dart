@@ -3195,6 +3195,67 @@ class AppLocalizationsDe extends AppLocalizations {
   String get expenseCreationDateLabel => 'Ausgabedatum. Zum Ändern tippen.';
 
   @override
+  String expenseCreationStartsOn(String date) {
+    return 'Ab $date';
+  }
+
+  @override
+  String get expenseCreationNextDueLabel =>
+      'Erste Fälligkeit. Zum Ändern tippen.';
+
+  @override
+  String get expenseCreationEditRepeatSemantic =>
+      'Wiederholung. Zum Ändern tippen.';
+
+  @override
+  String get expenseCreationRepeatNever => 'Wiederholt sich nicht';
+
+  @override
+  String get expenseCreationRepeatNeverOption => 'Nie';
+
+  @override
+  String get expenseCreationRepeatDaily => 'Wiederholt sich täglich';
+
+  @override
+  String get expenseCreationRepeatWeekly => 'Wiederholt sich wöchentlich';
+
+  @override
+  String get expenseCreationRepeatBiweekly => 'Wiederholt sich alle 2 Wochen';
+
+  @override
+  String get expenseCreationRepeatMonthly => 'Wiederholt sich monatlich';
+
+  @override
+  String get expenseCreationRepeatQuarterly =>
+      'Wiederholt sich vierteljährlich';
+
+  @override
+  String get expenseCreationRepeatYearly => 'Wiederholt sich jährlich';
+
+  @override
+  String expenseCreationRepeatCurrencyHint(String currency) {
+    return 'Wiederkehrende Ausgaben werden in $currency erfasst.';
+  }
+
+  @override
+  String get expenseCreationRecurringTitle => 'Neue wiederkehrende Ausgabe';
+
+  @override
+  String get expenseCreationRecurringEditTitle =>
+      'Wiederkehrende Ausgabe bearbeiten';
+
+  @override
+  String get expenseCreationRecurringAdded =>
+      'Wiederkehrende Ausgabe hinzugefügt';
+
+  @override
+  String get expenseCreationRecurringSaved =>
+      'Wiederkehrende Ausgabe aktualisiert';
+
+  @override
+  String get recurringEditTooltip => 'Bearbeiten';
+
+  @override
   String get expenseCreationReceiptButton => 'Beleg';
 
   @override
@@ -4058,7 +4119,30 @@ class AppLocalizationsDe extends AppLocalizations {
       'Teile diesen Code. Wer ihn eingibt, tritt deinem Haushalt bei.';
 
   @override
-  String get authOnboardingGoToBoard => 'Zu deiner Pinnwand';
+  String get authOnboardingGoToBoard => 'Weiter';
+
+  @override
+  String get authOnboardingReadyTitle => 'Dein Haushalt ist bereit';
+
+  @override
+  String get authOnboardingReadyBody =>
+      'Drei Dinge solltest du wissen. Das ist schon alles.';
+
+  @override
+  String get authOnboardingOrientationHome => 'Home zeigt, was gerade ansteht';
+
+  @override
+  String get authOnboardingOrientationTabs =>
+      'Tabs geben jedem Haushaltsbereich seinen Platz';
+
+  @override
+  String get authOnboardingOrientationAdd =>
+      'Mit + fügst du von überall etwas hinzu';
+
+  @override
+  String authOnboardingEnterHousehold(String name) {
+    return '$name öffnen';
+  }
 
   @override
   String get authOnboardingResolving => 'Deine Pinnwand wird geöffnet…';

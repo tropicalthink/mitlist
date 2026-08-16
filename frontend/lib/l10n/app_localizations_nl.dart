@@ -3171,6 +3171,63 @@ class AppLocalizationsNl extends AppLocalizations {
   String get expenseCreationDateLabel => 'Uitgavedatum. Tik om te wijzigen.';
 
   @override
+  String expenseCreationStartsOn(String date) {
+    return 'Vanaf $date';
+  }
+
+  @override
+  String get expenseCreationNextDueLabel => 'Eerste keer. Tik om te wijzigen.';
+
+  @override
+  String get expenseCreationEditRepeatSemantic =>
+      'Herhaling. Tik om te wijzigen.';
+
+  @override
+  String get expenseCreationRepeatNever => 'Herhaalt niet';
+
+  @override
+  String get expenseCreationRepeatNeverOption => 'Nooit';
+
+  @override
+  String get expenseCreationRepeatDaily => 'Herhaalt dagelijks';
+
+  @override
+  String get expenseCreationRepeatWeekly => 'Herhaalt wekelijks';
+
+  @override
+  String get expenseCreationRepeatBiweekly => 'Herhaalt elke 2 weken';
+
+  @override
+  String get expenseCreationRepeatMonthly => 'Herhaalt maandelijks';
+
+  @override
+  String get expenseCreationRepeatQuarterly => 'Herhaalt per kwartaal';
+
+  @override
+  String get expenseCreationRepeatYearly => 'Herhaalt jaarlijks';
+
+  @override
+  String expenseCreationRepeatCurrencyHint(String currency) {
+    return 'Terugkerende uitgaven worden vastgelegd in $currency.';
+  }
+
+  @override
+  String get expenseCreationRecurringTitle => 'Nieuwe terugkerende uitgave';
+
+  @override
+  String get expenseCreationRecurringEditTitle =>
+      'Terugkerende uitgave bewerken';
+
+  @override
+  String get expenseCreationRecurringAdded => 'Terugkerende uitgave toegevoegd';
+
+  @override
+  String get expenseCreationRecurringSaved => 'Terugkerende uitgave bijgewerkt';
+
+  @override
+  String get recurringEditTooltip => 'Bewerken';
+
+  @override
   String get expenseCreationReceiptButton => 'Bon';
 
   @override
@@ -4031,7 +4088,31 @@ class AppLocalizationsNl extends AppLocalizations {
       'Deel deze code. Wie hem invoert, komt bij je huishouden.';
 
   @override
-  String get authOnboardingGoToBoard => 'Naar je prikbord';
+  String get authOnboardingGoToBoard => 'Verder';
+
+  @override
+  String get authOnboardingReadyTitle => 'Je huishouden is klaar';
+
+  @override
+  String get authOnboardingReadyBody =>
+      'Drie dingen om te weten. Dat is de hele kaart.';
+
+  @override
+  String get authOnboardingOrientationHome =>
+      'Home laat zien wat aandacht nodig heeft';
+
+  @override
+  String get authOnboardingOrientationTabs =>
+      'Tabs geven elk deel van het huishouden een vaste plek';
+
+  @override
+  String get authOnboardingOrientationAdd =>
+      'Met de knop + voeg je overal iets toe';
+
+  @override
+  String authOnboardingEnterHousehold(String name) {
+    return '$name openen';
+  }
 
   @override
   String get authOnboardingResolving => 'Je prikbord wordt geopend…';

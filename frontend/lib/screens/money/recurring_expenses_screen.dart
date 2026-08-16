@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -8,23 +6,20 @@ import '../../l10n/app_localizations.dart';
 import '../../models/finance_models.dart';
 import '../../providers/finance_provider.dart';
 import '../../providers/group_provider.dart';
-import '../../providers/grocery_provider.dart';
-import '../../providers/list_provider.dart' show grocerySeedProvider;
 import '../../router.dart' show currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
+import '../../sheets/expense_creation_sheet.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../utils/active_group_context.dart';
-import '../../utils/expense_categories.dart';
 import '../../utils/format_currency.dart';
 import '../../utils/friendly_error.dart';
 import '../../utils/latest_request_guard.dart';
 import '../../widgets/app_button.dart';
-import '../../widgets/app_input.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/app_icon.dart';
-import '../../widgets/chip.dart';
+import '../../widgets/app_toast.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/mitlist_app_bar.dart';
 import '../../widgets/skeleton.dart';
@@ -99,9 +94,7 @@ class _RecurringExpensesScreenState
       final message = friendlyErrorMessage(e, AppLocalizations.of(context)!);
       if (hadContent) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message)),
-        );
+        AppToast.error(context, message);
         return;
       }
       setState(() {
@@ -123,9 +116,7 @@ class _RecurringExpensesScreenState
       await _load();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.recurringCouldNotUpdate)),
-      );
+      AppToast.error(context, l10n.recurringCouldNotUpdate);
     } finally {
       if (mounted) setState(() => _submittingId = null);
     }
@@ -140,9 +131,7 @@ class _RecurringExpensesScreenState
       await _load();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.recurringCouldNotDelete)),
-      );
+      AppToast.error(context, l10n.recurringCouldNotDelete);
     } finally {
       if (mounted) setState(() => _submittingId = null);
     }
@@ -171,7 +160,7 @@ class _RecurringExpensesScreenState
           ? null
           : AppButton(
               size: AppButtonSize.lg,
-              onPressed: () => _openCreateSheet(),
+              onPressed: () => _openSheet(),
               text: l10n.recurringAddRecurring,
               icon: const AppIcon(name: 'plus'),
               tooltip: l10n.recurringAddRecurringTooltip,
@@ -258,7 +247,7 @@ class _RecurringExpensesScreenState
                 text: l10n.recurringAddExpense,
                 variant: AppButtonVariant.outline,
                 size: AppButtonSize.sm,
-                onPressed: _openCreateSheet,
+                onPressed: () => _openSheet(),
               ),
             ],
           ),
@@ -275,6 +264,7 @@ class _RecurringExpensesScreenState
           item: item,
           payerName: _userLabels[item.payerId] ?? item.payerId,
           formatFrequency: _formatFrequency,
+          onEdit: () => _openSheet(existing: item),
           onToggle: () => _toggleActive(item),
           onDelete: () => _deleteItem(item.id),
           isSubmitting: _submittingId == item.id,
@@ -283,51 +273,15 @@ class _RecurringExpensesScreenState
     );
   }
 
-  Future<void> _openCreateSheet() async {
-    final groups = await ref.read(cachedGroupsProvider.future);
-    final groupId = resolveActiveGroupId(
-      groups,
-      ref.read(currentGroupIdProvider),
+  /// Both create and edit route through the one expense editor, so a recurring
+  /// rule gets the same payer, split, category and currency handling as a
+  /// one-off expense instead of a parallel, thinner form.
+  Future<void> _openSheet({RecurringExpense? existing}) async {
+    final saved = await ExpenseCreationSheet.showRecurring(
+      context,
+      existing: existing,
     );
-    if (!isValidGroupId(groupId)) return;
-    if (!mounted) return;
-
-    final result = await showModalBottomSheet<_CreateRecurringResult>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (ctx) => _RecurringCreationSheet(
-        userLabels: _userLabels,
-        groupId: groupId!,
-      ),
-    );
-    if (result == null) return;
-
-    setState(() => _submittingId = 'create');
-    try {
-      final service = await ref.read(financeServiceProviderAsync.future);
-      await service.createRecurringExpense(
-        CreateRecurringExpenseRequest(
-          groupId: result.groupId,
-          payerId: result.payerId,
-          amount: result.amount,
-          description: result.description,
-          category: result.category,
-          frequency: result.frequency,
-          nextDue: result.nextDue,
-          isActive: true,
-        ),
-      );
-      await _load();
-    } catch (e) {
-      if (!mounted) return;
-      final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.recurringCouldNotCreate)),
-      );
-    } finally {
-      if (mounted) setState(() => _submittingId = null);
-    }
+    if (saved == true && mounted) await _load();
   }
 }
 
@@ -335,6 +289,7 @@ class _RecurringCard extends StatelessWidget {
   final RecurringExpense item;
   final String payerName;
   final String Function(String frequency) formatFrequency;
+  final VoidCallback onEdit;
   final VoidCallback onToggle;
   final VoidCallback onDelete;
   final bool isSubmitting;
@@ -343,6 +298,7 @@ class _RecurringCard extends StatelessWidget {
     required this.item,
     required this.payerName,
     required this.formatFrequency,
+    required this.onEdit,
     required this.onToggle,
     required this.onDelete,
     required this.isSubmitting,
@@ -359,6 +315,9 @@ class _RecurringCard extends StatelessWidget {
       child: AppCard(
         variant: AppCardVariant.outlined,
         padding: AppCardPadding.md,
+        interactive: !isSubmitting,
+        onTap: isSubmitting ? null : onEdit,
+        semanticLabel: l10n.recurringEditTooltip,
         child: Row(
           children: [
             Expanded(
@@ -451,305 +410,5 @@ class _RecurringCard extends StatelessWidget {
     if (diff == 1) return l10n.recurringTomorrow;
     if (diff == -1) return l10n.expenseYesterday;
     return DateFormat('MMM d, y').format(date);
-  }
-}
-
-class _RecurringCreationSheet extends StatelessWidget {
-  final Map<String, String> userLabels;
-  final String groupId;
-
-  const _RecurringCreationSheet(
-      {required this.userLabels, required this.groupId});
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return AnimatedPadding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      duration: const Duration(milliseconds: 150),
-      curve: Curves.easeOut,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(MitlistSpacing.md),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: MitlistSpacing.md),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.outlineVariant,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            Text(
-              l10n.recurringSheetTitle,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: MitlistSpacing.md),
-            _CreateRecurringForm(userLabels: userLabels, groupId: groupId),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _CreateRecurringResult {
-  final String groupId;
-  final String payerId;
-  final int amount;
-  final String description;
-  final String category;
-  final String frequency;
-  final DateTime nextDue;
-
-  const _CreateRecurringResult({
-    required this.groupId,
-    required this.payerId,
-    required this.amount,
-    required this.description,
-    required this.category,
-    required this.frequency,
-    required this.nextDue,
-  });
-}
-
-class _CreateRecurringForm extends ConsumerStatefulWidget {
-  final Map<String, String> userLabels;
-  final String groupId;
-  const _CreateRecurringForm({
-    required this.userLabels,
-    required this.groupId,
-  });
-
-  @override
-  ConsumerState<_CreateRecurringForm> createState() =>
-      _CreateRecurringFormState();
-}
-
-class _CreateRecurringFormState extends ConsumerState<_CreateRecurringForm> {
-  final _descriptionController = TextEditingController();
-  final _amountController = TextEditingController();
-  String _frequency = 'monthly';
-  String _category = 'other';
-  bool _categoryWasChosen = false;
-  bool _categoryWasSuggested = false;
-  Timer? _categoryDebounce;
-  int _categorySuggestionGeneration = 0;
-  String? _payerId;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.userLabels.isNotEmpty) {
-      _payerId = widget.userLabels.keys.first;
-    }
-  }
-
-  @override
-  void dispose() {
-    _categoryDebounce?.cancel();
-    _descriptionController.dispose();
-    _amountController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final userLabels = widget.userLabels;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (_error != null) ...[
-          Text(
-            _error!,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.error,
-                ),
-          ),
-          const SizedBox(height: MitlistSpacing.sm),
-        ],
-        AppInput(
-          controller: _descriptionController,
-          label: l10n.recurringSheetDescription,
-          onChanged: _scheduleCategorySuggestion,
-        ),
-        const SizedBox(height: MitlistSpacing.sm),
-        AppInput(
-          controller: _amountController,
-          label: l10n.recurringSheetAmount,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        ),
-        const SizedBox(height: MitlistSpacing.sm),
-        Text(
-          l10n.expenseCreationCategoryLabel,
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-        ),
-        const SizedBox(height: MitlistSpacing.xs),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              for (final key in expenseCategoryKeys)
-                Padding(
-                  padding: const EdgeInsets.only(right: MitlistSpacing.xs),
-                  child: AppChip(
-                    label: expenseCategoryLabel(l10n, key),
-                    selected: _category == key,
-                    onSelected: (_) {
-                      setState(() {
-                        _category = key;
-                        _categoryWasChosen = true;
-                        _categoryWasSuggested = false;
-                      });
-                      _categoryDebounce?.cancel();
-                    },
-                  ),
-                ),
-            ],
-          ),
-        ),
-        const SizedBox(height: MitlistSpacing.sm),
-        DropdownButtonFormField<String>(
-          initialValue: _frequency,
-          decoration: InputDecoration(labelText: l10n.recurringSheetFrequency),
-          items: [
-            DropdownMenuItem(
-                value: 'daily', child: Text(l10n.recurringFrequencyDaily)),
-            DropdownMenuItem(
-                value: 'weekly', child: Text(l10n.recurringFrequencyWeekly)),
-            DropdownMenuItem(
-                value: 'biweekly',
-                child: Text(l10n.recurringFrequencyBiweekly)),
-            DropdownMenuItem(
-                value: 'monthly', child: Text(l10n.recurringFrequencyMonthly)),
-            DropdownMenuItem(
-                value: 'quarterly',
-                child: Text(l10n.recurringFrequencyQuarterly)),
-            DropdownMenuItem(
-                value: 'yearly', child: Text(l10n.recurringFrequencyYearly)),
-          ],
-          onChanged: (v) => setState(() => _frequency = v!),
-        ),
-        const SizedBox(height: MitlistSpacing.sm),
-        DropdownButtonFormField<String>(
-          initialValue: _payerId,
-          decoration: InputDecoration(labelText: l10n.recurringSheetPayer),
-          items: userLabels.isEmpty
-              ? [
-                  DropdownMenuItem(
-                      value: null, child: Text(l10n.commonLoadingMembers))
-                ]
-              : userLabels.entries
-                  .map((e) => DropdownMenuItem(
-                        value: e.key,
-                        child: Text(e.value),
-                      ))
-                  .toList(),
-          onChanged:
-              userLabels.isEmpty ? null : (v) => setState(() => _payerId = v),
-        ),
-        const SizedBox(height: MitlistSpacing.md),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            AppButton(
-              variant: AppButtonVariant.outline,
-              color: AppButtonColor.neutral,
-              text: l10n.commonCancel,
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            const SizedBox(width: MitlistSpacing.sm),
-            AppButton(
-              variant: AppButtonVariant.solid,
-              text: l10n.commonSave,
-              onPressed: _submit,
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  void _submit() {
-    final l10n = AppLocalizations.of(context)!;
-    final description = _descriptionController.text.trim();
-    final amountText = _amountController.text.trim();
-    if (description.isEmpty) {
-      setState(() => _error = l10n.recurringValidationDesc);
-      return;
-    }
-    if (amountText.isEmpty) {
-      setState(() => _error = l10n.recurringValidationAmount);
-      return;
-    }
-    if (_payerId == null) {
-      setState(() => _error = l10n.recurringValidationPayer);
-      return;
-    }
-
-    final amount = double.tryParse(amountText.replaceAll(',', '.'));
-    if (amount == null || amount <= 0) {
-      setState(() => _error = l10n.recurringValidationAmountPositive);
-      return;
-    }
-
-    Navigator.of(context).pop(_CreateRecurringResult(
-      groupId: widget.groupId,
-      payerId: _payerId!,
-      amount: (amount * 100).round(),
-      description: description,
-      category: _category,
-      frequency: _frequency,
-      nextDue: DateTime.now().add(const Duration(days: 1)),
-    ));
-  }
-
-  void _scheduleCategorySuggestion(String description) {
-    final generation = ++_categorySuggestionGeneration;
-    _categoryDebounce?.cancel();
-    if (_categoryWasChosen) return;
-    if (description.trim().length < 2) {
-      if (_categoryWasSuggested) {
-        setState(() {
-          _category = 'other';
-          _categoryWasSuggested = false;
-        });
-      }
-      return;
-    }
-    _categoryDebounce = Timer(const Duration(milliseconds: 350), () async {
-      try {
-        await ref.read(grocerySeedProvider.future);
-        final suggestion = await ref
-            .read(groceryExpenseCategoryServiceProvider)
-            .suggest(description, widget.groupId);
-        if (!mounted ||
-            generation != _categorySuggestionGeneration ||
-            _categoryWasChosen) {
-          return;
-        }
-        setState(() {
-          if (suggestion != null) {
-            _category = suggestion;
-            _categoryWasSuggested = true;
-          } else if (_categoryWasSuggested) {
-            _category = 'other';
-            _categoryWasSuggested = false;
-          }
-        });
-      } catch (_) {
-        // Categorisation is an enhancement; the form remains fully usable.
-      }
-    });
   }
 }
