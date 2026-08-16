@@ -11,3 +11,9 @@ google-services.json
 GoogleService-Info.plist
 **/google-services.json
 **/GoogleService-Info.plist
+
+# Python tooling and Home Assistant integration test caches.
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/

@@ -1,0 +1,47 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect Mitlist",
+        "description": "Enter the Mitlist API URL and the one-time integration token created in Mitlist.",
+        "data": {
+          "base_url": "API URL",
+          "token": "Integration token",
+          "verify_ssl": "Verify TLS certificate"
+        }
+      },
+      "reauth": {
+        "title": "Reconnect Mitlist",
+        "description": "The Mitlist integration token was rejected. Create a replacement connection token in Mitlist.",
+        "data": {"token": "Integration token"}
+      }
+    },
+    "error": {
+      "invalid_auth": "The integration token was rejected.",
+      "cannot_connect": "Unable to connect to Mitlist.",
+      "no_households": "This Mitlist account does not have an available household."
+    },
+    "abort": {
+      "already_configured": "This Mitlist account is already configured.",
+      "reauth_successful": "Mitlist was reconnected."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Mitlist options",
+        "data": {
+          "groups": "Households",
+          "domains": "Data domains",
+          "enable_finance": "Include finance data",
+          "enable_sse": "Use live updates",
+          "verify_ssl": "Verify TLS certificate",
+          "scan_interval": "Polling fallback interval (seconds)"
+        }
+      }
+    },
+    "error": {
+      "select_household": "Select at least one household."
+    }
+  }
+}

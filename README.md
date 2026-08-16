@@ -207,6 +207,14 @@ stores their metadata, household quota counters, and refresh sessions.
 
 ## Download
 
+### Home Assistant
+
+Mitlist ships a native Home Assistant custom integration for household todo
+lists, chores, calendars, live events, status counters, and scoped actions.
+Tagged `home-assistant-v*` releases can be installed through HACS using this
+repository as an Integration custom repository. See the
+[Home Assistant guide](home_assistant/README.md) for setup and security details.
+
 Store builds aren't published yet — the way to run mitlist today is to self-host the backend and build the Flutter app yourself (or open the web PWA against your instance).
 
 | Platform | Status |

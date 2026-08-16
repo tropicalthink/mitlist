@@ -1,0 +1,31 @@
+name: Home Assistant release
+
+on:
+  push:
+    tags:
+      - "home-assistant-v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build HACS archive
+        run: |
+          cd home_assistant
+          zip -r ../mitlist.zip custom_components README.md \
+            -x '*/__pycache__/*' '*.py[cod]'
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mitlist-home-assistant
+          path: mitlist.zip
+      - name: Publish tagged release archive
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" mitlist.zip --generate-notes
