@@ -159,6 +159,94 @@ class AppLocalizationsNl extends AppLocalizations {
   String get commonLoadingMembers => 'Leden laden...';
 
   @override
+  String get integrationsTitle => 'Integrations';
+
+  @override
+  String get homeAssistantTitle => 'Home Assistant';
+
+  @override
+  String get homeAssistantDescription =>
+      'Connect your household to dashboards, voice control, and automations.';
+
+  @override
+  String get homeAssistantConnections => 'Connections';
+
+  @override
+  String get homeAssistantNoConnections => 'No Home Assistant connections yet.';
+
+  @override
+  String get homeAssistantCreateConnection => 'Create connection';
+
+  @override
+  String get homeAssistantConnectionName => 'Connection name';
+
+  @override
+  String get homeAssistantConnectionNameHint => 'Home Assistant';
+
+  @override
+  String get homeAssistantHouseholds => 'Households';
+
+  @override
+  String get homeAssistantPermissions => 'Permissions';
+
+  @override
+  String get homeAssistantWriteAccess => 'Allow Home Assistant to make changes';
+
+  @override
+  String get homeAssistantFinanceAccess => 'Include financial data';
+
+  @override
+  String get homeAssistantTokenTitle => 'Connection token';
+
+  @override
+  String get homeAssistantTokenBody =>
+      'Copy this token into Home Assistant now. For security, mitlist cannot show it again.';
+
+  @override
+  String get homeAssistantTokenCopied => 'Connection token copied';
+
+  @override
+  String get homeAssistantRevoke => 'Revoke connection';
+
+  @override
+  String get homeAssistantRevokeConfirm =>
+      'This immediately disconnects Home Assistant. You can create a new connection later.';
+
+  @override
+  String get homeAssistantRevoked => 'Revoked';
+
+  @override
+  String get homeAssistantNeverUsed => 'Never used';
+
+  @override
+  String homeAssistantLastUsed(String date) {
+    return 'Last used $date';
+  }
+
+  @override
+  String get homeAssistantSelectHousehold => 'Select at least one household.';
+
+  @override
+  String get homeAssistantCreated => 'Home Assistant connection created';
+
+  @override
+  String get homeAssistantRevokedSuccess => 'Home Assistant connection revoked';
+
+  @override
+  String get homeAssistantLoadFailed =>
+      'Could not load Home Assistant connections.';
+
+  @override
+  String get homeAssistantSaveFailed =>
+      'Could not create the connection. Please try again.';
+
+  @override
+  String get homeAssistantReadOnly => 'Read only';
+
+  @override
+  String get homeAssistantReadWrite => 'Read and write';
+
+  @override
   String get welcomeTagline => 'Jullie huishouden, overzichtelijk.';
 
   @override

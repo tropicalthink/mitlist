@@ -22,6 +22,7 @@ import 'screens/money/expenses_screen.dart';
 import 'screens/money/recurring_expenses_screen.dart';
 import 'screens/calendar/calendar_screen.dart';
 import 'screens/you/account_screen.dart';
+import 'screens/you/home_assistant_connections_screen.dart';
 import 'screens/auth/welcome_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/signup_screen.dart';
@@ -411,6 +412,19 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: 'shopping-locations',
             name: 'shoppingLocations',
             builder: (context, state) => const ShoppingLocationsScreen(),
+          ),
+          GoRoute(
+            path: 'integrations/home-assistant',
+            name: 'homeAssistantConnections',
+            builder: (context, state) => const HomeAssistantConnectionsScreen(),
+            routes: [
+              GoRoute(
+                path: 'new',
+                name: 'homeAssistantConnectionNew',
+                builder: (context, state) =>
+                    const HomeAssistantConnectionCreateScreen(),
+              ),
+            ],
           ),
         ],
       ),
