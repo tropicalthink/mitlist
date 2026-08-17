@@ -112,6 +112,21 @@ func (r *BillingRepository) UpsertSubscription(ctx context.Context, s *models.Bi
 	return nil, err
 }
 
+// SupersedeSubscription closes a provider row that was replaced by another
+// purchase token (Google plan changes). It is deliberately provider-scoped and
+// monotonic so an old RTDN delivery cannot reactivate the superseded token.
+func (r *BillingRepository) SupersedeSubscription(ctx context.Context, provider, providerSubscriptionID string, supersededAt time.Time) error {
+	_, err := r.pool.Exec(ctx, `
+		UPDATE billing_subscriptions
+		SET status = 'canceled', cancel_at_period_end = false,
+			current_period_end = LEAST(COALESCE(current_period_end, $3), $3),
+			ends_at = $3, provider_modified_at = $3, updated_at = NOW()
+		WHERE provider = $1 AND provider_subscription_id = $2
+		  AND (provider_modified_at IS NULL OR provider_modified_at <= $3)`,
+		provider, providerSubscriptionID, supersededAt)
+	return err
+}
+
 // GetSubscriptionByProviderID looks up a subscription by the provider's ID.
 func (r *BillingRepository) GetSubscriptionByProviderID(ctx context.Context, provider, providerSubscriptionID string) (*models.BillingSubscription, error) {
 	query := `SELECT ` + billingSubscriptionColumns + `

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -6,6 +8,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../l10n/app_localizations.dart';
 import '../models/billing_models.dart';
 import '../providers/billing_provider.dart';
+import '../services/iap_service.dart';
+import '../config/iap_config.dart';
 import '../theme/spacing.dart';
 import '../widgets/alert.dart';
 import '../widgets/app_bottom_sheet.dart';
@@ -54,7 +58,49 @@ class _PremiumSheetBodyState extends ConsumerState<_PremiumSheetBody> {
   bool _busy = false;
   String? _error;
 
+  /// The native IAP service and its purchase-result subscription, used only on
+  /// iOS and Android. Null on web/desktop, which keep the Polar hosted checkout.
+  IapService? _iap;
+  StreamSubscription<IapResult>? _iapSub;
+
+  @override
+  void initState() {
+    super.initState();
+    // Preload store products so the selector can show the store's own localized
+    // price (which already includes the +€2 annual uplift).
+    if (IapService.isSupported) {
+      _loadStoreProducts();
+    }
+  }
+
+  @override
+  void dispose() {
+    _iapSub?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadStoreProducts() async {
+    try {
+      final iap = await ref.read(iapServiceProvider.future);
+      await iap.loadProducts();
+      if (!mounted) return;
+      setState(() => _iap = iap);
+    } catch (_) {
+      // Prices are decoration; a failure just leaves the tiles without them.
+    }
+  }
+
+  /// Entry point for the subscribe button: native IAP on mobile, Polar checkout
+  /// in a browser everywhere else.
   Future<void> _startCheckout() async {
+    if (IapService.isSupported) {
+      await _startIapPurchase();
+    } else {
+      await _startWebCheckout();
+    }
+  }
+
+  Future<void> _startWebCheckout() async {
     final l10n = AppLocalizations.of(context)!;
     setState(() {
       _busy = true;
@@ -85,10 +131,80 @@ class _PremiumSheetBodyState extends ConsumerState<_PremiumSheetBody> {
     }
   }
 
-  /// Formats a plan for display, in the viewer's locale and the provider's
-  /// currency. Null when no price was reported, which the selector renders as
-  /// a tile with no price rather than a wrong one.
-  String? _priceLabel(BillingPlan? plan) {
+  /// Runs the native store purchase. The store confirms payment asynchronously,
+  /// so this subscribes to the result stream: only a verified success (the
+  /// backend validated the receipt) activates premium and closes the sheet.
+  Future<void> _startIapPurchase() async {
+    final l10n = AppLocalizations.of(context)!;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final iap = await ref.read(iapServiceProvider.future);
+      await _iapSub?.cancel();
+      _iapSub = iap.results.listen(_onIapResult);
+      await iap.buy(interval: _interval, groupId: widget.groupId);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = l10n.billingCheckoutFailed;
+      });
+    }
+  }
+
+  void _onIapResult(IapResult result) {
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+    switch (result.status) {
+      case IapStatus.pending:
+        // Keep the button busy; the store is still processing.
+        break;
+      case IapStatus.canceled:
+        setState(() => _busy = false);
+      case IapStatus.error:
+        setState(() {
+          _busy = false;
+          _error = l10n.billingCheckoutFailed;
+        });
+      case IapStatus.success:
+        invalidateBilling(ref);
+        final navigator = Navigator.of(context);
+        final message = l10n.billingPurchased;
+        navigator.pop();
+        if (mounted) AppToast.success(context, message);
+    }
+  }
+
+  Future<void> _restorePurchases() async {
+    final l10n = AppLocalizations.of(context)!;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final iap = await ref.read(iapServiceProvider.future);
+      await _iapSub?.cancel();
+      _iapSub = iap.results.listen(_onIapResult);
+      await iap.restore(groupId: widget.groupId);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = l10n.billingCheckoutFailed;
+      });
+    }
+  }
+
+  /// Formats the price for an interval. On mobile the store is the source of
+  /// truth — its localized string already includes the +€2 annual uplift — so
+  /// the Polar [plan] is used only on web/desktop. Null renders a tile with no
+  /// price rather than a wrong one.
+  String? _priceLabel(BillingInterval interval, BillingPlan? plan) {
+    if (IapService.isSupported) {
+      return _iap?.priceLabel(interval);
+    }
     if (plan == null) return null;
     final locale = Localizations.localeOf(context).toString();
     return NumberFormat.simpleCurrency(
@@ -201,26 +317,78 @@ class _PremiumSheetBodyState extends ConsumerState<_PremiumSheetBody> {
       _IntervalSelector(
         selected: _interval,
         enabled: !_busy,
-        yearlyPrice: _priceLabel(status?.planFor(BillingInterval.yearly)),
-        monthlyPrice: _priceLabel(status?.planFor(BillingInterval.monthly)),
+        yearlyPrice: _priceLabel(
+            BillingInterval.yearly, status?.planFor(BillingInterval.yearly)),
+        monthlyPrice: _priceLabel(
+            BillingInterval.monthly, status?.planFor(BillingInterval.monthly)),
         onChanged: (value) => setState(() => _interval = value),
       ),
       const SizedBox(height: MitlistSpacing.lg),
       AppButton(
-        text: _busy ? l10n.billingOpeningCheckout : l10n.billingSubscribe,
+        text: _busy
+            ? (IapService.isSupported
+                ? l10n.billingProcessing
+                : l10n.billingOpeningCheckout)
+            : l10n.billingSubscribe,
         variant: AppButtonVariant.solid,
         color: AppButtonColor.primary,
         isLoading: _busy,
         onPressed: _busy ? null : _startCheckout,
       ),
       const SizedBox(height: MitlistSpacing.sm),
-      Text(
-        l10n.billingReturnHint,
-        textAlign: TextAlign.center,
-        style: theme.textTheme.bodySmall
-            ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-      ),
+      if (IapService.isSupported)
+        // Apple requires a restore affordance; it is also how a user recovers
+        // premium on a reinstalled or new device.
+        Center(
+          child: TextButton(
+            onPressed: _busy ? null : _restorePurchases,
+            child: Text(l10n.billingRestore),
+          ),
+        )
+      else
+        Text(
+          l10n.billingReturnHint,
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodySmall
+              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        ),
+      if (IapService.isSupported) ...[
+        const SizedBox(height: MitlistSpacing.sm),
+        Text(
+          l10n.billingAutoRenewDisclosure,
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodySmall
+              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: MitlistSpacing.xs),
+        Wrap(
+          alignment: WrapAlignment.center,
+          children: [
+            TextButton(
+              onPressed: () => _openLegalUrl(IapConfig.termsUrl),
+              child: Text(l10n.accountTermsTitle),
+            ),
+            TextButton(
+              onPressed: () => _openLegalUrl(IapConfig.privacyUrl),
+              child: Text(l10n.authSignupPrivacyPolicy),
+            ),
+          ],
+        ),
+      ],
     ];
+  }
+
+  Future<void> _openLegalUrl(String value) async {
+    final launched = await launchUrl(
+      Uri.parse(value),
+      mode: LaunchMode.externalApplication,
+    );
+    if (!launched && mounted) {
+      AppToast.error(
+          context, AppLocalizations.of(context)!.commonSomethingWentWrong);
+    }
   }
 }
 

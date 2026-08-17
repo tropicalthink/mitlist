@@ -14,6 +14,8 @@ import (
 	"github.com/mitlist-app/mitlist/internal/api"
 	"github.com/mitlist-app/mitlist/internal/models"
 	"github.com/mitlist-app/mitlist/internal/repositories"
+	"github.com/mitlist-app/mitlist/internal/services/appstore"
+	"github.com/mitlist-app/mitlist/internal/services/playstore"
 	"github.com/mitlist-app/mitlist/internal/services/polar"
 )
 
@@ -43,6 +45,15 @@ type BillingConfig struct {
 	DefaultDiscountID string
 	// CheckoutSuccessURL is where Polar returns the customer after paying.
 	CheckoutSuccessURL string
+
+	// Store product ids mapped to a billing interval, used to turn a native IAP
+	// purchase (which names a product, not a cadence) back into a Plan interval.
+	// AppleProduct* are App Store product ids; GoogleProduct* are Play base-plan
+	// ids. Empty when mobile IAP is not configured.
+	AppleProductMonthly  string
+	AppleProductYearly   string
+	GoogleProductMonthly string
+	GoogleProductYearly  string
 }
 
 // Plan is what one of the two premium products costs, read from the payment
@@ -75,6 +86,8 @@ type BillingService struct {
 	groupRepo repositories.GroupRepo
 	userRepo  repositories.UserRepo
 	client    *polar.Client
+	apple     *appstore.Client
+	google    *playstore.Client
 	cfg       BillingConfig
 
 	planMu      sync.RWMutex
@@ -90,6 +103,8 @@ func NewBillingService(
 	groupRepo repositories.GroupRepo,
 	userRepo repositories.UserRepo,
 	client *polar.Client,
+	apple *appstore.Client,
+	google *playstore.Client,
 	cfg BillingConfig,
 ) *BillingService {
 	if cfg.FreeMemberLimit <= 0 {
@@ -100,13 +115,24 @@ func NewBillingService(
 		groupRepo: groupRepo,
 		userRepo:  userRepo,
 		client:    client,
+		apple:     apple,
+		google:    google,
 		cfg:       cfg,
 	}
 }
 
-// Enabled reports whether checkout can actually be started.
+// Enabled reports whether any payment provider can grant premium. It controls
+// whether the entitlement gate and billing UI exist at all; native IAP must not
+// accidentally depend on the optional Polar web checkout.
 func (s *BillingService) Enabled() bool {
-	return s != nil && s.client.Enabled()
+	return s != nil && (s.WebBillingEnabled() || s.AppleIAPEnabled() || s.GoogleIAPEnabled())
+}
+
+// WebBillingEnabled reports whether Polar checkout and its customer portal are
+// available. Keep this separate from Enabled: an IAP-only deployment still
+// enforces premium, but cannot create a hosted web checkout.
+func (s *BillingService) WebBillingEnabled() bool {
+	return s != nil && s.client != nil && s.client.Enabled()
 }
 
 // FreeMemberLimit exposes the configured free household size.
@@ -122,7 +148,7 @@ func (s *BillingService) FreeMemberLimit() int {
 // error: the price is decoration on a paywall that still works without it, and
 // failing the whole status call over it would be worse than showing no price.
 func (s *BillingService) GetPlans(ctx context.Context) []Plan {
-	if !s.Enabled() {
+	if !s.WebBillingEnabled() {
 		return nil
 	}
 
@@ -279,7 +305,7 @@ type CheckoutInput struct {
 // StartCheckout opens a hosted checkout session for the user and returns the
 // URL to send them to.
 func (s *BillingService) StartCheckout(ctx context.Context, userID uuid.UUID, in CheckoutInput) (string, error) {
-	if !s.Enabled() {
+	if !s.WebBillingEnabled() {
 		return "", &api.ValidationError{Message: "billing is not enabled on this server"}
 	}
 
@@ -335,7 +361,7 @@ func (s *BillingService) StartCheckout(ctx context.Context, userID uuid.UUID, in
 // OpenCustomerPortal returns a URL where the user manages their subscription
 // (payment method, invoices, cancellation) on Polar.
 func (s *BillingService) OpenCustomerPortal(ctx context.Context, userID uuid.UUID) (string, error) {
-	if !s.Enabled() {
+	if !s.WebBillingEnabled() {
 		return "", &api.ValidationError{Message: "billing is not enabled on this server"}
 	}
 	session, err := s.client.CreateCustomerSession(ctx, userID.String())
@@ -418,18 +444,6 @@ func (s *BillingService) ApplyWebhookEvent(ctx context.Context, deliveryID strin
 		return err
 	}
 
-	// Record the delivery before applying it. A redelivery of an event already
-	// applied is dropped here.
-	if deliveryID != "" {
-		fresh, err := s.repo.MarkWebhookEventProcessed(ctx, deliveryID, "polar", evt.Type)
-		if err != nil {
-			return err
-		}
-		if !fresh {
-			return ErrEventIgnored
-		}
-	}
-
 	sub := &models.BillingSubscription{
 		UserID:                 userID,
 		PrimaryGroupID:         resolveGroup(evt.Data),
@@ -453,8 +467,23 @@ func (s *BillingService) ApplyWebhookEvent(ctx context.Context, deliveryID strin
 		sub.Currency = "eur"
 	}
 
-	_, err = s.repo.UpsertSubscription(ctx, sub)
-	return err
+	if _, err = s.repo.UpsertSubscription(ctx, sub); err != nil {
+		return err
+	}
+
+	// Only acknowledge idempotency after the state write succeeds. Recording a
+	// delivery first would permanently discard a provider retry when the
+	// database fails between these two operations.
+	if deliveryID != "" {
+		fresh, markErr := s.repo.MarkWebhookEventProcessed(ctx, deliveryID, "polar", evt.Type)
+		if markErr != nil {
+			return markErr
+		}
+		if !fresh {
+			return ErrEventIgnored
+		}
+	}
+	return nil
 }
 
 // isMitlistEvent reports whether an event belongs to mitlist. The Polar

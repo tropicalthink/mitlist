@@ -9508,6 +9508,30 @@ abstract class AppLocalizations {
   /// **'Finish in your browser, then come back — premium activates automatically.'**
   String get billingReturnHint;
 
+  /// Loading label while a native in-app purchase is being confirmed
+  ///
+  /// In en, this message translates to:
+  /// **'Processing your purchase...'**
+  String get billingProcessing;
+
+  /// Button that restores a previous in-app purchase (iOS/Android)
+  ///
+  /// In en, this message translates to:
+  /// **'Restore purchases'**
+  String get billingRestore;
+
+  /// Auto-renewal and cancellation disclosure on the native-store paywall
+  ///
+  /// In en, this message translates to:
+  /// **'Payment is charged to your store account. The subscription renews automatically unless canceled at least 24 hours before the current period ends. Manage or cancel it in your App Store or Google Play account.'**
+  String get billingAutoRenewDisclosure;
+
+  /// Confirmation toast after a successful in-app purchase
+  ///
+  /// In en, this message translates to:
+  /// **'Premium is active. Thanks!'**
+  String get billingPurchased;
+
   /// Title of the billing card on the account screen
   ///
   /// In en, this message translates to:
