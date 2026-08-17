@@ -28,14 +28,18 @@ func (h *BillingHandler) RegisterRoutes(r chi.Router) {
 	r.Put("/billing/groups/{groupID}/premium", h.SetPremiumHousehold)
 	r.Post("/billing/checkout", h.CreateCheckout)
 	r.Post("/billing/portal", h.OpenPortal)
+	r.Post("/billing/iap/verify", h.VerifyIAP)
 }
 
 // billingStatusResponse describes the caller's own billing position.
 type billingStatusResponse struct {
 	// Enabled is false on servers with no payment provider configured — a
 	// self-hosted instance, typically. Clients should hide billing UI entirely.
-	Enabled   bool `json:"enabled"`
-	FreeLimit int  `json:"free_limit"`
+	Enabled       bool `json:"enabled"`
+	WebEnabled    bool `json:"web_enabled"`
+	AppleEnabled  bool `json:"apple_enabled"`
+	GoogleEnabled bool `json:"google_enabled"`
+	FreeLimit     int  `json:"free_limit"`
 	// Plans is what each interval costs, read live from the payment provider so
 	// the client never advertises a stale price. Empty when the provider could
 	// not be reached — the paywall still works, it just shows no price.
@@ -57,10 +61,13 @@ func (h *BillingHandler) GetStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	api.RespondJSON(w, http.StatusOK, billingStatusResponse{
-		Enabled:      h.svc.Enabled(),
-		FreeLimit:    h.svc.FreeMemberLimit(),
-		Plans:        h.svc.GetPlans(r.Context()),
-		Subscription: sub,
+		Enabled:       h.svc.Enabled(),
+		WebEnabled:    h.svc.WebBillingEnabled(),
+		AppleEnabled:  h.svc.AppleIAPEnabled(),
+		GoogleEnabled: h.svc.GoogleIAPEnabled(),
+		FreeLimit:     h.svc.FreeMemberLimit(),
+		Plans:         h.svc.GetPlans(r.Context()),
+		Subscription:  sub,
 	})
 }
 
@@ -166,6 +173,68 @@ func (h *BillingHandler) CreateCheckout(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	api.RespondJSON(w, http.StatusOK, createCheckoutResponse{CheckoutURL: url})
+}
+
+// verifyIAPRequest is what the mobile app posts after a successful native
+// purchase. platform selects the store; token is the StoreKit 2 signed
+// transaction on iOS, or the purchase token on Android.
+type verifyIAPRequest struct {
+	Platform string `json:"platform"`
+	Token    string `json:"token"`
+	// GroupID is the household the subscription will cover. Optional: when
+	// omitted the buyer picks their premium household afterwards.
+	GroupID string `json:"group_id,omitempty"`
+}
+
+// VerifyIAP POST /billing/iap/verify
+//
+// Validates a native In-App Purchase against the store and records the
+// subscription. Entitlement is server-authoritative: the app calls this after
+// the store confirms payment, and only a verified receipt grants premium.
+func (h *BillingHandler) VerifyIAP(w http.ResponseWriter, r *http.Request) {
+	userID := RequireUser(w, r)
+	if userID == uuid.Nil {
+		return
+	}
+
+	var req verifyIAPRequest
+	if err := decodeJSON(r, &req); err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	if req.Token == "" {
+		api.RespondError(w, &api.ValidationError{Field: "token", Message: "a purchase token is required"})
+		return
+	}
+
+	var groupID uuid.UUID
+	if req.GroupID != "" {
+		parsed, parseErr := uuid.Parse(req.GroupID)
+		if parseErr != nil || parsed == uuid.Nil {
+			api.RespondError(w, &api.ValidationError{Field: "group_id", Message: "group_id must be a valid household ID"})
+			return
+		}
+		groupID = parsed
+	}
+
+	var (
+		sub *models.BillingSubscription
+		err error
+	)
+	switch req.Platform {
+	case "apple", "ios":
+		sub, err = h.svc.VerifyAppleTransaction(r.Context(), userID, groupID, req.Token)
+	case "google", "android":
+		sub, err = h.svc.VerifyGooglePurchase(r.Context(), userID, groupID, req.Token)
+	default:
+		api.RespondError(w, &api.ValidationError{Field: "platform", Message: "platform must be apple or google"})
+		return
+	}
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	api.RespondJSON(w, http.StatusOK, sub)
 }
 
 type portalResponse struct {

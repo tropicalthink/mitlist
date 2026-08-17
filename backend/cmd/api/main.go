@@ -105,6 +105,15 @@ func main() {
 	}
 	polarWebhookHandler.RegisterRoutes(srv.Router())
 
+	// Store IAP notifications (Apple ASSN V2, Google RTDN). Public: the stores
+	// call these directly. Apple payloads are signed JWS; Google notifications
+	// are re-verified against the Play API inside the billing service.
+	handlers.NewIAPWebhookHandler(
+		cnt.BillingService(), log,
+		cfg.GooglePubSubAudience,
+		cfg.GooglePubSubServiceAccount,
+	).RegisterRoutes(srv.Router())
+
 	// Operational endpoints, admin-guarded (IP allowlist via DEBUG_ALLOWLIST or
 	// HTTP Basic via ADMIN_USER/ADMIN_PASS). pprof and debug wrap AdminGuard
 	// internally; metrics is wrapped here.

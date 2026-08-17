@@ -58,6 +58,12 @@ dependencies:
   connectivity_plus: ^7.2.0
   image: ^4.3.0
   url_launcher: ^6.3.1
+  # Native In-App Purchase (StoreKit + Google Play Billing) for mobile premium.
+  # Web/desktop keep the Polar hosted checkout; this only drives iOS/Android.
+  in_app_purchase: ^3.2.0
+  # Imported directly for Google Play base-plan / offer selection
+  # (GooglePlayProductDetails, GooglePlayPurchaseParam).
+  in_app_purchase_android: ^0.5.0
   wakelock_plus: ^1.2.8
   share_plus: ^13.2.0
   # Firebase — required for FCM push on Android and iOS.

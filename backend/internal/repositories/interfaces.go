@@ -48,6 +48,7 @@ type AuthRepo interface {
 // BillingRepo is the interface for premium subscription operations.
 type BillingRepo interface {
 	UpsertSubscription(ctx context.Context, s *models.BillingSubscription) (*models.BillingSubscription, error)
+	SupersedeSubscription(ctx context.Context, provider, providerSubscriptionID string, supersededAt time.Time) error
 	GetSubscriptionByProviderID(ctx context.Context, provider, providerSubscriptionID string) (*models.BillingSubscription, error)
 	ListSubscriptionsByUser(ctx context.Context, userID uuid.UUID) ([]models.BillingSubscription, error)
 	GetLiveSubscriptionForUser(ctx context.Context, userID uuid.UUID) (*models.BillingSubscription, error)
