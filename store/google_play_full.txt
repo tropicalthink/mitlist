@@ -1,4 +1,4 @@
-mitlist is the shared household coordination app that puts you in control. Split expenses, rotate chores, manage shopping lists, and plan meals — all in one place. No subscriptions, no ads, no lock-in.
+mitlist is the shared household coordination app that puts you in control. Split expenses, rotate chores, manage shopping lists, and plan meals — all in one place, with an optional Premium subscription for larger households.
 
 WHY MITLIST
 You're already paying rent. Why pay another subscription for apps that do less? mitlist is free and open source. Host it yourself in 5 minutes with Docker.
@@ -21,4 +21,4 @@ YOUR DATA, YOUR RULES
 • Open source (AGPL-3.0) — auditable, transparent
 
 PRICE
-Free. No in-app purchases. No subscriptions. No ads.
+Free for households of up to four people. Optional monthly or yearly Premium unlocks larger households and can be managed or canceled through Google Play. No ads.

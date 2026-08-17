@@ -6,6 +6,16 @@ follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Native In-App Purchase for premium on iOS and Android (App Store + Play
+  Store), alongside the existing Polar web checkout. Purchases are verified
+  server-side (Apple StoreKit 2 JWS chain to Apple Root CA - G3; Google Play
+  Developer API), with App Store Server Notifications V2 and Play RTDN handled
+  idempotently. Opt-in via `APPLE_IAP_*` / `GOOGLE_PLAY_*` config. Annual is +€2
+  on mobile to cover the store cut; monthly unchanged. See
+  `docs/iap-subscriptions-plan.md`.
+
 ## [1.0.0] - 2026-XX-XX
 
 ### Added
