@@ -17,6 +17,8 @@ import 'services/error_reporter.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'services/fcm_service.dart';
 import 'services/push_subscription_service.dart';
+import 'providers/billing_provider.dart' show iapServiceProvider;
+import 'services/iap_service.dart';
 import 'widgets/offline_banner.dart';
 
 import 'widgets/app_toast.dart';
@@ -45,6 +47,12 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
       environment: const String.fromEnvironment('ENVIRONMENT',
           defaultValue: 'development'),
     );
+    if (IapService.isSupported) {
+      // The store can redeliver unfinished transactions before authentication
+      // finishes. Subscribe immediately; failed delivery is retained and
+      // retried after the authenticated bootstrap below.
+      unawaited(ref.read(iapServiceProvider.future));
+    }
   }
 
   void _ensureDeferredInit() {
@@ -58,6 +66,13 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
     // starting it here gives it a head start before the user is likely to be
     // actively typing into a list.
     ref.read(grocerySeedProvider);
+    if (IapService.isSupported) {
+      unawaited(
+        ref
+            .read(iapServiceProvider.future)
+            .then((service) => service.retryPendingVerification()),
+      );
+    }
     _initPushSubscriptions();
   }
 
@@ -129,6 +144,13 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
       // Force-reconnect SSE — the OS may have silently killed the connection
       // while the app was backgrounded.
       ref.read(sseServiceProvider).reconnect();
+      if (IapService.isSupported && ref.read(authStateProvider)) {
+        unawaited(
+          ref
+              .read(iapServiceProvider.future)
+              .then((service) => service.retryPendingVerification()),
+        );
+      }
       // Re-run the banner state now rather than waiting out the poll interval,
       // so a stale offline bar never survives into the first visible frame.
       ref.invalidate(outboxStateProvider);

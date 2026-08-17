@@ -32,6 +32,8 @@ migrate_working_dir/
 .pub-cache/
 .pub/
 /build/
+/third_party/**/.gradle/
+/third_party/**/build/
 
 
 web/drift_worker.dart.js
@@ -60,3 +62,5 @@ app.*.map.json
 /android/app/google-services.json
 google-services.json
 GoogleService-Info.plist
+android/key.properties
+*.jks

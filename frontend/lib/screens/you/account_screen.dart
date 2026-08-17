@@ -26,6 +26,7 @@ import '../../providers/calendar_provider.dart';
 import '../../router.dart' show currentGroupIdProvider;
 import '../../services/scan/ocr_training_data_service.dart';
 import '../../providers/billing_provider.dart';
+import '../../config/iap_config.dart';
 import '../../sheets/feedback_sheet.dart';
 import '../../sheets/premium_sheet.dart';
 import '../../theme/spacing.dart';
@@ -767,8 +768,17 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   Future<void> _openBillingPortal() async {
     final l10n = AppLocalizations.of(context)!;
     try {
-      final service = await ref.read(billingServiceProvider.future);
-      final url = await service.openPortal();
+      final sub = ref.read(billingStatusProvider).valueOrNull?.subscription;
+      final String url;
+      switch (sub?.provider) {
+        case 'apple':
+          url = IapConfig.appleManageSubscriptionsUrl;
+        case 'google':
+          url = IapConfig.googleManageSubscriptionsUrl;
+        default:
+          final service = await ref.read(billingServiceProvider.future);
+          url = await service.openPortal();
+      }
       await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     } catch (_) {
       if (!mounted) return;

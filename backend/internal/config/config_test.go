@@ -32,19 +32,30 @@ func TestLogIntegrationStatus(t *testing.T) {
 
 	t.Run("fully configured", func(t *testing.T) {
 		cfg := &Config{
-			SendGridSMTPHost:       "smtp.sendgrid.net",
-			SendGridSMTPUser:       "apikey",
-			ResendAPIKey:           "re_test_key",
-			VapidPublicKey:         "BExamplePublicKey",
-			VapidPrivateKey:        "ExamplePrivateKey",
-			FirebaseProjectID:      "my-project",
-			FirebaseServiceAccount: `{"type":"service_account"}`,
-			S3BucketName:           "my-bucket",
-			GoogleClientID:         "google-client-id.apps.googleusercontent.com",
-			SentryDSN:              "https://abc@o123.ingest.sentry.io/456",
-			FxRateAPIURL:           "https://api.frankfurter.dev",
-			PolarAccessToken:       "polar_at_test",
-			PolarWebhookSecret:     "whsec_test",
+			SendGridSMTPHost:             "smtp.sendgrid.net",
+			SendGridSMTPUser:             "apikey",
+			ResendAPIKey:                 "re_test_key",
+			VapidPublicKey:               "BExamplePublicKey",
+			VapidPrivateKey:              "ExamplePrivateKey",
+			FirebaseProjectID:            "my-project",
+			FirebaseServiceAccount:       `{"type":"service_account"}`,
+			S3BucketName:                 "my-bucket",
+			GoogleClientID:               "google-client-id.apps.googleusercontent.com",
+			SentryDSN:                    "https://abc@o123.ingest.sentry.io/456",
+			FxRateAPIURL:                 "https://api.frankfurter.dev",
+			PolarAccessToken:             "polar_at_test",
+			PolarWebhookSecret:           "whsec_test",
+			AppleIAPBundleID:             "dev.mohamad.mitlist",
+			AppleIAPAppID:                1234567890,
+			AppleIAPProductMonthly:       "dev.mohamad.mitlist.premium.monthly",
+			AppleIAPProductYearly:        "dev.mohamad.mitlist.premium.yearly",
+			GooglePlayPackageName:        "dev.mohamad.mitlist",
+			GooglePlayServiceAccountJSON: `{"type":"service_account"}`,
+			GooglePlaySubscriptionID:     "premium",
+			GooglePlayProductMonthly:     "premium-monthly",
+			GooglePlayProductYearly:      "premium-yearly",
+			GooglePubSubAudience:         "https://api.mitlist.me/webhooks/google",
+			GooglePubSubServiceAccount:   "pubsub@project.iam.gserviceaccount.com",
 		}
 		out := captureLog(cfg.LogIntegrationStatus)
 		if !strings.Contains(out, `"email":true`) {
@@ -133,5 +144,29 @@ func TestValidateRejectsSharedTokenSigningKey(t *testing.T) {
 	}
 	if err := cfg.Validate(); err == nil {
 		t.Fatal("expected identical access and refresh signing keys to be rejected")
+	}
+}
+
+func TestValidateRejectsUnknownAppleIAPEnvironment(t *testing.T) {
+	cfg := &Config{Environment: "development", AppleIAPEnvironment: "staging"}
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("expected invalid Apple IAP environment to be rejected")
+	}
+}
+
+func TestValidateRequiresAppleAppIDOutsideSandbox(t *testing.T) {
+	cfg := &Config{
+		Environment:            "development",
+		AppleIAPEnvironment:    "Production",
+		AppleIAPBundleID:       "me.mitlist",
+		AppleIAPProductMonthly: "me.mitlist.premium.monthly",
+		AppleIAPProductYearly:  "me.mitlist.premium.yearly",
+	}
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("expected production Apple IAP without an app Apple ID to be rejected")
+	}
+	cfg.AppleIAPEnvironment = "Sandbox"
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("sandbox Apple IAP should not require an app Apple ID: %v", err)
 	}
 }

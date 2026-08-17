@@ -1,4 +1,4 @@
-The shared household, all in one place. Split expenses, rotate chores, manage shopping lists, and plan meals — free and open source. No ads, no subscriptions, no lock-in.
+The shared household, all in one place. Split expenses, rotate chores, manage shopping lists, and plan meals — free for households of up to four, with optional Premium for larger households. No ads.
 
 WHY MITLIST
 You're already paying rent. Why pay another subscription for apps that do less? mitlist is free and open source. Host it yourself in 5 minutes with Docker.
@@ -19,4 +19,4 @@ YOUR DATA, YOUR RULES
 No account required on self-hosted instances. Export your data anytime. No telemetry, no tracking, no ads. Open source (AGPL-3.0).
 
 PRICE
-Free. No in-app purchases. No subscriptions.
+Free for households of up to four people. Optional monthly or yearly Premium unlocks larger households and can be managed or canceled through your App Store account.

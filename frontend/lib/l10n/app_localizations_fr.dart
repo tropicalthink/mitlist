@@ -5163,6 +5163,19 @@ class AppLocalizationsFr extends AppLocalizations {
       'Terminez dans votre navigateur, puis revenez — premium s’active automatiquement.';
 
   @override
+  String get billingProcessing => 'Processing your purchase...';
+
+  @override
+  String get billingRestore => 'Restore purchases';
+
+  @override
+  String get billingAutoRenewDisclosure =>
+      'Payment is charged to your store account. The subscription renews automatically unless canceled at least 24 hours before the current period ends. Manage or cancel it in your App Store or Google Play account.';
+
+  @override
+  String get billingPurchased => 'Premium is active. Thanks!';
+
+  @override
   String get billingAccountCardTitle => 'Premium';
 
   @override

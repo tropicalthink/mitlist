@@ -1,11 +1,35 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mitlist/models/billing_models.dart';
+import 'package:mitlist/providers/billing_provider.dart';
 
 /// Guards the parsing of what the paywall shows. A price is the one thing on
 /// that screen a customer can hold us to, so a malformed or missing plan must
 /// degrade to "no price" rather than to a wrong one.
 void main() {
   group('BillingStatus plans', () {
+    test('parses provider capabilities and subscription provider', () {
+      final status = BillingStatus.fromJson({
+        'enabled': true,
+        'web_enabled': false,
+        'apple_enabled': true,
+        'google_enabled': false,
+        'free_limit': 4,
+        'subscription': {
+          'id': 'sub',
+          'user_id': 'user',
+          'provider': 'apple',
+          'status': 'active',
+        },
+      });
+
+      expect(status.webEnabled, isFalse);
+      expect(status.appleEnabled, isTrue);
+      expect(status.subscription?.provider, 'apple');
+      // Widget tests run on the host platform, so an Apple-only server must not
+      // advertise a checkout here.
+      expect(billingCheckoutEnabled(status), isFalse);
+    });
+
     test('parses plans for both intervals', () {
       final status = BillingStatus.fromJson({
         'enabled': true,
