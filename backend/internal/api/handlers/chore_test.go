@@ -16,7 +16,7 @@ import (
 func TestChore_CreateChore(t *testing.T) {
 	clearTables(t)
 	router, _ := newChoreRouter(t)
-	user := createTestUser(t, "chore@example.com", "password123!")
+	user := createTestUser(t, "chore@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()
@@ -48,7 +48,7 @@ func TestChore_CreateChore(t *testing.T) {
 func TestChore_ListChores(t *testing.T) {
 	clearTables(t)
 	router, _ := newChoreRouter(t)
-	user := createTestUser(t, "lschore@example.com", "password123!")
+	user := createTestUser(t, "lschore@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()
@@ -84,7 +84,7 @@ func TestChore_ListChores(t *testing.T) {
 func TestChore_ListCurrentChores(t *testing.T) {
 	clearTables(t)
 	router, _ := newChoreRouter(t)
-	user := createTestUser(t, "currentchore@example.com", "password123!")
+	user := createTestUser(t, "currentchore@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()
@@ -133,7 +133,7 @@ func TestChore_ListCurrentChores(t *testing.T) {
 func TestChore_GetChore_NotFound(t *testing.T) {
 	clearTables(t)
 	router, _ := newChoreRouter(t)
-	user := createTestUser(t, "nfchore@example.com", "password123!")
+	user := createTestUser(t, "nfchore@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	rec := execRequest(t, router, "GET", "/api/v1/chores/"+uuid.New().String(), nil, token)
@@ -143,7 +143,7 @@ func TestChore_GetChore_NotFound(t *testing.T) {
 func TestChore_UpdateChore(t *testing.T) {
 	clearTables(t)
 	router, _ := newChoreRouter(t)
-	user := createTestUser(t, "upchore@example.com", "password123!")
+	user := createTestUser(t, "upchore@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()
@@ -181,7 +181,7 @@ func TestChore_UpdateChore(t *testing.T) {
 func TestChore_DeleteChore(t *testing.T) {
 	clearTables(t)
 	router, _ := newChoreRouter(t)
-	user := createTestUser(t, "delchore@example.com", "password123!")
+	user := createTestUser(t, "delchore@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()
@@ -214,7 +214,7 @@ func TestChore_DeleteChore(t *testing.T) {
 func TestChore_RotateChore(t *testing.T) {
 	clearTables(t)
 	router, _ := newChoreRouter(t)
-	user := createTestUser(t, "rot@example.com", "password123!")
+	user := createTestUser(t, "rot@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()
@@ -253,7 +253,7 @@ func TestChore_RotateChore(t *testing.T) {
 func TestChore_CompleteChore(t *testing.T) {
 	clearTables(t)
 	router, _ := newChoreRouter(t)
-	user := createTestUser(t, "comp@example.com", "password123!")
+	user := createTestUser(t, "comp@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()
@@ -303,7 +303,7 @@ func TestChore_CompleteChore(t *testing.T) {
 func TestChore_RescheduleChore(t *testing.T) {
 	clearTables(t)
 	router, _ := newChoreRouter(t)
-	user := createTestUser(t, "reschedule@example.com", "password123!")
+	user := createTestUser(t, "reschedule@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()
@@ -345,7 +345,7 @@ func TestChore_RescheduleChore(t *testing.T) {
 func TestChore_GetAssignments(t *testing.T) {
 	clearTables(t)
 	router, _ := newChoreRouter(t)
-	user := createTestUser(t, "ass@example.com", "password123!")
+	user := createTestUser(t, "ass@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()

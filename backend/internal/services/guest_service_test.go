@@ -89,14 +89,14 @@ func TestGuestService_ConvertGuest(t *testing.T) {
 
 		userRepo.On("GetByID", ctx, guestID).Return(&models.User{ID: guestID, IsGuest: true, IsActive: true}, nil)
 		userRepo.On("GetByEmail", ctx, "new@example.com").Return(nil, fmt.Errorf("user not found"))
-		passSvc.On("Hash", "password123!").Return("hash", nil)
+		passSvc.On("Hash", "Password123!").Return("hash", nil)
 		userRepo.On("Update", ctx, mock.AnythingOfType("*models.User")).Return(nil)
 		authRepo.On("CreateEmailVerification", ctx, guestID, mock.AnythingOfType("string"), mock.AnythingOfType("time.Time")).Return(nil)
 		mailSvc.On("Send", "new@example.com", "Verify your mitlist account", mock.AnythingOfType("string"), false).Return(nil)
 		jwtSvc.On("RevokeUserSessions", guestID).Return(nil)
 		jwtSvc.On("GenerateTokenPair", guestID.String(), mock.Anything).Return("access", "refresh", nil)
 
-		user, access, _, err := svc.ConvertGuest(ctx, guestID, "new@example.com", "password123!", "Test", "User")
+		user, access, _, err := svc.ConvertGuest(ctx, guestID, "new@example.com", "Password123!", "Test", "User")
 		require.NoError(t, err)
 		assert.True(t, user.IsGuest)
 		assert.False(t, user.IsVerified)

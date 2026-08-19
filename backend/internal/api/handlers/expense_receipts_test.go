@@ -19,7 +19,7 @@ import (
 func TestExpenses_Receipts_AttachAndList(t *testing.T) {
 	clearTables(t)
 
-	user := createTestUser(t, "receipts@example.com", "password123!")
+	user := createTestUser(t, "receipts@example.com", "Password123!")
 	groupRepo := newTestGroupRepo()
 	finRepo := newTestFinanceRepo()
 

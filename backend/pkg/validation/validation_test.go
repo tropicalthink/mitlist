@@ -34,9 +34,15 @@ func TestPassword(t *testing.T) {
 		input   string
 		wantErr bool
 	}{
-		{"valid", "12345678", false},
-		{"too short", "1234567", true},
+		{"valid", "Passw0rd!", false},
+		{"too short", "Pa0!aaa", true},
 		{"too long", strings.Repeat("a", 129), true},
+		{"no uppercase", "passw0rd!", true},
+		{"no digit", "Password!", true},
+		{"no special", "Passw0rdd", true},
+		{"space does not count as special", "Passw0rd 1", true},
+		{"unicode uppercase counts", "Ünicode1!", false},
+		{"symbol counts as special", "Passw0rd~", false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

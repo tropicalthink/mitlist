@@ -4023,6 +4023,38 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authSignupPasswordRequired => 'Password is required.';
 
   @override
+  String get authSignupConfirmPassword => 'Confirm password';
+
+  @override
+  String get authSignupConfirmPasswordHint => 'Re-enter your password';
+
+  @override
+  String get authSignupConfirmPasswordRequired =>
+      'Please confirm your password.';
+
+  @override
+  String get authSignupPasswordMismatch => 'Passwords do not match.';
+
+  @override
+  String get authSignupPasswordRequirementsNotMet =>
+      'Password does not meet the requirements below.';
+
+  @override
+  String get passwordRequirementsTitle => 'Your password must contain:';
+
+  @override
+  String get passwordRequirementLength => 'At least 8 characters';
+
+  @override
+  String get passwordRequirementUppercase => 'One uppercase letter';
+
+  @override
+  String get passwordRequirementDigit => 'One number';
+
+  @override
+  String get passwordRequirementSpecial => 'One special character';
+
+  @override
   String get authSignupGenericError =>
       'Couldn\'t create account. Check your connection and try again.';
 
