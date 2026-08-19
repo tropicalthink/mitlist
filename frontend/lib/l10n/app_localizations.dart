@@ -6099,6 +6099,12 @@ abstract class AppLocalizations {
   /// **'Drag notes to move  ·  Pinch to zoom'**
   String get pinwallDragHint;
 
+  /// Board button that opens the note composer
+  ///
+  /// In en, this message translates to:
+  /// **'Add a note'**
+  String get pinwallAddNote;
+
   /// Accessibility label listing the household members currently viewing the board
   ///
   /// In en, this message translates to:
