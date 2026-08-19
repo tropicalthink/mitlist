@@ -351,10 +351,9 @@ class _DoneStamp extends StatelessWidget {
                 vertical: MitlistSpacing.space0_5,
               ),
               decoration: BoxDecoration(
-                color: (dark
-                        ? MitlistColors.success950
-                        : MitlistColors.success50)
-                    .withValues(alpha: 0.92),
+                color:
+                    (dark ? MitlistColors.success950 : MitlistColors.success50)
+                        .withValues(alpha: 0.92),
                 border: Border.all(
                   color: dark
                       ? MitlistColors.success400
