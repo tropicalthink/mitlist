@@ -2,12 +2,14 @@ package handlers
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	appcheckservice "github.com/mitlist-app/mitlist/internal/services/appcheck"
+	turnstileservice "github.com/mitlist-app/mitlist/internal/services/turnstile"
 )
 
 func TestAuth_Register(t *testing.T) {
@@ -187,6 +189,75 @@ func TestAuth_GuestRejectsMissingRequiredAppCheckToken(t *testing.T) {
 
 	rec := execRequest(t, router, "POST", "/api/v1/auth/guest", nil, "")
 	requireStatus(t, rec, http.StatusUnauthorized)
+}
+
+// siteverifyStub stands in for Cloudflare, answering every request with the
+// given body.
+func siteverifyStub(t *testing.T, body string) *httptest.Server {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(body))
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func guestWithHeader(t *testing.T, router http.Handler, header, value string) *httptest.ResponseRecorder {
+	t.Helper()
+	req := buildRequest(t, "POST", "/api/v1/auth/guest", nil, "")
+	if header != "" {
+		req.Header.Set(header, value)
+	}
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+	return rec
+}
+
+func TestAuth_GuestAcceptsTurnstileToken(t *testing.T) {
+	clearTables(t)
+	router, handler := newAuthRouter(t)
+	stub := siteverifyStub(t, `{"success":true,"hostname":"app.mitlist.me"}`)
+	handler.turnstile = turnstileservice.NewForTesting("secret", stub.URL, stub.Client())
+
+	rec := guestWithHeader(t, router, "X-Mitlist-Turnstile", "solved")
+	requireStatus(t, rec, http.StatusCreated)
+
+	var resp map[string]any
+	parseJSONResponse(t, rec, &resp)
+	assert.True(t, resp["user"].(map[string]any)["is_guest"].(bool))
+}
+
+func TestAuth_GuestRejectsMissingTurnstileToken(t *testing.T) {
+	clearTables(t)
+	router, handler := newAuthRouter(t)
+	stub := siteverifyStub(t, `{"success":true}`)
+	handler.turnstile = turnstileservice.NewForTesting("secret", stub.URL, stub.Client())
+
+	rec := guestWithHeader(t, router, "", "")
+	requireStatus(t, rec, http.StatusUnauthorized)
+}
+
+func TestAuth_GuestRejectsFailedTurnstileChallenge(t *testing.T) {
+	clearTables(t)
+	router, handler := newAuthRouter(t)
+	stub := siteverifyStub(t, `{"success":false,"error-codes":["invalid-input-response"]}`)
+	handler.turnstile = turnstileservice.NewForTesting("secret", stub.URL, stub.Client())
+
+	rec := guestWithHeader(t, router, "X-Mitlist-Turnstile", "forged")
+	requireStatus(t, rec, http.StatusUnauthorized)
+}
+
+// The bypass worth guarding: with both enforced, dropping the App Check header
+// must fall through to Turnstile rather than skipping attestation entirely.
+func TestAuth_GuestWithBothEnforcedStillRequiresOneProof(t *testing.T) {
+	clearTables(t)
+	router, handler := newAuthRouter(t)
+	stub := siteverifyStub(t, `{"success":true,"hostname":"app.mitlist.me"}`)
+	handler.appCheck = appcheckservice.NewForTesting("1234567890", "https://jwks.test", nil)
+	handler.turnstile = turnstileservice.NewForTesting("secret", stub.URL, stub.Client())
+
+	requireStatus(t, guestWithHeader(t, router, "", ""), http.StatusUnauthorized)
+	requireStatus(t, guestWithHeader(t, router, "X-Mitlist-Turnstile", "solved"), http.StatusCreated)
 }
 
 func TestAuth_Refresh(t *testing.T) {

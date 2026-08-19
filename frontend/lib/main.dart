@@ -32,9 +32,11 @@ Future<void> main() async {
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   }
 
-  // App Check is build-time opt-in. Official workflows enable it; self-hosted
-  // builds remain Firebase-free unless their operator opts in. Activate it
-  // after Firebase Core and before guest creation requests a token.
+  // App Check is build-time opt-in and mobile-only: its web provider would be
+  // reCAPTCHA Enterprise, and web uses Cloudflare Turnstile instead (see
+  // TurnstileConfig). Official workflows enable it; self-hosted builds remain
+  // Firebase-free unless their operator opts in. Activate it after Firebase
+  // Core and before guest creation requests a token.
   await FirebaseAppCheckService.initialize();
 
   const dsn = String.fromEnvironment('GLITCHTIP_DSN', defaultValue: '');

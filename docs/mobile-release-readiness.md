@@ -229,13 +229,11 @@ version codes and iOS bundle versions. The URL, DSN, and signing material are
 only passed through protected workflow environment variables; they are never
 written to artifacts or repository files.
 
-The production PWA workflow forces `APP_CHECK_ENABLED=true` and requires
-`PRODUCTION_FIREBASE_PROJECT_ID`, `PRODUCTION_FIREBASE_API_KEY`,
-`PRODUCTION_FIREBASE_APP_ID`, `PRODUCTION_FIREBASE_MESSAGING_SENDER_ID`, and
-`PRODUCTION_FIREBASE_PROJECT_NUMBER`, and
-`PRODUCTION_APP_CHECK_WEB_RECAPTCHA_SITE_KEY` to be non-empty, and
-`PRODUCTION_FIREBASE_APP_CHECK_REQUIRED` to equal `true`. Its build is
-rejected before Docker starts if any check fails.
+The production PWA workflow carries no Firebase or App Check values: web
+attests with Cloudflare Turnstile, so it requires `TURNSTILE_SITE_KEY`,
+`PRODUCTION_API_BASE_URL` and `APPLE_TEAM_ID` to be non-empty. Its build is
+rejected before Docker starts if any check fails. App Check remains the mobile
+path, configured by the beta/release workflows.
 The production API must separately set `FIREBASE_APP_CHECK_REQUIRED=true` at
 runtime (see [the deployment runbook](DEPLOYMENT.md)); a build-time client flag
 alone is not an access-control boundary.

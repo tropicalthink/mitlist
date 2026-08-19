@@ -10,6 +10,7 @@ import '../models/auth_models.dart';
 import 'api_client.dart';
 import 'api_error_mapper.dart';
 import 'app_check_service.dart';
+import 'turnstile_service.dart';
 import 'fcm_service.dart';
 import 'push_subscription_service.dart';
 import 'token_store.dart';
@@ -32,6 +33,7 @@ class AuthService {
   final SharedPreferences _prefs;
   final TokenStore _tokenStore;
   final AppCheckTokenProvider _appCheck;
+  final TurnstileTokenProvider _turnstile;
 
   void _logFailure(String operation, DioException error) {
     if (!kDebugMode) return;
@@ -44,9 +46,12 @@ class AuthService {
   final Future<void> Function()? _wipeLocalData;
 
   AuthService._(this._dio, this._prefs, this._tokenStore,
-      {Future<void> Function()? wipeLocalData, AppCheckTokenProvider? appCheck})
+      {Future<void> Function()? wipeLocalData,
+      AppCheckTokenProvider? appCheck,
+      TurnstileTokenProvider? turnstile})
       : _wipeLocalData = wipeLocalData,
-        _appCheck = appCheck ?? FirebaseAppCheckService.instance;
+        _appCheck = appCheck ?? FirebaseAppCheckService.instance,
+        _turnstile = turnstile ?? TurnstileService.instance;
 
   /// Test-only constructor that accepts all dependencies directly.
   @visibleForTesting
@@ -56,8 +61,11 @@ class AuthService {
     TokenStore tokenStore, {
     Future<void> Function()? wipeLocalData,
     AppCheckTokenProvider? appCheck,
+    TurnstileTokenProvider? turnstile,
   }) : this._(dio, prefs, tokenStore,
-            wipeLocalData: wipeLocalData, appCheck: appCheck);
+            wipeLocalData: wipeLocalData,
+            appCheck: appCheck,
+            turnstile: turnstile);
 
   static Future<AuthService> create([Ref? ref]) async {
     final prefs = await SharedPreferences.getInstance();
@@ -341,16 +349,21 @@ class AuthService {
   /// Returns a [TokenPair] with access and refresh tokens.
   Future<TokenPair> createGuest({bool rememberMe = true}) async {
     try {
-      // App Check is intentionally scoped to this unauthenticated, abuse-
-      // sensitive endpoint. Fetch immediately before the request so expired
-      // tokens are refreshed by Firebase rather than cached in Dio headers.
+      // Attestation is intentionally scoped to this unauthenticated, abuse-
+      // sensitive endpoint. Both tokens are fetched immediately before the
+      // request so expired ones are refreshed rather than cached in Dio
+      // headers, and both are single-platform: App Check returns null on web,
+      // Turnstile returns null everywhere else. The API accepts either.
       final appCheckToken = await _appCheck.getToken();
+      final turnstileToken = await _turnstile.getToken();
       final response = await _dio.post(
         '/auth/guest',
         options: Options(
           headers: {
             if (appCheckToken != null && appCheckToken.isNotEmpty)
               'X-Firebase-AppCheck': appCheckToken,
+            if (turnstileToken != null && turnstileToken.isNotEmpty)
+              'X-Mitlist-Turnstile': turnstileToken,
           },
         ),
       );

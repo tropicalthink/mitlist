@@ -15,6 +15,7 @@ import (
 	"github.com/mitlist-app/mitlist/internal/services"
 	appcheckservice "github.com/mitlist-app/mitlist/internal/services/appcheck"
 	jwtservice "github.com/mitlist-app/mitlist/internal/services/jwt"
+	turnstileservice "github.com/mitlist-app/mitlist/internal/services/turnstile"
 )
 
 // AuthHandler exposes authentication and user management endpoints.
@@ -25,6 +26,7 @@ type AuthHandler struct {
 	oauthService      *services.OAuthService
 	jwtService        *jwtservice.Service
 	appCheck          *appcheckservice.Verifier
+	turnstile         *turnstileservice.Verifier
 	credentialService *services.IntegrationCredentialService
 }
 
@@ -56,6 +58,14 @@ func NewAuthHandler(
 // tests and embedded servers.
 func (h *AuthHandler) SetIntegrationCredentialService(service *services.IntegrationCredentialService) {
 	h.credentialService = service
+}
+
+// SetTurnstileVerifier wires web attestation for guest creation. It is a
+// setter rather than a constructor argument for the same reason as the
+// credential service: the constructor is used by tests and embedded servers
+// that have no business knowing about Cloudflare.
+func (h *AuthHandler) SetTurnstileVerifier(verifier *turnstileservice.Verifier) {
+	h.turnstile = verifier
 }
 
 // RegisterRoutes mounts all auth routes under the provided router.
@@ -481,17 +491,40 @@ func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) CreateGuest(w http.ResponseWriter, r *http.Request) {
-	// App Check is deliberately enforced at the guest boundary only. When it
-	// is enabled, the caller-controlled install ID can only supplement (not
-	// replace) the verified token identity used for quota enforcement.
+	// Attestation is deliberately enforced at the guest boundary only, and the
+	// proof depends on where the caller runs: mobile presents an App Check
+	// token (Play Integrity / App Attest), web presents a Turnstile token,
+	// because App Check's only web provider is reCAPTCHA Enterprise.
+	//
+	// Whichever proof is presented must verify. The last branch is the one
+	// that matters: if App Check is enforced and the caller sends no proof at
+	// all, that is a rejection, not an unattested guest — otherwise omitting a
+	// header would be a bypass.
 	installIdentity := ""
-	if h.appCheck != nil && h.appCheck.Enabled() {
-		claims, err := h.appCheck.Verify(r.Context(), r.Header.Get("X-Firebase-AppCheck"))
+	appCheckToken := r.Header.Get("X-Firebase-AppCheck")
+	appCheckOn := h.appCheck != nil && h.appCheck.Enabled()
+	turnstileOn := h.turnstile != nil && h.turnstile.Enabled()
+
+	switch {
+	case appCheckOn && appCheckToken != "":
+		claims, err := h.appCheck.Verify(r.Context(), appCheckToken)
 		if err != nil {
 			api.RespondError(w, api.ErrUnauthorized)
 			return
 		}
 		installIdentity = claims.QuotaIdentity(r.Header.Get("X-Mitlist-Install-ID"))
+	case turnstileOn:
+		result, err := h.turnstile.Verify(
+			r.Context(), r.Header.Get("X-Mitlist-Turnstile"), middleware.ExtractIP(r),
+		)
+		if err != nil {
+			api.RespondError(w, api.ErrUnauthorized)
+			return
+		}
+		installIdentity = result.QuotaIdentity(r.Header.Get("X-Mitlist-Install-ID"))
+	case appCheckOn:
+		api.RespondError(w, api.ErrUnauthorized)
+		return
 	}
 	user, access, refresh, err := h.guestService.CreateGuestForIdentity(
 		r.Context(), middleware.ExtractIP(r), installIdentity,

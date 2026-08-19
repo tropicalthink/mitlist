@@ -5,10 +5,15 @@ import 'package:dio/dio.dart';
 import '../l10n/app_localizations.dart';
 import '../services/app_check_service.dart';
 import '../services/api_error_mapper.dart';
+import '../services/turnstile_provider.dart';
 
 String friendlyErrorMessage(Object error, AppLocalizations l10n) {
-  if (error is AppCheckUnavailableException) {
-    return _sentenceCase(error.message);
+  // Attestation failures carry their own already-user-facing message; both
+  // reach the user before any request is sent, so there is no server message
+  // to prefer over them.
+  if (error is AppCheckUnavailableException ||
+      error is TurnstileUnavailableException) {
+    return _sentenceCase((error as ApiException).message);
   }
 
   // Services wrap transport errors in ApiException. Surface the backend's
