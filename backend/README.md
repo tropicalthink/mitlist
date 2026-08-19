@@ -48,6 +48,9 @@ All config via environment variables (see `.env.example`):
 | `S3_ENDPOINT_URL` | No | — | R2 S3 endpoint |
 | `MAX_FILE_SIZE_BYTES` | No | `10485760` | Maximum attachment size (10 MiB) |
 | `MAX_STORAGE_PER_GROUP_GB` | No | `1` | Storage quota per household; `0` disables it for self-hosters |
+| `FIREBASE_APP_CHECK_REQUIRED` | No | `false` | Require a valid Firebase App Check token for guest creation; production must fail closed when enabled |
+| `FIREBASE_PROJECT_NUMBER` | When App Check is enabled | — | Numeric Firebase project number used for App Check issuer/audience checks |
+| `FIREBASE_APP_CHECK_ALLOWED_APP_IDS` | When App Check is enabled | — | Comma-separated Firebase App IDs permitted to create guests |
 | `GLITCHTIP_DSN` | No | — | Error reporting DSN |
 
 ### Production credentials (docker compose --profile prod)
@@ -91,7 +94,8 @@ the existing PostgreSQL migrations normally.
 
 For this deployment, run only the API service; do not start the bundled
 Postgres container. Keep `RUN_MIGRATIONS_ON_STARTUP=true` for the first
-deployment, then verify `/health` before directing app traffic to the server.
+deployment, then verify `/healthz` and `/readyz` before directing app traffic to
+the server.
 PlanetScale's managed backups cover the database; attachment objects remain in
 R2 and need their own lifecycle/retention policy.
 

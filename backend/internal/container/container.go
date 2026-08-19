@@ -8,11 +8,13 @@ import (
 	"github.com/mitlist-app/mitlist/internal/config"
 	"github.com/mitlist-app/mitlist/internal/repositories"
 	"github.com/mitlist-app/mitlist/internal/services"
+	appstoresvc "github.com/mitlist-app/mitlist/internal/services/appstore"
 	fxsvc "github.com/mitlist-app/mitlist/internal/services/fx"
 	jwtservice "github.com/mitlist-app/mitlist/internal/services/jwt"
 	mailservice "github.com/mitlist-app/mitlist/internal/services/mail"
 	oauthclient "github.com/mitlist-app/mitlist/internal/services/oauth"
 	passwordservice "github.com/mitlist-app/mitlist/internal/services/password"
+	playstoresvc "github.com/mitlist-app/mitlist/internal/services/playstore"
 	polarsvc "github.com/mitlist-app/mitlist/internal/services/polar"
 	pushservice "github.com/mitlist-app/mitlist/internal/services/push"
 	storagesvc "github.com/mitlist-app/mitlist/internal/services/storage"
@@ -46,6 +48,9 @@ type Container struct {
 
 	authRepoOnce sync.Once
 	authRepo     *repositories.AuthRepository
+
+	integrationCredentialRepoOnce sync.Once
+	integrationCredentialRepo     *repositories.IntegrationCredentialRepository
 
 	groupRepoOnce sync.Once
 	groupRepo     *repositories.GroupRepository
@@ -107,6 +112,9 @@ type Container struct {
 	oauthServiceOnce sync.Once
 	oauthService     *services.OAuthService
 
+	integrationCredentialServiceOnce sync.Once
+	integrationCredentialService     *services.IntegrationCredentialService
+
 	listServiceOnce sync.Once
 	listService     *services.ListService
 
@@ -167,10 +175,17 @@ type Container struct {
 	polarClientOnce sync.Once
 	polarClient     *polarsvc.Client
 
+	appleIAPClientOnce sync.Once
+	appleIAPClient     *appstoresvc.Client
+
+	googleIAPClientOnce sync.Once
+	googleIAPClient     *playstoresvc.Client
+
 	billingServiceOnce sync.Once
 	billingService     *services.BillingService
 
-	sseHub *sse.Hub
+	sseHubOnce sync.Once
+	sseHub     *sse.Hub
 }
 
 // New wires shared infrastructure into a dependency container.
@@ -251,6 +266,14 @@ func (c *Container) AuthRepo() *repositories.AuthRepository {
 		c.authRepo = repositories.NewAuthRepository(c.db)
 	})
 	return c.authRepo
+}
+
+// IntegrationCredentialRepo returns the singleton integration credential repository.
+func (c *Container) IntegrationCredentialRepo() *repositories.IntegrationCredentialRepository {
+	c.integrationCredentialRepoOnce.Do(func() {
+		c.integrationCredentialRepo = repositories.NewIntegrationCredentialRepository(c.db)
+	})
+	return c.integrationCredentialRepo
 }
 
 // GroupRepo returns the singleton group repository.
@@ -366,6 +389,7 @@ func (c *Container) ListItemAttachmentRepo() *repositories.ListItemAttachmentRep
 func (c *Container) UserService() *services.UserService {
 	c.userServiceOnce.Do(func() {
 		c.userService = services.NewUserService(c.UserRepo(), c.AuthRepo(), c.JWT(), c.Password(), c.Mail())
+		c.userService.SetFrontendURL(c.cfg.FrontendURL)
 	})
 	return c.userService
 }
@@ -374,6 +398,7 @@ func (c *Container) UserService() *services.UserService {
 func (c *Container) GroupService() *services.GroupService {
 	c.groupServiceOnce.Do(func() {
 		c.groupService = services.NewGroupService(c.GroupRepo(), c.UserRepo())
+		c.groupService.SetHub(c.SSEHub())
 		// Only gate household growth when billing is actually configured; a
 		// self-hosted instance without it keeps unlimited households.
 		if c.BillingService().Enabled() {
@@ -400,6 +425,36 @@ func (c *Container) PolarClient() *polarsvc.Client {
 	return c.polarClient
 }
 
+// AppleIAPClient returns the singleton Apple App Store verification client. It
+// is disabled (verifies nothing) when Apple IAP credentials are unset.
+func (c *Container) AppleIAPClient() *appstoresvc.Client {
+	c.appleIAPClientOnce.Do(func() {
+		c.appleIAPClient = appstoresvc.New(appstoresvc.Config{
+			BundleID:         c.cfg.AppleIAPBundleID,
+			Environment:      c.cfg.AppleIAPEnvironment,
+			AppAppleID:       int64(c.cfg.AppleIAPAppID),
+			ProductIDMonthly: c.cfg.AppleIAPProductMonthly,
+			ProductIDYearly:  c.cfg.AppleIAPProductYearly,
+		})
+	})
+	return c.appleIAPClient
+}
+
+// GoogleIAPClient returns the singleton Google Play verification client. It is
+// disabled when the service account or package name is unset.
+func (c *Container) GoogleIAPClient() *playstoresvc.Client {
+	c.googleIAPClientOnce.Do(func() {
+		c.googleIAPClient = playstoresvc.New(playstoresvc.Config{
+			PackageName:        c.cfg.GooglePlayPackageName,
+			ServiceAccountJSON: c.cfg.GooglePlayServiceAccountJSON,
+			SubscriptionID:     c.cfg.GooglePlaySubscriptionID,
+			BasePlanMonthly:    c.cfg.GooglePlayProductMonthly,
+			BasePlanYearly:     c.cfg.GooglePlayProductYearly,
+		})
+	})
+	return c.googleIAPClient
+}
+
 // BillingService returns the singleton premium entitlement service.
 func (c *Container) BillingService() *services.BillingService {
 	c.billingServiceOnce.Do(func() {
@@ -408,12 +463,18 @@ func (c *Container) BillingService() *services.BillingService {
 			c.GroupRepo(),
 			c.UserRepo(),
 			c.PolarClient(),
+			c.AppleIAPClient(),
+			c.GoogleIAPClient(),
 			services.BillingConfig{
-				FreeMemberLimit:    c.cfg.FreeMemberLimit,
-				ProductIDMonthly:   c.cfg.PolarProductIDMonthly,
-				ProductIDYearly:    c.cfg.PolarProductIDYearly,
-				DefaultDiscountID:  c.cfg.PolarDefaultDiscountID,
-				CheckoutSuccessURL: c.cfg.CheckoutSuccessURL,
+				FreeMemberLimit:      c.cfg.FreeMemberLimit,
+				ProductIDMonthly:     c.cfg.PolarProductIDMonthly,
+				ProductIDYearly:      c.cfg.PolarProductIDYearly,
+				DefaultDiscountID:    c.cfg.PolarDefaultDiscountID,
+				CheckoutSuccessURL:   c.cfg.CheckoutSuccessURL,
+				AppleProductMonthly:  c.cfg.AppleIAPProductMonthly,
+				AppleProductYearly:   c.cfg.AppleIAPProductYearly,
+				GoogleProductMonthly: c.cfg.GooglePlayProductMonthly,
+				GoogleProductYearly:  c.cfg.GooglePlayProductYearly,
 			},
 		)
 	})
@@ -439,7 +500,8 @@ func (c *Container) AppleClient() *oauthclient.AppleClient {
 // GuestService returns the singleton guest service.
 func (c *Container) GuestService() *services.GuestService {
 	c.guestServiceOnce.Do(func() {
-		c.guestService = services.NewGuestService(c.UserRepo(), c.JWT(), c.Password())
+		c.guestService = services.NewGuestServiceWithAuth(c.UserRepo(), c.JWT(), c.Password(), c.AuthRepo(), c.Mail())
+		c.guestService.SetFrontendURL(c.cfg.FrontendURL)
 	})
 	return c.guestService
 }
@@ -450,6 +512,13 @@ func (c *Container) OAuthService() *services.OAuthService {
 		c.oauthService = services.NewOAuthService(c.UserRepo(), c.AuthRepo(), c.JWT(), c.GoogleClient(), c.AppleClient())
 	})
 	return c.oauthService
+}
+
+func (c *Container) IntegrationCredentialService() *services.IntegrationCredentialService {
+	c.integrationCredentialServiceOnce.Do(func() {
+		c.integrationCredentialService = services.NewIntegrationCredentialService(c.IntegrationCredentialRepo(), c.GroupRepo())
+	})
+	return c.integrationCredentialService
 }
 
 // ListService returns the singleton list service.
@@ -505,7 +574,9 @@ func (c *Container) RecipeService() *services.RecipeService {
 func (c *Container) MealPlanService() *services.MealPlanService {
 	c.mealPlanServiceOnce.Do(func() {
 		c.mealPlanService = services.NewMealPlanService(c.MealPlanRepo(), c.GroupRepo(), c.RecipeRepo(), c.ListRepo())
+		c.mealPlanService.SetHub(c.SSEHub())
 		c.mealPlanService.SetCanonicalNameResolver(c.GroceryService().ResolveIngredientName)
+		c.mealPlanService.SetDispatcher(c.NotificationService())
 	})
 	return c.mealPlanService
 }
@@ -527,6 +598,7 @@ func (c *Container) NotificationService() *services.NotificationService {
 			c.NotificationRepo(), c.ActivityRepo(), c.GroupRepo(), c.Push(), c.Mail(),
 		)
 		c.notificationService.SetHub(c.SSEHub())
+		c.notificationService.SetLogger(c.logger)
 	})
 	return c.notificationService
 }
@@ -552,6 +624,7 @@ func (c *Container) PinwallService() *services.PinwallService {
 func (c *Container) AttachmentService() *services.AttachmentService {
 	c.attachmentServiceOnce.Do(func() {
 		c.attachmentService = services.NewAttachmentService(c.cfg, c.AttachmentRepo(), c.GroupRepo(), c.Storage())
+		c.attachmentService.SetHub(c.SSEHub())
 	})
 	return c.attachmentService
 }
@@ -605,9 +678,15 @@ func (c *Container) ShareService() *services.ShareService {
 
 // SSEHub returns the singleton SSE hub for real-time broadcasts.
 func (c *Container) SSEHub() *sse.Hub {
-	if c.sseHub == nil {
+	c.sseHubOnce.Do(func() {
 		c.sseHub = sse.New()
-	}
+		// Keep unit-test and embedded containers (which often have no pool)
+		// local-only, while production instances get durable replay and
+		// PostgreSQL LISTEN/NOTIFY fan-out automatically.
+		if c.db != nil {
+			c.sseHub.SetStore(sse.NewPostgresStore(c.db, ""))
+		}
+	})
 	return c.sseHub
 }
 

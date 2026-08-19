@@ -21,6 +21,7 @@ class GrocerySuggestionField extends ConsumerStatefulWidget {
     super.key,
     required this.controller,
     required this.groupId,
+    required this.suggestionContext,
     this.label,
     this.focusNode,
     this.maxLength,
@@ -31,6 +32,7 @@ class GrocerySuggestionField extends ConsumerStatefulWidget {
 
   final TextEditingController controller;
   final String groupId;
+  final GrocerySuggestionContext suggestionContext;
   final String? label;
   final FocusNode? focusNode;
   final int? maxLength;
@@ -74,7 +76,11 @@ class _GrocerySuggestionFieldState
     try {
       await ref.read(grocerySeedProvider.future);
       final svc = ref.read(grocerySuggestionServiceProvider);
-      final results = await svc.suggest(value, widget.groupId);
+      final results = await svc.suggest(
+        value,
+        widget.groupId,
+        suggestionContext: widget.suggestionContext,
+      );
       if (!mounted || token != _queryToken) return;
       setState(() => _suggestions = results);
     } catch (_) {

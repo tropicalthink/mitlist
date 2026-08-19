@@ -1,7 +1,7 @@
 // Helpers for building and parsing household invite links.
 //
 // Deep-link format: `mitlist:///join/<CODE>` — used internally by the router.
-// Web link format:  `https://mitlist.me/join/<CODE>` — used for sharing.
+// Web link format:  `https://app.mitlist.me/join/<CODE>` — used for sharing.
 // With Dart's Uri, `mitlist:///join/ABCD-1234` parses as:
 //   scheme = 'mitlist', host = '' (empty), pathSegments = ['join', 'ABCD-1234']
 
@@ -9,7 +9,7 @@ import '../l10n/app_localizations.dart';
 
 const _kWebAppUrl = String.fromEnvironment(
   'WEB_APP_URL',
-  defaultValue: 'https://mitlist.me',
+  defaultValue: 'https://app.mitlist.me',
 );
 
 /// A code is "plausible" when it is ≥ 4 characters and contains only

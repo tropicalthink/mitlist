@@ -44,10 +44,16 @@ class _CountingNotificationService implements NotificationService {
 
   @override
   Future<List<NotificationModel>> listNotifications(
-      {int limit = 50, int offset = 0}) async {
+      {int limit = 50,
+      int offset = 0,
+      DateTime? beforeCreatedAt,
+      String? beforeId}) async {
     listCallCount++;
     return [];
   }
+
+  @override
+  Future<int> countUnreadNotifications() async => 0;
 
   @override
   Future<void> markAllAsRead() async {}

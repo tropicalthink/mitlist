@@ -1,0 +1,23 @@
+# This tracks verified rules while the custom integration works toward Platinum.
+# A tier is not claimed until Home Assistant has reviewed the integration.
+rules:
+  action_setup: done
+  appropriate_polling: done
+  common_modules: done
+  config_flow: done
+  dependency_transparency: done
+  docs_actions: done
+  docs_configuration_parameters: done
+  docs_high_level_description: done
+  docs_installation_instructions: done
+  docs_known_limitations: done
+  docs_removal_instructions: done
+  entity_event_setup: done
+  entity_unique_id: done
+  has_entity_name: done
+  inject_websession: done
+  reauthentication_flow: done
+  runtime_data: done
+  test_before_configure: done
+  test_before_setup: done
+  unique_config_entry: done

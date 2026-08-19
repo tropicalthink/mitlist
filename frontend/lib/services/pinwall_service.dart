@@ -6,6 +6,7 @@ import '../models/pinwall_media_models.dart';
 import '../models/pinwall_models.dart';
 import 'api_client.dart';
 import 'group_id_validator.dart';
+import 'outbox_request.dart';
 
 class PinwallService {
   final Dio _dio;
@@ -50,6 +51,7 @@ class PinwallService {
     DateTime? remindAt,
     String? linkedEntityType,
     String? linkedEntityId,
+    String? idempotencyKey,
   }) async {
     ensureValidGroupId(groupId);
     try {
@@ -62,6 +64,7 @@ class PinwallService {
           if (linkedEntityType != null) 'linked_entity_type': linkedEntityType,
           if (linkedEntityId != null) 'linked_entity_id': linkedEntityId,
         },
+        options: outboxOptions(idempotencyKey),
       );
       return PinwallPost.fromJson((r.data as Map).cast<String, dynamic>());
     } on DioException catch (e) {
@@ -70,12 +73,14 @@ class PinwallService {
     }
   }
 
-  Future<void> deletePost(String groupId, String postId) async {
+  Future<void> deletePost(String groupId, String postId,
+      {String? idempotencyKey}) async {
     ensureValidGroupId(groupId);
     try {
       await _dio.delete(
         '/pinwall/posts/$postId',
         queryParameters: {'group_id': groupId},
+        options: outboxOptions(idempotencyKey),
       );
     } on DioException catch (e) {
       _logger.e('Delete pinwall post failed: ${e.response?.data}');
@@ -90,12 +95,14 @@ class PinwallService {
     String postId, {
     required double x,
     required double y,
+    String? idempotencyKey,
   }) async {
     ensureValidGroupId(groupId);
     try {
       final r = await _dio.put(
         '/pinwall/posts/$postId/position',
         data: {'group_id': groupId, 'x': x, 'y': y},
+        options: outboxOptions(idempotencyKey),
       );
       return PinwallPost.fromJson((r.data as Map).cast<String, dynamic>());
     } on DioException catch (e) {

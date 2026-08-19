@@ -20,7 +20,6 @@ import '../../router.dart' show currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
 import '../../utils/active_group_context.dart';
 import '../../theme/spacing.dart';
-import '../../theme/typography.dart';
 import '../../theme/theme.dart';
 import '../../theme/list_tile_accent.dart';
 import '../../utils/haptics.dart';
@@ -140,9 +139,12 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
         unawaited(ref.read(currentGroupIdProvider.notifier).set(gid));
         unawaited(_loadData());
       } else {
+        // No household on this account. The board setup flow owns that state;
+        // an empty hub behind dead tabs would only restate it with less help.
+        // The skeleton stays up for the frame or two the redirect takes.
         _resolvedGroupId = null;
         _households = groups;
-        setState(() => _isLoading = false);
+        context.goNamed('onboarding');
       }
     } catch (e) {
       if (mounted) {
@@ -557,110 +559,6 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
     );
   }
 
-  Future<void> _onCreateHousehold() async {
-    await Haptics.light();
-    if (!mounted) return;
-    final created = await CreateHouseholdSheet.show(context);
-    await _onHouseholdResult(created);
-  }
-
-  Future<void> _onJoinHousehold() async {
-    await Haptics.light();
-    if (!mounted) return;
-    final group = await JoinHouseholdSheet.show(context);
-    if (group == null || !mounted) return;
-    try {
-      await refreshCachedGroups(ref, ensure: group);
-      final groups = await ref.read(cachedGroupsProvider.future);
-      if (!mounted) return;
-      setState(() => _households = groups);
-      unawaited(_switchGroup(group.id));
-    } catch (_) {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _onHouseholdResult(Group? group) async {
-    if (group == null || !mounted) return;
-    try {
-      await refreshCachedGroups(ref, ensure: group);
-      final groups = await ref.read(cachedGroupsProvider.future);
-      if (!mounted) return;
-      setState(() => _households = groups);
-      unawaited(_switchGroup(group.id));
-    } catch (_) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  Widget _buildEmptyState(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final colorScheme = Theme.of(context).colorScheme;
-    final bodyMedium = Theme.of(context).textTheme.bodyMedium;
-
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(MitlistSpacing.lg),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'mitlist',
-              style: MitlistTypography.logo(color: colorScheme.onSurface),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: MitlistSpacing.md),
-            AppIcon(
-              name: 'homeOutline',
-              size: 48,
-              color: colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(height: MitlistSpacing.md),
-            Text(
-              l10n.hubWelcomeHeadline,
-              style: Theme.of(context).textTheme.headlineSmall,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: MitlistSpacing.sm),
-            Text(
-              l10n.hubWelcomeDescription,
-              style: bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: MitlistSpacing.lg),
-            SizedBox(
-              width: double.infinity,
-              child: AppButton(
-                variant: AppButtonVariant.solid,
-                color: AppButtonColor.primary,
-                size: AppButtonSize.lg,
-                text: l10n.hubCreateAHousehold,
-                icon: const AppIcon(name: 'addHomeOutline'),
-                onPressed: _onCreateHousehold,
-              ),
-            ),
-            const SizedBox(height: MitlistSpacing.md),
-            SizedBox(
-              width: double.infinity,
-              child: AppButton(
-                variant: AppButtonVariant.outline,
-                color: AppButtonColor.neutral,
-                size: AppButtonSize.lg,
-                text: l10n.hubJoinWithInviteCode,
-                icon: const AppIcon(name: 'keyOutline'),
-                onPressed: _onJoinHousehold,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildAppBarTitle(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final name = _data?.name ?? l10n.hubAppBarTitle;
@@ -752,8 +650,10 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                     ),
                   ),
                 )
+              // No household: _resolveAndLoad already sent us to the board
+              // setup flow; keep the skeleton up while the redirect lands.
               : _resolvedGroupId == null
-                  ? _buildEmptyState(context)
+                  ? const HubSkeleton()
                   : _error != null
                       ? Center(
                           child: Padding(

@@ -1236,7 +1236,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     return CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
-        if (_controller.groupId != null)
+        if (_controller.groupId != null && _controller.listType == 'shopping')
           SliverToBoxAdapter(
             child: RunningLowStrip(
               groupId: _controller.groupId!,
@@ -1297,11 +1297,21 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   }
 
   Widget _buildDismissibleItemRow(ListItem item, {int? reorderIndex}) {
-    return SettleCollapse(
+    final row = SettleCollapse(
       key: ValueKey(item.id),
       collapsed: _controller.isCollapsing(item.id),
       onCollapsed: () => _controller.finishSettle(item.id),
       child: _buildDismissibleCore(item, reorderIndex: reorderIndex),
+    );
+    if (_controller.listType != 'shopping') return row;
+
+    return Padding(
+      key: ValueKey('shopping-${item.id}'),
+      padding: const EdgeInsets.symmetric(
+        horizontal: MitlistSpacing.md,
+        vertical: MitlistSpacing.xs,
+      ),
+      child: row,
     );
   }
 
@@ -1350,6 +1360,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
           : null,
       onLongPress: () => _handleItemAction(item),
       reorderIndex: reorderIndex,
+      shoppingVisual: _controller.listType == 'shopping',
+      groceryCategory: _controller.categoryFor(item),
     );
   }
 

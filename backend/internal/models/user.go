@@ -17,6 +17,11 @@ type User struct {
 	IsActive     bool      `json:"is_active"`
 	IsVerified   bool      `json:"is_verified"`
 	IsGuest      bool      `json:"is_guest"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	// Guest lifecycle timestamps are maintained server-side. They are omitted
+	// from the public user JSON; guests are locked after inactivity and retained
+	// for a recovery grace period before cleanup.
+	GuestLastSeenAt *time.Time `json:"-"`
+	GuestLockedAt   *time.Time `json:"-"`
+	CreatedAt       time.Time  `json:"created_at"`
+	UpdatedAt       time.Time  `json:"updated_at"`
 }

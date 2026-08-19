@@ -1149,9 +1149,13 @@ class _RecipeLineEditorState extends ConsumerState<_RecipeLineEditor> {
     _suggestDebounce = Timer(const Duration(milliseconds: 220), () async {
       try {
         await ref.read(grocerySeedProvider.future);
-        final suggestions = await ref
-            .read(grocerySuggestionServiceProvider)
-            .suggest(query, groupId, limit: 5);
+        final suggestions =
+            await ref.read(grocerySuggestionServiceProvider).suggest(
+                  query,
+                  groupId,
+                  suggestionContext: GrocerySuggestionContext.recipe,
+                  limit: 5,
+                );
         if (!mounted || generation != _suggestGeneration) return;
         setState(() => _suggestions = suggestions);
       } catch (_) {}

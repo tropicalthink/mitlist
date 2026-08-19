@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"math"
 	"sort"
@@ -111,15 +110,25 @@ func (s *FinanceService) CreateExpenseWithSplitMode(ctx context.Context, userID 
 	if err := s.financeRepo.CreateExpenseWithSplits(ctx, expense, splits); err != nil {
 		return err
 	}
+	s.publishFinanceEvent("expense:created", expense.GroupID, expense.ID, "expense_id")
 	if s.dispatcher != nil && expense.ID != uuid.Nil {
+		actorName := s.memberDisplayName(ctx, expense.GroupID, userID)
+		householdName := s.householdName(ctx, expense.GroupID)
 		notifPayload := models.NotificationPayload{
 			Screen:     models.ScreenExpenseDetail,
 			EntityType: models.EntityTypeExpense,
 			ID:         expense.ID.String(),
 			GroupID:    expense.GroupID.String(),
+			ActorName:  actorName,
+			EntityName: expense.Description,
+			Copy: models.NewNotificationCopy(models.NotificationTemplateExpenseCreated, map[string]string{
+				"actor_name":   actorName,
+				"expense_name": expense.Description,
+				"group_name":   householdName,
+			}),
 		}
-		_ = s.dispatcher.DispatchToGroup(ctx, expense.GroupID, userID, "expense_created",
-			"New expense", expense.Description+" was added", notifPayload)
+		_ = s.dispatcher.DispatchToGroup(ctx, expense.GroupID, userID, models.NotificationTypeExpenseCreated,
+			"Expense added", actorName+" added "+expense.Description+" in "+householdName+".", notifPayload)
 	}
 	return nil
 }
@@ -264,7 +273,11 @@ func (s *FinanceService) UpdateExpense(ctx context.Context, userID uuid.UUID, ex
 
 	// base_amount unchanged → splits already consistent, plain update is enough.
 	if expense.BaseAmount == existing.BaseAmount {
-		return s.financeRepo.UpdateExpense(ctx, expense)
+		if err := s.financeRepo.UpdateExpense(ctx, expense); err != nil {
+			return err
+		}
+		s.publishFinanceEvent("expense:updated", existing.GroupID, expense.ID, "expense_id")
+		return nil
 	}
 
 	// base_amount changed → rescale existing splits proportionally so their
@@ -274,7 +287,11 @@ func (s *FinanceService) UpdateExpense(ctx context.Context, userID uuid.UUID, ex
 		return err
 	}
 	rescaled := rescaleSplits(existingSplits, existing.BaseAmount, expense.BaseAmount)
-	return s.financeRepo.UpdateExpenseWithSplits(ctx, expense, rescaled)
+	if err := s.financeRepo.UpdateExpenseWithSplits(ctx, expense, rescaled); err != nil {
+		return err
+	}
+	s.publishFinanceEvent("expense:updated", existing.GroupID, expense.ID, "expense_id")
+	return nil
 }
 
 // rescaleSplits proportionally rescales splits from oldTotal to newTotal,
@@ -317,7 +334,11 @@ func (s *FinanceService) DeleteExpense(ctx context.Context, userID, expenseID uu
 	if err := s.requireAdmin(ctx, existing.GroupID, userID); err != nil {
 		return err
 	}
-	return s.financeRepo.DeleteExpense(ctx, expenseID)
+	if err := s.financeRepo.DeleteExpense(ctx, expenseID); err != nil {
+		return err
+	}
+	s.publishFinanceEvent("expense:deleted", existing.GroupID, expenseID, "expense_id")
+	return nil
 }
 
 // ------------------------------------------------------------------
@@ -358,7 +379,11 @@ func (s *FinanceService) CreateSplit(ctx context.Context, userID uuid.UUID, spli
 	if split.UserID == expense.PayerID {
 		split.IsSettled = true
 	}
-	return s.financeRepo.CreateSplit(ctx, split)
+	if err := s.financeRepo.CreateSplit(ctx, split); err != nil {
+		return err
+	}
+	s.publishFinanceEvent("expense:split_created", expense.GroupID, split.ID, "split_id")
+	return nil
 }
 
 // UpdateSplit modifies an existing split.
@@ -390,7 +415,11 @@ func (s *FinanceService) UpdateSplit(ctx context.Context, userID uuid.UUID, spli
 		}
 	}
 	split.ExpenseID = existing.ExpenseID
-	return s.financeRepo.UpdateSplit(ctx, split)
+	if err := s.financeRepo.UpdateSplit(ctx, split); err != nil {
+		return err
+	}
+	s.publishFinanceEvent("expense:split_updated", expense.GroupID, split.ID, "split_id")
+	return nil
 }
 
 // DeleteSplit removes a split (admin only).
@@ -412,7 +441,11 @@ func (s *FinanceService) DeleteSplit(ctx context.Context, userID, splitID uuid.U
 	if err := s.requireAdmin(ctx, expense.GroupID, userID); err != nil {
 		return err
 	}
-	return s.financeRepo.DeleteSplit(ctx, splitID)
+	if err := s.financeRepo.DeleteSplit(ctx, splitID); err != nil {
+		return err
+	}
+	s.publishFinanceEvent("expense:split_deleted", expense.GroupID, splitID, "split_id")
+	return nil
 }
 
 // ------------------------------------------------------------------
@@ -449,15 +482,25 @@ func (s *FinanceService) CreateSettlement(ctx context.Context, userID uuid.UUID,
 
 	if s.dispatcher != nil {
 		creatorName := s.memberDisplayName(ctx, settlement.GroupID, settlement.CreatedBy)
+		householdName := s.householdName(ctx, settlement.GroupID)
 		amount := s.formatGroupAmount(ctx, settlement.GroupID, settlement.Amount)
 		var body string
+		var template string
 		if settlement.CreatedBy == settlement.FromUserID {
-			body = creatorName + " says they paid you " + amount + " — confirm to update balances"
+			body = creatorName + " says they paid you " + amount + " in " + householdName + ". Confirm to update balances."
+			template = models.NotificationTemplateSettlementPaidYou
 		} else {
-			body = creatorName + " says you paid them " + amount + " — confirm to update balances"
+			body = creatorName + " says you paid them " + amount + " in " + householdName + ". Confirm to update balances."
+			template = models.NotificationTemplateSettlementYouPaid
 		}
+		payload := s.settlementPayload(settlement)
+		payload.Copy = models.NewNotificationCopy(template, map[string]string{
+			"actor_name": creatorName,
+			"amount":     amount,
+			"group_name": householdName,
+		})
 		_ = s.dispatcher.DispatchToUsers(ctx, []uuid.UUID{settlement.Counterparty()}, settlement.GroupID,
-			"settlement_requested", "Settlement to confirm", body, s.settlementPayload(settlement))
+			models.NotificationTypeSettlementRequested, "Settlement to confirm", body, payload)
 	}
 	s.publishSettlement("settlement:created", settlement.GroupID, settlement.ID)
 	return nil
@@ -508,14 +551,25 @@ func (s *FinanceService) RespondToSettlement(ctx context.Context, userID, settle
 
 	if s.dispatcher != nil {
 		responderName := s.memberDisplayName(ctx, settlement.GroupID, userID)
+		householdName := s.householdName(ctx, settlement.GroupID)
 		amount := s.formatGroupAmount(ctx, settlement.GroupID, settlement.Amount)
-		nType, title, verb := "settlement_confirmed", "Settlement confirmed", "confirmed"
+		nType, title, verb := models.NotificationTypeSettlementConfirmed, "Settlement confirmed", "confirmed"
 		if !approve {
-			nType, title, verb = "settlement_declined", "Settlement declined", "declined"
+			nType, title, verb = models.NotificationTypeSettlementDeclined, "Settlement declined", "declined"
 		}
-		body := responderName + " " + verb + " your settlement of " + amount
+		body := responderName + " " + verb + " your settlement of " + amount + " in " + householdName + "."
+		payload := s.settlementPayload(settlement)
+		template := models.NotificationTemplateSettlementConfirmed
+		if !approve {
+			template = models.NotificationTemplateSettlementDeclined
+		}
+		payload.Copy = models.NewNotificationCopy(template, map[string]string{
+			"actor_name": responderName,
+			"amount":     amount,
+			"group_name": householdName,
+		})
 		_ = s.dispatcher.DispatchToUsers(ctx, []uuid.UUID{settlement.CreatedBy}, settlement.GroupID,
-			nType, title, body, s.settlementPayload(settlement))
+			nType, title, body, payload)
 	}
 	s.publishSettlement("settlement:updated", settlement.GroupID, settlement.ID)
 	return settlement, nil
@@ -568,6 +622,14 @@ func (s *FinanceService) memberDisplayName(ctx context.Context, groupID, userID 
 	return "A group member"
 }
 
+func (s *FinanceService) householdName(ctx context.Context, groupID uuid.UUID) string {
+	group, err := s.groupRepo.GetGroupByID(ctx, groupID)
+	if err == nil && strings.TrimSpace(group.Name) != "" {
+		return group.Name
+	}
+	return "your household"
+}
+
 // formatGroupAmount renders an integer minor-unit amount in the group currency.
 func (s *FinanceService) formatGroupAmount(ctx context.Context, groupID uuid.UUID, amount int64) string {
 	currency := ""
@@ -583,15 +645,11 @@ func (s *FinanceService) formatGroupAmount(ctx context.Context, groupID uuid.UUI
 
 // publishSettlement emits an SSE event for a settlement state change.
 func (s *FinanceService) publishSettlement(eventType string, groupID, settlementID uuid.UUID) {
-	if s.hub == nil {
-		return
-	}
-	data, _ := json.Marshal(map[string]string{"settlement_id": settlementID.String()})
-	s.hub.Publish(groupID.String(), sse.Event{
-		Type:    eventType,
-		GroupID: groupID.String(),
-		Payload: data,
-	})
+	publishDomainEvent(s.hub, eventType, groupID, map[string]string{"settlement_id": settlementID.String()})
+}
+
+func (s *FinanceService) publishFinanceEvent(eventType string, groupID, id uuid.UUID, key string) {
+	publishDomainEvent(s.hub, eventType, groupID, map[string]string{key: id.String()})
 }
 
 // ------------------------------------------------------------------
@@ -609,7 +667,11 @@ func (s *FinanceService) CreateRecurringExpense(ctx context.Context, userID uuid
 	if err := s.validateRecurringSplitConfig(ctx, re); err != nil {
 		return err
 	}
-	return s.financeRepo.CreateRecurringExpense(ctx, re)
+	if err := s.financeRepo.CreateRecurringExpense(ctx, re); err != nil {
+		return err
+	}
+	s.publishFinanceEvent("recurring_expense:created", re.GroupID, re.ID, "recurring_expense_id")
+	return nil
 }
 
 // GetRecurringExpense returns a recurring expense.
@@ -660,7 +722,11 @@ func (s *FinanceService) UpdateRecurringExpense(ctx context.Context, userID uuid
 	if err := s.validateRecurringSplitConfig(ctx, re); err != nil {
 		return err
 	}
-	return s.financeRepo.UpdateRecurringExpense(ctx, re)
+	if err := s.financeRepo.UpdateRecurringExpense(ctx, re); err != nil {
+		return err
+	}
+	s.publishFinanceEvent("recurring_expense:updated", existing.GroupID, re.ID, "recurring_expense_id")
+	return nil
 }
 
 // validateRecurringSplitConfig validates split_mode and split_inputs if a non-payer-only mode is set.
@@ -707,7 +773,11 @@ func (s *FinanceService) DeleteRecurringExpense(ctx context.Context, userID, id 
 	if err := s.requireAdmin(ctx, existing.GroupID, userID); err != nil {
 		return err
 	}
-	return s.financeRepo.DeleteRecurringExpense(ctx, id)
+	if err := s.financeRepo.DeleteRecurringExpense(ctx, id); err != nil {
+		return err
+	}
+	s.publishFinanceEvent("recurring_expense:deleted", existing.GroupID, id, "recurring_expense_id")
+	return nil
 }
 
 // ListExpenseSplits returns all splits for an expense.

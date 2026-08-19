@@ -97,6 +97,8 @@ class AppToast {
     ScaffoldMessengerState messenger, {
     String? title,
     required String body,
+    String? actionLabel,
+    VoidCallback? onAction,
   }) {
     messenger
       ..clearSnackBars()
@@ -112,6 +114,8 @@ class AppToast {
             message: body,
             title: title,
             tone: AppToastTone.info,
+            actionLabel: actionLabel,
+            onAction: onAction,
           ),
         ),
       );

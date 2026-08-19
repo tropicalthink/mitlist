@@ -17,6 +17,7 @@ import (
 	"github.com/mitlist-app/mitlist/internal/models"
 	"github.com/mitlist-app/mitlist/internal/repositories"
 	storagesvc "github.com/mitlist-app/mitlist/internal/services/storage"
+	"github.com/mitlist-app/mitlist/internal/sse"
 )
 
 var allowedContentTypes = map[string]bool{
@@ -37,7 +38,11 @@ type AttachmentService struct {
 	repo      repositories.AttachmentRepo
 	groupRepo repositories.GroupRepo
 	storage   attachmentStorage
+	hub       *sse.Hub
 }
+
+// SetHub injects the household event hub for attachment lifecycle changes.
+func (s *AttachmentService) SetHub(h *sse.Hub) { s.hub = h }
 
 type attachmentStorage interface {
 	GetUploadURL(key string, contentType string, contentLength int64, expires time.Duration) string
@@ -265,6 +270,7 @@ func (s *AttachmentService) FinalizeUpload(ctx context.Context, user *models.Use
 	}
 	a.Status = models.AttachmentStatusReady
 	a.ByteSize = realSize
+	publishDomainEvent(s.hub, "attachment:ready", groupID, map[string]string{"attachment_id": attachmentID.String()})
 	return a, nil
 }
 
@@ -397,6 +403,7 @@ func (s *AttachmentService) DeleteAttachment(ctx context.Context, user *models.U
 		}
 		return err
 	}
+	publishDomainEvent(s.hub, "attachment:deleted", groupID, map[string]string{"attachment_id": attachmentID.String()})
 	return nil
 }
 

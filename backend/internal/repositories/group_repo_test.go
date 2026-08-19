@@ -255,12 +255,27 @@ func TestGroupRepository_ConsumeInvite(t *testing.T) {
 	inviteID := fixedUUID()
 	userID := fixedUUID()
 
-	mock.ExpectExec("UPDATE group_invites SET used_by = .* WHERE id = .*").
+	mock.ExpectExec("UPDATE group_invites SET used_by = .* WHERE id = .* AND used_at IS NULL").
 		WithArgs(userID, pgxmock.AnyArg(), inviteID).
 		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
 
 	err := repo.ConsumeInvite(context.Background(), inviteID, userID)
 	require.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestGroupRepository_ConsumeInvite_AlreadyUsed(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewGroupRepository(mock)
+	inviteID := fixedUUID()
+	userID := fixedUUID()
+
+	mock.ExpectExec("UPDATE group_invites SET used_by = .* WHERE id = .* AND used_at IS NULL").
+		WithArgs(userID, pgxmock.AnyArg(), inviteID).
+		WillReturnResult(pgxmock.NewResult("UPDATE", 0))
+
+	err := repo.ConsumeInvite(context.Background(), inviteID, userID)
+	assert.ErrorIs(t, err, ErrInviteAlreadyUsed)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 

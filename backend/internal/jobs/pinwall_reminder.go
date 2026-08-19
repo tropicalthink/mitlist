@@ -99,15 +99,26 @@ func (r *PinwallReminder) sendForPost(ctx context.Context, post models.PinwallPo
 		EntityType: models.EntityTypePinwallPost,
 		ID:         post.ID.String(),
 		GroupID:    post.GroupID.String(),
+		DedupeKey:  "pinwall-reminder:" + post.ID.String(),
+		Copy: models.NewNotificationCopy(models.NotificationTemplatePinwallReminder, map[string]string{
+			"content": post.Content,
+		}),
 	}
 
 	if r.dispatcher != nil {
 		// Dispatcher handles persist+push preference-filtered for the whole group.
 		// uuid.Nil actor: reminders have no "actor" to exclude — the author set the
 		// reminder and must receive it too (same idiom as weekly_summary/recurring_expense).
-		if err := r.dispatcher.DispatchToGroup(ctx, post.GroupID, uuid.Nil, "pinwall_reminder",
-			"Reminder", post.Content, notifPayload); err != nil {
-			return fmt.Errorf("dispatch pinwall reminder: %w", err)
+		var dispatchErr error
+		if reliable, ok := r.dispatcher.(ReliableNotificationDispatcher); ok {
+			dispatchErr = reliable.DispatchToGroupAndWait(ctx, post.GroupID, uuid.Nil, models.NotificationTypePinwallReminder,
+				"Reminder", post.Content, notifPayload)
+		} else {
+			dispatchErr = r.dispatcher.DispatchToGroup(ctx, post.GroupID, uuid.Nil, models.NotificationTypePinwallReminder,
+				"Reminder", post.Content, notifPayload)
+		}
+		if dispatchErr != nil {
+			return fmt.Errorf("dispatch pinwall reminder: %w", dispatchErr)
 		}
 		ok, err := r.repo.MarkReminderSent(ctx, post.ID, sentAt)
 		if err != nil {
@@ -142,7 +153,7 @@ func (r *PinwallReminder) sendForPost(ctx context.Context, post models.PinwallPo
 			ID:        uuid.New(),
 			UserID:    userID,
 			GroupID:   post.GroupID,
-			Type:      "pinwall_reminder",
+			Type:      models.NotificationTypePinwallReminder,
 			Title:     "Reminder",
 			Body:      post.Content,
 			Data:      data,
@@ -154,7 +165,7 @@ func (r *PinwallReminder) sendForPost(ctx context.Context, post models.PinwallPo
 		return nil
 	}
 
-	if err := r.repo.CreateNotificationsBatch(ctx, toDeliver); err != nil {
+	if err := r.createNotificationBatch(ctx, toDeliver); err != nil {
 		return fmt.Errorf("create notifications batch: %w", err)
 	}
 
@@ -199,6 +210,18 @@ func (r *PinwallReminder) sendForPost(ctx context.Context, post models.PinwallPo
 	return nil
 }
 
+// createNotificationBatch uses the repository's deduplicating path when it is
+// available. This keeps the legacy push-only fallback safe on a provider retry
+// too; lightweight test repositories can continue using the original method.
+func (r *PinwallReminder) createNotificationBatch(ctx context.Context, notifications []models.Notification) error {
+	if idempotent, ok := r.repo.(interface {
+		CreateNotificationsBatchIdempotent(context.Context, []models.Notification) error
+	}); ok {
+		return idempotent.CreateNotificationsBatchIdempotent(ctx, notifications)
+	}
+	return r.repo.CreateNotificationsBatch(ctx, notifications)
+}
+
 type pinwallReminderRepoImpl struct {
 	db repositories.DBTX
 }
@@ -208,13 +231,27 @@ func (r *pinwallReminderRepoImpl) ListDueReminders(ctx context.Context, before t
 		limit = 200
 	}
 	rows, err := r.db.Query(ctx, `
+		WITH due AS (
+			SELECT id
+			FROM pinwall_posts
+			WHERE remind_at IS NOT NULL
+			  AND reminder_sent_at IS NULL
+			  AND remind_at <= $1
+			  AND (reminder_claimed_at IS NULL OR reminder_claimed_at < NOW() - INTERVAL '5 minutes')
+			ORDER BY remind_at ASC
+			FOR UPDATE SKIP LOCKED
+			LIMIT $2
+		), claimed AS (
+			UPDATE pinwall_posts AS post
+			SET reminder_claimed_at = NOW()
+			FROM due
+			WHERE post.id = due.id
+			RETURNING post.id, post.group_id, post.user_id, post.content,
+				post.created_at, post.remind_at, post.reminder_sent_at
+		)
 		SELECT id, group_id, user_id, content, created_at, remind_at, reminder_sent_at
-		FROM pinwall_posts
-		WHERE remind_at IS NOT NULL
-		  AND reminder_sent_at IS NULL
-		  AND remind_at <= $1
+		FROM claimed
 		ORDER BY remind_at ASC
-		LIMIT $2
 	`, before, limit)
 	if err != nil {
 		return nil, fmt.Errorf("query due reminders: %w", err)
@@ -281,10 +318,15 @@ func (r *pinwallReminderRepoImpl) CreateNotificationsBatch(ctx context.Context, 
 	return repo.CreateNotificationsBatch(ctx, notifications)
 }
 
+func (r *pinwallReminderRepoImpl) CreateNotificationsBatchIdempotent(ctx context.Context, notifications []models.Notification) error {
+	repo := repositories.NewNotificationRepository(r.db)
+	return repo.CreateNotificationsBatchIdempotent(ctx, notifications)
+}
+
 func (r *pinwallReminderRepoImpl) MarkReminderSent(ctx context.Context, postID uuid.UUID, sentAt time.Time) (bool, error) {
 	ct, err := r.db.Exec(ctx, `
 		UPDATE pinwall_posts
-		SET reminder_sent_at = $2
+		SET reminder_sent_at = $2, reminder_claimed_at = NULL
 		WHERE id = $1 AND reminder_sent_at IS NULL
 	`, postID, sentAt)
 	if err != nil {

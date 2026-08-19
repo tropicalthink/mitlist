@@ -34,6 +34,10 @@
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
+  <!-- Cloudflare Turnstile guards guest sign-up. render=explicit keeps the
+       script from scanning the DOM for widgets: Flutter owns the DOM, and the
+       widget is created on demand by lib/services/turnstile_service_web.dart. -->
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

@@ -422,6 +422,44 @@ class UpdateSplitRequest {
       };
 }
 
+/// One participant's share of a recurring expense. The job materialises real
+/// splits from these every time the rule fires; a rule with no inputs falls
+/// back to a settled payer-only split (i.e. it charges nobody).
+class RecurringSplitInput {
+  final String userId;
+  final int amount;
+  final int shares;
+
+  /// Basis points — 50% is 5000, matching [CreateExpenseSplitRequest].
+  final int percentage;
+
+  const RecurringSplitInput({
+    required this.userId,
+    this.amount = 0,
+    this.shares = 0,
+    this.percentage = 0,
+  });
+
+  factory RecurringSplitInput.fromJson(Map<String, dynamic> json) {
+    // Absent weights mean "unused for this mode", not a malformed payload.
+    int optionalInt(String key) =>
+        json[key] == null ? 0 : parseJsonInt64(json[key], fieldName: key);
+    return RecurringSplitInput(
+      userId: json['user_id'] as String,
+      amount: optionalInt('amount'),
+      shares: optionalInt('shares'),
+      percentage: optionalInt('percentage'),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'user_id': userId,
+        'amount': amount,
+        'shares': shares,
+        'percentage': percentage,
+      };
+}
+
 class RecurringExpense {
   final String id;
   final String groupId;
@@ -435,6 +473,11 @@ class RecurringExpense {
   final bool isActive;
   final DateTime createdAt;
 
+  /// One of `equal`, `amount`, `shares`, `percentage`, or `payer_only` for
+  /// legacy rules created before splits were configurable.
+  final String splitMode;
+  final List<RecurringSplitInput> splitInputs;
+
   const RecurringExpense({
     required this.id,
     required this.groupId,
@@ -447,6 +490,8 @@ class RecurringExpense {
     required this.nextDue,
     required this.isActive,
     required this.createdAt,
+    this.splitMode = 'payer_only',
+    this.splitInputs = const [],
   });
 
   factory RecurringExpense.fromJson(Map<String, dynamic> json) =>
@@ -462,6 +507,12 @@ class RecurringExpense {
         nextDue: DateTime.parse(json['next_due'] as String),
         isActive: json['is_active'] as bool? ?? true,
         createdAt: DateTime.parse(json['created_at'] as String),
+        splitMode: json['split_mode'] as String? ?? 'payer_only',
+        splitInputs: (json['split_inputs'] as List?)
+                ?.map((e) => RecurringSplitInput.fromJson(
+                    (e as Map).cast<String, dynamic>()))
+                .toList() ??
+            const [],
       );
 }
 
@@ -471,9 +522,15 @@ class CreateRecurringExpenseRequest {
   final int amount;
   final String description;
   final String category;
+
+  /// Recurring expenses are materialised at fx_rate=1, so this must be the
+  /// household's base currency or the resulting splits would be mis-denominated.
+  final String? currency;
   final String frequency;
   final DateTime nextDue;
   final bool isActive;
+  final String splitMode;
+  final List<RecurringSplitInput> splitInputs;
 
   const CreateRecurringExpenseRequest({
     required this.groupId,
@@ -481,9 +538,12 @@ class CreateRecurringExpenseRequest {
     required this.amount,
     required this.description,
     this.category = 'other',
+    this.currency,
     this.frequency = 'monthly',
     required this.nextDue,
     this.isActive = true,
+    this.splitMode = 'payer_only',
+    this.splitInputs = const [],
   });
 
   Map<String, dynamic> toJson() => {
@@ -492,9 +552,12 @@ class CreateRecurringExpenseRequest {
         'amount': amount,
         'description': description,
         'category': category,
+        if (currency != null) 'currency': currency,
         'frequency': frequency,
         'next_due': nextDue.toUtc().toIso8601String(),
         'is_active': isActive,
+        'split_mode': splitMode,
+        'split_inputs': splitInputs.map((e) => e.toJson()).toList(),
       };
 }
 
@@ -503,18 +566,24 @@ class UpdateRecurringExpenseRequest {
   final int? amount;
   final String? description;
   final String? category;
+  final String? currency;
   final String? frequency;
   final DateTime? nextDue;
   final bool? isActive;
+  final String? splitMode;
+  final List<RecurringSplitInput>? splitInputs;
 
   const UpdateRecurringExpenseRequest({
     this.payerId,
     this.amount,
     this.description,
     this.category,
+    this.currency,
     this.frequency,
     this.nextDue,
     this.isActive,
+    this.splitMode,
+    this.splitInputs,
   });
 
   Map<String, dynamic> toJson() => {
@@ -522,8 +591,12 @@ class UpdateRecurringExpenseRequest {
         if (amount != null) 'amount': amount,
         if (description != null) 'description': description,
         if (category != null) 'category': category,
+        if (currency != null) 'currency': currency,
         if (frequency != null) 'frequency': frequency,
         if (nextDue != null) 'next_due': nextDue!.toUtc().toIso8601String(),
         if (isActive != null) 'is_active': isActive,
+        if (splitMode != null) 'split_mode': splitMode,
+        if (splitInputs != null)
+          'split_inputs': splitInputs!.map((e) => e.toJson()).toList(),
       };
 }

@@ -99,6 +99,18 @@ func (r *Runner) RegisterAll() {
 		pr = NewPinwallReminder(r.db, r.push, r.log)
 	}
 	r.register("pinwall-reminder", "* * * * *", pr.Run, true)
+
+	// List item digests — every minute. This requires the durable notification
+	// dispatcher, so legacy push-only runners do not consume the queue.
+	if r.dispatcher != nil {
+		ld := NewListNotificationDigest(r.db, r.dispatcher, r.log)
+		r.register("list-notification-digest", "* * * * *", ld.Run, true)
+	}
+
+	// Guest lifecycle — daily at 03:15. Guests are locked after 30 days without
+	// activity and retained for a 180-day recovery grace period before cleanup.
+	gc := NewGuestCleanup(r.db, r.log)
+	r.register("guest-cleanup", "15 3 * * *", gc.Run, true)
 }
 
 // RegisterAttachmentCleanup adds the storage reservation sweeper. It is kept

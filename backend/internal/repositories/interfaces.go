@@ -2,11 +2,16 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/mitlist-app/mitlist/internal/models"
 )
+
+// ErrInviteAlreadyUsed is returned when a concurrent or repeated redemption
+// attempts to consume a one-use invite.
+var ErrInviteAlreadyUsed = errors.New("invite already used")
 
 // UserRepo is the interface for user repository operations.
 type UserRepo interface {
@@ -16,6 +21,8 @@ type UserRepo interface {
 	GetByOAuth(ctx context.Context, provider, providerUserID string) (*models.User, error)
 	Update(ctx context.Context, user *models.User) error
 	SoftDelete(ctx context.Context, id uuid.UUID) error
+	TouchGuestActivity(ctx context.Context, id uuid.UUID) error
+	ReactivateGuest(ctx context.Context, id uuid.UUID) error
 	List(ctx context.Context, limit, offset int) ([]models.User, error)
 }
 
@@ -45,9 +52,21 @@ type AuthRepo interface {
 	ConsumeOAuthHandoff(ctx context.Context, codeHash string) (uuid.UUID, error)
 }
 
+// IntegrationCredentialRepo is the persistence contract for revocable,
+// group-scoped bearer credentials.
+type IntegrationCredentialRepo interface {
+	Create(ctx context.Context, credential *models.IntegrationCredential, tokenHash string) error
+	ListByUser(ctx context.Context, userID uuid.UUID) ([]models.IntegrationCredential, error)
+	GetActiveByHash(ctx context.Context, tokenHash string) (*models.IntegrationCredential, error)
+	TouchLastUsed(ctx context.Context, id uuid.UUID, ip, userAgent string) error
+	Revoke(ctx context.Context, userID, id uuid.UUID) error
+	GetByID(ctx context.Context, userID, id uuid.UUID) (*models.IntegrationCredential, error)
+}
+
 // BillingRepo is the interface for premium subscription operations.
 type BillingRepo interface {
 	UpsertSubscription(ctx context.Context, s *models.BillingSubscription) (*models.BillingSubscription, error)
+	SupersedeSubscription(ctx context.Context, provider, providerSubscriptionID string, supersededAt time.Time) error
 	GetSubscriptionByProviderID(ctx context.Context, provider, providerSubscriptionID string) (*models.BillingSubscription, error)
 	ListSubscriptionsByUser(ctx context.Context, userID uuid.UUID) ([]models.BillingSubscription, error)
 	GetLiveSubscriptionForUser(ctx context.Context, userID uuid.UUID) (*models.BillingSubscription, error)
@@ -244,13 +263,20 @@ type NotificationRepo interface {
 	CreateNotification(ctx context.Context, n *models.Notification) error
 	GetNotificationByID(ctx context.Context, id uuid.UUID) (*models.Notification, error)
 	ListNotificationsByUser(ctx context.Context, userID uuid.UUID, limit, offset int) ([]models.Notification, error)
+	ListNotificationsByUserAndGroups(ctx context.Context, userID uuid.UUID, groupIDs []uuid.UUID, limit, offset int) ([]models.Notification, error)
+	ListNotificationsByUserBefore(ctx context.Context, userID uuid.UUID, before time.Time, beforeID uuid.UUID, limit int) ([]models.Notification, error)
+	ListNotificationsByUserAndGroupsBefore(ctx context.Context, userID uuid.UUID, groupIDs []uuid.UUID, before time.Time, beforeID uuid.UUID, limit int) ([]models.Notification, error)
+	CountUnreadNotifications(ctx context.Context, userID uuid.UUID) (int, error)
+	CountUnreadNotificationsByGroups(ctx context.Context, userID uuid.UUID, groupIDs []uuid.UUID) (int, error)
 	MarkAsRead(ctx context.Context, id uuid.UUID) error
 	MarkAllAsRead(ctx context.Context, userID uuid.UUID) error
+	MarkAllAsReadByGroups(ctx context.Context, userID uuid.UUID, groupIDs []uuid.UUID) error
 	DeleteNotification(ctx context.Context, id uuid.UUID) error
 	GetPreference(ctx context.Context, userID, groupID uuid.UUID) (*models.NotificationPreference, error)
 	GetPreferencesByUser(ctx context.Context, userID uuid.UUID) ([]models.NotificationPreference, error)
 	GetPreferencesByGroup(ctx context.Context, groupID uuid.UUID) (map[uuid.UUID]*models.NotificationPreference, error)
 	CreateNotificationsBatch(ctx context.Context, notifications []models.Notification) error
+	QueueListItemNotification(ctx context.Context, groupID, actorID, listID uuid.UUID, actorName, listName, itemName string) error
 	UpsertPreference(ctx context.Context, pref *models.NotificationPreference) error
 }
 

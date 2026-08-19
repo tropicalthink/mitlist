@@ -22,6 +22,7 @@ import '../../widgets/app_button.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/app_input.dart';
 import '../../widgets/board/cork_board.dart';
+import '../../utils/password_policy.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -179,9 +180,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               setSheetState(() => error = l10n.authLoginResetFillAllFields);
               return;
             }
-            if (newPassword.length < 12) {
+            if (!PasswordPolicy.isSatisfied(newPassword)) {
               setSheetState(
-                () => error = l10n.authSignupPasswordMinLength,
+                () => error = PasswordPolicy.hasMinLength(newPassword)
+                    ? l10n.authSignupPasswordRequirementsNotMet
+                    : l10n.authSignupPasswordMinLength,
               );
               return;
             }

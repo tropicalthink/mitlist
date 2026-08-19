@@ -120,6 +120,18 @@ class AppIcons {
   static const IconData heart = Icons.favorite_border;
   static const IconData server = Icons.dns_outlined;
   static const IconData chatBubbleLeftRight = Icons.forum_outlined;
+  static const IconData groceryProduce = Icons.eco_outlined;
+  static const IconData groceryDairy = Icons.water_drop_outlined;
+  static const IconData groceryBakery = Icons.bakery_dining_outlined;
+  static const IconData groceryMeat = Icons.kebab_dining_outlined;
+  static const IconData groceryFish = Icons.set_meal_outlined;
+  static const IconData groceryFrozen = Icons.ac_unit;
+  static const IconData groceryBeverages = Icons.local_drink_outlined;
+  static const IconData groceryPantry = Icons.kitchen_outlined;
+  static const IconData grocerySnacks = Icons.cookie_outlined;
+  static const IconData groceryPersonalCare = Icons.spa_outlined;
+  static const IconData groceryBaby = Icons.child_care;
+  static const IconData groceryFlowers = Icons.local_florist_outlined;
 
   /// Resolves a semantic [name] to its placeholder [IconData].
   ///
@@ -234,6 +246,18 @@ class AppIcons {
       'removeDoneOutline' => removeDoneOutline,
       'dragHandle' => dragHandle,
       'chatBubbleLeftRight' => chatBubbleLeftRight,
+      'groceryProduce' => groceryProduce,
+      'groceryDairy' => groceryDairy,
+      'groceryBakery' => groceryBakery,
+      'groceryMeat' => groceryMeat,
+      'groceryFish' => groceryFish,
+      'groceryFrozen' => groceryFrozen,
+      'groceryBeverages' => groceryBeverages,
+      'groceryPantry' => groceryPantry,
+      'grocerySnacks' => grocerySnacks,
+      'groceryPersonalCare' => groceryPersonalCare,
+      'groceryBaby' => groceryBaby,
+      'groceryFlowers' => groceryFlowers,
       _ => null,
     };
   }

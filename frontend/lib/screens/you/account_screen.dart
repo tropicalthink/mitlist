@@ -26,6 +26,7 @@ import '../../providers/calendar_provider.dart';
 import '../../router.dart' show currentGroupIdProvider;
 import '../../services/scan/ocr_training_data_service.dart';
 import '../../providers/billing_provider.dart';
+import '../../config/iap_config.dart';
 import '../../sheets/feedback_sheet.dart';
 import '../../sheets/premium_sheet.dart';
 import '../../theme/spacing.dart';
@@ -44,6 +45,7 @@ import '../../utils/friendly_error.dart';
 import '../../utils/active_group_context.dart';
 
 import '../../widgets/app_toast.dart';
+import '../../utils/password_policy.dart';
 
 const String _appVersion = '1.0.0';
 
@@ -219,8 +221,12 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               setSheetState(() => error = l10n.accountFillPasswordFields);
               return;
             }
-            if (newPassword.length < 12) {
-              setSheetState(() => error = l10n.accountPasswordMinLength);
+            if (!PasswordPolicy.isSatisfied(newPassword)) {
+              setSheetState(() => error = PasswordPolicy.hasMinLength(
+                    newPassword,
+                  )
+                      ? l10n.authSignupPasswordRequirementsNotMet
+                      : l10n.accountPasswordMinLength);
               return;
             }
             if (newPassword != confirmPassword) {
@@ -320,6 +326,17 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     if (_isSaving) return;
     _isSaving = true;
     try {
+      final pending = await ref.read(appDatabaseProvider).outboxCount();
+      if (pending > 0) {
+        if (mounted) {
+          AppToast.error(
+            context,
+            AppLocalizations.of(context)!.offlineBannerStatusPending,
+          );
+        }
+        _isSaving = false;
+        return;
+      }
       if (_userId != null) await _ocrTrainingData.clear(_userId!);
     } catch (_) {}
     try {
@@ -362,6 +379,16 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       return;
     }
     try {
+      if (await ref.read(appDatabaseProvider).outboxCount() > 0) {
+        if (mounted) {
+          AppToast.error(
+            context,
+            AppLocalizations.of(context)!.offlineBannerStatusPending,
+          );
+        }
+        _isSaving = false;
+        return;
+      }
       if (_userId != null) await _ocrTrainingData.clear(_userId!);
     } catch (_) {}
     try {
@@ -570,6 +597,13 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           ),
           Divider(color: Theme.of(context).colorScheme.outlineVariant),
           _MenuRow(
+            icon: const AppIcon(name: 'homeOutline'),
+            label: l10n.integrationsTitle,
+            value: l10n.homeAssistantTitle,
+            onTap: () => context.pushNamed('homeAssistantConnections'),
+          ),
+          Divider(color: Theme.of(context).colorScheme.outlineVariant),
+          _MenuRow(
             icon: const AppIcon(name: 'sun'),
             label: l10n.accountAppearance,
             trailing: DropdownButton<ThemeMode>(
@@ -615,8 +649,30 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               },
             ),
           ),
+          // Recovery for a quick start dismissed too early. Only offered while
+          // it is actually dismissed; the strip still retires itself once the
+          // household is going, so restoring is always safe.
+          if (ref.watch(hubQuickStartDismissedProvider).valueOrNull ??
+              false) ...[
+            Divider(color: Theme.of(context).colorScheme.outlineVariant),
+            _MenuRow(
+              icon: const AppIcon(name: 'pushPinOutline'),
+              label: l10n.accountShowQuickStart,
+              onTap: _restoreQuickStart,
+            ),
+          ],
         ],
       ),
+    );
+  }
+
+  Future<void> _restoreQuickStart() async {
+    await restoreHubQuickStart();
+    ref.invalidate(hubQuickStartDismissedProvider);
+    if (!mounted) return;
+    AppToast.success(
+      context,
+      AppLocalizations.of(context)!.accountQuickStartRestored,
     );
   }
 
@@ -767,8 +823,17 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   Future<void> _openBillingPortal() async {
     final l10n = AppLocalizations.of(context)!;
     try {
-      final service = await ref.read(billingServiceProvider.future);
-      final url = await service.openPortal();
+      final sub = ref.read(billingStatusProvider).valueOrNull?.subscription;
+      final String url;
+      switch (sub?.provider) {
+        case 'apple':
+          url = IapConfig.appleManageSubscriptionsUrl;
+        case 'google':
+          url = IapConfig.googleManageSubscriptionsUrl;
+        default:
+          final service = await ref.read(billingServiceProvider.future);
+          url = await service.openPortal();
+      }
       await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     } catch (_) {
       if (!mounted) return;
@@ -1373,45 +1438,51 @@ class _MenuRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.zero,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
-        child: Row(
-          children: [
-            icon,
-            const SizedBox(width: MitlistSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (value != null)
+    return Semantics(
+      button: onTap != null,
+      enabled: onTap != null,
+      label: value == null ? label : '$label, $value',
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.zero,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
+          child: Row(
+            children: [
+              icon,
+              const SizedBox(width: MitlistSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text(
-                      value!,
+                      label,
+                      style: Theme.of(context).textTheme.bodyMedium,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
                     ),
-                ],
+                    if (value != null)
+                      Text(
+                        value!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
+                      ),
+                  ],
+                ),
               ),
-            ),
-            if (trailing != null)
-              trailing!
-            else if (onTap != null)
-              AppIcon(
-                  name: 'chevronRight',
-                  color: Theme.of(context).colorScheme.onSurfaceVariant),
-          ],
+              if (trailing != null)
+                trailing!
+              else if (onTap != null)
+                AppIcon(
+                    name: 'chevronRight',
+                    color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ],
+          ),
         ),
       ),
     );

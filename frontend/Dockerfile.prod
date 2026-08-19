@@ -12,6 +12,9 @@ ARG ENVIRONMENT=production
 # "Send feedback" card is hidden. See lib/config/feedback_config.dart.
 ARG REQTRACK_APP_KEY=
 ARG REQTRACK_URL=
+# Cloudflare Turnstile guards guest sign-up in the browser. App Check is
+# mobile-only, so no Firebase values reach this image.
+ARG TURNSTILE_SITE_KEY=
 # Flutter does not compile web/drift_worker.dart — compile it for Drift WASM.
 RUN dart compile js -O4 web/drift_worker.dart -o web/drift_worker.dart.js
 RUN flutter build web --release \
@@ -20,7 +23,8 @@ RUN flutter build web --release \
     --dart-define=GLITCHTIP_DSN=${GLITCHTIP_DSN} \
     --dart-define=ENVIRONMENT=${ENVIRONMENT} \
     --dart-define=REQTRACK_APP_KEY=${REQTRACK_APP_KEY} \
-    --dart-define=REQTRACK_URL=${REQTRACK_URL}
+    --dart-define=REQTRACK_URL=${REQTRACK_URL} \
+    --dart-define=TURNSTILE_SITE_KEY=${TURNSTILE_SITE_KEY}
 
 FROM nginx:1.29-alpine
 COPY --from=build /app/build/web /usr/share/nginx/html

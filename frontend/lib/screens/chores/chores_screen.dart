@@ -18,6 +18,7 @@ import '../../sheets/chore_creation_sheet.dart';
 import '../../sheets/chore_detail_sheet.dart';
 import '../../sheets/chore_load_sheet.dart';
 import '../../sheets/chore_zones_sheet.dart';
+import '../../theme/animations.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../utils/shell_tab_load.dart';
@@ -65,6 +66,10 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   /// before landing in the ledger.
   final Set<String> _settlingIds = {};
   bool _doneSectionExpanded = true;
+
+  /// The chore that just settled into the ledger, so its new row can land
+  /// visibly (grow + highlight fade) instead of popping in.
+  String? _justLandedChoreId;
 
   AppLocalizations get _l10n => AppLocalizations.of(context)!;
   StreamSubscription<List<CurrentChore>>? _sub;
@@ -239,6 +244,9 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
               ? _formatLastAction(_l10n, entry.lastAssignment!)
               : null,
           supplies: entry.chore.supplies,
+          nextTurnName: entry.nextAssigneeUserId != null
+              ? _memberNames[entry.nextAssigneeUserId]
+              : null,
         ));
       }
 
@@ -276,6 +284,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
         ..clear()
         ..addAll(done);
       _settlingIds.clear();
+      _justLandedChoreId = null;
       _hasHousehold = true;
       _isLoading = allowSkeleton && chores.isEmpty && done.isEmpty;
       _hasError = false;
@@ -345,6 +354,9 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       assignee: details?.pendingAssignment?.userId != null
           ? _shortUserLabel(details!.pendingAssignment!.userId)
           : chore.assigneeInitials,
+      nextAssignee: details?.nextAssigneeUserId != null
+          ? _shortUserLabel(details!.nextAssigneeUserId!)
+          : chore.nextTurnName,
       frequencyLabel: details != null
           ? _frequencyLabel(
               _l10n, details.chore.frequency, details.chore.periodInterval)
@@ -517,6 +529,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       _settlingIds.remove(id);
       final idx = _chores.indexWhere((c) => c.id == id);
       if (idx == -1) return;
+      _justLandedChoreId = id;
       final chore = _chores.removeAt(idx);
       _recentlyDone.insert(
         0,
@@ -541,6 +554,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     if (!mounted) return;
     setState(() {
       _settlingIds.remove(id);
+      if (_justLandedChoreId == id) _justLandedChoreId = null;
       final entryIdx = _recentlyDone
           .indexWhere((e) => e.choreId == id && e.restoreChore != null);
       if (entryIdx != -1) {
@@ -817,6 +831,15 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     final myActive = _chores.where((c) => c.isMine && !c.completed).length;
     final totalActive = _chores.where((c) => !c.completed).length;
     final myTurn = _myTurnNow();
+    // The house verdict: overdue across *everyone*, never filtered by
+    // Me/Everyone — this is the from-bed "what state is the flat in" read.
+    final today = DateTime.now();
+    final todayDay = DateTime(today.year, today.month, today.day);
+    final houseOverdue = _chores.where((c) {
+      if (c.completed) return false;
+      final due = DateTime(c.dueDate.year, c.dueDate.month, c.dueDate.day);
+      return due.isBefore(todayDay);
+    }).length;
     final hasAny = _chores.isNotEmpty || _recentlyDone.isNotEmpty;
 
     final showHeader = _hasHousehold && !_isLoading && !_hasError && hasAny;
@@ -999,6 +1022,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                           myTurn: myTurn,
                           myActiveCount: myActive,
                           totalActiveCount: totalActive,
+                          houseOverdueCount: houseOverdue,
                         ),
                         const SizedBox(height: MitlistSpacing.sm),
                         _FairnessStrip(
@@ -1155,11 +1179,22 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                     ),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
-                        (context, index) => _DoneEntryRow(
-                          entry: _recentlyDone[index],
-                          onTap: () =>
-                              _openChoreDetail(_recentlyDone[index].choreId),
-                        ),
+                        (context, index) {
+                          final entry = _recentlyDone[index];
+                          final row = _DoneEntryRow(
+                            entry: entry,
+                            onTap: () => _openChoreDetail(entry.choreId),
+                          );
+                          // The just-completed chore lands visibly — the other
+                          // half of the queue card's settle-out.
+                          if (entry.choreId == _justLandedChoreId) {
+                            return _LedgerLanding(
+                              key: ValueKey('landed-${entry.choreId}'),
+                              child: row,
+                            );
+                          }
+                          return row;
+                        },
                         childCount: _recentlyDone.length,
                       ),
                     ),
@@ -1224,6 +1259,10 @@ class _Chore {
   final String? lastActionLabel;
   final List<String> supplies;
 
+  /// Display name of who the turn passes to next, when the rotation is
+  /// deterministic — the wheel's "whose turn is coming" read, as a label.
+  final String? nextTurnName;
+
   _Chore({
     required this.id,
     this.assignmentId,
@@ -1239,6 +1278,7 @@ class _Chore {
     this.completed = false,
     this.lastActionLabel,
     this.supplies = const [],
+    this.nextTurnName,
   });
 
   /// Short label for whose turn it is: "Your turn", "Sam's turn", or null when
@@ -1292,10 +1332,15 @@ class _TurnHero extends StatelessWidget {
   final int myActiveCount;
   final int totalActiveCount;
 
+  /// Overdue across the whole household, unfiltered — the one-line house
+  /// verdict checked from bed.
+  final int houseOverdueCount;
+
   const _TurnHero({
     required this.myTurn,
     required this.myActiveCount,
     required this.totalActiveCount,
+    required this.houseOverdueCount,
   });
 
   @override
@@ -1309,11 +1354,13 @@ class _TurnHero extends StatelessWidget {
     final shareLabel = totalActiveCount == 0
         ? l10n.choreNothingShare
         : l10n.choreCarryingShare(myActiveCount, totalActiveCount);
+    final houseVerdict = houseOverdueCount > 0
+        ? l10n.choreHouseOverdue(houseOverdueCount)
+        : l10n.choreHouseAllClear;
 
     return Semantics(
-      label: caughtUp
-          ? l10n.choreAllCaughtUp
-          : '${dueNowCount == 1 ? l10n.choreHeroDescSingular(dueNowCount) : l10n.choreHeroDescPlural(dueNowCount)} $shareLabel',
+      label:
+          '${caughtUp ? l10n.choreAllCaughtUp : '${dueNowCount == 1 ? l10n.choreHeroDescSingular(dueNowCount) : l10n.choreHeroDescPlural(dueNowCount)} $shareLabel'}, $houseVerdict',
       child: AppCard(
         variant: caughtUp ? AppCardVariant.outlined : AppCardVariant.filled,
         tint: caughtUp ? AppCardTint.neutral : AppCardTint.primary,
@@ -1365,6 +1412,34 @@ class _TurnHero extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
+                      const SizedBox(height: MitlistSpacing.xs),
+                      // The house verdict, quiet but always present: distinct
+                      // from *my* verdict above — the whole flat's state.
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            color: houseOverdueCount > 0
+                                ? colorScheme.error
+                                : colorScheme.tertiary,
+                          ),
+                          const SizedBox(width: MitlistSpacing.space1),
+                          Flexible(
+                            child: Text(
+                              houseVerdict,
+                              style: MitlistTypography.labelXSmall(
+                                color: houseOverdueCount > 0
+                                    ? colorScheme.error
+                                    : colorScheme.onSurfaceVariant,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -1378,8 +1453,10 @@ class _TurnHero extends StatelessWidget {
 }
 
 /// Inline fairness read: who's carried the household load over the last 30
-/// days. Your share is the brand color so an uneven split is obvious at a
-/// glance. Tap for the per-member breakdown.
+/// days, as a proportional strip — one segment per member, yours in the brand
+/// color — so an uneven split reads as shape before any text. Deliberately
+/// thin and unlabeled: visible enough that a freeloader shows, quiet enough
+/// that it isn't an accusation. Tap for the per-member breakdown.
 class _FairnessStrip extends StatelessWidget {
   final List<ChoreLoadEntry> entries;
   final Map<String, String> memberNames;
@@ -1393,6 +1470,12 @@ class _FairnessStrip extends StatelessWidget {
     required this.onTap,
   });
 
+  String _nameFor(String userId) {
+    final name = memberNames[userId];
+    if (name != null && name.isNotEmpty) return name;
+    return userId.length <= 8 ? userId : userId.substring(0, 8);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -1401,37 +1484,75 @@ class _FairnessStrip extends StatelessWidget {
 
     final total = entries.fold<int>(0, (sum, e) => sum + e.completedCount);
 
+    // Same ordering as the breakdown sheet, so the strip and the sheet agree.
+    final shares = entries.where((e) => e.completedCount > 0).toList()
+      ..sort((a, b) {
+        final byCount = b.completedCount.compareTo(a.completedCount);
+        return byCount != 0
+            ? byCount
+            : _nameFor(a.userId).compareTo(_nameFor(b.userId));
+      });
+
     // Inline (not a card): one less border under the hero card. Stays tappable
     // for the per-member breakdown.
     return InkWell(
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.xs),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AppIcon(
-              name: 'chartBar',
-              size: 16,
-              color: colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(width: MitlistSpacing.space2),
-            Expanded(
-              child: Text(
-                total == 0
-                    ? l10n.choreHowItSplits
-                    : '${l10n.choreHowItSplits} · ${l10n.choreDoneLast30Days(total)}',
-                style: textTheme.labelMedium?.copyWith(
+            Row(
+              children: [
+                AppIcon(
+                  name: 'chartBar',
+                  size: 16,
                   color: colorScheme.onSurfaceVariant,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                const SizedBox(width: MitlistSpacing.space2),
+                Expanded(
+                  child: Text(
+                    total == 0
+                        ? l10n.choreHowItSplits
+                        : '${l10n.choreHowItSplits} · ${l10n.choreDoneLast30Days(total)}',
+                    style: textTheme.labelMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                AppIcon(
+                  name: 'chevronRight',
+                  size: 16,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ],
+            ),
+            if (shares.isNotEmpty) ...[
+              const SizedBox(height: MitlistSpacing.space1),
+              ExcludeSemantics(
+                // The text row above already carries the summary; per-segment
+                // detail lives in the tap-through sheet.
+                child: Row(
+                  children: [
+                    for (var i = 0; i < shares.length; i++) ...[
+                      if (i > 0) const SizedBox(width: MitlistSpacing.space0_5),
+                      Expanded(
+                        flex: shares[i].completedCount,
+                        child: Container(
+                          height: 6,
+                          color: shares[i].userId == myUserId
+                              ? colorScheme.primary
+                              : colorScheme.secondary
+                                  .withValues(alpha: i.isEven ? 0.6 : 0.4),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
-            ),
-            AppIcon(
-              name: 'chevronRight',
-              size: 16,
-              color: colorScheme.onSurfaceVariant,
-            ),
+            ],
           ],
         ),
       ),
@@ -1709,6 +1830,42 @@ class _DoneEntryRow extends StatelessWidget {
   }
 }
 
+/// Entrance for a chore that just settled into the "Done recently" ledger:
+/// the row grows in and a brief highlight fades out, so completion reads as a
+/// visible state change — the card moves *somewhere* — rather than a vanish.
+class _LedgerLanding extends StatelessWidget {
+  const _LedgerLanding({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (MediaQuery.disableAnimationsOf(context)) return child;
+    final highlight = Theme.of(context).colorScheme.tertiaryContainer;
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0.0, end: 1.0),
+      duration: MitlistAnimations.slow,
+      curve: MitlistAnimations.easeEnter,
+      child: child,
+      builder: (context, t, child) {
+        // Grow over the first half; let the highlight linger, fading over the
+        // whole run so the eye can find where the chore landed.
+        final grow = (t * 2).clamp(0.0, 1.0);
+        return ClipRect(
+          child: Align(
+            alignment: Alignment.topCenter,
+            heightFactor: grow,
+            child: ColoredBox(
+              color: highlight.withValues(alpha: (1.0 - t) * 0.7),
+              child: Opacity(opacity: grow, child: child),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _ChoreItem extends StatelessWidget {
   final _Chore chore;
   final VoidCallback onToggle;
@@ -1739,6 +1896,8 @@ class _ChoreItem extends StatelessWidget {
       chore.title,
       if (isComplete) l10n.choreStatusDone,
       if (turnLabel != null && !isComplete) turnLabel,
+      if (chore.nextTurnName != null && !isComplete)
+        l10n.choreNextInRotation(chore.nextTurnName!),
       if (!chore.hasAssignee && !isComplete) l10n.choreUpForGrabs,
       _frequencyLabel(l10n, chore.frequency, chore.periodInterval),
       if (suppliesLabel != null) suppliesLabel,
@@ -1795,6 +1954,14 @@ class _ChoreItem extends StatelessWidget {
                                   ? colorScheme.primary
                                   : colorScheme.onSurfaceVariant,
                               emphasized: chore.isMine,
+                            ),
+                          // The rotation made visible: who the turn passes to
+                          // once this one is done.
+                          if (chore.nextTurnName != null && !isComplete)
+                            _MetaChip(
+                              icon: 'arrowRight',
+                              label: chore.nextTurnName!,
+                              color: colorScheme.onSurfaceVariant,
                             ),
                           if (chore.supplies.isNotEmpty)
                             _MetaChip(

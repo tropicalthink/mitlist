@@ -28,6 +28,38 @@ void main() {
     expect(apiCanonicalId(id), equals(id));
   });
 
+  test('canonical category lookup omits unknown and empty categories',
+      () async {
+    final db = _db();
+    addTearDown(db.close);
+    final now = DateTime(2026, 1, 1);
+    await db.upsertCanonicalItems([
+      CanonicalItemsTableCompanion.insert(
+        id: 'milk',
+        groupId: '__global__',
+        nameDe: const Value('Milch'),
+        nameEn: const Value('milk'),
+        category: const Value('dairy'),
+        createdAt: now,
+        updatedAt: now,
+      ),
+      CanonicalItemsTableCompanion.insert(
+        id: 'mystery',
+        groupId: 'group-1',
+        nameEn: const Value('mystery'),
+        category: const Value(''),
+        createdAt: now,
+        updatedAt: now,
+      ),
+    ]);
+
+    final repo = GroceryRepository(db: db, dio: Dio());
+    final categories =
+        await repo.getCanonicalCategories(['milk', 'mystery', 'missing']);
+
+    expect(categories, {'milk': 'dairy'});
+  });
+
   test('applyDelta maps server canonical UUIDs back to local slugs', () async {
     final db = _db();
     addTearDown(db.close);

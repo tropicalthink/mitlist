@@ -94,15 +94,7 @@ func (s *ChoreService) broadcastChorePush(ctx context.Context, groupID, choreID,
 
 // publishChore emits an SSE event for a chore state change.
 func (s *ChoreService) publishChore(eventType string, groupID, choreID uuid.UUID) {
-	if s.hub == nil {
-		return
-	}
-	data, _ := json.Marshal(map[string]string{"chore_id": choreID.String()})
-	s.hub.Publish(groupID.String(), sse.Event{
-		Type:    eventType,
-		GroupID: groupID.String(),
-		Payload: data,
-	})
+	publishDomainEvent(s.hub, eventType, groupID, map[string]string{"chore_id": choreID.String()})
 }
 
 func (s *ChoreService) requireActiveVerifiedUser(u *models.User) error {
@@ -173,6 +165,7 @@ func (s *ChoreService) CreateChore(ctx context.Context, user *models.User, chore
 			return fmt.Errorf("failed to advance initial rotation state: %w", err)
 		}
 	}
+	s.publishChore("chore:created", chore.GroupID, chore.ID)
 
 	return nil
 }
@@ -227,14 +220,24 @@ func (s *ChoreService) GetChoreDetails(ctx context.Context, user *models.User, c
 		return nil, err
 	}
 
+	// Best-effort, like the dashboard listing: a rotation-state read failure
+	// leaves the "next up" affordance empty rather than failing the details.
+	var nextAssignee *uuid.UUID
+	if pending != nil && isSequentialAssignment(chore.AssignmentType) {
+		if state, stateErr := s.choreRepo.GetRotationState(ctx, choreID); stateErr == nil {
+			nextAssignee = nextSequentialAssignee(chore.AssignmentType, state, pending)
+		}
+	}
+
 	now := time.Now().UTC()
 	return &models.ChoreDetails{
-		Chore:             *chore,
-		PendingAssignment: pending,
-		LastAssignment:    last,
-		Stats:             *stats,
-		DueStatus:         dueStatus(pending, now, dueSoonDays),
-		AssignedToMe:      pending != nil && pending.UserID == user.ID,
+		Chore:              *chore,
+		PendingAssignment:  pending,
+		LastAssignment:     last,
+		Stats:              *stats,
+		DueStatus:          dueStatus(pending, now, dueSoonDays),
+		AssignedToMe:       pending != nil && pending.UserID == user.ID,
+		NextAssigneeUserID: nextAssignee,
 	}, nil
 }
 
@@ -285,7 +288,68 @@ func (s *ChoreService) ListCurrentChores(ctx context.Context, user *models.User,
 		current[i].DueStatus = dueStatus(current[i].PendingAssignment, now, dueSoonDays)
 		current[i].AssignedToMe = current[i].PendingAssignment != nil && current[i].PendingAssignment.UserID == user.ID
 	}
+	s.fillNextAssignees(ctx, current)
 	return current, nil
+}
+
+// fillNextAssignees annotates chores whose rotation is deterministic with the
+// member who takes the turn after the pending one, so clients can render the
+// rotation as shape ("you → Sam"). Best-effort: a rotation-state read failure
+// leaves the field empty rather than failing the listing.
+func (s *ChoreService) fillNextAssignees(ctx context.Context, current []models.CurrentChore) {
+	choreIDs := make([]uuid.UUID, 0, len(current))
+	for i := range current {
+		if current[i].PendingAssignment != nil && isSequentialAssignment(current[i].Chore.AssignmentType) {
+			choreIDs = append(choreIDs, current[i].Chore.ID)
+		}
+	}
+	if len(choreIDs) == 0 {
+		return
+	}
+	states, err := s.choreRepo.GetRotationStatesByChoreIDs(ctx, choreIDs)
+	if err != nil {
+		return
+	}
+	stateByChoreID := make(map[uuid.UUID]models.ChoreRotationState, len(states))
+	for _, state := range states {
+		stateByChoreID[state.ChoreID] = state
+	}
+	for i := range current {
+		if state, ok := stateByChoreID[current[i].Chore.ID]; ok {
+			current[i].NextAssigneeUserID = nextSequentialAssignee(
+				current[i].Chore.AssignmentType, &state, current[i].PendingAssignment)
+		}
+	}
+}
+
+// nextSequentialAssignee returns who the turn passes to after the pending
+// assignment, or nil when the rotation isn't deterministic or has no
+// meaningful successor. The persisted index already points one past the
+// pending assignee (see rotateAndAssign / CreateChore's initial advance).
+func nextSequentialAssignee(assignmentType string, state *models.ChoreRotationState, pending *models.ChoreAssignment) *uuid.UUID {
+	if pending == nil || state == nil || !isSequentialAssignment(assignmentType) {
+		return nil
+	}
+	if len(state.MemberOrder) < 2 || state.CurrentIndex < 0 {
+		return nil
+	}
+	next := state.MemberOrder[state.CurrentIndex%len(state.MemberOrder)]
+	if next == pending.UserID {
+		// Manual reassignment drift: a wrong "next" is worse than none.
+		return nil
+	}
+	return &next
+}
+
+// isSequentialAssignment reports whether the next turn is predictable from the
+// rotation state alone ("random" re-rolls, "who-least-did-first" depends on
+// completion counts at rotation time, "no-assignment" has no turns).
+func isSequentialAssignment(assignmentType string) bool {
+	switch assignmentType {
+	case "round-robin", "round_robin", "in-alphabetical-order", "alphabetical":
+		return true
+	}
+	return false
 }
 
 // UpdateChore updates a chore's details.
@@ -343,6 +407,7 @@ func (s *ChoreService) UpdateChore(ctx context.Context, user *models.User, chore
 	if err := s.choreRepo.UpdateChore(ctx, chore); err != nil {
 		return nil, fmt.Errorf("failed to update chore: %w", err)
 	}
+	s.publishChore("chore:updated", chore.GroupID, chore.ID)
 	return chore, nil
 }
 
@@ -361,7 +426,11 @@ func (s *ChoreService) DeleteChore(ctx context.Context, user *models.User, chore
 	if err := s.requireAdmin(ctx, user.ID, chore.GroupID); err != nil {
 		return err
 	}
-	return s.choreRepo.DeleteChore(ctx, choreID)
+	if err := s.choreRepo.DeleteChore(ctx, choreID); err != nil {
+		return err
+	}
+	s.publishChore("chore:deleted", chore.GroupID, chore.ID)
+	return nil
 }
 
 // RotateChore manually advances the chore rotation and creates the next assignment.
@@ -393,7 +462,11 @@ func (s *ChoreService) RotateChore(ctx context.Context, user *models.User, chore
 		return fmt.Errorf("failed to get rotation state: %w", err)
 	}
 
-	return s.rotateAndAssign(ctx, chore, state)
+	if err := s.rotateAndAssign(ctx, chore, state); err != nil {
+		return err
+	}
+	s.publishChore("chore:rotated", chore.GroupID, chore.ID)
+	return nil
 }
 
 // CompleteChore marks the current pending assignment as completed, records completion, and rotates.
@@ -454,9 +527,6 @@ func (s *ChoreService) CompleteChore(ctx context.Context, user *models.User, cho
 	}
 
 	s.publishChore("chore:completed", chore.GroupID, choreID)
-	s.broadcastChorePush(ctx, chore.GroupID, choreID, user.ID, "chore_due",
-		"Chore completed",
-		displayName(user)+" completed "+chore.Name)
 	return nil
 }
 
@@ -511,9 +581,6 @@ func (s *ChoreService) SkipChore(ctx context.Context, user *models.User, choreID
 	}
 
 	s.publishChore("chore:skipped", chore.GroupID, choreID)
-	s.broadcastChorePush(ctx, chore.GroupID, choreID, user.ID, "chore_due",
-		"Chore skipped",
-		displayName(user)+" skipped "+chore.Name)
 	return nil
 }
 
@@ -1007,6 +1074,7 @@ func (s *ChoreService) CreateSubtask(ctx context.Context, user *models.User, sub
 	if err := s.choreRepo.CreateSubtask(ctx, subtask); err != nil {
 		return nil, fmt.Errorf("failed to create subtask: %w", err)
 	}
+	s.publishChore("chore:subtask_created", chore.GroupID, subtask.ChoreID)
 	return subtask, nil
 }
 
@@ -1039,6 +1107,7 @@ func (s *ChoreService) UpdateSubtask(ctx context.Context, user *models.User, sub
 	if err := s.choreRepo.UpdateSubtask(ctx, existing); err != nil {
 		return nil, fmt.Errorf("failed to update subtask: %w", err)
 	}
+	s.publishChore("chore:subtask_updated", chore.GroupID, existing.ChoreID)
 	return existing, nil
 }
 
@@ -1061,7 +1130,11 @@ func (s *ChoreService) DeleteSubtask(ctx context.Context, user *models.User, sub
 	if err := s.requireMembership(ctx, user.ID, chore.GroupID); err != nil {
 		return err
 	}
-	return s.choreRepo.DeleteSubtask(ctx, subtaskID)
+	if err := s.choreRepo.DeleteSubtask(ctx, subtaskID); err != nil {
+		return err
+	}
+	s.publishChore("chore:subtask_deleted", chore.GroupID, existing.ChoreID)
+	return nil
 }
 
 // FindDueChores returns pending assignments due within the given window.
@@ -1100,6 +1173,7 @@ func (s *ChoreService) ReorderSubtasks(ctx context.Context, user *models.User, c
 			return fmt.Errorf("failed to update subtask position: %w", err)
 		}
 	}
+	s.publishChore("chore:subtasks_reordered", chore.GroupID, choreID)
 	return nil
 }
 

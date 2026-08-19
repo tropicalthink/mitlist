@@ -18,7 +18,7 @@ import (
 func TestListItemPhotos_AttachAndList(t *testing.T) {
 	clearTables(t)
 
-	user := createTestUser(t, "listphotos@example.com", "password123!")
+	user := createTestUser(t, "listphotos@example.com", "Password123!")
 	groupRepo := newTestGroupRepo()
 	listRepo := newTestListRepo()
 

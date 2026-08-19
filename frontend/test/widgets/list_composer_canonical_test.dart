@@ -7,6 +7,7 @@ import 'package:mitlist/l10n/app_localizations.dart';
 import 'package:mitlist/repositories/list_repository.dart';
 import 'package:mitlist/services/scan/household_suggestion_engine.dart';
 import 'package:mitlist/storage/app_database.dart';
+import 'package:mitlist/widgets/app_card.dart';
 import 'package:mitlist/widgets/list/list_composer_bar.dart';
 
 import '../support/fakes.dart';
@@ -67,7 +68,7 @@ Widget _host(Widget child) {
 }
 
 void main() {
-  testWidgets('grocery chip exposes canonical id before add',
+  testWidgets('grocery card exposes canonical id before add',
       (WidgetTester tester) async {
     final controller = TextEditingController();
     final focusNode = FocusNode();
@@ -104,6 +105,9 @@ void main() {
 
     expect(controller.text, equals('Milch'));
     expect(events, equals(['selected:milk', 'add:Milch']));
+    final cardSize = tester.getSize(find.byType(AppCard));
+    expect(cardSize.width, 160);
+    expect(cardSize.height, greaterThanOrEqualTo(56));
   });
 
   group('addItemAmountOfflineFirst canonical id', () {

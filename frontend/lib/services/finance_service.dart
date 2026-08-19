@@ -5,6 +5,7 @@ import '../models/expense_receipt_models.dart';
 import 'api_client.dart';
 import 'api_error_mapper.dart';
 import 'group_id_validator.dart';
+import 'outbox_request.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class FinanceService {
@@ -16,9 +17,11 @@ class FinanceService {
     return FinanceService._(dio);
   }
 
-  Future<Expense> createExpense(CreateExpenseRequest req) async {
+  Future<Expense> createExpense(CreateExpenseRequest req,
+      {String? idempotencyKey}) async {
     try {
-      final r = await _dio.post('/expenses', data: req.toJson());
+      final r = await _dio.post('/expenses',
+          data: req.toJson(), options: outboxOptions(idempotencyKey));
       return Expense.fromJson(r.data);
     } on DioException catch (e) {
       _logger.e('Create expense failed: ${e.response?.data}');
@@ -94,9 +97,11 @@ class FinanceService {
     }
   }
 
-  Future<Expense> updateExpense(String id, UpdateExpenseRequest req) async {
+  Future<Expense> updateExpense(String id, UpdateExpenseRequest req,
+      {String? idempotencyKey}) async {
     try {
-      final r = await _dio.patch('/expenses/$id', data: req.toJson());
+      final r = await _dio.patch('/expenses/$id',
+          data: req.toJson(), options: outboxOptions(idempotencyKey));
       return Expense.fromJson(r.data);
     } on DioException catch (e) {
       _logger.e('Update expense failed: ${e.response?.data}');
@@ -104,9 +109,10 @@ class FinanceService {
     }
   }
 
-  Future<void> deleteExpense(String id) async {
+  Future<void> deleteExpense(String id, {String? idempotencyKey}) async {
     try {
-      await _dio.delete('/expenses/$id');
+      await _dio.delete('/expenses/$id',
+          options: outboxOptions(idempotencyKey));
     } on DioException catch (e) {
       _logger.e('Delete expense failed: ${e.response?.data}');
       throw apiException(e);
@@ -285,7 +291,8 @@ class FinanceService {
   }
 
   Future<Settlement> createGroupSettlement(
-      String groupId, CreateSettlementRequest req) async {
+      String groupId, CreateSettlementRequest req,
+      {String? idempotencyKey}) async {
     ensureValidGroupId(groupId);
     try {
       final r = await _dio.post(
@@ -296,6 +303,7 @@ class FinanceService {
           toUserId: req.toUserId,
           amount: req.amount,
         ).toJson(),
+        options: outboxOptions(idempotencyKey),
       );
       final data = r.data;
       if (data is! Map) throw ApiException('Unexpected response format');

@@ -19,7 +19,7 @@ import (
 func TestPinwallMedia_AttachAndList(t *testing.T) {
 	clearTables(t)
 
-	user := createTestUser(t, "pinwallmedia@example.com", "password123!")
+	user := createTestUser(t, "pinwallmedia@example.com", "Password123!")
 	groupRepo := newTestGroupRepo()
 
 	group := &models.Group{Name: "Pinwall", CreatedBy: user.ID}

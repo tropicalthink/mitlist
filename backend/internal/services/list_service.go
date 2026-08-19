@@ -52,15 +52,18 @@ func (s *ListService) SetDispatcher(d NotificationDispatcher) { s.dispatcher = d
 // broadcastListPush persists in-app feed rows and sends push to all group members
 // except the actor. Uses the dispatcher when available (persist+push); falls back
 // to push-only when only pushSvc is set.
-func (s *ListService) broadcastListPush(ctx context.Context, list *models.List, actorID uuid.UUID, title, body string) {
+func (s *ListService) broadcastListPush(ctx context.Context, list *models.List, actorID uuid.UUID, actorName, itemName, title, body string) {
 	if s.dispatcher != nil {
 		notifPayload := models.NotificationPayload{
 			Screen:     models.ScreenListDetail,
 			EntityType: models.EntityTypeList,
 			ID:         list.ID.String(),
 			GroupID:    list.GroupID.String(),
+			ActorName:  actorName,
+			EntityName: list.Name,
+			ItemName:   itemName,
 		}
-		_ = s.dispatcher.DispatchToGroup(ctx, list.GroupID, actorID, "list_item_added", title, body, notifPayload)
+		_ = s.dispatcher.DispatchToGroup(ctx, list.GroupID, actorID, models.NotificationTypeListItemAdded, title, body, notifPayload)
 		return
 	}
 	if s.pushSvc == nil {
@@ -74,6 +77,9 @@ func (s *ListService) broadcastListPush(ctx context.Context, list *models.List, 
 			EntityType: models.EntityTypeList,
 			ID:         list.ID.String(),
 			GroupID:    list.GroupID.String(),
+			ActorName:  actorName,
+			EntityName: list.Name,
+			ItemName:   itemName,
 		},
 	}
 	data, _ := json.Marshal(payload)
@@ -82,28 +88,14 @@ func (s *ListService) broadcastListPush(ctx context.Context, list *models.List, 
 
 // publishItem emits an SSE event for a list item mutation.
 func (s *ListService) publishItem(eventType string, groupID uuid.UUID, item *models.ListItem) {
-	if s.hub == nil {
-		return
-	}
-	data, _ := json.Marshal(item)
-	s.hub.Publish(groupID.String(), sse.Event{
-		Type:    eventType,
-		GroupID: groupID.String(),
-		Payload: data,
+	publishDomainEvent(s.hub, eventType, groupID, map[string]string{
+		"list_id": item.ListID.String(), "item_id": item.ID.String(),
 	})
 }
 
 // publishListEvent emits an SSE event for a list-level mutation (e.g. items cleared).
 func (s *ListService) publishListEvent(eventType string, groupID, listID uuid.UUID) {
-	if s.hub == nil {
-		return
-	}
-	data, _ := json.Marshal(map[string]string{"list_id": listID.String()})
-	s.hub.Publish(groupID.String(), sse.Event{
-		Type:    eventType,
-		GroupID: groupID.String(),
-		Payload: data,
-	})
+	publishDomainEvent(s.hub, eventType, groupID, map[string]string{"list_id": listID.String()})
 }
 
 func (s *ListService) requireMembership(ctx context.Context, userID, groupID uuid.UUID) error {
@@ -134,7 +126,11 @@ func (s *ListService) CreateList(ctx context.Context, user *models.User, list *m
 	if err := validation.MaxLength(list.Name, validation.MaxListNameLength, "name"); err != nil {
 		return &api.ValidationError{Field: "name", Message: err.Error()}
 	}
-	return s.listRepo.CreateList(ctx, list)
+	if err := s.listRepo.CreateList(ctx, list); err != nil {
+		return err
+	}
+	s.publishListEvent("list:created", list.GroupID, list.ID)
+	return nil
 }
 
 // GetList retrieves a single list by ID, enforcing group membership.
@@ -214,6 +210,7 @@ func (s *ListService) UpdateList(ctx context.Context, user *models.User, listID 
 	if err := s.listRepo.UpdateList(ctx, list); err != nil {
 		return nil, fmt.Errorf("failed to update list: %w", err)
 	}
+	s.publishListEvent("list:updated", list.GroupID, list.ID)
 	return list, nil
 }
 
@@ -232,7 +229,11 @@ func (s *ListService) DeleteList(ctx context.Context, user *models.User, listID 
 	if err := s.requireMembership(ctx, user.ID, list.GroupID); err != nil {
 		return err
 	}
-	return s.listRepo.HardDeleteList(ctx, listID)
+	if err := s.listRepo.HardDeleteList(ctx, listID); err != nil {
+		return err
+	}
+	s.publishListEvent("list:deleted", list.GroupID, list.ID)
+	return nil
 }
 
 // CreateItem adds a new item to a list.
@@ -270,7 +271,8 @@ func (s *ListService) CreateItem(ctx context.Context, user *models.User, item *m
 		return err
 	}
 	s.publishItem("list:item_created", list.GroupID, item)
-	s.broadcastListPush(ctx, list, user.ID, "New item added", displayName(user)+" added "+item.Name+" to "+list.Name)
+	actorName := displayName(user)
+	s.broadcastListPush(ctx, list, user.ID, actorName, item.Name, list.Name+" updated", actorName+" added "+item.Name+" to "+list.Name)
 	return nil
 }
 
@@ -403,7 +405,6 @@ func (s *ListService) ClearItems(ctx context.Context, user *models.User, listID 
 	}
 	if n > 0 {
 		s.publishListEvent("list:items_cleared", list.GroupID, listID)
-		s.broadcastListPush(ctx, list, user.ID, "List cleared", list.Name+" was cleared")
 	}
 	return n, nil
 }
@@ -446,6 +447,7 @@ func (s *ListService) AddItemAmount(ctx context.Context, user *models.User, list
 		if err := s.listRepo.UpdateItem(ctx, item); err != nil {
 			return nil, fmt.Errorf("failed to update item: %w", err)
 		}
+		s.publishItem("list:item_updated", list.GroupID, item)
 		return item, nil
 	}
 
@@ -460,6 +462,7 @@ func (s *ListService) AddItemAmount(ctx context.Context, user *models.User, list
 	if err := s.listRepo.CreateItem(ctx, item); err != nil {
 		return nil, fmt.Errorf("failed to create item: %w", err)
 	}
+	s.publishItem("list:item_created", list.GroupID, item)
 	return item, nil
 }
 
@@ -527,6 +530,7 @@ func (s *ListService) AddItemsBatch(ctx context.Context, user *models.User, list
 			if err := s.listRepo.UpdateItem(ctx, item); err != nil {
 				return nil, fmt.Errorf("failed to update item: %w", err)
 			}
+			s.publishItem("list:item_updated", list.GroupID, item)
 			result = append(result, *item)
 			continue
 		}
@@ -542,6 +546,7 @@ func (s *ListService) AddItemsBatch(ctx context.Context, user *models.User, list
 		if err := s.listRepo.CreateItem(ctx, &item); err != nil {
 			return nil, fmt.Errorf("failed to create item: %w", err)
 		}
+		s.publishItem("list:item_created", list.GroupID, &item)
 		existingByKey[key] = &item
 		result = append(result, item)
 	}
@@ -583,12 +588,14 @@ func (s *ListService) RemoveItemAmount(ctx context.Context, user *models.User, l
 		if err := s.listRepo.SoftDeleteItem(ctx, item.ID); err != nil {
 			return nil, false, fmt.Errorf("failed to remove item: %w", err)
 		}
+		s.publishItem("list:item_deleted", list.GroupID, item)
 		return item, true, nil
 	}
 	item.Quantity -= amount
 	if err := s.listRepo.UpdateItem(ctx, item); err != nil {
 		return nil, false, fmt.Errorf("failed to update item: %w", err)
 	}
+	s.publishItem("list:item_updated", list.GroupID, item)
 	return item, false, nil
 }
 
@@ -628,7 +635,11 @@ func (s *ListService) ReorderItems(ctx context.Context, user *models.User, listI
 	for pos, id := range itemIDs {
 		batch[pos] = models.ListItem{ID: id, Position: pos}
 	}
-	return s.listRepo.BatchUpdateItemPositions(ctx, batch)
+	if err := s.listRepo.BatchUpdateItemPositions(ctx, batch); err != nil {
+		return err
+	}
+	s.publishListEvent("list:items_reordered", list.GroupID, listID)
+	return nil
 }
 
 func (s *ListService) CreateShoppingLocation(ctx context.Context, user *models.User, location *models.ShoppingLocation) error {
@@ -642,7 +653,11 @@ func (s *ListService) CreateShoppingLocation(ctx context.Context, user *models.U
 	if err := s.requireMembership(ctx, user.ID, location.GroupID); err != nil {
 		return err
 	}
-	return s.listRepo.CreateShoppingLocation(ctx, location)
+	if err := s.listRepo.CreateShoppingLocation(ctx, location); err != nil {
+		return err
+	}
+	publishDomainEvent(s.hub, "store:created", location.GroupID, map[string]string{"store_id": location.ID.String()})
+	return nil
 }
 
 func (s *ListService) ListShoppingLocations(ctx context.Context, user *models.User, groupID uuid.UUID) ([]models.ShoppingLocation, error) {
@@ -671,7 +686,11 @@ func (s *ListService) CreateProduct(ctx context.Context, user *models.User, prod
 	if err := s.requireMembership(ctx, user.ID, product.GroupID); err != nil {
 		return err
 	}
-	return s.listRepo.CreateProduct(ctx, product)
+	if err := s.listRepo.CreateProduct(ctx, product); err != nil {
+		return err
+	}
+	publishDomainEvent(s.hub, "product:created", product.GroupID, map[string]string{"product_id": product.ID.String()})
+	return nil
 }
 
 func (s *ListService) ListProducts(ctx context.Context, user *models.User, groupID uuid.UUID) ([]models.Product, error) {
@@ -859,14 +878,20 @@ func (s *ListService) BulkCompleteItems(ctx context.Context, user *models.User, 
 
 // SetListArchived archives or unarchives a list.
 func (s *ListService) SetListArchived(ctx context.Context, user *models.User, listID uuid.UUID, archived bool) error {
-	if _, err := s.GetList(ctx, user, listID); err != nil {
+	list, err := s.GetList(ctx, user, listID)
+	if err != nil {
 		return err
 	}
-	return s.listRepo.SetListArchived(ctx, listID, user.ID, archived)
+	if err := s.listRepo.SetListArchived(ctx, listID, user.ID, archived); err != nil {
+		return err
+	}
+	s.publishListEvent("list:archived", list.GroupID, listID)
+	return nil
 }
 
 func (s *ListService) ClaimItem(ctx context.Context, user *models.User, listID, itemID uuid.UUID) error {
-	if _, err := s.GetList(ctx, user, listID); err != nil {
+	list, err := s.GetList(ctx, user, listID)
+	if err != nil {
 		return err
 	}
 	item, err := s.listRepo.GetItemByID(ctx, itemID)
@@ -876,11 +901,16 @@ func (s *ListService) ClaimItem(ctx context.Context, user *models.User, listID, 
 	if item.ListID != listID {
 		return &api.NotFoundError{Resource: "list item", ID: itemID.String()}
 	}
-	return s.listRepo.ClaimItem(ctx, listID, itemID, user.ID)
+	if err := s.listRepo.ClaimItem(ctx, listID, itemID, user.ID); err != nil {
+		return err
+	}
+	s.publishItem("list:item_claimed", list.GroupID, item)
+	return nil
 }
 
 func (s *ListService) UnclaimItem(ctx context.Context, user *models.User, listID, itemID uuid.UUID) error {
-	if _, err := s.GetList(ctx, user, listID); err != nil {
+	list, err := s.GetList(ctx, user, listID)
+	if err != nil {
 		return err
 	}
 	item, err := s.listRepo.GetItemByID(ctx, itemID)
@@ -890,7 +920,11 @@ func (s *ListService) UnclaimItem(ctx context.Context, user *models.User, listID
 	if item.ListID != listID {
 		return &api.NotFoundError{Resource: "list item", ID: itemID.String()}
 	}
-	return s.listRepo.UnclaimItem(ctx, listID, itemID, user.ID)
+	if err := s.listRepo.UnclaimItem(ctx, listID, itemID, user.ID); err != nil {
+		return err
+	}
+	s.publishItem("list:item_unclaimed", list.GroupID, item)
+	return nil
 }
 
 func (s *ListService) ListRepo() repositories.ListRepo {

@@ -13,13 +13,18 @@ import 'services/canonical_display.dart' show setGroceryDisplayLang;
 import 'providers/theme_provider.dart';
 import 'providers/locale_provider.dart';
 import 'providers/auth_provider.dart';
+import 'providers/notification_provider.dart';
 import 'services/error_reporter.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'services/fcm_service.dart';
 import 'services/push_subscription_service.dart';
+import 'providers/billing_provider.dart' show iapServiceProvider;
+import 'services/iap_service.dart';
 import 'widgets/offline_banner.dart';
 
 import 'widgets/app_toast.dart';
+import 'utils/notification_navigation.dart';
+import 'utils/notification_copy.dart';
 
 class MitlistApp extends ConsumerStatefulWidget {
   const MitlistApp({super.key});
@@ -45,6 +50,12 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
       environment: const String.fromEnvironment('ENVIRONMENT',
           defaultValue: 'development'),
     );
+    if (IapService.isSupported) {
+      // The store can redeliver unfinished transactions before authentication
+      // finishes. Subscribe immediately; failed delivery is retained and
+      // retried after the authenticated bootstrap below.
+      unawaited(ref.read(iapServiceProvider.future));
+    }
   }
 
   void _ensureDeferredInit() {
@@ -58,6 +69,13 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
     // starting it here gives it a head start before the user is likely to be
     // actively typing into a list.
     ref.read(grocerySeedProvider);
+    if (IapService.isSupported) {
+      unawaited(
+        ref
+            .read(iapServiceProvider.future)
+            .then((service) => service.retryPendingVerification()),
+      );
+    }
     _initPushSubscriptions();
   }
 
@@ -67,17 +85,31 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
       if (!ready || !mounted) return;
 
       _fcmSub = FcmService.onForegroundMessage.listen((message) {
+        ref.invalidate(unreadNotificationCountProvider);
         final title = message.notification?.title;
         final body = message.notification?.body;
         if (title == null && body == null) return;
         final messenger = _scaffoldMessengerKey.currentState;
-        if (messenger == null) return;
+        if (messenger == null || !messenger.mounted) return;
+        final l10n = AppLocalizations.of(messenger.context);
+        final text = l10n == null
+            ? null
+            : resolveNotificationText(
+                l10n: l10n,
+                fallbackTitle: title ?? '',
+                fallbackBody: body ?? title ?? '',
+                data: message.data,
+              );
         AppToast.notification(
           messenger,
           // A push with only a title has nothing to put underneath it, so the
           // title becomes the body rather than being printed twice.
-          title: body == null ? null : title,
-          body: body ?? title!,
+          title: text == null || text.title.isEmpty ? null : text.title,
+          body: text?.body ?? body ?? title!,
+          actionLabel: l10n == null
+              ? null
+              : _notificationActionLabel(message.data['screen'], l10n),
+          onAction: () => unawaited(_handleNotificationTap(message)),
         );
       });
 
@@ -93,19 +125,50 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
     });
   }
 
-  void _handleNotificationTap(RemoteMessage message) {
+  String _notificationActionLabel(
+    String? screen,
+    AppLocalizations l10n,
+  ) {
+    return switch (screen) {
+      'listDetail' => l10n.notificationsOpenList,
+      'choreDetail' => l10n.notificationsOpenChore,
+      'expenseDetail' ||
+      'settlements' ||
+      'recurringExpenses' =>
+        l10n.notificationsOpenMoney,
+      'mealPlan' || 'recipeDetail' => l10n.notificationsOpenRecipes,
+      'householdHub' => l10n.notificationsOpenHousehold,
+      _ => l10n.commonView,
+    };
+  }
+
+  Future<void> _handleNotificationTap(RemoteMessage message) async {
     final bootstrap = ref.read(authBootstrapProvider);
     if (bootstrap.isLoading || !ref.read(authStateProvider)) {
       return;
     }
     final data = message.data;
-    final screen = data['screen'] as String?;
-    final id = data['id'] as String?;
+    final notificationId = data['notification_id'];
+    if (notificationId != null && notificationId.isNotEmpty) {
+      unawaited(_markPushNotificationRead(notificationId));
+    }
     final router = ref.read(routerProvider);
-    if (screen == 'choreDetail') {
-      router.goNamed('chores');
-    } else if (screen == 'listDetail' && id != null) {
-      router.goNamed('listDetail', pathParameters: {'listId': id});
+    await navigateNotificationPayload(
+      router,
+      data,
+      preserveInbox: false,
+      switchGroup: (groupId) =>
+          ref.read(currentGroupIdProvider.notifier).set(groupId),
+    );
+  }
+
+  Future<void> _markPushNotificationRead(String notificationId) async {
+    try {
+      final service = await ref.read(notificationServiceProviderAsync.future);
+      await service.markAsRead(notificationId);
+      ref.invalidate(unreadNotificationCountProvider);
+    } catch (_) {
+      // Navigation should still succeed offline; the inbox remains canonical.
     }
   }
 
@@ -129,14 +192,34 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
       // Force-reconnect SSE — the OS may have silently killed the connection
       // while the app was backgrounded.
       ref.read(sseServiceProvider).reconnect();
+      if (IapService.isSupported && ref.read(authStateProvider)) {
+        unawaited(
+          ref
+              .read(iapServiceProvider.future)
+              .then((service) => service.retryPendingVerification()),
+        );
+      }
       // Re-run the banner state now rather than waiting out the poll interval,
       // so a stale offline bar never survives into the first visible frame.
       ref.invalidate(outboxStateProvider);
+      ref.invalidate(unreadNotificationCountProvider);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<bool>(authStateProvider, (previous, authenticated) {
+      if (!authenticated) {
+        _deferredInitDone = false;
+        ref.invalidate(unreadNotificationCountProvider);
+        unawaited(_fcmSub?.cancel());
+        unawaited(_fcmTapSub?.cancel());
+        _fcmSub = null;
+        _fcmTapSub = null;
+      } else if (previous == false) {
+        _ensureDeferredInit();
+      }
+    });
     ref.listen(authBootstrapProvider, (prev, next) {
       next.whenData((authenticated) {
         if (authenticated) _ensureDeferredInit();

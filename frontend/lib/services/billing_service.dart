@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
 
@@ -15,6 +16,10 @@ class BillingService {
   final Logger _logger = Logger();
 
   BillingService._(this._dio);
+
+  /// Test-only constructor for purchase-delivery regression tests.
+  @visibleForTesting
+  BillingService.forTest(Dio dio) : this._(dio);
 
   /// Creates an instance of BillingService.
   static Future<BillingService> create([Ref? ref]) async {
@@ -83,6 +88,30 @@ class BillingService {
       return url;
     } on DioException catch (e) {
       _logger.e('Create checkout failed: ${e.response?.data}');
+      throw apiException(e);
+    }
+  }
+
+  /// Verifies a native In-App Purchase with the backend, which validates it
+  /// against the store and records the resulting subscription.
+  ///
+  /// [platform] is 'apple' or 'google'; [token] is the StoreKit 2 signed
+  /// transaction (iOS) or the purchase token (Android). Entitlement only
+  /// activates once this returns — the client never grants premium on its own.
+  Future<BillingSubscription> verifyIap({
+    required String platform,
+    required String token,
+    String? groupId,
+  }) async {
+    try {
+      final response = await _dio.post('/billing/iap/verify', data: {
+        'platform': platform,
+        'token': token,
+        if (groupId != null) 'group_id': groupId,
+      });
+      return BillingSubscription.fromJson(response.data);
+    } on DioException catch (e) {
+      _logger.e('IAP verify failed: ${e.response?.data}');
       throw apiException(e);
     }
   }

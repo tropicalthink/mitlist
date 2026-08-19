@@ -11,7 +11,9 @@ import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_input.dart';
 import '../../widgets/board/cork_board.dart';
+import '../../widgets/password_requirements.dart';
 import '../../widgets/password_strength_bar.dart';
+import '../../utils/password_policy.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
@@ -24,10 +26,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   final _verificationController = TextEditingController();
   final _nameFocus = FocusNode();
   final _emailFocus = FocusNode();
   final _passwordFocus = FocusNode();
+  final _confirmPasswordFocus = FocusNode();
   final _verificationFocus = FocusNode();
 
   bool _isLoading = false;
@@ -37,6 +41,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   String? _nameError;
   String? _emailError;
   String? _passwordError;
+  String? _confirmPasswordError;
 
   AppLocalizations get l10n => AppLocalizations.of(context)!;
 
@@ -47,6 +52,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   void initState() {
     super.initState();
     _passwordController.addListener(_onPasswordChanged);
+    _confirmPasswordController.addListener(_onPasswordChanged);
   }
 
   void _onPasswordChanged() => setState(() {});
@@ -54,13 +60,16 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   @override
   void dispose() {
     _passwordController.removeListener(_onPasswordChanged);
+    _confirmPasswordController.removeListener(_onPasswordChanged);
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     _verificationController.dispose();
     _nameFocus.dispose();
     _emailFocus.dispose();
     _passwordFocus.dispose();
+    _confirmPasswordFocus.dispose();
     _verificationFocus.dispose();
     super.dispose();
   }
@@ -75,24 +84,48 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       _nameError = null;
       _emailError = null;
       _passwordError = null;
+      _confirmPasswordError = null;
     });
 
     final name = _nameController.text.trim();
     final email = _emailController.text.trim();
+    // Never trim a password: leading and trailing spaces are legitimate
+    // characters, and silently stripping them here would store something
+    // different from what the user typed.
     final password = _passwordController.text;
+    final confirmPassword = _confirmPasswordController.text;
 
-    if (name.isEmpty || email.isEmpty || password.isEmpty) {
+    if (name.isEmpty ||
+        email.isEmpty ||
+        password.isEmpty ||
+        confirmPassword.isEmpty) {
       setState(() {
         _errorMessage = l10n.authSignupFillAllFields;
         if (name.isEmpty) _nameError = l10n.authSignupNameRequired;
         if (email.isEmpty) _emailError = l10n.authSignupEmailRequired;
         if (password.isEmpty) _passwordError = l10n.authSignupPasswordRequired;
+        if (confirmPassword.isEmpty) {
+          _confirmPasswordError = l10n.authSignupConfirmPasswordRequired;
+        }
       });
       return;
     }
 
-    if (password.length < 12) {
-      setState(() => _passwordError = 'Use at least 12 characters.');
+    // Complexity is checked before the match: telling someone their passwords
+    // match when neither is acceptable just costs them a second attempt.
+    if (!PasswordPolicy.isSatisfied(password)) {
+      setState(() {
+        _passwordError = PasswordPolicy.hasMinLength(password)
+            ? l10n.authSignupPasswordRequirementsNotMet
+            : l10n.authSignupPasswordMinLength;
+      });
+      _passwordFocus.requestFocus();
+      return;
+    }
+
+    if (password != confirmPassword) {
+      setState(() => _confirmPasswordError = l10n.authSignupPasswordMismatch);
+      _confirmPasswordFocus.requestFocus();
       return;
     }
 
@@ -266,16 +299,35 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                 controller: _passwordController,
                                 focusNode: _passwordFocus,
                                 obscureText: true,
-                                textInputAction: TextInputAction.done,
+                                textInputAction: TextInputAction.next,
                                 autofillHints: const [
                                   AutofillHints.newPassword
                                 ],
-                                onSubmitted: (_) => _submit(),
+                                onSubmitted: (_) =>
+                                    _confirmPasswordFocus.requestFocus(),
                                 errorText: _passwordError,
                               ),
                               const SizedBox(height: MitlistSpacing.space2),
                               PasswordStrengthBar(
                                 password: _passwordController.text,
+                              ),
+                              const SizedBox(height: MitlistSpacing.space2),
+                              PasswordRequirements(
+                                password: _passwordController.text,
+                              ),
+                              const SizedBox(height: MitlistSpacing.space3),
+                              AppInput(
+                                label: l10n.authSignupConfirmPassword,
+                                hint: l10n.authSignupConfirmPasswordHint,
+                                controller: _confirmPasswordController,
+                                focusNode: _confirmPasswordFocus,
+                                obscureText: true,
+                                textInputAction: TextInputAction.done,
+                                autofillHints: const [
+                                  AutofillHints.newPassword
+                                ],
+                                onSubmitted: (_) => _submit(),
+                                errorText: _confirmPasswordError,
                               ),
                               const SizedBox(height: MitlistSpacing.space3),
                             ] else ...[

@@ -8,12 +8,17 @@ class AppChip extends StatelessWidget {
     required this.label,
     this.selected = false,
     this.onSelected,
+    this.onLongPress,
     this.leading,
   });
 
   final String label;
   final bool selected;
   final ValueChanged<bool>? onSelected;
+
+  /// Secondary action on the chip itself — used for destructive edits (remove
+  /// this zone) that shouldn't take a permanent × on every chip.
+  final VoidCallback? onLongPress;
   final Widget? leading;
 
   @override
@@ -26,6 +31,7 @@ class AppChip extends StatelessWidget {
 
     return GestureDetector(
       onTap: onSelected != null ? () => onSelected!(!selected) : null,
+      onLongPress: onLongPress,
       child: Container(
         height: MitlistSpacing.space11,
         padding: const EdgeInsets.symmetric(horizontal: MitlistSpacing.space3),

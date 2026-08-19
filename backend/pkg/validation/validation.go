@@ -4,6 +4,7 @@ package validation
 import (
 	"net/mail"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 )
 
@@ -18,7 +19,7 @@ const (
 	MaxListNameLength    = 100
 	MaxItemNameLength    = 200
 	MaxGroupNameLength   = 100
-	MinPasswordLength    = 12
+	MinPasswordLength    = 8
 )
 
 // NewFieldError creates a validation error for a specific field.
@@ -57,13 +58,50 @@ func NormalizeEmail(s string) string {
 	return strings.ToLower(strings.TrimSpace(s))
 }
 
-// Password validates password length constraints.
+// Password validates password length and character-class requirements.
+//
+// Every flow that *sets* a password routes through here (registration, change,
+// reset confirmation, account claim, guest conversion). Login does not, so
+// tightening this policy never locks out an existing account — it only applies
+// when a new password is chosen.
+//
+// Whitespace deliberately does not satisfy the special-character rule: a
+// trailing space is usually a typo, and accepting it as "special" would let a
+// password satisfy the policy in a way the user cannot see.
 func Password(s string) error {
 	if len(s) < MinPasswordLength {
-		return NewFieldError("password", "password must be at least 12 characters")
+		return NewFieldError("password", "password must be at least 8 characters")
 	}
+	// Length is measured in bytes because bcrypt silently truncates input past
+	// 72 bytes; a rune-based limit would let a multi-byte password lose
+	// characters without the user ever being told.
 	if len(s) > MaxPasswordLength {
 		return NewFieldError("password", "password too long")
+	}
+
+	var hasUpper, hasDigit, hasSpecial bool
+	for _, r := range s {
+		switch {
+		case unicode.IsUpper(r):
+			hasUpper = true
+		case unicode.IsDigit(r):
+			hasDigit = true
+		case unicode.IsLetter(r), unicode.IsSpace(r):
+			// Lower-case letters, caseless scripts, and whitespace are allowed
+			// but satisfy none of the requirements below.
+		default:
+			hasSpecial = true
+		}
+	}
+
+	if !hasUpper {
+		return NewFieldError("password", "password must contain at least one uppercase letter")
+	}
+	if !hasDigit {
+		return NewFieldError("password", "password must contain at least one number")
+	}
+	if !hasSpecial {
+		return NewFieldError("password", "password must contain at least one special character")
 	}
 	return nil
 }

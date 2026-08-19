@@ -62,7 +62,8 @@ Future<int> _count(AppDatabase db, String sql) async {
 }
 
 void main() {
-  test('v11→v12 migration adds local_item_signals_table + index, keeps household data',
+  test(
+      'v11→v12 migration adds local_item_signals_table + index, keeps household data',
       () async {
     final dir = Directory.systemTemp.createTempSync('mitv11');
     addTearDown(() => dir.deleteSync(recursive: true));
@@ -90,7 +91,13 @@ void main() {
         1);
 
     // Existing household grocery data is untouched.
-    expect(await _count(db, "SELECT COUNT(*) FROM canonical_items_table WHERE group_id='g1'"), 1);
-    expect(await _count(db, "SELECT COUNT(*) FROM item_aliases_table WHERE group_id='g1'"), 1);
+    expect(
+        await _count(db,
+            "SELECT COUNT(*) FROM canonical_items_table WHERE group_id='g1'"),
+        1);
+    expect(
+        await _count(
+            db, "SELECT COUNT(*) FROM item_aliases_table WHERE group_id='g1'"),
+        1);
   });
 }

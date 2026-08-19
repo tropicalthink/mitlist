@@ -52,11 +52,14 @@ func (r *AttachmentRepository) Reserve(ctx context.Context, a *models.Attachment
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 
+	// $3 is cast explicitly: compared bare against the literal 0, Postgres
+	// infers the parameter as int4, and any limit above ~2.1 GB then fails to
+	// encode — so every upload intent 500s on a household quota of 3 GB or more.
 	const reserve = `
 		UPDATE groups
 		SET storage_reserved_bytes = storage_reserved_bytes + $1
 		WHERE id = $2
-		  AND ($3 <= 0 OR storage_used_bytes + storage_reserved_bytes + $1 <= $3)
+		  AND ($3::bigint <= 0 OR storage_used_bytes + storage_reserved_bytes + $1 <= $3::bigint)
 	`
 	ct, err := tx.Exec(ctx, reserve, a.ByteSize, a.GroupID, limitBytes)
 	if err != nil {

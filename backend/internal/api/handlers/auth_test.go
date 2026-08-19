@@ -2,10 +2,14 @@ package handlers
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	appcheckservice "github.com/mitlist-app/mitlist/internal/services/appcheck"
+	turnstileservice "github.com/mitlist-app/mitlist/internal/services/turnstile"
 )
 
 func TestAuth_Register(t *testing.T) {
@@ -14,12 +18,12 @@ func TestAuth_Register(t *testing.T) {
 
 	body := map[string]any{
 		"email":      "auth@example.com",
-		"password":   "password123!",
+		"password":   "Password123!",
 		"first_name": "Auth",
 		"last_name":  "Test",
 	}
 	rec := execRequest(t, router, "POST", "/api/v1/auth/register", body, "")
-	requireStatus(t, rec, http.StatusCreated)
+	requireStatus(t, rec, http.StatusAccepted)
 
 	var resp map[string]any
 	parseJSONResponse(t, rec, &resp)
@@ -34,25 +38,27 @@ func TestAuth_Register_DuplicateEmail(t *testing.T) {
 
 	body := map[string]any{
 		"email":      "dup@example.com",
-		"password":   "password123!",
+		"password":   "Password123!",
 		"first_name": "Dup",
 		"last_name":  "Test",
 	}
 	rec := execRequest(t, router, "POST", "/api/v1/auth/register", body, "")
-	requireStatus(t, rec, http.StatusCreated)
+	requireStatus(t, rec, http.StatusAccepted)
 
 	rec = execRequest(t, router, "POST", "/api/v1/auth/register", body, "")
-	requireStatus(t, rec, http.StatusConflict)
+	// Duplicate registration does not reveal whether the address is already
+	// active; it receives the same generic acknowledgement as other requests.
+	requireStatus(t, rec, http.StatusAccepted)
 }
 
 func TestAuth_Login(t *testing.T) {
 	clearTables(t)
 	router, _ := newAuthRouter(t)
-	createTestUser(t, "login@example.com", "password123!")
+	createTestUser(t, "login@example.com", "Password123!")
 
 	body := map[string]any{
 		"email":    "login@example.com",
-		"password": "password123!",
+		"password": "Password123!",
 	}
 	rec := execRequest(t, router, "POST", "/api/v1/auth/login", body, "")
 	requireStatus(t, rec, http.StatusOK)
@@ -65,7 +71,7 @@ func TestAuth_Login(t *testing.T) {
 func TestAuth_Login_InvalidCredentials(t *testing.T) {
 	clearTables(t)
 	router, _ := newAuthRouter(t)
-	createTestUser(t, "bad@example.com", "password123!")
+	createTestUser(t, "bad@example.com", "Password123!")
 
 	body := map[string]any{
 		"email":    "bad@example.com",
@@ -78,7 +84,7 @@ func TestAuth_Login_InvalidCredentials(t *testing.T) {
 func TestAuth_GetMe(t *testing.T) {
 	clearTables(t)
 	router, _ := newAuthRouter(t)
-	user := createTestUser(t, "me@example.com", "password123!")
+	user := createTestUser(t, "me@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	rec := execRequest(t, router, "GET", "/api/v1/auth/me", nil, token)
@@ -100,7 +106,7 @@ func TestAuth_GetMe_Unauthorized(t *testing.T) {
 func TestAuth_UpdateMe(t *testing.T) {
 	clearTables(t)
 	router, _ := newAuthRouter(t)
-	user := createTestUser(t, "update@example.com", "password123!")
+	user := createTestUser(t, "update@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	body := map[string]any{"first_name": "Updated"}
@@ -115,7 +121,7 @@ func TestAuth_UpdateMe(t *testing.T) {
 func TestAuth_DeleteMe(t *testing.T) {
 	clearTables(t)
 	router, _ := newAuthRouter(t)
-	user := createTestUser(t, "delete@example.com", "password123!")
+	user := createTestUser(t, "delete@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	rec := execRequest(t, router, "DELETE", "/api/v1/auth/me", nil, token)
@@ -130,19 +136,19 @@ func TestAuth_DeleteMe(t *testing.T) {
 func TestAuth_ChangePassword(t *testing.T) {
 	clearTables(t)
 	router, _ := newAuthRouter(t)
-	user := createTestUser(t, "changepw@example.com", "oldpassword12!")
+	user := createTestUser(t, "changepw@example.com", "Oldpassword12!")
 	token := generateTestToken(user.ID)
 
 	body := map[string]any{
-		"old_password": "oldpassword12!",
-		"new_password": "newpassword123!",
+		"old_password": "Oldpassword12!",
+		"new_password": "newPassword123!",
 	}
 	rec := execRequest(t, router, "POST", "/api/v1/auth/change-password", body, token)
 	requireStatus(t, rec, http.StatusOK)
 
 	loginBody := map[string]any{
 		"email":    "changepw@example.com",
-		"password": "newpassword123!",
+		"password": "newPassword123!",
 	}
 	rec = execRequest(t, router, "POST", "/api/v1/auth/login", loginBody, "")
 	requireStatus(t, rec, http.StatusOK)
@@ -151,7 +157,7 @@ func TestAuth_ChangePassword(t *testing.T) {
 func TestAuth_PasswordReset(t *testing.T) {
 	clearTables(t)
 	router, _ := newAuthRouter(t)
-	createTestUser(t, "reset@example.com", "password123!")
+	createTestUser(t, "reset@example.com", "Password123!")
 
 	body := map[string]any{"email": "reset@example.com"}
 	rec := execRequest(t, router, "POST", "/api/v1/auth/password-reset", body, "")
@@ -172,10 +178,92 @@ func TestAuth_Guest(t *testing.T) {
 	assert.True(t, resp["user"].(map[string]any)["is_guest"].(bool))
 }
 
+func TestAuth_GuestRejectsMissingRequiredAppCheckToken(t *testing.T) {
+	clearTables(t)
+	router, handler := newAuthRouter(t)
+	handler.appCheck = appcheckservice.NewForTesting(
+		"1234567890",
+		"https://jwks.test",
+		nil,
+	)
+
+	rec := execRequest(t, router, "POST", "/api/v1/auth/guest", nil, "")
+	requireStatus(t, rec, http.StatusUnauthorized)
+}
+
+// siteverifyStub stands in for Cloudflare, answering every request with the
+// given body.
+func siteverifyStub(t *testing.T, body string) *httptest.Server {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(body))
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func guestWithHeader(t *testing.T, router http.Handler, header, value string) *httptest.ResponseRecorder {
+	t.Helper()
+	req := buildRequest(t, "POST", "/api/v1/auth/guest", nil, "")
+	if header != "" {
+		req.Header.Set(header, value)
+	}
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+	return rec
+}
+
+func TestAuth_GuestAcceptsTurnstileToken(t *testing.T) {
+	clearTables(t)
+	router, handler := newAuthRouter(t)
+	stub := siteverifyStub(t, `{"success":true,"hostname":"app.mitlist.me"}`)
+	handler.turnstile = turnstileservice.NewForTesting("secret", stub.URL, stub.Client())
+
+	rec := guestWithHeader(t, router, "X-Mitlist-Turnstile", "solved")
+	requireStatus(t, rec, http.StatusCreated)
+
+	var resp map[string]any
+	parseJSONResponse(t, rec, &resp)
+	assert.True(t, resp["user"].(map[string]any)["is_guest"].(bool))
+}
+
+func TestAuth_GuestRejectsMissingTurnstileToken(t *testing.T) {
+	clearTables(t)
+	router, handler := newAuthRouter(t)
+	stub := siteverifyStub(t, `{"success":true}`)
+	handler.turnstile = turnstileservice.NewForTesting("secret", stub.URL, stub.Client())
+
+	rec := guestWithHeader(t, router, "", "")
+	requireStatus(t, rec, http.StatusUnauthorized)
+}
+
+func TestAuth_GuestRejectsFailedTurnstileChallenge(t *testing.T) {
+	clearTables(t)
+	router, handler := newAuthRouter(t)
+	stub := siteverifyStub(t, `{"success":false,"error-codes":["invalid-input-response"]}`)
+	handler.turnstile = turnstileservice.NewForTesting("secret", stub.URL, stub.Client())
+
+	rec := guestWithHeader(t, router, "X-Mitlist-Turnstile", "forged")
+	requireStatus(t, rec, http.StatusUnauthorized)
+}
+
+// The bypass worth guarding: with both enforced, dropping the App Check header
+// must fall through to Turnstile rather than skipping attestation entirely.
+func TestAuth_GuestWithBothEnforcedStillRequiresOneProof(t *testing.T) {
+	clearTables(t)
+	router, handler := newAuthRouter(t)
+	stub := siteverifyStub(t, `{"success":true,"hostname":"app.mitlist.me"}`)
+	handler.appCheck = appcheckservice.NewForTesting("1234567890", "https://jwks.test", nil)
+	handler.turnstile = turnstileservice.NewForTesting("secret", stub.URL, stub.Client())
+
+	requireStatus(t, guestWithHeader(t, router, "", ""), http.StatusUnauthorized)
+	requireStatus(t, guestWithHeader(t, router, "X-Mitlist-Turnstile", "solved"), http.StatusCreated)
+}
+
 func TestAuth_Refresh(t *testing.T) {
 	clearTables(t)
 	router, _ := newAuthRouter(t)
-	user := createTestUser(t, "refresh@example.com", "password123!")
+	user := createTestUser(t, "refresh@example.com", "Password123!")
 	_, refresh, err := testJWT.GenerateTokenPair(user.ID.String(), nil)
 	require.NoError(t, err)
 
@@ -191,7 +279,7 @@ func TestAuth_Refresh(t *testing.T) {
 func TestAuth_Refresh_RotatesToken(t *testing.T) {
 	clearTables(t)
 	router, _ := newAuthRouter(t)
-	user := createTestUser(t, "refresh-rotate@example.com", "password123!")
+	user := createTestUser(t, "refresh-rotate@example.com", "Password123!")
 	_, refresh, err := testJWT.GenerateTokenPair(user.ID.String(), nil)
 	require.NoError(t, err)
 
@@ -212,7 +300,7 @@ func TestAuth_Refresh_RotatesToken(t *testing.T) {
 func TestAuth_Logout(t *testing.T) {
 	clearTables(t)
 	router, _ := newAuthRouter(t)
-	user := createTestUser(t, "logout@example.com", "password123!")
+	user := createTestUser(t, "logout@example.com", "Password123!")
 	_, refresh, err := testJWT.GenerateTokenPair(user.ID.String(), nil)
 	require.NoError(t, err)
 

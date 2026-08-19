@@ -2,7 +2,9 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -41,11 +43,24 @@ func TestGuestService_GetGuest(t *testing.T) {
 		userRepo := new(mocks.MockUserRepo)
 		svc := NewGuestService(userRepo, nil, nil)
 
-		userRepo.On("GetByID", ctx, userID).Return(&models.User{ID: userID, IsGuest: true}, nil)
+		userRepo.On("GetByID", ctx, userID).Return(&models.User{ID: userID, IsGuest: true, IsActive: true}, nil)
 
 		user, err := svc.GetGuest(ctx, userID)
 		require.NoError(t, err)
 		assert.True(t, user.IsGuest)
+	})
+
+	t.Run("locked guest is retained and rejected", func(t *testing.T) {
+		userRepo := new(mocks.MockUserRepo)
+		svc := NewGuestService(userRepo, nil, nil)
+		userRepo.On("GetByID", ctx, userID).Return(&models.User{
+			ID: userID, IsGuest: true, IsActive: false,
+		}, nil)
+
+		_, err := svc.GetGuest(ctx, userID)
+		require.Error(t, err)
+		assert.IsType(t, &api.ValidationError{}, err)
+		userRepo.AssertExpectations(t)
 	})
 
 	t.Run("not a guest", func(t *testing.T) {
@@ -66,19 +81,25 @@ func TestGuestService_ConvertGuest(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		userRepo := new(mocks.MockUserRepo)
+		authRepo := new(mocks.MockAuthRepo)
 		jwtSvc := new(mocks.MockJWTService)
 		passSvc := new(mocks.MockPasswordService)
-		svc := NewGuestService(userRepo, jwtSvc, passSvc)
+		mailSvc := new(mocks.MockMailService)
+		svc := NewGuestServiceWithAuth(userRepo, jwtSvc, passSvc, authRepo, mailSvc)
 
-		userRepo.On("GetByID", ctx, guestID).Return(&models.User{ID: guestID, IsGuest: true}, nil)
-		passSvc.On("Hash", "password123!").Return("hash", nil)
+		userRepo.On("GetByID", ctx, guestID).Return(&models.User{ID: guestID, IsGuest: true, IsActive: true}, nil)
+		userRepo.On("GetByEmail", ctx, "new@example.com").Return(nil, fmt.Errorf("user not found"))
+		passSvc.On("Hash", "Password123!").Return("hash", nil)
 		userRepo.On("Update", ctx, mock.AnythingOfType("*models.User")).Return(nil)
+		authRepo.On("CreateEmailVerification", ctx, guestID, mock.AnythingOfType("string"), mock.AnythingOfType("time.Time")).Return(nil)
+		mailSvc.On("Send", "new@example.com", "Verify your mitlist account", mock.AnythingOfType("string"), false).Return(nil)
 		jwtSvc.On("RevokeUserSessions", guestID).Return(nil)
 		jwtSvc.On("GenerateTokenPair", guestID.String(), mock.Anything).Return("access", "refresh", nil)
 
-		user, access, _, err := svc.ConvertGuest(ctx, guestID, "new@example.com", "password123!", "Test", "User")
+		user, access, _, err := svc.ConvertGuest(ctx, guestID, "new@example.com", "Password123!", "Test", "User")
 		require.NoError(t, err)
-		assert.False(t, user.IsGuest)
+		assert.True(t, user.IsGuest)
+		assert.False(t, user.IsVerified)
 		assert.Equal(t, "new@example.com", user.Email)
 		assert.Equal(t, "access", access)
 	})
@@ -93,4 +114,18 @@ func TestGuestService_ConvertGuest(t *testing.T) {
 		require.Error(t, err)
 		assert.IsType(t, &api.ValidationError{}, err)
 	})
+}
+
+func TestGuestService_CreateGuestForIdentity_UsesDurableQuota(t *testing.T) {
+	ctx := context.Background()
+	userRepo := new(mocks.MockUserRepo)
+	authRepo := new(mocks.MockAuthRepo)
+	svc := NewGuestServiceWithAuth(userRepo, nil, nil, authRepo, nil)
+
+	authRepo.On("ReserveLoginAttempt", ctx, guestQuotaKey("install", "device-1"), 3, 30*24*time.Hour).
+		Return(false, nil)
+
+	_, _, _, err := svc.CreateGuestForIdentity(ctx, "203.0.113.5", "device-1")
+	require.ErrorIs(t, err, ErrGuestCreationLimit)
+	userRepo.AssertNotCalled(t, "Create", mock.Anything, mock.Anything)
 }

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -55,6 +56,7 @@ import 'package:mitlist/services/group_service.dart';
 import 'package:mitlist/services/list_service.dart';
 import 'package:mitlist/services/notification_service.dart';
 import 'package:mitlist/services/recipe_service.dart';
+import 'package:mitlist/services/token_store.dart';
 import 'package:mitlist/storage/app_database.dart' hide FinanceSummary;
 import 'package:mitlist/widgets/app_button.dart';
 import 'package:mitlist/widgets/mitlist_bottom_nav.dart';
@@ -680,8 +682,8 @@ void main() {
     await tester.tap(find.text('Change Password'));
     await _pumpAfter(tester);
     await tester.enterText(find.byType(TextField).at(0), 'oldpassword');
-    await tester.enterText(find.byType(TextField).at(1), 'newpassword123');
-    await tester.enterText(find.byType(TextField).at(2), 'newpassword123');
+    await tester.enterText(find.byType(TextField).at(1), 'Newpassword123!');
+    await tester.enterText(find.byType(TextField).at(2), 'Newpassword123!');
     await tester
         .tap(find.text('CHANGE PASSWORD')); // solid variant renders uppercase
     await _pumpAfter(tester);
@@ -690,7 +692,7 @@ void main() {
     expect(authService.lastChangePasswordRequest!.oldPassword, 'oldpassword');
     expect(
       authService.lastChangePasswordRequest!.newPassword,
-      'newpassword123',
+      'Newpassword123!',
     );
 
     await tester.tap(find.text('Terms of Service'));
@@ -739,15 +741,15 @@ void main() {
     );
 
     await tester.enterText(find.byType(TextField).at(3), 'reset-code-123');
-    await tester.enterText(find.byType(TextField).at(4), 'freshpassword');
-    await tester.enterText(find.byType(TextField).at(5), 'freshpassword');
+    await tester.enterText(find.byType(TextField).at(4), 'Freshpassword1!');
+    await tester.enterText(find.byType(TextField).at(5), 'Freshpassword1!');
     await tester.ensureVisible(find.widgetWithText(
         AppButton, 'RESET PASSWORD')); // solid variant renders uppercase
     await tester.tap(find.widgetWithText(AppButton, 'RESET PASSWORD'));
     await _pumpAfter(tester);
 
     expect(authService.lastConfirmPasswordResetToken, 'reset-code-123');
-    expect(authService.lastConfirmPasswordResetPassword, 'freshpassword');
+    expect(authService.lastConfirmPasswordResetPassword, 'Freshpassword1!');
     expect(
       find.text('Password reset successful. You can sign in now.'),
       findsOneWidget,
@@ -915,6 +917,12 @@ void main() {
       tester,
       child: const RecipesScreen(),
       overrides: [
+        groupServiceProviderAsync.overrideWith(
+          (ref) async => FakeGroupService(
+            groups: [group],
+            groupDetail: group,
+          ),
+        ),
         recipeServiceProviderAsync.overrideWith((ref) async => recipeService),
       ],
     );
@@ -1090,7 +1098,11 @@ void main() {
     expect(await db.select(db.listsTable).get(), hasLength(1));
 
     // Create AuthService with the wipe callback (no Ref needed in unit tests).
-    final authService = await AuthService.createWithWipe(
+    final prefs = await SharedPreferences.getInstance();
+    final authService = AuthService.forTest(
+      Dio(),
+      prefs,
+      _MemoryTokenStore(),
       wipeLocalData: db.clearAllUserData,
     );
 
@@ -1105,6 +1117,23 @@ void main() {
     expect(await db.select(db.expensesTable).get(), isEmpty);
     expect(await db.select(db.listsTable).get(), isEmpty);
   });
+}
+
+class _MemoryTokenStore implements TokenStore {
+  @override
+  Future<void> clear() async {}
+
+  @override
+  Future<String?> getAccessToken() async => null;
+
+  @override
+  Future<String?> getRefreshToken() async => null;
+
+  @override
+  Future<void> save({
+    required String accessToken,
+    required String refreshToken,
+  }) async {}
 }
 
 Future<AppDatabase> _pumpScreen(
@@ -1241,7 +1270,8 @@ class FakeChoreService implements ChoreService {
   }
 
   @override
-  Future<Chore> createChore(CreateChoreRequest req) async {
+  Future<Chore> createChore(CreateChoreRequest req,
+      {String? idempotencyKey}) async {
     lastCreateRequest = req;
     final chore = Chore(
       id: '55555555-5555-5555-5555-555555555555',
@@ -1282,7 +1312,8 @@ class FakeChoreService implements ChoreService {
   }
 
   @override
-  Future<void> completeChore(String id, {String? notes}) async {
+  Future<void> completeChore(String id,
+      {String? notes, String? idempotencyKey}) async {
     completedIds.add(id);
     final index = _chores.indexWhere((chore) => chore.id == id);
     if (index >= 0) {
@@ -1321,7 +1352,8 @@ class FakeFinanceService implements FinanceService {
   }
 
   @override
-  Future<Expense> createExpense(CreateExpenseRequest req) async {
+  Future<Expense> createExpense(CreateExpenseRequest req,
+      {String? idempotencyKey}) async {
     lastCreateRequest = req;
     final expense = Expense(
       id: '66666666-6666-6666-6666-666666666666',
@@ -1464,7 +1496,8 @@ class FakeRecipeService implements RecipeService {
   }
 
   @override
-  Future<Recipe> createRecipe(CreateRecipeRequest req) async {
+  Future<Recipe> createRecipe(CreateRecipeRequest req,
+      {String? idempotencyKey}) async {
     lastCreateRequest = req;
     final recipe = Recipe(
       id: '77777777-7777-7777-7777-777777777777',
@@ -1522,6 +1555,9 @@ class FakeNotificationService implements NotificationService {
       : _preferences = preferences ?? <NotificationPreferenceModel>[];
 
   final List<NotificationPreferenceModel> _preferences;
+
+  @override
+  Future<int> countUnreadNotifications() async => 0;
 
   @override
   Future<List<NotificationPreferenceModel>> getPreferences() async =>
@@ -1594,12 +1630,14 @@ class FakePinwallService implements PinwallService {
       {required String content,
       DateTime? remindAt,
       String? linkedEntityType,
-      String? linkedEntityId}) async {
+      String? linkedEntityId,
+      String? idempotencyKey}) async {
     throw UnimplementedError();
   }
 
   @override
-  Future<void> deletePost(String groupId, String postId) async {}
+  Future<void> deletePost(String groupId, String postId,
+      {String? idempotencyKey}) async {}
 
   @override
   Future<PinwallPost> updatePostPosition(
@@ -1607,6 +1645,7 @@ class FakePinwallService implements PinwallService {
     String postId, {
     required double x,
     required double y,
+    String? idempotencyKey,
   }) async {
     throw UnimplementedError();
   }
@@ -1718,6 +1757,13 @@ class FakeListRepository implements ListRepository {
       _service.listLists(groupId);
 
   @override
+  Future<ItemList> createList(CreateListRequest req) async {
+    final created = await _service.createList(req);
+    _controller.add(await _service.listLists(req.groupId));
+    return created;
+  }
+
+  @override
   Future<int> refreshLists(String groupId,
       {int limit = 200, int offset = 0}) async {
     final lists = await _service.listLists(
@@ -1816,6 +1862,9 @@ class FakeListRepository implements ListRepository {
 
   @override
   Future<String?> getGroupId(String listId) async => null;
+
+  @override
+  Future<String?> getListType(String listId) async => null;
 
   @override
   Future<ListItem> addItemAmountOfflineFirst(

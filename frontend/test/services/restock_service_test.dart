@@ -2,6 +2,7 @@ import 'package:drift/native.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:mitlist/services/household_prior_service.dart';
 import 'package:mitlist/services/restock_service.dart';
 import 'package:mitlist/storage/app_database.dart';
 
@@ -86,6 +87,7 @@ void main() {
   group('RestockService.due (in-memory Drift)', () {
     late AppDatabase db;
     late RestockService service;
+    late DateTime currentNow;
 
     const groupId = 'g1';
     const canonicalItemId = 'milk';
@@ -93,7 +95,11 @@ void main() {
 
     setUp(() async {
       db = AppDatabase(NativeDatabase.memory());
-      service = RestockService(db);
+      currentNow = DateTime(2024, 6, 10);
+      service = RestockService(
+        db,
+        prior: HouseholdPriorService(db, clock: () => currentNow),
+      );
     });
 
     tearDown(() async {
@@ -122,37 +128,69 @@ void main() {
     }
 
     test('item bought every 7 days, last bought 9 days ago → due', () async {
-      final now = DateTime(2024, 6, 10);
-      final lastPurchase = now.subtract(const Duration(days: 9));
+      final lastPurchase = currentNow.subtract(const Duration(days: 9));
       await seedPurchases(canonicalItemId, lastPurchase, count: 4, gapDays: 7);
 
-      final results = await service.due(groupId: groupId, now: now);
+      final results = await service.due(groupId: groupId);
       expect(results.any((r) => r.canonicalItemId == canonicalItemId), isTrue);
     });
 
-    test('item bought every 7 days, last bought 3 days ago → not due',
-        () async {
-      final now = DateTime(2024, 6, 10);
-      final lastPurchase = now.subtract(const Duration(days: 3));
+    test('before-due staple remains eligible and is labelled usual', () async {
+      final lastPurchase = currentNow.subtract(const Duration(days: 3));
       await seedPurchases(canonicalItemId, lastPurchase, count: 4, gapDays: 7);
 
-      final results = await service.due(groupId: groupId, now: now);
-      expect(results.any((r) => r.canonicalItemId == canonicalItemId), isFalse);
+      final results = await service.due(groupId: groupId);
+      final milk = results.singleWhere(
+        (result) => result.canonicalItemId == canonicalItemId,
+      );
+      expect(milk.reason, RestockReason.usual);
     });
 
-    test('item with only 2 purchases → excluded (insufficient history)',
+    test('item with only two purchases is ranked with posterior cadence',
         () async {
-      final now = DateTime(2024, 6, 10);
-      final lastPurchase = now.subtract(const Duration(days: 20));
+      final lastPurchase = currentNow.subtract(const Duration(days: 20));
       await seedPurchases(canonicalItemId, lastPurchase, count: 2, gapDays: 7);
 
-      final results = await service.due(groupId: groupId, now: now);
-      expect(results.any((r) => r.canonicalItemId == canonicalItemId), isFalse);
+      final results = await service.due(groupId: groupId);
+      final milk = results.singleWhere(
+        (result) => result.canonicalItemId == canonicalItemId,
+      );
+      expect(milk.intervalDays, 7);
+    });
+
+    test('one recent purchase uses the household fallback cadence', () async {
+      await seedPurchases(
+        canonicalItemId,
+        currentNow.subtract(const Duration(days: 2)),
+        count: 1,
+        gapDays: 7,
+      );
+
+      final milk = (await service.due(groupId: groupId)).singleWhere(
+        (result) => result.canonicalItemId == canonicalItemId,
+      );
+      expect(milk.intervalDays, 14);
+      expect(milk.daysSince, 2);
+    });
+
+    test('abandoned one-off outside the familiarity window is excluded',
+        () async {
+      await seedPurchases(
+        canonicalItemId,
+        currentNow.subtract(const Duration(days: 400)),
+        count: 1,
+        gapDays: 7,
+      );
+
+      expect(
+        (await service.due(groupId: groupId))
+            .map((result) => result.canonicalItemId),
+        isNot(contains(canonicalItemId)),
+      );
     });
 
     test('item already on current list → excluded', () async {
-      final now = DateTime(2024, 6, 10);
-      final lastPurchase = now.subtract(const Duration(days: 10));
+      final lastPurchase = currentNow.subtract(const Duration(days: 10));
       await seedPurchases(canonicalItemId, lastPurchase, count: 4, gapDays: 7);
 
       // Seed a canonical item so the name resolves.
@@ -172,7 +210,6 @@ void main() {
 
       final results = await service.due(
         groupId: groupId,
-        now: now,
         currentItemNames: {'milk'}, // lowercase match on name
       );
       // 'Milk'.toLowerCase() == 'milk' → should be excluded.
@@ -180,22 +217,73 @@ void main() {
     });
 
     test('most overdue item sorts first', () async {
-      final now = DateTime(2024, 6, 10);
-
       // item1 (milk): 7-day cadence, last bought 20 days ago → 13 days overdue
       await seedPurchases(
-          canonicalItemId, now.subtract(const Duration(days: 20)),
+          canonicalItemId, currentNow.subtract(const Duration(days: 20)),
           count: 4, gapDays: 7);
 
       // item2 (eggs): 7-day cadence, last bought 9 days ago → 2 days overdue
       await seedPurchases(
-          canonicalItemId2, now.subtract(const Duration(days: 9)),
+          canonicalItemId2, currentNow.subtract(const Duration(days: 9)),
           count: 4, gapDays: 7);
 
-      final results = await service.due(groupId: groupId, now: now);
+      final results = await service.due(groupId: groupId);
       expect(results.length, greaterThanOrEqualTo(2));
       // milk is more overdue → should be first.
       expect(results.first.canonicalItemId, equals(canonicalItemId));
+    });
+
+    test('list context can make an associated item rank as goesWith', () async {
+      await seedPurchases(
+        'candidate',
+        currentNow.subtract(const Duration(days: 1)),
+        count: 1,
+        gapDays: 7,
+      );
+      await seedPurchases(
+        'context',
+        currentNow.subtract(const Duration(days: 1)),
+        count: 1,
+        gapDays: 7,
+      );
+      for (var i = 0; i < 30; i++) {
+        await db.insertPurchaseHistory(PurchaseHistoryTableCompanion.insert(
+          id: 'noise-$i',
+          groupId: groupId,
+          canonicalItemId: const drift.Value('noise'),
+          purchasedAt: currentNow.subtract(Duration(days: 300 + i)),
+        ));
+      }
+      await db.upsertCooccurrence([
+        ItemCooccurrenceTableCompanion.insert(
+          groupId: groupId,
+          itemAId: 'candidate',
+          itemBId: 'context',
+          count: const drift.Value(1),
+          lastSeenAt: currentNow,
+        ),
+      ]);
+
+      final candidate = (await service.due(
+        groupId: groupId,
+        listContextIds: const ['context'],
+      ))
+          .singleWhere((result) => result.canonicalItemId == 'candidate');
+      expect(candidate.reason, RestockReason.goesWith);
+    });
+
+    test('limit is enforced and equal-score order is deterministic', () async {
+      for (final itemId in ['c', 'a', 'b']) {
+        await seedPurchases(
+          itemId,
+          currentNow.subtract(const Duration(days: 2)),
+          count: 1,
+          gapDays: 7,
+        );
+      }
+
+      final results = await service.due(groupId: groupId, limit: 2);
+      expect(results.map((result) => result.canonicalItemId), ['a', 'b']);
     });
   });
 }

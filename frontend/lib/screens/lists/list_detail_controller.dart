@@ -16,6 +16,7 @@ import '../../repositories/grocery_repository.dart';
 import '../../repositories/list_repository.dart';
 import '../../services/list_service.dart';
 import '../../services/restock_service.dart';
+import '../../services/scan/grocery_suggestion_service.dart';
 import '../../services/scan/household_suggestion_engine.dart';
 import '../../theme/animations.dart';
 import '../../utils/haptics.dart';
@@ -62,6 +63,7 @@ class ListDetailController extends ChangeNotifier {
   bool _dirty = false;
   bool _doneSectionExpanded = true;
   String? _groupId;
+  String? _listType;
   final HouseholdSuggestionEngine _suggestionEngine =
       HouseholdSuggestionEngine();
   Future<List<Product>>? _productCatalogFuture;
@@ -70,6 +72,9 @@ class ListDetailController extends ChangeNotifier {
   final Set<String> _photoLoadAttempted = {};
   bool _batchPhotosSupported = true;
   bool _canonicalBackfillStarted = false;
+  final Map<String, String> _categoryByCanonicalId = {};
+  final Set<String> _resolvedCategoryIds = {};
+  final Set<String> _categoryIdsInFlight = {};
 
   /// Max in-flight photo-metadata requests while hydrating a list's
   /// thumbnails (see [_loadPhotosForItems]).
@@ -80,7 +85,7 @@ class ListDetailController extends ChangeNotifier {
   int _suggestGeneration = 0;
 
   /// Bumped instead of [notifyListeners] when only the composer suggestions
-  /// change, so a keystroke rebuilds the suggestion chips without rebuilding
+  /// change, so a keystroke rebuilds the suggestion cards without rebuilding
   /// the item list. The screen wraps the composer in a [ValueListenableBuilder]
   /// on this; the body keeps listening to the controller itself.
   final ValueNotifier<int> suggestionsRevision = ValueNotifier<int>(0);
@@ -111,11 +116,17 @@ class ListDetailController extends ChangeNotifier {
   bool get dirty => _dirty;
   bool get doneSectionExpanded => _doneSectionExpanded;
   String? get groupId => _groupId;
+  String? get listType => _listType;
   String? get userId => _userId;
   String get groupCurrency => _groupCurrency;
   List<HouseholdSuggestion> get suggestions => _suggestionEngine.suggestions;
 
   List<ListItemPhoto>? photosFor(String itemId) => _photosByItemId[itemId];
+  String? categoryFor(ListItem item) {
+    final canonicalId = item.canonicalItemId;
+    return canonicalId == null ? null : _categoryByCanonicalId[canonicalId];
+  }
+
   bool isCollapsing(String itemId) => _collapsing.contains(itemId);
 
   /// True once the initial load has resolved the list service — guards actions
@@ -200,11 +211,14 @@ class ListDetailController extends ChangeNotifier {
         }
         _notify();
         unawaited(_loadPhotosForItems(items));
+        unawaited(_ensureGroceryCategories());
       });
 
       final cached = await repo.getItemsByListOnce(listId);
       if (_disposed) return;
       final cachedGroupId = await repo.getGroupId(listId);
+      if (_disposed) return;
+      final cachedListType = await repo.getListType(listId);
       if (_disposed) return;
       _hasLocalSnapshot = _hasLocalSnapshot || cachedGroupId != null;
       _sectionsDirty = true;
@@ -213,7 +227,11 @@ class ListDetailController extends ChangeNotifier {
         ..addAll(cached);
       _isLoading = cached.isEmpty && !_hasLocalSnapshot;
       if (cachedGroupId != null) _groupId = cachedGroupId;
+      _listType = cachedListType;
       _notify();
+      if (_listType == 'shopping') {
+        unawaited(_ensureGroceryCategories());
+      }
 
       // Refresh list + items in background; stream will update.
       await repo.refreshListDetail(listId);
@@ -224,6 +242,7 @@ class ListDetailController extends ChangeNotifier {
       _hasLocalSnapshot = true;
       _listName = list.name;
       _groupId = list.groupId;
+      _listType = list.type;
       _notify();
       unawaited(_backfillCanonicalLinks(repo, list.groupId));
 
@@ -233,10 +252,10 @@ class ListDetailController extends ChangeNotifier {
       // Grocery graph shares the same SSE stream: corrections/aisles from
       // other members invalidate the local graph live.
       try {
-        final groceryRepo = await ref.read(groceryRepositoryProvider.future);
+        await _ensureGroceryCategories();
+        final groceryRepo = _groceryRepo;
         if (!_disposed) {
-          _groceryRepo = groceryRepo;
-          groceryRepo.attachSse(sseService, list.groupId);
+          groceryRepo?.attachSse(sseService, list.groupId);
         }
       } catch (_) {}
       try {
@@ -263,6 +282,50 @@ class ListDetailController extends ChangeNotifier {
       _hasError = !hasUsableContent;
       _refreshFailed = hasUsableContent;
       _notify();
+    }
+  }
+
+  Future<void> _ensureGroceryCategories() async {
+    if (_disposed || _listType != 'shopping') return;
+    if (!_items.any((item) => item.canonicalItemId != null)) return;
+    try {
+      await ref.read(grocerySeedProvider.future);
+      if (_disposed) return;
+      _groceryRepo ??= await ref.read(groceryRepositoryProvider.future);
+      if (_disposed) return;
+      await _loadGroceryCategories(_items);
+    } catch (_) {
+      // The visual category layer must never block cached/offline list data.
+    }
+  }
+
+  Future<void> _loadGroceryCategories(List<ListItem> items) async {
+    final groceryRepo = _groceryRepo;
+    if (groceryRepo == null || _listType != 'shopping') return;
+
+    final ids = items
+        .map((item) => item.canonicalItemId)
+        .whereType<String>()
+        .where((id) =>
+            !_resolvedCategoryIds.contains(id) &&
+            !_categoryIdsInFlight.contains(id))
+        .toSet();
+    if (ids.isEmpty) return;
+    _categoryIdsInFlight.addAll(ids);
+
+    try {
+      final categories = await groceryRepo.getCanonicalCategories(ids);
+      if (_disposed) return;
+      _resolvedCategoryIds.addAll(ids);
+      if (categories.isNotEmpty) {
+        _categoryByCanonicalId.addAll(categories);
+        _notify();
+      }
+    } catch (_) {
+      // Category decoration is fail-soft. Leave these ids retryable after a
+      // transient reference-database failure; the list itself remains usable.
+    } finally {
+      _categoryIdsInFlight.removeAll(ids);
     }
   }
 
@@ -1014,7 +1077,10 @@ class ListDetailController extends ChangeNotifier {
       bundled,
       _refreshGrocerySuggestions(q, groupId, gen),
       _refreshProductSuggestions(q, groupId, gen),
-      if (q.isEmpty) _refreshRestockSuggestions(groupId, gen),
+      if (q.isEmpty && _isShoppingList)
+        _refreshRestockSuggestions(groupId, gen)
+      else if (q.isEmpty)
+        _clearRestockSuggestions(gen),
     ]);
   }
 
@@ -1058,9 +1124,14 @@ class ListDetailController extends ChangeNotifier {
     int generation,
   ) async {
     try {
-      final grocery = await ref
-          .read(grocerySuggestionServiceProvider)
-          .suggest(query, groupId);
+      final grocery = await ref.read(grocerySuggestionServiceProvider).suggest(
+            query,
+            groupId,
+            suggestionContext: _isShoppingList
+                ? GrocerySuggestionContext.shoppingList
+                : GrocerySuggestionContext.nonShoppingList,
+            listContextIds: _openCanonicalContextIds,
+          );
       if (_disposed || _suggestGeneration != generation) return;
       _suggestionEngine.setGrocerySuggestions(
         HouseholdSuggestionSource.catalog,
@@ -1119,6 +1190,7 @@ class ListDetailController extends ChangeNotifier {
       final restock = await ref.read(restockServiceProvider).due(
             groupId: groupId,
             currentItemNames: currentNames,
+            listContextIds: _openCanonicalContextIds,
             limit: 5,
           );
       if (_disposed || _suggestGeneration != generation) return;
@@ -1130,5 +1202,19 @@ class ListDetailController extends ChangeNotifier {
         _bumpSuggestions();
       }
     }
+  }
+
+  bool get _isShoppingList => _listType == 'shopping';
+
+  List<String> get _openCanonicalContextIds => _items
+      .where((item) => !item.checked && item.canonicalItemId != null)
+      .map((item) => item.canonicalItemId!)
+      .toSet()
+      .toList(growable: false);
+
+  Future<void> _clearRestockSuggestions(int generation) async {
+    if (_disposed || _suggestGeneration != generation) return;
+    _suggestionEngine.setRestockSuggestions(const []);
+    _bumpSuggestions();
   }
 }

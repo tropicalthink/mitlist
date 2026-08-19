@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mitlist/services/scan/grocery_suggestion_service.dart';
+import 'package:mitlist/services/household_prior_service.dart';
 import 'package:mitlist/services/scan/local_item_promotion_service.dart';
 import 'package:mitlist/storage/app_database.dart';
 import 'package:mitlist/utils/uuid_validation.dart';
@@ -29,23 +30,28 @@ void main() {
 
   test('sub-threshold check-offs mint nothing and just tally', () async {
     for (var i = 0; i < kLocalPromotionThreshold - 1; i++) {
-      final r = await svc.recordUnresolvedCheckoff(groupId: group, rawName: 'fassi');
-      expect(r, isNull, reason: 'below threshold returns null (learns nothing)');
+      final r =
+          await svc.recordUnresolvedCheckoff(groupId: group, rawName: 'fassi');
+      expect(r, isNull,
+          reason: 'below threshold returns null (learns nothing)');
     }
     expect(await canonicalCount(), 0);
     expect(await aliasCount(), 0);
 
-    final sig = await db.getLocalItemSignal(groupId: group, normalizedName: 'fassi');
+    final sig =
+        await db.getLocalItemSignal(groupId: group, normalizedName: 'fassi');
     expect(sig, isNotNull);
     expect(sig!.count, kLocalPromotionThreshold - 1);
     expect(sig.promotedCanonicalItemId, isNull);
   });
 
-  test('crossing the threshold mints exactly one household-local canonical + alias',
+  test(
+      'crossing the threshold mints exactly one household-local canonical + alias',
       () async {
     LocalPromotionResult? result;
     for (var i = 0; i < kLocalPromotionThreshold; i++) {
-      result = await svc.recordUnresolvedCheckoff(groupId: group, rawName: 'Fassi');
+      result =
+          await svc.recordUnresolvedCheckoff(groupId: group, rawName: 'Fassi');
     }
     expect(result, isNotNull);
     expect(result!.justPromoted, isTrue);
@@ -56,13 +62,15 @@ void main() {
 
     final canon = (await db.select(db.canonicalItemsTable).get()).single;
     expect(canon.groupId, group);
-    expect(canon.isGlobal, isFalse, reason: 'never leaks into the shared brain');
+    expect(canon.isGlobal, isFalse,
+        reason: 'never leaks into the shared brain');
     expect(canon.id, result.canonicalItemId);
     expect(apiCanonicalId(canon.id), canon.id,
         reason: 'minted id is already a valid API uuid, syncs unchanged');
     expect(canon.nameEn, 'Fassi', reason: 'human display casing preserved');
 
-    final sig = await db.getLocalItemSignal(groupId: group, normalizedName: 'fassi');
+    final sig =
+        await db.getLocalItemSignal(groupId: group, normalizedName: 'fassi');
     expect(sig!.promotedCanonicalItemId, result.canonicalItemId);
   });
 
@@ -70,27 +78,30 @@ void main() {
     for (var i = 0; i < kLocalPromotionThreshold; i++) {
       await svc.recordUnresolvedCheckoff(groupId: group, rawName: 'fassi');
     }
-    final again = await svc.recordUnresolvedCheckoff(groupId: group, rawName: 'fassi');
+    final again =
+        await svc.recordUnresolvedCheckoff(groupId: group, rawName: 'fassi');
     expect(again, isNotNull);
     expect(again!.justPromoted, isFalse);
     expect(await canonicalCount(), 1, reason: 'still exactly one canonical');
     expect(await aliasCount(), 1, reason: 'still exactly one alias');
 
-    final sig = await db.getLocalItemSignal(groupId: group, normalizedName: 'fassi');
+    final sig =
+        await db.getLocalItemSignal(groupId: group, normalizedName: 'fassi');
     expect(sig!.count, kLocalPromotionThreshold + 1);
   });
 
-  test('idempotent: a re-fired promotion keeps a single canonical id', () async {
+  test('idempotent: a re-fired promotion keeps a single canonical id',
+      () async {
     // Deterministic id means minting the same (group, word) twice is a no-op
     // upsert, not a duplicate.
     for (var i = 0; i < kLocalPromotionThreshold; i++) {
       await svc.recordUnresolvedCheckoff(groupId: group, rawName: 'fassi');
     }
-    final firstId =
-        (await db.select(db.canonicalItemsTable).get()).single.id;
+    final firstId = (await db.select(db.canonicalItemsTable).get()).single.id;
     // A second fresh service instance minting the same word again.
     final svc2 = LocalItemPromotionService(db);
-    final r = await svc2.recordUnresolvedCheckoff(groupId: group, rawName: 'fassi');
+    final r =
+        await svc2.recordUnresolvedCheckoff(groupId: group, rawName: 'fassi');
     expect(r!.canonicalItemId, firstId);
     expect(await canonicalCount(), 1);
   });
@@ -107,7 +118,8 @@ void main() {
     expect(await canonicalCount(), 1);
   });
 
-  test('same word in two households mints distinct ids (no collision)', () async {
+  test('same word in two households mints distinct ids (no collision)',
+      () async {
     String? idA, idB;
     for (var i = 0; i < kLocalPromotionThreshold; i++) {
       idA = (await svc.recordUnresolvedCheckoff(groupId: 'A', rawName: 'fassi'))
@@ -122,7 +134,8 @@ void main() {
   });
 
   test('empty / whitespace-only name is ignored', () async {
-    final r = await svc.recordUnresolvedCheckoff(groupId: group, rawName: '   ');
+    final r =
+        await svc.recordUnresolvedCheckoff(groupId: group, rawName: '   ');
     expect(r, isNull);
     expect(await canonicalCount(), 0);
     expect(await db.select(db.localItemSignalsTable).get(), isEmpty);
@@ -132,18 +145,31 @@ void main() {
       () async {
     LocalPromotionResult? promoted;
     for (var i = 0; i < kLocalPromotionThreshold; i++) {
-      promoted = await svc.recordUnresolvedCheckoff(groupId: group, rawName: 'fassi');
+      promoted =
+          await svc.recordUnresolvedCheckoff(groupId: group, rawName: 'fassi');
     }
     final mintedId = promoted!.canonicalItemId;
-    final suggest = GrocerySuggestionService(db); // no embedder, no reference DB
+    final suggest = GrocerySuggestionService(
+      db,
+      prior: HouseholdPriorService(db),
+    ); // no embedder, no reference DB
 
-    final mine = await suggest.suggest('fas', group);
+    final mine = await suggest.suggest(
+      'fas',
+      group,
+      suggestionContext: GrocerySuggestionContext.shoppingList,
+    );
     expect(mine.map((s) => s.canonicalItemId), contains(mintedId));
     // Display name is title-cased by the suggestion UI layer.
     expect(mine.map((s) => s.name.toLowerCase()), contains('fassi'));
 
-    final other = await suggest.suggest('fas', 'someone-else');
-    expect(other, isEmpty, reason: 'household-scoped — never leaks to other groups');
+    final other = await suggest.suggest(
+      'fas',
+      'someone-else',
+      suggestionContext: GrocerySuggestionContext.shoppingList,
+    );
+    expect(other, isEmpty,
+        reason: 'household-scoped — never leaks to other groups');
   });
 
   test('clearAllUserData reclaims minted rows and pending signals', () async {

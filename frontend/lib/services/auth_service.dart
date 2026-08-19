@@ -4,11 +4,15 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:logger/logger.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 import '../config/api_config.dart';
 import '../models/auth_models.dart';
 import 'api_client.dart';
 import 'api_error_mapper.dart';
+import 'app_check_service.dart';
+import 'turnstile_service.dart';
 import 'fcm_service.dart';
+import 'push_subscription_service.dart';
 import 'token_store.dart';
 import 'dio_platform.dart';
 import 'token_refresh_coordinator.dart';
@@ -23,10 +27,13 @@ import 'token_refresh_coordinator.dart';
 /// - Password reset
 /// - User profile management
 class AuthService {
+  static const _installIdKey = 'mitlist_install_id';
   final Dio _dio;
   final Logger _logger = Logger();
   final SharedPreferences _prefs;
   final TokenStore _tokenStore;
+  final AppCheckTokenProvider _appCheck;
+  final TurnstileTokenProvider _turnstile;
 
   void _logFailure(String operation, DioException error) {
     if (!kDebugMode) return;
@@ -39,8 +46,12 @@ class AuthService {
   final Future<void> Function()? _wipeLocalData;
 
   AuthService._(this._dio, this._prefs, this._tokenStore,
-      {Future<void> Function()? wipeLocalData})
-      : _wipeLocalData = wipeLocalData;
+      {Future<void> Function()? wipeLocalData,
+      AppCheckTokenProvider? appCheck,
+      TurnstileTokenProvider? turnstile})
+      : _wipeLocalData = wipeLocalData,
+        _appCheck = appCheck ?? FirebaseAppCheckService.instance,
+        _turnstile = turnstile ?? TurnstileService.instance;
 
   /// Test-only constructor that accepts all dependencies directly.
   @visibleForTesting
@@ -49,13 +60,19 @@ class AuthService {
     SharedPreferences prefs,
     TokenStore tokenStore, {
     Future<void> Function()? wipeLocalData,
-  }) : this._(dio, prefs, tokenStore, wipeLocalData: wipeLocalData);
+    AppCheckTokenProvider? appCheck,
+    TurnstileTokenProvider? turnstile,
+  }) : this._(dio, prefs, tokenStore,
+            wipeLocalData: wipeLocalData,
+            appCheck: appCheck,
+            turnstile: turnstile);
 
   static Future<AuthService> create([Ref? ref]) async {
     final prefs = await SharedPreferences.getInstance();
     final dio = resolveDio(ref);
     final store = SecureTokenStore.shared;
     await store.migrateFromPrefs(prefs);
+    await _attachInstallIdentity(dio, prefs);
     return AuthService._(dio, prefs, store);
   }
 
@@ -68,7 +85,18 @@ class AuthService {
     final dio = resolveDio(ref);
     final store = SecureTokenStore.shared;
     await store.migrateFromPrefs(prefs);
+    await _attachInstallIdentity(dio, prefs);
     return AuthService._(dio, prefs, store, wipeLocalData: wipeLocalData);
+  }
+
+  static Future<void> _attachInstallIdentity(
+      Dio dio, SharedPreferences prefs) async {
+    var installId = prefs.getString(_installIdKey);
+    if (installId == null || installId.isEmpty) {
+      installId = const Uuid().v4();
+      await prefs.setString(_installIdKey, installId);
+    }
+    dio.options.headers['X-Mitlist-Install-ID'] = installId;
   }
 
   /// Registers a new user.
@@ -171,7 +199,6 @@ class AuthService {
   Future<void> logout() async {
     final accessToken = await _tokenStore.getAccessToken();
     final refreshToken = await _tokenStore.getRefreshToken();
-    await clearLocalSession();
     try {
       await FcmService.reset().timeout(const Duration(seconds: 2));
     } catch (e) {
@@ -195,6 +222,7 @@ class AuthService {
     try {
       await Future.wait<void>([
         FcmService.unregisterToken(cleanupDio),
+        PushSubscriptionService(_tokenStore).unsubscribe(),
         if (refreshToken != null || kIsWeb)
           cleanupDio.post<void>('/auth/logout',
               data: {'refresh_token': refreshToken ?? ''}),
@@ -205,6 +233,7 @@ class AuthService {
       if (kDebugMode) _logger.e('Logout cleanup failed (${e.runtimeType})');
     } finally {
       cleanupDio.close(force: true);
+      await clearLocalSession();
     }
   }
 
@@ -320,7 +349,24 @@ class AuthService {
   /// Returns a [TokenPair] with access and refresh tokens.
   Future<TokenPair> createGuest({bool rememberMe = true}) async {
     try {
-      final response = await _dio.post('/auth/guest');
+      // Attestation is intentionally scoped to this unauthenticated, abuse-
+      // sensitive endpoint. Both tokens are fetched immediately before the
+      // request so expired ones are refreshed rather than cached in Dio
+      // headers, and both are single-platform: App Check returns null on web,
+      // Turnstile returns null everywhere else. The API accepts either.
+      final appCheckToken = await _appCheck.getToken();
+      final turnstileToken = await _turnstile.getToken();
+      final response = await _dio.post(
+        '/auth/guest',
+        options: Options(
+          headers: {
+            if (appCheckToken != null && appCheckToken.isNotEmpty)
+              'X-Firebase-AppCheck': appCheckToken,
+            if (turnstileToken != null && turnstileToken.isNotEmpty)
+              'X-Mitlist-Turnstile': turnstileToken,
+          },
+        ),
+      );
 
       final tokenPair = TokenPair.fromJson(response.data);
       await _saveTokens(tokenPair, persistSession: rememberMe);

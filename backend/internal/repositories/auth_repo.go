@@ -17,6 +17,14 @@ type AuthRepository struct {
 	db DBTX
 }
 
+// Push registrations are deliberately bounded. A user normally has one
+// subscription per browser/device; retaining a small rolling window handles
+// reinstalls and stale browser profiles without allowing unbounded rows.
+const (
+	MaxPushSubscriptionsPerUser = 10
+	MaxDeviceTokensPerUser      = 10
+)
+
 // NewAuthRepository creates a new AuthRepository.
 func NewAuthRepository(db DBTX) *AuthRepository {
 	return &AuthRepository{db: db}
@@ -223,7 +231,9 @@ func (r *AuthRepository) ConsumeEmailVerification(ctx context.Context, tokenHash
 	`, tokenHash).Scan(&userID); err != nil {
 		return uuid.Nil, err
 	}
-	cmd, err := tx.Exec(ctx, `UPDATE users SET is_verified = TRUE, updated_at = NOW() WHERE id = $1 AND is_active AND deleted_at IS NULL`, userID)
+	// Verification is also the point at which a converted guest becomes a
+	// durable account. Ordinary registrations already have is_guest = FALSE.
+	cmd, err := tx.Exec(ctx, `UPDATE users SET is_verified = TRUE, is_guest = FALSE, updated_at = NOW() WHERE id = $1 AND is_active AND deleted_at IS NULL`, userID)
 	if err != nil || cmd.RowsAffected() != 1 {
 		if err != nil {
 			return uuid.Nil, err
@@ -290,22 +300,48 @@ func (r *AuthRepository) CreatePushSubscription(ctx context.Context, sub *models
 	}
 	now := time.Now().UTC()
 	sub.CreatedAt = now
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	if err := lockPushRegistrationOwner(ctx, tx, sub.UserID); err != nil {
+		return err
+	}
 	query := `
 		INSERT INTO push_subscriptions (id, user_id, endpoint, p256dh, auth, created_at)
 		VALUES ($1, $2, $3, $4, $5, $6)
+		ON CONFLICT (endpoint) DO UPDATE SET
+			user_id = EXCLUDED.user_id,
+			p256dh = EXCLUDED.p256dh,
+			auth = EXCLUDED.auth,
+			created_at = EXCLUDED.created_at
+		RETURNING id, created_at
 	`
-	_, err := r.db.Exec(ctx, query,
+	err = tx.QueryRow(ctx, query,
 		sub.ID,
 		sub.UserID,
 		sub.Endpoint,
 		sub.P256dh,
 		sub.Auth,
 		sub.CreatedAt,
-	)
+	).Scan(&sub.ID, &sub.CreatedAt)
 	if err != nil {
 		return err
 	}
-	return nil
+	if _, err := tx.Exec(ctx, `
+		DELETE FROM push_subscriptions
+		WHERE user_id = $1
+		  AND id NOT IN (
+			SELECT id FROM push_subscriptions
+			WHERE user_id = $1
+			ORDER BY created_at DESC, id DESC
+			LIMIT $2
+		)
+	`, sub.UserID, MaxPushSubscriptionsPerUser); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
 }
 
 // ListPushSubscriptionsByUser returns all push subscriptions for a user.
@@ -388,20 +424,56 @@ func (r *AuthRepository) DeletePushSubscription(ctx context.Context, id uuid.UUI
 
 // SaveDeviceToken upserts an FCM device token for a user.
 func (r *AuthRepository) SaveDeviceToken(ctx context.Context, userID uuid.UUID, platform, token string) (*models.DeviceToken, error) {
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	if err := lockPushRegistrationOwner(ctx, tx, userID); err != nil {
+		return nil, err
+	}
 	query := `
 		INSERT INTO device_tokens (user_id, platform, token)
 		VALUES ($1, $2, $3)
-		ON CONFLICT (user_id, token) DO UPDATE SET platform = EXCLUDED.platform
+		ON CONFLICT (token) DO UPDATE SET
+			user_id = EXCLUDED.user_id,
+			platform = EXCLUDED.platform,
+			created_at = NOW()
 		RETURNING id, user_id, platform, token, created_at
 	`
 	var dt models.DeviceToken
-	err := r.db.QueryRow(ctx, query, userID, platform, token).Scan(
+	err = tx.QueryRow(ctx, query, userID, platform, token).Scan(
 		&dt.ID, &dt.UserID, &dt.Platform, &dt.Token, &dt.CreatedAt,
 	)
 	if err != nil {
 		return nil, err
 	}
+	if _, err := tx.Exec(ctx, `
+		DELETE FROM device_tokens
+		WHERE user_id = $1
+		  AND id NOT IN (
+			SELECT id FROM device_tokens
+			WHERE user_id = $1
+			ORDER BY created_at DESC, id DESC
+			LIMIT $2
+		)
+	`, userID, MaxDeviceTokensPerUser); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return nil, err
+	}
 	return &dt, nil
+}
+
+// Serialize registration/pruning for a user so parallel requests cannot each
+// observe the same pre-prune set and leave more than the configured cap.
+func lockPushRegistrationOwner(ctx context.Context, tx pgx.Tx, userID uuid.UUID) error {
+	var lockedID uuid.UUID
+	if err := tx.QueryRow(ctx, `SELECT id FROM users WHERE id = $1 AND deleted_at IS NULL FOR UPDATE`, userID).Scan(&lockedID); err != nil {
+		return fmt.Errorf("lock push registration owner: %w", err)
+	}
+	return nil
 }
 
 // ListDeviceTokensByUser returns all device tokens for a user.

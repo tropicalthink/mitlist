@@ -15,6 +15,14 @@ type NotificationDispatcher interface {
 	DispatchToUsers(ctx context.Context, userIDs []uuid.UUID, groupID uuid.UUID, nType, title, body string, payload models.NotificationPayload) error
 }
 
+// ReliableNotificationDispatcher exposes blocking delivery for scheduled work.
+// Interactive requests keep using the non-blocking methods above.
+type ReliableNotificationDispatcher interface {
+	NotificationDispatcher
+	DispatchToGroupAndWait(ctx context.Context, groupID, actorID uuid.UUID, nType, title, body string, payload models.NotificationPayload) error
+	DispatchToUsersAndWait(ctx context.Context, userIDs []uuid.UUID, groupID uuid.UUID, nType, title, body string, payload models.NotificationPayload) error
+}
+
 // Pusher abstracts push notification delivery.
 type Pusher interface {
 	SendToUser(userID uuid.UUID, payload string) error
@@ -33,6 +41,7 @@ type choreReminderRepo interface {
 	GetChoreName(ctx context.Context, choreID uuid.UUID) (string, error)
 	GetChoreGroupID(ctx context.Context, choreID uuid.UUID) (uuid.UUID, error)
 	GetUserPreference(ctx context.Context, userID, groupID uuid.UUID) (*models.NotificationPreference, error)
+	MarkReminderSent(ctx context.Context, assignmentID uuid.UUID, sentAt time.Time) error
 }
 
 type recurringExpenseRepo interface {

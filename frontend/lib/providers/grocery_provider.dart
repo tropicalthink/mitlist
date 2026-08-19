@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../repositories/grocery_repository.dart';
 import '../services/grocery_expense_category_service.dart';
+import '../services/household_prior_service.dart';
 import '../services/restock_service.dart';
 import '../services/scan/bundled_grocery_suggestion_service.dart';
 import '../services/scan/canonical_link_service.dart';
@@ -53,12 +54,17 @@ final groceryExpenseCategoryServiceProvider =
   return GroceryExpenseCategoryService(ref.watch(canonicalLinkServiceProvider));
 });
 
+final householdPriorServiceProvider = Provider<HouseholdPriorService>((ref) {
+  return HouseholdPriorService(ref.watch(appDatabaseProvider));
+});
+
 /// Local, offline grocery autocomplete over the canonical seed (alias-powered).
 /// When the embedder bundle is present, results are semantically blended.
 final grocerySuggestionServiceProvider =
     Provider<GrocerySuggestionService>((ref) {
   return GrocerySuggestionService(
     ref.watch(appDatabaseProvider),
+    prior: ref.watch(householdPriorServiceProvider),
     embedder: ref.watch(staticEmbeddingServiceProvider),
   );
 });
@@ -71,7 +77,10 @@ final bundledGrocerySuggestionServiceProvider =
 
 /// On-device purchase-cadence restock predictor. Pure reads, no network.
 final restockServiceProvider = Provider<RestockService>((ref) {
-  return RestockService(ref.watch(appDatabaseProvider));
+  return RestockService(
+    ref.watch(appDatabaseProvider),
+    prior: ref.watch(householdPriorServiceProvider),
+  );
 });
 
 final scanPipelineProvider = FutureProvider<ScanPipelineService>((ref) async {
@@ -94,9 +103,7 @@ final groceryRepositoryProvider =
   return GroceryRepository.create(db, ref);
 });
 
-/// Restock predictions for [groupId] — most-overdue grocery items the household
-/// is due to rebuy, computed on-device from purchase cadence. Returns [] when
-/// there is not enough history.
+/// Household-prior restock predictions for [groupId], computed on-device.
 final runningLowProvider =
     FutureProvider.family<List<RestockSuggestion>, String>(
         (ref, groupId) async {
