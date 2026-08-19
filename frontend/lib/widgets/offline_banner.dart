@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/app_localizations.dart';
+import '../providers/initial_sync_provider.dart';
 import '../providers/outbox_provider.dart';
 import '../sheets/conflict_resolution_sheet.dart';
 import '../sheets/failed_changes_sheet.dart';
@@ -20,11 +21,19 @@ class OfflineBanner extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final stateAsync = ref.watch(outboxStateProvider);
+    final initialSync = ref.watch(initialSyncProvider);
 
     return stateAsync.when(
       data: (state) {
         if (state.status == OutboxStatus.online) {
-          return const SizedBox.shrink();
+          // Outbox is quiet — give the bar to the cold-start refresh, so a
+          // launch on stale cache is visibly syncing (or visibly failed).
+          return switch (initialSync) {
+            InitialSyncStatus.syncing =>
+              const _InitialSyncBanner(failed: false),
+            InitialSyncStatus.failed => const _InitialSyncBanner(failed: true),
+            _ => const SizedBox.shrink(),
+          };
         }
         return _Banner(state: state);
       },
@@ -236,5 +245,59 @@ class _Banner extends ConsumerWidget {
   void _retry(WidgetRef ref) {
     final coordinator = ref.read(outboxCoordinatorProvider).valueOrNull;
     coordinator?.retryFailed();
+  }
+}
+
+/// The cold-start refresh bar: a quiet "refreshing" while the initial pull is
+/// in flight, and a tappable retry when it failed and the cache may be stale.
+class _InitialSyncBanner extends ConsumerWidget {
+  const _InitialSyncBanner({required this.failed});
+
+  final bool failed;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+    final topInset = MediaQuery.paddingOf(context).top;
+
+    return Material(
+      color: failed ? colorScheme.error : colorScheme.primary,
+      child: InkWell(
+        onTap: failed
+            ? () => ref.read(initialSyncProvider.notifier).retry()
+            : null,
+        child: Padding(
+          padding: EdgeInsets.only(top: topInset),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(
+              horizontal: MitlistSpacing.md,
+              vertical: MitlistSpacing.sm,
+            ),
+            child: Row(
+              children: [
+                Icon(failed ? Icons.sync_problem : Icons.sync,
+                    size: 16, color: MitlistColors.textOnPrimary),
+                const SizedBox(width: MitlistSpacing.sm),
+                Expanded(
+                  child: Text(
+                    failed
+                        ? l10n.initialSyncFailed
+                        : l10n.initialSyncRefreshing,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: MitlistColors.textOnPrimary,
+                        ),
+                  ),
+                ),
+                if (failed)
+                  const Icon(Icons.refresh,
+                      size: 14, color: MitlistColors.textOnPrimary),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

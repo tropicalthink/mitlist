@@ -3661,6 +3661,12 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get initialSyncRefreshing => 'Refreshing…';
+
+  @override
+  String get initialSyncFailed => 'Couldn\'t refresh — tap to retry';
+
+  @override
   String get offlineBannerSyncing => 'Syncing changes…';
 
   @override

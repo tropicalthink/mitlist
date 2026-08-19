@@ -3681,6 +3681,13 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get initialSyncRefreshing => 'Actualizando…';
+
+  @override
+  String get initialSyncFailed =>
+      'No se pudo actualizar — toca para reintentar';
+
+  @override
   String get offlineBannerSyncing => 'Sincronizando cambios…';
 
   @override
