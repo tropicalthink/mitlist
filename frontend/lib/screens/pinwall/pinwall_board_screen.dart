@@ -20,7 +20,9 @@ import '../../theme/typography.dart';
 import '../../l10n/app_localizations.dart';
 import '../../utils/haptics.dart';
 import '../../utils/hub_helpers.dart';
+import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_button.dart';
+import '../../widgets/pinwall/pinwall_composer.dart';
 import '../../widgets/hub/pinned_memo_card.dart';
 import '../../widgets/pinwall/pinwall_note_card.dart';
 import '../../widgets/pinwall/pinwall_stat_rows.dart';
@@ -368,6 +370,27 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
     }
   }
 
+  /// Compose a note right from the board: a sheet hosts the same full
+  /// composer as the hub (text, reminder, entity link, photos). Plain notes
+  /// take the offline-first path and pin on via the live stream a frame or
+  /// two later; media/linked posts land after the server confirms.
+  Future<void> _composeNote() async {
+    unawaited(Haptics.light());
+    final l10n = AppLocalizations.of(context)!;
+    await showAppBottomSheet<void>(
+      context: context,
+      title: l10n.pinwallAddNote,
+      body: PinwallComposer(
+        groupId: widget.groupId,
+        me: widget.me,
+        autofocus: true,
+        // The sheet is the navigator's top route while the composer is up, so
+        // this closes just the sheet and leaves the board open underneath.
+        onPosted: () => Navigator.of(context).pop(),
+      ),
+    );
+  }
+
   /// All draggable cork items, sorted so the lifted card paints last.
   List<Widget> _buildBoardItems(BuildContext context, {required bool dark}) {
     final layers = <({String id, int order, Widget child})>[
@@ -556,6 +579,17 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
                       onClose: () => Navigator.of(context).pop(),
                     ),
                   ],
+                ),
+              ),
+            ),
+
+            // Compose a new note without leaving the board.
+            SafeArea(
+              child: Align(
+                alignment: Alignment.bottomRight,
+                child: Padding(
+                  padding: const EdgeInsets.all(MitlistSpacing.md),
+                  child: _BoardAddNoteButton(dark: dark, onTap: _composeNote),
                 ),
               ),
             ),
@@ -1548,6 +1582,53 @@ class _BoardChip extends StatelessWidget {
                   ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Add-note button + composer sheet ────────────────────────────────────────
+
+class _BoardAddNoteButton extends StatelessWidget {
+  const _BoardAddNoteButton({required this.dark, required this.onTap});
+  final bool dark;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final bg = dark
+        ? MitlistColors.neutral950.withValues(alpha: 0.72)
+        : MitlistColors.pinwallBoardBorder.withValues(alpha: 0.75);
+    return Semantics(
+      button: true,
+      label: l10n.pinwallAddNote,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          height: 44,
+          padding:
+              const EdgeInsets.symmetric(horizontal: MitlistSpacing.md),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(MitlistTheme.radiusFull),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.push_pin_outlined,
+                  size: 16, color: MitlistColors.surfaceSoft),
+              const SizedBox(width: MitlistSpacing.xs),
+              Text(
+                l10n.pinwallAddNote,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: MitlistColors.surfaceSoft,
+                    ),
+              ),
+            ],
+          ),
         ),
       ),
     );

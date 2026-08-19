@@ -959,6 +959,7 @@
   "pinwallSnapshot": "Auf einen Blick",
   "pinwallBoardLabel": "Pinwall",
   "pinwallDragHint": "Notizen zum Verschieben ziehen  ·  Zum Zoomen kneifen",
+  "pinwallAddNote": "Notiz hinzufügen",
   "pinwallCloseBoard": "Board schließen",
   "pinwallEmptyBoard": "Die Wand ist leer.\nPinne eine Notiz vom Hub an, um zu starten.",
   "pinwallNoteSemantics": "{user} · {content}",
