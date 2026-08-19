@@ -16,7 +16,7 @@ import (
 func TestTemplate_CreateTemplate(t *testing.T) {
 	clearTables(t)
 	router, _ := newTemplateRouter(t)
-	user := createTestUser(t, "tpl@example.com", "password123!")
+	user := createTestUser(t, "tpl@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()
@@ -42,7 +42,7 @@ func TestTemplate_CreateTemplate(t *testing.T) {
 func TestTemplate_ListTemplates(t *testing.T) {
 	clearTables(t)
 	router, _ := newTemplateRouter(t)
-	user := createTestUser(t, "lstpl@example.com", "password123!")
+	user := createTestUser(t, "lstpl@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()
@@ -75,7 +75,7 @@ func TestTemplate_ListTemplates(t *testing.T) {
 func TestTemplate_GetTemplate_NotFound(t *testing.T) {
 	clearTables(t)
 	router, _ := newTemplateRouter(t)
-	user := createTestUser(t, "nftpl@example.com", "password123!")
+	user := createTestUser(t, "nftpl@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	rec := execRequest(t, router, "GET", "/api/v1/templates/"+uuid.New().String(), nil, token)
@@ -85,7 +85,7 @@ func TestTemplate_GetTemplate_NotFound(t *testing.T) {
 func TestTemplate_DeleteTemplate(t *testing.T) {
 	clearTables(t)
 	router, _ := newTemplateRouter(t)
-	user := createTestUser(t, "deltpl@example.com", "password123!")
+	user := createTestUser(t, "deltpl@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()
@@ -115,7 +115,7 @@ func TestTemplate_DeleteTemplate(t *testing.T) {
 func TestTemplate_CreateChoreTemplate(t *testing.T) {
 	clearTables(t)
 	router, _ := newTemplateRouter(t)
-	user := createTestUser(t, "ctpl@example.com", "password123!")
+	user := createTestUser(t, "ctpl@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()
@@ -146,7 +146,7 @@ func TestTemplate_CreateChoreTemplate(t *testing.T) {
 func TestTemplate_ListChoreTemplates(t *testing.T) {
 	clearTables(t)
 	router, _ := newTemplateRouter(t)
-	user := createTestUser(t, "lctpl@example.com", "password123!")
+	user := createTestUser(t, "lctpl@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()

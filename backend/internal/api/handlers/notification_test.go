@@ -22,7 +22,7 @@ import (
 func TestNotification_ListNotifications(t *testing.T) {
 	clearTables(t)
 	router, _ := newNotificationRouter(t)
-	user := createTestUser(t, "notif@example.com", "password123!")
+	user := createTestUser(t, "notif@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	notificationRepo := newTestNotificationRepo()
@@ -47,7 +47,7 @@ func TestNotification_ListNotifications(t *testing.T) {
 func TestNotification_CountUnreadNotifications(t *testing.T) {
 	clearTables(t)
 	router, _ := newNotificationRouter(t)
-	user := createTestUser(t, "unreadnotif@example.com", "password123!")
+	user := createTestUser(t, "unreadnotif@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	notificationRepo := newTestNotificationRepo()
@@ -71,7 +71,7 @@ func TestNotification_CountUnreadNotifications(t *testing.T) {
 func TestNotification_GetNotification(t *testing.T) {
 	clearTables(t)
 	router, _ := newNotificationRouter(t)
-	user := createTestUser(t, "getnotif@example.com", "password123!")
+	user := createTestUser(t, "getnotif@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	notificationRepo := newTestNotificationRepo()
@@ -97,7 +97,7 @@ func TestNotification_GetNotification(t *testing.T) {
 func TestNotification_MarkAsRead(t *testing.T) {
 	clearTables(t)
 	router, _ := newNotificationRouter(t)
-	user := createTestUser(t, "readnotif@example.com", "password123!")
+	user := createTestUser(t, "readnotif@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	notificationRepo := newTestNotificationRepo()
@@ -119,7 +119,7 @@ func TestNotification_MarkAsRead(t *testing.T) {
 func TestNotification_MarkAllAsRead(t *testing.T) {
 	clearTables(t)
 	router, _ := newNotificationRouter(t)
-	user := createTestUser(t, "readall@example.com", "password123!")
+	user := createTestUser(t, "readall@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	notificationRepo := newTestNotificationRepo()
@@ -140,7 +140,7 @@ func TestNotification_MarkAllAsRead(t *testing.T) {
 func TestNotification_DeleteNotification(t *testing.T) {
 	clearTables(t)
 	router, _ := newNotificationRouter(t)
-	user := createTestUser(t, "delnotif@example.com", "password123!")
+	user := createTestUser(t, "delnotif@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	notificationRepo := newTestNotificationRepo()
@@ -162,7 +162,7 @@ func TestNotification_DeleteNotification(t *testing.T) {
 func TestNotification_GetPreferences(t *testing.T) {
 	clearTables(t)
 	router, _ := newNotificationRouter(t)
-	user := createTestUser(t, "pref@example.com", "password123!")
+	user := createTestUser(t, "pref@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	rec := execRequest(t, router, "GET", "/notifications/preferences", nil, token)
@@ -172,7 +172,7 @@ func TestNotification_GetPreferences(t *testing.T) {
 func TestNotification_UpdatePreferences(t *testing.T) {
 	clearTables(t)
 	router, _ := newNotificationRouter(t)
-	user := createTestUser(t, "uppref@example.com", "password123!")
+	user := createTestUser(t, "uppref@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()
@@ -207,7 +207,7 @@ func TestNotification_UpdatePreferences(t *testing.T) {
 func TestNotification_UpdatePreferencesRequiresGroup(t *testing.T) {
 	clearTables(t)
 	router, _ := newNotificationRouter(t)
-	user := createTestUser(t, "missingprefgroup@example.com", "password123!")
+	user := createTestUser(t, "missingprefgroup@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	rec := execRequest(t, router, "PATCH", "/notifications/preferences", map[string]any{
@@ -288,7 +288,7 @@ func TestNotification_IntegrationCredentialIsScopedToNotificationGroups(t *testi
 func TestNotification_IntegrationCredentialIsScopedToPreferenceGroups(t *testing.T) {
 	clearTables(t)
 	router, _ := newNotificationRouter(t)
-	user := createTestUser(t, "integration-pref@example.com", "password123!")
+	user := createTestUser(t, "integration-pref@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 	allowed := createNotificationTestGroup(t, user.ID, "Allowed Preferences")
 	denied := createNotificationTestGroup(t, user.ID, "Denied Preferences")

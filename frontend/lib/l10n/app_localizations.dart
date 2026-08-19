@@ -7119,6 +7119,66 @@ abstract class AppLocalizations {
   /// **'Password is required.'**
   String get authSignupPasswordRequired;
 
+  /// Confirm password input label on signup
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm password'**
+  String get authSignupConfirmPassword;
+
+  /// Confirm password hint text
+  ///
+  /// In en, this message translates to:
+  /// **'Re-enter your password'**
+  String get authSignupConfirmPasswordHint;
+
+  /// Validation: confirm password empty
+  ///
+  /// In en, this message translates to:
+  /// **'Please confirm your password.'**
+  String get authSignupConfirmPasswordRequired;
+
+  /// Validation: password and confirmation differ
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match.'**
+  String get authSignupPasswordMismatch;
+
+  /// Validation: password fails the complexity policy
+  ///
+  /// In en, this message translates to:
+  /// **'Password does not meet the requirements below.'**
+  String get authSignupPasswordRequirementsNotMet;
+
+  /// Heading above the password requirement checklist
+  ///
+  /// In en, this message translates to:
+  /// **'Your password must contain:'**
+  String get passwordRequirementsTitle;
+
+  /// Password requirement: minimum length
+  ///
+  /// In en, this message translates to:
+  /// **'At least 8 characters'**
+  String get passwordRequirementLength;
+
+  /// Password requirement: uppercase letter
+  ///
+  /// In en, this message translates to:
+  /// **'One uppercase letter'**
+  String get passwordRequirementUppercase;
+
+  /// Password requirement: number
+  ///
+  /// In en, this message translates to:
+  /// **'One number'**
+  String get passwordRequirementDigit;
+
+  /// Password requirement: special character
+  ///
+  /// In en, this message translates to:
+  /// **'One special character'**
+  String get passwordRequirementSpecial;
+
   /// Generic signup error message
   ///
   /// In en, this message translates to:

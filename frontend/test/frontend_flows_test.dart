@@ -682,8 +682,8 @@ void main() {
     await tester.tap(find.text('Change Password'));
     await _pumpAfter(tester);
     await tester.enterText(find.byType(TextField).at(0), 'oldpassword');
-    await tester.enterText(find.byType(TextField).at(1), 'newpassword123');
-    await tester.enterText(find.byType(TextField).at(2), 'newpassword123');
+    await tester.enterText(find.byType(TextField).at(1), 'Newpassword123!');
+    await tester.enterText(find.byType(TextField).at(2), 'Newpassword123!');
     await tester
         .tap(find.text('CHANGE PASSWORD')); // solid variant renders uppercase
     await _pumpAfter(tester);
@@ -692,7 +692,7 @@ void main() {
     expect(authService.lastChangePasswordRequest!.oldPassword, 'oldpassword');
     expect(
       authService.lastChangePasswordRequest!.newPassword,
-      'newpassword123',
+      'Newpassword123!',
     );
 
     await tester.tap(find.text('Terms of Service'));
@@ -741,15 +741,15 @@ void main() {
     );
 
     await tester.enterText(find.byType(TextField).at(3), 'reset-code-123');
-    await tester.enterText(find.byType(TextField).at(4), 'freshpassword');
-    await tester.enterText(find.byType(TextField).at(5), 'freshpassword');
+    await tester.enterText(find.byType(TextField).at(4), 'Freshpassword1!');
+    await tester.enterText(find.byType(TextField).at(5), 'Freshpassword1!');
     await tester.ensureVisible(find.widgetWithText(
         AppButton, 'RESET PASSWORD')); // solid variant renders uppercase
     await tester.tap(find.widgetWithText(AppButton, 'RESET PASSWORD'));
     await _pumpAfter(tester);
 
     expect(authService.lastConfirmPasswordResetToken, 'reset-code-123');
-    expect(authService.lastConfirmPasswordResetPassword, 'freshpassword');
+    expect(authService.lastConfirmPasswordResetPassword, 'Freshpassword1!');
     expect(
       find.text('Password reset successful. You can sign in now.'),
       findsOneWidget,

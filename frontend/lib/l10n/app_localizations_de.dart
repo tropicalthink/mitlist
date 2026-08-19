@@ -4083,6 +4083,39 @@ class AppLocalizationsDe extends AppLocalizations {
   String get authSignupPasswordRequired => 'Passwort ist erforderlich.';
 
   @override
+  String get authSignupConfirmPassword => 'Passwort bestätigen';
+
+  @override
+  String get authSignupConfirmPasswordHint => 'Passwort erneut eingeben';
+
+  @override
+  String get authSignupConfirmPasswordRequired =>
+      'Bitte bestätige dein Passwort.';
+
+  @override
+  String get authSignupPasswordMismatch =>
+      'Die Passwörter stimmen nicht überein.';
+
+  @override
+  String get authSignupPasswordRequirementsNotMet =>
+      'Das Passwort erfüllt die unten stehenden Anforderungen nicht.';
+
+  @override
+  String get passwordRequirementsTitle => 'Dein Passwort muss enthalten:';
+
+  @override
+  String get passwordRequirementLength => 'Mindestens 8 Zeichen';
+
+  @override
+  String get passwordRequirementUppercase => 'Einen Großbuchstaben';
+
+  @override
+  String get passwordRequirementDigit => 'Eine Zahl';
+
+  @override
+  String get passwordRequirementSpecial => 'Ein Sonderzeichen';
+
+  @override
   String get authSignupGenericError =>
       'Kontoerstellung fehlgeschlagen. Überprüfe deine Verbindung und versuche es erneut.';
 

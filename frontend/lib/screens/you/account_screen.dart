@@ -45,6 +45,7 @@ import '../../utils/friendly_error.dart';
 import '../../utils/active_group_context.dart';
 
 import '../../widgets/app_toast.dart';
+import '../../utils/password_policy.dart';
 
 const String _appVersion = '1.0.0';
 
@@ -220,8 +221,12 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               setSheetState(() => error = l10n.accountFillPasswordFields);
               return;
             }
-            if (newPassword.length < 8) {
-              setSheetState(() => error = l10n.accountPasswordMinLength);
+            if (!PasswordPolicy.isSatisfied(newPassword)) {
+              setSheetState(() => error = PasswordPolicy.hasMinLength(
+                    newPassword,
+                  )
+                      ? l10n.authSignupPasswordRequirementsNotMet
+                      : l10n.accountPasswordMinLength);
               return;
             }
             if (newPassword != confirmPassword) {
