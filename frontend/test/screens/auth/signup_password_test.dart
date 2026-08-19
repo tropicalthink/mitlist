@@ -74,7 +74,8 @@ Future<void> _submit(WidgetTester tester) async {
 void main() {
   testWidgets('signup form has a password confirmation field', (tester) async {
     await _pumpSignup(tester);
-    expect(find.text('CONFIRM PASSWORD'), findsOneWidget); // AppInput uppercases labels
+    expect(find.text('CONFIRM PASSWORD'),
+        findsOneWidget); // AppInput uppercases labels
     // name, email, password, confirm password
     expect(find.byType(TextField), findsNWidgets(4));
   });
