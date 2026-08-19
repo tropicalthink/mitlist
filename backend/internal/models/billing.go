@@ -26,8 +26,8 @@ type BillingSubscription struct {
 	// PrimaryGroupID is the single household this subscription makes premium.
 	// Nil means the owner has not chosen one yet (or the household was
 	// deleted), in which case the subscription covers nothing.
-	PrimaryGroupID *uuid.UUID `json:"primary_group_id,omitempty"`
-	Provider       string     `json:"provider"`
+	PrimaryGroupID         *uuid.UUID `json:"primary_group_id,omitempty"`
+	Provider               string     `json:"provider"`
 	ProviderSubscriptionID string     `json:"provider_subscription_id"`
 	ProviderCustomerID     string     `json:"provider_customer_id"`
 	ProductID              string     `json:"product_id"`

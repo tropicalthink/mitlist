@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"net/http"
+	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -17,6 +19,8 @@ import (
 	"github.com/mitlist-app/mitlist/internal/observability"
 	"github.com/mitlist-app/mitlist/internal/server"
 	"github.com/mitlist-app/mitlist/internal/services"
+	appcheckservice "github.com/mitlist-app/mitlist/internal/services/appcheck"
+	turnstileservice "github.com/mitlist-app/mitlist/internal/services/turnstile"
 	"github.com/mitlist-app/mitlist/pkg/logger"
 )
 
@@ -105,6 +109,15 @@ func main() {
 	}
 	polarWebhookHandler.RegisterRoutes(srv.Router())
 
+	// Store IAP notifications (Apple ASSN V2, Google RTDN). Public: the stores
+	// call these directly. Apple payloads are signed JWS; Google notifications
+	// are re-verified against the Play API inside the billing service.
+	handlers.NewIAPWebhookHandler(
+		cnt.BillingService(), log,
+		cfg.GooglePubSubAudience,
+		cfg.GooglePubSubServiceAccount,
+	).RegisterRoutes(srv.Router())
+
 	// Operational endpoints, admin-guarded (IP allowlist via DEBUG_ALLOWLIST or
 	// HTTP Basic via ADMIN_USER/ADMIN_PASS). pprof and debug wrap AdminGuard
 	// internally; metrics is wrapped here.
@@ -112,18 +125,29 @@ func main() {
 	srv.Router().Mount("/debug/pprof", handlers.NewPprofHandler())
 	srv.Router().Mount("/internal/debug", handlers.NewDebugHandler(cfg, srv.Router()).Routes())
 
-	// Web → app redirect: browsers open this URL, server redirects to the deep link.
-	// Shared links use https://mitlist.me/join/<code>; this makes them tappable.
+	// Canonicalize legacy/API invite URLs to the Flutter web app. The app host
+	// serves the same /join/<code> route to browsers and is covered by the native
+	// association files for Android App Links and iOS Universal Links.
 	srv.Router().Get("/join/{code}", func(w http.ResponseWriter, r *http.Request) {
 		code := chi.URLParam(r, "code")
 		if len(code) < 4 {
 			http.Error(w, "invalid invite code", http.StatusBadRequest)
 			return
 		}
-		http.Redirect(w, r, "mitlist:///join/"+code, http.StatusFound)
+		target := strings.TrimRight(cfg.FrontendURL, "/") + "/join/" + url.PathEscape(code)
+		http.Redirect(w, r, target, http.StatusFound)
 	})
 
-	authHandler := handlers.NewAuthHandler(cfg, cnt.UserService(), cnt.GuestService(), cnt.OAuthService(), cnt.JWT())
+	appCheckVerifier, err := appcheckservice.New(cfg)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to initialize Firebase App Check verifier")
+	}
+	authHandler := handlers.NewAuthHandler(cfg, cnt.UserService(), cnt.GuestService(), cnt.OAuthService(), cnt.JWT(), appCheckVerifier)
+	authHandler.SetIntegrationCredentialService(cnt.IntegrationCredentialService())
+	// Web guest creation attests with Turnstile instead of App Check. Absent
+	// TURNSTILE_SECRET_KEY the verifier is simply disabled, which is what a
+	// self-hosted deployment wants.
+	authHandler.SetTurnstileVerifier(turnstileservice.New(cfg))
 	srv.Router().Route(cfg.APIPrefix+"/v1", func(r chi.Router) {
 		authHandler.RegisterRoutes(r)
 
@@ -142,13 +166,14 @@ func main() {
 		r.Post("/oauth/handoff/exchange", oauthHandler.ExchangeHandoff)
 
 		// SSE (Server-Sent Events) — auth handled inside the handler to skip UserRateLimit
-		sseHandler := handlers.NewSSEHandler(cnt.SSEHub(), cnt.JWT(), cnt.UserService(), cnt.GroupRepo())
+		sseHandler := handlers.NewSSEHandler(cnt.SSEHub(), cnt.JWT(), cnt.UserService(), cnt.GroupRepo(), cnt.IntegrationCredentialService())
 		sseHandler.RegisterRoutes(r)
 
 		// Protected feature routes
 		r.Group(func(r chi.Router) {
-			r.Use(middleware.Auth(cnt.JWT(), cnt.UserService()))
+			r.Use(middleware.AuthWithCredentials(cnt.JWT(), cnt.UserService(), cnt.IntegrationCredentialService()))
 			r.Use(middleware.UserRateLimit())
+			r.Use(middleware.Idempotency(cnt.DB()))
 
 			// Notifications
 			notificationHandler := handlers.NewNotificationHandler(cnt.NotificationService())

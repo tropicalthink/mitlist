@@ -15,6 +15,10 @@ class BillingSubscription {
   /// The single household this subscription makes premium. Null when the owner
   /// has not chosen one yet, in which case it covers nothing.
   final String? primaryGroupId;
+
+  /// 'polar', 'apple', or 'google'. Controls where subscription management
+  /// opens; mobile-store subscriptions must never be sent to Polar's portal.
+  final String provider;
   final String status;
 
   /// 'month' or 'year' as reported by the payment provider, when known.
@@ -31,6 +35,7 @@ class BillingSubscription {
     required this.id,
     required this.userId,
     this.primaryGroupId,
+    required this.provider,
     required this.status,
     this.recurringInterval,
     this.amountCents = 0,
@@ -44,6 +49,7 @@ class BillingSubscription {
       id: json['id'] as String,
       userId: json['user_id'] as String,
       primaryGroupId: json['primary_group_id'] as String?,
+      provider: json['provider'] as String? ?? 'polar',
       status: json['status'] as String? ?? 'active',
       recurringInterval: json['recurring_interval'] as String?,
       amountCents: json['amount_cents'] as int? ?? 0,
@@ -96,6 +102,9 @@ class BillingStatus {
   /// False on servers with no payment provider configured — a self-hosted
   /// instance, typically. All billing UI is hidden when this is false.
   final bool enabled;
+  final bool webEnabled;
+  final bool appleEnabled;
+  final bool googleEnabled;
 
   /// Largest household size that stays free.
   final int freeLimit;
@@ -109,6 +118,9 @@ class BillingStatus {
 
   const BillingStatus({
     required this.enabled,
+    this.webEnabled = false,
+    this.appleEnabled = false,
+    this.googleEnabled = false,
     required this.freeLimit,
     this.plans = const [],
     this.subscription,
@@ -123,6 +135,9 @@ class BillingStatus {
     final rawPlans = json['plans'];
     return BillingStatus(
       enabled: json['enabled'] as bool? ?? false,
+      webEnabled: json['web_enabled'] as bool? ?? false,
+      appleEnabled: json['apple_enabled'] as bool? ?? false,
+      googleEnabled: json['google_enabled'] as bool? ?? false,
       freeLimit: json['free_limit'] as int? ?? 0,
       plans: rawPlans is List
           ? rawPlans

@@ -35,6 +35,7 @@ class ListRepository {
 
   SseService? _sseService;
   StreamSubscription<SseEvent>? _sseSub;
+  String? _sseGroupId;
 
   ListRepository({
     required AppDatabase db,
@@ -70,6 +71,17 @@ class ListRepository {
   Future<List<ListItem>> getItemsByListOnce(String listId) async {
     final rows = await _db.getItemsByListOnce(listId);
     return rows.map(_toListItem).toList();
+  }
+
+  /// Creates a list on the server and lands it in the local cache in the same
+  /// step. The create sheet used to call the service directly, which left
+  /// every DB-backed watcher — the lists grid, the hub quick start — unaware
+  /// the list existed until something forced a refresh: the new list simply
+  /// didn't appear, and the quick-start step it satisfied stayed unticked.
+  Future<ItemList> createList(CreateListRequest req) async {
+    final created = await _remote.createList(req);
+    await _db.upsertListsRows([_toListsRow(created)]);
+    return created;
   }
 
   Future<int> refreshLists(String groupId,
@@ -204,6 +216,8 @@ class ListRepository {
   }
 
   Future<String?> getGroupId(String listId) => _db.getListGroupId(listId);
+
+  Future<String?> getListType(String listId) => _db.getListType(listId);
 
   // ---------------------------------------------------------------------------
   // Offline-first writes (optimistic local + outbox)
@@ -432,37 +446,39 @@ class ListRepository {
       createdAt: existing.createdAt,
       updatedAt: DateTime.now(),
     );
-    await _db.upsertListItemsRows([_toListItemsRow(patched)]);
-    await _patchListPreviewFromLocalItems(listId);
+    await _db.transaction(() async {
+      await _db.upsertListItemsRows([_toListItemsRow(patched)]);
+      await _patchListPreviewFromLocalItems(listId);
 
-    // Record purchase signal when item transitions to checked.
-    if ((req.checked ?? false) && !existing.checked) {
-      await _recordPurchaseSignal(listId, itemId, existingRow);
-    }
+      // Record purchase signal when item transitions to checked.
+      if ((req.checked ?? false) && !existing.checked) {
+        await _recordPurchaseSignal(listId, itemId, existingRow);
+      }
 
-    // Optimistic-concurrency base: the server updated_at this edit was based
-    // on. Skip it when an edit is already queued for this item — that chain is
-    // all ours, so there's no foreign server base to guard against (and using
-    // the locally-bumped value would self-conflict).
-    final hasPendingEdit =
-        await _db.pendingOpCountForEntity('updateItem', itemId) > 0;
-    final expectedUpdatedAt =
-        hasPendingEdit ? null : existing.updatedAt.toUtc().toIso8601String();
+      // Optimistic-concurrency base: the server updated_at this edit was based
+      // on. Skip it when an edit is already queued for this item — that chain is
+      // all ours, so there's no foreign server base to guard against (and using
+      // the locally-bumped value would self-conflict).
+      final hasPendingEdit =
+          await _db.pendingOpCountForEntity('updateItem', itemId) > 0;
+      final expectedUpdatedAt =
+          hasPendingEdit ? null : existing.updatedAt.toUtc().toIso8601String();
 
-    await _db.enqueueOutbox(
-      id: _uuid.v4(),
-      type: 'updateItem',
-      payload: {
-        'listId': listId,
-        'itemId': itemId,
-        'patch': req.toJson(),
-        if (expectedUpdatedAt != null) 'expectedUpdatedAt': expectedUpdatedAt,
-      },
-      idempotencyKey:
-          'updateItem:$itemId:${patched.updatedAt.toIso8601String()}',
-      entityType: 'listItem',
-      entityId: itemId,
-    );
+      await _db.enqueueOutbox(
+        id: _uuid.v4(),
+        type: 'updateItem',
+        payload: {
+          'listId': listId,
+          'itemId': itemId,
+          'patch': req.toJson(),
+          if (expectedUpdatedAt != null) 'expectedUpdatedAt': expectedUpdatedAt,
+        },
+        idempotencyKey:
+            'updateItem:$itemId:${patched.updatedAt.toIso8601String()}',
+        entityType: 'listItem',
+        entityId: itemId,
+      );
+    });
 
     if (_autoSync) unawaited(drainOutboxOnce());
     return patched;
@@ -507,42 +523,38 @@ class ListRepository {
       );
     }
 
-    await _db.upsertListItemsRows(patched);
-    await _patchListPreviewFromLocalItems(listId);
-
-    await _db.enqueueOutbox(
-      id: _uuid.v4(),
-      type: 'reorderItems',
-      payload: {
-        'listId': listId,
-        'itemIds': itemIdsInOrder,
-      },
-      idempotencyKey:
-          'reorderItems:$listId:${DateTime.now().toIso8601String()}',
-      entityType: 'list',
-      entityId: listId,
-    );
+    await _db.transaction(() async {
+      await _db.upsertListItemsRows(patched);
+      await _patchListPreviewFromLocalItems(listId);
+      await _db.enqueueOutbox(
+        id: _uuid.v4(),
+        type: 'reorderItems',
+        payload: {'listId': listId, 'itemIds': itemIdsInOrder},
+        idempotencyKey:
+            'reorderItems:$listId:${DateTime.now().toIso8601String()}',
+        entityType: 'list',
+        entityId: listId,
+      );
+    });
 
     if (_autoSync) unawaited(drainOutboxOnce());
   }
 
   Future<void> deleteItemOfflineFirst(String listId, String itemId) async {
     // Optimistic local delete
-    await (_db.delete(_db.listItemsTable)..where((t) => t.id.equals(itemId)))
-        .go();
-    await _patchListPreviewFromLocalItems(listId);
-
-    await _db.enqueueOutbox(
-      id: _uuid.v4(),
-      type: 'deleteItem',
-      payload: {
-        'listId': listId,
-        'itemId': itemId,
-      },
-      idempotencyKey: 'deleteItem:$itemId',
-      entityType: 'listItem',
-      entityId: itemId,
-    );
+    await _db.transaction(() async {
+      await (_db.delete(_db.listItemsTable)..where((t) => t.id.equals(itemId)))
+          .go();
+      await _patchListPreviewFromLocalItems(listId);
+      await _db.enqueueOutbox(
+        id: _uuid.v4(),
+        type: 'deleteItem',
+        payload: {'listId': listId, 'itemId': itemId},
+        idempotencyKey: 'deleteItem:$itemId',
+        entityType: 'listItem',
+        entityId: itemId,
+      );
+    });
 
     if (_autoSync) unawaited(drainOutboxOnce());
   }
@@ -659,19 +671,25 @@ class ListRepository {
           'clearItems',
         ],
         handlers: {
-          'createItem': (op, payload) => _syncCreateItem(op.id, payload),
-          'updateItem': (op, payload) => _syncUpdateItem(op.id, payload),
-          'deleteItem': (op, payload) => _syncDeleteItem(op.id, payload),
-          'reorderItems': (op, payload) => _syncReorderItems(op.id, payload),
-          'addItemAmount': (op, payload) => _syncAddItemAmount(op.id, payload),
-          'clearItems': (op, payload) => _syncClearItems(op.id, payload),
+          'createItem': (op, payload) =>
+              _syncCreateItem(op.id, payload, op.idempotencyKey),
+          'updateItem': (op, payload) =>
+              _syncUpdateItem(op.id, payload, op.idempotencyKey),
+          'deleteItem': (op, payload) =>
+              _syncDeleteItem(op.id, payload, op.idempotencyKey),
+          'reorderItems': (op, payload) =>
+              _syncReorderItems(op.id, payload, op.idempotencyKey),
+          'addItemAmount': (op, payload) =>
+              _syncAddItemAmount(op.id, payload, op.idempotencyKey),
+          'clearItems': (op, payload) =>
+              _syncClearItems(op.id, payload, op.idempotencyKey),
         },
       );
       await OutboxDrainer(_db).drain(
         types: const ['recordPurchase'],
         handlers: {
           'recordPurchase': (op, payload) =>
-              _syncRecordPurchase(op.id, payload),
+              _syncRecordPurchase(op.id, payload, op.idempotencyKey),
         },
       );
     } finally {
@@ -680,7 +698,7 @@ class ListRepository {
   }
 
   Future<void> _syncCreateItem(
-      String opId, Map<String, dynamic> payload) async {
+      String opId, Map<String, dynamic> payload, String? idempotencyKey) async {
     final listId = payload['listId'] as String?;
     final tempId = payload['tempId'] as String?;
     final name = payload['name'] as String?;
@@ -699,6 +717,7 @@ class ListRepository {
         priceCents: payload['priceCents'] as int?,
         canonicalItemId: payload['canonicalItemId'] as String?,
       ),
+      idempotencyKey: idempotencyKey,
     );
 
     // Atomically replace the temp row and rewrite all queued payloads that
@@ -713,7 +732,7 @@ class ListRepository {
   }
 
   Future<void> _syncAddItemAmount(
-      String opId, Map<String, dynamic> payload) async {
+      String opId, Map<String, dynamic> payload, String? idempotencyKey) async {
     final listId = payload['listId'] as String?;
     final name = payload['name'] as String?;
     final amount = (payload['amount'] as num?)?.toDouble();
@@ -730,6 +749,7 @@ class ListRepository {
         unit: payload['unit'] as String? ?? '',
         note: payload['note'] as String? ?? '',
       ),
+      idempotencyKey: idempotencyKey,
     );
 
     final tempId = payload['tempId'] as String?;
@@ -752,7 +772,7 @@ class ListRepository {
   }
 
   Future<void> _syncUpdateItem(
-      String opId, Map<String, dynamic> payload) async {
+      String opId, Map<String, dynamic> payload, String? idempotencyKey) async {
     final listId = payload['listId'] as String?;
     final itemId = payload['itemId'] as String?;
     final patch = payload['patch'];
@@ -774,6 +794,7 @@ class ListRepository {
         position: patch['position'] as int?,
         expectedUpdatedAt: payload['expectedUpdatedAt'] as String?,
       ),
+      idempotencyKey: idempotencyKey,
     );
 
     await _db.upsertListItemsRows([_toListItemsRow(updated)]);
@@ -782,7 +803,7 @@ class ListRepository {
   }
 
   Future<void> _syncDeleteItem(
-      String opId, Map<String, dynamic> payload) async {
+      String opId, Map<String, dynamic> payload, String? idempotencyKey) async {
     final listId = payload['listId'] as String?;
     final itemId = payload['itemId'] as String?;
     if (listId == null || itemId == null) {
@@ -790,13 +811,13 @@ class ListRepository {
       return;
     }
 
-    await _remote.deleteItem(listId, itemId);
+    await _remote.deleteItem(listId, itemId, idempotencyKey: idempotencyKey);
     await _db.deleteOutboxOp(opId);
     await _patchListPreviewFromLocalItems(listId);
   }
 
   Future<void> _syncReorderItems(
-      String opId, Map<String, dynamic> payload) async {
+      String opId, Map<String, dynamic> payload, String? idempotencyKey) async {
     final listId = payload['listId'] as String?;
     final rawIds = payload['itemIds'];
     if (listId == null || rawIds is! List) {
@@ -804,26 +825,28 @@ class ListRepository {
       return;
     }
     final itemIds = rawIds.map((e) => e.toString()).toList();
-    await _remote.reorderItems(listId, ReorderItemsRequest(itemIds: itemIds));
+    await _remote.reorderItems(listId, ReorderItemsRequest(itemIds: itemIds),
+        idempotencyKey: idempotencyKey);
     await _db.deleteOutboxOp(opId);
     await _patchListPreviewFromLocalItems(listId);
   }
 
   Future<void> _syncClearItems(
-      String opId, Map<String, dynamic> payload) async {
+      String opId, Map<String, dynamic> payload, String? idempotencyKey) async {
     final listId = payload['listId'] as String?;
     if (listId == null) {
       await _db.deleteOutboxOp(opId);
       return;
     }
     final onlyChecked = payload['onlyChecked'] as bool? ?? false;
-    await _remote.clearItems(listId, onlyChecked: onlyChecked);
+    await _remote.clearItems(listId,
+        onlyChecked: onlyChecked, idempotencyKey: idempotencyKey);
     await _db.deleteOutboxOp(opId);
     await _patchListPreviewFromLocalItems(listId);
   }
 
   Future<void> _syncRecordPurchase(
-      String opId, Map<String, dynamic> payload) async {
+      String opId, Map<String, dynamic> payload, String? idempotencyKey) async {
     final groupId = payload['groupId'] as String?;
     final rawEvents = payload['events'];
     if (groupId == null || rawEvents is! List) {
@@ -834,7 +857,8 @@ class ListRepository {
         .whereType<Map>()
         .map((event) => event.cast<String, dynamic>())
         .toList(growable: false);
-    await _remote.recordGroceryPurchases(groupId, events);
+    await _remote.recordGroceryPurchases(groupId, events,
+        idempotencyKey: idempotencyKey);
     await _db.deleteOutboxOp(opId);
   }
 
@@ -892,9 +916,10 @@ class ListRepository {
   /// Events that mutate list items are applied directly to local SQLite,
   /// which causes the existing [watchItemsByList] Drift streams to fire.
   void attachSse(SseService sseService, String groupId) {
-    if (_sseService == sseService) return;
+    if (_sseService == sseService && _sseGroupId == groupId) return;
     _sseSub?.cancel();
     _sseService = sseService;
+    _sseGroupId = groupId;
     sseService.connect(groupId);
     _sseSub = sseService.events.listen(_handleSseEvent);
   }
@@ -904,9 +929,11 @@ class ListRepository {
     _sseSub?.cancel();
     _sseSub = null;
     _sseService = null;
+    _sseGroupId = null;
   }
 
   Future<void> _handleSseEvent(SseEvent event) async {
+    if (_sseGroupId == null || event.groupId != _sseGroupId) return;
     switch (event.type) {
       case 'list:item_created':
       case 'list:item_updated':

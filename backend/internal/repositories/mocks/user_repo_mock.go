@@ -52,6 +52,16 @@ func (m *MockUserRepo) SoftDelete(ctx context.Context, id uuid.UUID) error {
 	return args.Error(0)
 }
 
+func (m *MockUserRepo) TouchGuestActivity(ctx context.Context, id uuid.UUID) error {
+	args := m.Called(ctx, id)
+	return args.Error(0)
+}
+
+func (m *MockUserRepo) ReactivateGuest(ctx context.Context, id uuid.UUID) error {
+	args := m.Called(ctx, id)
+	return args.Error(0)
+}
+
 func (m *MockUserRepo) List(ctx context.Context, limit, offset int) ([]models.User, error) {
 	args := m.Called(ctx, limit, offset)
 	if u := args.Get(0); u != nil {

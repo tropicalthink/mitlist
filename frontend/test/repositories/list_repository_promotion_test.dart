@@ -36,7 +36,8 @@ Future<void> _insertList(AppDatabase db, String listId,
   ]);
 }
 
-Future<void> _insertItem(AppDatabase db, String listId, String id, String name) {
+Future<void> _insertItem(
+    AppDatabase db, String listId, String id, String name) {
   return db.upsertListItemsRows([
     ListItemsTableCompanion(
       id: drift.Value(id),
@@ -80,8 +81,7 @@ void main() {
     }
 
     Future<ListItemsTableData> item() async =>
-        (await db.getItemsByListOnce(listId))
-            .firstWhere((r) => r.id == itemId);
+        (await db.getItemsByListOnce(listId)).firstWhere((r) => r.id == itemId);
 
     // Two real check-offs (check → uncheck → check → uncheck). A signal only
     // fires on the false→true transition, so this is 2 unresolved check-offs —

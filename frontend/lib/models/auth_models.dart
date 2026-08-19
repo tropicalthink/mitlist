@@ -87,17 +87,14 @@ class TokenPair {
 }
 
 class RegistrationResult {
-  final User user;
   final bool verificationRequired;
 
   const RegistrationResult({
-    required this.user,
     required this.verificationRequired,
   });
 
   factory RegistrationResult.fromJson(Map<String, dynamic> json) {
     return RegistrationResult(
-      user: User.fromJson(json['user'] as Map<String, dynamic>),
       verificationRequired: json['verification_required'] as bool? ?? true,
     );
   }

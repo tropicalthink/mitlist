@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/getsentry/sentry-go"
+	"github.com/rs/zerolog/log"
 )
 
 // Common domain errors used across the application.
@@ -217,6 +218,12 @@ func WriteError(w http.ResponseWriter, err error) {
 // It is a no-op when Sentry is not configured. The attached stacktrace points at
 // the handler that returned the error.
 func captureServerError(err error) {
+	// Log first, and unconditionally. Sentry is the production destination, but
+	// it has no client configured in tests, in CI, or on a dev machine — so
+	// without this the cause of every 5xx is discarded and the only evidence
+	// left is a bare "internal server error" body.
+	log.Error().Err(err).Msg("internal server error")
+
 	hub := sentry.CurrentHub()
 	if hub.Client() == nil {
 		return

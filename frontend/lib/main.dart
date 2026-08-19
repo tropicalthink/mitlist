@@ -7,6 +7,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'app.dart';
 import 'config/api_config.dart';
+import 'services/app_check_service.dart';
 import 'services/fcm_service.dart';
 
 /// Must be a top-level function so the OS can invoke it in a separate isolate.
@@ -30,6 +31,13 @@ Future<void> main() async {
   if (!kIsWeb && await FcmService.ensureFirebaseCore()) {
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   }
+
+  // App Check is build-time opt-in and mobile-only: its web provider would be
+  // reCAPTCHA Enterprise, and web uses Cloudflare Turnstile instead (see
+  // TurnstileConfig). Official workflows enable it; self-hosted builds remain
+  // Firebase-free unless their operator opts in. Activate it after Firebase
+  // Core and before guest creation requests a token.
+  await FirebaseAppCheckService.initialize();
 
   const dsn = String.fromEnvironment('GLITCHTIP_DSN', defaultValue: '');
   const env =

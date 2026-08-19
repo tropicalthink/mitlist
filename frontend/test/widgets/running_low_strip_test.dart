@@ -16,12 +16,14 @@ const _milk = RestockSuggestion(
   name: 'Milk',
   intervalDays: 7,
   daysSince: 9,
+  reason: RestockReason.due,
 );
 const _eggs = RestockSuggestion(
   canonicalItemId: 'c2',
   name: 'Eggs',
   intervalDays: 5,
   daysSince: 6,
+  reason: RestockReason.goesWith,
 );
 
 /// Pumps [RunningLowStrip] inside a localized [MaterialApp] backed by a
@@ -62,11 +64,14 @@ Future<void> _pumpStrip(
 void main() {
   group('RunningLowStrip', () {
     // 1. Renders suggestions
-    testWidgets('shows chip for each suggestion', (tester) async {
+    testWidgets('shows a card for each suggestion', (tester) async {
       await _pumpStrip(tester, suggestions: [_milk, _eggs]);
 
       expect(find.text('Milk'), findsOneWidget);
       expect(find.text('Eggs'), findsOneWidget);
+      expect(find.text('Due again'), findsOneWidget);
+      expect(find.text('Goes with this list'), findsOneWidget);
+      expect(find.text('You might also need'), findsOneWidget);
     });
 
     // 2. Excludes current items
@@ -82,19 +87,19 @@ void main() {
       expect(find.text('Eggs'), findsOneWidget);
     });
 
-    // 3. Empty → invisible (no heading, no chip text)
+    // 3. Empty → invisible (no heading or card text)
     testWidgets('renders nothing when suggestions list is empty',
         (tester) async {
       await _pumpStrip(tester, suggestions: []);
 
-      // No heading and no chip names should appear.
+      // No heading and no card names should appear.
       expect(find.text('Running low'), findsNothing);
       expect(find.text('Milk'), findsNothing);
       expect(find.text('Eggs'), findsNothing);
     });
 
     // 4. Tap calls onAdd with the correct suggestion
-    testWidgets('tapping a chip calls onAdd with matching suggestion',
+    testWidgets('tapping a card calls onAdd with matching suggestion',
         (tester) async {
       RestockSuggestion? added;
 

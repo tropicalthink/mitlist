@@ -7,6 +7,7 @@ import '../../providers/group_provider.dart';
 import '../../providers/list_provider.dart';
 import '../../router.dart' show currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
+import '../../services/scan/grocery_suggestion_service.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../utils/active_group_context.dart';
@@ -445,6 +446,7 @@ class _CreateProductFormState extends State<_CreateProductForm> {
         GrocerySuggestionField(
           controller: _nameController,
           groupId: widget.groupId,
+          suggestionContext: GrocerySuggestionContext.product,
           label: l10n.productsFieldName,
           onSelected: (suggestion) {
             if (_unitController.text.trim().isEmpty &&

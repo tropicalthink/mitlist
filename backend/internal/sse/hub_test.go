@@ -1,6 +1,7 @@
 package sse
 
 import (
+	"context"
 	"encoding/json"
 	"sync"
 	"testing"
@@ -9,6 +10,25 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+type testEventStore struct {
+	watch chan Event
+	seen  []Event
+}
+
+func (s *testEventStore) Append(_ context.Context, event Event) (Event, error) {
+	if event.ID == "" {
+		event.ID = "1"
+	}
+	s.seen = append(s.seen, event)
+	return event, nil
+}
+
+func (s *testEventStore) ListAfter(_ context.Context, _, _ string, _ int) ([]Event, error) {
+	return append([]Event(nil), s.seen...), nil
+}
+
+func (s *testEventStore) Watch(_ context.Context) (<-chan Event, error) { return s.watch, nil }
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -56,6 +76,27 @@ func TestPublishDelivers(t *testing.T) {
 	got := recv(t, ch, time.Second)
 	assert.Equal(t, want.Type, got.Type)
 	assert.Equal(t, want.GroupID, got.GroupID)
+}
+
+func TestDurablePublishUsesEnvelopeVersionAndDeduplicatesWatch(t *testing.T) {
+	store := &testEventStore{watch: make(chan Event, 1)}
+	h := New()
+	h.SetStore(store)
+	ch := h.Subscribe("g", "u1")
+
+	h.Publish("g", Event{Type: "x", GroupID: "g"})
+	got := recv(t, ch, time.Second)
+	assert.Equal(t, EventSchemaVersion, got.Version)
+	assert.Len(t, store.seen, 1)
+
+	// PostgreSQL NOTIFY also reaches the writing process. The watcher must not
+	// deliver this same durable ID twice.
+	store.watch <- store.seen[0]
+	select {
+	case duplicate := <-ch:
+		t.Fatalf("durable event delivered twice: %s", duplicate)
+	case <-time.After(50 * time.Millisecond):
+	}
 }
 
 func TestPublishDeliversSameEncodedBytesToSubscribers(t *testing.T) {
@@ -189,6 +230,31 @@ func TestOnlineUserIDsDedupAndExcludesAnonymous(t *testing.T) {
 	ids := h.OnlineUserIDs("g")
 	require.Len(t, ids, 2, "should deduplicate u1 and exclude anonymous")
 	assert.Equal(t, toSet([]string{"u1", "u2"}), toSet(ids))
+}
+
+func TestTrySubscribeEnforcesUserAndIPLimitsAndCleanup(t *testing.T) {
+	h := NewWithLimits(2, 2)
+	user := "u1"
+	ip := "192.0.2.10"
+
+	ch1, ok := h.TrySubscribe("g1", user, ip)
+	require.True(t, ok)
+	ch2, ok := h.TrySubscribe("g2", user, ip)
+	require.True(t, ok)
+	if _, ok := h.TrySubscribe("g3", user, "192.0.2.11"); ok {
+		t.Fatal("third connection for a user should be rejected")
+	}
+	if _, ok := h.TrySubscribe("g3", "u2", ip); ok {
+		t.Fatal("third connection for an IP should be rejected")
+	}
+
+	// Cleanup must release both counters, and a repeated cleanup must be safe.
+	h.Unsubscribe("g1", ch1)
+	h.Unsubscribe("g1", ch1)
+	ch3, ok := h.TrySubscribe("g3", user, ip)
+	require.True(t, ok)
+	h.Unsubscribe("g2", ch2)
+	h.Unsubscribe("g3", ch3)
 }
 
 // TestBroadcastPresenceShape verifies that BroadcastPresence emits an event

@@ -58,7 +58,8 @@ void main() {
   });
 
   group('OnboardingScreen', () {
-    testWidgets('shows create/join actions immediately', (tester) async {
+    testWidgets('holds the board until membership resolves, then shows choose',
+        (tester) async {
       final groupsCompleter = Completer<List<Group>>();
       addTearDown(() {
         if (!groupsCompleter.isCompleted) {
@@ -80,11 +81,21 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('Create a household'), findsOneWidget);
-      expect(find.text('Join with invite code'), findsOneWidget);
+      // Membership unknown: the bare board holds, no create/join flash that
+      // would have to be yanked away from an existing account.
+      expect(find.text('Create a household'), findsNothing);
+      expect(find.text('Join with invite code'), findsNothing);
+
+      // Slow check: the hint paper appears rather than dead cork.
+      await tester.pump(const Duration(milliseconds: 750));
+      expect(find.text('Opening your board…'), findsOneWidget);
 
       groupsCompleter.complete(const []);
-      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Opening your board…'), findsNothing);
+      expect(find.text('Create a household'), findsOneWidget);
+      expect(find.text('Join with invite code'), findsOneWidget);
     });
 
     testWidgets('redirects to home when user already has a household',
@@ -134,7 +145,7 @@ void main() {
       expect(find.text('Create a household'), findsNothing);
     });
 
-    testWidgets('create flow stays on the board: name stage, then invite slip',
+    testWidgets('create flow ends with a concise map into the real app',
         (tester) async {
       final service = _FakeGroupService();
 
@@ -180,7 +191,25 @@ void main() {
       expect(find.text('Bring in your flatmates'), findsOneWidget);
       expect(find.text('SUNNY'), findsOneWidget);
       expect(find.text('TACO'), findsOneWidget);
-      expect(find.text('GO TO YOUR BOARD'), findsOneWidget);
+      expect(find.text('CONTINUE'), findsOneWidget);
+
+      // The handoff names the shell's three rules without asking the user to
+      // complete a tutorial task or step through every feature.
+      await tester.ensureVisible(find.text('CONTINUE'));
+      await tester.tap(find.text('CONTINUE'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Your household is ready'), findsOneWidget);
+      expect(find.text('Home shows what needs attention'), findsOneWidget);
+      expect(
+        find.text('Tabs keep each part of the household in its place'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('The + button adds something from anywhere'),
+        findsOneWidget,
+      );
+      expect(find.text('OPEN FLAT 4B'), findsOneWidget);
     });
   });
 }

@@ -368,6 +368,168 @@ abstract class AppLocalizations {
   /// **'Loading members...'**
   String get commonLoadingMembers;
 
+  /// Account integrations page title
+  ///
+  /// In en, this message translates to:
+  /// **'Integrations'**
+  String get integrationsTitle;
+
+  /// Home Assistant integration name
+  ///
+  /// In en, this message translates to:
+  /// **'Home Assistant'**
+  String get homeAssistantTitle;
+
+  /// Home Assistant integration summary
+  ///
+  /// In en, this message translates to:
+  /// **'Connect your household to dashboards, voice control, and automations.'**
+  String get homeAssistantDescription;
+
+  /// Home Assistant connection list heading
+  ///
+  /// In en, this message translates to:
+  /// **'Connections'**
+  String get homeAssistantConnections;
+
+  /// Empty state for Home Assistant connections
+  ///
+  /// In en, this message translates to:
+  /// **'No Home Assistant connections yet.'**
+  String get homeAssistantNoConnections;
+
+  /// Create a Home Assistant credential button
+  ///
+  /// In en, this message translates to:
+  /// **'Create connection'**
+  String get homeAssistantCreateConnection;
+
+  /// Home Assistant connection name field
+  ///
+  /// In en, this message translates to:
+  /// **'Connection name'**
+  String get homeAssistantConnectionName;
+
+  /// Home Assistant connection name hint
+  ///
+  /// In en, this message translates to:
+  /// **'Home Assistant'**
+  String get homeAssistantConnectionNameHint;
+
+  /// Household permission selection heading
+  ///
+  /// In en, this message translates to:
+  /// **'Households'**
+  String get homeAssistantHouseholds;
+
+  /// Integration permissions heading
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions'**
+  String get homeAssistantPermissions;
+
+  /// Integration write permission toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Allow Home Assistant to make changes'**
+  String get homeAssistantWriteAccess;
+
+  /// Integration finance permission toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Include financial data'**
+  String get homeAssistantFinanceAccess;
+
+  /// One-time integration token dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Connection token'**
+  String get homeAssistantTokenTitle;
+
+  /// One-time integration token warning
+  ///
+  /// In en, this message translates to:
+  /// **'Copy this token into Home Assistant now. For security, mitlist cannot show it again.'**
+  String get homeAssistantTokenBody;
+
+  /// Confirmation after copying integration token
+  ///
+  /// In en, this message translates to:
+  /// **'Connection token copied'**
+  String get homeAssistantTokenCopied;
+
+  /// Revoke Home Assistant connection action
+  ///
+  /// In en, this message translates to:
+  /// **'Revoke connection'**
+  String get homeAssistantRevoke;
+
+  /// Revoke Home Assistant connection confirmation
+  ///
+  /// In en, this message translates to:
+  /// **'This immediately disconnects Home Assistant. You can create a new connection later.'**
+  String get homeAssistantRevokeConfirm;
+
+  /// Revoked integration credential status
+  ///
+  /// In en, this message translates to:
+  /// **'Revoked'**
+  String get homeAssistantRevoked;
+
+  /// Integration credential has not been used
+  ///
+  /// In en, this message translates to:
+  /// **'Never used'**
+  String get homeAssistantNeverUsed;
+
+  /// Integration credential last-use time
+  ///
+  /// In en, this message translates to:
+  /// **'Last used {date}'**
+  String homeAssistantLastUsed(String date);
+
+  /// Validation for Home Assistant household scopes
+  ///
+  /// In en, this message translates to:
+  /// **'Select at least one household.'**
+  String get homeAssistantSelectHousehold;
+
+  /// Successful Home Assistant credential creation
+  ///
+  /// In en, this message translates to:
+  /// **'Home Assistant connection created'**
+  String get homeAssistantCreated;
+
+  /// Successful Home Assistant credential revocation
+  ///
+  /// In en, this message translates to:
+  /// **'Home Assistant connection revoked'**
+  String get homeAssistantRevokedSuccess;
+
+  /// Home Assistant connection loading failure
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load Home Assistant connections.'**
+  String get homeAssistantLoadFailed;
+
+  /// Home Assistant connection creation failure
+  ///
+  /// In en, this message translates to:
+  /// **'Could not create the connection. Please try again.'**
+  String get homeAssistantSaveFailed;
+
+  /// Integration credential access summary
+  ///
+  /// In en, this message translates to:
+  /// **'Read only'**
+  String get homeAssistantReadOnly;
+
+  /// Integration credential access summary
+  ///
+  /// In en, this message translates to:
+  /// **'Read and write'**
+  String get homeAssistantReadWrite;
+
   /// Subtitle under the app name on the welcome screen
   ///
   /// In en, this message translates to:
@@ -422,10 +584,10 @@ abstract class AppLocalizations {
   /// **'Join the household to share lists, chores, and money.'**
   String get welcomeInviteSubtitle;
 
-  /// Footnote below the guest button explaining the trial
+  /// Footnote below the guest button: guest mode is the full app, an account is only needed to keep data long-term
   ///
   /// In en, this message translates to:
-  /// **'No account needed. Try everything free for 30 days.'**
+  /// **'No sign-up needed. Add an account later to keep your data.'**
   String get welcomeGuestFootnote;
 
   /// AppBar title for the household hub screen
@@ -938,6 +1100,24 @@ abstract class AppLocalizations {
   /// **'How it splits'**
   String get choreHowItSplits;
 
+  /// House-wide verdict in the hero when no chore is overdue
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing overdue in the house'**
+  String get choreHouseAllClear;
+
+  /// House-wide verdict in the hero counting overdue chores across all members
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 chore overdue in the house} other{{count} chores overdue in the house}}'**
+  String choreHouseOverdue(num count);
+
+  /// Who the turn passes to after the current assignee, shown on rotating chores
+  ///
+  /// In en, this message translates to:
+  /// **'then {name}'**
+  String choreNextInRotation(String name);
+
   /// Supply count label (1)
   ///
   /// In en, this message translates to:
@@ -1087,6 +1267,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Zone'**
   String get choreCreationZoneLabel;
+
+  /// Zone summary line value when a chore has no zone
+  ///
+  /// In en, this message translates to:
+  /// **'No zone'**
+  String get choreCreationZoneNone;
+
+  /// Hint under the zone chips in the chore creation sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Long-press a zone to remove it'**
+  String get choreCreationZoneManageHint;
+
+  /// Confirm dialog title for removing a household chore zone
+  ///
+  /// In en, this message translates to:
+  /// **'Remove zone?'**
+  String get choreCreationRemoveZoneTitle;
+
+  /// Confirm dialog body for removing a household chore zone
+  ///
+  /// In en, this message translates to:
+  /// **'{zone} will no longer be offered when adding a chore. Chores already in it keep it.'**
+  String choreCreationRemoveZoneBody(String zone);
 
   /// Kitchen zone preset
   ///
@@ -1489,6 +1693,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Whose turn'**
   String get choreDetailAssignee;
+
+  /// Detail row: who the turn passes to after the current assignee
+  ///
+  /// In en, this message translates to:
+  /// **'Next up'**
+  String get choreDetailNextUp;
 
   /// Detail row: due date
   ///
@@ -4326,7 +4536,7 @@ abstract class AppLocalizations {
   /// Validation: password too short
   ///
   /// In en, this message translates to:
-  /// **'New password must be at least 12 characters.'**
+  /// **'New password must be at least 8 characters.'**
   String get accountPasswordMinLength;
 
   /// Validation: passwords don't match
@@ -4386,7 +4596,7 @@ abstract class AppLocalizations {
   /// Dialog body for account deletion
   ///
   /// In en, this message translates to:
-  /// **'This will permanently delete your account and all associated data. This cannot be undone.'**
+  /// **'This permanently removes your account, revokes all sessions, deletes credentials, and anonymizes your shared household history. This cannot be undone.'**
   String get accountDeleteAccountBody;
 
   /// Button to log out
@@ -4725,6 +4935,12 @@ abstract class AppLocalizations {
   /// **'Failed to load notification preferences.'**
   String get notifPrefFailedLoad;
 
+  /// Error when a notification preference save fails
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t save that preference. Check your connection and try again.'**
+  String get notifPrefFailedSave;
+
   /// No-household description for preferences
   ///
   /// In en, this message translates to:
@@ -4785,16 +5001,16 @@ abstract class AppLocalizations {
   /// **'When someone adds to a shared list'**
   String get notifPrefListItemAddedDesc;
 
-  /// Toggle label for expense notifications
+  /// Toggle label for money notifications
   ///
   /// In en, this message translates to:
-  /// **'Expense created'**
+  /// **'Money activity'**
   String get notifPrefExpenseCreated;
 
-  /// Toggle subtitle for expense notifications
+  /// Toggle subtitle for money notifications
   ///
   /// In en, this message translates to:
-  /// **'When a new expense is logged'**
+  /// **'Expenses, recurring charges, and settlements'**
   String get notifPrefExpenseCreatedDesc;
 
   /// Toggle label for meal plan notifications
@@ -4844,6 +5060,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Receive notifications on this device'**
   String get notifPrefPushNotificationsDesc;
+
+  /// Toggle label for email notifications
+  ///
+  /// In en, this message translates to:
+  /// **'Email notifications'**
+  String get notifPrefEmailNotifications;
+
+  /// Toggle subtitle for email notifications
+  ///
+  /// In en, this message translates to:
+  /// **'Receive important reminders by email'**
+  String get notifPrefEmailNotificationsDesc;
 
   /// AppBar title for shopping trip
   ///
@@ -5481,6 +5709,12 @@ abstract class AppLocalizations {
   /// **'Category'**
   String get expenseCreationCategoryLabel;
 
+  /// Prefix on the expense sheet date row, e.g. Date · 3 Aug 2026
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get expenseCreationDatePrefix;
+
   /// Expense category
   ///
   /// In en, this message translates to:
@@ -5540,6 +5774,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Expense date. Tap to change.'**
   String get expenseCreationDateLabel;
+
+  /// Date button label for a recurring expense's first occurrence
+  ///
+  /// In en, this message translates to:
+  /// **'Starts {date}'**
+  String expenseCreationStartsOn(String date);
+
+  /// Semantics label for the recurring start date picker
+  ///
+  /// In en, this message translates to:
+  /// **'First occurrence. Tap to change.'**
+  String get expenseCreationNextDueLabel;
+
+  /// Semantics label for the repeat summary line
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat schedule. Tap to change.'**
+  String get expenseCreationEditRepeatSemantic;
+
+  /// Repeat summary line for a one-off expense
+  ///
+  /// In en, this message translates to:
+  /// **'Doesn\'t repeat'**
+  String get expenseCreationRepeatNever;
+
+  /// Repeat frequency chip meaning no repeat
+  ///
+  /// In en, this message translates to:
+  /// **'Never'**
+  String get expenseCreationRepeatNeverOption;
+
+  /// Repeat summary line
+  ///
+  /// In en, this message translates to:
+  /// **'Repeats daily'**
+  String get expenseCreationRepeatDaily;
+
+  /// Repeat summary line
+  ///
+  /// In en, this message translates to:
+  /// **'Repeats weekly'**
+  String get expenseCreationRepeatWeekly;
+
+  /// Repeat summary line
+  ///
+  /// In en, this message translates to:
+  /// **'Repeats every 2 weeks'**
+  String get expenseCreationRepeatBiweekly;
+
+  /// Repeat summary line
+  ///
+  /// In en, this message translates to:
+  /// **'Repeats monthly'**
+  String get expenseCreationRepeatMonthly;
+
+  /// Repeat summary line
+  ///
+  /// In en, this message translates to:
+  /// **'Repeats quarterly'**
+  String get expenseCreationRepeatQuarterly;
+
+  /// Repeat summary line
+  ///
+  /// In en, this message translates to:
+  /// **'Repeats yearly'**
+  String get expenseCreationRepeatYearly;
+
+  /// Explains why the currency selector is hidden for recurring expenses
+  ///
+  /// In en, this message translates to:
+  /// **'Repeating expenses are recorded in {currency}.'**
+  String expenseCreationRepeatCurrencyHint(String currency);
+
+  /// Sheet title when creating a recurring expense
+  ///
+  /// In en, this message translates to:
+  /// **'New recurring expense'**
+  String get expenseCreationRecurringTitle;
+
+  /// Sheet title when editing a recurring expense
+  ///
+  /// In en, this message translates to:
+  /// **'Edit recurring expense'**
+  String get expenseCreationRecurringEditTitle;
+
+  /// Toast after creating a recurring expense
+  ///
+  /// In en, this message translates to:
+  /// **'Recurring expense added'**
+  String get expenseCreationRecurringAdded;
+
+  /// Toast after updating a recurring expense
+  ///
+  /// In en, this message translates to:
+  /// **'Recurring expense updated'**
+  String get expenseCreationRecurringSaved;
+
+  /// Tooltip for editing a recurring expense
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get recurringEditTooltip;
 
   /// Button text for receipt scan
   ///
@@ -6744,7 +7080,7 @@ abstract class AppLocalizations {
   /// Password hint text
   ///
   /// In en, this message translates to:
-  /// **'At least 12 characters'**
+  /// **'At least 8 characters'**
   String get authSignupPasswordHint;
 
   /// Submit button for signup
@@ -6780,7 +7116,7 @@ abstract class AppLocalizations {
   /// Password too short validation
   ///
   /// In en, this message translates to:
-  /// **'Password must be at least 12 characters.'**
+  /// **'Password must be at least 8 characters.'**
   String get authSignupPasswordMinLength;
 
   /// Signup screen title when joining via invite
@@ -6812,6 +7148,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Password is required.'**
   String get authSignupPasswordRequired;
+
+  /// Confirm password input label on signup
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm password'**
+  String get authSignupConfirmPassword;
+
+  /// Confirm password hint text
+  ///
+  /// In en, this message translates to:
+  /// **'Re-enter your password'**
+  String get authSignupConfirmPasswordHint;
+
+  /// Validation: confirm password empty
+  ///
+  /// In en, this message translates to:
+  /// **'Please confirm your password.'**
+  String get authSignupConfirmPasswordRequired;
+
+  /// Validation: password and confirmation differ
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match.'**
+  String get authSignupPasswordMismatch;
+
+  /// Validation: password fails the complexity policy
+  ///
+  /// In en, this message translates to:
+  /// **'Password does not meet the requirements below.'**
+  String get authSignupPasswordRequirementsNotMet;
+
+  /// Heading above the password requirement checklist
+  ///
+  /// In en, this message translates to:
+  /// **'Your password must contain:'**
+  String get passwordRequirementsTitle;
+
+  /// Password requirement: minimum length
+  ///
+  /// In en, this message translates to:
+  /// **'At least 8 characters'**
+  String get passwordRequirementLength;
+
+  /// Password requirement: uppercase letter
+  ///
+  /// In en, this message translates to:
+  /// **'One uppercase letter'**
+  String get passwordRequirementUppercase;
+
+  /// Password requirement: number
+  ///
+  /// In en, this message translates to:
+  /// **'One number'**
+  String get passwordRequirementDigit;
+
+  /// Password requirement: special character
+  ///
+  /// In en, this message translates to:
+  /// **'One special character'**
+  String get passwordRequirementSpecial;
 
   /// Generic signup error message
   ///
@@ -7059,11 +7455,53 @@ abstract class AppLocalizations {
   /// **'Share this code. Anyone who enters it joins your household.'**
   String get authOnboardingInviteBody;
 
-  /// CTA leaving onboarding for the hub
+  /// CTA from the invite stage to the final orientation
   ///
   /// In en, this message translates to:
-  /// **'Go to your board'**
+  /// **'Continue'**
   String get authOnboardingGoToBoard;
+
+  /// Final onboarding orientation title
+  ///
+  /// In en, this message translates to:
+  /// **'Your household is ready'**
+  String get authOnboardingReadyTitle;
+
+  /// Final onboarding orientation description
+  ///
+  /// In en, this message translates to:
+  /// **'Three things to know. That’s the whole map.'**
+  String get authOnboardingReadyBody;
+
+  /// Explains the Home destination during final onboarding
+  ///
+  /// In en, this message translates to:
+  /// **'Home shows what needs attention'**
+  String get authOnboardingOrientationHome;
+
+  /// Explains feature tabs during final onboarding
+  ///
+  /// In en, this message translates to:
+  /// **'Tabs keep each part of the household in its place'**
+  String get authOnboardingOrientationTabs;
+
+  /// Explains the global add action during final onboarding
+  ///
+  /// In en, this message translates to:
+  /// **'The + button adds something from anywhere'**
+  String get authOnboardingOrientationAdd;
+
+  /// CTA entering the household after orientation
+  ///
+  /// In en, this message translates to:
+  /// **'Open {name}'**
+  String authOnboardingEnterHousehold(String name);
+
+  /// Hint shown while onboarding checks whether the account already belongs to a household
+  ///
+  /// In en, this message translates to:
+  /// **'Opening your board…'**
+  String get authOnboardingResolving;
 
   /// Hub first-run checklist heading
   ///
@@ -7364,6 +7802,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Track an expense'**
   String get hubOnboardingTrackExpense;
+
+  /// Screen-reader label for the highlighted next quick start step
+  ///
+  /// In en, this message translates to:
+  /// **'Next step: {label}'**
+  String hubQuickStartNextSemantic(String label);
+
+  /// Toast after dismissing the hub quick start, pointing at the recovery path
+  ///
+  /// In en, this message translates to:
+  /// **'Quick start put away. Bring it back anytime from Account.'**
+  String get hubQuickStartDismissedToast;
+
+  /// Account row that restores the dismissed hub quick start
+  ///
+  /// In en, this message translates to:
+  /// **'Show quick start on the hub'**
+  String get accountShowQuickStart;
+
+  /// Toast after restoring the hub quick start from the account screen
+  ///
+  /// In en, this message translates to:
+  /// **'Quick start is back on your board.'**
+  String get accountQuickStartRestored;
 
   /// Discard changes dialog title
   ///
@@ -8319,6 +8781,181 @@ abstract class AppLocalizations {
   /// **'View'**
   String get commonView;
 
+  /// No description provided for @notificationsOpenList.
+  ///
+  /// In en, this message translates to:
+  /// **'Open list'**
+  String get notificationsOpenList;
+
+  /// No description provided for @notificationsOpenChore.
+  ///
+  /// In en, this message translates to:
+  /// **'Open chore'**
+  String get notificationsOpenChore;
+
+  /// No description provided for @notificationsOpenMoney.
+  ///
+  /// In en, this message translates to:
+  /// **'Open money'**
+  String get notificationsOpenMoney;
+
+  /// No description provided for @notificationsOpenRecipes.
+  ///
+  /// In en, this message translates to:
+  /// **'Open recipes'**
+  String get notificationsOpenRecipes;
+
+  /// No description provided for @notificationsOpenHousehold.
+  ///
+  /// In en, this message translates to:
+  /// **'Open household'**
+  String get notificationsOpenHousehold;
+
+  /// No description provided for @notificationChoreDueSoonTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chore due soon'**
+  String get notificationChoreDueSoonTitle;
+
+  /// No description provided for @notificationChoreDueSoonBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{choreName} is due soon'**
+  String notificationChoreDueSoonBody(String choreName);
+
+  /// No description provided for @notificationChoreDueTodayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chore due today'**
+  String get notificationChoreDueTodayTitle;
+
+  /// No description provided for @notificationChoreDueTodayBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{choreName} is due today'**
+  String notificationChoreDueTodayBody(String choreName);
+
+  /// No description provided for @notificationListUpdatedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{listName} updated'**
+  String notificationListUpdatedTitle(String listName);
+
+  /// No description provided for @notificationListUpdatedOneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{actorName} added {itemName} to {listName} in {groupName}.'**
+  String notificationListUpdatedOneBody(
+      String actorName, String itemName, String listName, String groupName);
+
+  /// No description provided for @notificationListUpdatedManyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{actorName} added {count} items to {listName} in {groupName}.'**
+  String notificationListUpdatedManyBody(
+      String actorName, num count, String listName, String groupName);
+
+  /// No description provided for @notificationExpenseCreatedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Expense added'**
+  String get notificationExpenseCreatedTitle;
+
+  /// No description provided for @notificationExpenseCreatedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{actorName} added {expenseName} in {groupName}.'**
+  String notificationExpenseCreatedBody(
+      String actorName, String expenseName, String groupName);
+
+  /// No description provided for @notificationRecurringExpenseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recurring expense added'**
+  String get notificationRecurringExpenseTitle;
+
+  /// No description provided for @notificationRecurringExpenseBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{expenseName} was added.'**
+  String notificationRecurringExpenseBody(String expenseName);
+
+  /// No description provided for @notificationSettlementRequestTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Settlement to confirm'**
+  String get notificationSettlementRequestTitle;
+
+  /// No description provided for @notificationSettlementPaidYouBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{actorName} says they paid you {amount} in {groupName}. Confirm to update balances.'**
+  String notificationSettlementPaidYouBody(
+      String actorName, String amount, String groupName);
+
+  /// No description provided for @notificationSettlementYouPaidBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{actorName} says you paid them {amount} in {groupName}. Confirm to update balances.'**
+  String notificationSettlementYouPaidBody(
+      String actorName, String amount, String groupName);
+
+  /// No description provided for @notificationSettlementConfirmedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Settlement confirmed'**
+  String get notificationSettlementConfirmedTitle;
+
+  /// No description provided for @notificationSettlementConfirmedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{actorName} confirmed your settlement of {amount} in {groupName}.'**
+  String notificationSettlementConfirmedBody(
+      String actorName, String amount, String groupName);
+
+  /// No description provided for @notificationSettlementDeclinedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Settlement declined'**
+  String get notificationSettlementDeclinedTitle;
+
+  /// No description provided for @notificationSettlementDeclinedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{actorName} declined your settlement of {amount} in {groupName}.'**
+  String notificationSettlementDeclinedBody(
+      String actorName, String amount, String groupName);
+
+  /// No description provided for @notificationMealPlanTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Meal plan updated'**
+  String get notificationMealPlanTitle;
+
+  /// No description provided for @notificationMealPlanBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{actorName} updated the meal plan in {groupName}.'**
+  String notificationMealPlanBody(String actorName, String groupName);
+
+  /// No description provided for @notificationWeeklyDigestTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly summary'**
+  String get notificationWeeklyDigestTitle;
+
+  /// No description provided for @notificationWeeklyDigestBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No household activity this week} =1{Your household had 1 activity this week} other{Your household had {count} activities this week}}'**
+  String notificationWeeklyDigestBody(num count);
+
+  /// No description provided for @notificationPinwallReminderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder'**
+  String get notificationPinwallReminderTitle;
+
   /// Generic photo label
   ///
   /// In en, this message translates to:
@@ -8667,6 +9304,24 @@ abstract class AppLocalizations {
   /// **'{days}d ago'**
   String runningLowDaysAgo(num days);
 
+  /// Reason shown when a household suggestion is due based on purchase cadence
+  ///
+  /// In en, this message translates to:
+  /// **'Due again'**
+  String get restockReasonDue;
+
+  /// Reason shown when a household suggestion is a familiar recurring purchase
+  ///
+  /// In en, this message translates to:
+  /// **'Usual buy'**
+  String get restockReasonUsual;
+
+  /// Reason shown when a household suggestion commonly occurs with current list items
+  ///
+  /// In en, this message translates to:
+  /// **'Goes with this list'**
+  String get restockReasonGoesWith;
+
   /// Household settings storage section title
   ///
   /// In en, this message translates to:
@@ -8942,6 +9597,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Finish in your browser, then come back — premium activates automatically.'**
   String get billingReturnHint;
+
+  /// Loading label while a native in-app purchase is being confirmed
+  ///
+  /// In en, this message translates to:
+  /// **'Processing your purchase...'**
+  String get billingProcessing;
+
+  /// Button that restores a previous in-app purchase (iOS/Android)
+  ///
+  /// In en, this message translates to:
+  /// **'Restore purchases'**
+  String get billingRestore;
+
+  /// Auto-renewal and cancellation disclosure on the native-store paywall
+  ///
+  /// In en, this message translates to:
+  /// **'Payment is charged to your store account. The subscription renews automatically unless canceled at least 24 hours before the current period ends. Manage or cancel it in your App Store or Google Play account.'**
+  String get billingAutoRenewDisclosure;
+
+  /// Confirmation toast after a successful in-app purchase
+  ///
+  /// In en, this message translates to:
+  /// **'Premium is active. Thanks!'**
+  String get billingPurchased;
 
   /// Title of the billing card on the account screen
   ///

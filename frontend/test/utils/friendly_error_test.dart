@@ -4,7 +4,10 @@ import 'package:mitlist/l10n/app_localizations_en.dart';
 import 'package:mitlist/services/api_error_mapper.dart';
 import 'package:mitlist/utils/friendly_error.dart';
 
-DioException _dioError({int? statusCode, Object? data, DioExceptionType type = DioExceptionType.badResponse}) {
+DioException _dioError(
+    {int? statusCode,
+    Object? data,
+    DioExceptionType type = DioExceptionType.badResponse}) {
   final options = RequestOptions(path: '/groups/join');
   return DioException(
     requestOptions: options,
@@ -31,7 +34,10 @@ void main() {
     test('surfaces conflict detail like already-a-member', () {
       final dio = _dioError(
         statusCode: 409,
-        data: {'error': 'conflict', 'message': 'already a member of this group'},
+        data: {
+          'error': 'conflict',
+          'message': 'already a member of this group'
+        },
       );
       final err = apiException(dio);
       expect(friendlyErrorMessage(err, l10n), 'Already a member of this group');
@@ -54,7 +60,8 @@ void main() {
 
     test('plain ApiException without cause falls back to generic', () {
       expect(
-        friendlyErrorMessage(const ApiException('Unexpected response format'), l10n),
+        friendlyErrorMessage(
+            const ApiException('Unexpected response format'), l10n),
         l10n.errorGenericRetry,
       );
     });
@@ -62,8 +69,10 @@ void main() {
 
   group('friendlyErrorMessage with raw DioException', () {
     test('maps statuses to localized copy', () {
-      expect(friendlyErrorMessage(_dioError(statusCode: 404), l10n), l10n.errorNotFound);
-      expect(friendlyErrorMessage(_dioError(statusCode: 403), l10n), l10n.errorNoPermission);
+      expect(friendlyErrorMessage(_dioError(statusCode: 404), l10n),
+          l10n.errorNotFound);
+      expect(friendlyErrorMessage(_dioError(statusCode: 403), l10n),
+          l10n.errorNoPermission);
     });
   });
 }

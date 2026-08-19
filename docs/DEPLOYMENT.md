@@ -15,15 +15,18 @@ the repository root unless a step says otherwise.
       either during this release would invalidate more sessions than intended.
 - [ ] Confirm `MAX_STORAGE_PER_GROUP_GB=1` and
       `MAX_FILE_SIZE_BYTES=10485760` for official hosting.
+- [ ] Confirm `FIREBASE_APP_CHECK_REQUIRED=true` for the official API and
+      that `FIREBASE_PROJECT_NUMBER` identifies the same Firebase project used
+      by the released mobile clients. The
+      official service must reject missing or invalid App Check tokens.
 - [ ] Confirm the database can accommodate the API pool. One API process opens
       at most 20 PostgreSQL connections today.
 - [ ] Build an immutable backend image from the release commit; do not deploy a
       moving `latest` tag without also recording its digest.
 
-Existing refresh tokens were stored in Redis and cannot be migrated. Users
-will need to sign in again after this release. Existing access tokens remain
-valid only until their configured expiry; new deployments default to 15
-minutes.
+Refresh sessions are PostgreSQL-backed. Keep `SECRET_KEY` and
+`SESSION_SECRET_KEY` stable during a normal deploy so existing sessions remain
+valid.
 
 ## 2. Database preflight
 
@@ -34,16 +37,12 @@ cd backend
 DATABASE_URL="$DATABASE_URL" go run ./cmd/migrate version
 ```
 
-The expected pre-release version is `33`, clean. Version 33 is pinwall
-positioning. Migration 34 adds attachment quota accounting; migration 35 adds
-PostgreSQL refresh sessions; migration 36 adds settlement approval; migrations
-37 and 38 add household premium billing.
-
-Migration 37 only creates new tables (`billing_subscriptions`,
-`billing_webhook_events`) and touches nothing existing, and migration 38 only
-adds a nullable `primary_group_id` column to the first of those, so the
-currently deployed backend keeps running against a database that has them
-applied. Billing stays dormant until `POLAR_ACCESS_TOKEN` is set.
+The release artifact and database must agree on their migration head. This
+checkout's head is `54`. Migrations 39–47 harden authentication and push-device
+ownership; 48–51 add reminder delivery state, notification group scoping and
+list notification batching; 52 adds authenticated request replay protection;
+53 deduplicates scheduled notification retries; 54 adds recoverable guest
+account locking and retirement timestamps.
 
 If the database reports `dirty: true`, stop. Take a backup and inspect the
 failed migration before using `force`; never force a production version merely
@@ -56,11 +55,14 @@ DATABASE_URL="$DATABASE_URL" go run ./cmd/migrate up
 DATABASE_URL="$DATABASE_URL" go run ./cmd/migrate version
 ```
 
-- [ ] The resulting version is `38`, `dirty: false`.
+- [ ] The resulting version is `54`, `dirty: false`.
 - [ ] `groups.storage_used_bytes` and `groups.storage_reserved_bytes` exist.
 - [ ] `auth_sessions` exists.
 - [ ] `billing_subscriptions` and `billing_webhook_events` exist.
 - [ ] `billing_subscriptions.primary_group_id` exists and is nullable.
+- [ ] `request_idempotency` exists.
+- [ ] `idx_notifications_scheduled_dedupe` exists.
+- [ ] `users.guest_last_seen_at` and `users.guest_locked_at` exist.
 
 ## 3. Cut over the API
 
@@ -69,9 +71,62 @@ DATABASE_URL="$DATABASE_URL" go run ./cmd/migrate version
       runtime configuration. They are no longer read.
 - [ ] Start one API replica first.
 - [ ] Confirm startup logs show a successful database connection and migration
-      version 38, with no panic or repeated connection retries.
+      version 54, with no panic or repeated connection retries.
 - [ ] Keep coarse IP abuse protection enabled at the edge. Fine-grained API
       rate-limit buckets are process-local, so replicas do not share them.
+
+### Guest sign-up attestation
+
+The guest endpoint is the only unauthenticated, abuse-sensitive route, and the
+proof it demands depends on the platform:
+
+- **Mobile** presents a Firebase App Check token (Play Integrity / App Attest).
+- **Web** presents a Cloudflare Turnstile token. App Check's only web provider
+  is reCAPTCHA Enterprise, which would add a GCP billing dependency to protect
+  one endpoint, so the browser solves an invisible Turnstile challenge instead.
+
+The API accepts either, and rejects a caller that presents neither while App
+Check is enforced. Turnstile needs one runtime variable:
+
+```dotenv
+TURNSTILE_SECRET_KEY=0x...
+```
+
+Leave it unset and web guests are unattested — the correct default for a
+self-hosted instance, and not acceptable for the official service.
+
+#### App Check enforcement (mobile)
+
+The official hosted service runs with Firebase App Check required. Configure
+the API runtime before admitting traffic:
+
+```dotenv
+ENVIRONMENT=production
+FIREBASE_PROJECT_ID=your-firebase-project
+FIREBASE_PROJECT_NUMBER=123456789012
+FIREBASE_APP_CHECK_REQUIRED=true
+FIREBASE_APP_CHECK_ALLOWED_APP_IDS=1:...:android:...,1:...:ios:...
+# Required separately only when FCM push is enabled:
+FIREBASE_SERVICE_ACCOUNT_JSON={...}
+```
+
+The Firebase project must contain the exact Android (`me.mitlist`) and iOS
+(`me.mitlist`) apps shipped by the beta/production workflows. Android release
+builds use Play Integrity, iOS release builds use App Attest, and the
+web app is not registered with an App Check provider at all — it uses
+Turnstile, above. Do not put a
+Firebase App Check debug token in a production secret or artifact. If the
+project number, or required flag is absent, stop the cutover — a
+hosted API must not silently accept unauthenticated mobile traffic.
+For the official service, populate `FIREBASE_APP_CHECK_ALLOWED_APP_IDS` with
+the exact Android and iOS App IDs from Firebase Console; the web App ID no
+longer belongs there, because web builds ship no App Check provider. The API refuses
+to start with App Check required and an empty allowlist.
+
+Self-hosted instances are intentionally opt-in: `FIREBASE_APP_CHECK_REQUIRED`
+defaults to `false` in `backend/.env.example`. Operators enabling it must use
+their own Firebase project and register their own application IDs; they should
+build a matching client with `--dart-define=APP_CHECK_ENABLED=true`.
 
 The production Compose profile accepts a complete `DATABASE_URL` from the root
 `.env`. When it is present, it overrides the bundled Postgres URL:
@@ -90,8 +145,8 @@ go run ./cmd/smoke -base-url https://your-api.example.com
 ```
 
 Then run the disposable full journey. This performs one real tiny object upload,
-removes the object, list, and household, and soft-deletes the account through
-the normal product endpoint afterward:
+removes the object, list, and household, and deletes/anonymizes the account
+through the normal product endpoint afterward:
 
 ```bash
 go run ./cmd/smoke \
@@ -121,19 +176,21 @@ The application, tests, CI, and Compose stack no longer require Redis.
 
 ## Rollback
 
-Migrations 34 and 35 are additive, so prefer an application rollback without
-rolling the database down. The previous backend image still requires its Redis
-service; restoring that image therefore also requires temporarily restoring its
-matching Redis configuration.
+Prefer an application rollback without rolling the database down. Before
+rollback, verify that the previous image tolerates schema version 54; migrations
+40, 45, and 47 include destructive security cleanup and cannot be reversed into
+the deleted credentials or duplicate device ownership records.
 
 If the full smoke fails before normal traffic:
 
 1. Remove the new API replica from traffic.
 2. Capture its logs and the smoke command's failing step.
 3. Restore the previous image and its matching runtime services.
-4. Leave migrations 34 and 35 in place unless they are proven to be the cause.
+4. Leave migrations in place unless a tested rollback procedure proves one is
+   the cause and its down migration is data-safe.
 5. Re-run the previous release's health checks.
 
 Do not run `migrate down` as a routine rollback. Dropping `auth_sessions` logs
-out every session created by the new release, and reversing storage accounting
-without reconciling attachment rows can make quota data misleading.
+out every session created by the new release; dropping idempotency state can
+allow queued mutations to execute twice; reversing storage accounting without
+reconciling attachment rows can make quota data misleading.

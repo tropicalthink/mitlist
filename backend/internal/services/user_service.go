@@ -7,6 +7,8 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -22,11 +24,26 @@ import (
 
 // UserService provides business logic for user authentication and management.
 type UserService struct {
-	userRepo repositories.UserRepo
-	authRepo repositories.AuthRepo
-	jwt      JWTService
-	password PasswordService
-	mail     MailService
+	userRepo    repositories.UserRepo
+	authRepo    repositories.AuthRepo
+	jwt         JWTService
+	password    PasswordService
+	mail        MailService
+	frontendURL string
+}
+
+// SetFrontendURL adds a clickable signup/recovery link to email messages while
+// retaining the short code for clients that cannot open app links.
+func (s *UserService) SetFrontendURL(frontendURL string) {
+	s.frontendURL = strings.TrimRight(frontendURL, "/")
+}
+
+func verificationMessage(raw, frontendURL string) string {
+	message := "Your email verification code is: " + raw
+	if frontendURL != "" {
+		message += "\n\nOpen " + frontendURL + "/signup?verification_token=" + url.QueryEscape(raw)
+	}
+	return message
 }
 
 // A fixed bcrypt hash ensures unknown-email logins perform the same expensive
@@ -110,7 +127,13 @@ func (s *UserService) Register(ctx context.Context, input RegisterInput) (*model
 	if err := s.authRepo.CreateUnverifiedUser(ctx, user, tokenHash, expiresAt); err != nil {
 		return nil, err
 	}
-	if err := s.mail.Send(user.Email, "Verify your mitlist account", fmt.Sprintf("Your email verification code is: %s", rawToken), false); err != nil {
+	if err := s.mail.Send(user.Email, "Verify your mitlist account", verificationMessage(rawToken, s.frontendURL), false); err != nil {
+		// Deliberately not fatal. The account is already persisted above, so
+		// failing here told the caller registration failed while leaving a real
+		// pending account behind — and the retry then looked like a duplicate.
+		// Registration answers 202 either way; the caller recovers through
+		// verify-email/resend, which the register handler already routes a
+		// repeat attempt into.
 		log.Error().Err(err).Str("user_id", user.ID.String()).Msg("registration verification delivery failed")
 	}
 
@@ -118,11 +141,17 @@ func (s *UserService) Register(ctx context.Context, input RegisterInput) (*model
 }
 
 func newEmailVerificationToken() (raw, hash string, expiresAt time.Time, err error) {
-	tokenBytes := make([]byte, 32)
-	if _, err = rand.Read(tokenBytes); err != nil {
-		return "", "", time.Time{}, err
+	const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+	const tokenLength = 8
+	rawBytes := make([]byte, tokenLength)
+	for i := range rawBytes {
+		var n [1]byte
+		if _, err = rand.Read(n[:]); err != nil {
+			return "", "", time.Time{}, err
+		}
+		rawBytes[i] = alphabet[int(n[0])%len(alphabet)]
 	}
-	raw = hex.EncodeToString(tokenBytes)
+	raw = string(rawBytes)
 	return raw, resetTokenHash(raw), time.Now().UTC().Add(30 * time.Minute), nil
 }
 
@@ -157,8 +186,13 @@ func (s *UserService) ResendEmailVerification(ctx context.Context, email string)
 	if err = s.authRepo.CreateEmailVerification(ctx, user.ID, hash, expiresAt); err != nil {
 		return err
 	}
-	if err = s.mail.Send(user.Email, "Verify your mitlist account", fmt.Sprintf("Your email verification code is: %s", raw), false); err != nil {
-		return fmt.Errorf("send verification email: %w", err)
+	if err = s.mail.Send(user.Email, "Verify your mitlist account", verificationMessage(raw, s.frontendURL), false); err != nil {
+		// Same reasoning as Register, plus an enumeration one: this call only
+		// reaches a send for an address that exists and is unverified, so
+		// surfacing the failure would answer 500 for real addresses and nil for
+		// unknown ones — the account-existence signal this function promises
+		// not to give.
+		log.Error().Err(err).Str("user_id", user.ID.String()).Msg("verification resend delivery failed")
 	}
 	return nil
 }
@@ -219,11 +253,43 @@ func (s *UserService) GetMe(ctx context.Context, userID uuid.UUID) (*models.User
 	if !user.IsActive {
 		return nil, &api.ValidationError{Message: "account is inactive"}
 	}
-	if !user.IsVerified {
+	if user.IsGuest {
+		// Activity is deliberately refreshed only after the account has passed
+		// the active checks above. A stale token cannot revive a locked guest.
+		if err := s.userRepo.TouchGuestActivity(ctx, userID); err != nil {
+			return nil, err
+		}
+	}
+	// A guest that has supplied an email but has not completed verification may
+	// continue the guest session long enough to enter the emailed code. It does
+	// not receive a normal account session until verification consumes the code.
+	if !user.IsVerified && !user.IsGuest {
 		return nil, &api.ValidationError{Message: "account is not verified"}
 	}
 
 	return user, nil
+}
+
+// ReactivateGuestForRefresh unlocks an inactive guest after the JWT layer has
+// confirmed possession of a live, unrevoked refresh session. The refresh
+// endpoint calls this before rotating that session, so a locked guest can
+// return without an email-based account-recovery flow while an expired guest
+// remains permanently unavailable after cleanup.
+func (s *UserService) ReactivateGuestForRefresh(ctx context.Context, userID uuid.UUID) error {
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if !user.IsGuest {
+		if !user.IsActive {
+			return &api.ValidationError{Message: "account is inactive"}
+		}
+		return nil
+	}
+	if user.IsActive {
+		return nil
+	}
+	return s.userRepo.ReactivateGuest(ctx, userID)
 }
 
 // UpdateMeInput holds optional fields for updating the current user.
@@ -289,6 +355,11 @@ func (s *UserService) DeleteMe(ctx context.Context, userID uuid.UUID) error {
 	if !user.IsVerified {
 		return &api.ValidationError{Message: "account is not verified"}
 	}
+	if s.jwt != nil {
+		if err := s.jwt.RevokeUserSessions(userID); err != nil {
+			return err
+		}
+	}
 	if err := s.userRepo.SoftDelete(ctx, userID); err != nil {
 		return err
 	}
@@ -341,23 +412,26 @@ func (s *UserService) RequestPasswordReset(ctx context.Context, email string) er
 		return nil
 	}
 
-	tokenBytes := make([]byte, 32)
-	if _, err := rand.Read(tokenBytes); err != nil {
+	tokenStr, tokenHash, expiresAt, err := newEmailVerificationToken()
+	if err != nil {
 		return err
 	}
-	tokenStr := hex.EncodeToString(tokenBytes)
 
 	resetToken := &models.PasswordResetToken{
 		UserID:    user.ID,
-		Token:     resetTokenHash(tokenStr),
-		ExpiresAt: time.Now().UTC().Add(24 * time.Hour),
+		Token:     tokenHash,
+		ExpiresAt: expiresAt,
 	}
 
 	if err := s.authRepo.CreatePasswordResetToken(ctx, resetToken); err != nil {
 		return err
 	}
 
-	if err := s.mail.Send(user.Email, "Password Reset", fmt.Sprintf("Your password reset code is: %s", tokenStr), false); err != nil {
+	resetMessage := "Your password reset code is: " + tokenStr
+	if s.frontendURL != "" {
+		resetMessage += "\n\nOpen " + s.frontendURL + "/reset-password?token=" + url.QueryEscape(tokenStr)
+	}
+	if err := s.mail.Send(user.Email, "Password Reset", resetMessage, false); err != nil {
 		return fmt.Errorf("send password reset email: %w", err)
 	}
 	return nil
@@ -380,7 +454,7 @@ func (s *UserService) ConfirmPasswordReset(ctx context.Context, token, newPasswo
 }
 
 func resetTokenHash(token string) string {
-	digest := sha256.Sum256([]byte(token))
+	digest := sha256.Sum256([]byte(strings.ToUpper(strings.TrimSpace(token))))
 	return hex.EncodeToString(digest[:])
 }
 
@@ -414,6 +488,12 @@ func (s *UserService) ClaimAccount(ctx context.Context, userID uuid.UUID, input 
 		}
 		return nil, err
 	}
+	if user.IsGuest {
+		return nil, &api.ValidationError{Message: "guest accounts must be converted and email-verified before claiming"}
+	}
+	if !user.IsVerified {
+		return nil, &api.ValidationError{Message: "email verification is required before claiming this account"}
+	}
 	if user.IsActive && user.IsVerified && user.PasswordHash != "" && !user.IsGuest {
 		return nil, &api.ConflictError{Message: "account already claimed"}
 	}
@@ -427,6 +507,9 @@ func (s *UserService) ClaimAccount(ctx context.Context, userID uuid.UUID, input 
 	user.FirstName = input.FirstName
 	user.LastName = input.LastName
 	user.IsActive = true
+	// Claiming never proves ownership of an email address. Verification must
+	// have happened through the one-time email credential before this method is
+	// allowed to set a password.
 	user.IsVerified = true
 	user.IsGuest = false
 
@@ -449,6 +532,16 @@ func (s *UserService) CreatePushSubscription(ctx context.Context, sub *models.Pu
 	}
 	if sub.Endpoint == "" || sub.P256dh == "" || sub.Auth == "" {
 		return &api.ValidationError{Message: "endpoint, p256dh, and auth are required"}
+	}
+	// Browser-provided key material is short base64url data. Bound each field
+	// before it reaches storage so a malicious registration cannot consume
+	// oversized rows or memory in downstream push code.
+	const maxPushKeyLength = 512
+	if len(sub.P256dh) > maxPushKeyLength {
+		return &api.ValidationError{Field: "p256dh", Message: "p256dh exceeds maximum length of 512 bytes"}
+	}
+	if len(sub.Auth) > maxPushKeyLength {
+		return &api.ValidationError{Field: "auth", Message: "auth exceeds maximum length of 512 bytes"}
 	}
 	if err := pushvalidate.ValidatePushEndpoint(sub.Endpoint); err != nil {
 		return err
@@ -496,11 +589,18 @@ func (s *UserService) DeletePushSubscription(ctx context.Context, userID, subID 
 
 // SaveDeviceToken upserts an FCM device token for the current user.
 func (s *UserService) SaveDeviceToken(ctx context.Context, userID uuid.UUID, platform, token string) (*models.DeviceToken, error) {
+	if userID == uuid.Nil {
+		return nil, &api.ValidationError{Field: "user_id", Message: "user_id is required"}
+	}
 	if platform != "android" && platform != "ios" {
 		return nil, &api.ValidationError{Field: "platform", Message: "platform must be android or ios"}
 	}
 	if token == "" {
 		return nil, &api.ValidationError{Field: "token", Message: "token is required"}
+	}
+	const maxDeviceTokenLength = 4096
+	if len(token) > maxDeviceTokenLength {
+		return nil, &api.ValidationError{Field: "token", Message: "token exceeds maximum length of 4096 bytes"}
 	}
 	return s.authRepo.SaveDeviceToken(ctx, userID, platform, token)
 }

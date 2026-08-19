@@ -20,6 +20,8 @@ class ListItemRowReactive extends ConsumerWidget {
     this.claimedLabel,
     this.onPhotoTap,
     this.reorderIndex,
+    this.shoppingVisual = false,
+    this.groceryCategory,
   });
 
   final ListItem item;
@@ -31,6 +33,8 @@ class ListItemRowReactive extends ConsumerWidget {
   final VoidCallback? onPhotoTap;
   final VoidCallback onLongPress;
   final int? reorderIndex;
+  final bool shoppingVisual;
+  final String? groceryCategory;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -46,6 +50,8 @@ class ListItemRowReactive extends ConsumerWidget {
       onLongPress: onLongPress,
       reorderIndex: reorderIndex,
       failedToSync: failedToSync,
+      shoppingVisual: shoppingVisual,
+      groceryCategory: groceryCategory,
     );
   }
 }

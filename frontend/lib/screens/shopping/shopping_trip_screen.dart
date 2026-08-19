@@ -18,11 +18,9 @@ import '../../theme/animations.dart';
 import '../../theme/shadows.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
-import '../../theme/theme.dart';
 import '../../utils/active_group_context.dart';
 import '../../utils/friendly_error.dart';
 import '../../utils/latest_request_guard.dart';
-import '../../widgets/animated_check_toggle.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_icon.dart';
@@ -31,6 +29,7 @@ import '../../widgets/mitlist_app_bar.dart';
 import '../../widgets/odometer.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/store_picker_sheet.dart';
+import '../../widgets/shopping/shopping_trip_item_card.dart';
 
 /// An item's aisle for the selected store: a display name plus its shopping-path
 /// sort order (lower = earlier in the store).
@@ -71,6 +70,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
   /// chosen (the trip then groups by list). Recomputed when items or store
   /// change.
   Map<String, _ItemAisle> _aisleByItemId = {};
+  Map<String, String> _categoryByCanonicalId = {};
   String? _groupId;
 
   @override
@@ -100,6 +100,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
         setState(() {
           _lists.clear();
           _itemsByList.clear();
+          _categoryByCanonicalId = {};
           _hasHousehold = false;
           _isLoading = false;
         });
@@ -118,6 +119,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
         setState(() {
           _lists.clear();
           _itemsByList.clear();
+          _categoryByCanonicalId = {};
           _hasHousehold = true;
           _isLoading = false;
         });
@@ -150,9 +152,23 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
         _lists.addAll(shoppingLists);
         _itemsByList.clear();
         _itemsByList.addAll(itemsByList);
+        final activeCanonicalIds = {
+          for (final items in itemsByList.values)
+            for (final item in items)
+              if (item.canonicalItemId != null) item.canonicalItemId!,
+        };
+        _categoryByCanonicalId.removeWhere(
+          (id, _) => !activeCanonicalIds.contains(id),
+        );
         _hasHousehold = true;
         _isLoading = false;
       });
+      unawaited(
+        _loadCategories(
+          itemsByList.values.expand((items) => items),
+          request,
+        ),
+      );
       unawaited(_recomputeAisles());
     } catch (e) {
       if (!mounted || !_loadGuard.isCurrent(request)) return;
@@ -178,6 +194,37 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
     } catch (_) {
       return null;
     }
+  }
+
+  Future<void> _loadCategories(
+    Iterable<ListItem> items,
+    int loadRequest,
+  ) async {
+    final ids = items
+        .map((item) => item.canonicalItemId)
+        .whereType<String>()
+        .where((id) => !_categoryByCanonicalId.containsKey(id))
+        .toSet();
+    if (ids.isEmpty) return;
+    try {
+      await ref.read(grocerySeedProvider.future);
+      if (!mounted || !_loadGuard.isCurrent(loadRequest)) return;
+      final groceryRepo = await ref.read(groceryRepositoryProvider.future);
+      final categories = await groceryRepo.getCanonicalCategories(ids);
+      if (!mounted ||
+          !_loadGuard.isCurrent(loadRequest) ||
+          categories.isEmpty) {
+        return;
+      }
+      setState(() => _categoryByCanonicalId.addAll(categories));
+    } catch (_) {
+      // Category color is optional decoration; trip actions remain available.
+    }
+  }
+
+  String? _categoryFor(ListItem item) {
+    final canonicalId = item.canonicalItemId;
+    return canonicalId == null ? null : _categoryByCanonicalId[canonicalId];
   }
 
   /// Resolves each open item to an aisle for the selected store so the trip can
@@ -500,6 +547,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
             listName: listName,
             items: items,
             checkedIds: _checkedItemIds,
+            categoryFor: _categoryFor,
             onToggle: _toggleItem,
             onTapList: () => context
                 .pushNamed('listDetail', pathParameters: {'listId': listId}),
@@ -532,34 +580,45 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
       itemCount: groups.length + 1,
       itemBuilder: (context, index) {
         if (index == 0) {
-          return InkWell(
-            onTap: () => showStorePicker(context),
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
-              child: Row(
-                children: [
-                  AppIcon(
-                      name: 'shoppingCart',
-                      size: 16,
-                      color: colorScheme.primary),
-                  const SizedBox(width: MitlistSpacing.xs),
-                  Expanded(
-                    child: Text(
-                      storeName == null
-                          ? l10n.shoppingTripSortedByAisles
-                          : l10n.shoppingTripSortedByStoreAisles(storeName),
-                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                    ),
-                  ),
-                  Text(
-                    l10n.commonChange,
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          color: colorScheme.primary,
+          return Padding(
+            padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
+            child: Semantics(
+              button: true,
+              label: l10n.shoppingTripChooseStore,
+              child: InkWell(
+                onTap: () => showStorePicker(context),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 44),
+                  child: Row(
+                    children: [
+                      AppIcon(
+                        name: 'shoppingCart',
+                        size: 18,
+                        color: colorScheme.primary,
+                      ),
+                      const SizedBox(width: MitlistSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          storeName == null
+                              ? l10n.shoppingTripSortedByAisles
+                              : l10n.shoppingTripSortedByStoreAisles(storeName),
+                          style:
+                              Theme.of(context).textTheme.labelMedium?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
                         ),
+                      ),
+                      Text(
+                        l10n.commonChange,
+                        style:
+                            Theme.of(context).textTheme.labelMedium?.copyWith(
+                                  color: colorScheme.primary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           );
@@ -569,6 +628,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
           aisle: group.aisle,
           items: group.items,
           checkedIds: _checkedItemIds,
+          categoryFor: _categoryFor,
           onToggle: _toggleItem,
         );
       },
@@ -748,6 +808,7 @@ class _ListSection extends StatelessWidget {
   final String listName;
   final List<ListItem> items;
   final Set<String> checkedIds;
+  final String? Function(ListItem) categoryFor;
   final ValueChanged<String> onToggle;
   final VoidCallback onTapList;
 
@@ -756,6 +817,7 @@ class _ListSection extends StatelessWidget {
     required this.listName,
     required this.items,
     required this.checkedIds,
+    required this.categoryFor,
     required this.onToggle,
     required this.onTapList,
   });
@@ -765,63 +827,69 @@ class _ListSection extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
-      child: AppCard(
-        variant: AppCardVariant.outlined,
-        padding: AppCardPadding.md,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            InkWell(
+      padding: const EdgeInsets.only(bottom: MitlistSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Semantics(
+            button: true,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
               onTap: onTapList,
-              borderRadius: BorderRadius.circular(MitlistTheme.radiusSm),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      listName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 44),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        listName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
-                  ),
-                  const AppIcon(name: 'chevronRight', size: 16),
-                ],
+                    const AppIcon(name: 'chevronRight', size: 18),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: MitlistSpacing.sm),
-            Divider(color: Theme.of(context).colorScheme.outlineVariant),
-            const SizedBox(height: MitlistSpacing.sm),
-            ...items.map((item) {
-              final isChecked = checkedIds.contains(item.id);
-              return _ItemRow(
+          ),
+          const SizedBox(height: MitlistSpacing.xs),
+          ...items.map((item) {
+            final isChecked = checkedIds.contains(item.id);
+            return Padding(
+              padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
+              child: ShoppingTripItemCard(
                 key: ValueKey(item.id),
                 item: item,
                 isChecked: isChecked,
+                groceryCategory: categoryFor(item),
                 onToggle: () => onToggle(item.id),
-              );
-            }),
-          ],
-        ),
+              ),
+            );
+          }),
+        ],
       ),
     );
   }
 }
 
-/// A store-aisle section in shopping mode: an aisle title over its items, with
-/// no list affordance (items may span several lists).
+/// A store-aisle section in shopping mode: a strong wayfinding heading over
+/// large one-handed item targets. Items may span several source lists.
 class _AisleSection extends StatelessWidget {
   final String aisle;
   final List<ListItem> items;
   final Set<String> checkedIds;
+  final String? Function(ListItem) categoryFor;
   final ValueChanged<String> onToggle;
 
   const _AisleSection({
     required this.aisle,
     required this.items,
     required this.checkedIds,
+    required this.categoryFor,
     required this.onToggle,
   });
 
@@ -829,220 +897,50 @@ class _AisleSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     return Padding(
-      padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
-      child: AppCard(
-        variant: AppCardVariant.outlined,
-        padding: AppCardPadding.md,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      padding: const EdgeInsets.only(bottom: MitlistSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 44),
+            child: Row(
               children: [
                 AppIcon(
                   name: 'tagOutline',
-                  size: 16,
+                  size: 18,
                   color: Theme.of(context).colorScheme.primary,
                 ),
-                const SizedBox(width: MitlistSpacing.xs),
+                const SizedBox(width: MitlistSpacing.sm),
                 Expanded(
                   child: Text(
                     aisle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
+                    style: textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: MitlistSpacing.sm),
-            Divider(color: Theme.of(context).colorScheme.outlineVariant),
-            const SizedBox(height: MitlistSpacing.sm),
-            ...items.map((item) {
-              return _ItemRow(
+          ),
+          const SizedBox(height: MitlistSpacing.xs),
+          ...items.map((item) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
+              child: ShoppingTripItemCard(
                 key: ValueKey(item.id),
                 item: item,
                 isChecked: checkedIds.contains(item.id),
+                groceryCategory: categoryFor(item),
                 onToggle: () => onToggle(item.id),
-              );
-            }),
-          ],
-        ),
+              ),
+            );
+          }),
+        ],
       ),
     );
   }
-}
-
-class _ItemRow extends StatefulWidget {
-  final ListItem item;
-  final bool isChecked;
-  final VoidCallback onToggle;
-
-  const _ItemRow({
-    super.key,
-    required this.item,
-    required this.isChecked,
-    required this.onToggle,
-  });
-
-  @override
-  State<_ItemRow> createState() => _ItemRowState();
-}
-
-class _ItemRowState extends State<_ItemRow>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: MitlistAnimations.checkToggle,
-      value: widget.isChecked ? 1.0 : 0.0,
-    );
-  }
-
-  @override
-  void didUpdateWidget(_ItemRow oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.isChecked != oldWidget.isChecked) {
-      if (widget.isChecked) {
-        _controller.forward();
-      } else {
-        _controller.reverse();
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-    final disableAnimations = MediaQuery.of(context).disableAnimations;
-
-    final qtyText = widget.item.quantity > 0
-        ? '${widget.item.quantity.toStringAsFixed(widget.item.quantity == widget.item.quantity.roundToDouble() ? 0 : 1)} ${widget.item.unit}'
-        : '';
-
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, _) {
-        final t = disableAnimations
-            ? (widget.isChecked ? 1.0 : 0.0)
-            : _controller.value;
-        // A single small hop as the item lands in (or leaves) the basket;
-        // peaks mid-transition and settles flat. Never persists when checked.
-        final hop = disableAnimations ? 0.0 : -math.sin(math.pi * t) * 3.0;
-        final strikeProgress = Curves.easeOutCubic.transform(t);
-        final textColor = Color.lerp(
-          colorScheme.onSurface,
-          colorScheme.onSurfaceVariant,
-          t,
-        )!;
-
-        return Transform.translate(
-          offset: Offset(0, hop),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: colorScheme.primary.withValues(alpha: 0.06 * t),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                vertical: MitlistSpacing.xs,
-                horizontal: MitlistSpacing.xs,
-              ),
-              child: Row(
-                children: [
-                  AnimatedCheckToggle(
-                    value: widget.isChecked,
-                    onChanged: (_) => widget.onToggle(),
-                    semanticLabelOn:
-                        l10n.shoppingTripMarkNotPurchased(widget.item.name),
-                    semanticLabelOff:
-                        l10n.shoppingTripMarkPurchased(widget.item.name),
-                  ),
-                  Expanded(
-                    child: CustomPaint(
-                      foregroundPainter: _StrikePainter(
-                        progress: strikeProgress,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                      child: Text(
-                        widget.item.name,
-                        style: textTheme.bodyMedium?.copyWith(color: textColor),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
-                  Opacity(
-                    opacity: 1.0 - 0.35 * t,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (qtyText.isNotEmpty)
-                          Text(
-                            qtyText.trim(),
-                            style: MitlistTypography.labelXSmall(),
-                          ),
-                        if (widget.item.priceCents != null &&
-                            widget.item.priceCents! > 0)
-                          Padding(
-                            padding:
-                                const EdgeInsets.only(left: MitlistSpacing.sm),
-                            child: Text(
-                              '€${(widget.item.priceCents! / 100).toStringAsFixed(2)}',
-                              style: MitlistTypography.labelXSmall(),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-/// Draws an ink strike-through that grows across the label from left to right
-/// as [progress] goes 0 -> 1.
-class _StrikePainter extends CustomPainter {
-  _StrikePainter({required this.progress, required this.color});
-
-  final double progress;
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (progress <= 0) return;
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 2
-      ..strokeCap = StrokeCap.round;
-    final y = size.height / 2;
-    canvas.drawLine(
-      Offset(0, y),
-      Offset(size.width * progress.clamp(0.0, 1.0), y),
-      paint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_StrikePainter oldDelegate) =>
-      oldDelegate.progress != progress || oldDelegate.color != color;
 }
 
 /// The completion "stamp" — a rotated, hard-bordered DONE mark that thwacks

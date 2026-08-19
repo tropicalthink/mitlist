@@ -214,6 +214,56 @@ func TestGenerateAndValidate_RoundTrip(t *testing.T) {
 	}
 }
 
+func TestGuestRefreshTokenRetainsRecoveryWindow(t *testing.T) {
+	svc := newServiceWithSessions()
+	_, guestRefresh, err := svc.GenerateTokenPair(uuid.NewString(), []string{"guest"})
+	if err != nil {
+		t.Fatalf("GenerateTokenPair guest: %v", err)
+	}
+	guestClaims, err := svc.ValidateRefreshToken(guestRefresh)
+	if err != nil {
+		t.Fatalf("ValidateRefreshToken guest: %v", err)
+	}
+	guestExpiry, err := guestClaims.GetExpirationTime()
+	if err != nil || guestExpiry == nil {
+		t.Fatalf("guest refresh expiry missing: %v", err)
+	}
+	if remaining := time.Until(guestExpiry.Time); remaining < 364*24*time.Hour {
+		t.Fatalf("guest refresh remaining = %s, want at least 364 days", remaining)
+	}
+	_, rotatedGuestRefresh, err := svc.RotateRefreshToken(guestRefresh)
+	if err != nil {
+		t.Fatalf("RotateRefreshToken guest: %v", err)
+	}
+	rotatedClaims, err := svc.ValidateRefreshToken(rotatedGuestRefresh)
+	if err != nil {
+		t.Fatalf("ValidateRefreshToken rotated guest: %v", err)
+	}
+	rotatedExpiry, err := rotatedClaims.GetExpirationTime()
+	if err != nil || rotatedExpiry == nil {
+		t.Fatalf("rotated guest refresh expiry missing: %v", err)
+	}
+	if remaining := time.Until(rotatedExpiry.Time); remaining < 364*24*time.Hour {
+		t.Fatalf("rotated guest refresh remaining = %s, want at least 364 days", remaining)
+	}
+
+	_, regularRefresh, err := svc.GenerateTokenPair(uuid.NewString(), []string{"member"})
+	if err != nil {
+		t.Fatalf("GenerateTokenPair regular: %v", err)
+	}
+	regularClaims, err := svc.ValidateRefreshToken(regularRefresh)
+	if err != nil {
+		t.Fatalf("ValidateRefreshToken regular: %v", err)
+	}
+	regularExpiry, err := regularClaims.GetExpirationTime()
+	if err != nil || regularExpiry == nil {
+		t.Fatalf("regular refresh expiry missing: %v", err)
+	}
+	if remaining := time.Until(regularExpiry.Time); remaining > 8*24*time.Hour {
+		t.Fatalf("regular refresh remaining = %s, want at most 8 days", remaining)
+	}
+}
+
 func TestRevokeAccessToken(t *testing.T) {
 	svc := newServiceWithSessions()
 

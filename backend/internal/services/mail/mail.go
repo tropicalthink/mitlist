@@ -2,8 +2,11 @@ package mail
 
 import (
 	"bytes"
+	"context"
+	"encoding/json"
 	"fmt"
 	"html/template"
+	"net/http"
 	"net/smtp"
 	"strings"
 	"time"
@@ -68,11 +71,12 @@ func buildMessage(from, to, subject, body string, isHTML bool) []byte {
 	return buf.Bytes()
 }
 
-// Send dispatches an email asynchronously. Errors are logged but never returned
-// to the caller because sending happens in the background.
+// Send delivers an email before returning. Authentication flows must not report
+// that a verification or recovery message was sent when the provider rejected
+// it. A Resend API key opts into the HTTPS provider; SMTP remains available as
+// a fallback for self-hosted deployments.
 func (s *Service) Send(to, subject, body string, isHTML bool) error {
-	go s.sendAsync(to, subject, body, isHTML)
-	return nil
+	return s.send(to, subject, body, isHTML)
 }
 
 // SendTemplate renders an html/template and sends the result as an HTML email.
@@ -88,15 +92,23 @@ func (s *Service) SendTemplate(to, subject, tmplStr string, data any) error {
 	return s.Send(to, subject, buf.String(), true)
 }
 
-func (s *Service) sendAsync(to, subject, body string, isHTML bool) {
+func (s *Service) send(to, subject, body string, isHTML bool) error {
 	from := s.cfg.MailFromEmail
 	if from == "" {
 		from = "noreply@mitlist.me"
 	}
 
 	msg := buildMessage(from, to, subject, body, isHTML)
+	if s.cfg.ResendAPIKey != "" {
+		if err := s.sendViaResend(to, from, subject, body, isHTML); err == nil {
+			s.log.Info().Str("provider", "resend").Str("to", to).Msg("email sent")
+			return nil
+		} else {
+			s.log.WithError(err).Warn().Str("provider", "resend").Msg("resend send failed, trying smtp")
+		}
+	}
 
-	if err := s.sendViaSMTP(
+	sendGridErr := s.sendViaSMTP(
 		s.cfg.SendGridSMTPHost,
 		s.cfg.SendGridSMTPPort,
 		s.cfg.SendGridSMTPUser,
@@ -104,10 +116,11 @@ func (s *Service) sendAsync(to, subject, body string, isHTML bool) {
 		from,
 		[]string{to},
 		msg,
-	); err != nil {
-		s.log.WithError(err).Error().Str("provider", "sendgrid").Msg("smtp send failed, trying brevo")
+	)
+	if sendGridErr != nil {
+		s.log.WithError(sendGridErr).Error().Str("provider", "sendgrid").Msg("smtp send failed, trying brevo")
 
-		if err := s.sendViaSMTP(
+		brevoErr := s.sendViaSMTP(
 			s.cfg.BrevoSMTPHost,
 			s.cfg.BrevoSMTPPort,
 			s.cfg.BrevoSMTPUser,
@@ -115,14 +128,47 @@ func (s *Service) sendAsync(to, subject, body string, isHTML bool) {
 			from,
 			[]string{to},
 			msg,
-		); err != nil {
-			s.log.WithError(err).Error().Str("provider", "brevo").Msg("smtp fallback send failed")
+		)
+		if brevoErr != nil {
+			s.log.WithError(brevoErr).Error().Str("provider", "brevo").Msg("smtp fallback send failed")
+			return fmt.Errorf("send email via smtp providers: sendgrid: %v; brevo: %w", sendGridErr, brevoErr)
 		} else {
 			s.log.Info().Str("provider", "brevo").Str("to", to).Msg("email sent")
 		}
 	} else {
 		s.log.Info().Str("provider", "sendgrid").Str("to", to).Msg("email sent")
 	}
+	return nil
+}
+
+func (s *Service) sendViaResend(to, from, subject, body string, isHTML bool) error {
+	payload := map[string]any{"from": from, "to": []string{to}, "subject": subject}
+	if isHTML {
+		payload["html"] = body
+	} else {
+		payload["text"] = body
+	}
+	encoded, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("encode resend request: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://api.resend.com/emails", bytes.NewReader(encoded))
+	if err != nil {
+		return fmt.Errorf("create resend request: %w", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+s.cfg.ResendAPIKey)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("resend request: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("resend returned status %d", resp.StatusCode)
+	}
+	return nil
 }
 
 func (s *Service) sendViaSMTP(host string, port int, user, pass, from string, to []string, msg []byte) error {

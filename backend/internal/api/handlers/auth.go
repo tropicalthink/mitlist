@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -12,16 +13,21 @@ import (
 	"github.com/mitlist-app/mitlist/internal/middleware"
 	"github.com/mitlist-app/mitlist/internal/models"
 	"github.com/mitlist-app/mitlist/internal/services"
+	appcheckservice "github.com/mitlist-app/mitlist/internal/services/appcheck"
 	jwtservice "github.com/mitlist-app/mitlist/internal/services/jwt"
+	turnstileservice "github.com/mitlist-app/mitlist/internal/services/turnstile"
 )
 
 // AuthHandler exposes authentication and user management endpoints.
 type AuthHandler struct {
-	cfg          *config.Config
-	userService  *services.UserService
-	guestService *services.GuestService
-	oauthService *services.OAuthService
-	jwtService   *jwtservice.Service
+	cfg               *config.Config
+	userService       *services.UserService
+	guestService      *services.GuestService
+	oauthService      *services.OAuthService
+	jwtService        *jwtservice.Service
+	appCheck          *appcheckservice.Verifier
+	turnstile         *turnstileservice.Verifier
+	credentialService *services.IntegrationCredentialService
 }
 
 // NewAuthHandler creates an AuthHandler with explicit dependencies.
@@ -31,14 +37,35 @@ func NewAuthHandler(
 	guestService *services.GuestService,
 	oauthService *services.OAuthService,
 	jwtService *jwtservice.Service,
+	appCheck ...*appcheckservice.Verifier,
 ) *AuthHandler {
+	var verifier *appcheckservice.Verifier
+	if len(appCheck) > 0 {
+		verifier = appCheck[0]
+	}
 	return &AuthHandler{
 		cfg:          cfg,
 		userService:  userService,
 		guestService: guestService,
 		oauthService: oauthService,
 		jwtService:   jwtService,
+		appCheck:     verifier,
 	}
+}
+
+// SetIntegrationCredentialService enables management of non-interactive,
+// scoped credentials without weakening the type-safe constructor used by
+// tests and embedded servers.
+func (h *AuthHandler) SetIntegrationCredentialService(service *services.IntegrationCredentialService) {
+	h.credentialService = service
+}
+
+// SetTurnstileVerifier wires web attestation for guest creation. It is a
+// setter rather than a constructor argument for the same reason as the
+// credential service: the constructor is used by tests and embedded servers
+// that have no business knowing about Cloudflare.
+func (h *AuthHandler) SetTurnstileVerifier(verifier *turnstileservice.Verifier) {
+	h.turnstile = verifier
 }
 
 // RegisterRoutes mounts all auth routes under the provided router.
@@ -72,6 +99,11 @@ func (h *AuthHandler) RegisterRoutes(r chi.Router) {
 			// Device tokens (FCM — mobile push)
 			r.Post("/device-tokens", h.CreateDeviceToken)
 			r.Delete("/device-tokens/{id}", h.DeleteDeviceToken)
+
+			if h.credentialService != nil {
+				credentialHandler := NewIntegrationCredentialHandler(h.credentialService)
+				credentialHandler.RegisterRoutes(r)
+			}
 		})
 	})
 }
@@ -227,19 +259,36 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
 		return
 	}
-	user, err := h.userService.Register(r.Context(), services.RegisterInput{
+	_, err := h.userService.Register(r.Context(), services.RegisterInput{
 		Email:     req.Email,
 		Password:  req.Password,
 		FirstName: req.FirstName,
 		LastName:  req.LastName,
 	})
 	if err != nil {
+		// Do not turn registration into an account-enumeration oracle. The
+		// address may already belong to an active account, a pending account,
+		// or a deleted tombstone; callers receive the same acknowledgement.
+		if errors.Is(err, api.ErrConflict) {
+			// A previous provider failure may have left a legitimate pending
+			// registration without its code. Retry delivery without exposing
+			// whether the address exists or is already verified.
+			if resendErr := h.userService.ResendEmailVerification(r.Context(), req.Email); resendErr != nil {
+				api.RespondError(w, resendErr)
+				return
+			}
+			api.RespondJSON(w, http.StatusAccepted, map[string]any{
+				"verification_required": true,
+				"message":               "if the address can be registered, a verification code has been sent",
+			})
+			return
+		}
 		api.RespondError(w, err)
 		return
 	}
-	api.RespondJSON(w, http.StatusCreated, map[string]any{
-		"user":                  user,
+	api.RespondJSON(w, http.StatusAccepted, map[string]any{
 		"verification_required": true,
+		"message":               "if the address can be registered, a verification code has been sent",
 	})
 }
 
@@ -297,7 +346,21 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
 		return
 	}
-	access, refresh, err := h.jwtService.RotateRefreshToken(refreshCredential(r, req.RefreshToken))
+	credential := refreshCredential(r, req.RefreshToken)
+	claims, err := h.jwtService.ValidateRefreshToken(credential)
+	if err != nil {
+		api.RespondError(w, api.ErrUnauthorized)
+		return
+	}
+	// A locked guest may return only by presenting a still-valid refresh
+	// session. Normal inactive accounts are not reactivated here.
+	if userID, parseErr := uuid.Parse(claims.Subject); parseErr == nil {
+		if err := h.userService.ReactivateGuestForRefresh(r.Context(), userID); err != nil {
+			api.RespondError(w, api.ErrUnauthorized)
+			return
+		}
+	}
+	access, refresh, err := h.jwtService.RotateRefreshToken(credential)
 	if err != nil {
 		api.RespondError(w, api.ErrUnauthorized)
 		return
@@ -428,8 +491,52 @@ func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) CreateGuest(w http.ResponseWriter, r *http.Request) {
-	user, access, refresh, err := h.guestService.CreateGuest(r.Context())
+	// Attestation is deliberately enforced at the guest boundary only, and the
+	// proof depends on where the caller runs: mobile presents an App Check
+	// token (Play Integrity / App Attest), web presents a Turnstile token,
+	// because App Check's only web provider is reCAPTCHA Enterprise.
+	//
+	// Whichever proof is presented must verify. The last branch is the one
+	// that matters: if App Check is enforced and the caller sends no proof at
+	// all, that is a rejection, not an unattested guest — otherwise omitting a
+	// header would be a bypass.
+	installIdentity := ""
+	appCheckToken := r.Header.Get("X-Firebase-AppCheck")
+	appCheckOn := h.appCheck != nil && h.appCheck.Enabled()
+	turnstileOn := h.turnstile != nil && h.turnstile.Enabled()
+
+	switch {
+	case appCheckOn && appCheckToken != "":
+		claims, err := h.appCheck.Verify(r.Context(), appCheckToken)
+		if err != nil {
+			api.RespondError(w, api.ErrUnauthorized)
+			return
+		}
+		installIdentity = claims.QuotaIdentity(r.Header.Get("X-Mitlist-Install-ID"))
+	case turnstileOn:
+		result, err := h.turnstile.Verify(
+			r.Context(), r.Header.Get("X-Mitlist-Turnstile"), middleware.ExtractIP(r),
+		)
+		if err != nil {
+			api.RespondError(w, api.ErrUnauthorized)
+			return
+		}
+		installIdentity = result.QuotaIdentity(r.Header.Get("X-Mitlist-Install-ID"))
+	case appCheckOn:
+		api.RespondError(w, api.ErrUnauthorized)
+		return
+	}
+	user, access, refresh, err := h.guestService.CreateGuestForIdentity(
+		r.Context(), middleware.ExtractIP(r), installIdentity,
+	)
 	if err != nil {
+		if errors.Is(err, services.ErrGuestCreationLimit) {
+			w.Header().Set("Retry-After", "3600")
+			api.RespondJSON(w, http.StatusTooManyRequests, map[string]string{
+				"error": "guest creation limit reached; sign in or try again later",
+			})
+			return
+		}
 		api.RespondError(w, err)
 		return
 	}

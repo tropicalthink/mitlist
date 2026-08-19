@@ -38,15 +38,16 @@ type ChoreRotationState struct {
 
 // ChoreAssignment represents an instance of a chore assigned to a user.
 type ChoreAssignment struct {
-	ID          uuid.UUID  `json:"id"`
-	ChoreID     uuid.UUID  `json:"chore_id"`
-	UserID      uuid.UUID  `json:"user_id"`
-	Status      string     `json:"status"`
-	DueDate     *time.Time `json:"due_date,omitempty"`
-	AssignedAt  time.Time  `json:"assigned_at"`
-	CompletedAt *time.Time `json:"completed_at,omitempty"`
-	SkipReason  *string    `json:"skip_reason,omitempty"`
-	ChoreName   string     `json:"chore_name,omitempty"`
+	ID             uuid.UUID  `json:"id"`
+	ChoreID        uuid.UUID  `json:"chore_id"`
+	UserID         uuid.UUID  `json:"user_id"`
+	Status         string     `json:"status"`
+	DueDate        *time.Time `json:"due_date,omitempty"`
+	AssignedAt     time.Time  `json:"assigned_at"`
+	CompletedAt    *time.Time `json:"completed_at,omitempty"`
+	ReminderSentAt *time.Time `json:"reminder_sent_at,omitempty"`
+	SkipReason     *string    `json:"skip_reason,omitempty"`
+	ChoreName      string     `json:"chore_name,omitempty"`
 }
 
 // ChoreCompletion records the completion of a chore assignment.
@@ -65,6 +66,11 @@ type CurrentChore struct {
 	LastAssignment    *ChoreAssignment `json:"last_assignment,omitempty"`
 	DueStatus         string           `json:"due_status"`
 	AssignedToMe      bool             `json:"assigned_to_me"`
+
+	// NextAssigneeUserID is who the turn passes to after the pending
+	// assignment, set only when the rotation is deterministic (sequential
+	// types). Lets clients render the rotation as shape: "you → Sam".
+	NextAssigneeUserID *uuid.UUID `json:"next_assignee_user_id,omitempty"`
 }
 
 // ChoreSubtask represents a subtask within a chore.
@@ -101,4 +107,8 @@ type ChoreDetails struct {
 	Stats             ChoreStats       `json:"stats"`
 	DueStatus         string           `json:"due_status"`
 	AssignedToMe      bool             `json:"assigned_to_me"`
+
+	// NextAssigneeUserID mirrors CurrentChore's field: who the turn passes to
+	// after the pending assignment, set only for deterministic rotations.
+	NextAssigneeUserID *uuid.UUID `json:"next_assignee_user_id,omitempty"`
 }

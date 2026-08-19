@@ -12,7 +12,14 @@ final authServiceProvider = Provider<AuthService>((ref) {
 final authServiceProviderAsync = FutureProvider<AuthService>((ref) async {
   final db = ref.read(appDatabaseProvider);
   return await AuthService.createWithWipe(
-      ref: ref, wipeLocalData: db.clearAllUserData);
+      ref: ref,
+      // Logout is also called by non-UI entry points. Never erase a database
+      // that still contains queued writes; the account screen additionally
+      // blocks logout and asks the user to sync first.
+      wipeLocalData: () async {
+        if (await db.outboxCount() != 0) return;
+        await db.clearAllUserData();
+      });
 });
 
 /// Provider for authentication state.

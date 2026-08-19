@@ -17,6 +17,13 @@ void main() {
     });
   });
 
+  test('buildWebInviteLink uses the canonical app host by default', () {
+    expect(
+      buildWebInviteLink('sunny-taco'),
+      'https://app.mitlist.me/join/SUNNY-TACO',
+    );
+  });
+
   group('extractInviteCode', () {
     test('accepts a bare code, uppercased', () {
       expect(extractInviteCode('sunny-taco-42'), 'SUNNY-TACO-42');

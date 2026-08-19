@@ -22,6 +22,7 @@ class ChoreDetailSheet extends StatefulWidget {
     required this.title,
     required this.statusLabel,
     required this.assignee,
+    this.nextAssignee,
     this.frequencyLabel,
     required this.dueDate,
     this.trackedCount,
@@ -46,6 +47,10 @@ class ChoreDetailSheet extends StatefulWidget {
   final String title;
   final String statusLabel;
   final String assignee;
+
+  /// Who the turn passes to after the current assignee, when the rotation is
+  /// deterministic — the same "→ next" cue the queue tile shows.
+  final String? nextAssignee;
 
   /// Human rhythm label ("Every 2 weeks", "As needed"); the one fact the sheet
   /// was missing about a recurring chore.
@@ -74,6 +79,7 @@ class ChoreDetailSheet extends StatefulWidget {
     required String title,
     required String statusLabel,
     required String assignee,
+    String? nextAssignee,
     String? frequencyLabel,
     required DateTime dueDate,
     int? trackedCount,
@@ -102,6 +108,7 @@ class ChoreDetailSheet extends StatefulWidget {
         title: title,
         statusLabel: statusLabel,
         assignee: assignee,
+        nextAssignee: nextAssignee,
         frequencyLabel: frequencyLabel,
         dueDate: dueDate,
         trackedCount: trackedCount,
@@ -267,6 +274,14 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
               if (widget.assignee.isNotEmpty) ...[
                 _DetailRow(
                     label: l10n.choreDetailAssignee, value: widget.assignee),
+                const AppDivider(),
+              ],
+              if (widget.nextAssignee != null &&
+                  widget.nextAssignee!.isNotEmpty) ...[
+                _DetailRow(
+                  label: l10n.choreDetailNextUp,
+                  value: widget.nextAssignee!,
+                ),
                 const AppDivider(),
               ],
               if (widget.frequencyLabel != null &&

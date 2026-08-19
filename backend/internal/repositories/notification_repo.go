@@ -25,25 +25,25 @@ func NewNotificationRepository(db DBTX) *NotificationRepository {
 // CreateNotification inserts a new notification and returns it with generated fields.
 func (r *NotificationRepository) CreateNotification(ctx context.Context, n *models.Notification) error {
 	query := `
-		INSERT INTO notifications (id, user_id, type, title, body, data, is_read, read_at, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		RETURNING id, user_id, type, title, body, data, is_read, read_at, created_at
+		INSERT INTO notifications (id, user_id, group_id, type, title, body, data, is_read, read_at, created_at)
+		VALUES ($1, $2, NULLIF($3, '00000000-0000-0000-0000-000000000000'::uuid), $4, $5, $6, $7, $8, $9, $10)
+		RETURNING id, user_id, COALESCE(group_id, '00000000-0000-0000-0000-000000000000'::uuid), type, title, body, data, is_read, read_at, created_at
 	`
 	return r.db.QueryRow(ctx, query,
-		n.ID, n.UserID, n.Type, n.Title, n.Body, n.Data, n.IsRead, n.ReadAt, n.CreatedAt,
-	).Scan(&n.ID, &n.UserID, &n.Type, &n.Title, &n.Body, &n.Data, &n.IsRead, &n.ReadAt, &n.CreatedAt)
+		n.ID, n.UserID, n.GroupID, n.Type, n.Title, n.Body, n.Data, n.IsRead, n.ReadAt, n.CreatedAt,
+	).Scan(&n.ID, &n.UserID, &n.GroupID, &n.Type, &n.Title, &n.Body, &n.Data, &n.IsRead, &n.ReadAt, &n.CreatedAt)
 }
 
 // GetNotificationByID retrieves a notification by its ID.
 func (r *NotificationRepository) GetNotificationByID(ctx context.Context, id uuid.UUID) (*models.Notification, error) {
 	query := `
-		SELECT id, user_id, type, title, body, data, is_read, read_at, created_at
+		SELECT id, user_id, COALESCE(group_id, '00000000-0000-0000-0000-000000000000'::uuid), type, title, body, data, is_read, read_at, created_at
 		FROM notifications
 		WHERE id = $1
 	`
 	var n models.Notification
 	err := r.db.QueryRow(ctx, query, id).Scan(
-		&n.ID, &n.UserID, &n.Type, &n.Title, &n.Body, &n.Data, &n.IsRead, &n.ReadAt, &n.CreatedAt,
+		&n.ID, &n.UserID, &n.GroupID, &n.Type, &n.Title, &n.Body, &n.Data, &n.IsRead, &n.ReadAt, &n.CreatedAt,
 	)
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -63,7 +63,7 @@ func (r *NotificationRepository) ListNotificationsByUser(ctx context.Context, us
 		limit = 500
 	}
 	query := `
-		SELECT id, user_id, type, title, body, data, is_read, read_at, created_at
+		SELECT id, user_id, COALESCE(group_id, '00000000-0000-0000-0000-000000000000'::uuid), type, title, body, data, is_read, read_at, created_at
 		FROM notifications
 		WHERE user_id = $1
 		ORDER BY created_at DESC, id DESC
@@ -79,7 +79,7 @@ func (r *NotificationRepository) ListNotificationsByUser(ctx context.Context, us
 	for rows.Next() {
 		var n models.Notification
 		if err := rows.Scan(
-			&n.ID, &n.UserID, &n.Type, &n.Title, &n.Body, &n.Data, &n.IsRead, &n.ReadAt, &n.CreatedAt,
+			&n.ID, &n.UserID, &n.GroupID, &n.Type, &n.Title, &n.Body, &n.Data, &n.IsRead, &n.ReadAt, &n.CreatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -89,6 +89,127 @@ func (r *NotificationRepository) ListNotificationsByUser(ctx context.Context, us
 		return nil, err
 	}
 	return notifications, nil
+}
+
+// ListNotificationsByUserAndGroups applies the household allow-list carried by
+// a long-lived integration credential at the query boundary.
+func (r *NotificationRepository) ListNotificationsByUserAndGroups(ctx context.Context, userID uuid.UUID, groupIDs []uuid.UUID, limit, offset int) ([]models.Notification, error) {
+	if limit <= 0 {
+		limit = 50
+	}
+	if limit > 500 {
+		limit = 500
+	}
+	rows, err := r.db.Query(ctx, `
+		SELECT id, user_id, COALESCE(group_id, '00000000-0000-0000-0000-000000000000'::uuid), type, title, body, data, is_read, read_at, created_at
+		FROM notifications
+		WHERE user_id = $1 AND group_id = ANY($2::uuid[])
+		ORDER BY created_at DESC, id DESC
+		LIMIT $3 OFFSET $4
+	`, userID, groupIDs, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var notifications []models.Notification
+	for rows.Next() {
+		var n models.Notification
+		if err := rows.Scan(
+			&n.ID, &n.UserID, &n.GroupID, &n.Type, &n.Title, &n.Body, &n.Data, &n.IsRead, &n.ReadAt, &n.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		notifications = append(notifications, n)
+	}
+	return notifications, rows.Err()
+}
+
+// ListNotificationsByUserBefore performs stable keyset pagination. The ID
+// tie-breaker prevents skips when multiple rows have the same created_at.
+func (r *NotificationRepository) ListNotificationsByUserBefore(ctx context.Context, userID uuid.UUID, before time.Time, beforeID uuid.UUID, limit int) ([]models.Notification, error) {
+	if limit <= 0 {
+		limit = 50
+	}
+	if limit > 500 {
+		limit = 500
+	}
+	rows, err := r.db.Query(ctx, `
+		SELECT id, user_id, COALESCE(group_id, '00000000-0000-0000-0000-000000000000'::uuid), type, title, body, data, is_read, read_at, created_at
+		FROM notifications
+		WHERE user_id = $1 AND (created_at, id) < ($2, $3)
+		ORDER BY created_at DESC, id DESC
+		LIMIT $4
+	`, userID, before, beforeID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var notifications []models.Notification
+	for rows.Next() {
+		var n models.Notification
+		if err := rows.Scan(
+			&n.ID, &n.UserID, &n.GroupID, &n.Type, &n.Title, &n.Body, &n.Data, &n.IsRead, &n.ReadAt, &n.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		notifications = append(notifications, n)
+	}
+	return notifications, rows.Err()
+}
+
+func (r *NotificationRepository) ListNotificationsByUserAndGroupsBefore(ctx context.Context, userID uuid.UUID, groupIDs []uuid.UUID, before time.Time, beforeID uuid.UUID, limit int) ([]models.Notification, error) {
+	if limit <= 0 {
+		limit = 50
+	}
+	if limit > 500 {
+		limit = 500
+	}
+	rows, err := r.db.Query(ctx, `
+		SELECT id, user_id, COALESCE(group_id, '00000000-0000-0000-0000-000000000000'::uuid), type, title, body, data, is_read, read_at, created_at
+		FROM notifications
+		WHERE user_id = $1 AND group_id = ANY($2::uuid[]) AND (created_at, id) < ($3, $4)
+		ORDER BY created_at DESC, id DESC
+		LIMIT $5
+	`, userID, groupIDs, before, beforeID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var notifications []models.Notification
+	for rows.Next() {
+		var n models.Notification
+		if err := rows.Scan(
+			&n.ID, &n.UserID, &n.GroupID, &n.Type, &n.Title, &n.Body, &n.Data, &n.IsRead, &n.ReadAt, &n.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		notifications = append(notifications, n)
+	}
+	return notifications, rows.Err()
+}
+
+// CountUnreadNotifications returns the canonical unread inbox count for a user.
+func (r *NotificationRepository) CountUnreadNotifications(ctx context.Context, userID uuid.UUID) (int, error) {
+	var count int
+	err := r.db.QueryRow(ctx, `
+		SELECT COUNT(*)
+		FROM notifications
+		WHERE user_id = $1 AND is_read = false
+	`, userID).Scan(&count)
+	return count, err
+}
+
+func (r *NotificationRepository) CountUnreadNotificationsByGroups(ctx context.Context, userID uuid.UUID, groupIDs []uuid.UUID) (int, error) {
+	var count int
+	err := r.db.QueryRow(ctx, `
+		SELECT COUNT(*)
+		FROM notifications
+		WHERE user_id = $1 AND group_id = ANY($2::uuid[]) AND is_read = false
+	`, userID, groupIDs).Scan(&count)
+	return count, err
 }
 
 // MarkAsRead marks a single notification as read.
@@ -116,6 +237,15 @@ func (r *NotificationRepository) MarkAllAsRead(ctx context.Context, userID uuid.
 		WHERE user_id = $1 AND is_read = false
 	`
 	_, err := r.db.Exec(ctx, query, userID)
+	return err
+}
+
+func (r *NotificationRepository) MarkAllAsReadByGroups(ctx context.Context, userID uuid.UUID, groupIDs []uuid.UUID) error {
+	_, err := r.db.Exec(ctx, `
+		UPDATE notifications
+		SET is_read = true, read_at = NOW()
+		WHERE user_id = $1 AND group_id = ANY($2::uuid[]) AND is_read = false
+	`, userID, groupIDs)
 	return err
 }
 
@@ -225,6 +355,7 @@ func (r *NotificationRepository) CreateNotificationsBatch(ctx context.Context, n
 	}
 	ids := make([]uuid.UUID, len(notifications))
 	userIDs := make([]uuid.UUID, len(notifications))
+	groupIDs := make([]uuid.UUID, len(notifications))
 	types := make([]string, len(notifications))
 	titles := make([]string, len(notifications))
 	bodies := make([]string, len(notifications))
@@ -242,6 +373,7 @@ func (r *NotificationRepository) CreateNotificationsBatch(ctx context.Context, n
 		n.IsRead = false
 		ids[i] = n.ID
 		userIDs[i] = n.UserID
+		groupIDs[i] = n.GroupID
 		types[i] = n.Type
 		titles[i] = n.Title
 		bodies[i] = n.Body
@@ -250,14 +382,114 @@ func (r *NotificationRepository) CreateNotificationsBatch(ctx context.Context, n
 		createdAt[i] = n.CreatedAt
 	}
 	_, err := r.db.Exec(ctx, `
-		INSERT INTO notifications (id, user_id, type, title, body, data, is_read, read_at, created_at)
-		SELECT id, user_id, type, title, body, data, is_read, NULL::timestamptz, created_at
-		FROM unnest($1::uuid[], $2::uuid[], $3::text[], $4::text[], $5::text[], $6::jsonb[], $7::bool[], $8::timestamptz[]) AS t(
-			id, user_id, type, title, body, data, is_read, created_at
+		INSERT INTO notifications (id, user_id, group_id, type, title, body, data, is_read, read_at, created_at)
+		SELECT id, user_id, NULLIF(group_id, '00000000-0000-0000-0000-000000000000'::uuid), type, title, body, data, is_read, NULL::timestamptz, created_at
+		FROM unnest($1::uuid[], $2::uuid[], $3::uuid[], $4::text[], $5::text[], $6::text[], $7::jsonb[], $8::bool[], $9::timestamptz[]) AS t(
+			id, user_id, group_id, type, title, body, data, is_read, created_at
 		)
-	`, ids, userIDs, types, titles, bodies, data, isRead, createdAt)
+	`, ids, userIDs, groupIDs, types, titles, bodies, data, isRead, createdAt)
 	if err != nil {
 		return fmt.Errorf("create notification batch: %w", err)
+	}
+	return nil
+}
+
+// CreateNotificationsBatchIdempotent persists scheduled notification rows by
+// their user/type/dedupe_key tuple. Existing rows are updated with the latest
+// copy/body and their canonical IDs are copied back into notifications so a
+// retry can deliver the same inbox item instead of creating another one.
+func (r *NotificationRepository) CreateNotificationsBatchIdempotent(ctx context.Context, notifications []models.Notification) error {
+	if len(notifications) == 0 {
+		return nil
+	}
+	ids := make([]uuid.UUID, len(notifications))
+	userIDs := make([]uuid.UUID, len(notifications))
+	groupIDs := make([]uuid.UUID, len(notifications))
+	types := make([]string, len(notifications))
+	titles := make([]string, len(notifications))
+	bodies := make([]string, len(notifications))
+	data := make([][]byte, len(notifications))
+	isRead := make([]bool, len(notifications))
+	createdAt := make([]time.Time, len(notifications))
+	for i := range notifications {
+		n := &notifications[i]
+		if n.ID == uuid.Nil {
+			n.ID = uuid.New()
+		}
+		if n.CreatedAt.IsZero() {
+			n.CreatedAt = time.Now().UTC()
+		}
+		n.IsRead = false
+		ids[i], userIDs[i], groupIDs[i] = n.ID, n.UserID, n.GroupID
+		types[i], titles[i], bodies[i], data[i] = n.Type, n.Title, n.Body, n.Data
+		isRead[i], createdAt[i] = n.IsRead, n.CreatedAt
+	}
+	rows, err := r.db.Query(ctx, `
+		INSERT INTO notifications (id, user_id, group_id, type, title, body, data, is_read, read_at, created_at)
+		SELECT id, user_id, NULLIF(group_id, '00000000-0000-0000-0000-000000000000'::uuid), type, title, body, data, is_read, NULL::timestamptz, created_at
+		FROM unnest($1::uuid[], $2::uuid[], $3::uuid[], $4::text[], $5::text[], $6::text[], $7::jsonb[], $8::bool[], $9::timestamptz[]) AS t(
+			id, user_id, group_id, type, title, body, data, is_read, created_at
+		)
+		ON CONFLICT (user_id, type, (data->>'dedupe_key'))
+			WHERE data->>'dedupe_key' IS NOT NULL
+		DO UPDATE SET title = EXCLUDED.title, body = EXCLUDED.body, data = EXCLUDED.data
+		RETURNING id, user_id
+	`, ids, userIDs, groupIDs, types, titles, bodies, data, isRead, createdAt)
+	if err != nil {
+		return fmt.Errorf("create idempotent notification batch: %w", err)
+	}
+	defer rows.Close()
+	canonicalIDs := make(map[uuid.UUID]uuid.UUID, len(notifications))
+	for rows.Next() {
+		var id, userID uuid.UUID
+		if err := rows.Scan(&id, &userID); err != nil {
+			return fmt.Errorf("scan idempotent notification: %w", err)
+		}
+		canonicalIDs[userID] = id
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("idempotent notification rows: %w", err)
+	}
+	for i := range notifications {
+		if id, ok := canonicalIDs[notifications[i].UserID]; ok {
+			notifications[i].ID = id
+		}
+	}
+	return nil
+}
+
+// QueueListItemNotification coalesces rapid additions by the same person to the
+// same list. A busy stream is capped at two minutes so a digest cannot be
+// postponed indefinitely.
+func (r *NotificationRepository) QueueListItemNotification(ctx context.Context, groupID, actorID, listID uuid.UUID, actorName, listName, itemName string) error {
+	_, err := r.db.Exec(ctx, `
+		INSERT INTO list_notification_batches (
+			group_id, actor_id, list_id, actor_name, list_name, last_item_name
+		) VALUES ($1, $2, $3, $4, $5, $6)
+		ON CONFLICT (group_id, actor_id, list_id) DO UPDATE SET
+			actor_name = EXCLUDED.actor_name,
+			list_name = EXCLUDED.list_name,
+			last_item_name = EXCLUDED.last_item_name,
+			item_count = CASE
+				WHEN list_notification_batches.claimed_at IS NULL THEN list_notification_batches.item_count + 1
+				ELSE 1
+			END,
+			first_at = CASE
+				WHEN list_notification_batches.claimed_at IS NULL THEN list_notification_batches.first_at
+				ELSE NOW()
+			END,
+			updated_at = NOW(),
+			deliver_after = CASE
+				WHEN list_notification_batches.claimed_at IS NULL THEN LEAST(
+					list_notification_batches.first_at + INTERVAL '2 minutes',
+					NOW() + INTERVAL '45 seconds'
+				)
+				ELSE NOW() + INTERVAL '45 seconds'
+			END,
+			claimed_at = NULL
+	`, groupID, actorID, listID, actorName, listName, itemName)
+	if err != nil {
+		return fmt.Errorf("queue list notification: %w", err)
 	}
 	return nil
 }

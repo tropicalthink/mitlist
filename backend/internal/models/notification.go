@@ -7,6 +7,21 @@ import (
 	"github.com/google/uuid"
 )
 
+const (
+	NotificationTypeChoreDue                = "chore_due"
+	NotificationTypeChoreDueDayOf           = "chore_due_day_of"
+	NotificationTypeListItemAdded           = "list_item_added"
+	NotificationTypeListItemsAddedDigest    = "list_items_added_digest"
+	NotificationTypeExpenseCreated          = "expense_created"
+	NotificationTypeRecurringExpenseCreated = "recurring_expense_created"
+	NotificationTypeSettlementRequested     = "settlement_requested"
+	NotificationTypeSettlementConfirmed     = "settlement_confirmed"
+	NotificationTypeSettlementDeclined      = "settlement_declined"
+	NotificationTypeMealPlanChanged         = "meal_plan_changed"
+	NotificationTypeWeeklyDigest            = "weekly_digest"
+	NotificationTypePinwallReminder         = "pinwall_reminder"
+)
+
 type Notification struct {
 	ID        uuid.UUID       `json:"id"`
 	UserID    uuid.UUID       `json:"user_id"`

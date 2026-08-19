@@ -179,7 +179,8 @@ class FakeFinanceService implements FinanceService {
   }
 
   @override
-  Future<Expense> createExpense(CreateExpenseRequest req) async {
+  Future<Expense> createExpense(CreateExpenseRequest req,
+      {String? idempotencyKey}) async {
     lastCreateRequest = req;
     final created = Expense(
       id: '77777777-7777-7777-7777-777777777777',

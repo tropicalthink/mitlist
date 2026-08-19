@@ -3,6 +3,7 @@ import 'package:logger/logger.dart';
 import '../models/recipe_models.dart';
 import 'api_client.dart';
 import 'api_error_mapper.dart';
+import 'outbox_request.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class RecipeService {
@@ -14,9 +15,11 @@ class RecipeService {
     return RecipeService._(dio);
   }
 
-  Future<Recipe> createRecipe(CreateRecipeRequest req) async {
+  Future<Recipe> createRecipe(CreateRecipeRequest req,
+      {String? idempotencyKey}) async {
     try {
-      final r = await _dio.post('/recipes', data: req.toJson());
+      final r = await _dio.post('/recipes',
+          data: req.toJson(), options: outboxOptions(idempotencyKey));
       return Recipe.fromJson(r.data);
     } on DioException catch (e) {
       _logger.e('Create recipe failed: ${e.response?.data}');
@@ -47,9 +50,11 @@ class RecipeService {
     }
   }
 
-  Future<Recipe> updateRecipe(String id, UpdateRecipeRequest req) async {
+  Future<Recipe> updateRecipe(String id, UpdateRecipeRequest req,
+      {String? idempotencyKey}) async {
     try {
-      final r = await _dio.patch('/recipes/$id', data: req.toJson());
+      final r = await _dio.patch('/recipes/$id',
+          data: req.toJson(), options: outboxOptions(idempotencyKey));
       return Recipe.fromJson(r.data);
     } on DioException catch (e) {
       _logger.e('Update recipe failed: ${e.response?.data}');
@@ -57,9 +62,9 @@ class RecipeService {
     }
   }
 
-  Future<void> deleteRecipe(String id) async {
+  Future<void> deleteRecipe(String id, {String? idempotencyKey}) async {
     try {
-      await _dio.delete('/recipes/$id');
+      await _dio.delete('/recipes/$id', options: outboxOptions(idempotencyKey));
     } on DioException catch (e) {
       _logger.e('Delete recipe failed: ${e.response?.data}');
       throw apiException(e);

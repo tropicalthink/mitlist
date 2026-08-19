@@ -1,7 +1,12 @@
 package middleware
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"io"
 	"net/http"
 	"strings"
 	"sync"
@@ -9,13 +14,17 @@ import (
 )
 
 const (
-	maxRateLimitBuckets = 10_000
-	ipCapacity          = 100
-	ipRefillRate        = 100.0 / 60.0
-	userCapacity        = 1000
-	userRefillRate      = 1000.0 / 3600.0
-	authIPCapacity      = 10
-	authIPRefillRate    = 10.0 / 60.0
+	maxRateLimitBuckets      = 10_000
+	ipCapacity               = 100
+	ipRefillRate             = 100.0 / 60.0
+	userCapacity             = 1000
+	userRefillRate           = 1000.0 / 3600.0
+	authIPCapacity           = 10
+	authIPRefillRate         = 10.0 / 60.0
+	authIdentifierCapacity   = 5
+	authIdentifierRefillRate = 5.0 / 300.0
+	guestIPCapacity          = 3
+	guestIPRefillRate        = 3.0 / 600.0
 )
 
 type userContextKey struct{}
@@ -114,6 +123,25 @@ func RateLimit(apiPrefix string) func(next http.Handler) http.Handler {
 				writeRateLimitError(w)
 				return
 			}
+			if isAuthEndpoint(r.URL.Path, apiPrefix) {
+				if identifier := authIdentifier(r); identifier != "" {
+					identifierKey := "ratelimit:auth:identifier:" + endpointName(r.URL.Path, apiPrefix) + ":" + identifier
+					if !defaultLimiter.Allow(identifierKey, authIdentifierCapacity, authIdentifierRefillRate, now) {
+						writeRateLimitError(w)
+						return
+					}
+				}
+			}
+			if isGuestCreationEndpoint(r.URL.Path, apiPrefix) {
+				guestKey := "ratelimit:guest:ip:" + ip
+				if !defaultLimiter.Allow(guestKey, guestIPCapacity, guestIPRefillRate, now) {
+					writeRateLimitError(w)
+					return
+				}
+				// Do not rate-limit guest creation by X-Mitlist-Install-ID. It is a
+				// caller-controlled header and can be rotated or spoofed. The handler
+				// applies the durable identity budget using verified App Check claims.
+			}
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -154,7 +182,8 @@ func writeRateLimitError(w http.ResponseWriter) {
 func isAuthEndpoint(path, apiPrefix string) bool {
 	for _, p := range []string{
 		apiPrefix + "/v1/auth/login", apiPrefix + "/v1/auth/register",
-		apiPrefix + "/v1/auth/password-reset", apiPrefix + "/v1/auth/guest",
+		apiPrefix + "/v1/auth/verify-email", apiPrefix + "/v1/auth/password-reset",
+		apiPrefix + "/v1/auth/password-reset/confirm", apiPrefix + "/v1/auth/guest",
 		apiPrefix + "/v1/auth/token/refresh",
 	} {
 		if strings.HasPrefix(path, p) {
@@ -162,6 +191,42 @@ func isAuthEndpoint(path, apiPrefix string) bool {
 		}
 	}
 	return false
+}
+
+func isGuestCreationEndpoint(path, apiPrefix string) bool {
+	return path == apiPrefix+"/v1/auth/guest"
+}
+
+func endpointName(path, apiPrefix string) string {
+	name := strings.TrimPrefix(path, apiPrefix+"/v1/auth/")
+	return strings.ReplaceAll(name, "/", ":")
+}
+
+// authIdentifier extracts and hashes an email from an auth request. Hashing
+// keeps raw addresses out of in-process limiter keys while combining a stable
+// account-level budget with the IP budget above. The body is restored for the
+// downstream handler.
+func authIdentifier(r *http.Request) string {
+	if r.Body == nil || r.Method == http.MethodGet {
+		return ""
+	}
+	body, err := io.ReadAll(io.LimitReader(r.Body, 8<<10))
+	if err != nil {
+		return ""
+	}
+	r.Body = io.NopCloser(bytes.NewReader(body))
+	var payload struct {
+		Email string `json:"email"`
+	}
+	if json.Unmarshal(body, &payload) != nil {
+		return ""
+	}
+	email := strings.ToLower(strings.TrimSpace(payload.Email))
+	if email == "" {
+		return ""
+	}
+	digest := sha256.Sum256([]byte(email))
+	return hex.EncodeToString(digest[:])
 }
 
 func shouldSkip(path, apiPrefix string) bool {

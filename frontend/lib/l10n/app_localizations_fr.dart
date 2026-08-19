@@ -159,6 +159,94 @@ class AppLocalizationsFr extends AppLocalizations {
   String get commonLoadingMembers => 'Chargement des membres...';
 
   @override
+  String get integrationsTitle => 'Integrations';
+
+  @override
+  String get homeAssistantTitle => 'Home Assistant';
+
+  @override
+  String get homeAssistantDescription =>
+      'Connect your household to dashboards, voice control, and automations.';
+
+  @override
+  String get homeAssistantConnections => 'Connections';
+
+  @override
+  String get homeAssistantNoConnections => 'No Home Assistant connections yet.';
+
+  @override
+  String get homeAssistantCreateConnection => 'Create connection';
+
+  @override
+  String get homeAssistantConnectionName => 'Connection name';
+
+  @override
+  String get homeAssistantConnectionNameHint => 'Home Assistant';
+
+  @override
+  String get homeAssistantHouseholds => 'Households';
+
+  @override
+  String get homeAssistantPermissions => 'Permissions';
+
+  @override
+  String get homeAssistantWriteAccess => 'Allow Home Assistant to make changes';
+
+  @override
+  String get homeAssistantFinanceAccess => 'Include financial data';
+
+  @override
+  String get homeAssistantTokenTitle => 'Connection token';
+
+  @override
+  String get homeAssistantTokenBody =>
+      'Copy this token into Home Assistant now. For security, mitlist cannot show it again.';
+
+  @override
+  String get homeAssistantTokenCopied => 'Connection token copied';
+
+  @override
+  String get homeAssistantRevoke => 'Revoke connection';
+
+  @override
+  String get homeAssistantRevokeConfirm =>
+      'This immediately disconnects Home Assistant. You can create a new connection later.';
+
+  @override
+  String get homeAssistantRevoked => 'Revoked';
+
+  @override
+  String get homeAssistantNeverUsed => 'Never used';
+
+  @override
+  String homeAssistantLastUsed(String date) {
+    return 'Last used $date';
+  }
+
+  @override
+  String get homeAssistantSelectHousehold => 'Select at least one household.';
+
+  @override
+  String get homeAssistantCreated => 'Home Assistant connection created';
+
+  @override
+  String get homeAssistantRevokedSuccess => 'Home Assistant connection revoked';
+
+  @override
+  String get homeAssistantLoadFailed =>
+      'Could not load Home Assistant connections.';
+
+  @override
+  String get homeAssistantSaveFailed =>
+      'Could not create the connection. Please try again.';
+
+  @override
+  String get homeAssistantReadOnly => 'Read only';
+
+  @override
+  String get homeAssistantReadWrite => 'Read and write';
+
+  @override
   String get welcomeTagline => 'Ton foyer, organisé.';
 
   @override
@@ -190,7 +278,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get welcomeGuestFootnote =>
-      'Pas de compte nécessaire. Essaie tout gratuitement pendant 30 jours.';
+      'Pas d\'inscription nécessaire. Crée un compte plus tard pour garder tes données.';
 
   @override
   String get hubAppBarTitle => 'Accueil';
@@ -498,6 +586,25 @@ class AppLocalizationsFr extends AppLocalizations {
   String get choreHowItSplits => 'Répartition';
 
   @override
+  String get choreHouseAllClear => 'Rien en retard dans la maison';
+
+  @override
+  String choreHouseOverdue(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tâches en retard dans la maison',
+      one: '1 tâche en retard dans la maison',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String choreNextInRotation(String name) {
+    return 'ensuite $name';
+  }
+
+  @override
   String choreSupplySingular(num count) {
     return '$count fourniture';
   }
@@ -586,6 +693,21 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get choreCreationZoneLabel => 'Zone';
+
+  @override
+  String get choreCreationZoneNone => 'Aucune zone';
+
+  @override
+  String get choreCreationZoneManageHint =>
+      'Appuyez longuement sur une zone pour la supprimer';
+
+  @override
+  String get choreCreationRemoveZoneTitle => 'Supprimer la zone ?';
+
+  @override
+  String choreCreationRemoveZoneBody(String zone) {
+    return '$zone ne sera plus proposée lors de la création d’une tâche. Les tâches qui l’utilisent déjà la conservent.';
+  }
 
   @override
   String get choreCreationZoneKitchen => 'Cuisine';
@@ -806,6 +928,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get choreDetailAssignee => 'À qui le tour';
+
+  @override
+  String get choreDetailNextUp => 'Tour suivant';
 
   @override
   String get choreDetailDue => 'Échéance';
@@ -2457,7 +2582,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get accountPasswordMinLength =>
-      'Le nouveau mot de passe doit contenir au moins 12 caractères.';
+      'Le nouveau mot de passe doit contenir au moins 8 caractères.';
 
   @override
   String get accountPasswordsMismatch =>
@@ -2682,6 +2807,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Impossible de charger les préférences de notifications.';
 
   @override
+  String get notifPrefFailedSave =>
+      'Impossible d’enregistrer cette préférence. Vérifiez votre connexion et réessayez.';
+
+  @override
   String get notifPrefNoHouseholdDesc =>
       'Rejoins ou crée un foyer pour configurer les préférences de notifications.';
 
@@ -2716,11 +2845,11 @@ class AppLocalizationsFr extends AppLocalizations {
       'Quand quelqu\'un ajoute à une liste partagée';
 
   @override
-  String get notifPrefExpenseCreated => 'Dépense créée';
+  String get notifPrefExpenseCreated => 'Activité financière';
 
   @override
   String get notifPrefExpenseCreatedDesc =>
-      'Quand une nouvelle dépense est enregistrée';
+      'Dépenses, frais récurrents et règlements';
 
   @override
   String get notifPrefMealPlanChanged => 'Plan de repas modifié';
@@ -2748,6 +2877,13 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get notifPrefPushNotificationsDesc =>
       'Recevoir les notifications sur cet appareil';
+
+  @override
+  String get notifPrefEmailNotifications => 'Notifications par e-mail';
+
+  @override
+  String get notifPrefEmailNotificationsDesc =>
+      'Recevoir les rappels importants par e-mail';
 
   @override
   String get shoppingTripAppBarTitle => 'Courses';
@@ -3139,6 +3275,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get expenseCreationCategoryLabel => 'Category';
 
   @override
+  String get expenseCreationDatePrefix => 'Date';
+
+  @override
   String get expenseCategoryGroceries => 'Groceries';
 
   @override
@@ -3168,6 +3307,64 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get expenseCreationDateLabel =>
       'Date de la dépense. Appuie pour changer.';
+
+  @override
+  String expenseCreationStartsOn(String date) {
+    return 'À partir du $date';
+  }
+
+  @override
+  String get expenseCreationNextDueLabel =>
+      'Première échéance. Appuie pour changer.';
+
+  @override
+  String get expenseCreationEditRepeatSemantic =>
+      'Récurrence. Appuie pour changer.';
+
+  @override
+  String get expenseCreationRepeatNever => 'Ne se répète pas';
+
+  @override
+  String get expenseCreationRepeatNeverOption => 'Jamais';
+
+  @override
+  String get expenseCreationRepeatDaily => 'Se répète chaque jour';
+
+  @override
+  String get expenseCreationRepeatWeekly => 'Se répète chaque semaine';
+
+  @override
+  String get expenseCreationRepeatBiweekly => 'Se répète toutes les 2 semaines';
+
+  @override
+  String get expenseCreationRepeatMonthly => 'Se répète chaque mois';
+
+  @override
+  String get expenseCreationRepeatQuarterly => 'Se répète chaque trimestre';
+
+  @override
+  String get expenseCreationRepeatYearly => 'Se répète chaque année';
+
+  @override
+  String expenseCreationRepeatCurrencyHint(String currency) {
+    return 'Les dépenses récurrentes sont enregistrées en $currency.';
+  }
+
+  @override
+  String get expenseCreationRecurringTitle => 'Nouvelle dépense récurrente';
+
+  @override
+  String get expenseCreationRecurringEditTitle =>
+      'Modifier la dépense récurrente';
+
+  @override
+  String get expenseCreationRecurringAdded => 'Dépense récurrente ajoutée';
+
+  @override
+  String get expenseCreationRecurringSaved => 'Dépense récurrente mise à jour';
+
+  @override
+  String get recurringEditTooltip => 'Modifier';
 
   @override
   String get expenseCreationReceiptButton => 'Reçu';
@@ -3851,7 +4048,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get authSignupPassword => 'Mot de passe';
 
   @override
-  String get authSignupPasswordHint => 'Au moins 12 caractères';
+  String get authSignupPasswordHint => 'Au moins 8 caractères';
 
   @override
   String get authSignupCreateAccount => 'Créer un compte';
@@ -3870,7 +4067,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get authSignupPasswordMinLength =>
-      'Le mot de passe doit contenir au moins 12 caractères.';
+      'Le mot de passe doit contenir au moins 8 caractères.';
 
   @override
   String get authSignupJoinTitle => 'Rejoindre un foyer';
@@ -3886,6 +4083,38 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get authSignupPasswordRequired => 'Le mot de passe est requis.';
+
+  @override
+  String get authSignupConfirmPassword => 'Confirm password';
+
+  @override
+  String get authSignupConfirmPasswordHint => 'Re-enter your password';
+
+  @override
+  String get authSignupConfirmPasswordRequired =>
+      'Please confirm your password.';
+
+  @override
+  String get authSignupPasswordMismatch => 'Passwords do not match.';
+
+  @override
+  String get authSignupPasswordRequirementsNotMet =>
+      'Password does not meet the requirements below.';
+
+  @override
+  String get passwordRequirementsTitle => 'Your password must contain:';
+
+  @override
+  String get passwordRequirementLength => 'At least 8 characters';
+
+  @override
+  String get passwordRequirementUppercase => 'One uppercase letter';
+
+  @override
+  String get passwordRequirementDigit => 'One number';
+
+  @override
+  String get passwordRequirementSpecial => 'One special character';
 
   @override
   String get authSignupGenericError =>
@@ -4033,7 +4262,34 @@ class AppLocalizationsFr extends AppLocalizations {
       'Partage ce code. Qui le saisit rejoint ton foyer.';
 
   @override
-  String get authOnboardingGoToBoard => 'Aller à ton tableau';
+  String get authOnboardingGoToBoard => 'Continuer';
+
+  @override
+  String get authOnboardingReadyTitle => 'Ton foyer est prêt';
+
+  @override
+  String get authOnboardingReadyBody =>
+      'Trois choses à savoir. C’est toute la carte.';
+
+  @override
+  String get authOnboardingOrientationHome =>
+      'Accueil montre ce qui demande ton attention';
+
+  @override
+  String get authOnboardingOrientationTabs =>
+      'Les onglets rangent chaque partie du foyer';
+
+  @override
+  String get authOnboardingOrientationAdd =>
+      'Le bouton + ajoute quelque chose depuis partout';
+
+  @override
+  String authOnboardingEnterHousehold(String name) {
+    return 'Ouvrir $name';
+  }
+
+  @override
+  String get authOnboardingResolving => 'Ouverture de ton tableau…';
 
   @override
   String get hubChecklistTitle => 'Mets la maison en route';
@@ -4194,6 +4450,23 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get hubOnboardingTrackExpense => 'Suivre une dépense';
+
+  @override
+  String hubQuickStartNextSemantic(String label) {
+    return 'Étape suivante : $label';
+  }
+
+  @override
+  String get hubQuickStartDismissedToast =>
+      'Démarrage rapide rangé. Tu le retrouves à tout moment dans Compte.';
+
+  @override
+  String get accountShowQuickStart =>
+      'Afficher le démarrage rapide sur le tableau';
+
+  @override
+  String get accountQuickStartRestored =>
+      'Le démarrage rapide est de retour sur ton tableau.';
 
   @override
   String get appBottomSheetDiscardTitle => 'Abandonner les modifications ?';
@@ -4760,6 +5033,130 @@ class AppLocalizationsFr extends AppLocalizations {
   String get commonView => 'Voir';
 
   @override
+  String get notificationsOpenList => 'Ouvrir la liste';
+
+  @override
+  String get notificationsOpenChore => 'Ouvrir la tâche';
+
+  @override
+  String get notificationsOpenMoney => 'Ouvrir les finances';
+
+  @override
+  String get notificationsOpenRecipes => 'Ouvrir les recettes';
+
+  @override
+  String get notificationsOpenHousehold => 'Ouvrir le foyer';
+
+  @override
+  String get notificationChoreDueSoonTitle => 'Tâche bientôt due';
+
+  @override
+  String notificationChoreDueSoonBody(String choreName) {
+    return '$choreName arrive bientôt à échéance';
+  }
+
+  @override
+  String get notificationChoreDueTodayTitle => 'Tâche due aujourd’hui';
+
+  @override
+  String notificationChoreDueTodayBody(String choreName) {
+    return '$choreName est à faire aujourd’hui';
+  }
+
+  @override
+  String notificationListUpdatedTitle(String listName) {
+    return '$listName mise à jour';
+  }
+
+  @override
+  String notificationListUpdatedOneBody(
+      String actorName, String itemName, String listName, String groupName) {
+    return '$actorName a ajouté $itemName à $listName dans $groupName.';
+  }
+
+  @override
+  String notificationListUpdatedManyBody(
+      String actorName, num count, String listName, String groupName) {
+    return '$actorName a ajouté $count éléments à $listName dans $groupName.';
+  }
+
+  @override
+  String get notificationExpenseCreatedTitle => 'Dépense ajoutée';
+
+  @override
+  String notificationExpenseCreatedBody(
+      String actorName, String expenseName, String groupName) {
+    return '$actorName a ajouté $expenseName dans $groupName.';
+  }
+
+  @override
+  String get notificationRecurringExpenseTitle => 'Dépense récurrente ajoutée';
+
+  @override
+  String notificationRecurringExpenseBody(String expenseName) {
+    return '$expenseName a été ajoutée.';
+  }
+
+  @override
+  String get notificationSettlementRequestTitle => 'Règlement à confirmer';
+
+  @override
+  String notificationSettlementPaidYouBody(
+      String actorName, String amount, String groupName) {
+    return '$actorName indique vous avoir payé $amount dans $groupName. Confirmez pour actualiser les soldes.';
+  }
+
+  @override
+  String notificationSettlementYouPaidBody(
+      String actorName, String amount, String groupName) {
+    return '$actorName indique que vous lui avez payé $amount dans $groupName. Confirmez pour actualiser les soldes.';
+  }
+
+  @override
+  String get notificationSettlementConfirmedTitle => 'Règlement confirmé';
+
+  @override
+  String notificationSettlementConfirmedBody(
+      String actorName, String amount, String groupName) {
+    return '$actorName a confirmé votre règlement de $amount dans $groupName.';
+  }
+
+  @override
+  String get notificationSettlementDeclinedTitle => 'Règlement refusé';
+
+  @override
+  String notificationSettlementDeclinedBody(
+      String actorName, String amount, String groupName) {
+    return '$actorName a refusé votre règlement de $amount dans $groupName.';
+  }
+
+  @override
+  String get notificationMealPlanTitle => 'Menu mis à jour';
+
+  @override
+  String notificationMealPlanBody(String actorName, String groupName) {
+    return '$actorName a mis à jour le menu dans $groupName.';
+  }
+
+  @override
+  String get notificationWeeklyDigestTitle => 'Résumé de la semaine';
+
+  @override
+  String notificationWeeklyDigestBody(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Votre foyer a eu $count activités cette semaine',
+      one: 'Votre foyer a eu 1 activité cette semaine',
+      zero: 'Aucune activité du foyer cette semaine',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get notificationPinwallReminderTitle => 'Rappel';
+
+  @override
   String get commonPhoto => 'Photo';
 
   @override
@@ -4991,6 +5388,15 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get restockReasonDue => 'À racheter';
+
+  @override
+  String get restockReasonUsual => 'Achat habituel';
+
+  @override
+  String get restockReasonGoesWith => 'Va avec cette liste';
+
+  @override
   String get householdStorageTitle => 'Stockage du foyer';
 
   @override
@@ -5161,6 +5567,19 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get billingReturnHint =>
       'Terminez dans votre navigateur, puis revenez — premium s’active automatiquement.';
+
+  @override
+  String get billingProcessing => 'Processing your purchase...';
+
+  @override
+  String get billingRestore => 'Restore purchases';
+
+  @override
+  String get billingAutoRenewDisclosure =>
+      'Payment is charged to your store account. The subscription renews automatically unless canceled at least 24 hours before the current period ends. Manage or cancel it in your App Store or Google Play account.';
+
+  @override
+  String get billingPurchased => 'Premium is active. Thanks!';
 
   @override
   String get billingAccountCardTitle => 'Premium';

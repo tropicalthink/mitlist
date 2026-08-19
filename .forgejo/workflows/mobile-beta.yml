@@ -1,0 +1,183 @@
+name: Build closed-beta mobile artifacts
+
+on:
+  workflow_dispatch:
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Materialize protected Android configuration
+        env:
+          GOOGLE_SERVICES_JSON_B64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
+          ANDROID_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          set -eu
+          test -n "$GOOGLE_SERVICES_JSON_B64"
+          test -n "$ANDROID_KEYSTORE_B64"
+          test -n "$ANDROID_KEYSTORE_PASSWORD"
+          test -n "$ANDROID_KEY_PASSWORD"
+          test -n "$ANDROID_KEY_ALIAS"
+          printf '%s' "$GOOGLE_SERVICES_JSON_B64" | base64 -d > frontend/android/app/google-services.json
+          printf '%s' "$ANDROID_KEYSTORE_B64" | base64 -d > frontend/android/app/release.jks
+          {
+            printf 'storePassword=%s\n' "$ANDROID_KEYSTORE_PASSWORD"
+            printf 'keyPassword=%s\n' "$ANDROID_KEY_PASSWORD"
+            printf 'keyAlias=%s\n' "$ANDROID_KEY_ALIAS"
+            printf 'storeFile=release.jks\n'
+          } > frontend/android/key.properties
+      - name: Build signed Android App Bundle
+        env:
+          API_BASE_URL: ${{ secrets.BETA_API_BASE_URL }}
+          GLITCHTIP_DSN: ${{ secrets.GLITCHTIP_DSN_BETA }}
+          BETA_ENVIRONMENT: ${{ secrets.BETA_ENVIRONMENT }}
+          APP_CHECK_ENABLED: "true"
+          FIREBASE_PROJECT_ID: ${{ secrets.BETA_FIREBASE_PROJECT_ID }}
+          FIREBASE_PROJECT_NUMBER: ${{ secrets.BETA_FIREBASE_PROJECT_NUMBER }}
+          BUILD_NUMBER: ${{ gitea.run_number }}
+        run: |
+          set -eu
+
+          # A release binary without an API endpoint cannot complete login or
+          # recovery. Keep this check before Flutter starts so a misconfigured
+          # beta never produces an apparently valid artifact.
+          test -n "$API_BASE_URL"
+          case "$API_BASE_URL" in
+            https://*) ;;
+            *) echo "BETA_API_BASE_URL must be an https URL" >&2; exit 1 ;;
+          esac
+          case "$API_BASE_URL" in
+            *" "*|*$'\n'*|*$'\r'*) echo "BETA_API_BASE_URL contains whitespace" >&2; exit 1 ;;
+          esac
+
+          case "$BUILD_NUMBER" in
+            ''|*[!0-9]*) echo "Gitea did not provide a numeric run number" >&2; exit 1 ;;
+          esac
+          test "$BUILD_NUMBER" -gt 0
+
+          ENVIRONMENT="${BETA_ENVIRONMENT:-beta}"
+          case "$ENVIRONMENT" in
+            ''|*[!A-Za-z0-9._-]*) echo "BETA_ENVIRONMENT contains invalid characters" >&2; exit 1 ;;
+          esac
+
+          # Closed-beta artifacts are official hosted builds. They must use
+          # real Firebase App Check attestation (Play Integrity / App Attest),
+          # never the debug provider or an accidentally disabled client.
+          test "$APP_CHECK_ENABLED" = "true"
+          test -n "$FIREBASE_PROJECT_ID"
+          test -n "$FIREBASE_PROJECT_NUMBER"
+          case "$FIREBASE_PROJECT_ID" in
+            ''|*[!a-z0-9-]*) echo "BETA_FIREBASE_PROJECT_ID contains invalid characters" >&2; exit 1 ;;
+          esac
+          case "$FIREBASE_PROJECT_NUMBER" in
+            ''|*[!0-9]*) echo "BETA_FIREBASE_PROJECT_NUMBER must be numeric" >&2; exit 1 ;;
+          esac
+
+          cd frontend
+          flutter pub get
+          flutter build appbundle --release \
+            --build-number="$BUILD_NUMBER" \
+            --dart-define="API_BASE_URL=$API_BASE_URL" \
+            --dart-define="GLITCHTIP_DSN=$GLITCHTIP_DSN" \
+            --dart-define="ENVIRONMENT=$ENVIRONMENT" \
+            --dart-define="APP_CHECK_ENABLED=$APP_CHECK_ENABLED" \
+            --dart-define="FIREBASE_PROJECT_ID=$FIREBASE_PROJECT_ID"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mitlist-android-beta
+          path: frontend/build/app/outputs/bundle/release/app-release.aab
+
+  ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - uses: apple-actions/import-codesign-certs@v3
+        with:
+          p12-file-base64: ${{ secrets.IOS_DISTRIBUTION_CERTIFICATE_B64 }}
+          p12-password: ${{ secrets.IOS_DISTRIBUTION_CERTIFICATE_PASSWORD }}
+      - name: Materialize protected iOS configuration
+        env:
+          GOOGLE_SERVICE_INFO_PLIST_B64: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST_B64 }}
+          IOS_PROVISIONING_PROFILE_B64: ${{ secrets.IOS_PROVISIONING_PROFILE_B64 }}
+          IOS_EXPORT_OPTIONS_PLIST_B64: ${{ secrets.IOS_EXPORT_OPTIONS_PLIST_B64 }}
+          IOS_DEVELOPMENT_TEAM: ${{ secrets.IOS_DEVELOPMENT_TEAM }}
+        run: |
+          set -eu
+          test -n "$GOOGLE_SERVICE_INFO_PLIST_B64"
+          test -n "$IOS_PROVISIONING_PROFILE_B64"
+          test -n "$IOS_EXPORT_OPTIONS_PLIST_B64"
+          test -n "$IOS_DEVELOPMENT_TEAM"
+          printf '%s' "$GOOGLE_SERVICE_INFO_PLIST_B64" | base64 -d > frontend/ios/Runner/GoogleService-Info.plist
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          printf '%s' "$IOS_PROVISIONING_PROFILE_B64" | base64 -d > "$HOME/Library/MobileDevice/Provisioning Profiles/mitlist.mobileprovision"
+          printf '%s' "$IOS_EXPORT_OPTIONS_PLIST_B64" | base64 -d > frontend/ios/ExportOptions.plist
+          printf '\nDEVELOPMENT_TEAM=%s\nCODE_SIGN_IDENTITY=Apple Distribution\n' "$IOS_DEVELOPMENT_TEAM" >> frontend/ios/Flutter/Release.xcconfig
+      - name: Build iOS archive
+        env:
+          API_BASE_URL: ${{ secrets.BETA_API_BASE_URL }}
+          GLITCHTIP_DSN: ${{ secrets.GLITCHTIP_DSN_BETA }}
+          BETA_ENVIRONMENT: ${{ secrets.BETA_ENVIRONMENT }}
+          APP_CHECK_ENABLED: "true"
+          FIREBASE_PROJECT_ID: ${{ secrets.BETA_FIREBASE_PROJECT_ID }}
+          FIREBASE_PROJECT_NUMBER: ${{ secrets.BETA_FIREBASE_PROJECT_NUMBER }}
+          BUILD_NUMBER: ${{ gitea.run_number }}
+        run: |
+          set -eu
+
+          # Keep Android and iOS on the same server and release number. The
+          # endpoint is intentionally required for a usable store build.
+          test -n "$API_BASE_URL"
+          case "$API_BASE_URL" in
+            https://*) ;;
+            *) echo "BETA_API_BASE_URL must be an https URL" >&2; exit 1 ;;
+          esac
+          case "$API_BASE_URL" in
+            *" "*|*$'\n'*|*$'\r'*) echo "BETA_API_BASE_URL contains whitespace" >&2; exit 1 ;;
+          esac
+
+          case "$BUILD_NUMBER" in
+            ''|*[!0-9]*) echo "Gitea did not provide a numeric run number" >&2; exit 1 ;;
+          esac
+          test "$BUILD_NUMBER" -gt 0
+
+          ENVIRONMENT="${BETA_ENVIRONMENT:-beta}"
+          case "$ENVIRONMENT" in
+            ''|*[!A-Za-z0-9._-]*) echo "BETA_ENVIRONMENT contains invalid characters" >&2; exit 1 ;;
+          esac
+
+          # Keep iOS fail-closed as well: a signed beta without App Attest
+          # would otherwise look healthy while bypassing the API gate.
+          test "$APP_CHECK_ENABLED" = "true"
+          test -n "$FIREBASE_PROJECT_ID"
+          test -n "$FIREBASE_PROJECT_NUMBER"
+          case "$FIREBASE_PROJECT_ID" in
+            ''|*[!a-z0-9-]*) echo "BETA_FIREBASE_PROJECT_ID contains invalid characters" >&2; exit 1 ;;
+          esac
+          case "$FIREBASE_PROJECT_NUMBER" in
+            ''|*[!0-9]*) echo "BETA_FIREBASE_PROJECT_NUMBER must be numeric" >&2; exit 1 ;;
+          esac
+
+          cd frontend
+          flutter pub get
+          flutter build ipa --release \
+            --build-number="$BUILD_NUMBER" \
+            --dart-define="API_BASE_URL=$API_BASE_URL" \
+            --dart-define="GLITCHTIP_DSN=$GLITCHTIP_DSN" \
+            --dart-define="ENVIRONMENT=$ENVIRONMENT" \
+            --dart-define="APP_CHECK_ENABLED=$APP_CHECK_ENABLED" \
+            --dart-define="FIREBASE_PROJECT_ID=$FIREBASE_PROJECT_ID" \
+            --export-options-plist=ios/ExportOptions.plist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mitlist-ios-beta
+          path: frontend/build/ios/ipa/*.ipa

@@ -75,4 +75,29 @@ void main() {
     expect(engine.suggestions.first.sources,
         contains(HouseholdSuggestionSource.restock));
   });
+
+  test('preserves catalog ranking instead of re-sorting by prefix', () {
+    const familiarFuzzy = GrocerySuggestion(
+      canonicalItemId: 'familiar',
+      name: 'Weekly staple',
+      category: 'pantry',
+      unit: '',
+    );
+    const weakPrefix = GrocerySuggestion(
+      canonicalItemId: 'prefix',
+      name: 'Milk substitute',
+      category: 'dairy',
+      unit: '',
+    );
+    final engine = HouseholdSuggestionEngine()..beginQuery('mil');
+    engine.setGrocerySuggestions(
+      HouseholdSuggestionSource.catalog,
+      const [familiarFuzzy, weakPrefix],
+    );
+
+    expect(
+      engine.suggestions.map((suggestion) => suggestion.canonicalItemId),
+      ['familiar', 'prefix'],
+    );
+  });
 }

@@ -31,7 +31,7 @@ func TestGroceryGraphSyncRoundTrip(t *testing.T) {
 	clearTables(t)
 	router, _ := newGroceryRouter(t)
 
-	user := createTestUser(t, "grocery@example.com", "password123!")
+	user := createTestUser(t, "grocery@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	group := &models.Group{
@@ -116,7 +116,7 @@ func TestGroceryGraphSyncRoundTrip(t *testing.T) {
 	parseJSONResponse(t, rec, &versionResp)
 	assert.Equal(t, int64(2), versionResp.Version)
 
-	outsider := createTestUser(t, "grocery-outsider@example.com", "password123!")
+	outsider := createTestUser(t, "grocery-outsider@example.com", "Password123!")
 	outsiderToken := generateTestToken(outsider.ID)
 	rec = execRequest(t, router, "GET", "/groups/"+group.ID.String()+"/grocery/graph?since_version=0", nil, outsiderToken)
 	requireStatus(t, rec, http.StatusForbidden)
@@ -126,7 +126,7 @@ func TestGroceryCorrectionCreatesUnseededCanonicalItem(t *testing.T) {
 	clearTables(t)
 	router, _ := newGroceryRouter(t)
 
-	user := createTestUser(t, "grocery-unseeded@example.com", "password123!")
+	user := createTestUser(t, "grocery-unseeded@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	group := &models.Group{
@@ -197,7 +197,7 @@ func TestGroceryCorrectionCreatesUnseededCanonicalItem(t *testing.T) {
 func TestGroceryPurchaseBatchIsIdempotent(t *testing.T) {
 	clearTables(t)
 	router, _ := newGroceryRouter(t)
-	user := createTestUser(t, "grocery-purchases@example.com", "password123!")
+	user := createTestUser(t, "grocery-purchases@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 	group := createGroceryTestGroup(t, user.ID, "Purchase Learning Group")
 
@@ -242,7 +242,7 @@ func TestGroceryCorrectionRecorrectionUpdatesAliasCanonicalID(t *testing.T) {
 	clearTables(t)
 	router, _ := newGroceryRouter(t)
 
-	user := createTestUser(t, "grocery-recorrection@example.com", "password123!")
+	user := createTestUser(t, "grocery-recorrection@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 	group := createGroceryTestGroup(t, user.ID, "Grocery Recorrection Group")
 
@@ -294,7 +294,7 @@ func TestGroceryGraphDeltaPaginationDrains(t *testing.T) {
 	clearTables(t)
 	router, _ := newGroceryRouter(t)
 
-	user := createTestUser(t, "grocery-pagination@example.com", "password123!")
+	user := createTestUser(t, "grocery-pagination@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 	group := createGroceryTestGroup(t, user.ID, "Grocery Pagination Group")
 
@@ -340,7 +340,7 @@ func TestGroceryHandlerValidation(t *testing.T) {
 	clearTables(t)
 	router, _ := newGroceryRouter(t)
 
-	user := createTestUser(t, "grocery-validation@example.com", "password123!")
+	user := createTestUser(t, "grocery-validation@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 	group := createGroceryTestGroup(t, user.ID, "Grocery Validation Group")
 

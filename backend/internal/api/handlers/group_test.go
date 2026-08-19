@@ -16,7 +16,7 @@ import (
 func TestGroup_CreateGroup(t *testing.T) {
 	clearTables(t)
 	router, _ := newGroupRouter(t)
-	user := createTestUser(t, "group@example.com", "password123!")
+	user := createTestUser(t, "group@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	body := map[string]any{"name": "My Group", "currency": "USD"}
@@ -40,7 +40,7 @@ func TestGroup_CreateGroup_Unauthorized(t *testing.T) {
 func TestGroup_ListGroups(t *testing.T) {
 	clearTables(t)
 	router, _ := newGroupRouter(t)
-	user := createTestUser(t, "list@example.com", "password123!")
+	user := createTestUser(t, "list@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()
@@ -66,7 +66,7 @@ func TestGroup_ListGroups(t *testing.T) {
 func TestGroup_GetGroup(t *testing.T) {
 	clearTables(t)
 	router, _ := newGroupRouter(t)
-	user := createTestUser(t, "get@example.com", "password123!")
+	user := createTestUser(t, "get@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()
@@ -92,7 +92,7 @@ func TestGroup_GetGroup(t *testing.T) {
 func TestGroup_GetGroup_NotFound(t *testing.T) {
 	clearTables(t)
 	router, _ := newGroupRouter(t)
-	user := createTestUser(t, "nf@example.com", "password123!")
+	user := createTestUser(t, "nf@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	// GetGroup checks membership before existence to avoid leaking whether a
@@ -104,7 +104,7 @@ func TestGroup_GetGroup_NotFound(t *testing.T) {
 func TestGroup_UpdateGroup(t *testing.T) {
 	clearTables(t)
 	router, _ := newGroupRouter(t)
-	user := createTestUser(t, "update@example.com", "password123!")
+	user := createTestUser(t, "update@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()
@@ -131,7 +131,7 @@ func TestGroup_UpdateGroup(t *testing.T) {
 func TestGroup_DeleteGroup(t *testing.T) {
 	clearTables(t)
 	router, _ := newGroupRouter(t)
-	user := createTestUser(t, "delete@example.com", "password123!")
+	user := createTestUser(t, "delete@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()
@@ -158,8 +158,8 @@ func TestGroup_DeleteGroup(t *testing.T) {
 func TestGroup_JoinGroup(t *testing.T) {
 	clearTables(t)
 	router, _ := newGroupRouter(t)
-	owner := createTestUser(t, "owner@example.com", "password123!")
-	member := createTestUser(t, "member@example.com", "password123!")
+	owner := createTestUser(t, "owner@example.com", "Password123!")
+	member := createTestUser(t, "member@example.com", "Password123!")
 	memberToken := generateTestToken(member.ID)
 
 	groupRepo := newTestGroupRepo()
@@ -189,8 +189,8 @@ func TestGroup_JoinGroup(t *testing.T) {
 func TestGroup_RemoveMember(t *testing.T) {
 	clearTables(t)
 	router, _ := newGroupRouter(t)
-	owner := createTestUser(t, "owner2@example.com", "password123!")
-	member := createTestUser(t, "member2@example.com", "password123!")
+	owner := createTestUser(t, "owner2@example.com", "Password123!")
+	member := createTestUser(t, "member2@example.com", "Password123!")
 	ownerToken := generateTestToken(owner.ID)
 
 	groupRepo := newTestGroupRepo()
@@ -219,8 +219,8 @@ func TestGroup_RemoveMember(t *testing.T) {
 func TestGroup_UpdateMemberRole(t *testing.T) {
 	clearTables(t)
 	router, _ := newGroupRouter(t)
-	owner := createTestUser(t, "owner3@example.com", "password123!")
-	member := createTestUser(t, "member3@example.com", "password123!")
+	owner := createTestUser(t, "owner3@example.com", "Password123!")
+	member := createTestUser(t, "member3@example.com", "Password123!")
 	ownerToken := generateTestToken(owner.ID)
 
 	groupRepo := newTestGroupRepo()

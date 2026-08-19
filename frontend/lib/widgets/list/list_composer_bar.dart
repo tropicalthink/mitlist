@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
 import '../../services/scan/household_suggestion_engine.dart';
 import '../../theme/animations.dart';
+import '../../theme/list_tile_accent.dart';
 import '../../theme/spacing.dart';
+import '../../theme/typography.dart';
 import '../app_button.dart';
+import '../app_card.dart';
 import '../app_icon.dart';
-import '../chip.dart';
 
 class ListComposerBar extends StatelessWidget {
   const ListComposerBar({
@@ -31,13 +33,15 @@ class ListComposerBar extends StatelessWidget {
   Widget _buildSuggestions(BuildContext context) {
     if (!showProductSuggestions) return const SizedBox.shrink();
 
-    final chips = suggestions
-        .map((suggestion) => AppChip(
-              label: suggestion.name,
-              leading: suggestion.hasIntelligence
-                  ? const AppIcon(name: 'bolt', size: 14)
-                  : null,
-              onSelected: (_) {
+    final brightness = Theme.of(context).brightness;
+    final cards = suggestions
+        .map((suggestion) => _ComposerSuggestionCard(
+              suggestion: suggestion,
+              accent: ListTileAccent.fromSeed(
+                suggestion.canonicalItemId ?? suggestion.name,
+                brightness,
+              ),
+              onTap: () {
                 controller.text = suggestion.name;
                 onSuggestionSelected?.call(suggestion);
                 onAdd();
@@ -46,20 +50,21 @@ class ListComposerBar extends StatelessWidget {
         .toList(growable: false);
 
     // Reserve this slot at a fixed height for the whole time the composer is
-    // focused, whether or not chips have arrived yet — suggestions land in two
+    // focused, whether or not cards have arrived yet — suggestions land in two
     // independent async waves (fast local grocery/restock, then a slower
     // network product-history fetch) that each rebuild this row, so sizing to
-    // `chips.isEmpty` made the bar visibly resize per wave/keystroke instead of
+    // checking `suggestions.isEmpty` made the bar resize per wave/keystroke
     // settling once on focus.
     return Padding(
       padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
       child: SizedBox(
-        height: 32,
+        height: MitlistSpacing.space16,
         child: ListView.separated(
+          clipBehavior: Clip.none,
           scrollDirection: Axis.horizontal,
-          itemCount: chips.length,
+          itemCount: cards.length,
           separatorBuilder: (_, __) => const SizedBox(width: MitlistSpacing.sm),
-          itemBuilder: (context, index) => chips[index],
+          itemBuilder: (context, index) => cards[index],
         ),
       ),
     );
@@ -140,6 +145,78 @@ class ListComposerBar extends StatelessWidget {
                   tooltip: l10n.composerAddItem,
                 ),
               ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ComposerSuggestionCard extends StatelessWidget {
+  const _ComposerSuggestionCard({
+    required this.suggestion,
+    required this.accent,
+    required this.onTap,
+  });
+
+  final HouseholdSuggestion suggestion;
+  final ListTileAccent accent;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final detail =
+        suggestion.category.isNotEmpty ? suggestion.category : suggestion.unit;
+    return SizedBox(
+      width: MitlistSpacing.space20 * 2,
+      height: MitlistSpacing.space14,
+      child: AppCard(
+        interactive: true,
+        padding: AppCardPadding.sm,
+        backgroundColor: accent.tileBackground,
+        semanticLabel: suggestion.name,
+        onTap: onTap,
+        child: Row(
+          children: [
+            AppIcon(
+              name: suggestion.hasIntelligence ? 'bolt' : 'inventoryOutline',
+              size: MitlistSpacing.space5,
+              color: accent.iconColor,
+            ),
+            const SizedBox(width: MitlistSpacing.sm),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    suggestion.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: accent.titleColor,
+                          fontWeight: FontWeight.w700,
+                          height: 1.1,
+                        ),
+                  ),
+                  if (detail.isNotEmpty)
+                    Text(
+                      detail,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: MitlistTypography.labelXSmall(
+                        color: accent.snippetOnTile,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(width: MitlistSpacing.xs),
+            AppIcon(
+              name: 'plus',
+              size: MitlistSpacing.space4,
+              color: accent.iconColor,
             ),
           ],
         ),

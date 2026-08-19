@@ -216,7 +216,7 @@
   },
   "welcomeInviteHeadline": "Te han invitado",
   "welcomeInviteSubtitle": "Únete al hogar para compartir listas, tareas y gastos.",
-  "welcomeGuestFootnote": "Sin necesidad de cuenta. Prueba todo gratis durante 30 días.",
+  "welcomeGuestFootnote": "Sin registro. Crea una cuenta más adelante para conservar tus datos.",
   "@welcomeGuestFootnote": {
     "description": "Footnote below the guest button explaining the trial"
   },
@@ -530,6 +530,28 @@
   "@choreHowItSplits": {
     "description": "Fairness strip header text"
   },
+  "choreHouseAllClear": "Nada atrasado en la casa",
+  "@choreHouseAllClear": {
+    "description": "House-wide verdict in the hero when no chore is overdue"
+  },
+  "choreHouseOverdue": "{count, plural, =1{1 tarea atrasada en la casa} other{{count} tareas atrasadas en la casa}}",
+  "@choreHouseOverdue": {
+    "description": "House-wide verdict in the hero counting overdue chores across all members",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "choreNextInRotation": "después {name}",
+  "@choreNextInRotation": {
+    "description": "Who the turn passes to after the current assignee, shown on rotating chores",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "choreSupplySingular": "{count} suministro",
   "@choreSupplySingular": {
     "description": "Supply count label (1)",
@@ -668,6 +690,10 @@
     "description": "Label for AI suggestions section"
   },
   "choreCreationZoneLabel": "Zona",
+  "choreCreationZoneNone": "Sin zona",
+  "choreCreationZoneManageHint": "Mantén pulsada una zona para quitarla",
+  "choreCreationRemoveZoneTitle": "¿Quitar zona?",
+  "choreCreationRemoveZoneBody": "{zone} ya no aparecerá al añadir una tarea. Las tareas que ya la usan la conservan.",
   "@choreCreationZoneLabel": {
     "description": "Label for zone selector"
   },
@@ -956,6 +982,10 @@
   "choreDetailAssignee": "A quién le toca",
   "@choreDetailAssignee": {
     "description": "Detail row: assigned to"
+  },
+  "choreDetailNextUp": "Siguiente turno",
+  "@choreDetailNextUp": {
+    "description": "Detail row: who the turn passes to after the current assignee"
   },
   "choreDetailDue": "Vence",
   "@choreDetailDue": {
@@ -2924,7 +2954,7 @@
   "@accountFillPasswordFields": {
     "description": "Validation: all password fields required"
   },
-  "accountPasswordMinLength": "La nueva contraseña debe tener al menos 12 caracteres.",
+  "accountPasswordMinLength": "La nueva contraseña debe tener al menos 8 caracteres.",
   "@accountPasswordMinLength": {
     "description": "Validation: password too short"
   },
@@ -3157,6 +3187,10 @@
   "@notifPrefFailedLoad": {
     "description": "Error when preferences fail to load"
   },
+  "notifPrefFailedSave": "No se pudo guardar esta preferencia. Comprueba tu conexión e inténtalo de nuevo.",
+  "@notifPrefFailedSave": {
+    "description": "Error when a notification preference save fails"
+  },
   "notifPrefNoHouseholdDesc": "Únete o crea un hogar para configurar las preferencias de notificaciones.",
   "@notifPrefNoHouseholdDesc": {
     "description": "No-household description for preferences"
@@ -3197,11 +3231,11 @@
   "@notifPrefListItemAddedDesc": {
     "description": "Toggle subtitle for list item notifications"
   },
-  "notifPrefExpenseCreated": "Gasto creado",
+  "notifPrefExpenseCreated": "Actividad de dinero",
   "@notifPrefExpenseCreated": {
     "description": "Toggle label for expense notifications"
   },
-  "notifPrefExpenseCreatedDesc": "Cuando se registra un nuevo gasto",
+  "notifPrefExpenseCreatedDesc": "Gastos, cargos recurrentes y liquidaciones",
   "@notifPrefExpenseCreatedDesc": {
     "description": "Toggle subtitle for expense notifications"
   },
@@ -3237,6 +3271,8 @@
   "@notifPrefPushNotificationsDesc": {
     "description": "Toggle subtitle for push notifications"
   },
+  "notifPrefEmailNotifications": "Notificaciones por correo",
+  "notifPrefEmailNotificationsDesc": "Recibir recordatorios importantes por correo",
   "shoppingTripAppBarTitle": "Viaje de compras",
   "@shoppingTripAppBarTitle": {
     "description": "AppBar title for shopping trip"
@@ -3754,6 +3790,23 @@
     "description": "Placeholder for optional notes"
   },
   "expenseCreationDateLabel": "Fecha del gasto. Toca para cambiar.",
+  "expenseCreationStartsOn": "Empieza el {date}",
+  "expenseCreationNextDueLabel": "Primera vez. Toca para cambiar.",
+  "expenseCreationEditRepeatSemantic": "Repetición. Toca para cambiar.",
+  "expenseCreationRepeatNever": "No se repite",
+  "expenseCreationRepeatNeverOption": "Nunca",
+  "expenseCreationRepeatDaily": "Se repite a diario",
+  "expenseCreationRepeatWeekly": "Se repite cada semana",
+  "expenseCreationRepeatBiweekly": "Se repite cada 2 semanas",
+  "expenseCreationRepeatMonthly": "Se repite cada mes",
+  "expenseCreationRepeatQuarterly": "Se repite cada trimestre",
+  "expenseCreationRepeatYearly": "Se repite cada año",
+  "expenseCreationRepeatCurrencyHint": "Los gastos recurrentes se registran en {currency}.",
+  "expenseCreationRecurringTitle": "Nuevo gasto recurrente",
+  "expenseCreationRecurringEditTitle": "Editar gasto recurrente",
+  "expenseCreationRecurringAdded": "Gasto recurrente añadido",
+  "expenseCreationRecurringSaved": "Gasto recurrente actualizado",
+  "recurringEditTooltip": "Editar",
   "@expenseCreationDateLabel": {
     "description": "Semantics label for date picker"
   },
@@ -4407,7 +4460,18 @@
   "authOnboardingPinIt": "Fíjalo en el tablero",
   "authOnboardingInviteTitle": "Trae a tus compañeros",
   "authOnboardingInviteBody": "Comparte este código. Quien lo introduzca se unirá a tu hogar.",
-  "authOnboardingGoToBoard": "Ir a tu tablero",
+  "authOnboardingGoToBoard": "Continuar",
+  "authOnboardingReadyTitle": "Tu hogar está listo",
+  "authOnboardingReadyBody": "Tres cosas que debes saber. Ese es todo el mapa.",
+  "authOnboardingOrientationHome": "Inicio muestra lo que necesita atención",
+  "authOnboardingOrientationTabs": "Las pestañas mantienen cada parte del hogar en su sitio",
+  "authOnboardingOrientationAdd": "El botón + añade algo desde cualquier lugar",
+  "authOnboardingEnterHousehold": "Abrir {name}",
+  "authOnboardingResolving": "Abriendo tu tablero…",
+  "hubQuickStartNextSemantic": "Siguiente paso: {label}",
+  "hubQuickStartDismissedToast": "Inicio rápido guardado. Recupéralo cuando quieras desde Cuenta.",
+  "accountShowQuickStart": "Mostrar el inicio rápido en el tablero",
+  "accountQuickStartRestored": "El inicio rápido vuelve a estar en tu tablero.",
   "hubChecklistTitle": "Pon la casa en marcha",
   "hubChecklistDone": "Hecho",
   "hubChecklistProgress": "{done} de {total} hechos",
@@ -4506,11 +4570,11 @@
   "@authSignupPassword": {
     "description": "Password input label"
   },
-  "authSignupPasswordHint": "Al menos 12 caracteres",
+  "authSignupPasswordHint": "Al menos 8 caracteres",
   "@authSignupPasswordHint": {
     "description": "Password hint text"
   },
-  "authSignupPasswordMinLength": "La contraseña debe tener al menos 12 caracteres.",
+  "authSignupPasswordMinLength": "La contraseña debe tener al menos 8 caracteres.",
   "@authSignupPasswordMinLength": {
     "description": "Password too short validation"
   },
@@ -4567,6 +4631,34 @@
     "description": "Generic photo label"
   },
   "commonView": "Ver",
+  "notificationsOpenList": "Abrir lista",
+  "notificationsOpenChore": "Abrir tarea",
+  "notificationsOpenMoney": "Abrir finanzas",
+  "notificationsOpenRecipes": "Abrir recetas",
+  "notificationsOpenHousehold": "Abrir hogar",
+  "notificationChoreDueSoonTitle": "Tarea próxima",
+  "notificationChoreDueSoonBody": "{choreName} vence pronto",
+  "notificationChoreDueTodayTitle": "Tarea para hoy",
+  "notificationChoreDueTodayBody": "{choreName} vence hoy",
+  "notificationListUpdatedTitle": "{listName} actualizada",
+  "notificationListUpdatedOneBody": "{actorName} añadió {itemName} a {listName} en {groupName}.",
+  "notificationListUpdatedManyBody": "{actorName} añadió {count} artículos a {listName} en {groupName}.",
+  "notificationExpenseCreatedTitle": "Gasto añadido",
+  "notificationExpenseCreatedBody": "{actorName} añadió {expenseName} en {groupName}.",
+  "notificationRecurringExpenseTitle": "Gasto recurrente añadido",
+  "notificationRecurringExpenseBody": "Se añadió {expenseName}.",
+  "notificationSettlementRequestTitle": "Pago por confirmar",
+  "notificationSettlementPaidYouBody": "{actorName} dice que te pagó {amount} en {groupName}. Confirma para actualizar los saldos.",
+  "notificationSettlementYouPaidBody": "{actorName} dice que le pagaste {amount} en {groupName}. Confirma para actualizar los saldos.",
+  "notificationSettlementConfirmedTitle": "Pago confirmado",
+  "notificationSettlementConfirmedBody": "{actorName} confirmó tu pago de {amount} en {groupName}.",
+  "notificationSettlementDeclinedTitle": "Pago rechazado",
+  "notificationSettlementDeclinedBody": "{actorName} rechazó tu pago de {amount} en {groupName}.",
+  "notificationMealPlanTitle": "Plan de comidas actualizado",
+  "notificationMealPlanBody": "{actorName} actualizó el plan de comidas en {groupName}.",
+  "notificationWeeklyDigestTitle": "Resumen semanal",
+  "notificationWeeklyDigestBody": "{count, plural, =0{No hubo actividad en el hogar esta semana} =1{Tu hogar tuvo 1 actividad esta semana} other{Tu hogar tuvo {count} actividades esta semana}}",
+  "notificationPinwallReminderTitle": "Recordatorio",
   "@commonView": {
     "description": "Generic view button"
   },
@@ -5685,8 +5777,14 @@
   "runningLowHeading": "Se acaba",
   "@runningLowHeading": { "description": "Section header for the restock suggestion strip above the list" },
   "runningLowDaysAgo": "hace {days}d",
-  "@runningLowDaysAgo": { "description": "Per-chip cadence hint showing how many days since last purchase", "placeholders": { "days": { "type": "num" } } }
-  ,"householdStorageTitle": "Almacenamiento del hogar",
+  "@runningLowDaysAgo": { "description": "Per-chip cadence hint showing how many days since last purchase", "placeholders": { "days": { "type": "num" } } },
+  "restockReasonDue": "Toca reponer",
+  "@restockReasonDue": { "description": "Reason shown when a household suggestion is due based on purchase cadence" },
+  "restockReasonUsual": "Compra habitual",
+  "@restockReasonUsual": { "description": "Reason shown when a household suggestion is a familiar recurring purchase" },
+  "restockReasonGoesWith": "Va con esta lista",
+  "@restockReasonGoesWith": { "description": "Reason shown when a household suggestion commonly occurs with current list items" },
+  "householdStorageTitle": "Almacenamiento del hogar",
   "householdStorageUsedOf": "{used} de {limit} usados",
   "householdStorageUsedUnlimited": "{used} usados · sin límite",
   "householdStoragePending": "{pending} están reservados para cargas en curso.",
@@ -5740,5 +5838,6 @@
   "billingRenewsOn": "Se renueva el {date}",
   "billingEndsOn": "Termina el {date}",
   "billingMemberUsage": "{count} de {limit} plazas gratuitas usadas",
-  "billingUnlimitedMembers": "Miembros ilimitados"
+  "billingUnlimitedMembers": "Miembros ilimitados",
+  "expenseCreationDatePrefix": "Fecha"
 }

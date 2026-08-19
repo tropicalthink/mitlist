@@ -1,12 +1,35 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/billing_models.dart';
 import '../services/billing_service.dart';
-import 'auth_provider.dart' show authStateProvider;
+import '../services/iap_service.dart';
+import 'auth_provider.dart' show authStateProvider, authServiceProviderAsync;
 
 /// Provider for the BillingService instance.
 final billingServiceProvider = FutureProvider<BillingService>((ref) async {
   return await BillingService.create(ref);
+});
+
+/// The native In-App Purchase service, used on iOS and Android in place of the
+/// Polar hosted checkout. Kept alive for the session so the store's purchase
+/// stream is observed continuously; disposed when no longer watched.
+///
+/// Callers should still gate on [IapService.isSupported] — on web and desktop
+/// this resolves to a service whose platform checks all return false.
+final iapServiceProvider = FutureProvider<IapService>((ref) async {
+  ref.keepAlive();
+  final billing = await ref.read(billingServiceProvider.future);
+  final auth = await ref.read(authServiceProviderAsync.future);
+  final service = IapService(billing, auth);
+  service.start();
+  ref.listen<bool>(authStateProvider, (previous, next) {
+    if (next && previous != true) {
+      service.retryPendingVerification();
+    }
+  });
+  ref.onDispose(service.dispose);
+  return service;
 });
 
 /// The signed-in user's billing position.
@@ -27,13 +50,31 @@ final billingStatusProvider = FutureProvider<BillingStatus>((ref) async {
   }
 });
 
+/// Whether this particular client has a configured way to buy premium. The
+/// server may have Apple enabled while this is an Android/desktop client (or
+/// vice versa), which must not surface a checkout that cannot succeed.
+bool billingCheckoutEnabled(BillingStatus status) {
+  if (kIsWeb) return status.webEnabled;
+  switch (defaultTargetPlatform) {
+    case TargetPlatform.iOS:
+      return status.appleEnabled;
+    case TargetPlatform.android:
+      return status.googleEnabled;
+    default:
+      return status.webEnabled;
+  }
+}
+
 /// One household's premium position. Invalidate after joining, inviting, or
 /// changing the premium household so member counts stay honest.
 final householdEntitlementProvider =
     FutureProvider.family<HouseholdEntitlement?, String>((ref, groupId) async {
   final status = await ref.watch(billingStatusProvider.future);
   // No provider configured: there is no paywall to describe.
-  if (!status.enabled) return null;
+  if (!status.enabled ||
+      (!status.isSubscribed && !billingCheckoutEnabled(status))) {
+    return null;
+  }
 
   final service = await ref.read(billingServiceProvider.future);
   try {

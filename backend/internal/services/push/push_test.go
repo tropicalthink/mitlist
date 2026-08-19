@@ -23,8 +23,9 @@ import (
 // stubAuthRepo satisfies repositories.AuthRepo minimally for push tests.
 // Only DeletePushSubscription is exercised; all others panic.
 type stubAuthRepo struct {
-	mu      sync.Mutex
-	deleted []uuid.UUID
+	mu            sync.Mutex
+	deleted       []uuid.UUID
+	subscriptions []models.PushSubscription
 }
 
 func (r *stubAuthRepo) DeletePushSubscription(_ context.Context, id uuid.UUID) error {
@@ -72,7 +73,7 @@ func (r *stubAuthRepo) CreatePushSubscription(_ context.Context, _ *models.PushS
 	panic("not impl")
 }
 func (r *stubAuthRepo) ListPushSubscriptionsByUser(_ context.Context, _ uuid.UUID) ([]models.PushSubscription, error) {
-	panic("not impl")
+	return r.subscriptions, nil
 }
 func (r *stubAuthRepo) ListPushSubscriptionsByUserIDs(_ context.Context, _ []uuid.UUID) (map[uuid.UUID][]models.PushSubscription, error) {
 	panic("not impl")
@@ -81,7 +82,7 @@ func (r *stubAuthRepo) SaveDeviceToken(_ context.Context, _ uuid.UUID, _, _ stri
 	panic("not impl")
 }
 func (r *stubAuthRepo) ListDeviceTokensByUser(_ context.Context, _ uuid.UUID) ([]models.DeviceToken, error) {
-	panic("not impl")
+	return nil, nil
 }
 func (r *stubAuthRepo) ListDeviceTokensByUserIDs(_ context.Context, _ []uuid.UUID) (map[uuid.UUID][]models.DeviceToken, error) {
 	panic("not impl")
@@ -99,9 +100,10 @@ func (r *stubAuthRepo) ConsumeOAuthHandoff(_ context.Context, _ string) (uuid.UU
 // stubHTTPClient is a webpush.HTTPClient that returns a canned status code.
 // It satisfies webpush.HTTPClient (Do(*http.Request) (*http.Response, error)).
 type stubHTTPClient struct {
-	status int
-	delay  time.Duration // if > 0, sleep before returning
-	calls  int
+	status   int
+	statuses []int
+	delay    time.Duration // if > 0, sleep before returning
+	calls    int
 }
 
 func (c *stubHTTPClient) Do(req *http.Request) (*http.Response, error) {
@@ -113,8 +115,12 @@ func (c *stubHTTPClient) Do(req *http.Request) (*http.Response, error) {
 		case <-time.After(c.delay):
 		}
 	}
+	status := c.status
+	if len(c.statuses) >= c.calls {
+		status = c.statuses[c.calls-1]
+	}
 	return &http.Response{
-		StatusCode: c.status,
+		StatusCode: status,
 		Body:       io.NopCloser(strings.NewReader("")),
 	}, nil
 }
@@ -229,6 +235,46 @@ func TestSendWebPush_500_NoPrune(t *testing.T) {
 	if len(stub.deleted) != 0 {
 		t.Errorf("expected no deletions on 500, got %v", stub.deleted)
 	}
+}
+
+func TestSendToUser_ReturnsProviderFailure(t *testing.T) {
+	sub := validSub()
+	stub := &stubAuthRepo{subscriptions: []models.PushSubscription{sub}}
+	svc := newTestService(t, stub, &stubHTTPClient{status: http.StatusInternalServerError})
+
+	if err := svc.SendToUser(sub.UserID, `{"title":"hi"}`); err == nil {
+		t.Fatal("expected provider failure to be returned")
+	}
+}
+
+func TestSendWebPush_TransientFailureRetriesOnce(t *testing.T) {
+	stub := &stubAuthRepo{}
+	httpStub := &stubHTTPClient{statuses: []int{http.StatusTooManyRequests, http.StatusCreated}}
+	svc := newTestService(t, stub, httpStub)
+
+	svc.sendWebPush(context.Background(), validSub(), `{"title":"hi"}`)
+
+	if httpStub.calls != 2 {
+		t.Fatalf("expected one retry after transient response, got %d calls", httpStub.calls)
+	}
+}
+
+func TestNotificationCollapseKey(t *testing.T) {
+	t.Run("groups updates for the same entity", func(t *testing.T) {
+		got := notificationCollapseKey(map[string]string{
+			"entity_type": "chore",
+			"id":          "11111111-1111-1111-1111-111111111111",
+		})
+		if got != "chore:11111111-1111-1111-1111-111111111111" {
+			t.Fatalf("unexpected collapse key %q", got)
+		}
+	})
+
+	t.Run("does not collapse unrelated generic notifications", func(t *testing.T) {
+		if got := notificationCollapseKey(map[string]string{"notification_id": uuid.NewString()}); got != "" {
+			t.Fatalf("expected no collapse key, got %q", got)
+		}
+	})
 }
 
 // TestSendWebPush_Timeout verifies that a hanging endpoint unblocks within the client timeout.

@@ -33,11 +33,24 @@ import '../widgets/skeleton.dart';
 
 import '../widgets/app_toast.dart';
 
+/// The single editor for money leaving the household — whether it happens once
+/// or every month. A repeat schedule is a property of the expense, not a
+/// separate kind of thing, so the same amount / payer / split / category form
+/// backs both; picking a frequency swaps the create call for the recurring one.
 class ExpenseCreationSheet extends ConsumerStatefulWidget {
   final String? initialDescription;
   final String? initialAmount;
   final File? receiptImage;
   final ValueNotifier<bool>? dirtyNotifier;
+
+  /// The recurring rule being edited, when opened from the recurring list.
+  /// Null means "create".
+  final RecurringExpense? initialRecurring;
+
+  /// True when opened to manage a recurring rule. The repeat schedule is then
+  /// mandatory — there is no "Never" option, because turning it off would mean
+  /// the sheet silently stops managing the thing the caller opened it for.
+  final bool recurringOnly;
 
   const ExpenseCreationSheet({
     super.key,
@@ -45,6 +58,8 @@ class ExpenseCreationSheet extends ConsumerStatefulWidget {
     this.initialAmount,
     this.receiptImage,
     this.dirtyNotifier,
+    this.initialRecurring,
+    this.recurringOnly = false,
   });
 
   static Future<bool?> show(
@@ -64,6 +79,30 @@ class ExpenseCreationSheet extends ConsumerStatefulWidget {
         initialAmount: initialAmount,
         receiptImage: receiptImage,
         dirtyNotifier: dirty,
+      ),
+    );
+    unawaited(future.whenComplete(dirty.dispose));
+    return future;
+  }
+
+  /// Opens the same sheet locked to a repeat schedule, for creating or editing
+  /// a recurring rule.
+  static Future<bool?> showRecurring(
+    BuildContext context, {
+    RecurringExpense? existing,
+  }) async {
+    final l10n = AppLocalizations.of(context)!;
+    final dirty = ValueNotifier<bool>(false);
+    final future = showAppBottomSheet<bool>(
+      context: context,
+      title: existing == null
+          ? l10n.expenseCreationRecurringTitle
+          : l10n.expenseCreationRecurringEditTitle,
+      isDirtyListenable: dirty,
+      body: ExpenseCreationSheet(
+        dirtyNotifier: dirty,
+        initialRecurring: existing,
+        recurringOnly: true,
       ),
     );
     unawaited(future.whenComplete(dirty.dispose));
@@ -131,6 +170,37 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
   /// Reset to false the moment the user edits the field.
   bool _rateAutoFilled = false;
 
+  /// Frequencies the backend accepts as presets (it also parses raw cron, which
+  /// the UI deliberately doesn't expose).
+  static const List<String> _repeatFrequencies = [
+    'daily',
+    'weekly',
+    'biweekly',
+    'monthly',
+    'quarterly',
+    'yearly',
+  ];
+
+  /// The repeat schedule, or null for a one-off expense.
+  String? _repeatFrequency;
+
+  /// When the first (or next) occurrence is charged. Only meaningful while
+  /// [_isRecurring]; the one-off path uses [_date] instead.
+  DateTime _nextDue = DateTime.now().add(const Duration(days: 1));
+  bool _showRepeatEditor = false;
+
+  /// Whether the category chip row is unfolded.
+  bool _showCategoryEditor = false;
+
+  /// The rule's stored splits, used to restore the editor once members load.
+  Map<String, RecurringSplitInput> _initialSplitInputs = const {};
+
+  bool get _isRecurring => _repeatFrequency != null;
+
+  /// Receipts attach to a recorded expense, not to a schedule, so the scan flow
+  /// never offers a repeat toggle rather than silently dropping the image.
+  bool get _canOfferRepeat => widget.receiptImage == null;
+
   @override
   void initState() {
     super.initState();
@@ -142,6 +212,29 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
       _amountController.selection = TextSelection.fromPosition(
         TextPosition(offset: widget.initialAmount!.length),
       );
+    }
+    final recurring = widget.initialRecurring;
+    if (recurring != null) {
+      _descriptionController.text = recurring.description;
+      _amountController.text = (recurring.amount / 100).toStringAsFixed(2);
+      _category = recurring.category;
+      _categoryWasChosen = true; // never re-suggest over a saved category
+      _payerId = recurring.payerId;
+      _repeatFrequency = _repeatFrequencies.contains(recurring.frequency)
+          ? recurring.frequency
+          : 'monthly';
+      _nextDue = recurring.nextDue.toLocal();
+      // 'payer_only' is the legacy mode for rules created before splits were
+      // configurable; it has no editor, so it opens as an equal split.
+      _splitMode =
+          recurring.splitMode == 'payer_only' || recurring.splitMode.isEmpty
+              ? 'equal'
+              : recurring.splitMode;
+      _initialSplitInputs = {
+        for (final input in recurring.splitInputs) input.userId: input,
+      };
+    } else if (widget.recurringOnly) {
+      _repeatFrequency = 'monthly';
     }
     _loadGroupContext();
   }
@@ -182,13 +275,21 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
         _membersFailed = false;
         _myId = me.id;
         _payerId ??= me.id;
+        // Editing a rule restores its own participants; everything else starts
+        // with the whole household selected.
+        final restored = _initialSplitInputs.keys
+            .where((id) => members.any((m) => m.userId == id))
+            .toSet();
         _selectedMemberIds
           ..clear()
-          ..addAll(members.map((m) => m.userId));
+          ..addAll(
+              restored.isNotEmpty ? restored : members.map((m) => m.userId));
         for (final member in members) {
           _splitControllers.putIfAbsent(
             member.userId,
-            () => TextEditingController(text: '1'),
+            () => TextEditingController(
+              text: _initialSplitText(_initialSplitInputs[member.userId]),
+            ),
           );
         }
       });
@@ -268,6 +369,24 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
     }
   }
 
+  /// The split-editor value a restored rule should show for one member. Mirrors
+  /// the units the editor writes: currency for exact, whole percent for
+  /// percentage (stored as basis points), a bare count for shares.
+  String _initialSplitText(RecurringSplitInput? input) {
+    if (input == null) return '1';
+    return switch (_splitMode) {
+      'amount' => (input.amount / 100).toStringAsFixed(2),
+      'percentage' => _trimTrailingZeros(input.percentage / 100),
+      'shares' => input.shares == 0 ? '1' : '${input.shares}',
+      _ => '1',
+    };
+  }
+
+  static String _trimTrailingZeros(double value) =>
+      value == value.roundToDouble()
+          ? value.toStringAsFixed(0)
+          : value.toStringAsFixed(2);
+
   Future<void> _pickDate() async {
     final now = DateTime.now();
     final picked = await showDatePicker(
@@ -280,6 +399,60 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
     setState(() => _date = picked);
     _markDirty();
   }
+
+  /// Unlike the expense date, a schedule only points forward.
+  Future<void> _pickNextDue() async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final initial = _nextDue.isBefore(today) ? today : _nextDue;
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: today,
+      lastDate: DateTime(now.year + 5),
+    );
+    if (picked == null || !mounted) return;
+    setState(() => _nextDue = picked);
+    _markDirty();
+  }
+
+  void _onRepeatChanged(String? frequency) {
+    setState(() {
+      _repeatFrequency = frequency;
+      if (frequency != null) {
+        // The recurring job materialises expenses at fx_rate=1, so a rule in
+        // anything but the household currency would produce splits in the
+        // wrong denomination. Repeating means base currency, always.
+        _currency = _groupCurrency;
+        _fxRate = 1.0;
+        _fxRateController.clear();
+        _fxRateError = null;
+        _rateAutoFilled = false;
+      }
+    });
+    _markDirty();
+  }
+
+  String _repeatSummaryLabel(AppLocalizations l10n) =>
+      switch (_repeatFrequency) {
+        'daily' => l10n.expenseCreationRepeatDaily,
+        'weekly' => l10n.expenseCreationRepeatWeekly,
+        'biweekly' => l10n.expenseCreationRepeatBiweekly,
+        'monthly' => l10n.expenseCreationRepeatMonthly,
+        'quarterly' => l10n.expenseCreationRepeatQuarterly,
+        'yearly' => l10n.expenseCreationRepeatYearly,
+        _ => l10n.expenseCreationRepeatNever,
+      };
+
+  String _frequencyChipLabel(AppLocalizations l10n, String frequency) =>
+      switch (frequency) {
+        'daily' => l10n.recurringFrequencyDaily,
+        'weekly' => l10n.recurringFrequencyWeekly,
+        'biweekly' => l10n.recurringFrequencyBiweekly,
+        'monthly' => l10n.recurringFrequencyMonthly,
+        'quarterly' => l10n.recurringFrequencyQuarterly,
+        _ => l10n.recurringFrequencyYearly,
+      };
 
   /// Payer name for the collapsed summary line: "you" for the current user,
   /// otherwise the chosen member's display name.
@@ -333,6 +506,122 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
       _selectedMemberIds.isNotEmpty &&
       !_isSaving;
 
+  /// Brings a blocked submit's cause into view — the live split summary shows
+  /// the reason in red, but it may be scrolled off or folded away.
+  void _revealSplitProblem() {
+    unawaited(Haptics.medium());
+    final summaryContext = _splitSummaryKey.currentContext;
+    if (summaryContext != null) {
+      unawaited(
+        Scrollable.ensureVisible(
+          summaryContext,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOutCubic,
+          alignment: 0.5,
+        ),
+      );
+    }
+  }
+
+  Future<void> _onSubmit() => _isRecurring ? _onSaveRecurring() : _onCreate();
+
+  /// Creates or updates the recurring rule. Splits go over as a stored config
+  /// the job rebuilds on every occurrence, so a rule charges the same people
+  /// the same way each time instead of landing entirely on the payer.
+  Future<void> _onSaveRecurring() async {
+    final l10n = AppLocalizations.of(context)!;
+    if (!_canCreate) return;
+
+    final amount = _parseAmountToCents(_amountController.text);
+    if (amount == null) {
+      setState(() => _amountError = l10n.expenseCreationValidationAmount);
+      return;
+    }
+
+    final summary = computeSplitSummary(
+      l10n: l10n,
+      mode: _splitMode,
+      selectedIds: _selectedMemberIds,
+      controllers: _splitControllers,
+      totalCents: amount,
+      currency: _groupCurrency,
+    );
+    if (!summary.isValid) {
+      _revealSplitProblem();
+      return;
+    }
+
+    setState(() => _isSaving = true);
+
+    try {
+      final authService = await ref.read(authServiceProviderAsync.future);
+      final financeService = await ref.read(financeServiceProviderAsync.future);
+      final groups = await ref.read(cachedGroupsProvider.future);
+
+      if (!mounted) return;
+      final groupId = resolveActiveGroupId(
+        groups,
+        ref.read(currentGroupIdProvider),
+      );
+      if (groupId == null) {
+        setState(() => _isSaving = false);
+        AppToast.info(context, l10n.choreCreationJoinFirst);
+        return;
+      }
+
+      final me = await authService.getMe();
+      final existing = widget.initialRecurring;
+      if (existing != null) {
+        await financeService.updateRecurringExpense(
+          existing.id,
+          UpdateRecurringExpenseRequest(
+            payerId: _payerId ?? me.id,
+            amount: amount,
+            description: _descriptionController.text.trim(),
+            category: _category,
+            currency: _groupCurrency,
+            frequency: _repeatFrequency,
+            nextDue: _nextDue,
+            splitMode: _splitMode,
+            splitInputs: _buildRecurringSplitInputs(),
+          ),
+        );
+      } else {
+        await financeService.createRecurringExpense(
+          CreateRecurringExpenseRequest(
+            groupId: groupId,
+            payerId: _payerId ?? me.id,
+            amount: amount,
+            description: _descriptionController.text.trim(),
+            category: _category,
+            currency: _groupCurrency,
+            frequency: _repeatFrequency!,
+            nextDue: _nextDue,
+            isActive: true,
+            splitMode: _splitMode,
+            splitInputs: _buildRecurringSplitInputs(),
+          ),
+        );
+      }
+
+      if (!mounted) return;
+      widget.dirtyNotifier?.value = false;
+      Navigator.of(context).pop(true);
+      AppToast.success(
+        context,
+        existing != null
+            ? l10n.expenseCreationRecurringSaved
+            : l10n.expenseCreationRecurringAdded,
+      );
+      unawaited(Haptics.success());
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      AppToast.error(
+          context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
+    }
+  }
+
   Future<void> _onCreate() async {
     final l10n = AppLocalizations.of(context)!;
     if (!_canCreate) return;
@@ -361,20 +650,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
       currency: _groupCurrency,
     );
     if (!summary.isValid) {
-      // The live split summary shows the reason in red. Bring it into view so a
-      // blocked submit points at its cause instead of buzzing silently.
-      unawaited(Haptics.medium());
-      final summaryContext = _splitSummaryKey.currentContext;
-      if (summaryContext != null) {
-        unawaited(
-          Scrollable.ensureVisible(
-            summaryContext,
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeOutCubic,
-            alignment: 0.5,
-          ),
-        );
-      }
+      _revealSplitProblem();
       return;
     }
 
@@ -442,11 +718,20 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
         }
       }
 
+      // Grabbed before the pop: after it this State is disposed and `ref` can
+      // no longer be read.
+      final financeRepo = await ref.read(financeRepositoryProvider.future);
+
       if (!mounted) return;
       widget.dirtyNotifier?.value = false;
       Navigator.of(context).pop(true);
       AppToast.success(context, l10n.expenseCreationExpenseAdded);
       unawaited(Haptics.success());
+      // Land the expense in the local cache. Screens — and the hub quick start
+      // — watch the DB rather than the service, so without this the expense
+      // exists on the server but nothing on device knows until some other
+      // action forces a refresh.
+      unawaited(financeRepo.refreshGroup(groupId).catchError((_) => 0));
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSaving = false);
@@ -467,7 +752,58 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
     return (parsed * 100).round();
   }
 
+  /// Percent shares that can't be written exactly — three ways at 33.33% each —
+  /// round to 9999 basis points, and the server requires exactly 10000. The
+  /// editor deliberately accepts those (±0.05%), so the leftover is settled
+  /// here instead of surfacing as "percentages must total 100%" on a form that
+  /// just showed a green tick.
+  ///
+  /// The adjustment goes to the largest shares first: a basis point is the
+  /// smallest distortion there, and it can never push a small share to zero,
+  /// which the server rejects outright.
+  Map<String, int> _percentageBasisPoints() {
+    final points = <String, int>{};
+    var assigned = 0;
+    for (final userId in _selectedMemberIds) {
+      final raw = _splitControllers[userId]?.text.trim() ?? '';
+      final value = double.tryParse(raw.replaceAll(',', '.')) ?? 0;
+      final basisPoints = (value * 100).round();
+      points[userId] = basisPoints;
+      assigned += basisPoints;
+    }
+
+    // Nothing entered yet: leave it alone and let validation refuse the submit
+    // rather than inventing a distribution.
+    if (assigned <= 0) return points;
+
+    var remainder = 10000 - assigned;
+    if (remainder == 0) return points;
+
+    final byDescendingShare = points.keys.toList()
+      ..sort((a, b) => points[b]!.compareTo(points[a]!));
+    final step = remainder > 0 ? 1 : -1;
+    // Repeat the sweep in case a single pass can't absorb it — with the ±0.05%
+    // tolerance the remainder is a handful of basis points, but this keeps the
+    // loop correct rather than relying on that.
+    while (remainder != 0) {
+      var changed = false;
+      for (final userId in byDescendingShare) {
+        if (remainder == 0) break;
+        final next = points[userId]! + step;
+        if (next <= 0) continue; // a zero share is rejected by the server
+        points[userId] = next;
+        remainder -= step;
+        changed = true;
+      }
+      if (!changed) break; // nowhere left to put it; let the server object
+    }
+    return points;
+  }
+
   List<CreateExpenseSplitRequest> _buildSplitRequests() {
+    final percentages = _splitMode == 'percentage'
+        ? _percentageBasisPoints()
+        : const <String, int>{};
     return _selectedMemberIds.map((userId) {
       final raw = _splitControllers[userId]?.text.trim() ?? '';
       switch (_splitMode) {
@@ -477,10 +813,9 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
             amount: _parseAmountToCents(raw) ?? 0,
           );
         case 'percentage':
-          final value = double.tryParse(raw.replaceAll(',', '.')) ?? 0;
           return CreateExpenseSplitRequest(
             userId: userId,
-            percentage: (value * 100).round(),
+            percentage: percentages[userId] ?? 0,
           );
         case 'shares':
           return CreateExpenseSplitRequest(
@@ -489,6 +824,37 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
           );
         default:
           return CreateExpenseSplitRequest(userId: userId);
+      }
+    }).toList();
+  }
+
+  /// The recurring twin of [_buildSplitRequests]. Kept separate because the
+  /// recurring payload always carries all three weights (the Go struct has no
+  /// omitempty), whereas the expense payload sends only the one in play.
+  List<RecurringSplitInput> _buildRecurringSplitInputs() {
+    final percentages = _splitMode == 'percentage'
+        ? _percentageBasisPoints()
+        : const <String, int>{};
+    return _selectedMemberIds.map((userId) {
+      final raw = _splitControllers[userId]?.text.trim() ?? '';
+      switch (_splitMode) {
+        case 'amount':
+          return RecurringSplitInput(
+            userId: userId,
+            amount: _parseAmountToCents(raw) ?? 0,
+          );
+        case 'percentage':
+          return RecurringSplitInput(
+            userId: userId,
+            percentage: percentages[userId] ?? 0,
+          );
+        case 'shares':
+          return RecurringSplitInput(
+            userId: userId,
+            shares: int.tryParse(raw) ?? 0,
+          );
+        default:
+          return RecurringSplitInput(userId: userId);
       }
     }).toList();
   }
@@ -518,9 +884,15 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
             : totalCents;
     final l10n = AppLocalizations.of(context)!;
     // The payer + split editor stays folded for the common case, but is forced
-    // open whenever the split isn't a plain equal split so a custom split is
-    // never hidden behind the one-line summary.
-    final splitEditorOpen = _showSplitEditor || _splitMode != 'equal';
+    // open whenever the split isn't a plain equal split among everyone — a
+    // custom split, or a rule that leaves someone out, is never hidden behind
+    // the one-line summary.
+    // An empty member list means "still loading" or "no household" — neither is
+    // a partial split, so neither should force the editor open.
+    final splitsEveryone =
+        _members.isEmpty || _selectedMemberIds.length == _members.length;
+    final splitEditorOpen =
+        _showSplitEditor || _splitMode != 'equal' || !splitsEveryone;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -547,33 +919,37 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
               ),
             ),
             const SizedBox(width: MitlistSpacing.xs),
-            _CompactCurrencyButton(
-              value: _currency,
-              onChanged: (value) {
-                if (value == null) return;
-                setState(() {
-                  _currency = value;
-                  _rateAutoFilled = false;
-                  if (_currency == _groupCurrency) {
-                    // Back to base currency: no conversion needed.
-                    _fxRate = 1.0;
-                    _fxRateController.clear();
-                    _fxRateError = null;
-                  } else {
-                    // Switched to a foreign currency: clear stale rate, then
-                    // attempt to prefill from the advisory endpoint.
-                    _fxRate = 0.0;
-                    _fxRateController.clear();
-                    _fxRateError = null;
+            // A repeating expense is always booked in the household currency,
+            // so the selector steps aside rather than offering a choice that
+            // would be silently overridden on save.
+            if (!_isRecurring)
+              _CompactCurrencyButton(
+                value: _currency,
+                onChanged: (value) {
+                  if (value == null) return;
+                  setState(() {
+                    _currency = value;
+                    _rateAutoFilled = false;
+                    if (_currency == _groupCurrency) {
+                      // Back to base currency: no conversion needed.
+                      _fxRate = 1.0;
+                      _fxRateController.clear();
+                      _fxRateError = null;
+                    } else {
+                      // Switched to a foreign currency: clear stale rate, then
+                      // attempt to prefill from the advisory endpoint.
+                      _fxRate = 0.0;
+                      _fxRateController.clear();
+                      _fxRateError = null;
+                    }
+                  });
+                  // Attempt advisory prefill for foreign currencies (fail-soft).
+                  if (_currency != _groupCurrency) {
+                    _fetchAndPrefillRate(_currency, _groupCurrency);
                   }
-                });
-                // Attempt advisory prefill for foreign currencies (fail-soft).
-                if (_currency != _groupCurrency) {
-                  _fetchAndPrefillRate(_currency, _groupCurrency);
-                }
-                _markDirty();
-              },
-            ),
+                  _markDirty();
+                },
+              ),
           ],
         ),
         if (_isForeignCurrency) ...[
@@ -619,38 +995,55 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
             _scheduleCategorySuggestion(_descriptionController.text);
           },
         ),
-        // ── Category (horizontal chips) ───────────────────────────────
-        const SizedBox(height: MitlistSpacing.md),
-        Text(
-          l10n.expenseCreationCategoryLabel,
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+        // ── Category (folded: the description usually picks it) ───────
+        // A full chip row here carried the same visual weight as the amount
+        // and the description, so the sheet read as one flat list of equally
+        // important things. The category is nearly always already right — the
+        // description suggests it — so it states itself in one line and only
+        // unfolds when someone disagrees.
+        const SizedBox(height: MitlistSpacing.lg),
+        _SummaryLine(
+          text: '${l10n.expenseCreationCategoryLabel} · '
+              '${expenseCategoryLabel(l10n, _category)}',
+          semanticLabel: l10n.expenseCreationCategoryLabel,
+          expanded: _showCategoryEditor,
+          onTap: () =>
+              setState(() => _showCategoryEditor = !_showCategoryEditor),
         ),
-        const SizedBox(height: MitlistSpacing.sm),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              for (final key in expenseCategoryKeys)
-                Padding(
-                  padding: const EdgeInsets.only(right: MitlistSpacing.xs),
-                  child: AppChip(
-                    label: expenseCategoryLabel(l10n, key),
-                    selected: _category == key,
-                    onSelected: (_) {
-                      setState(() {
-                        _category = key;
-                        _categoryWasChosen = true;
-                        _categoryWasSuggested = false;
-                      });
-                      _categoryDebounce?.cancel();
-                      _markDirty();
-                    },
+        AnimatedSize(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          alignment: Alignment.topCenter,
+          child: _showCategoryEditor
+              ? Padding(
+                  padding: const EdgeInsets.only(top: MitlistSpacing.sm),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        for (final key in expenseCategoryKeys)
+                          Padding(
+                            padding:
+                                const EdgeInsets.only(right: MitlistSpacing.xs),
+                            child: AppChip(
+                              label: expenseCategoryLabel(l10n, key),
+                              selected: _category == key,
+                              onSelected: (_) {
+                                setState(() {
+                                  _category = key;
+                                  _categoryWasChosen = true;
+                                  _categoryWasSuggested = false;
+                                });
+                                _categoryDebounce?.cancel();
+                                _markDirty();
+                              },
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
-                ),
-            ],
-          ),
+                )
+              : const SizedBox.shrink(),
         ),
         // ── Paid by + split (folded to one calm line; tap to change) ──
         // Mirrors Splitwise/Tricount: the common case reads as a sentence
@@ -731,33 +1124,97 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
           ),
         ],
         // ── Date ──────────────────────────────────────────────────────
-        const SizedBox(height: MitlistSpacing.lg),
-        Row(
-          children: [
-            Expanded(
-              child: AppButton(
-                text: MaterialLocalizations.of(context).formatMediumDate(_date),
-                icon: const AppIcon(name: 'calendarDays', size: 18),
-                variant: AppButtonVariant.outline,
-                color: AppButtonColor.neutral,
-                onPressed: _pickDate,
-                semanticLabel: l10n.expenseCreationDateLabel,
-              ),
-            ),
-          ],
-        ),
-        // ── Notes (optional, recedes) ─────────────────────────────────
+        // One control, two meanings: when this happened, or when the schedule
+        // first fires. A rule has no "expense date" to record.
+        // Same quiet row as the lines around it — as an outline button it read
+        // as an action on a par with saving, which it isn't.
         const SizedBox(height: MitlistSpacing.sm),
-        AppInput(
-          variant: AppInputVariant.soft,
-          hint: l10n.expenseCreationNotesHint,
-          controller: _notesController,
-          textInputAction: TextInputAction.newline,
-          keyboardType: TextInputType.multiline,
-          minLines: 1,
-          maxLines: 4,
-          onChanged: (_) => _markDirty(),
+        _SummaryLine(
+          text: _isRecurring
+              ? l10n.expenseCreationStartsOn(
+                  MaterialLocalizations.of(context).formatMediumDate(_nextDue),
+                )
+              : '${l10n.expenseCreationDatePrefix} · '
+                  '${MaterialLocalizations.of(context).formatMediumDate(_date)}',
+          semanticLabel: _isRecurring
+              ? l10n.expenseCreationNextDueLabel
+              : l10n.expenseCreationDateLabel,
+          expanded: false,
+          expandable: false,
+          onTap: _isRecurring ? _pickNextDue : _pickDate,
         ),
+        // ── Repeat (folded to one line, like the split summary) ───────
+        if (_canOfferRepeat) ...[
+          const SizedBox(height: MitlistSpacing.sm),
+          _SummaryLine(
+            text: _repeatSummaryLabel(l10n),
+            semanticLabel: l10n.expenseCreationEditRepeatSemantic,
+            expanded: _showRepeatEditor,
+            onTap: () => setState(() => _showRepeatEditor = !_showRepeatEditor),
+          ),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
+            alignment: Alignment.topCenter,
+            child: _showRepeatEditor
+                ? Padding(
+                    padding: const EdgeInsets.only(top: MitlistSpacing.md),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Wrap(
+                          spacing: MitlistSpacing.sm,
+                          runSpacing: MitlistSpacing.sm,
+                          children: [
+                            if (!widget.recurringOnly)
+                              AppChip(
+                                label: l10n.expenseCreationRepeatNeverOption,
+                                selected: _repeatFrequency == null,
+                                onSelected: (_) => _onRepeatChanged(null),
+                              ),
+                            for (final frequency in _repeatFrequencies)
+                              AppChip(
+                                label: _frequencyChipLabel(l10n, frequency),
+                                selected: _repeatFrequency == frequency,
+                                onSelected: (_) => _onRepeatChanged(frequency),
+                              ),
+                          ],
+                        ),
+                        if (_isRecurring) ...[
+                          const SizedBox(height: MitlistSpacing.sm),
+                          Text(
+                            l10n.expenseCreationRepeatCurrencyHint(
+                                _groupCurrency),
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
+                                    ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  )
+                : const SizedBox.shrink(),
+          ),
+        ],
+        // ── Notes (optional, recedes) ─────────────────────────────────
+        // A recurring rule has nowhere to store notes, so the field is absent
+        // rather than accepting text that would be dropped on save.
+        if (!_isRecurring) ...[
+          const SizedBox(height: MitlistSpacing.sm),
+          AppInput(
+            variant: AppInputVariant.soft,
+            hint: l10n.expenseCreationNotesHint,
+            controller: _notesController,
+            textInputAction: TextInputAction.newline,
+            keyboardType: TextInputType.multiline,
+            minLines: 1,
+            maxLines: 4,
+            onChanged: (_) => _markDirty(),
+          ),
+        ],
         const SizedBox(height: MitlistSpacing.lg),
         SizedBox(
           width: double.infinity,
@@ -765,13 +1222,22 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
             variant: AppButtonVariant.solid,
             color: AppButtonColor.primary,
             size: AppButtonSize.lg,
-            text: _isSaving ? l10n.commonAdding : l10n.expenseAddExpense,
+            text: _submitLabel(l10n),
             isLoading: _isSaving,
-            onPressed: _canCreate ? _onCreate : null,
+            onPressed: _canCreate ? _onSubmit : null,
           ),
         ),
       ],
     );
+  }
+
+  /// A schedule is saved, not added — which also keeps the submit button from
+  /// echoing the recurring screen's "Add recurring" FAB behind the sheet.
+  String _submitLabel(AppLocalizations l10n) {
+    if (_isRecurring) {
+      return _isSaving ? l10n.commonSaving : l10n.commonSave;
+    }
+    return _isSaving ? l10n.commonAdding : l10n.expenseAddExpense;
   }
 }
 
@@ -1188,11 +1654,17 @@ class _SummaryLine extends StatelessWidget {
   final bool expanded;
   final VoidCallback onTap;
 
+  /// A row that opens a picker instead of unfolding in place keeps the same
+  /// quiet grammar but takes a chevron-right — an expand caret would promise
+  /// something the tap doesn't do.
+  final bool expandable;
+
   const _SummaryLine({
     required this.text,
     required this.semanticLabel,
     required this.expanded,
     required this.onTap,
+    this.expandable = true,
   });
 
   @override
@@ -1224,16 +1696,23 @@ class _SummaryLine extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: MitlistSpacing.sm),
-              AnimatedRotation(
-                turns: expanded ? 0.5 : 0,
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeOut,
-                child: Icon(
-                  Icons.expand_more,
+              if (expandable)
+                AnimatedRotation(
+                  turns: expanded ? 0.5 : 0,
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeOut,
+                  child: Icon(
+                    Icons.expand_more,
+                    size: 18,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                )
+              else
+                Icon(
+                  Icons.chevron_right,
                   size: 18,
                   color: colorScheme.onSurfaceVariant,
                 ),
-              ),
             ],
           ),
         ),

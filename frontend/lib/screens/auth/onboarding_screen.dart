@@ -12,7 +12,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/group_models.dart';
 import '../../providers/group_provider.dart';
-import '../../router.dart' show currentGroupIdProvider;
+import '../../router.dart' show currentGroupIdProvider, resetLastShellTab;
 import '../../sheets/join_household_sheet.dart';
 import '../../theme/animations.dart';
 import '../../theme/colors.dart';
@@ -28,17 +28,19 @@ import '../../widgets/app_icon.dart';
 import '../../widgets/app_input.dart';
 import '../../widgets/board/cork_board.dart';
 
-/// First run, staged as the app's own metaphor: one cork board, three beats.
+/// First run, staged as the app's own metaphor: one cork board, four beats.
 ///
 /// 1. Choose — a fresh sticky note ("create") and a torn paper slip ("join")
 ///    drop onto the board and settle with a spring wobble.
 /// 2. Name — the household name is written directly on the sticky note and
 ///    pinned to the board. No detour through a generic form sheet.
 /// 3. Invite — a slip with the invite code (and its QR) is torn off for the
-///    rest of the house; the board the user just dressed becomes their hub.
+///    rest of the house.
+/// 4. Ready — three navigation rules bridge into the real household hub
+///    without turning first run into a feature tour.
 ///
 /// Under reduced motion every beat is simply already in place.
-enum _Stage { choose, name, invite }
+enum _Stage { choose, name, invite, ready }
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -64,6 +66,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
   bool _createLanded = false;
   bool _joinLanded = false;
   bool _didStart = false;
+
+  // The board holds until we know whether this account already belongs to a
+  // household. Existing accounts go straight home without ever seeing the
+  // create/join notes; new ones get the full entrance. A hint appears only
+  // when the check is slow enough to feel like waiting.
+  bool _membershipResolved = false;
+  bool _showResolveHint = false;
+  Timer? _resolveHintTimer;
 
   _Stage _stage = _Stage.choose;
 
@@ -106,8 +116,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _startAnimation();
-      unawaited(_checkExistingGroups());
+      _resolveHintTimer = Timer(const Duration(milliseconds: 700), () {
+        if (mounted && !_membershipResolved) {
+          setState(() => _showResolveHint = true);
+        }
+      });
+      unawaited(_resolveMembership());
     });
   }
 
@@ -123,21 +137,50 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     }
   }
 
-  Future<void> _checkExistingGroups() async {
+  Future<void> _resolveMembership() async {
+    final pending = ref.read(cachedGroupsProvider.future);
     try {
-      final groups = await ref
-          .read(cachedGroupsProvider.future)
-          .timeout(const Duration(seconds: 10));
+      final groups = await pending.timeout(const Duration(seconds: 4));
       if (!mounted) return;
-      // Only skip onboarding when the user already belongs to a shared
-      // household, and only while they haven't started dressing the board.
+      if (groups.any((g) => g.isPersonal == false)) {
+        // Existing household: this screen was never for them.
+        context.goNamed('home');
+        return;
+      }
+      _revealChoose();
+    } catch (_) {
+      // Slow or offline — let the user proceed rather than hold the door.
+      if (!mounted) return;
+      _revealChoose();
+      unawaited(_skipIfLateResultHasHousehold(pending));
+    }
+  }
+
+  /// The 4s reveal timeout gave up on the fetch, but the fetch itself may
+  /// still land. If it eventually reports an existing household and the user
+  /// hasn't started dressing the board, skip home late rather than never.
+  Future<void> _skipIfLateResultHasHousehold(
+    Future<List<Group>> pending,
+  ) async {
+    try {
+      final groups = await pending;
+      if (!mounted) return;
       final hasHousehold = groups.any((g) => g.isPersonal == false);
       if (hasHousehold && _stage == _Stage.choose) {
         context.goNamed('home');
       }
     } catch (_) {
-      // API slow/unavailable — keep onboarding visible so the user can proceed.
+      // API unavailable — onboarding stays usable.
     }
+  }
+
+  void _revealChoose() {
+    _resolveHintTimer?.cancel();
+    setState(() {
+      _membershipResolved = true;
+      _showResolveHint = false;
+    });
+    _startAnimation();
   }
 
   void _startAnimation() {
@@ -154,6 +197,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
 
   @override
   void dispose() {
+    _resolveHintTimer?.cancel();
     _copiedTimer?.cancel();
     _nameController.dispose();
     _controller.dispose();
@@ -180,7 +224,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     final group = await JoinHouseholdSheet.show(context);
     if (group != null && mounted) {
       unawaited(ref.read(currentGroupIdProvider.notifier).set(group.id));
-      context.goNamed('home');
+      setState(() => _createdGroup = group);
+      _toStage(_Stage.ready);
     }
   }
 
@@ -296,9 +341,21 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     });
   }
 
-  void _goToBoard() {
+  Future<void> _goToBoard() async {
     unawaited(Haptics.light());
+    // Finishing first run lands on the household board. The shell restores the
+    // tab a previous session ended on the moment it builds, which overrode
+    // this navigation and dropped a brand-new household into whatever tab was
+    // last — clearing it first is what makes "go to the board" go to the
+    // board.
+    await resetLastShellTab();
+    if (!mounted) return;
     context.goNamed('home');
+  }
+
+  void _showReady() {
+    unawaited(Haptics.light());
+    _toStage(_Stage.ready);
   }
 
   // ── Build ──────────────────────────────────────────────────────────────────
@@ -306,6 +363,41 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+
+    if (!_membershipResolved) {
+      // Membership check in flight: hold the bare board. The hint paper only
+      // appears once the check is slow enough to feel like waiting, so the
+      // common fast path is a beat of cork before the notes drop in.
+      return Scaffold(
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            const CorkBoardBackground(),
+            if (_showResolveHint)
+              SafeArea(
+                child: Center(
+                  child: Semantics(
+                    liveRegion: true,
+                    child: TapedPaper(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: MitlistSpacing.lg,
+                        vertical: MitlistSpacing.space5,
+                      ),
+                      child: Text(
+                        l10n.authOnboardingResolving,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: MitlistColors.textPrimary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      );
+    }
 
     return Scaffold(
       body: Stack(
@@ -365,6 +457,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                                   _Stage.name => _nameStage(l10n, noteWidth),
                                   _Stage.invite =>
                                     _inviteStage(l10n, noteWidth),
+                                  _Stage.ready => _readyStage(l10n, noteWidth),
                                 },
                               ),
                             ),
@@ -397,6 +490,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
       _Stage.invite => (
           l10n.authOnboardingInviteTitle,
           l10n.authOnboardingInviteBody,
+        ),
+      _Stage.ready => (
+          l10n.authOnboardingReadyTitle,
+          l10n.authOnboardingReadyBody,
         ),
     };
 
@@ -675,10 +772,29 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                             ),
                           ),
                         ),
+                        const SizedBox(height: MitlistSpacing.space2),
+                        Center(
+                          child: AppButton(
+                            key: ValueKey(_copied),
+                            size: AppButtonSize.sm,
+                            text: _copied
+                                ? l10n.sheetInviteCopied
+                                : l10n.sheetInviteCopy,
+                            icon: _copied
+                                ? const AppIcon(name: 'checkCircle', size: 16)
+                                : const AppIcon(name: 'copy', size: 16),
+                            onPressed: _copyCode,
+                            variant: AppButtonVariant.ghost,
+                            color: _copied
+                                ? AppButtonColor.success
+                                : AppButtonColor.neutral,
+                          ),
+                        ),
                         const SizedBox(height: MitlistSpacing.space4),
                         AppButton(
                           variant: AppButtonVariant.solid,
                           color: AppButtonColor.primary,
+                          size: AppButtonSize.lg,
                           text: l10n.sheetInviteShare,
                           icon: const AppIcon(name: 'share', size: 18),
                           onPressed: () => SharePlus.instance.share(
@@ -687,25 +803,70 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                             ),
                           ),
                         ),
-                        const SizedBox(height: MitlistSpacing.space2),
-                        AppButton(
-                          key: ValueKey(_copied),
-                          text: _copied
-                              ? l10n.sheetInviteCopied
-                              : l10n.sheetInviteCopy,
-                          icon: _copied
-                              ? const AppIcon(name: 'checkCircle', size: 18)
-                              : const AppIcon(name: 'copy', size: 18),
-                          onPressed: _copyCode,
-                          variant: _copied
-                              ? AppButtonVariant.solid
-                              : AppButtonVariant.outline,
-                          color: _copied
-                              ? AppButtonColor.success
-                              : AppButtonColor.neutral,
-                        ),
                       ],
                     ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: MitlistSpacing.space6),
+        // One thing to do here, and it isn't leaving: sharing the invite is
+        // the only solid button on the beat. Continuing is a quiet outline and
+        // copying is a text button that lives with the code it copies — the
+        // three used to be near-equal blocks competing for the same tap.
+        AppButton(
+          variant: AppButtonVariant.outline,
+          color: AppButtonColor.neutral,
+          size: AppButtonSize.lg,
+          text: l10n.authOnboardingGoToBoard,
+          onPressed: _showReady,
+        ),
+      ],
+    );
+  }
+
+  // ── Final beat: the map ───────────────────────────────────────────────────
+
+  /// A ten-second handoff into the real shell. This is deliberately not a
+  /// feature tour: it names the three navigation rules and asks for no task.
+  Widget _readyStage(AppLocalizations l10n, double noteWidth) {
+    final groupName = _createdGroup?.name ?? l10n.hubAppBarTitle;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Align(
+          alignment: Alignment.center,
+          child: SizedBox(
+            width: math.max(noteWidth, 320.0),
+            child: Transform.rotate(
+              angle: -0.012,
+              child: TornSlip(
+                padding: const EdgeInsets.fromLTRB(
+                  MitlistSpacing.lg,
+                  MitlistSpacing.space6,
+                  MitlistSpacing.lg,
+                  MitlistSpacing.space5,
+                ),
+                child: Column(
+                  children: [
+                    _OrientationRow(
+                      icon: 'home',
+                      label: l10n.authOnboardingOrientationHome,
+                    ),
+                    const _OrientationRule(),
+                    _OrientationRow(
+                      icon: 'squares2x2',
+                      label: l10n.authOnboardingOrientationTabs,
+                    ),
+                    const _OrientationRule(),
+                    _OrientationRow(
+                      icon: 'plus',
+                      label: l10n.authOnboardingOrientationAdd,
+                      accent: true,
+                    ),
                   ],
                 ),
               ),
@@ -717,10 +878,81 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
           variant: AppButtonVariant.solid,
           color: AppButtonColor.primary,
           size: AppButtonSize.lg,
-          text: l10n.authOnboardingGoToBoard,
+          text: l10n.authOnboardingEnterHousehold(groupName),
+          icon: const AppIcon(name: 'arrowRight', size: 18),
           onPressed: _goToBoard,
         ),
       ],
+    );
+  }
+}
+
+class _OrientationRow extends StatelessWidget {
+  const _OrientationRow({
+    required this.icon,
+    required this.label,
+    this.accent = false,
+  });
+
+  final String icon;
+  final String label;
+  final bool accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final iconBackground =
+        accent ? MitlistColors.primary500 : MitlistColors.surfaceSecondary;
+    final iconColor = accent ? Colors.white : MitlistColors.textPrimary;
+
+    return Semantics(
+      label: label,
+      child: ExcludeSemantics(
+        child: Row(
+          children: [
+            Container(
+              width: MitlistSpacing.space12,
+              height: MitlistSpacing.space12,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: iconBackground,
+                border: Border.all(
+                  color: MitlistColors.borderPrimary,
+                  width: 2,
+                ),
+              ),
+              child: AppIcon(name: icon, size: 22, color: iconColor),
+            ),
+            const SizedBox(width: MitlistSpacing.space4),
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: MitlistColors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                      height: 1.25,
+                    ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _OrientationRule extends StatelessWidget {
+  const _OrientationRule();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.space3),
+      child: Container(
+        height: 2,
+        color: MitlistColors.borderPrimary.withValues(alpha: 0.18),
+      ),
     );
   }
 }
@@ -764,10 +996,23 @@ class _ChoiceNote extends StatelessWidget {
                   height: 1.4,
                 ),
           ),
-          const SizedBox(height: MitlistSpacing.space3),
-          Align(
-            alignment: Alignment.centerRight,
-            child: Icon(Icons.arrow_forward, size: 20, color: ink),
+          const SizedBox(height: MitlistSpacing.space4),
+          // The blank name line the next beat asks you to write on — the same
+          // show-the-thing move as the join slip's empty code boxes.
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Icon(Icons.edit_outlined,
+                  size: 18, color: ink.withValues(alpha: 0.65)),
+              const SizedBox(width: MitlistSpacing.space2),
+              Container(
+                width: 120,
+                height: 2,
+                color: ink.withValues(alpha: 0.45),
+              ),
+              const Spacer(),
+              Icon(Icons.arrow_forward, size: 20, color: ink),
+            ],
           ),
         ],
       ),

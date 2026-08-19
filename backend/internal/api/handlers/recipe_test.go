@@ -16,7 +16,7 @@ import (
 func TestRecipe_CreateRecipe(t *testing.T) {
 	clearTables(t)
 	router, _ := newRecipeRouter(t)
-	user := createTestUser(t, "recipe@example.com", "password123!")
+	user := createTestUser(t, "recipe@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	body := map[string]any{
@@ -38,7 +38,7 @@ func TestRecipe_CreateRecipe(t *testing.T) {
 func TestRecipe_ListRecipes(t *testing.T) {
 	clearTables(t)
 	router, _ := newRecipeRouter(t)
-	user := createTestUser(t, "lsrecipe@example.com", "password123!")
+	user := createTestUser(t, "lsrecipe@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	recipeRepo := newTestRecipeRepo()
@@ -67,7 +67,7 @@ func TestRecipe_ListRecipes(t *testing.T) {
 func TestRecipe_GetRecipe_NotFound(t *testing.T) {
 	clearTables(t)
 	router, _ := newRecipeRouter(t)
-	user := createTestUser(t, "nfrecipe@example.com", "password123!")
+	user := createTestUser(t, "nfrecipe@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	rec := execRequest(t, router, "GET", "/api/v1/recipes/"+uuid.New().String(), nil, token)
@@ -77,7 +77,7 @@ func TestRecipe_GetRecipe_NotFound(t *testing.T) {
 func TestRecipe_UpdateRecipe(t *testing.T) {
 	clearTables(t)
 	router, _ := newRecipeRouter(t)
-	user := createTestUser(t, "uprecipe@example.com", "password123!")
+	user := createTestUser(t, "uprecipe@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	recipeRepo := newTestRecipeRepo()
@@ -108,7 +108,7 @@ func TestRecipe_UpdateRecipe(t *testing.T) {
 func TestRecipe_DeleteRecipe(t *testing.T) {
 	clearTables(t)
 	router, _ := newRecipeRouter(t)
-	user := createTestUser(t, "delrecipe@example.com", "password123!")
+	user := createTestUser(t, "delrecipe@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	recipeRepo := newTestRecipeRepo()
@@ -134,7 +134,7 @@ func TestRecipe_DeleteRecipe(t *testing.T) {
 func TestRecipe_GetRecipeIngredients(t *testing.T) {
 	clearTables(t)
 	router, _ := newRecipeRouter(t)
-	user := createTestUser(t, "ingredients@example.com", "password123!")
+	user := createTestUser(t, "ingredients@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	recipeRepo := newTestRecipeRepo()
@@ -175,7 +175,7 @@ func TestRecipe_GetRecipeIngredients(t *testing.T) {
 func TestRecipe_GetRecipeIngredients_NotFound(t *testing.T) {
 	clearTables(t)
 	router, _ := newRecipeRouter(t)
-	user := createTestUser(t, "nfingredients@example.com", "password123!")
+	user := createTestUser(t, "nfingredients@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	rec := execRequest(t, router, "GET", "/api/v1/recipes/"+uuid.New().String()+"/ingredients", nil, token)
@@ -185,7 +185,7 @@ func TestRecipe_GetRecipeIngredients_NotFound(t *testing.T) {
 func TestRecipe_GetRecipeSteps(t *testing.T) {
 	clearTables(t)
 	router, _ := newRecipeRouter(t)
-	user := createTestUser(t, "steps@example.com", "password123!")
+	user := createTestUser(t, "steps@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	recipeRepo := newTestRecipeRepo()
@@ -224,7 +224,7 @@ func TestRecipe_GetRecipeSteps(t *testing.T) {
 func TestRecipe_AddToList(t *testing.T) {
 	clearTables(t)
 	router, _ := newRecipeRouter(t)
-	user := createTestUser(t, "addtolist@example.com", "password123!")
+	user := createTestUser(t, "addtolist@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()
@@ -294,7 +294,7 @@ func TestRecipe_AddToList(t *testing.T) {
 func TestRecipe_AddMissingToList(t *testing.T) {
 	clearTables(t)
 	router, _ := newRecipeRouter(t)
-	user := createTestUser(t, "addmissing@example.com", "password123!")
+	user := createTestUser(t, "addmissing@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()
@@ -366,7 +366,7 @@ func TestRecipe_AddMissingToList(t *testing.T) {
 func TestRecipe_AddToList_CanonicalResolution(t *testing.T) {
 	clearTables(t)
 	router, _ := newRecipeRouterWithGrocery(t)
-	user := createTestUser(t, "canonicallist@example.com", "password123!")
+	user := createTestUser(t, "canonicallist@example.com", "Password123!")
 	token := generateTestToken(user.ID)
 
 	groupRepo := newTestGroupRepo()

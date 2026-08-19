@@ -180,9 +180,11 @@ void main() {
       final entries = jsonDecode(
         (await db.getCurrentChoresOnce(groupId))!.choresJson,
       ) as List;
-      expect(entries, hasLength(1), reason: 'no duplicate after the create syncs');
+      expect(entries, hasLength(1),
+          reason: 'no duplicate after the create syncs');
       expect((entries.single as Map)['chore']['id'], 'server-1');
-      expect(entries.map((e) => (e as Map)['chore']['id']), isNot(contains(localId)));
+      expect(entries.map((e) => (e as Map)['chore']['id']),
+          isNot(contains(localId)));
     });
 
     test('a complete queued against the local id retargets the server id',

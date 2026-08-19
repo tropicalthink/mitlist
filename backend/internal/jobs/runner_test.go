@@ -12,7 +12,7 @@ func TestRunner_RegisterAll(t *testing.T) {
 	r := NewRunner(nil, nil, log)
 	r.RegisterAll()
 
-	assert.Len(t, r.jobs, 5)
+	assert.Len(t, r.jobs, 6)
 
 	expected := map[string]struct {
 		schedule string
@@ -23,6 +23,7 @@ func TestRunner_RegisterAll(t *testing.T) {
 		"chore-reminder":    {"0 9 * * *", true},
 		"weekly-summary":    {"0 9 * * 1", true},
 		"pinwall-reminder":  {"* * * * *", true},
+		"guest-cleanup":     {"15 3 * * *", true},
 	}
 
 	for _, j := range r.jobs {
@@ -31,4 +32,21 @@ func TestRunner_RegisterAll(t *testing.T) {
 		assert.Equal(t, exp.schedule, j.Schedule, "job %s schedule mismatch", j.Name)
 		assert.Equal(t, exp.enabled, j.Enabled, "job %s enabled mismatch", j.Name)
 	}
+}
+
+func TestRunner_RegisterAll_WithDispatcherRegistersListDigest(t *testing.T) {
+	log := logger.New("test")
+	r := NewRunnerWithDispatcher(nil, &capturedDispatch{}, log)
+	r.RegisterAll()
+
+	assert.Len(t, r.jobs, 7)
+	found := false
+	for _, job := range r.jobs {
+		if job.Name == "list-notification-digest" {
+			found = true
+			assert.Equal(t, "* * * * *", job.Schedule)
+			assert.True(t, job.Enabled)
+		}
+	}
+	assert.True(t, found)
 }

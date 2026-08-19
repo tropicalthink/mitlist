@@ -1,0 +1,6 @@
+aiohttp
+pytest
+pytest-homeassistant-custom-component
+PyYAML
+ruff
+voluptuous

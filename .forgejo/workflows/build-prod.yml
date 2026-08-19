@@ -18,8 +18,13 @@
 #     date-and-short-sha string; SHA alone is what hosts/anansi/stacks/mitlist
 #     pins via MITLIST_TAG, and it makes rollback a tag change.
 #
-# Every `test -n` gate below is carried over deliberately. The official image
-# must never fall back to an unauthenticated App Check provider.
+# Every `test -n` gate below is carried over deliberately: the official image
+# must never fall back to an unattested guest endpoint.
+#
+# What changed 2026-08-19: the web build no longer carries Firebase or App
+# Check values at all. App Check's only web provider is reCAPTCHA Enterprise,
+# which needs GCP billing to protect exactly one endpoint, so web attests with
+# Cloudflare Turnstile and mobile keeps App Check. The API accepts either.
 name: build-prod
 
 on:
@@ -75,40 +80,35 @@ jobs:
           GLITCHTIP_DSN: ${{ secrets.GLITCHTIP_DSN_WEB }}
           REQTRACK_APP_KEY: ${{ secrets.REQTRACK_APP_KEY }}
           REQTRACK_URL: ${{ secrets.REQTRACK_URL }}
+          TURNSTILE_SITE_KEY: ${{ secrets.TURNSTILE_SITE_KEY }}
           ANDROID_APP_LINK_SHA256: ${{ secrets.ANDROID_APP_LINK_SHA256 }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          APP_CHECK_ENABLED: "true"
-          FIREBASE_PROJECT_ID: ${{ secrets.PRODUCTION_FIREBASE_PROJECT_ID }}
-          FIREBASE_PROJECT_NUMBER: ${{ secrets.PRODUCTION_FIREBASE_PROJECT_NUMBER }}
-          FIREBASE_APP_CHECK_REQUIRED: ${{ secrets.PRODUCTION_FIREBASE_APP_CHECK_REQUIRED }}
-          FIREBASE_API_KEY: ${{ secrets.PRODUCTION_FIREBASE_API_KEY }}
-          FIREBASE_APP_ID: ${{ secrets.PRODUCTION_FIREBASE_APP_ID }}
-          FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.PRODUCTION_FIREBASE_MESSAGING_SENDER_ID }}
-          APP_CHECK_WEB_RECAPTCHA_SITE_KEY: ${{ secrets.PRODUCTION_APP_CHECK_WEB_RECAPTCHA_SITE_KEY }}
         run: |
           set -eu
+          # Fail closed on everything the official build must not ship without.
+          # No Firebase or App Check values here any more: App Check is
+          # mobile-only (see AppCheckConfig), and the web build attests with
+          # Turnstile, so a missing site key is the thing worth stopping for.
           test -n "$API_BASE_URL"
-          test -n "$ANDROID_APP_LINK_SHA256"
           test -n "$APPLE_TEAM_ID"
-          test "$APP_CHECK_ENABLED" = "true"
-          test -n "$FIREBASE_PROJECT_ID"
-          test -n "$FIREBASE_PROJECT_NUMBER"
-          test "$FIREBASE_APP_CHECK_REQUIRED" = "true"
-          test -n "$FIREBASE_API_KEY"
-          test -n "$FIREBASE_APP_ID"
-          test -n "$FIREBASE_MESSAGING_SENDER_ID"
-          test -n "$APP_CHECK_WEB_RECAPTCHA_SITE_KEY"
-          case "$FIREBASE_PROJECT_ID" in
-            ''|*[!a-z0-9-]*) echo "FIREBASE_PROJECT_ID has invalid characters" >&2; exit 1 ;;
-          esac
-          case "$FIREBASE_PROJECT_NUMBER" in
-            ''|*[!0-9]*) echo "FIREBASE_PROJECT_NUMBER must be numeric" >&2; exit 1 ;;
-          esac
+          test -n "$TURNSTILE_SITE_KEY"
 
-          sed -i "s/__PLAY_APP_SIGNING_SHA256__/$ANDROID_APP_LINK_SHA256/g" \
-            frontend/web/.well-known/assetlinks.json
           sed -i "s/__APPLE_TEAM_ID__/$APPLE_TEAM_ID/g" \
             frontend/web/.well-known/apple-app-site-association
+
+          # Android is deliberately conditional. The fingerprint is the Play
+          # app-signing certificate, which does not exist until the first AAB
+          # upload — and that upload is manual. Publishing the placeholder is
+          # publishing a false statement, so serve no file rather than a wrong
+          # one; the check below then still catches every other placeholder.
+          if [ -n "$ANDROID_APP_LINK_SHA256" ]; then
+            sed -i "s/__PLAY_APP_SIGNING_SHA256__/$ANDROID_APP_LINK_SHA256/g" \
+              frontend/web/.well-known/assetlinks.json
+          else
+            echo "no ANDROID_APP_LINK_SHA256: dropping assetlinks.json" >&2
+            rm -f frontend/web/.well-known/assetlinks.json
+          fi
+
           if grep -R '__[A-Z0-9_]*__' frontend/web/.well-known; then
             echo "Unresolved app-link association placeholder" >&2
             exit 1
@@ -120,12 +120,7 @@ jobs:
             --build-arg ENVIRONMENT=production \
             --build-arg REQTRACK_APP_KEY="$REQTRACK_APP_KEY" \
             --build-arg REQTRACK_URL="$REQTRACK_URL" \
-            --build-arg APP_CHECK_ENABLED="$APP_CHECK_ENABLED" \
-            --build-arg FIREBASE_PROJECT_ID="$FIREBASE_PROJECT_ID" \
-            --build-arg FIREBASE_API_KEY="$FIREBASE_API_KEY" \
-            --build-arg FIREBASE_APP_ID="$FIREBASE_APP_ID" \
-            --build-arg FIREBASE_MESSAGING_SENDER_ID="$FIREBASE_MESSAGING_SENDER_ID" \
-            --build-arg APP_CHECK_WEB_RECAPTCHA_SITE_KEY="$APP_CHECK_WEB_RECAPTCHA_SITE_KEY" \
+            --build-arg TURNSTILE_SITE_KEY="$TURNSTILE_SITE_KEY" \
             -f frontend/Dockerfile.prod \
             -t "$IMAGE_PREFIX-frontend:${{ github.sha }}" \
             frontend

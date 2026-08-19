@@ -2,6 +2,8 @@ package config
 
 import (
 	"fmt"
+	"net"
+	"net/url"
 	"os"
 	"reflect"
 	"strconv"
@@ -53,8 +55,20 @@ type Config struct {
 	// Firebase / FCM (mobile push)
 	// Set FIREBASE_PROJECT_ID and FIREBASE_SERVICE_ACCOUNT_JSON (raw JSON string)
 	// to enable FCM push to Android and iOS devices.
-	FirebaseProjectID      string `env:"FIREBASE_PROJECT_ID"`
-	FirebaseServiceAccount string `env:"FIREBASE_SERVICE_ACCOUNT_JSON"`
+	FirebaseProjectID string `env:"FIREBASE_PROJECT_ID"`
+	// App Check JWTs use the numeric Firebase project number for issuer and
+	// audience validation. It is separate from FirebaseProjectID, which is
+	// sufficient for FCM but not for verifying App Check tokens.
+	FirebaseProjectNumber         string `env:"FIREBASE_PROJECT_NUMBER"`
+	FirebaseAppCheckRequired      bool   `env:"FIREBASE_APP_CHECK_REQUIRED" default:"false"`
+	FirebaseAppCheckAllowedAppIDs string `env:"FIREBASE_APP_CHECK_ALLOWED_APP_IDS"`
+	FirebaseServiceAccount        string `env:"FIREBASE_SERVICE_ACCOUNT_JSON"`
+
+	// Cloudflare Turnstile guards guest creation from the web, where App
+	// Check's attestation providers (Play Integrity, App Attest) do not apply.
+	// Web builds no longer ship an App Check provider at all; mobile still does,
+	// so the two run side by side rather than one replacing the other.
+	TurnstileSecretKey string `env:"TURNSTILE_SECRET_KEY"`
 
 	// Email
 	ResendAPIKey    string `env:"RESEND_API_KEY"`
@@ -126,6 +140,37 @@ type Config struct {
 	// FreeMemberLimit is the largest household size that stays free. Only
 	// enforced when billing is configured.
 	FreeMemberLimit int `env:"FREE_MEMBER_LIMIT" default:"4"`
+
+	// Apple In-App Purchase (opt-in, mobile only). Signed StoreKit transactions
+	// and notifications are verified locally and only require the bundle id.
+	// App Store Server API credentials are intentionally absent: this code does
+	// not call that API, so accepting an unused private key would be misleading.
+	AppleIAPBundleID    string `env:"APPLE_IAP_BUNDLE_ID"`
+	AppleIAPEnvironment string `env:"APPLE_IAP_ENVIRONMENT" default:"Production"`
+	// AppleIAPAppID is the numeric App Store Connect Apple ID. Apple includes it
+	// in production notifications, where it is checked alongside the bundle id.
+	AppleIAPAppID int `env:"APPLE_IAP_APP_ID"`
+	// AppleIAPProductMonthly and AppleIAPProductYearly map an App Store product
+	// id back to a billing interval, since StoreKit reports the product but not
+	// the plan cadence in a form we key on.
+	AppleIAPProductMonthly string `env:"APPLE_IAP_PRODUCT_MONTHLY"`
+	AppleIAPProductYearly  string `env:"APPLE_IAP_PRODUCT_YEARLY"`
+
+	// Google Play In-App Purchase (opt-in, mobile only). Leave
+	// GOOGLE_PLAY_SERVICE_ACCOUNT_JSON empty to keep Google IAP disabled. The
+	// service account verifies purchase tokens via the Play Developer API.
+	GooglePlayPackageName        string `env:"GOOGLE_PLAY_PACKAGE_NAME"`
+	GooglePlayServiceAccountJSON string `env:"GOOGLE_PLAY_SERVICE_ACCOUNT_JSON"`
+	// GooglePubSubAudience and GooglePubSubServiceAccount secure the RTDN push
+	// endpoint with Pub/Sub's Google-signed OIDC bearer token.
+	GooglePubSubAudience       string `env:"GOOGLE_PUBSUB_AUDIENCE"`
+	GooglePubSubServiceAccount string `env:"GOOGLE_PUBSUB_SERVICE_ACCOUNT"`
+	// GooglePlaySubscriptionID is the Play Console subscription product id.
+	GooglePlaySubscriptionID string `env:"GOOGLE_PLAY_SUBSCRIPTION_ID" default:"premium"`
+	// GooglePlayProductMonthly and GooglePlayProductYearly are the base-plan ids
+	// mapped to a billing interval, mirroring the Apple pair above.
+	GooglePlayProductMonthly string `env:"GOOGLE_PLAY_PRODUCT_MONTHLY"`
+	GooglePlayProductYearly  string `env:"GOOGLE_PLAY_PRODUCT_YEARLY"`
 }
 
 // Load reads the .env file (if it exists) and populates a Config from the environment.
@@ -192,6 +237,7 @@ func (c *Config) LogIntegrationStatus() {
 	emailOn := c.ResendAPIKey != "" || c.SendGridSMTPUser != "" || c.BrevoSMTPUser != ""
 	webPushOn := c.VapidPublicKey != "" && c.VapidPrivateKey != ""
 	mobilePushOn := c.FirebaseProjectID != "" && c.FirebaseServiceAccount != ""
+	appCheckOn := c.FirebaseAppCheckRequired
 	storageOn := c.S3BucketName != ""
 	oauthOn := c.GoogleClientID != "" || c.AppleClientID != ""
 	errorReportingOn := c.SentryDSN != ""
@@ -203,6 +249,7 @@ func (c *Config) LogIntegrationStatus() {
 		Bool("email", emailOn).
 		Bool("web_push", webPushOn).
 		Bool("mobile_push", mobilePushOn).
+		Bool("firebase_app_check", appCheckOn).
 		Bool("file_storage", storageOn).
 		Bool("oauth", oauthOn).
 		Bool("error_reporting", errorReportingOn).
@@ -223,6 +270,12 @@ func (c *Config) LogIntegrationStatus() {
 	}
 	if !billingOn {
 		disabled = append(disabled, "billing (set POLAR_ACCESS_TOKEN and POLAR_WEBHOOK_SECRET; households grow without limit until then)")
+	}
+	if !c.AppleIAPEnabled() {
+		disabled = append(disabled, "apple_iap (set APPLE_IAP_BUNDLE_ID and both APPLE_IAP_PRODUCT_* ids for App Store subscriptions)")
+	}
+	if !c.GoogleIAPEnabled() {
+		disabled = append(disabled, "google_iap (set GOOGLE_PLAY_SERVICE_ACCOUNT_JSON and GOOGLE_PLAY_PACKAGE_NAME for Play Store subscriptions)")
 	}
 	if len(disabled) > 0 {
 		log.Warn().Strs("disabled_integrations", disabled).
@@ -247,7 +300,24 @@ func (c Config) MaskSecrets() Config {
 	masked.AWSSecretAccessKey = mask(masked.AWSSecretAccessKey)
 	masked.PolarAccessToken = mask(masked.PolarAccessToken)
 	masked.PolarWebhookSecret = mask(masked.PolarWebhookSecret)
+	masked.GooglePlayServiceAccountJSON = mask(masked.GooglePlayServiceAccountJSON)
 	return masked
+}
+
+// AppleIAPEnabled reports whether Apple In-App Purchase verification is
+// configured. Mobile IAP is independent of the Polar web checkout: a server can
+// run one, both, or neither.
+func (c *Config) AppleIAPEnabled() bool {
+	return c.AppleIAPBundleID != "" && c.AppleIAPProductMonthly != "" &&
+		c.AppleIAPProductYearly != ""
+}
+
+// GoogleIAPEnabled reports whether Google Play purchase verification is
+// configured.
+func (c *Config) GoogleIAPEnabled() bool {
+	return c.GooglePlayServiceAccountJSON != "" && c.GooglePlayPackageName != "" &&
+		c.GooglePlaySubscriptionID != "" && c.GooglePlayProductMonthly != "" &&
+		c.GooglePlayProductYearly != ""
 }
 
 func (c *Config) Validate() error {
@@ -263,8 +333,41 @@ func (c *Config) Validate() error {
 	if c.Environment == "production" && (c.SecretKey == "dev-only-insecure-key-do-not-use-in-prod" || c.SessionSecretKey == "dev-only-insecure-key-do-not-use-in-prod") {
 		return fmt.Errorf("refusing to start in production with default dev secret keys — set SECRET_KEY and SESSION_SECRET_KEY in environment")
 	}
+	if c.Environment == "production" {
+		frontendURL, err := url.Parse(c.FrontendURL)
+		if err != nil || frontendURL.Host == "" || (frontendURL.Scheme != "http" && frontendURL.Scheme != "https") {
+			return fmt.Errorf("FRONTEND_URL must be an absolute http(s) origin in production")
+		}
+		host := strings.ToLower(frontendURL.Hostname())
+		if host == "localhost" || strings.HasSuffix(host, ".localhost") {
+			return fmt.Errorf("FRONTEND_URL must not use localhost in production")
+		}
+		if ip := net.ParseIP(host); ip != nil && ip.IsLoopback() {
+			return fmt.Errorf("FRONTEND_URL must not use a loopback address in production")
+		}
+	}
+	if c.FirebaseAppCheckRequired && strings.TrimSpace(c.FirebaseProjectNumber) == "" {
+		return fmt.Errorf("FIREBASE_PROJECT_NUMBER is required when Firebase App Check is enabled")
+	}
+	if c.FirebaseAppCheckRequired && strings.TrimSpace(c.FirebaseAppCheckAllowedAppIDs) == "" {
+		return fmt.Errorf("FIREBASE_APP_CHECK_ALLOWED_APP_IDS is required when Firebase App Check is enabled")
+	}
 	if c.SecretKey != "" && c.SecretKey == c.SessionSecretKey {
 		return fmt.Errorf("SECRET_KEY and SESSION_SECRET_KEY must be different")
+	}
+	if (c.GooglePubSubAudience == "") != (c.GooglePubSubServiceAccount == "") {
+		return fmt.Errorf("GOOGLE_PUBSUB_AUDIENCE and GOOGLE_PUBSUB_SERVICE_ACCOUNT must be set together")
+	}
+	switch strings.ToLower(c.AppleIAPEnvironment) {
+	case "", "production", "sandbox", "both":
+	default:
+		return fmt.Errorf("invalid APPLE_IAP_ENVIRONMENT: must be Production, Sandbox, or Both")
+	}
+	if c.AppleIAPEnabled() && strings.ToLower(c.AppleIAPEnvironment) != "sandbox" && c.AppleIAPAppID <= 0 {
+		return fmt.Errorf("production Apple IAP requires APPLE_IAP_APP_ID")
+	}
+	if c.GoogleIAPEnabled() && (c.GooglePubSubAudience == "" || c.GooglePubSubServiceAccount == "") {
+		return fmt.Errorf("Google IAP requires authenticated RTDN: set GOOGLE_PUBSUB_AUDIENCE and GOOGLE_PUBSUB_SERVICE_ACCOUNT")
 	}
 	return nil
 }
