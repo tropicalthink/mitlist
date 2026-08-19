@@ -54,14 +54,11 @@ class FirebaseAppCheckService implements AppCheckTokenProvider {
     }
 
     try {
+      // Native config only: google-services.json / GoogleService-Info.plist.
+      // Web never reaches here — AppCheckConfig.enabled is false there — so no
+      // providerWeb is registered and no Firebase web options are needed.
       if (Firebase.apps.isEmpty) {
-        if (kIsWeb) {
-          final options = AppCheckConfig.firebaseWebOptions;
-          if (options == null) return false;
-          await Firebase.initializeApp(options: options);
-        } else {
-          await Firebase.initializeApp();
-        }
+        await Firebase.initializeApp();
       }
 
       await FirebaseAppCheck.instance.activate(
@@ -71,9 +68,6 @@ class FirebaseAppCheckService implements AppCheckTokenProvider {
         providerApple: kDebugMode
             ? const AppleDebugProvider()
             : const AppleAppAttestWithDeviceCheckFallbackProvider(),
-        providerWeb: kDebugMode
-            ? WebDebugProvider()
-            : ReCaptchaV3Provider(AppCheckConfig.webRecaptchaSiteKey),
       );
       _active = true;
       _activationError = null;

@@ -20,6 +20,7 @@ import (
 	"github.com/mitlist-app/mitlist/internal/server"
 	"github.com/mitlist-app/mitlist/internal/services"
 	appcheckservice "github.com/mitlist-app/mitlist/internal/services/appcheck"
+	turnstileservice "github.com/mitlist-app/mitlist/internal/services/turnstile"
 	"github.com/mitlist-app/mitlist/pkg/logger"
 )
 
@@ -143,6 +144,10 @@ func main() {
 	}
 	authHandler := handlers.NewAuthHandler(cfg, cnt.UserService(), cnt.GuestService(), cnt.OAuthService(), cnt.JWT(), appCheckVerifier)
 	authHandler.SetIntegrationCredentialService(cnt.IntegrationCredentialService())
+	// Web guest creation attests with Turnstile instead of App Check. Absent
+	// TURNSTILE_SECRET_KEY the verifier is simply disabled, which is what a
+	// self-hosted deployment wants.
+	authHandler.SetTurnstileVerifier(turnstileservice.New(cfg))
 	srv.Router().Route(cfg.APIPrefix+"/v1", func(r chi.Router) {
 		authHandler.RegisterRoutes(r)
 

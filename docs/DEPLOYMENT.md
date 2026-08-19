@@ -75,7 +75,27 @@ DATABASE_URL="$DATABASE_URL" go run ./cmd/migrate version
 - [ ] Keep coarse IP abuse protection enabled at the edge. Fine-grained API
       rate-limit buckets are process-local, so replicas do not share them.
 
-### App Check enforcement
+### Guest sign-up attestation
+
+The guest endpoint is the only unauthenticated, abuse-sensitive route, and the
+proof it demands depends on the platform:
+
+- **Mobile** presents a Firebase App Check token (Play Integrity / App Attest).
+- **Web** presents a Cloudflare Turnstile token. App Check's only web provider
+  is reCAPTCHA Enterprise, which would add a GCP billing dependency to protect
+  one endpoint, so the browser solves an invisible Turnstile challenge instead.
+
+The API accepts either, and rejects a caller that presents neither while App
+Check is enforced. Turnstile needs one runtime variable:
+
+```dotenv
+TURNSTILE_SECRET_KEY=0x...
+```
+
+Leave it unset and web guests are unattested — the correct default for a
+self-hosted instance, and not acceptable for the official service.
+
+#### App Check enforcement (mobile)
 
 The official hosted service runs with Firebase App Check required. Configure
 the API runtime before admitting traffic:
@@ -85,7 +105,7 @@ ENVIRONMENT=production
 FIREBASE_PROJECT_ID=your-firebase-project
 FIREBASE_PROJECT_NUMBER=123456789012
 FIREBASE_APP_CHECK_REQUIRED=true
-FIREBASE_APP_CHECK_ALLOWED_APP_IDS=1:...:android:...,1:...:ios:...,1:...:web:...
+FIREBASE_APP_CHECK_ALLOWED_APP_IDS=1:...:android:...,1:...:ios:...
 # Required separately only when FCM push is enabled:
 FIREBASE_SERVICE_ACCOUNT_JSON={...}
 ```
@@ -93,13 +113,14 @@ FIREBASE_SERVICE_ACCOUNT_JSON={...}
 The Firebase project must contain the exact Android (`me.mitlist`) and iOS
 (`me.mitlist`) apps shipped by the beta/production workflows. Android release
 builds use Play Integrity, iOS release builds use App Attest, and the
-production web app must be registered with the reCAPTCHA provider and its
-generated web app ID. Do not put a
+web app is not registered with an App Check provider at all — it uses
+Turnstile, above. Do not put a
 Firebase App Check debug token in a production secret or artifact. If the
 project number, or required flag is absent, stop the cutover — a
 hosted API must not silently accept unauthenticated mobile traffic.
 For the official service, populate `FIREBASE_APP_CHECK_ALLOWED_APP_IDS` with
-the exact Android, iOS, and web App IDs from Firebase Console. The API refuses
+the exact Android and iOS App IDs from Firebase Console; the web App ID no
+longer belongs there, because web builds ship no App Check provider. The API refuses
 to start with App Check required and an empty allowlist.
 
 Self-hosted instances are intentionally opt-in: `FIREBASE_APP_CHECK_REQUIRED`

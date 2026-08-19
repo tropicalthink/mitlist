@@ -64,6 +64,12 @@ type Config struct {
 	FirebaseAppCheckAllowedAppIDs string `env:"FIREBASE_APP_CHECK_ALLOWED_APP_IDS"`
 	FirebaseServiceAccount        string `env:"FIREBASE_SERVICE_ACCOUNT_JSON"`
 
+	// Cloudflare Turnstile guards guest creation from the web, where App
+	// Check's attestation providers (Play Integrity, App Attest) do not apply.
+	// Web builds no longer ship an App Check provider at all; mobile still does,
+	// so the two run side by side rather than one replacing the other.
+	TurnstileSecretKey string `env:"TURNSTILE_SECRET_KEY"`
+
 	// Email
 	ResendAPIKey    string `env:"RESEND_API_KEY"`
 	ResendFromEmail string `env:"RESEND_FROM_EMAIL"`
