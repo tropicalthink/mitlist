@@ -33,14 +33,17 @@ class CreateListSheet extends ConsumerStatefulWidget {
   /// One of 'shopping', 'todo', 'custom'. Null → defaults to shopping.
   final String? initialType;
 
-  static Future<bool?> show(
+  /// Resolves to the created list, or null if the sheet was dismissed. The
+  /// list is already in the local cache by then, so callers can navigate
+  /// straight into it and every DB-backed watcher has it.
+  static Future<ItemList?> show(
     BuildContext context, {
     String? initialGroupId,
     String? initialName,
     String? initialType,
   }) async {
     final l10n = AppLocalizations.of(context)!;
-    return showAppBottomSheet<bool>(
+    return showAppBottomSheet<ItemList>(
       context: context,
       title: l10n.sheetCreateListTitle,
       body: CreateListSheet(
@@ -146,8 +149,8 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
     });
 
     try {
-      final listService = await ref.read(listServiceProviderAsync.future);
-      await listService.createList(
+      final repo = await ref.read(listRepositoryProvider.future);
+      final created = await repo.createList(
         CreateListRequest(
           groupId: _selectedGroupId!,
           name: _nameController.text.trim(),
@@ -156,7 +159,7 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
       );
 
       if (!mounted) return;
-      Navigator.of(context).pop(true);
+      Navigator.of(context).pop(created);
       AppToast.success(context, l10n.createListCreated);
     } catch (e) {
       if (!mounted) return;

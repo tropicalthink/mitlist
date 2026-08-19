@@ -690,6 +690,10 @@
     "description": "Label for AI suggestions section"
   },
   "choreCreationZoneLabel": "Zone",
+  "choreCreationZoneNone": "Aucune zone",
+  "choreCreationZoneManageHint": "Appuyez longuement sur une zone pour la supprimer",
+  "choreCreationRemoveZoneTitle": "Supprimer la zone ?",
+  "choreCreationRemoveZoneBody": "{zone} ne sera plus proposée lors de la création d’une tâche. Les tâches qui l’utilisent déjà la conservent.",
   "@choreCreationZoneLabel": {
     "description": "Label for zone selector"
   },
@@ -5834,5 +5838,6 @@
   "billingRenewsOn": "Renouvellement le {date}",
   "billingEndsOn": "Se termine le {date}",
   "billingMemberUsage": "{count} place(s) gratuite(s) sur {limit} utilisée(s)",
-  "billingUnlimitedMembers": "Membres illimités"
+  "billingUnlimitedMembers": "Membres illimités",
+  "expenseCreationDatePrefix": "Date"
 }

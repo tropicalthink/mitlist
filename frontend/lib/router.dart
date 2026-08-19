@@ -456,6 +456,20 @@ final routerProvider = Provider<GoRouter>((ref) {
   return router;
 });
 
+const _lastShellTabKey = 'nav_last_tab_index';
+
+/// Forgets the remembered bottom-nav tab so the next entry into the shell
+/// lands on the hub.
+///
+/// Onboarding calls this before handing over: the shell restores the tab the
+/// last session ended on, which silently overrode the explicit "go to the
+/// board" navigation and dropped a freshly created household into whatever
+/// tab happened to be last.
+Future<void> resetLastShellTab() async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setInt(_lastShellTabKey, 0);
+}
+
 class BottomNavScaffold extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
   const BottomNavScaffold({super.key, required this.navigationShell});
@@ -465,7 +479,6 @@ class BottomNavScaffold extends ConsumerStatefulWidget {
 }
 
 class _BottomNavScaffoldState extends ConsumerState<BottomNavScaffold> {
-  static const _lastTabKey = 'nav_last_tab_index';
   bool _restored = false;
 
   /// Nav motion stays off until the tab the user left on has been restored and
@@ -485,7 +498,7 @@ class _BottomNavScaffoldState extends ConsumerState<BottomNavScaffold> {
 
   Future<void> _restoreLastTab() async {
     final prefs = await SharedPreferences.getInstance();
-    final saved = prefs.getInt(_lastTabKey) ?? 0;
+    final saved = prefs.getInt(_lastShellTabKey) ?? 0;
     if (!mounted || _restored) return;
     _restored = true;
     if (saved != 0 && saved < 5) {
@@ -515,7 +528,8 @@ class _BottomNavScaffoldState extends ConsumerState<BottomNavScaffold> {
     }
     markShellTabVisited(ref, index);
     widget.navigationShell.goBranch(index);
-    SharedPreferences.getInstance().then((p) => p.setInt(_lastTabKey, index));
+    SharedPreferences.getInstance()
+        .then((p) => p.setInt(_lastShellTabKey, index));
   }
 
   @override

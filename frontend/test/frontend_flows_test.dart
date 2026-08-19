@@ -1757,6 +1757,13 @@ class FakeListRepository implements ListRepository {
       _service.listLists(groupId);
 
   @override
+  Future<ItemList> createList(CreateListRequest req) async {
+    final created = await _service.createList(req);
+    _controller.add(await _service.listLists(req.groupId));
+    return created;
+  }
+
+  @override
   Future<int> refreshLists(String groupId,
       {int limit = 200, int offset = 0}) async {
     final lists = await _service.listLists(

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -30,6 +31,7 @@ import '../../widgets/chip.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/list_entrance.dart';
+import '../../widgets/masonry_flow.dart';
 import '../../widgets/mitlist_app_bar.dart';
 import 'list_detail_screen.dart';
 
@@ -370,7 +372,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
       initialGroupId: widget.groupId,
       initialType: _filterToListType(),
     );
-    if (created == true) {
+    if (created != null) {
       await _loadLists();
     }
   }
@@ -707,41 +709,62 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
   static int _gridColumns(double maxWidth) =>
       (maxWidth / _minTileWidth).floor().clamp(2, 5);
 
-  // Slightly taller tiles than before: the bottom action row grew to honor
-  // the 44px touch-target floor.
-  double _gridAspectRatio(BuildContext context) =>
-      MediaQuery.textScalerOf(context).scale(1.0) > 1.2 ? 0.68 : 0.74;
+  /// A card never gets shorter than this, so a freshly created empty list
+  /// still reads as a card rather than a strip of title.
+  static const double _minCardHeight = 116.0;
 
+  /// The waterfall: cards keep their own height (a two-item list is visibly
+  /// shorter than a four-item one) instead of every tile being stretched to a
+  /// single aspect ratio. Laid out eagerly — the page is bounded by the same
+  /// pagination that fed the old grid.
   Widget _buildGrid(List<ItemList> lists) {
-    final itemCount =
-        lists.length + (_isLoadingMore || _loadMoreError != null ? 1 : 0);
-
     return LayoutBuilder(
       builder: (context, constraints) {
         final columns = _gridColumns(constraints.maxWidth);
-        final aspectRatio = _gridAspectRatio(context);
+        final columnWidth = (constraints.maxWidth -
+                _contentPadding.horizontal -
+                MitlistSpacing.md * (columns - 1)) /
+            columns;
+        final textScale = MediaQuery.textScalerOf(context).scale(1.0);
+        final groups = ref.watch(cachedGroupsProvider).valueOrNull ?? const [];
+        final showsGroupLine = groups.length > 1;
 
-        return GridView.builder(
+        return SingleChildScrollView(
           controller: _scrollController,
           physics: const AlwaysScrollableScrollPhysics(),
           padding: _contentPadding,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: columns,
-            mainAxisSpacing: MitlistSpacing.md,
-            crossAxisSpacing: MitlistSpacing.md,
-            childAspectRatio: aspectRatio,
-          ),
-          itemCount: itemCount,
-          itemBuilder: (context, index) {
-            if (index >= lists.length) return _buildPaginationFooter();
-            return ListEntrance(
-              index: index,
-              child: _ListCard(
-                list: lists[index],
-                onChanged: () => unawaited(_loadLists()),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              MasonryFlow(
+                columnCount: columns,
+                spacing: MitlistSpacing.md,
+                itemCount: lists.length,
+                estimateExtent: (i) => _estimateCardExtent(
+                  lists[i],
+                  columnWidth: columnWidth,
+                  textScale: textScale,
+                  showsGroupLine: showsGroupLine,
+                ),
+                itemBuilder: (context, index) => ListEntrance(
+                  index: index,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: _minCardHeight * textScale,
+                    ),
+                    child: _ListCard(
+                      list: lists[index],
+                      onChanged: () => unawaited(_loadLists()),
+                    ),
+                  ),
+                ),
               ),
-            );
-          },
+              if (_isLoadingMore || _loadMoreError != null) ...[
+                const SizedBox(height: MitlistSpacing.md),
+                _buildPaginationFooter(),
+              ],
+            ],
+          ),
         );
       },
     );
@@ -914,21 +937,75 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
     );
   }
 
+  /// Skeletons ride the same waterfall, with a repeating 3/1/2-line pattern so
+  /// the loading state has the ragged silhouette the real cards will have.
   Widget _buildSkeleton() {
+    const previewPattern = [3, 1, 2, 4, 2, 1];
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final columns = _gridColumns(constraints.maxWidth);
-        return GridView.count(
-          crossAxisCount: columns,
+        final count = columns * 3;
+        return SingleChildScrollView(
           padding: const EdgeInsets.all(MitlistSpacing.md),
-          mainAxisSpacing: MitlistSpacing.md,
-          crossAxisSpacing: MitlistSpacing.md,
-          childAspectRatio: _gridAspectRatio(context),
-          children: List.generate(columns * 2, (_) => const _SkeletonCard()),
+          child: MasonryFlow(
+            columnCount: columns,
+            spacing: MitlistSpacing.md,
+            itemCount: count,
+            estimateExtent: (i) =>
+                _minCardHeight + previewPattern[i % previewPattern.length] * 18,
+            itemBuilder: (_, i) => _SkeletonCard(
+              previewLines: previewPattern[i % previewPattern.length],
+            ),
+          ),
         );
       },
     );
   }
+}
+
+/// Approximate laid-out height of a [_ListCard], used only to decide which
+/// waterfall column a card joins. Deliberately cheap and deliberately
+/// approximate: the card still lays out to whatever it actually needs, so an
+/// error here shows up as slightly uneven column bottoms, never as clipping.
+double _estimateCardExtent(
+  ItemList list, {
+  required double columnWidth,
+  required double textScale,
+  required bool showsGroupLine,
+}) {
+  const cardPadding = MitlistSpacing.md * 2;
+  const titleLineHeight = 19.2; // titleMedium 16 × 1.2
+  const previewLineHeight = 16.2; // bodySmall 12 × 1.35
+  const actionRowHeight = 44.0; // the 44px touch-target floor
+  const badgeInset = MitlistSpacing.space5;
+
+  // Rough character budget per title line at the card's inner width.
+  final titleWidth = columnWidth - cardPadding - badgeInset;
+  final titleCharsPerLine = (titleWidth / (16 * 0.52)).floor().clamp(6, 200);
+  final titleLines =
+      (list.name.length / titleCharsPerLine).ceil().clamp(1, 3).toDouble();
+
+  final previewCount = list.itemPreview
+      .map((s) => s.trim())
+      .where((s) => s.isNotEmpty)
+      .take(4)
+      .length;
+
+  var height = cardPadding + titleLines * titleLineHeight;
+  if (previewCount > 0) {
+    height += MitlistSpacing.sm +
+        previewCount * previewLineHeight +
+        (previewCount - 1) * MitlistSpacing.xs;
+  }
+  height += MitlistSpacing.sm;
+  if (showsGroupLine) height += 14 + MitlistSpacing.xs;
+  height += actionRowHeight;
+
+  return math.max(
+    _ListsScreenState._minCardHeight * textScale,
+    height * textScale,
+  );
 }
 
 class _ListCard extends ConsumerWidget {
@@ -1080,12 +1157,13 @@ class _ListCard extends ConsumerWidget {
       list.id,
       Theme.of(context).brightness,
     );
-    // Three single-line previews: with the 44px action row, four lines can
-    // overflow the grid tile when the title also wraps to three lines.
+    // The waterfall sizes each card to its own content, so every preview line
+    // the server sent can be shown — that variation is what gives the column
+    // flow its rhythm.
     final previewLines = list.itemPreview
         .map((s) => s.trim())
         .where((s) => s.isNotEmpty)
-        .take(3)
+        .take(4)
         .toList();
     final snippetColor = accent.snippetOnTile;
     final isTodo = list.type.toLowerCase() == 'todo';
@@ -1117,131 +1195,110 @@ class _ListCard extends ConsumerWidget {
       semanticLabel: _semanticLabel(),
       onTap: () => _openList(context),
       onLongPress: () => _showActions(context, ref),
-      child: SizedBox(
-        width: double.infinity,
-        child: Stack(
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Reserve top-right space for the type badge
-                Padding(
-                  padding: const EdgeInsets.only(right: MitlistSpacing.space5),
-                  child: Text(
-                    list.name,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: accent.titleColor,
-                          fontWeight: FontWeight.w600,
-                          height: 1.2,
-                        ),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // The type icon used to float in the top-right corner, which cost
+          // the title a notch out of every one of its lines. It reads the same
+          // down in the footer beside the count, and the title gets the card's
+          // full width back.
+          Text(
+            list.name,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: accent.titleColor,
+                  fontWeight: FontWeight.w600,
+                  height: 1.2,
                 ),
-                if (previewLines.isNotEmpty) ...[
-                  const SizedBox(height: MitlistSpacing.sm),
-                  for (var i = 0; i < previewLines.length; i++)
-                    Padding(
-                      padding: EdgeInsets.only(
-                        top: i == 0 ? 0 : MitlistSpacing.xs,
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (isTodo) ...[
-                            AppIcon(
-                              name: 'checkCircleOutline',
-                              size: 14,
-                              color: snippetColor.withValues(alpha: 0.5),
-                            ),
-                            const SizedBox(width: MitlistSpacing.xs),
-                          ],
-                          Expanded(
-                            child: Text(
-                              previewLines[i],
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
-                                    color: snippetColor,
-                                    height: 1.35,
-                                  ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
-                const SizedBox(height: MitlistSpacing.sm),
-                if (groupName != null) ...[
-                  Row(
-                    children: [
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
+          if (previewLines.isNotEmpty) ...[
+            const SizedBox(height: MitlistSpacing.sm),
+            for (var i = 0; i < previewLines.length; i++)
+              Padding(
+                padding: EdgeInsets.only(top: i == 0 ? 0 : MitlistSpacing.xs),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (isTodo) ...[
                       AppIcon(
-                        name: 'userGroup',
-                        size: 11,
-                        color: snippetColor,
+                        name: 'checkCircleOutline',
+                        size: 14,
+                        color: snippetColor.withValues(alpha: 0.5),
                       ),
                       const SizedBox(width: MitlistSpacing.xs),
-                      Expanded(
-                        child: Text(
-                          l10n.listSharedWith(groupName),
-                          style:
-                              Theme.of(context).textTheme.labelSmall?.copyWith(
-                                    color: snippetColor,
-                                  ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
                     ],
-                  ),
-                  const SizedBox(height: MitlistSpacing.xs),
-                ],
-                Row(
-                  children: [
-                    if (countLabel != null)
-                      Expanded(
-                        child: Text(
-                          countLabel,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style:
-                              Theme.of(context).textTheme.labelSmall?.copyWith(
-                                    color: snippetColor,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                        ),
-                      )
-                    else
-                      const Spacer(),
-                    _CardActionButton(
-                      iconName: 'addCircleOutline',
-                      color: accent.iconColor,
-                      tooltip: l10n.listQuickAddItemTooltip,
-                      semanticLabel: l10n.listQuickAddItemSemantics(list.name),
-                      onTap: () => _openList(context, composer: true),
-                    ),
-                    _CardActionButton(
-                      iconName: 'ellipsisVertical',
-                      color: snippetColor,
-                      tooltip: l10n.listOptionsTooltip,
-                      semanticLabel: l10n.listOptionsTooltip,
-                      onTap: () => _showActions(context, ref),
+                    Expanded(
+                      child: Text(
+                        previewLines[i],
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: snippetColor,
+                              height: 1.35,
+                            ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ],
                 ),
+              ),
+          ],
+          if (groupName != null) ...[
+            const SizedBox(height: MitlistSpacing.sm),
+            Row(
+              children: [
+                AppIcon(name: 'userGroup', size: 11, color: snippetColor),
+                const SizedBox(width: MitlistSpacing.xs),
+                Expanded(
+                  child: Text(
+                    l10n.listSharedWith(groupName),
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: snippetColor,
+                        ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ],
             ),
-            Positioned(
-              top: 0,
-              right: 0,
-              child: _TypeBadge(type: list.type, color: accent.titleColor),
-            ),
           ],
-        ),
+          const SizedBox(height: MitlistSpacing.sm),
+          Row(
+            children: [
+              _TypeBadge(type: list.type, color: accent.titleColor),
+              if (countLabel != null) ...[
+                const SizedBox(width: MitlistSpacing.xs),
+                Expanded(
+                  child: Text(
+                    countLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: snippetColor,
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                ),
+              ] else
+                const Spacer(),
+              _CardActionButton(
+                iconName: 'addCircleOutline',
+                color: accent.iconColor,
+                tooltip: l10n.listQuickAddItemTooltip,
+                semanticLabel: l10n.listQuickAddItemSemantics(list.name),
+                onTap: () => _openList(context, composer: true),
+              ),
+              _CardActionButton(
+                iconName: 'ellipsisVertical',
+                color: snippetColor,
+                tooltip: l10n.listOptionsTooltip,
+                semanticLabel: l10n.listOptionsTooltip,
+                onTap: () => _showActions(context, ref),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -1314,7 +1371,11 @@ class _TypeBadge extends StatelessWidget {
 }
 
 class _SkeletonCard extends StatelessWidget {
-  const _SkeletonCard();
+  const _SkeletonCard({this.previewLines = 2});
+
+  /// How many preview rows this placeholder stands in for — the only thing
+  /// that varies the card's height, mirroring the real card.
+  final int previewLines;
 
   @override
   Widget build(BuildContext context) {
@@ -1330,21 +1391,24 @@ class _SkeletonCard extends StatelessWidget {
         boxShadow: MitlistShadows.shadowSoft,
       ),
       padding: const EdgeInsets.all(MitlistSpacing.md),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          AppSkeleton(
+          const AppSkeleton(
             width: double.infinity,
             height: MitlistSpacing.space5,
           ),
-          SizedBox(height: MitlistSpacing.sm),
-          AppSkeleton(
-            width: double.infinity,
-            height: MitlistSpacing.space3,
-          ),
-          SizedBox(height: MitlistSpacing.xs),
-          AppSkeleton(
+          const SizedBox(height: MitlistSpacing.sm),
+          for (var i = 0; i < previewLines; i++) ...[
+            if (i > 0) const SizedBox(height: MitlistSpacing.xs),
+            AppSkeleton(
+              width: i.isEven ? double.infinity : MitlistSpacing.space10 * 2,
+              height: MitlistSpacing.space3,
+            ),
+          ],
+          const SizedBox(height: MitlistSpacing.md),
+          const AppSkeleton(
             width: MitlistSpacing.space10,
             height: MitlistSpacing.space3,
           ),

@@ -12,7 +12,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/group_models.dart';
 import '../../providers/group_provider.dart';
-import '../../router.dart' show currentGroupIdProvider;
+import '../../router.dart' show currentGroupIdProvider, resetLastShellTab;
 import '../../sheets/join_household_sheet.dart';
 import '../../theme/animations.dart';
 import '../../theme/colors.dart';
@@ -341,8 +341,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     });
   }
 
-  void _goToBoard() {
+  Future<void> _goToBoard() async {
     unawaited(Haptics.light());
+    // Finishing first run lands on the household board. The shell restores the
+    // tab a previous session ended on the moment it builds, which overrode
+    // this navigation and dropped a brand-new household into whatever tab was
+    // last — clearing it first is what makes "go to the board" go to the
+    // board.
+    await resetLastShellTab();
+    if (!mounted) return;
     context.goNamed('home');
   }
 
@@ -765,10 +772,29 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                             ),
                           ),
                         ),
+                        const SizedBox(height: MitlistSpacing.space2),
+                        Center(
+                          child: AppButton(
+                            key: ValueKey(_copied),
+                            size: AppButtonSize.sm,
+                            text: _copied
+                                ? l10n.sheetInviteCopied
+                                : l10n.sheetInviteCopy,
+                            icon: _copied
+                                ? const AppIcon(name: 'checkCircle', size: 16)
+                                : const AppIcon(name: 'copy', size: 16),
+                            onPressed: _copyCode,
+                            variant: AppButtonVariant.ghost,
+                            color: _copied
+                                ? AppButtonColor.success
+                                : AppButtonColor.neutral,
+                          ),
+                        ),
                         const SizedBox(height: MitlistSpacing.space4),
                         AppButton(
                           variant: AppButtonVariant.solid,
                           color: AppButtonColor.primary,
+                          size: AppButtonSize.lg,
                           text: l10n.sheetInviteShare,
                           icon: const AppIcon(name: 'share', size: 18),
                           onPressed: () => SharePlus.instance.share(
@@ -776,23 +802,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                               text: inviteShareText(code, l10n),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: MitlistSpacing.space2),
-                        AppButton(
-                          key: ValueKey(_copied),
-                          text: _copied
-                              ? l10n.sheetInviteCopied
-                              : l10n.sheetInviteCopy,
-                          icon: _copied
-                              ? const AppIcon(name: 'checkCircle', size: 18)
-                              : const AppIcon(name: 'copy', size: 18),
-                          onPressed: _copyCode,
-                          variant: _copied
-                              ? AppButtonVariant.solid
-                              : AppButtonVariant.outline,
-                          color: _copied
-                              ? AppButtonColor.success
-                              : AppButtonColor.neutral,
                         ),
                       ],
                     ],
@@ -803,9 +812,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
           ),
         ),
         const SizedBox(height: MitlistSpacing.space6),
+        // One thing to do here, and it isn't leaving: sharing the invite is
+        // the only solid button on the beat. Continuing is a quiet outline and
+        // copying is a text button that lives with the code it copies — the
+        // three used to be near-equal blocks competing for the same tap.
         AppButton(
-          variant: AppButtonVariant.solid,
-          color: AppButtonColor.primary,
+          variant: AppButtonVariant.outline,
+          color: AppButtonColor.neutral,
           size: AppButtonSize.lg,
           text: l10n.authOnboardingGoToBoard,
           onPressed: _showReady,

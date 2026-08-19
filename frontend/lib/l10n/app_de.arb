@@ -167,6 +167,10 @@
   "choreCreationStartFromRoutine": "Aus einer Routine starten",
   "choreCreationSuggestions": "Vorschläge",
   "choreCreationZoneLabel": "Bereich",
+  "choreCreationZoneNone": "Kein Bereich",
+  "choreCreationZoneManageHint": "Zum Entfernen lange auf einen Bereich drücken",
+  "choreCreationRemoveZoneTitle": "Bereich entfernen?",
+  "choreCreationRemoveZoneBody": "{zone} wird beim Anlegen von Aufgaben nicht mehr angeboten. Aufgaben, die ihn bereits nutzen, behalten ihn.",
   "choreCreationZoneKitchen": "Küche",
   "choreCreationZoneBathroom": "Bad",
   "choreCreationZoneLivingRoom": "Wohnzimmer",
@@ -1955,5 +1959,6 @@
   "billingRenewsOn": "Verlängert sich am {date}",
   "billingEndsOn": "Endet am {date}",
   "billingMemberUsage": "{count} von {limit} kostenlosen Plätzen belegt",
-  "billingUnlimitedMembers": "Unbegrenzte Mitglieder"
+  "billingUnlimitedMembers": "Unbegrenzte Mitglieder",
+  "expenseCreationDatePrefix": "Datum"
 }

@@ -1268,6 +1268,30 @@ abstract class AppLocalizations {
   /// **'Zone'**
   String get choreCreationZoneLabel;
 
+  /// Zone summary line value when a chore has no zone
+  ///
+  /// In en, this message translates to:
+  /// **'No zone'**
+  String get choreCreationZoneNone;
+
+  /// Hint under the zone chips in the chore creation sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Long-press a zone to remove it'**
+  String get choreCreationZoneManageHint;
+
+  /// Confirm dialog title for removing a household chore zone
+  ///
+  /// In en, this message translates to:
+  /// **'Remove zone?'**
+  String get choreCreationRemoveZoneTitle;
+
+  /// Confirm dialog body for removing a household chore zone
+  ///
+  /// In en, this message translates to:
+  /// **'{zone} will no longer be offered when adding a chore. Chores already in it keep it.'**
+  String choreCreationRemoveZoneBody(String zone);
+
   /// Kitchen zone preset
   ///
   /// In en, this message translates to:
@@ -5684,6 +5708,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Category'**
   String get expenseCreationCategoryLabel;
+
+  /// Prefix on the expense sheet date row, e.g. Date · 3 Aug 2026
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get expenseCreationDatePrefix;
 
   /// Expense category
   ///

@@ -152,13 +152,9 @@ void main() {
       ],
     );
 
-    final groceriesChip = tester.widget<AppChip>(
-      find.ancestor(
-        of: find.text('Groceries'),
-        matching: find.byType(AppChip),
-      ),
-    );
-    expect(groceriesChip.selected, isTrue);
+    // The category is folded to its summary line, so the suggestion has to be
+    // legible there without unfolding anything.
+    expect(find.text('Category · Groceries'), findsOneWidget);
   });
 
   testWidgets('never replaces a category explicitly chosen by the user',
@@ -176,6 +172,14 @@ void main() {
         ),
       ],
     );
+
+    // Unfold the category row before disagreeing with the suggestion.
+    final categoryLine = find.textContaining('Category · ');
+    await tester.ensureVisible(categoryLine);
+    await tester.tap(categoryLine);
+    for (var i = 0; i < 4; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
 
     await tester.ensureVisible(find.text('Transport'));
     await tester.tap(find.text('Transport'));
