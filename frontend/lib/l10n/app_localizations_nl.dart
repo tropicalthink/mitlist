@@ -3690,6 +3690,13 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get initialSyncRefreshing => 'Vernieuwen…';
+
+  @override
+  String get initialSyncFailed =>
+      'Vernieuwen mislukt — tik om opnieuw te proberen';
+
+  @override
   String get offlineBannerSyncing => 'Wijzigingen synchroniseren…';
 
   @override
