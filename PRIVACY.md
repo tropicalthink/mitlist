@@ -29,7 +29,9 @@ When enabled, crash reports contain stack traces and basic context (OS version, 
 
 Reports are sent to whatever endpoint the operator configures in the DSN. We recommend pointing this at a **self-hosted GlitchTip** instance so crash data stays on the operator's own infrastructure and is not sent to a third party.
 
-## Official-service abuse prevention (Firebase App Check)
+## Official-service abuse prevention
+
+### Mobile: Firebase App Check
 
 The official mobile builds use Firebase App Check to attest that requests come
 from an unmodified mitlist app: Play Integrity on Android and App Attest on
@@ -50,6 +52,27 @@ A self-hoster who opts in is responsible for configuring their own Firebase
 project, reviewing that provider's privacy terms, and disclosing it to their
 users. Debug App Check providers and debug tokens are never appropriate for a
 released official artifact.
+
+### Web: Cloudflare Turnstile
+
+The official web app uses Cloudflare Turnstile in **invisible** mode on guest
+sign-up, in place of App Check — App Check's only web provider is reCAPTCHA
+Enterprise, and we would rather not route sign-ups through an advertising
+company's risk engine. Cloudflare receives the signals it needs to decide
+whether the browser is automated; mitlist receives only the pass/fail result.
+No challenge is shown unless Cloudflare asks for one.
+
+Cloudflare processes this data as described in the
+[Cloudflare Turnstile Privacy Addendum](https://www.cloudflare.com/application-services/products/turnstile-privacy-addendum/),
+which applies to our use of invisible mode and is incorporated here by
+reference.
+
+Like App Check, Turnstile is an abuse signal rather than a profile: the token
+is single-use, it is verified once at sign-up, and it is not retained or
+joined to an account.
+
+Turnstile is disabled by default for independently self-hosted deployments,
+which set `TURNSTILE_SECRET_KEY` only if they want it.
 
 ---
 
@@ -74,6 +97,7 @@ Each of the following is optional and disabled unless the operator provides cred
 | SendGrid / Brevo SMTP | Transactional email (SMTP fallback) | `SENDGRID_SMTP_*` / `BREVO_SMTP_*` |
 | Firebase / FCM | Mobile push notifications | `FIREBASE_PROJECT_ID` + `FIREBASE_SERVICE_ACCOUNT_JSON` |
 | Firebase App Check | Mobile app/device attestation for official-service abuse prevention | `FIREBASE_APP_CHECK_REQUIRED=true` + `FIREBASE_PROJECT_NUMBER` + Firebase project credentials |
+| Cloudflare Turnstile | Web guest sign-up abuse prevention (invisible mode) | `TURNSTILE_SECRET_KEY` |
 | Web Push (VAPID) | Browser push notifications | `VAPID_PRIVATE_KEY` + `VAPID_PUBLIC_KEY` |
 | AWS S3 / Cloudflare R2 | File and photo storage | `AWS_ACCESS_KEY_ID` + `S3_BUCKET_NAME` |
 | FX rate feed | Live exchange rates for expenses | `FX_RATE_API_URL` |

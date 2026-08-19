@@ -73,6 +73,23 @@ import SiteFooter from "../components/SiteFooter.astro";
         is not sent to a third party.
       </p>
 
+      <h2>Abuse prevention on sign-up</h2>
+      <p>
+        Creating a guest account in the browser runs an invisible
+        <strong>Cloudflare Turnstile</strong> check, so that automated sign-ups
+        do not drown out real households. Cloudflare receives the signals it
+        needs to judge whether the browser is automated; mitlist receives only
+        the pass or fail. The token is single-use, checked once, and never
+        stored against your account. Usually you will see nothing at all.
+      </p>
+      <p>
+        Cloudflare processes that data as described in the
+        <a href="https://www.cloudflare.com/application-services/products/turnstile-privacy-addendum/" rel="noopener">Cloudflare
+        Turnstile Privacy Addendum</a>, which applies to our use of invisible
+        mode and is incorporated into this statement by reference. The mobile
+        apps use Firebase App Check for the same purpose.
+      </p>
+
       <h2>Account controls</h2>
       <ul>
         <li>
@@ -107,6 +124,7 @@ import SiteFooter from "../components/SiteFooter.astro";
             <tr><td>PlanetScale</td><td>Managed PostgreSQL for the official service</td><td><code>DATABASE_URL</code></td></tr>
             <tr><td>SendGrid / Brevo SMTP</td><td>Transactional email (SMTP fallback)</td><td><code>SENDGRID_SMTP_*</code> / <code>BREVO_SMTP_*</code></td></tr>
             <tr><td>Firebase / FCM</td><td>Mobile push notifications</td><td><code>FIREBASE_PROJECT_ID</code> + <code>FIREBASE_SERVICE_ACCOUNT_JSON</code></td></tr>
+            <tr><td>Cloudflare Turnstile</td><td>Web guest sign-up abuse prevention (invisible mode)</td><td><code>TURNSTILE_SECRET_KEY</code></td></tr>
             <tr><td>Web Push (VAPID)</td><td>Browser push notifications</td><td><code>VAPID_PRIVATE_KEY</code> + <code>VAPID_PUBLIC_KEY</code></td></tr>
             <tr><td>AWS S3 / Cloudflare R2</td><td>File and photo storage</td><td><code>AWS_ACCESS_KEY_ID</code> + <code>S3_BUCKET_NAME</code></td></tr>
             <tr><td>FX rate feed</td><td>Live exchange rates for expenses</td><td><code>FX_RATE_API_URL</code></td></tr>
