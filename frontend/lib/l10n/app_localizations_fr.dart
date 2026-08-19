@@ -3703,6 +3703,13 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get initialSyncRefreshing => 'Actualisation…';
+
+  @override
+  String get initialSyncFailed =>
+      'Échec de l\'actualisation — touchez pour réessayer';
+
+  @override
   String get offlineBannerSyncing => 'Synchronisation des modifications…';
 
   @override
