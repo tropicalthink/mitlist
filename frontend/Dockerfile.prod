@@ -3,6 +3,13 @@
 FROM ghcr.io/cirruslabs/flutter:stable AS build
 WORKDIR /app
 COPY pubspec.yaml pubspec.lock ./
+# `onnxruntime` is a path dependency, and pub resolves a path dep by reading
+# the target's pubspec — so this file has to exist before `pub get` runs or
+# resolution fails outright ("could not find package onnxruntime at
+# third_party/onnxruntime"). Only the manifest is copied here: the sources
+# arrive with `COPY . .` below, which keeps the dependency layer cacheable
+# across ordinary code changes.
+COPY third_party/onnxruntime/pubspec.yaml ./third_party/onnxruntime/pubspec.yaml
 RUN flutter pub get
 COPY . .
 ARG API_BASE_URL=

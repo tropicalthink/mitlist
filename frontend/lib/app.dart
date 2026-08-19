@@ -19,6 +19,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'services/fcm_service.dart';
 import 'services/push_subscription_service.dart';
 import 'providers/billing_provider.dart' show iapServiceProvider;
+import 'providers/initial_sync_provider.dart';
 import 'services/iap_service.dart';
 import 'widgets/offline_banner.dart';
 
@@ -62,6 +63,9 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
     if (_deferredInitDone || !ref.read(authStateProvider)) return;
     _deferredInitDone = true;
     ref.read(outboxCoordinatorProvider);
+    // Cold-start pull of the active household, so screens never sit on stale
+    // cache without at least attempting (and surfacing) a refresh.
+    unawaited(ref.read(initialSyncProvider.notifier).start());
     // Kick off the grocery/alias seed as early as possible (app bootstrap,
     // right after auth) rather than waiting for whichever screen the user
     // opens first — it's a one-time but heavy load (~280k alias rows) that
@@ -211,6 +215,7 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
     ref.listen<bool>(authStateProvider, (previous, authenticated) {
       if (!authenticated) {
         _deferredInitDone = false;
+        ref.read(initialSyncProvider.notifier).reset();
         ref.invalidate(unreadNotificationCountProvider);
         unawaited(_fcmSub?.cancel());
         unawaited(_fcmTapSub?.cancel());

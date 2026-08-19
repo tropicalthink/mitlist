@@ -6465,6 +6465,18 @@ abstract class AppLocalizations {
   /// **'Syncing {count} changes…'**
   String offlineBannerSyncingCount(num count);
 
+  /// Banner text while the cold-start refresh pulls fresh data
+  ///
+  /// In en, this message translates to:
+  /// **'Refreshing…'**
+  String get initialSyncRefreshing;
+
+  /// Banner text when the cold-start refresh failed; tapping retries
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t refresh — tap to retry'**
+  String get initialSyncFailed;
+
   /// Banner text when syncing (no count)
   ///
   /// In en, this message translates to:
