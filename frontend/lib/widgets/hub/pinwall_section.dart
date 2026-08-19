@@ -21,6 +21,7 @@ import '../../screens/pinwall/pinwall_board_screen.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/theme.dart';
+import '../../utils/friendly_error.dart';
 import '../../utils/haptics.dart';
 import '../app_bottom_sheet.dart';
 import '../app_button.dart';
@@ -265,37 +266,63 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
     setState(() => _pendingMedia.addAll(files));
   }
 
+  /// The offline-first pin, done optimistically: the composer empties on the
+  /// tap and the note arrives from the local DB stream a frame or two later.
+  /// Flipping [_isPosting] here used to flash a spinner in the post button for
+  /// the few milliseconds of local writes — a loading state for work that is
+  /// never actually pending. If the enqueue itself fails, the text and the
+  /// reminder come back exactly as they were typed.
+  Future<void> _postOptimistically(String content) async {
+    final l10n = AppLocalizations.of(context)!;
+    final restoreText = _controller.text;
+    final restoreRemindAt = _remindAt;
+
+    _controller.clear();
+    _clearReminder();
+    unawaited(Haptics.light());
+
+    try {
+      final repo = await ref.read(pinwallRepositoryProvider.future);
+      await repo.createPostOfflineFirst(
+        widget.groupId,
+        content: content.isEmpty ? ' ' : content,
+        userId: widget.me?.id ?? '',
+        remindAt: restoreRemindAt,
+      );
+      // Best-effort immediate sync; offline leaves the queued + synthetic
+      // post in place until connectivity returns.
+      unawaited(repo.drainOutboxOnce().catchError((_) {}));
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _controller.text = restoreText;
+        _controller.selection = TextSelection.collapsed(
+          offset: restoreText.length,
+        );
+        _remindAt = restoreRemindAt;
+      });
+      unawaited(Haptics.failure());
+      AppToast.error(context, friendlyErrorMessage(e, l10n));
+    }
+  }
+
   Future<void> _post() async {
     final content = _controller.text.trim();
     if ((content.isEmpty && _pendingMedia.isEmpty) || _isPosting) return;
 
+    // Plain-text posts (no media, no linked entity) go through the
+    // offline-first path so they pin immediately and work without a
+    // connection. Media/linked posts still require the server.
+    final canQueueOffline =
+        _pendingMedia.isEmpty && (_linkedEntityId?.isEmpty ?? true);
+    if (canQueueOffline) {
+      await _postOptimistically(content);
+      return;
+    }
+
     setState(() => _isPosting = true);
     final l10n = AppLocalizations.of(context)!;
     try {
-      // Plain-text posts (no media, no linked entity) go through the
-      // offline-first path so they pin immediately and work without a
-      // connection. Media/linked posts still require the server.
-      final canQueueOffline =
-          _pendingMedia.isEmpty && (_linkedEntityId?.isEmpty ?? true);
-      if (canQueueOffline) {
-        final repo = await ref.read(pinwallRepositoryProvider.future);
-        await repo.createPostOfflineFirst(
-          widget.groupId,
-          content: content.isEmpty ? ' ' : content,
-          userId: widget.me?.id ?? '',
-          remindAt: _remindAt,
-        );
-        _controller.clear();
-        _clearReminder();
-        // Best-effort immediate sync; offline leaves the queued + synthetic
-        // post in place until connectivity returns.
-        unawaited(repo.drainOutboxOnce().catchError((_) {}));
-        if (!mounted) return;
-        unawaited(Haptics.light());
-        AppToast.success(context, l10n.pinwallPinned);
-        return;
-      }
-
       final svc = await ref.read(pinwallServiceProviderAsync.future);
       final post = await svc.createPost(widget.groupId,
           content: content.isEmpty ? ' ' : content,

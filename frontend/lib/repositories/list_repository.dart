@@ -73,6 +73,17 @@ class ListRepository {
     return rows.map(_toListItem).toList();
   }
 
+  /// Creates a list on the server and lands it in the local cache in the same
+  /// step. The create sheet used to call the service directly, which left
+  /// every DB-backed watcher — the lists grid, the hub quick start — unaware
+  /// the list existed until something forced a refresh: the new list simply
+  /// didn't appear, and the quick-start step it satisfied stayed unticked.
+  Future<ItemList> createList(CreateListRequest req) async {
+    final created = await _remote.createList(req);
+    await _db.upsertListsRows([_toListsRow(created)]);
+    return created;
+  }
+
   Future<int> refreshLists(String groupId,
       {int limit = 200, int offset = 0}) async {
     final remote =

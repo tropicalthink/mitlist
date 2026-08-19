@@ -167,8 +167,18 @@ void main() {
             matching: find.byType(AppChip),
           ),
         );
+    // The category folds to a summary line; the suggestion has to read there.
+    expect(find.text('Category · Groceries'), findsOneWidget);
+
+    // Unfold it to override the suggestion by hand.
+    await tester.ensureVisible(find.text('Category · Groceries'));
+    await tester.tap(find.text('Category · Groceries'));
+    for (var i = 0; i < 4; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
     expect(chip('Groceries').selected, isTrue);
 
+    await tester.ensureVisible(find.text('Transport'));
     await tester.tap(find.text('Transport'));
     await tester.pump();
     expect(chip('Transport').selected, isTrue);

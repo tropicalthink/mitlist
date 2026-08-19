@@ -690,6 +690,10 @@
     "description": "Label for AI suggestions section"
   },
   "choreCreationZoneLabel": "Zona",
+  "choreCreationZoneNone": "Sin zona",
+  "choreCreationZoneManageHint": "Mantén pulsada una zona para quitarla",
+  "choreCreationRemoveZoneTitle": "¿Quitar zona?",
+  "choreCreationRemoveZoneBody": "{zone} ya no aparecerá al añadir una tarea. Las tareas que ya la usan la conservan.",
   "@choreCreationZoneLabel": {
     "description": "Label for zone selector"
   },
@@ -5834,5 +5838,6 @@
   "billingRenewsOn": "Se renueva el {date}",
   "billingEndsOn": "Termina el {date}",
   "billingMemberUsage": "{count} de {limit} plazas gratuitas usadas",
-  "billingUnlimitedMembers": "Miembros ilimitados"
+  "billingUnlimitedMembers": "Miembros ilimitados",
+  "expenseCreationDatePrefix": "Fecha"
 }

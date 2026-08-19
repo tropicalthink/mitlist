@@ -690,6 +690,10 @@
     "description": "Label for AI suggestions section"
   },
   "choreCreationZoneLabel": "Zone",
+  "choreCreationZoneNone": "Geen zone",
+  "choreCreationZoneManageHint": "Houd een zone ingedrukt om hem te verwijderen",
+  "choreCreationRemoveZoneTitle": "Zone verwijderen?",
+  "choreCreationRemoveZoneBody": "{zone} wordt niet meer aangeboden bij het toevoegen van een taak. Taken die hem al gebruiken behouden hem.",
   "@choreCreationZoneLabel": {
     "description": "Label for zone selector"
   },
@@ -5834,5 +5838,6 @@
   "billingRenewsOn": "Verlengt op {date}",
   "billingEndsOn": "Eindigt op {date}",
   "billingMemberUsage": "{count} van {limit} gratis plekken gebruikt",
-  "billingUnlimitedMembers": "Onbeperkt aantal leden"
+  "billingUnlimitedMembers": "Onbeperkt aantal leden",
+  "expenseCreationDatePrefix": "Datum"
 }

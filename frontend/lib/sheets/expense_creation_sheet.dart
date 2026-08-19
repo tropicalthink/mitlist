@@ -189,6 +189,9 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
   DateTime _nextDue = DateTime.now().add(const Duration(days: 1));
   bool _showRepeatEditor = false;
 
+  /// Whether the category chip row is unfolded.
+  bool _showCategoryEditor = false;
+
   /// The rule's stored splits, used to restore the editor once members load.
   Map<String, RecurringSplitInput> _initialSplitInputs = const {};
 
@@ -715,11 +718,20 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
         }
       }
 
+      // Grabbed before the pop: after it this State is disposed and `ref` can
+      // no longer be read.
+      final financeRepo = await ref.read(financeRepositoryProvider.future);
+
       if (!mounted) return;
       widget.dirtyNotifier?.value = false;
       Navigator.of(context).pop(true);
       AppToast.success(context, l10n.expenseCreationExpenseAdded);
       unawaited(Haptics.success());
+      // Land the expense in the local cache. Screens — and the hub quick start
+      // — watch the DB rather than the service, so without this the expense
+      // exists on the server but nothing on device knows until some other
+      // action forces a refresh.
+      unawaited(financeRepo.refreshGroup(groupId).catchError((_) => 0));
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSaving = false);
@@ -983,38 +995,55 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
             _scheduleCategorySuggestion(_descriptionController.text);
           },
         ),
-        // ── Category (horizontal chips) ───────────────────────────────
-        const SizedBox(height: MitlistSpacing.md),
-        Text(
-          l10n.expenseCreationCategoryLabel,
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+        // ── Category (folded: the description usually picks it) ───────
+        // A full chip row here carried the same visual weight as the amount
+        // and the description, so the sheet read as one flat list of equally
+        // important things. The category is nearly always already right — the
+        // description suggests it — so it states itself in one line and only
+        // unfolds when someone disagrees.
+        const SizedBox(height: MitlistSpacing.lg),
+        _SummaryLine(
+          text: '${l10n.expenseCreationCategoryLabel} · '
+              '${expenseCategoryLabel(l10n, _category)}',
+          semanticLabel: l10n.expenseCreationCategoryLabel,
+          expanded: _showCategoryEditor,
+          onTap: () =>
+              setState(() => _showCategoryEditor = !_showCategoryEditor),
         ),
-        const SizedBox(height: MitlistSpacing.sm),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              for (final key in expenseCategoryKeys)
-                Padding(
-                  padding: const EdgeInsets.only(right: MitlistSpacing.xs),
-                  child: AppChip(
-                    label: expenseCategoryLabel(l10n, key),
-                    selected: _category == key,
-                    onSelected: (_) {
-                      setState(() {
-                        _category = key;
-                        _categoryWasChosen = true;
-                        _categoryWasSuggested = false;
-                      });
-                      _categoryDebounce?.cancel();
-                      _markDirty();
-                    },
+        AnimatedSize(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          alignment: Alignment.topCenter,
+          child: _showCategoryEditor
+              ? Padding(
+                  padding: const EdgeInsets.only(top: MitlistSpacing.sm),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        for (final key in expenseCategoryKeys)
+                          Padding(
+                            padding:
+                                const EdgeInsets.only(right: MitlistSpacing.xs),
+                            child: AppChip(
+                              label: expenseCategoryLabel(l10n, key),
+                              selected: _category == key,
+                              onSelected: (_) {
+                                setState(() {
+                                  _category = key;
+                                  _categoryWasChosen = true;
+                                  _categoryWasSuggested = false;
+                                });
+                                _categoryDebounce?.cancel();
+                                _markDirty();
+                              },
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
-                ),
-            ],
-          ),
+                )
+              : const SizedBox.shrink(),
         ),
         // ── Paid by + split (folded to one calm line; tap to change) ──
         // Mirrors Splitwise/Tricount: the common case reads as a sentence
@@ -1097,27 +1126,22 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
         // ── Date ──────────────────────────────────────────────────────
         // One control, two meanings: when this happened, or when the schedule
         // first fires. A rule has no "expense date" to record.
-        const SizedBox(height: MitlistSpacing.lg),
-        Row(
-          children: [
-            Expanded(
-              child: AppButton(
-                text: _isRecurring
-                    ? l10n.expenseCreationStartsOn(
-                        MaterialLocalizations.of(context)
-                            .formatMediumDate(_nextDue),
-                      )
-                    : MaterialLocalizations.of(context).formatMediumDate(_date),
-                icon: const AppIcon(name: 'calendarDays', size: 18),
-                variant: AppButtonVariant.outline,
-                color: AppButtonColor.neutral,
-                onPressed: _isRecurring ? _pickNextDue : _pickDate,
-                semanticLabel: _isRecurring
-                    ? l10n.expenseCreationNextDueLabel
-                    : l10n.expenseCreationDateLabel,
-              ),
-            ),
-          ],
+        // Same quiet row as the lines around it — as an outline button it read
+        // as an action on a par with saving, which it isn't.
+        const SizedBox(height: MitlistSpacing.sm),
+        _SummaryLine(
+          text: _isRecurring
+              ? l10n.expenseCreationStartsOn(
+                  MaterialLocalizations.of(context).formatMediumDate(_nextDue),
+                )
+              : '${l10n.expenseCreationDatePrefix} · '
+                  '${MaterialLocalizations.of(context).formatMediumDate(_date)}',
+          semanticLabel: _isRecurring
+              ? l10n.expenseCreationNextDueLabel
+              : l10n.expenseCreationDateLabel,
+          expanded: false,
+          expandable: false,
+          onTap: _isRecurring ? _pickNextDue : _pickDate,
         ),
         // ── Repeat (folded to one line, like the split summary) ───────
         if (_canOfferRepeat) ...[
@@ -1630,11 +1654,17 @@ class _SummaryLine extends StatelessWidget {
   final bool expanded;
   final VoidCallback onTap;
 
+  /// A row that opens a picker instead of unfolding in place keeps the same
+  /// quiet grammar but takes a chevron-right — an expand caret would promise
+  /// something the tap doesn't do.
+  final bool expandable;
+
   const _SummaryLine({
     required this.text,
     required this.semanticLabel,
     required this.expanded,
     required this.onTap,
+    this.expandable = true,
   });
 
   @override
@@ -1666,16 +1696,23 @@ class _SummaryLine extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: MitlistSpacing.sm),
-              AnimatedRotation(
-                turns: expanded ? 0.5 : 0,
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeOut,
-                child: Icon(
-                  Icons.expand_more,
+              if (expandable)
+                AnimatedRotation(
+                  turns: expanded ? 0.5 : 0,
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeOut,
+                  child: Icon(
+                    Icons.expand_more,
+                    size: 18,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                )
+              else
+                Icon(
+                  Icons.chevron_right,
                   size: 18,
                   color: colorScheme.onSurfaceVariant,
                 ),
-              ),
             ],
           ),
         ),

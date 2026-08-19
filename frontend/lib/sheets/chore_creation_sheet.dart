@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/chore_models.dart';
+import '../models/group_models.dart';
 import '../providers/chore_provider.dart';
 import '../providers/group_provider.dart';
 import '../router.dart' show currentGroupIdProvider;
@@ -15,6 +16,7 @@ import '../utils/haptics.dart';
 import '../widgets/animated_check_toggle.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
+import '../widgets/app_dialog.dart';
 import '../widgets/app_input.dart';
 import '../utils/friendly_error.dart';
 import '../widgets/chip.dart';
@@ -90,6 +92,7 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
   // Scheduling folds behind a one-line summary for the common one-off chore;
   // forced open once a recurrence is chosen so it's never hidden.
   bool _showRecurrence = false;
+  bool _showZone = false;
   String? _category;
   String? _groupId;
   final List<String> _supplies = [];
@@ -151,6 +154,117 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
       if (group.id == groupId) return group.choreZones;
     }
     return const [];
+  }
+
+  /// Same lookup outside build, where `ref.watch` isn't allowed.
+  List<String> _readGroupZones() {
+    final groups = ref.read(cachedGroupsProvider).valueOrNull;
+    if (groups == null || groups.isEmpty) return const [];
+    final groupId =
+        resolveActiveGroupId(groups, ref.read(currentGroupIdProvider));
+    if (groupId == null) return const [];
+    for (final group in groups) {
+      if (group.id == groupId) return group.choreZones;
+    }
+    return const [];
+  }
+
+  /// Zones are the household's, not the chore's, so editing them writes
+  /// straight through to the group. They're editable from here because the
+  /// moment you need a new zone is the moment you're filing a chore under one
+  /// — sending people to household settings mid-create loses the chore.
+  Future<bool> _persistZones(List<String> zones) async {
+    final l10n = AppLocalizations.of(context)!;
+    final groups = ref.read(cachedGroupsProvider).valueOrNull ?? const [];
+    final groupId =
+        resolveActiveGroupId(groups, ref.read(currentGroupIdProvider));
+    if (groupId == null) return false;
+    try {
+      final svc = await ref.read(groupServiceProviderAsync.future);
+      await svc.updateGroup(groupId, UpdateGroupRequest(choreZones: zones));
+      await refreshCachedGroups(ref);
+      return true;
+    } catch (e) {
+      if (!mounted) return false;
+      AppToast.error(context, friendlyErrorMessage(e, l10n));
+      return false;
+    }
+  }
+
+  Future<void> _addZone() async {
+    final l10n = AppLocalizations.of(context)!;
+    final existing = _readGroupZones();
+    final controller = TextEditingController();
+    final entered = await showAppDialog<String>(
+      context: context,
+      title: l10n.sheetGroupSettingsAddZone,
+      body: AppInput(
+        hint: l10n.sheetGroupSettingsZoneHint,
+        controller: controller,
+        maxLength: 40,
+        textInputAction: TextInputAction.done,
+        onSubmitted: (v) => Navigator.of(context).pop(v),
+      ),
+      actions: [
+        AppButton(
+          text: l10n.commonCancel,
+          variant: AppButtonVariant.outline,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        AppButton(
+          text: l10n.commonAdd,
+          onPressed: () => Navigator.of(context).pop(controller.text),
+        ),
+      ],
+    );
+    controller.dispose();
+    if (!mounted) return;
+
+    final name = entered?.trim() ?? '';
+    if (name.isEmpty) return;
+
+    // Already there under some casing: just select it rather than duplicating.
+    final match =
+        existing.firstWhereOrNull((z) => z.toLowerCase() == name.toLowerCase());
+    if (match != null) {
+      setState(() => _category = match);
+      _markDirty();
+      return;
+    }
+
+    if (!await _persistZones([...existing, name])) return;
+    if (!mounted) return;
+    unawaited(Haptics.light());
+    setState(() => _category = name);
+    _markDirty();
+  }
+
+  Future<void> _removeZone(String zone) async {
+    final l10n = AppLocalizations.of(context)!;
+    unawaited(Haptics.medium());
+    final confirmed = await showAppDialog<bool>(
+      context: context,
+      title: l10n.choreCreationRemoveZoneTitle,
+      body: Text(l10n.choreCreationRemoveZoneBody(zone)),
+      actions: [
+        AppButton(
+          text: l10n.commonCancel,
+          variant: AppButtonVariant.outline,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        AppButton(
+          text: l10n.commonRemove,
+          color: AppButtonColor.error,
+          onPressed: () => Navigator.of(context).pop(true),
+        ),
+      ],
+    );
+    if (confirmed != true || !mounted) return;
+
+    final remaining = _readGroupZones().where((z) => z != zone).toList();
+    if (!await _persistZones(remaining)) return;
+    if (!mounted) return;
+    if (_category == zone) setState(() => _category = null);
   }
 
   bool get _canCreate => _nameController.text.trim().isNotEmpty && !_isSaving;
@@ -415,8 +529,9 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── Name ─────────────────────────────────────────────────────
+        // ── Name (the headline: one big field, then decisions) ────────
         AppInput(
+          size: AppInputSize.lg,
           hint: l10n.choreCreationNameHint,
           controller: _nameController,
           textInputAction: TextInputAction.next,
@@ -427,24 +542,6 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
           },
         ),
         const SizedBox(height: MitlistSpacing.md),
-
-        if (groupZones.isNotEmpty) ...[
-          _ChipRow(
-            label: l10n.choreCreationZoneLabel,
-            children: [
-              for (final zone in groupZones)
-                AppChip(
-                  label: zone,
-                  selected: _category == zone,
-                  onSelected: (_) {
-                    setState(() => _category = _category == zone ? null : zone);
-                    _markDirty();
-                  },
-                ),
-            ],
-          ),
-          const SizedBox(height: MitlistSpacing.sm),
-        ],
 
         // ── Who does it? (first-class: chores are about people) ──────
         _ChipRow(
@@ -530,6 +627,68 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
           ),
         ),
         const SizedBox(height: MitlistSpacing.md),
+
+        // ── Zone (folded: filing, not a decision) ─────────────────────
+        _SummaryLine(
+          text: '${l10n.choreCreationZoneLabel} · '
+              '${_category ?? l10n.choreCreationZoneNone}',
+          semanticLabel: l10n.choreCreationZoneLabel,
+          expanded: _showZone,
+          onTap: () => setState(() => _showZone = !_showZone),
+        ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          alignment: Alignment.topCenter,
+          child: _showZone
+              ? Padding(
+                  padding: const EdgeInsets.only(top: MitlistSpacing.md),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // The row is here even with no zones yet: the add chip is
+                      // how the first one gets made, and a household that never
+                      // opens settings would otherwise never meet zones at all.
+                      _ChipRow(
+                        label: l10n.choreCreationZoneLabel,
+                        children: [
+                          for (final zone in groupZones)
+                            AppChip(
+                              label: zone,
+                              selected: _category == zone,
+                              onSelected: (_) {
+                                setState(() => _category =
+                                    _category == zone ? null : zone);
+                                _markDirty();
+                              },
+                              onLongPress: () => unawaited(_removeZone(zone)),
+                            ),
+                          AppChip(
+                            label: l10n.sheetGroupSettingsAddZone,
+                            leading: const AppIcon(name: 'plus', size: 14),
+                            onSelected: (_) => unawaited(_addZone()),
+                          ),
+                        ],
+                      ),
+                      if (groupZones.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(
+                            left: MitlistSpacing.space14,
+                            top: MitlistSpacing.space1,
+                          ),
+                          child: Text(
+                            l10n.choreCreationZoneManageHint,
+                            style: textTheme.labelSmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                )
+              : const SizedBox.shrink(),
+        ),
+        const SizedBox(height: MitlistSpacing.sm),
 
         // ── Repeats (folded to a calm summary line; tap to change) ────
         _SummaryLine(

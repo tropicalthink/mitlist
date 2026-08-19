@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../providers/chore_provider.dart';
@@ -13,6 +15,7 @@ import '../../sheets/chore_creation_sheet.dart';
 import '../../sheets/create_list_sheet.dart';
 import '../../sheets/expense_creation_sheet.dart';
 import '../../sheets/invite_household_sheet.dart';
+import '../../screens/lists/list_detail_screen.dart' show ListDetailRouteArgs;
 import '../../theme/animations.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
@@ -75,7 +78,7 @@ class HubQuickStart extends ConsumerWidget {
             ListScrap(label: l10n.hubOnboardingCreateList, ghost: ghost),
         onTap: () {
           Haptics.light();
-          CreateListSheet.show(context);
+          unawaited(_createListAndOpen(context));
         },
       ),
       _QuickStep(
@@ -223,6 +226,26 @@ class HubQuickStart extends ConsumerWidget {
       ],
     );
   }
+}
+
+/// Opens the create sheet and, when a list actually comes back, lands the user
+/// in it with the composer focused — the step is "put something on a list", so
+/// stopping at a closed sheet on the hub left the job half done.
+///
+/// The tick takes care of itself: the created list is in the local cache
+/// before the sheet closes, so the DB-backed watcher behind this strip flips
+/// the step to done with no manual refresh.
+Future<void> _createListAndOpen(BuildContext context) async {
+  final created = await CreateListSheet.show(context);
+  if (created == null || !context.mounted) return;
+  await context.pushNamed(
+    'listDetail',
+    pathParameters: {'listId': created.id},
+    extra: ListDetailRouteArgs(
+      listName: created.name,
+      autoFocusComposer: true,
+    ),
+  );
 }
 
 class _QuickStep {

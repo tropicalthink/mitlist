@@ -696,6 +696,21 @@ class AppLocalizationsDe extends AppLocalizations {
   String get choreCreationZoneLabel => 'Bereich';
 
   @override
+  String get choreCreationZoneNone => 'Kein Bereich';
+
+  @override
+  String get choreCreationZoneManageHint =>
+      'Zum Entfernen lange auf einen Bereich drücken';
+
+  @override
+  String get choreCreationRemoveZoneTitle => 'Bereich entfernen?';
+
+  @override
+  String choreCreationRemoveZoneBody(String zone) {
+    return '$zone wird beim Anlegen von Aufgaben nicht mehr angeboten. Aufgaben, die ihn bereits nutzen, behalten ihn.';
+  }
+
+  @override
   String get choreCreationZoneKitchen => 'Küche';
 
   @override
@@ -3273,6 +3288,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get expenseCreationCategoryLabel => 'Category';
+
+  @override
+  String get expenseCreationDatePrefix => 'Datum';
 
   @override
   String get expenseCategoryGroceries => 'Groceries';
