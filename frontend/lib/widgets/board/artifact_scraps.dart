@@ -145,7 +145,8 @@ class DashedShapePainter extends CustomPainter {
 }
 
 class _DashedBox extends StatelessWidget {
-  const _DashedBox({required this.size, required this.color, this.circle = false});
+  const _DashedBox(
+      {required this.size, required this.color, this.circle = false});
 
   final double size;
   final Color color;

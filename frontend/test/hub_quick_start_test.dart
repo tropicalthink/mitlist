@@ -170,8 +170,8 @@ void main() {
         cachedGroupsProvider.overrideWith((ref) async => [soloHousehold]),
         cachedListsByGroupProvider
             .overrideWith((ref, id) => Stream.value([list])),
-        cachedCurrentChoresByGroupProvider.overrideWith(
-            (ref, id) => Stream.value([_currentChore(groupId)])),
+        cachedCurrentChoresByGroupProvider
+            .overrideWith((ref, id) => Stream.value([_currentChore(groupId)])),
         cachedExpensesByGroupProvider
             .overrideWith((ref, id) => Stream.value([_expense(groupId)])),
       ]));
