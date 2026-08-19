@@ -90,14 +90,24 @@ jobs:
           # mobile-only (see AppCheckConfig), and the web build attests with
           # Turnstile, so a missing site key is the thing worth stopping for.
           test -n "$API_BASE_URL"
-          test -n "$ANDROID_APP_LINK_SHA256"
           test -n "$APPLE_TEAM_ID"
           test -n "$TURNSTILE_SITE_KEY"
 
-          sed -i "s/__PLAY_APP_SIGNING_SHA256__/$ANDROID_APP_LINK_SHA256/g" \
-            frontend/web/.well-known/assetlinks.json
           sed -i "s/__APPLE_TEAM_ID__/$APPLE_TEAM_ID/g" \
             frontend/web/.well-known/apple-app-site-association
+
+          # Android is deliberately conditional. The fingerprint is the Play
+          # app-signing certificate, which does not exist until the first AAB
+          # upload — and that upload is manual. Publishing the placeholder is
+          # publishing a false statement, so serve no file rather than a wrong
+          # one; the check below then still catches every other placeholder.
+          if [ -n "$ANDROID_APP_LINK_SHA256" ]; then
+            sed -i "s/__PLAY_APP_SIGNING_SHA256__/$ANDROID_APP_LINK_SHA256/g" \
+              frontend/web/.well-known/assetlinks.json
+          else
+            echo "no ANDROID_APP_LINK_SHA256: dropping assetlinks.json" >&2
+            rm -f frontend/web/.well-known/assetlinks.json
+          fi
 
           if grep -R '__[A-Z0-9_]*__' frontend/web/.well-known; then
             echo "Unresolved app-link association placeholder" >&2
