@@ -21,6 +21,19 @@
 # Every `test -n` gate below is carried over deliberately: the official image
 # must never fall back to an unattested guest endpoint.
 #
+# What changed 2026-08-19 (2): pushes no longer go to the public registry
+# name. git.tropicalthink.com resolves to Cloudflare, and a Docker blob is
+# uploaded in ONE request, so any layer over Cloudflare's 100MB body limit
+# dies with a 413 after five retries — which is what the PWA image did.
+# Forgejo is one container away on `edge`, so writes go to forgejo:3000 over
+# the LAN instead. Same registry, same package, same pull URL: Forgejo keys
+# packages by /v2/<owner>/<image> rather than by the hostname the client
+# used, and its blob-upload Location headers are relative, so an upload stays
+# on the connection it started on. Only the auth realm is absolute (ROOT_URL)
+# — a token GET with no body, which the tunnel handles fine.
+# Requires dind on `edge` with --insecure-registry forgejo:3000; see
+# hosts/anansi/stacks/forgejo-runner/compose.yml. Deploy that FIRST.
+#
 # What changed 2026-08-19: the web build no longer carries Firebase or App
 # Check values at all. App Check's only web provider is reCAPTCHA Enterprise,
 # which needs GCP billing to protect exactly one endpoint, so web attests with
@@ -33,7 +46,11 @@ on:
   workflow_dispatch:
 
 env:
-  REGISTRY: git.tropicalthink.com
+  # Two names for one registry. REGISTRY/PUSH_PREFIX is the LAN path used for
+  # every write; IMAGE_PREFIX is the public name the mitlist stack pulls by,
+  # and the only one that belongs in a MITLIST_TAG instruction.
+  REGISTRY: forgejo:3000
+  PUSH_PREFIX: forgejo:3000/tropicalthink/mitlist
   IMAGE_PREFIX: git.tropicalthink.com/tropicalthink/mitlist
 
 jobs:
@@ -70,9 +87,9 @@ jobs:
           docker build \
             --build-arg VERSION="${{ github.sha }}" \
             -f backend/Dockerfile.prod \
-            -t "$IMAGE_PREFIX-backend:${{ github.sha }}" \
+            -t "$PUSH_PREFIX-backend:${{ github.sha }}" \
             backend
-          docker push "$IMAGE_PREFIX-backend:${{ github.sha }}"
+          docker push "$PUSH_PREFIX-backend:${{ github.sha }}"
 
       - name: Build and push the PWA
         env:
@@ -122,9 +139,9 @@ jobs:
             --build-arg REQTRACK_URL="$REQTRACK_URL" \
             --build-arg TURNSTILE_SITE_KEY="$TURNSTILE_SITE_KEY" \
             -f frontend/Dockerfile.prod \
-            -t "$IMAGE_PREFIX-frontend:${{ github.sha }}" \
+            -t "$PUSH_PREFIX-frontend:${{ github.sha }}" \
             frontend
-          docker push "$IMAGE_PREFIX-frontend:${{ github.sha }}"
+          docker push "$PUSH_PREFIX-frontend:${{ github.sha }}"
 
       - name: Tell us what to pin
         run: |
