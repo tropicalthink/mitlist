@@ -3484,6 +3484,9 @@ class AppLocalizationsNl extends AppLocalizations {
       'Sleep notities om te verplaatsen  ·  Knijp om te zoomen';
 
   @override
+  String get pinwallAddNote => 'Notitie toevoegen';
+
+  @override
   String pinwallPresenceHere(String names) {
     return '$names here now';
   }

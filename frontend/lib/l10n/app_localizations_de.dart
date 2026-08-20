@@ -3512,6 +3512,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Notizen zum Verschieben ziehen  ·  Zum Zoomen kneifen';
 
   @override
+  String get pinwallAddNote => 'Notiz hinzufügen';
+
+  @override
   String pinwallPresenceHere(String names) {
     return '$names here now';
   }

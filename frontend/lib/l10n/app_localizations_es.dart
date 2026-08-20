@@ -3474,6 +3474,9 @@ class AppLocalizationsEs extends AppLocalizations {
       'Arrastra las notas para moverlas  ·  Pellizca para hacer zoom';
 
   @override
+  String get pinwallAddNote => 'Añadir una nota';
+
+  @override
   String pinwallPresenceHere(String names) {
     return '$names here now';
   }
