@@ -22,6 +22,20 @@ ARG REQTRACK_URL=
 # Cloudflare Turnstile guards guest sign-up in the browser. App Check is
 # mobile-only, so no Firebase values reach this image.
 ARG TURNSTILE_SITE_KEY=
+# The PP-OCR ONNX weights (84MB) are native-only: ocr_service.dart swaps in
+# ppocr_inference_stub.dart when dart.library.html is present, so the web build
+# can never load them. Shipping them anyway pushed the nginx layer past
+# Cloudflare's 100MB request-body limit and the registry push died with a 413
+# — the image is built here and pushed through the tunnel at
+# git.tropicalthink.com. Both the pubspec entries and the files have to go:
+# flutter build fails on an asset directory that does not exist.
+#
+# `assets/models/` above them stays, and stays correct — a Flutter asset
+# directory entry is not recursive, so it covers the tflite classifier next to
+# it and never the ocr/ subtree.
+RUN sed -i '\#assets/models/ocr/#d' pubspec.yaml \
+    && rm -rf assets/models/ocr
+
 # Flutter does not compile web/drift_worker.dart — compile it for Drift WASM.
 RUN dart compile js -O4 web/drift_worker.dart -o web/drift_worker.dart.js
 RUN flutter build web --release \
