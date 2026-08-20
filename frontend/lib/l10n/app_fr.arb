@@ -3925,6 +3925,7 @@
     "description": "Board chip label for pinwall"
   },
   "pinwallDragHint": "Glisser les notes pour déplacer  ·  Pincer pour zoomer",
+  "pinwallAddNote": "Ajouter une note",
   "@pinwallDragHint": {
     "description": "Hint text for pinwall interactions"
   },

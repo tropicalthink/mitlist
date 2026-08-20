@@ -3925,6 +3925,7 @@
     "description": "Board chip label for pinwall"
   },
   "pinwallDragHint": "Sleep notities om te verplaatsen  ·  Knijp om te zoomen",
+  "pinwallAddNote": "Notitie toevoegen",
   "@pinwallDragHint": {
     "description": "Hint text for pinwall interactions"
   },
