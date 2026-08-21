@@ -86,6 +86,18 @@ func (s *ListService) broadcastListPush(ctx context.Context, list *models.List, 
 	_ = s.pushSvc.BroadcastToGroupExcluding(list.GroupID, actorID, string(data))
 }
 
+// queueListItemNotification enqueues an item-added digest entry for the add
+// paths that bypass CreateItem (amount merges and batch adds), so the
+// end-of-session summary counts every item the person added. Digest-only by
+// design: the legacy push-only fallback would send one raw push per item,
+// which is exactly the spam the digest exists to prevent.
+func (s *ListService) queueListItemNotification(ctx context.Context, list *models.List, actorID uuid.UUID, actorName, itemName string) {
+	if s.dispatcher == nil {
+		return
+	}
+	s.broadcastListPush(ctx, list, actorID, actorName, itemName, list.Name+" updated", actorName+" added "+itemName+" to "+list.Name)
+}
+
 // publishItem emits an SSE event for a list item mutation.
 func (s *ListService) publishItem(eventType string, groupID uuid.UUID, item *models.ListItem) {
 	publishDomainEvent(s.hub, eventType, groupID, map[string]string{
@@ -448,6 +460,7 @@ func (s *ListService) AddItemAmount(ctx context.Context, user *models.User, list
 			return nil, fmt.Errorf("failed to update item: %w", err)
 		}
 		s.publishItem("list:item_updated", list.GroupID, item)
+		s.queueListItemNotification(ctx, list, user.ID, displayName(user), item.Name)
 		return item, nil
 	}
 
@@ -463,6 +476,7 @@ func (s *ListService) AddItemAmount(ctx context.Context, user *models.User, list
 		return nil, fmt.Errorf("failed to create item: %w", err)
 	}
 	s.publishItem("list:item_created", list.GroupID, item)
+	s.queueListItemNotification(ctx, list, user.ID, displayName(user), item.Name)
 	return item, nil
 }
 
@@ -531,6 +545,7 @@ func (s *ListService) AddItemsBatch(ctx context.Context, user *models.User, list
 				return nil, fmt.Errorf("failed to update item: %w", err)
 			}
 			s.publishItem("list:item_updated", list.GroupID, item)
+			s.queueListItemNotification(ctx, list, user.ID, displayName(user), item.Name)
 			result = append(result, *item)
 			continue
 		}
@@ -547,6 +562,7 @@ func (s *ListService) AddItemsBatch(ctx context.Context, user *models.User, list
 			return nil, fmt.Errorf("failed to create item: %w", err)
 		}
 		s.publishItem("list:item_created", list.GroupID, &item)
+		s.queueListItemNotification(ctx, list, user.ID, displayName(user), item.Name)
 		existingByKey[key] = &item
 		result = append(result, item)
 	}

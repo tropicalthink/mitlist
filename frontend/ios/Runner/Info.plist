@@ -42,7 +42,7 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>mitlist uses the camera to scan receipts and shopping lists so items can be added automatically.</string>
+	<string>mitlist uses the camera to scan receipts, shopping lists, and household invite QR codes.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>The camera component declares microphone access as part of video capture support; mitlist does not record audio.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

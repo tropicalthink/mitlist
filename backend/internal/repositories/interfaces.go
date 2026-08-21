@@ -277,6 +277,7 @@ type NotificationRepo interface {
 	GetPreferencesByGroup(ctx context.Context, groupID uuid.UUID) (map[uuid.UUID]*models.NotificationPreference, error)
 	CreateNotificationsBatch(ctx context.Context, notifications []models.Notification) error
 	QueueListItemNotification(ctx context.Context, groupID, actorID, listID uuid.UUID, actorName, listName, itemName string) error
+	FlushListNotificationBatches(ctx context.Context, actorID, listID uuid.UUID) error
 	UpsertPreference(ctx context.Context, pref *models.NotificationPreference) error
 }
 
