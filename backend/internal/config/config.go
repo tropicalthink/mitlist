@@ -11,6 +11,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog/log"
+	standardwebhooks "github.com/standard-webhooks/standard-webhooks/libraries/go"
 )
 
 // Config holds all application configuration loaded from environment variables.
@@ -354,6 +355,22 @@ func (c *Config) Validate() error {
 	}
 	if c.SecretKey != "" && c.SecretKey == c.SessionSecretKey {
 		return fmt.Errorf("SECRET_KEY and SESSION_SECRET_KEY must be different")
+	}
+
+	// Checked here rather than where the handler is built, because that
+	// happens after the database is up and the job runner has started — so a
+	// malformed secret killed a booted process instead of failing config
+	// validation, and the container crash-looped in production on 2026-08-21.
+	//
+	// standard-webhooks strips an optional "whsec_" prefix and base64-decodes
+	// the rest. Polar hands out a raw secret, so it has to be encoded before
+	// it gets here.
+	if c.PolarWebhookSecret != "" {
+		if _, err := standardwebhooks.NewWebhook(c.PolarWebhookSecret); err != nil {
+			return fmt.Errorf(
+				"POLAR_WEBHOOK_SECRET is not a valid standard-webhooks secret (%w) — "+
+					"it must be base64, optionally prefixed with whsec_", err)
+		}
 	}
 	if (c.GooglePubSubAudience == "") != (c.GooglePubSubServiceAccount == "") {
 		return fmt.Errorf("GOOGLE_PUBSUB_AUDIENCE and GOOGLE_PUBSUB_SERVICE_ACCOUNT must be set together")
