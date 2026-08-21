@@ -61,6 +61,12 @@ class ListDetailController extends ChangeNotifier {
   String _searchQuery = '';
   ListService? _service;
   bool _dirty = false;
+
+  /// True once this session added at least one item. Consumed on dispose to
+  /// flush the server-side item-added digest, so housemates get their single
+  /// summary notification right after the person leaves the list instead of
+  /// after the server's idle-window fallback.
+  bool _itemsAddedThisSession = false;
   bool _doneSectionExpanded = true;
   String? _groupId;
   String? _listType;
@@ -136,6 +142,12 @@ class ListDetailController extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    if (_itemsAddedThisSession) {
+      // Leaving the list ends the adding session: release the notification
+      // digest now. Best-effort — the service logs and swallows failures, and
+      // the server's idle window still delivers if this never arrives.
+      unawaited(_service?.flushListNotifications(listId));
+    }
     for (final timer in _settleTimers.values) {
       timer.cancel();
     }
@@ -599,6 +611,7 @@ class ListDetailController extends ChangeNotifier {
           deferImmediateSync: shouldResolve,
         );
       }
+      _itemsAddedThisSession = true;
       if (shouldResolve) {
         try {
           final resolvedId = await _resolveHighConfidence(parsed.name);
@@ -646,6 +659,7 @@ class ListDetailController extends ChangeNotifier {
         canonicalItemId: suggestion.canonicalItemId,
       ),
     );
+    _itemsAddedThisSession = true;
     if (_disposed) return;
     _dirty = true;
   }

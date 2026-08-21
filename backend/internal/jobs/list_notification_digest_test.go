@@ -67,6 +67,23 @@ func TestListNotificationDigest_Run(t *testing.T) {
 		assert.Equal(t, []uuid.UUID{batchID}, repo.deleted)
 	})
 
+	t.Run("lists the remembered item names with a truncation marker", func(t *testing.T) {
+		repo := &fakeListDigestRepo{batches: []listNotificationBatch{{
+			ID: uuid.New(), GroupID: uuid.New(), ActorID: uuid.New(), ListID: uuid.New(),
+			ActorName: "Mina", ListName: "Groceries", LastItemName: "Bread",
+			GroupName: "Flatmates", ItemCount: 4,
+			ItemNames: []string{"Milk", "Eggs", "Bread"}, UpdatedAt: time.Now(),
+		}}}
+		dispatcher := &capturedDispatch{}
+		job := &ListNotificationDigest{repo: repo, dispatcher: dispatcher, log: logger.New("test")}
+
+		job.Run()
+
+		assert.Equal(t, "Mina added 4 items to Groceries in Flatmates: Milk, Eggs, Bread, …", dispatcher.body)
+		require.NotNil(t, dispatcher.payload.Copy)
+		assert.Equal(t, "Milk, Eggs, Bread, …", dispatcher.payload.Copy.Params["item_names"])
+	})
+
 	t.Run("keeps a claimed batch when dispatch fails", func(t *testing.T) {
 		repo := &fakeListDigestRepo{batches: []listNotificationBatch{{
 			ID: uuid.New(), GroupID: uuid.New(), ActorID: uuid.New(), ListID: uuid.New(),

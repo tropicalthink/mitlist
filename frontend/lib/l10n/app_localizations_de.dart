@@ -4605,6 +4605,20 @@ class AppLocalizationsDe extends AppLocalizations {
   String get joinPasteButton => 'Paste';
 
   @override
+  String get joinScanButton => 'Scannen';
+
+  @override
+  String get joinScanTitle => 'Einladungscode scannen';
+
+  @override
+  String get joinScanHint =>
+      'Richte die Kamera auf den Einladungs-QR-Code des Haushalts';
+
+  @override
+  String get joinScanCameraError =>
+      'Kamera konnte nicht geöffnet werden. Prüfe die Kameraberechtigung und versuche es erneut.';
+
+  @override
   String get joinPasteFilled => 'Invite code pasted';
 
   @override
@@ -5107,6 +5121,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String notificationListUpdatedManyBody(
       String actorName, num count, String listName, String groupName) {
     return '$actorName hat $count Einträge zu $listName in $groupName hinzugefügt.';
+  }
+
+  @override
+  String notificationListUpdatedManyNamesBody(String actorName, num count,
+      String listName, String groupName, String itemNames) {
+    return '$actorName hat $count Einträge zu $listName in $groupName hinzugefügt: $itemNames';
   }
 
   @override

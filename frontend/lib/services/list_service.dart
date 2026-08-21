@@ -315,6 +315,18 @@ class ListService {
     }
   }
 
+  /// Releases the server-side item-added digest for this list so housemates
+  /// get their one summary notification right after the adding session ends.
+  /// Fire-and-forget: failure only means the server's idle-window fallback
+  /// delivers the digest a little later, so errors are logged and swallowed.
+  Future<void> flushListNotifications(String listId) async {
+    try {
+      await _dio.post('/lists/$listId/notifications/flush');
+    } on DioException catch (e) {
+      _logger.w('Flush list notifications failed: ${e.response?.data}');
+    }
+  }
+
   Future<ListItem> addItemAmount(String listId, AddListItemAmountRequest req,
       {String? idempotencyKey}) async {
     try {

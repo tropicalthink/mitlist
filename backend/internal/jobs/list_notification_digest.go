@@ -3,6 +3,7 @@ package jobs
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -21,6 +22,7 @@ type listNotificationBatch struct {
 	LastItemName string
 	GroupName    string
 	ItemCount    int
+	ItemNames    []string
 	UpdatedAt    time.Time
 }
 
@@ -47,10 +49,10 @@ func (r *postgresListNotificationBatchRepo) ClaimDueListNotificationBatches(ctx 
 			FROM due
 			WHERE b.id = due.id
 			RETURNING b.id, b.group_id, b.actor_id, b.list_id, b.actor_name,
-				b.list_name, b.last_item_name, b.item_count, b.updated_at
+				b.list_name, b.last_item_name, b.item_count, b.item_names, b.updated_at
 		)
 		SELECT c.id, c.group_id, c.actor_id, c.list_id, c.actor_name,
-			c.list_name, c.last_item_name, c.item_count, c.updated_at, g.name
+			c.list_name, c.last_item_name, c.item_count, c.item_names, c.updated_at, g.name
 		FROM claimed c
 		JOIN groups g ON g.id = c.group_id
 		ORDER BY c.updated_at, c.id
@@ -66,7 +68,7 @@ func (r *postgresListNotificationBatchRepo) ClaimDueListNotificationBatches(ctx 
 		if err := rows.Scan(
 			&batch.ID, &batch.GroupID, &batch.ActorID, &batch.ListID,
 			&batch.ActorName, &batch.ListName, &batch.LastItemName,
-			&batch.ItemCount, &batch.UpdatedAt, &batch.GroupName,
+			&batch.ItemCount, &batch.ItemNames, &batch.UpdatedAt, &batch.GroupName,
 		); err != nil {
 			return nil, err
 		}
@@ -81,6 +83,20 @@ func (r *postgresListNotificationBatchRepo) DeleteClaimedListNotificationBatch(c
 		WHERE id = $1 AND updated_at = $2 AND claimed_at IS NOT NULL
 	`, id, updatedAt)
 	return err
+}
+
+// joinDigestItemNames renders the remembered item names for the digest body.
+// The batch stores at most the first few names; when the count outgrew that
+// cap an ellipsis marks the truncation.
+func joinDigestItemNames(names []string, itemCount int) string {
+	if len(names) == 0 {
+		return ""
+	}
+	joined := strings.Join(names, ", ")
+	if itemCount > len(names) {
+		joined += ", …"
+	}
+	return joined
 }
 
 // ListNotificationDigest turns rapid list-item additions into one useful inbox
@@ -106,9 +122,13 @@ func (j *ListNotificationDigest) Run() {
 		return
 	}
 	for _, batch := range batches {
+		itemNames := joinDigestItemNames(batch.ItemNames, batch.ItemCount)
 		body := fmt.Sprintf("%s added %s to %s in %s.", batch.ActorName, batch.LastItemName, batch.ListName, batch.GroupName)
 		if batch.ItemCount > 1 {
 			body = fmt.Sprintf("%s added %d items to %s in %s.", batch.ActorName, batch.ItemCount, batch.ListName, batch.GroupName)
+			if itemNames != "" {
+				body = fmt.Sprintf("%s added %d items to %s in %s: %s", batch.ActorName, batch.ItemCount, batch.ListName, batch.GroupName, itemNames)
+			}
 		}
 		payload := models.NotificationPayload{
 			Screen:     models.ScreenListDetail,
@@ -122,6 +142,7 @@ func (j *ListNotificationDigest) Run() {
 				"actor_name":     batch.ActorName,
 				"item_count":     fmt.Sprintf("%d", batch.ItemCount),
 				"last_item_name": batch.LastItemName,
+				"item_names":     itemNames,
 				"list_name":      batch.ListName,
 				"group_name":     batch.GroupName,
 			}),

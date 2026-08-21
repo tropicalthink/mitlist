@@ -77,6 +77,34 @@ void main() {
     );
   });
 
+  test('lists the digest item names when the server provides them', () {
+    final l10n = AppLocalizationsEn();
+    final data = {
+      'copy': {
+        'version': 1,
+        'template': 'list_items_added',
+        'params': {
+          'actor_name': 'Mina',
+          'item_count': '4',
+          'last_item_name': 'Bread',
+          'item_names': 'Milk, Eggs, Bread, …',
+          'list_name': 'Groceries',
+          'group_name': 'Flatmates',
+        },
+      },
+    };
+
+    expect(
+      resolveNotificationText(
+        l10n: l10n,
+        fallbackTitle: '',
+        fallbackBody: '',
+        data: data,
+      ).body,
+      'Mina added 4 items to Groceries in Flatmates: Milk, Eggs, Bread, …',
+    );
+  });
+
   test('supports string-encoded push copy and legacy fallback', () {
     final l10n = AppLocalizationsEn();
     final structured = resolveNotificationText(

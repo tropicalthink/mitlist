@@ -8025,6 +8025,30 @@ abstract class AppLocalizations {
   /// **'Paste'**
   String get joinPasteButton;
 
+  /// Button that opens the in-app camera to scan an invite QR code
+  ///
+  /// In en, this message translates to:
+  /// **'Scan'**
+  String get joinScanButton;
+
+  /// Title of the invite QR scanner screen
+  ///
+  /// In en, this message translates to:
+  /// **'Scan invite code'**
+  String get joinScanTitle;
+
+  /// Instruction shown on the invite QR scanner screen
+  ///
+  /// In en, this message translates to:
+  /// **'Point your camera at the household\'s invite QR code'**
+  String get joinScanHint;
+
+  /// Shown when the invite QR scanner cannot access the camera
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open the camera. Check camera permissions and try again.'**
+  String get joinScanCameraError;
+
   /// Confirmation shown after pasting a valid invite code
   ///
   /// In en, this message translates to:
@@ -8884,6 +8908,13 @@ abstract class AppLocalizations {
   /// **'{actorName} added {count} items to {listName} in {groupName}.'**
   String notificationListUpdatedManyBody(
       String actorName, num count, String listName, String groupName);
+
+  /// No description provided for @notificationListUpdatedManyNamesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{actorName} added {count} items to {listName} in {groupName}: {itemNames}'**
+  String notificationListUpdatedManyNamesBody(String actorName, num count,
+      String listName, String groupName, String itemNames);
 
   /// No description provided for @notificationExpenseCreatedTitle.
   ///
