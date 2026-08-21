@@ -675,6 +675,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get choreCreationTitle => 'Add chore';
 
   @override
+  String get choreEditTitle => 'Edit chore';
+
+  @override
+  String get choreEditSaved => 'Chore updated';
+
+  @override
   String get choreCreationNameHint => 'Chore name';
 
   @override

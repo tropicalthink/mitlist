@@ -681,6 +681,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get choreCreationTitle => 'Aufgabe hinzufügen';
 
   @override
+  String get choreEditTitle => 'Aufgabe bearbeiten';
+
+  @override
+  String get choreEditSaved => 'Aufgabe aktualisiert';
+
+  @override
   String get choreCreationNameHint => 'Name der Aufgabe';
 
   @override

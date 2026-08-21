@@ -40,6 +40,7 @@ class ChoreDetailSheet extends StatefulWidget {
     this.onDeleteSubtask,
     this.onReorderSubtasks,
     this.onAddSuppliesToList,
+    this.onEdit,
     this.onDelete,
   });
 
@@ -71,6 +72,7 @@ class ChoreDetailSheet extends StatefulWidget {
   final ValueChanged<String>? onDeleteSubtask;
   final ValueChanged<List<String>>? onReorderSubtasks;
   final VoidCallback? onAddSuppliesToList;
+  final VoidCallback? onEdit;
   final VoidCallback? onDelete;
 
   static Future<void> show(
@@ -97,6 +99,7 @@ class ChoreDetailSheet extends StatefulWidget {
     ValueChanged<String>? onDeleteSubtask,
     ValueChanged<List<String>>? onReorderSubtasks,
     VoidCallback? onAddSuppliesToList,
+    VoidCallback? onEdit,
     VoidCallback? onDelete,
   }) async {
     final l10n = AppLocalizations.of(context)!;
@@ -126,6 +129,7 @@ class ChoreDetailSheet extends StatefulWidget {
         onDeleteSubtask: onDeleteSubtask,
         onReorderSubtasks: onReorderSubtasks,
         onAddSuppliesToList: onAddSuppliesToList,
+        onEdit: onEdit,
         onDelete: onDelete,
       ),
     );
@@ -392,6 +396,7 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
             widget.onSkip != null ||
             widget.onRescheduleTomorrow != null ||
             widget.onUndo != null ||
+            widget.onEdit != null ||
             widget.onDelete != null) ...[
           const SizedBox(height: MitlistSpacing.lg),
           if (widget.onMarkDone != null)
@@ -441,6 +446,20 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
                 size: AppButtonSize.lg,
                 text: l10n.choreDetailUndoLast,
                 onPressed: widget.onUndo,
+              ),
+            ),
+          ],
+          if (widget.onEdit != null) ...[
+            const SizedBox(height: MitlistSpacing.sm),
+            SizedBox(
+              width: double.infinity,
+              child: AppButton(
+                variant: AppButtonVariant.outline,
+                color: AppButtonColor.neutral,
+                size: AppButtonSize.lg,
+                text: l10n.choreEditTitle,
+                icon: const AppIcon(name: 'pencil'),
+                onPressed: widget.onEdit,
               ),
             ),
           ],

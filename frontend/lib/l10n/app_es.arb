@@ -673,6 +673,14 @@
   "@choreCreationTitle": {
     "description": "Bottom sheet title for chore creation"
   },
+  "choreEditTitle": "Editar tarea",
+  "@choreEditTitle": {
+    "description": "Bottom sheet title and detail-sheet button when editing an existing chore"
+  },
+  "choreEditSaved": "Tarea actualizada",
+  "@choreEditSaved": {
+    "description": "Toast shown after a chore edit is saved"
+  },
   "choreCreationNameHint": "Nombre de la tarea",
   "@choreCreationNameHint": {
     "description": "Input hint for chore name"

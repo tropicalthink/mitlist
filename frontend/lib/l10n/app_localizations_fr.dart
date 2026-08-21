@@ -679,6 +679,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get choreCreationTitle => 'Ajouter une tâche';
 
   @override
+  String get choreEditTitle => 'Modifier la tâche';
+
+  @override
+  String get choreEditSaved => 'Tâche mise à jour';
+
+  @override
   String get choreCreationNameHint => 'Nom de la tâche';
 
   @override
