@@ -3021,7 +3021,7 @@
   "recipeCreationScanRecipeViaCamera": "Scan recipe via camera",
   "@recipeCreationScanRecipeViaCamera": { "description": "Semantics label for scanning a recipe" },
 
-  "joinCodeFormatHint": "Codes look like WORD-WORD-42. Ask whoever invited you.",
+  "joinCodeFormatHint": "Codes look like WORD-WORD-X7WM2K9PQ6R8S. Ask whoever invited you.",
   "@joinCodeFormatHint": { "description": "Hint text describing invite code format" },
   "joinEnterGroup": "Enter {name}",
   "@joinEnterGroup": { "description": "Semantics label to enter a household", "placeholders": { "name": { "type": "String" } } },
@@ -3156,7 +3156,7 @@
   "createListNoHousehold": "No household available.",
   "@createListNoHousehold": { "description": "Empty state when no households exist" },
 
-  "sheetJoinCodeExample": "SUNNY-TACO-42",
+  "sheetJoinCodeExample": "SUNNY-TACO-X7WM2K9PQ6R8S",
   "@sheetJoinCodeExample": { "description": "Example invite code placeholder" },
   "joinMembersAlreadyInside": "{count, plural, =1{1 member already inside} other{{count} members already inside}}",
   "@joinMembersAlreadyInside": { "description": "Member count after joining household", "placeholders": { "count": { "type": "num" } } },
