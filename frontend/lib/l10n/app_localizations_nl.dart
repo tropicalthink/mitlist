@@ -678,6 +678,12 @@ class AppLocalizationsNl extends AppLocalizations {
   String get choreCreationTitle => 'Klus toevoegen';
 
   @override
+  String get choreEditTitle => 'Klus bewerken';
+
+  @override
+  String get choreEditSaved => 'Klus bijgewerkt';
+
+  @override
   String get choreCreationNameHint => 'Klusnaam';
 
   @override

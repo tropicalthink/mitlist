@@ -678,6 +678,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get choreCreationTitle => 'Añadir tarea';
 
   @override
+  String get choreEditTitle => 'Editar tarea';
+
+  @override
+  String get choreEditSaved => 'Tarea actualizada';
+
+  @override
   String get choreCreationNameHint => 'Nombre de la tarea';
 
   @override

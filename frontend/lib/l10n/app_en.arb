@@ -385,6 +385,10 @@
 
   "choreCreationTitle": "Add chore",
   "@choreCreationTitle": { "description": "Bottom sheet title for chore creation" },
+  "choreEditTitle": "Edit chore",
+  "@choreEditTitle": { "description": "Bottom sheet title and detail-sheet button when editing an existing chore" },
+  "choreEditSaved": "Chore updated",
+  "@choreEditSaved": { "description": "Toast shown after a chore edit is saved" },
   "choreCreationNameHint": "Chore name",
   "@choreCreationNameHint": { "description": "Input hint for chore name" },
   "choreCreationYourRoutines": "Your routines",

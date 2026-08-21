@@ -162,6 +162,8 @@
   "choreCarryingShare": "{my} von {total} offenen Aufgaben",
   "choreNothingShare": "Aktuell nichts für dich",
   "choreCreationTitle": "Aufgabe hinzufügen",
+  "choreEditTitle": "Aufgabe bearbeiten",
+  "choreEditSaved": "Aufgabe aktualisiert",
   "choreCreationNameHint": "Name der Aufgabe",
   "choreCreationYourRoutines": "Deine Routinen",
   "choreCreationStartFromRoutine": "Aus einer Routine starten",

@@ -1238,6 +1238,18 @@ abstract class AppLocalizations {
   /// **'Add chore'**
   String get choreCreationTitle;
 
+  /// Bottom sheet title and detail-sheet button when editing an existing chore
+  ///
+  /// In en, this message translates to:
+  /// **'Edit chore'**
+  String get choreEditTitle;
+
+  /// Toast shown after a chore edit is saved
+  ///
+  /// In en, this message translates to:
+  /// **'Chore updated'**
+  String get choreEditSaved;
+
   /// Input hint for chore name
   ///
   /// In en, this message translates to:

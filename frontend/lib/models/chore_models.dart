@@ -185,6 +185,7 @@ class UpdateChoreRequest {
   final List<String>? assignmentConfig;
   final bool? isActive;
   final List<String>? supplies;
+  final String? category;
 
   const UpdateChoreRequest({
     this.name,
@@ -200,6 +201,7 @@ class UpdateChoreRequest {
     this.assignmentConfig,
     this.isActive,
     this.supplies,
+    this.category,
   });
 
   Map<String, dynamic> toJson() {
@@ -219,6 +221,7 @@ class UpdateChoreRequest {
     if (assignmentConfig != null) m['assignment_config'] = assignmentConfig;
     if (isActive != null) m['is_active'] = isActive;
     if (supplies != null) m['supplies'] = supplies;
+    if (category != null) m['category'] = category;
     return m;
   }
 }
