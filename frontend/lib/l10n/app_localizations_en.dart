@@ -4888,7 +4888,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get joinCodeFormatHint =>
-      'Codes look like WORD-WORD-42. Ask whoever invited you.';
+      'Codes look like WORD-WORD-X7WM2K9PQ6R8S. Ask whoever invited you.';
 
   @override
   String joinEnterGroup(String name) {
@@ -5155,7 +5155,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createListNoHousehold => 'No household available.';
 
   @override
-  String get sheetJoinCodeExample => 'SUNNY-TACO-42';
+  String get sheetJoinCodeExample => 'SUNNY-TACO-X7WM2K9PQ6R8S';
 
   @override
   String joinMembersAlreadyInside(num count) {

@@ -1279,7 +1279,7 @@
   "createListCreated": "Liste erstellt",
   "recipeCreationScanRecipe": "Rezept scannen",
   "recipeCreationScanRecipeViaCamera": "Rezept per Kamera scannen",
-  "joinCodeFormatHint": "Codes sehen aus wie WORT-WORT-42. Frag die Person, die dich eingeladen hat.",
+  "joinCodeFormatHint": "Codes sehen aus wie WORT-WORT-X7WM2K9PQ6R8S. Frag die Person, die dich eingeladen hat.",
   "joinEnterGroup": "{name} betreten",
   "inviteCodeLabel": "Einladungscode: {code}",
   "inviteQrTitle": "Haushaltseinladungs-QR-Code",
@@ -1866,7 +1866,7 @@
       }
     }
   },
-  "sheetJoinCodeExample": "SUNNY-TACO-42",
+  "sheetJoinCodeExample": "SUNNY-TACO-X7WM2K9PQ6R8S",
   "@sheetJoinCodeExample": {
     "description": "Example invite code placeholder"
   },

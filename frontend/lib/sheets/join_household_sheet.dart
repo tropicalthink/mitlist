@@ -235,7 +235,10 @@ class _JoinHouseholdSheetState extends ConsumerState<JoinHouseholdSheet>
             controller: _codeController,
             enabled: !isJoining,
             textInputAction: TextInputAction.done,
-            maxLength: 20,
+            // Codes are ADJ-NOUN-<13 chars> (up to 29 chars today, see the
+            // backend's generatePlayfulInviteCode); leave headroom so a longer
+            // wordlist never truncates a pasted code again.
+            maxLength: 40,
             prefixIcon: const Icon(Icons.confirmation_number_outlined),
             onChanged: (val) {
               final upper = val.toUpperCase();

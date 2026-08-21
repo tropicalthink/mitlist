@@ -5240,7 +5240,7 @@
   "@inviteQrUnavailable": {
     "description": "Error when QR code cannot be rendered"
   },
-  "joinCodeFormatHint": "Les codes ressemblent à MOT-MOT-42. Demande à la personne qui t'a invité.",
+  "joinCodeFormatHint": "Les codes ressemblent à MOT-MOT-X7WM2K9PQ6R8S. Demande à la personne qui t'a invité.",
   "@joinCodeFormatHint": {
     "description": "Hint text describing invite code format"
   },
@@ -5678,7 +5678,7 @@
   "@sheetInviteTitle": {
     "description": "Sheet title for inviting to household"
   },
-  "sheetJoinCodeExample": "SUNNY-TACO-42",
+  "sheetJoinCodeExample": "SUNNY-TACO-X7WM2K9PQ6R8S",
   "@sheetJoinCodeExample": {
     "description": "Example invite code placeholder"
   },

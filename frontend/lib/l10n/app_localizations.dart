@@ -8646,7 +8646,7 @@ abstract class AppLocalizations {
   /// Hint text describing invite code format
   ///
   /// In en, this message translates to:
-  /// **'Codes look like WORD-WORD-42. Ask whoever invited you.'**
+  /// **'Codes look like WORD-WORD-X7WM2K9PQ6R8S. Ask whoever invited you.'**
   String get joinCodeFormatHint;
 
   /// Semantics label to enter a household
@@ -9067,7 +9067,7 @@ abstract class AppLocalizations {
   /// Example invite code placeholder
   ///
   /// In en, this message translates to:
-  /// **'SUNNY-TACO-42'**
+  /// **'SUNNY-TACO-X7WM2K9PQ6R8S'**
   String get sheetJoinCodeExample;
 
   /// Member count after joining household

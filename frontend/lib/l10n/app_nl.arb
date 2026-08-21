@@ -5240,7 +5240,7 @@
   "@inviteQrUnavailable": {
     "description": "Error when QR code cannot be rendered"
   },
-  "joinCodeFormatHint": "Codes zien eruit als WOORD-WOORD-42. Vraag het aan degene die je heeft uitgenodigd.",
+  "joinCodeFormatHint": "Codes zien eruit als WOORD-WOORD-X7WM2K9PQ6R8S. Vraag het aan degene die je heeft uitgenodigd.",
   "@joinCodeFormatHint": {
     "description": "Hint text describing invite code format"
   },
@@ -5678,7 +5678,7 @@
   "@sheetInviteTitle": {
     "description": "Sheet title for inviting to household"
   },
-  "sheetJoinCodeExample": "SUNNY-TACO-42",
+  "sheetJoinCodeExample": "SUNNY-TACO-X7WM2K9PQ6R8S",
   "@sheetJoinCodeExample": {
     "description": "Example invite code placeholder"
   },
