@@ -14,15 +14,52 @@ import 'app_dialog.dart';
 /// A custom bottom sheet matching the mitlist design system.
 ///
 /// Use [showAppBottomSheet] to display with the correct shape and animation.
-class AppBottomSheet extends StatelessWidget {
+class AppBottomSheet extends StatefulWidget {
   const AppBottomSheet({
     super.key,
     required this.title,
     required this.body,
+    this.onDragDismissRequested,
   });
 
   final String title;
   final Widget body;
+  final Future<void> Function()? onDragDismissRequested;
+
+  @override
+  State<AppBottomSheet> createState() => _AppBottomSheetState();
+}
+
+class _AppBottomSheetState extends State<AppBottomSheet> {
+  static const double _dismissDragDistance = MitlistSpacing.xxl;
+
+  double _dragDistance = 0;
+  bool _dismissRequested = false;
+
+  void _resetDrag() {
+    _dragDistance = 0;
+    _dismissRequested = false;
+  }
+
+  void _trackDrag(double delta) {
+    if (widget.onDragDismissRequested == null || _dismissRequested) return;
+    _dragDistance = math.max(0, _dragDistance + delta);
+    if (_dragDistance < _dismissDragDistance) return;
+    _dismissRequested = true;
+    widget.onDragDismissRequested!();
+  }
+
+  bool _handleScrollNotification(ScrollNotification notification) {
+    if (notification is ScrollStartNotification) {
+      _resetDrag();
+    } else if (notification is OverscrollNotification &&
+        notification.overscroll < 0) {
+      _trackDrag(-notification.overscroll);
+    } else if (notification is ScrollEndNotification) {
+      _resetDrag();
+    }
+    return false;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,9 +70,8 @@ class AppBottomSheet extends StatelessWidget {
     // fullscreen on notched MacBooks a tall sheet slides up behind the camera
     // housing (NSScreen reports a ~38pt top inset there). Enforce a minimum
     // top gap on macOS that clears the notch / menu-bar row.
-    final minTopPadding = !kIsWeb && defaultTargetPlatform == TargetPlatform.macOS
-        ? 40.0
-        : 0.0;
+    final minTopPadding =
+        !kIsWeb && defaultTargetPlatform == TargetPlatform.macOS ? 40.0 : 0.0;
     final topPadding = math.max(mediaQuery.viewPadding.top, minTopPadding);
     // The on-screen keyboard inset. `showModalBottomSheet` (even with
     // isScrollControlled) does not resize for the keyboard, so without this the
@@ -68,35 +104,53 @@ class AppBottomSheet extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const SizedBox(height: MitlistSpacing.sm),
-              Center(
-                child: Container(
-                  width: MitlistSpacing.space10,
-                  height: MitlistSpacing.space1,
-                  decoration: BoxDecoration(
-                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
-                    borderRadius: const BorderRadius.all(
-                      Radius.circular(MitlistTheme.radiusFull),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: MitlistSpacing.sm),
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: MitlistSpacing.lg),
-                child: Row(
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onVerticalDragStart: widget.onDragDismissRequested == null
+                    ? null
+                    : (_) => _resetDrag(),
+                onVerticalDragUpdate: widget.onDragDismissRequested == null
+                    ? null
+                    : (details) => _trackDrag(details.delta.dy),
+                onVerticalDragEnd: widget.onDragDismissRequested == null
+                    ? null
+                    : (_) => _resetDrag(),
+                child: Column(
                   children: [
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: textTheme.titleMedium,
+                    const SizedBox(height: MitlistSpacing.sm),
+                    Center(
+                      child: Container(
+                        width: MitlistSpacing.space10,
+                        height: MitlistSpacing.space1,
+                        decoration: BoxDecoration(
+                          color: colorScheme.onSurfaceVariant
+                              .withValues(alpha: 0.3),
+                          borderRadius: const BorderRadius.all(
+                            Radius.circular(MitlistTheme.radiusFull),
+                          ),
+                        ),
                       ),
                     ),
+                    const SizedBox(height: MitlistSpacing.sm),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: MitlistSpacing.lg,
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              widget.title,
+                              style: textTheme.titleMedium,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: MitlistSpacing.md),
                   ],
                 ),
               ),
-              const SizedBox(height: MitlistSpacing.md),
               Flexible(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(
@@ -105,8 +159,16 @@ class AppBottomSheet extends StatelessWidget {
                     MitlistSpacing.lg,
                     MitlistSpacing.lg,
                   ),
-                  child: SingleChildScrollView(
-                    child: body,
+                  child: NotificationListener<ScrollNotification>(
+                    onNotification: _handleScrollNotification,
+                    child: SingleChildScrollView(
+                      physics: widget.onDragDismissRequested == null
+                          ? null
+                          : const AlwaysScrollableScrollPhysics(
+                              parent: ClampingScrollPhysics(),
+                            ),
+                      child: widget.body,
+                    ),
                   ),
                 ),
               ),
@@ -156,16 +218,33 @@ Future<T?> showAppBottomSheet<T>({
     }
   }
 
+  Future<void> handleGuardedDragDismiss(BuildContext context) async {
+    final dirty = isDirtyListenable?.value ?? isDirty;
+    if (dirty) {
+      await confirmDismiss(context);
+    } else if (context.mounted) {
+      Navigator.of(context).pop();
+    }
+  }
+
+  final usesGuardedDrag = isDirty || isDirtyListenable != null;
+
   return showModalBottomSheet<T>(
     context: context,
     backgroundColor: Colors.transparent,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(
+        top: Radius.circular(MitlistTheme.radiusLg),
+      ),
+    ),
+    clipBehavior: Clip.antiAlias,
     barrierColor:
         Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
     isScrollControlled: true,
-    // When dirtiness is dynamic, route every dismissal through the barrier so
-    // the PopScope guard below can intercept it; drag-to-dismiss bypasses it.
+    // Guarded sheets handle dragging inside AppBottomSheet so an edited form
+    // can ask for confirmation before it is dismissed.
     isDismissible: isDirtyListenable != null ? true : !isDirty,
-    enableDrag: isDirtyListenable != null ? false : !isDirty,
+    enableDrag: !usesGuardedDrag,
     sheetAnimationStyle: AnimationStyle(duration: MitlistAnimations.medium),
     builder: (context) {
       if (isDirtyListenable != null) {
@@ -177,7 +256,11 @@ Future<T?> showAppBottomSheet<T>({
               if (didPop) return;
               await confirmDismiss(context);
             },
-            child: AppBottomSheet(title: title, body: body),
+            child: AppBottomSheet(
+              title: title,
+              body: body,
+              onDragDismissRequested: () => handleGuardedDragDismiss(context),
+            ),
           ),
         );
       }
@@ -187,7 +270,12 @@ Future<T?> showAppBottomSheet<T>({
           if (didPop) return;
           await confirmDismiss(context);
         },
-        child: AppBottomSheet(title: title, body: body),
+        child: AppBottomSheet(
+          title: title,
+          body: body,
+          onDragDismissRequested:
+              usesGuardedDrag ? () => handleGuardedDragDismiss(context) : null,
+        ),
       );
     },
   );
