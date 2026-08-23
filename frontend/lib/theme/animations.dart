@@ -27,6 +27,10 @@ class MitlistAnimations {
   // slab: the destination should arrive before the indicator finishes.
   static const Duration navBranch = Duration(milliseconds: 180);
 
+  // Inline camera panel unfolding over the current screen. Slightly longer
+  // than [page] so the expand reads as a surface opening, not a nav push.
+  static const Duration cameraExpand = Duration(milliseconds: 380);
+
   // Staggered entrance — total window for a screen to settle.
   static const Duration entrance = Duration(milliseconds: 600);
 

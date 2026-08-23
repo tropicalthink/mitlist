@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -27,7 +29,14 @@ class AppBottomSheet extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
     final mediaQuery = MediaQuery.of(context);
-    final topPadding = mediaQuery.viewPadding.top;
+    // Flutter's macOS embedder reports no top safe-area inset, so in
+    // fullscreen on notched MacBooks a tall sheet slides up behind the camera
+    // housing (NSScreen reports a ~38pt top inset there). Enforce a minimum
+    // top gap on macOS that clears the notch / menu-bar row.
+    final minTopPadding = !kIsWeb && defaultTargetPlatform == TargetPlatform.macOS
+        ? 40.0
+        : 0.0;
+    final topPadding = math.max(mediaQuery.viewPadding.top, minTopPadding);
     // The on-screen keyboard inset. `showModalBottomSheet` (even with
     // isScrollControlled) does not resize for the keyboard, so without this the
     // keyboard covers the sheet's input + primary button. Tracks the keyboard

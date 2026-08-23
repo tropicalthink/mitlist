@@ -23,6 +23,23 @@ import '../../utils/haptics.dart';
 import '../../utils/list_composer_parser.dart';
 import '../../services/scan/resolution/string_sim.dart';
 
+/// What an [ListDetailController.addItem] call actually did, so the screen can
+/// tell the user when the add landed on a row that was already there instead of
+/// creating a new one.
+enum AddItemOutcome {
+  /// A new row was created.
+  created,
+
+  /// A checked-off row came back to the open section.
+  restored,
+
+  /// The name was already on the list, unchecked; nothing changed.
+  alreadyOnList,
+
+  /// An explicit amount was added on top of an existing open row.
+  increased,
+}
+
 /// Owns all data + side-effect state for [ListDetailScreen]: the items stream,
 /// photos, suggestions, the settle/collapse animation bookkeeping, and every
 /// offline-first mutation. The screen keeps only BuildContext-bound concerns
@@ -86,6 +103,10 @@ class ListDetailController extends ChangeNotifier {
   /// thumbnails (see [_loadPhotosForItems]).
   static const int _photoLoadConcurrency = 4;
   static const int _canonicalBackfillLimit = 20;
+
+  /// Cap on already-on-the-list cards so they never crowd out the catalog and
+  /// restock suggestions sharing the composer's single row.
+  static const int _listItemSuggestionLimit = 3;
   String _groupCurrency = 'USD';
   String? _userId;
   int _suggestGeneration = 0;
@@ -561,12 +582,25 @@ class ListDetailController extends ChangeNotifier {
   /// Adds an item parsed from the composer text. A bare name takes the plain
   /// offline-first create path; a quantity/unit ("2 milk", "1.5 kg flour")
   /// takes the additive offline-first amount path.
-  Future<void> addItem(String text, {String? canonicalItemId}) async {
+  ///
+  /// Re-adding a name the list already carries never duplicates the row: a
+  /// checked-off match is restored to the open section (and moved to the
+  /// bottom, where a fresh add would land), and an open match is left alone.
+  /// The quantity path keeps its additive behaviour — it merges into the same
+  /// row inside the repository — so only the outcome reported back differs.
+  Future<AddItemOutcome> addItem(String text, {String? canonicalItemId}) async {
     final service = _service;
     if (service == null) {
       throw StateError('list detail is not ready');
     }
     final parsed = parseComposerItem(text);
+    final bareAdd = parsed.quantity == 1 && parsed.unit.isEmpty;
+    final match = findMatchingItem(parsed.name, unit: parsed.unit);
+    if (bareAdd && match != null) {
+      if (!match.checked) return AddItemOutcome.alreadyOnList;
+      await _restoreCheckedItem(match);
+      return AddItemOutcome.restored;
+    }
     final now = DateTime.now();
     final pending = ListItem(
       id: const Uuid().v4(),
@@ -592,7 +626,7 @@ class ListDetailController extends ChangeNotifier {
       final repo = await ref.read(listRepositoryProvider.future);
       final shouldResolve = canonicalItemId == null && _groupId != null;
       ListItem created;
-      if (parsed.quantity == 1 && parsed.unit.isEmpty) {
+      if (bareAdd) {
         created = await repo.createItemOfflineFirst(
           listId,
           CreateListItemRequest(
@@ -604,7 +638,10 @@ class ListDetailController extends ChangeNotifier {
       } else {
         created = await repo.addItemAmountOfflineFirst(
           listId,
-          name: parsed.name,
+          // The repository merges on an exact name; hand it the row's own
+          // spelling so "2 MILK" tops up the existing "Milk" instead of
+          // opening a second row beside it.
+          name: match?.name ?? parsed.name,
           amount: parsed.quantity,
           unit: parsed.unit,
           canonicalItemId: canonicalItemId,
@@ -628,7 +665,12 @@ class ListDetailController extends ChangeNotifier {
           repo.triggerAutoSync();
         }
       }
-      if (_disposed) return;
+      final outcome = match == null
+          ? AddItemOutcome.created
+          : (match.checked
+              ? AddItemOutcome.restored
+              : AddItemOutcome.increased);
+      if (_disposed) return outcome;
       _pendingCreates.remove(pending.id);
       _items.removeWhere((item) => item.id == pending.id);
       final idx = _items.indexWhere((item) => item.id == created.id);
@@ -639,6 +681,7 @@ class ListDetailController extends ChangeNotifier {
       }
       _sectionsDirty = true;
       _notify();
+      return outcome;
     } catch (_) {
       _pendingCreates.remove(pending.id);
       _items.removeWhere((item) => item.id == pending.id);
@@ -648,9 +691,65 @@ class ListDetailController extends ChangeNotifier {
     }
   }
 
+  /// The row this list already carries for [name], or null. An open row wins
+  /// over a checked one — if the item is already waiting to be bought there is
+  /// nothing to restore. A unit only has to match when the composer text
+  /// actually carried one, so a bare "milk" still finds "2 l milk".
+  ListItem? findMatchingItem(String name, {String unit = ''}) {
+    final target = normaliseText(name);
+    if (target.isEmpty) return null;
+    ListItem? open;
+    ListItem? checked;
+    for (final item in _items) {
+      if (normaliseText(item.name) != target) continue;
+      if (unit.isNotEmpty && item.unit != unit) continue;
+      if (item.checked) {
+        if (checked == null || item.position < checked.position) checked = item;
+      } else {
+        if (open == null || item.position < open.position) open = item;
+      }
+    }
+    return open ?? checked;
+  }
+
+  /// Brings a checked-off row back into the open section and parks it at the
+  /// bottom, where a freshly added item would have landed — otherwise the
+  /// restore happens somewhere off-screen in a long list and reads as a no-op.
+  Future<void> _restoreCheckedItem(ListItem item) async {
+    _cancelSettle(item.id);
+    final maxPosition = _items.fold<int>(
+      -1,
+      (max, candidate) => candidate.position > max ? candidate.position : max,
+    );
+    final repo = await ref.read(listRepositoryProvider.future);
+    await repo.updateItemOfflineFirst(
+      listId,
+      item.id,
+      UpdateListItemRequest(
+        checked: false,
+        position: item.position == maxPosition ? null : maxPosition + 1,
+      ),
+    );
+    // Housemates see a restored row exactly as they see a new one, so it feeds
+    // the same end-of-session item-added digest.
+    _itemsAddedThisSession = true;
+    if (_disposed) return;
+    _dirty = true;
+  }
+
   /// Adds a restock suggestion via the same offline-first create path as
-  /// [addItem]. Not a new write path — only the entry point differs.
-  Future<void> addRestockSuggestion(RestockSuggestion suggestion) async {
+  /// [addItem]. Not a new write path — only the entry point differs. It
+  /// absorbs into an existing row on the same terms as [addItem]: restock
+  /// predictions only exclude names that are currently *open*, so a checked-off
+  /// row is exactly the case this has to avoid duplicating.
+  Future<AddItemOutcome> addRestockSuggestion(
+      RestockSuggestion suggestion) async {
+    final match = findMatchingItem(suggestion.name);
+    if (match != null) {
+      if (!match.checked) return AddItemOutcome.alreadyOnList;
+      await _restoreCheckedItem(match);
+      return AddItemOutcome.restored;
+    }
     final repo = await ref.read(listRepositoryProvider.future);
     await repo.createItemOfflineFirst(
       listId,
@@ -660,8 +759,9 @@ class ListDetailController extends ChangeNotifier {
       ),
     );
     _itemsAddedThisSession = true;
-    if (_disposed) return;
+    if (_disposed) return AddItemOutcome.created;
     _dirty = true;
+    return AddItemOutcome.created;
   }
 
   Future<void> clearItems({required bool onlyChecked}) async {
@@ -1076,6 +1176,7 @@ class ListDetailController extends ChangeNotifier {
     final gen = generation;
 
     _suggestionEngine.beginQuery(q);
+    _setListItemSuggestions(q);
     _bumpSuggestions();
 
     // These sources are independent. In particular, product history and
@@ -1216,6 +1317,32 @@ class ListDetailController extends ChangeNotifier {
         _bumpSuggestions();
       }
     }
+  }
+
+  /// Offers rows already on this list back to the composer, so a checked-off
+  /// item can be re-added by name instead of being retyped into a duplicate.
+  /// Checked rows come first — an open row is already visible above the
+  /// composer, so its card only exists to head off the duplicate.
+  void _setListItemSuggestions(String query) {
+    final q = normaliseText(query);
+    if (q.isEmpty) {
+      _suggestionEngine.setListItemSuggestions(const []);
+      return;
+    }
+    final matches = <ListItem>[];
+    for (final item in _items) {
+      if (normaliseText(item.name).contains(q)) matches.add(item);
+    }
+    matches.sort((a, b) {
+      if (a.checked != b.checked) return a.checked ? -1 : 1;
+      final aPrefix = normaliseText(a.name).startsWith(q);
+      final bPrefix = normaliseText(b.name).startsWith(q);
+      if (aPrefix != bPrefix) return aPrefix ? -1 : 1;
+      return a.position.compareTo(b.position);
+    });
+    _suggestionEngine.setListItemSuggestions(
+      matches.take(_listItemSuggestionLimit).toList(growable: false),
+    );
   }
 
   bool get _isShoppingList => _listType == 'shopping';

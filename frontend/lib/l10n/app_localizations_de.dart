@@ -5664,4 +5664,20 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get billingUnlimitedMembers => 'Unbegrenzte Mitglieder';
+
+  @override
+  String listDetailItemRestored(String name) {
+    return '$name wieder auf die Liste gesetzt';
+  }
+
+  @override
+  String listDetailItemAlreadyOnList(String name) {
+    return '$name steht schon auf der Liste';
+  }
+
+  @override
+  String get composerSuggestionCheckedOff => 'Abgehakt';
+
+  @override
+  String get composerSuggestionOnList => 'Auf der Liste';
 }

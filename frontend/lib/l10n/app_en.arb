@@ -3388,5 +3388,13 @@
   "billingMemberUsage": "{count} of {limit} free places used",
   "@billingMemberUsage": { "description": "Member count against the free limit", "placeholders": { "count": { "type": "num" }, "limit": { "type": "num" } } },
   "billingUnlimitedMembers": "Unlimited members",
-  "@billingUnlimitedMembers": { "description": "Member allowance for a premium household" }
+  "@billingUnlimitedMembers": { "description": "Member allowance for a premium household" },
+  "listDetailItemRestored": "Moved {name} back to the list",
+  "@listDetailItemRestored": { "description": "Snackbar when re-adding a checked-off item unchecks it", "placeholders": { "name": { "type": "String" } } },
+  "listDetailItemAlreadyOnList": "{name} is already on the list",
+  "@listDetailItemAlreadyOnList": { "description": "Snackbar when the added name is already on the list, unchecked", "placeholders": { "name": { "type": "String" } } },
+  "composerSuggestionCheckedOff": "Checked off",
+  "@composerSuggestionCheckedOff": { "description": "Composer suggestion detail: the row is on the list but checked off" },
+  "composerSuggestionOnList": "On the list",
+  "@composerSuggestionOnList": { "description": "Composer suggestion detail: the row is already on the list" }
 }

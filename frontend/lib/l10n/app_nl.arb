@@ -5857,5 +5857,9 @@
   "billingEndsOn": "Eindigt op {date}",
   "billingMemberUsage": "{count} van {limit} gratis plekken gebruikt",
   "billingUnlimitedMembers": "Onbeperkt aantal leden",
-  "expenseCreationDatePrefix": "Datum"
+  "expenseCreationDatePrefix": "Datum",
+  "listDetailItemRestored": "{name} staat weer op de lijst",
+  "listDetailItemAlreadyOnList": "{name} staat al op de lijst",
+  "composerSuggestionCheckedOff": "Afgevinkt",
+  "composerSuggestionOnList": "Op de lijst"
 }

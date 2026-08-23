@@ -1972,5 +1972,9 @@
   "billingEndsOn": "Endet am {date}",
   "billingMemberUsage": "{count} von {limit} kostenlosen Plätzen belegt",
   "billingUnlimitedMembers": "Unbegrenzte Mitglieder",
-  "expenseCreationDatePrefix": "Datum"
+  "expenseCreationDatePrefix": "Datum",
+  "listDetailItemRestored": "{name} wieder auf die Liste gesetzt",
+  "listDetailItemAlreadyOnList": "{name} steht schon auf der Liste",
+  "composerSuggestionCheckedOff": "Abgehakt",
+  "composerSuggestionOnList": "Auf der Liste"
 }

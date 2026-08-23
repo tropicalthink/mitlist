@@ -28,6 +28,13 @@ const {
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
 
+    <!-- Cloudflare Web Analytics: cookieless, landing page only. The app at
+         app.mitlist.me deliberately carries no analytics (see PRIVACY.md). -->
+    <script
+      is:inline
+      type="module"
+      src="https://static.cloudflareinsights.com/beacon.min.js"
+      data-cf-beacon='{"token": "cd937df3e2e24407a59ff8f4fe7d5fcf"}'></script>
   </head>
   <body>
     <slot />

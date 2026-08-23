@@ -11,6 +11,7 @@ import '../../services/scan/capture_boundary_service.dart';
 import '../../services/scan/capture_preprocessor_service.dart';
 import '../../services/scan/capture_quality_service.dart';
 import '../../services/scan/document_rectifier_service.dart';
+import '../../theme/animations.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../widgets/app_button.dart';
@@ -266,33 +267,51 @@ class _LiveSmartCaptureScreenState extends State<LiveSmartCaptureScreen>
     final ready = controller != null && controller.value.isInitialized;
     final quality = _quality;
     final boundary = _boundary;
-    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      // Black stage: the inline-camera route unfolds a dark panel over the
+      // app, then the live preview fades in on top once the controller is
+      // ready — no hard cut when the platform view attaches.
+      backgroundColor: Colors.black,
       body: SafeArea(
         child: Stack(
           fit: StackFit.expand,
           children: [
-            if (ready)
-              Stack(
-                fit: StackFit.expand,
-                children: [
-                  _CameraPreview(controller: controller),
-                  _BoundaryOverlay(boundary: boundary),
-                ],
-              )
-            else
-              Center(
-                child: _initializing
-                    ? const AppSpinner(size: AppSpinnerSize.lg)
-                    : Text(_error ?? l10n.liveSmartCaptureCameraUnavailable),
-              ),
+            AnimatedSwitcher(
+              duration: MitlistAnimations.medium,
+              child: ready
+                  ? Stack(
+                      key: const ValueKey('camera-preview'),
+                      fit: StackFit.expand,
+                      children: [
+                        _CameraPreview(controller: controller),
+                        _BoundaryOverlay(boundary: boundary),
+                      ],
+                    )
+                  : Center(
+                      key: const ValueKey('camera-initializing'),
+                      child: _initializing
+                          ? const AppSpinner(size: AppSpinnerSize.lg)
+                          : Padding(
+                              padding:
+                                  const EdgeInsets.all(MitlistSpacing.xl),
+                              child: Text(
+                                _error ??
+                                    l10n.liveSmartCaptureCameraUnavailable,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyLarge
+                                    ?.copyWith(color: Colors.white70),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                    ),
+            ),
             Positioned(
               left: MitlistSpacing.md,
               top: MitlistSpacing.md,
               child: IconButton(
-                icon: const AppIcon(name: 'arrowLeft'),
+                icon: const AppIcon(name: 'arrowLeft', color: Colors.white),
                 tooltip: l10n.commonBack,
                 onPressed: () => Navigator.of(context).pop(),
               ),
@@ -360,15 +379,21 @@ class _CameraPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.sizeOf(context);
     final previewSize = controller.value.previewSize;
     if (previewSize == null) return CameraPreview(controller);
-    final previewAspect = previewSize.height / previewSize.width;
-    final screenAspect = size.width / size.height;
-    return Transform.scale(
-      scale: previewAspect / screenAspect,
-      child: Center(
-        child: CameraPreview(controller),
+    // Cover-fit the preview into whatever box hosts it (the inline camera
+    // card is a different aspect than the screen), cropping the overflow.
+    // previewSize is reported in sensor (landscape) orientation — swap it
+    // for the portrait UI.
+    return ClipRect(
+      child: FittedBox(
+        fit: BoxFit.cover,
+        clipBehavior: Clip.hardEdge,
+        child: SizedBox(
+          width: previewSize.height,
+          height: previewSize.width,
+          child: CameraPreview(controller),
+        ),
       ),
     );
   }

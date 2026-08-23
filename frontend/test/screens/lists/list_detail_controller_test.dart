@@ -89,6 +89,10 @@ class _ControlledBundledSuggestions extends BundledGrocerySuggestionService {
 }
 
 class _UnusedListService implements ListService {
+  /// Called from `dispose` whenever the session added (or restored) an item.
+  @override
+  Future<void> flushListNotifications(String listId) async {}
+
   @override
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError(
         '${invocation.memberName} not implemented on _UnusedListService',
@@ -114,6 +118,9 @@ class _ControlledListRepository implements ListRepository {
   final Error? deleteError;
   final Error? reorderError;
   int refreshCalls = 0;
+  int createCalls = 0;
+  final List<UpdateListItemRequest> updates = [];
+  final List<String> amountAdds = [];
 
   @override
   Stream<List<ListItem>> watchItemsByList(String listId) =>
@@ -134,6 +141,77 @@ class _ControlledListRepository implements ListRepository {
     await refreshGate?.future;
     if (refreshError case final error?) throw error;
   }
+
+  @override
+  Future<ListItem> createItemOfflineFirst(
+    String listId,
+    CreateListItemRequest req, {
+    bool deferImmediateSync = false,
+  }) async {
+    createCalls++;
+    return ListItem(
+      id: 'created-$createCalls',
+      listId: listId,
+      name: req.name,
+      quantity: 1,
+      unit: '',
+      checked: false,
+      position: cachedItems.length,
+      canonicalItemId: req.canonicalItemId,
+      createdAt: DateTime.utc(2026, 1, 1),
+      updatedAt: DateTime.utc(2026, 1, 1),
+    );
+  }
+
+  @override
+  Future<ListItem> addItemAmountOfflineFirst(
+    String listId, {
+    required String name,
+    required double amount,
+    String unit = '',
+    String note = '',
+    String? canonicalItemId,
+    bool deferImmediateSync = false,
+  }) async {
+    amountAdds.add(name);
+    return ListItem(
+      id: 'amount-${amountAdds.length}',
+      listId: listId,
+      name: name,
+      quantity: amount,
+      unit: unit,
+      checked: false,
+      position: cachedItems.length,
+      canonicalItemId: canonicalItemId,
+      createdAt: DateTime.utc(2026, 1, 1),
+      updatedAt: DateTime.utc(2026, 1, 1),
+    );
+  }
+
+  @override
+  Future<ListItem> updateItemOfflineFirst(
+    String listId,
+    String itemId,
+    UpdateListItemRequest req,
+  ) async {
+    updates.add(req);
+    final existing = cachedItems.firstWhere((item) => item.id == itemId);
+    return ListItem(
+      id: existing.id,
+      listId: existing.listId,
+      name: existing.name,
+      quantity: existing.quantity,
+      unit: existing.unit,
+      checked: req.checked ?? existing.checked,
+      position: req.position ?? existing.position,
+      canonicalItemId: existing.canonicalItemId,
+      createdAt: existing.createdAt,
+      updatedAt: DateTime.utc(2026, 1, 2),
+    );
+  }
+
+  @override
+  void triggerAutoSync() {}
 
   @override
   Future<void> deleteItemOfflineFirst(String listId, String itemId) async {
@@ -159,20 +237,59 @@ ListItem _item(
   int position, {
   bool checked = false,
   String? canonicalItemId,
+  String? name,
+  String unit = '',
 }) {
   final now = DateTime.utc(2026, 1, 1);
   return ListItem(
     id: id,
     listId: 'list-1',
-    name: 'Item $id',
+    name: name ?? 'Item $id',
     quantity: 1,
-    unit: '',
+    unit: unit,
     checked: checked,
     position: position,
     canonicalItemId: canonicalItemId,
     createdAt: now,
     updatedAt: now,
   );
+}
+
+/// Builds a loaded controller over [repo] with every async suggestion source
+/// stubbed out, so the assertions below see only what the controller itself
+/// contributes.
+Future<ListDetailController> _loadedController(
+  WidgetTester tester,
+  _ControlledListRepository repo, {
+  BundledGrocerySuggestionService? bundled,
+}) async {
+  ListDetailController? controller;
+  await tester.pumpWidget(ProviderScope(
+    overrides: [
+      grocerySeedProvider.overrideWith((ref) async {}),
+      listServiceProviderAsync
+          .overrideWith((ref) async => _UnusedListService()),
+      listRepositoryProvider.overrideWith((ref) async => repo),
+      if (bundled != null)
+        bundledGrocerySuggestionServiceProvider.overrideWithValue(bundled),
+    ],
+    child: MaterialApp(
+      home: Consumer(builder: (context, ref, _) {
+        controller ??= ListDetailController(ref: ref, listId: 'list-1');
+        return const SizedBox.shrink();
+      }),
+    ),
+  ));
+  addTearDown(() => controller?.dispose());
+  await controller!.load();
+  return controller!;
+}
+
+class _NoBundledSuggestions extends BundledGrocerySuggestionService {
+  @override
+  Future<List<GrocerySuggestion>> suggest(String query,
+          {int limit = 8}) async =>
+      const [];
 }
 
 void main() {
@@ -506,5 +623,124 @@ void main() {
     expect(grocery.lastContext, GrocerySuggestionContext.nonShoppingList);
     await controller!.refreshSuggestions('');
     expect(restock.calls, 0);
+  });
+
+  testWidgets('re-adding a checked-off name unchecks it instead of duplicating',
+      (tester) async {
+    final repo = _ControlledListRepository(
+      cachedItems: [
+        _item('a', 0, name: 'Milk', checked: true),
+        _item('b', 1, name: 'Bread'),
+      ],
+      // No group id on purpose: it would start the canonical backfill, which
+      // wants the real grocery database and embedding isolate. None of the
+      // behaviour below depends on it.
+      refreshError: StateError('offline'),
+    );
+    final controller = await _loadedController(tester, repo);
+
+    // Typed with different casing on purpose — the match is on the normalised
+    // name, the way a user retypes a thing they bought last week.
+    expect(await controller.addItem('milk'), AddItemOutcome.restored);
+
+    expect(repo.createCalls, 0);
+    expect(repo.updates, hasLength(1));
+    expect(repo.updates.single.checked, isFalse);
+    // Parked below the last row, where a fresh add would have landed.
+    expect(repo.updates.single.position, 2);
+  });
+
+  testWidgets('re-adding a name that is still open leaves the list alone',
+      (tester) async {
+    final repo = _ControlledListRepository(
+      cachedItems: [_item('a', 0, name: 'Milk')],
+      refreshError: StateError('offline'),
+    );
+    final controller = await _loadedController(tester, repo);
+
+    expect(await controller.addItem('Milk'), AddItemOutcome.alreadyOnList);
+
+    expect(repo.createCalls, 0);
+    expect(repo.updates, isEmpty);
+  });
+
+  testWidgets('an open row wins over a checked one with the same name',
+      (tester) async {
+    final repo = _ControlledListRepository(
+      cachedItems: [
+        _item('a', 0, name: 'Milk', checked: true),
+        _item('b', 1, name: 'Milk'),
+      ],
+      refreshError: StateError('offline'),
+    );
+    final controller = await _loadedController(tester, repo);
+
+    expect(await controller.addItem('milk'), AddItemOutcome.alreadyOnList);
+    expect(repo.updates, isEmpty);
+  });
+
+  testWidgets('a bare add still matches a row that carries a unit',
+      (tester) async {
+    final repo = _ControlledListRepository(
+      cachedItems: [_item('a', 0, name: 'Milk', unit: 'l', checked: true)],
+      refreshError: StateError('offline'),
+    );
+    final controller = await _loadedController(tester, repo);
+
+    expect(await controller.addItem('milk'), AddItemOutcome.restored);
+    expect(repo.updates.single.checked, isFalse);
+  });
+
+  testWidgets('a quantity add tops up the existing row under its own spelling',
+      (tester) async {
+    final repo = _ControlledListRepository(
+      cachedItems: [_item('a', 0, name: 'Milk', unit: 'l')],
+      // No group id, so the write skips canonical enrichment — that path wants
+      // a seeded grocery database this harness deliberately does not stand up.
+      refreshError: StateError('offline'),
+    );
+    final controller = await _loadedController(tester, repo);
+
+    expect(await controller.addItem('2 l MILK'), AddItemOutcome.increased);
+    expect(repo.createCalls, 0);
+    expect(repo.amountAdds, ['Milk']);
+  });
+
+  testWidgets('a new name is still created', (tester) async {
+    final repo = _ControlledListRepository(
+      cachedItems: [_item('a', 0, name: 'Milk', checked: true)],
+      refreshError: StateError('offline'),
+    );
+    final controller = await _loadedController(tester, repo);
+
+    expect(await controller.addItem('Bread'), AddItemOutcome.created);
+    expect(repo.createCalls, 1);
+    expect(repo.updates, isEmpty);
+  });
+
+  testWidgets('the composer offers checked-off rows first', (tester) async {
+    final repo = _ControlledListRepository(
+      cachedItems: [
+        _item('a', 0, name: 'Almond milk'),
+        _item('b', 1, name: 'Milk', checked: true),
+      ],
+      refreshError: StateError('offline'),
+    );
+    final controller = await _loadedController(
+      tester,
+      repo,
+      bundled: _NoBundledSuggestions(),
+    );
+
+    await controller.refreshSuggestions('mil');
+    final suggestions = controller.suggestions;
+    expect(suggestions.map((s) => s.name), ['Milk', 'Almond milk']);
+    expect(suggestions.every((s) => s.isOnList), isTrue);
+    expect(suggestions.first.onListChecked, isTrue);
+    expect(suggestions.last.onListChecked, isFalse);
+
+    // An empty composer has nothing to re-add — those cards belong to restock.
+    await controller.refreshSuggestions('');
+    expect(controller.suggestions, isEmpty);
   });
 }

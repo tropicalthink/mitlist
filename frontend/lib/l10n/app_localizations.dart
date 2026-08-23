@@ -9730,6 +9730,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unlimited members'**
   String get billingUnlimitedMembers;
+
+  /// Snackbar when re-adding a checked-off item unchecks it
+  ///
+  /// In en, this message translates to:
+  /// **'Moved {name} back to the list'**
+  String listDetailItemRestored(String name);
+
+  /// Snackbar when the added name is already on the list, unchecked
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is already on the list'**
+  String listDetailItemAlreadyOnList(String name);
+
+  /// Composer suggestion detail: the row is on the list but checked off
+  ///
+  /// In en, this message translates to:
+  /// **'Checked off'**
+  String get composerSuggestionCheckedOff;
+
+  /// Composer suggestion detail: the row is already on the list
+  ///
+  /// In en, this message translates to:
+  /// **'On the list'**
+  String get composerSuggestionOnList;
 }
 
 class _AppLocalizationsDelegate
