@@ -6,6 +6,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../l10n/app_localizations.dart';
 import '../../theme/spacing.dart';
 import '../../utils/haptics.dart';
+import '../../utils/inline_camera_route.dart';
 import '../../utils/invite_link.dart';
 
 /// Full-screen camera scanner for household invite QR codes, so joining never
@@ -18,11 +19,9 @@ class InviteQrScanScreen extends StatefulWidget {
   /// Opens the scanner and resolves with the invite code, or `null` when the
   /// person backs out without scanning one.
   static Future<String?> show(BuildContext context) {
-    return Navigator.of(context, rootNavigator: true).push<String>(
-      MaterialPageRoute(
-        fullscreenDialog: true,
-        builder: (_) => const InviteQrScanScreen(),
-      ),
+    return pushInlineCamera<String>(
+      context,
+      builder: (_) => const InviteQrScanScreen(),
     );
   }
 

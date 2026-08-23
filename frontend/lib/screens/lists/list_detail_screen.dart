@@ -18,6 +18,7 @@ import '../../sheets/cost_summary_sheet.dart';
 import '../../widgets/list/list_all_done_panel.dart';
 import '../../widgets/list/list_composer_bar.dart';
 import '../../widgets/list/list_detail_skeleton.dart';
+import '../../utils/list_composer_parser.dart';
 import '../../widgets/list/list_detail_states.dart';
 import '../../widgets/list/list_done_section_header.dart';
 import '../../widgets/list/list_group_banner.dart';
@@ -379,7 +380,9 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     // settle in the background.
     _finishOperation(operation);
     try {
-      await addFuture;
+      final outcome = await addFuture;
+      if (!mounted) return;
+      _reportAddOutcome(outcome, parseComposerItem(text).name);
     } catch (e) {
       if (!mounted) return;
       // Only restore if the field is still empty — the user may have already
@@ -397,12 +400,27 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     }
   }
 
+  /// Surfaces the adds that landed on a row the list already had — silence
+  /// there reads as a dropped add, since no new row appears.
+  void _reportAddOutcome(AddItemOutcome outcome, String name) {
+    final l10n = AppLocalizations.of(context)!;
+    final message = switch (outcome) {
+      AddItemOutcome.restored => l10n.listDetailItemRestored(name),
+      AddItemOutcome.alreadyOnList => l10n.listDetailItemAlreadyOnList(name),
+      AddItemOutcome.created || AddItemOutcome.increased => null,
+    };
+    if (message == null) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
+  }
+
   Future<void> _addRestockSuggestion(RestockSuggestion suggestion) async {
     final operation = _operationKey('restock:${suggestion.canonicalItemId}');
     if (!_beginOperation(operation)) return;
     try {
-      await _controller.addRestockSuggestion(suggestion);
+      final outcome = await _controller.addRestockSuggestion(suggestion);
       if (!mounted) return;
+      _reportAddOutcome(outcome, suggestion.name);
       unawaited(Haptics.light());
     } catch (_) {
       if (!mounted) return;

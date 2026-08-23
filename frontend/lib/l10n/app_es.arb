@@ -5857,5 +5857,9 @@
   "billingEndsOn": "Termina el {date}",
   "billingMemberUsage": "{count} de {limit} plazas gratuitas usadas",
   "billingUnlimitedMembers": "Miembros ilimitados",
-  "expenseCreationDatePrefix": "Fecha"
+  "expenseCreationDatePrefix": "Fecha",
+  "listDetailItemRestored": "{name} vuelve a la lista",
+  "listDetailItemAlreadyOnList": "{name} ya está en la lista",
+  "composerSuggestionCheckedOff": "Marcado",
+  "composerSuggestionOnList": "En la lista"
 }
