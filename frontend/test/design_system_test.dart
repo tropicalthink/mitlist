@@ -211,6 +211,43 @@ void main() {
       expect(find.text('Dialog body'), findsOneWidget);
     });
 
+    testWidgets('does not inherit the theme square outline', (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        theme: ThemeData(
+          dialogTheme: const DialogThemeData(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.zero,
+              side: BorderSide(color: Colors.black, width: 2),
+            ),
+          ),
+        ),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () => showAppDialog(
+                context: context,
+                title: 'Dialog title',
+                body: const Text('Dialog body'),
+              ),
+              child: const Text('Show'),
+            ),
+          ),
+        ),
+      ));
+
+      await tester.tap(find.text('Show'));
+      await tester.pump();
+
+      final dialog = tester.widget<Dialog>(find.byType(Dialog));
+      final shape = dialog.shape! as RoundedRectangleBorder;
+      final borderRadius = shape.borderRadius as BorderRadius;
+      expect(borderRadius.topLeft.x, greaterThan(0));
+      expect(borderRadius.topRight.x, greaterThan(0));
+      expect(shape.side, BorderSide.none);
+    });
+
     testWidgets('shows dialog with custom actions', (tester) async {
       await tester.pumpWidget(MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -475,6 +512,134 @@ void main() {
 
       expect(find.text('Sheet Title'), findsOneWidget);
       expect(find.text('Sheet body'), findsOneWidget);
+    });
+
+    testWidgets('uses a clipped rounded route shape', (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        theme: ThemeData(
+          bottomSheetTheme: const BottomSheetThemeData(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.zero,
+              side: BorderSide(color: Colors.black, width: 2),
+            ),
+          ),
+        ),
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () => showAppBottomSheet(
+                context: context,
+                title: 'Sheet Title',
+                body: const Text('Sheet body'),
+              ),
+              child: const Text('Show'),
+            ),
+          ),
+        ),
+      ));
+
+      await tester.tap(find.text('Show'));
+      await tester.pump();
+
+      final sheet = tester.widget<BottomSheet>(find.byType(BottomSheet));
+      final shape = sheet.shape! as RoundedRectangleBorder;
+      final borderRadius = shape.borderRadius as BorderRadius;
+      expect(borderRadius.topLeft.x, greaterThan(0));
+      expect(borderRadius.topRight.x, greaterThan(0));
+      expect(shape.side, BorderSide.none);
+      expect(sheet.clipBehavior, Clip.antiAlias);
+    });
+
+    testWidgets('swipe down closes a dynamically tracked clean sheet',
+        (tester) async {
+      final dirty = ValueNotifier(false);
+      addTearDown(dirty.dispose);
+
+      await tester.pumpWidget(MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () => showAppBottomSheet(
+                context: context,
+                title: 'Sheet Title',
+                body: const Text('Sheet body'),
+                isDirtyListenable: dirty,
+              ),
+              child: const Text('Show'),
+            ),
+          ),
+        ),
+      ));
+
+      await tester.tap(find.text('Show'));
+      await tester.pumpAndSettle();
+      await tester.drag(find.text('Sheet Title'), const Offset(0, 500));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Sheet Title'), findsNothing);
+    });
+
+    testWidgets('swipe down asks before closing a dirty sheet', (tester) async {
+      final dirty = ValueNotifier(true);
+      addTearDown(dirty.dispose);
+
+      await tester.pumpWidget(MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () => showAppBottomSheet(
+                context: context,
+                title: 'Sheet Title',
+                body: const Text('Sheet body'),
+                isDirtyListenable: dirty,
+              ),
+              child: const Text('Show'),
+            ),
+          ),
+        ),
+      ));
+
+      await tester.tap(find.text('Show'));
+      await tester.pumpAndSettle();
+      await tester.drag(find.text('Sheet Title'), const Offset(0, 500));
+      await tester.pumpAndSettle();
+
+      expect(find.text('DISCARD CHANGES?'), findsOneWidget);
+      expect(find.text('Sheet body'), findsOneWidget);
+    });
+
+    testWidgets('swipe down on the body closes the sheet', (tester) async {
+      final dirty = ValueNotifier(false);
+      addTearDown(dirty.dispose);
+
+      await tester.pumpWidget(MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () => showAppBottomSheet(
+                context: context,
+                title: 'Sheet Title',
+                body: const SizedBox(height: 300, child: Text('Sheet body')),
+                isDirtyListenable: dirty,
+              ),
+              child: const Text('Show'),
+            ),
+          ),
+        ),
+      ));
+
+      await tester.tap(find.text('Show'));
+      await tester.pumpAndSettle();
+      await tester.drag(find.text('Sheet body'), const Offset(0, 500));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Sheet Title'), findsNothing);
     });
   });
 

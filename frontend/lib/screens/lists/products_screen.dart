@@ -14,6 +14,7 @@ import '../../utils/active_group_context.dart';
 import '../../utils/friendly_error.dart';
 import '../../utils/latest_request_guard.dart';
 import '../../widgets/app_button.dart';
+import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_input.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_icon.dart';
@@ -261,11 +262,10 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
     if (!isValidGroupId(groupId)) return;
     if (!mounted) return;
 
-    final result = await showModalBottomSheet<_CreateProductResult>(
+    final result = await showAppBottomSheet<_CreateProductResult>(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (ctx) => _ProductCreationSheet(groupId: groupId!),
+      title: AppLocalizations.of(context)!.productsSheetTitle,
+      body: _CreateProductForm(groupId: groupId!),
     );
     if (result == null) return;
 
@@ -342,48 +342,6 @@ class _ProductCard extends StatelessWidget {
                 ],
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ProductCreationSheet extends StatelessWidget {
-  final String groupId;
-
-  const _ProductCreationSheet({required this.groupId});
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return AnimatedPadding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      duration: const Duration(milliseconds: 150),
-      curve: Curves.easeOut,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(MitlistSpacing.md),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: MitlistSpacing.md),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.outlineVariant,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            Text(
-              l10n.productsSheetTitle,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: MitlistSpacing.md),
-            _CreateProductForm(groupId: groupId),
           ],
         ),
       ),

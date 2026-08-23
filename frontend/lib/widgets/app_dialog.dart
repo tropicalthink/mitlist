@@ -30,6 +30,11 @@ class AppDialog extends StatelessWidget {
     return Dialog(
       backgroundColor: Colors.transparent,
       elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(
+          Radius.circular(MitlistTheme.radiusLg),
+        ),
+      ),
       insetPadding: const EdgeInsets.symmetric(
         horizontal: MitlistSpacing.md,
         vertical: MitlistSpacing.lg,
