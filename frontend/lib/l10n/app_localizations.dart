@@ -9754,6 +9754,174 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'On the list'**
   String get composerSuggestionOnList;
+
+  /// Feature board screen title
+  ///
+  /// In en, this message translates to:
+  /// **'Feature board'**
+  String get featureBoardTitle;
+
+  /// Account feature-board banner title
+  ///
+  /// In en, this message translates to:
+  /// **'What should we build next?'**
+  String get featureBoardBannerTitle;
+
+  /// Account feature-board banner body
+  ///
+  /// In en, this message translates to:
+  /// **'See what we\'re working on, suggest an idea, and upvote the features that matter to you.'**
+  String get featureBoardBannerBody;
+
+  /// Button opening the feature board
+  ///
+  /// In en, this message translates to:
+  /// **'Open feature board'**
+  String get featureBoardBannerAction;
+
+  /// Action to create a feature-board request
+  ///
+  /// In en, this message translates to:
+  /// **'Suggest a feature'**
+  String get featureBoardAdd;
+
+  /// Feature-board introduction title
+  ///
+  /// In en, this message translates to:
+  /// **'Built with your input'**
+  String get featureBoardIntroTitle;
+
+  /// Feature-board introduction body
+  ///
+  /// In en, this message translates to:
+  /// **'Vote for ideas you want most. Your votes help us decide what to improve next.'**
+  String get featureBoardIntroBody;
+
+  /// Feature-board loading error
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the feature board'**
+  String get featureBoardLoadFailed;
+
+  /// Feature-board retry guidance
+  ///
+  /// In en, this message translates to:
+  /// **'Check your connection and try again.'**
+  String get featureBoardTryAgain;
+
+  /// Feature-board empty-state title
+  ///
+  /// In en, this message translates to:
+  /// **'No ideas here yet'**
+  String get featureBoardNoFeaturesTitle;
+
+  /// Feature-board empty-state body
+  ///
+  /// In en, this message translates to:
+  /// **'Be the first to suggest something that would make mitlist better.'**
+  String get featureBoardNoFeaturesBody;
+
+  /// New feature sheet title
+  ///
+  /// In en, this message translates to:
+  /// **'Suggest a feature'**
+  String get featureBoardNewTitle;
+
+  /// New feature sheet introduction
+  ///
+  /// In en, this message translates to:
+  /// **'Describe one improvement other households could vote for too.'**
+  String get featureBoardNewIntro;
+
+  /// New feature title field label
+  ///
+  /// In en, this message translates to:
+  /// **'Feature title'**
+  String get featureBoardTitleLabel;
+
+  /// New feature title field hint
+  ///
+  /// In en, this message translates to:
+  /// **'Shared grocery list templates'**
+  String get featureBoardTitleHint;
+
+  /// New feature description field label
+  ///
+  /// In en, this message translates to:
+  /// **'Why would this help? (optional)'**
+  String get featureBoardDescriptionLabel;
+
+  /// New feature description field hint
+  ///
+  /// In en, this message translates to:
+  /// **'Tell us how you would use it…'**
+  String get featureBoardDescriptionHint;
+
+  /// New feature validation error
+  ///
+  /// In en, this message translates to:
+  /// **'Add a short title for your idea.'**
+  String get featureBoardEmpty;
+
+  /// New feature submit button
+  ///
+  /// In en, this message translates to:
+  /// **'Add to board'**
+  String get featureBoardSubmit;
+
+  /// New feature submit button loading state
+  ///
+  /// In en, this message translates to:
+  /// **'Adding…'**
+  String get featureBoardSubmitting;
+
+  /// New feature success toast
+  ///
+  /// In en, this message translates to:
+  /// **'Your idea is on the board.'**
+  String get featureBoardCreated;
+
+  /// Feature-board write error
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t update the feature board. Please try again.'**
+  String get featureBoardFailed;
+
+  /// Feature-board in-progress section
+  ///
+  /// In en, this message translates to:
+  /// **'In progress'**
+  String get featureBoardInProgress;
+
+  /// Feature-board planned section
+  ///
+  /// In en, this message translates to:
+  /// **'Planned'**
+  String get featureBoardPlanned;
+
+  /// Feature-board shipped section
+  ///
+  /// In en, this message translates to:
+  /// **'Shipped'**
+  String get featureBoardShipped;
+
+  /// Upvote button semantics
+  ///
+  /// In en, this message translates to:
+  /// **'Upvote feature'**
+  String get featureBoardUpvote;
+
+  /// Upvoted button semantics
+  ///
+  /// In en, this message translates to:
+  /// **'Feature upvoted'**
+  String get featureBoardUpvoted;
+
+  /// Feature vote count
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 vote} other{{count} votes}}'**
+  String featureBoardVotes(num count);
 }
 
 class _AppLocalizationsDelegate

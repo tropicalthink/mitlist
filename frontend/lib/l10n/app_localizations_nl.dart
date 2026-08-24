@@ -5648,4 +5648,106 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get composerSuggestionOnList => 'Op de lijst';
+
+  @override
+  String get featureBoardTitle => 'Functiebord';
+
+  @override
+  String get featureBoardBannerTitle => 'Wat moeten we hierna bouwen?';
+
+  @override
+  String get featureBoardBannerBody =>
+      'Bekijk waar we aan werken, stel een idee voor en stem op belangrijke functies.';
+
+  @override
+  String get featureBoardBannerAction => 'Open functiebord';
+
+  @override
+  String get featureBoardAdd => 'Functie voorstellen';
+
+  @override
+  String get featureBoardIntroTitle => 'Gebouwd met jouw ideeën';
+
+  @override
+  String get featureBoardIntroBody =>
+      'Stem op de ideeën die je het liefst wilt. Jouw stemmen helpen ons kiezen wat we verbeteren.';
+
+  @override
+  String get featureBoardLoadFailed =>
+      'Het functiebord kon niet worden geladen';
+
+  @override
+  String get featureBoardTryAgain =>
+      'Controleer je verbinding en probeer het opnieuw.';
+
+  @override
+  String get featureBoardNoFeaturesTitle => 'Nog geen ideeën';
+
+  @override
+  String get featureBoardNoFeaturesBody =>
+      'Stel als eerste iets voor dat mitlist beter maakt.';
+
+  @override
+  String get featureBoardNewTitle => 'Functie voorstellen';
+
+  @override
+  String get featureBoardNewIntro =>
+      'Beschrijf een verbetering waarop andere huishoudens ook kunnen stemmen.';
+
+  @override
+  String get featureBoardTitleLabel => 'Titel van de functie';
+
+  @override
+  String get featureBoardTitleHint =>
+      'Sjablonen voor gedeelde boodschappenlijsten';
+
+  @override
+  String get featureBoardDescriptionLabel =>
+      'Waarom zou dit helpen? (optioneel)';
+
+  @override
+  String get featureBoardDescriptionHint =>
+      'Vertel ons hoe je het zou gebruiken…';
+
+  @override
+  String get featureBoardEmpty => 'Geef je idee een korte titel.';
+
+  @override
+  String get featureBoardSubmit => 'Aan bord toevoegen';
+
+  @override
+  String get featureBoardSubmitting => 'Toevoegen…';
+
+  @override
+  String get featureBoardCreated => 'Je idee staat op het bord.';
+
+  @override
+  String get featureBoardFailed =>
+      'Het functiebord kon niet worden bijgewerkt. Probeer het opnieuw.';
+
+  @override
+  String get featureBoardInProgress => 'In uitvoering';
+
+  @override
+  String get featureBoardPlanned => 'Gepland';
+
+  @override
+  String get featureBoardShipped => 'Uitgebracht';
+
+  @override
+  String get featureBoardUpvote => 'Stem op functie';
+
+  @override
+  String get featureBoardUpvoted => 'Op functie gestemd';
+
+  @override
+  String featureBoardVotes(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count stemmen',
+      one: '1 stem',
+    );
+    return '$_temp0';
+  }
 }

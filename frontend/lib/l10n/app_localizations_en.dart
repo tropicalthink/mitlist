@@ -5596,4 +5596,101 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get composerSuggestionOnList => 'On the list';
+
+  @override
+  String get featureBoardTitle => 'Feature board';
+
+  @override
+  String get featureBoardBannerTitle => 'What should we build next?';
+
+  @override
+  String get featureBoardBannerBody =>
+      'See what we\'re working on, suggest an idea, and upvote the features that matter to you.';
+
+  @override
+  String get featureBoardBannerAction => 'Open feature board';
+
+  @override
+  String get featureBoardAdd => 'Suggest a feature';
+
+  @override
+  String get featureBoardIntroTitle => 'Built with your input';
+
+  @override
+  String get featureBoardIntroBody =>
+      'Vote for ideas you want most. Your votes help us decide what to improve next.';
+
+  @override
+  String get featureBoardLoadFailed => 'Couldn\'t load the feature board';
+
+  @override
+  String get featureBoardTryAgain => 'Check your connection and try again.';
+
+  @override
+  String get featureBoardNoFeaturesTitle => 'No ideas here yet';
+
+  @override
+  String get featureBoardNoFeaturesBody =>
+      'Be the first to suggest something that would make mitlist better.';
+
+  @override
+  String get featureBoardNewTitle => 'Suggest a feature';
+
+  @override
+  String get featureBoardNewIntro =>
+      'Describe one improvement other households could vote for too.';
+
+  @override
+  String get featureBoardTitleLabel => 'Feature title';
+
+  @override
+  String get featureBoardTitleHint => 'Shared grocery list templates';
+
+  @override
+  String get featureBoardDescriptionLabel => 'Why would this help? (optional)';
+
+  @override
+  String get featureBoardDescriptionHint => 'Tell us how you would use it…';
+
+  @override
+  String get featureBoardEmpty => 'Add a short title for your idea.';
+
+  @override
+  String get featureBoardSubmit => 'Add to board';
+
+  @override
+  String get featureBoardSubmitting => 'Adding…';
+
+  @override
+  String get featureBoardCreated => 'Your idea is on the board.';
+
+  @override
+  String get featureBoardFailed =>
+      'Couldn\'t update the feature board. Please try again.';
+
+  @override
+  String get featureBoardInProgress => 'In progress';
+
+  @override
+  String get featureBoardPlanned => 'Planned';
+
+  @override
+  String get featureBoardShipped => 'Shipped';
+
+  @override
+  String get featureBoardUpvote => 'Upvote feature';
+
+  @override
+  String get featureBoardUpvoted => 'Feature upvoted';
+
+  @override
+  String featureBoardVotes(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count votes',
+      one: '1 vote',
+    );
+    return '$_temp0';
+  }
 }
