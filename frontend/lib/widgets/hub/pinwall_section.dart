@@ -547,4 +547,3 @@ void _navigateToLinkedEntity(BuildContext context, PinwallPost post) {
       context.go('/money');
   }
 }
-

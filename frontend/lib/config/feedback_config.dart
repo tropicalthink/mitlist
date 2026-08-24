@@ -9,7 +9,8 @@
 /// ```
 ///
 /// The app key is the per-app intake key issued when mitlist was registered in
-/// the tracker dashboard; it only permits submitting requests, never reading.
+/// the tracker dashboard; it only exposes mitlist's public feature board and
+/// intake endpoints, never staff/admin data.
 class FeedbackConfig {
   static const String appKey =
       String.fromEnvironment('REQTRACK_APP_KEY', defaultValue: '');
@@ -31,6 +32,7 @@ class FeedbackConfig {
   }
 
   static const String intakePath = '/api/v1/intake/requests';
+  static const String boardPath = '/api/v1/intake/board/requests';
 
   /// Feedback entry points are hidden entirely when no app key was baked in
   /// (e.g. self-hosted builds), mirroring how OAuth buttons are gated.

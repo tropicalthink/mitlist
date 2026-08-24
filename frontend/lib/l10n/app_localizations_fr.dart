@@ -5667,4 +5667,103 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get composerSuggestionOnList => 'Dans la liste';
+
+  @override
+  String get featureBoardTitle => 'Tableau des fonctionnalités';
+
+  @override
+  String get featureBoardBannerTitle => 'Que devons-nous créer ensuite ?';
+
+  @override
+  String get featureBoardBannerBody =>
+      'Découvrez nos projets, proposez une idée et votez pour les fonctionnalités qui comptent.';
+
+  @override
+  String get featureBoardBannerAction => 'Ouvrir le tableau';
+
+  @override
+  String get featureBoardAdd => 'Proposer une fonctionnalité';
+
+  @override
+  String get featureBoardIntroTitle => 'Créé avec vos idées';
+
+  @override
+  String get featureBoardIntroBody =>
+      'Votez pour vos idées préférées. Vos votes nous aident à choisir les prochaines améliorations.';
+
+  @override
+  String get featureBoardLoadFailed => 'Impossible de charger le tableau';
+
+  @override
+  String get featureBoardTryAgain => 'Vérifiez votre connexion et réessayez.';
+
+  @override
+  String get featureBoardNoFeaturesTitle => 'Aucune idée pour le moment';
+
+  @override
+  String get featureBoardNoFeaturesBody =>
+      'Soyez la première personne à proposer une amélioration pour mitlist.';
+
+  @override
+  String get featureBoardNewTitle => 'Proposer une fonctionnalité';
+
+  @override
+  String get featureBoardNewIntro =>
+      'Décrivez une amélioration pour laquelle d’autres foyers pourront aussi voter.';
+
+  @override
+  String get featureBoardTitleLabel => 'Titre de la fonctionnalité';
+
+  @override
+  String get featureBoardTitleHint => 'Modèles de listes de courses partagées';
+
+  @override
+  String get featureBoardDescriptionLabel =>
+      'Pourquoi serait-ce utile ? (facultatif)';
+
+  @override
+  String get featureBoardDescriptionHint =>
+      'Expliquez-nous comment vous l’utiliseriez…';
+
+  @override
+  String get featureBoardEmpty => 'Ajoutez un titre court à votre idée.';
+
+  @override
+  String get featureBoardSubmit => 'Ajouter au tableau';
+
+  @override
+  String get featureBoardSubmitting => 'Ajout…';
+
+  @override
+  String get featureBoardCreated => 'Votre idée est sur le tableau.';
+
+  @override
+  String get featureBoardFailed =>
+      'Impossible de mettre à jour le tableau. Réessayez.';
+
+  @override
+  String get featureBoardInProgress => 'En cours';
+
+  @override
+  String get featureBoardPlanned => 'Prévu';
+
+  @override
+  String get featureBoardShipped => 'Publié';
+
+  @override
+  String get featureBoardUpvote => 'Voter pour la fonctionnalité';
+
+  @override
+  String get featureBoardUpvoted => 'Vote enregistré';
+
+  @override
+  String featureBoardVotes(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count votes',
+      one: '1 vote',
+    );
+    return '$_temp0';
+  }
 }

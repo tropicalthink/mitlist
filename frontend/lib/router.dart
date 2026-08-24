@@ -22,6 +22,7 @@ import 'screens/money/expenses_screen.dart';
 import 'screens/money/recurring_expenses_screen.dart';
 import 'screens/calendar/calendar_screen.dart';
 import 'screens/you/account_screen.dart';
+import 'screens/you/feature_board_screen.dart';
 import 'screens/you/home_assistant_connections_screen.dart';
 import 'screens/auth/welcome_screen.dart';
 import 'screens/auth/login_screen.dart';
@@ -402,6 +403,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: 'notification-preferences',
             name: 'notificationPreferences',
             builder: (context, state) => const NotificationPreferencesScreen(),
+          ),
+          GoRoute(
+            path: 'feature-board',
+            name: 'featureBoard',
+            builder: (context, state) => const FeatureBoardScreen(),
           ),
           GoRoute(
             path: 'products',

@@ -856,13 +856,13 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             Row(
               children: [
                 AppIcon(
-                  name: 'chatBubbleLeftRight',
+                  name: 'bolt',
                   color: Theme.of(context).colorScheme.primary,
                 ),
                 const SizedBox(width: MitlistSpacing.sm),
                 Expanded(
                   child: Text(
-                    l10n.feedbackCardTitle,
+                    l10n.featureBoardBannerTitle,
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
@@ -870,7 +870,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             ),
             const SizedBox(height: MitlistSpacing.sm),
             Text(
-              l10n.feedbackCardBody,
+              l10n.featureBoardBannerBody,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -879,9 +879,20 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             SizedBox(
               width: double.infinity,
               child: AppButton(
-                text: l10n.accountSendFeedback,
+                text: l10n.featureBoardBannerAction,
                 variant: AppButtonVariant.solid,
                 color: AppButtonColor.primary,
+                icon: const AppIcon(name: 'arrowRight'),
+                onPressed: () => context.pushNamed('featureBoard'),
+              ),
+            ),
+            const SizedBox(height: MitlistSpacing.sm),
+            SizedBox(
+              width: double.infinity,
+              child: AppButton(
+                text: l10n.accountSendFeedback,
+                variant: AppButtonVariant.ghost,
+                color: AppButtonColor.neutral,
                 onPressed: () => showFeedbackSheet(context, ref),
               ),
             ),
