@@ -79,6 +79,9 @@ type Container struct {
 	activityRepoOnce sync.Once
 	activityRepo     *repositories.ActivityRepository
 
+	weeklySummaryRepoOnce sync.Once
+	weeklySummaryRepo     *repositories.WeeklySummaryRepository
+
 	pinwallRepoOnce sync.Once
 	pinwallRepo     *repositories.PinwallRepository
 
@@ -141,6 +144,9 @@ type Container struct {
 
 	activityServiceOnce sync.Once
 	activityService     *services.ActivityService
+
+	weeklySummaryServiceOnce sync.Once
+	weeklySummaryService     *services.WeeklySummaryService
 
 	notificationServiceOnce sync.Once
 	notificationService     *services.NotificationService
@@ -346,6 +352,14 @@ func (c *Container) ActivityRepo() *repositories.ActivityRepository {
 		c.activityRepo = repositories.NewActivityRepository(c.db)
 	})
 	return c.activityRepo
+}
+
+// WeeklySummaryRepo returns the singleton weekly summary repository.
+func (c *Container) WeeklySummaryRepo() *repositories.WeeklySummaryRepository {
+	c.weeklySummaryRepoOnce.Do(func() {
+		c.weeklySummaryRepo = repositories.NewWeeklySummaryRepository(c.db)
+	})
+	return c.weeklySummaryRepo
 }
 
 // PinwallRepo returns the singleton pinwall repository.
@@ -609,6 +623,14 @@ func (c *Container) ActivityService() *services.ActivityService {
 		c.activityService = services.NewActivityService(c.ActivityRepo(), c.GroupRepo())
 	})
 	return c.activityService
+}
+
+// WeeklySummaryService returns the singleton weekly summary service.
+func (c *Container) WeeklySummaryService() *services.WeeklySummaryService {
+	c.weeklySummaryServiceOnce.Do(func() {
+		c.weeklySummaryService = services.NewWeeklySummaryService(c.WeeklySummaryRepo(), c.GroupRepo())
+	})
+	return c.weeklySummaryService
 }
 
 // PinwallService returns the singleton pinwall service.

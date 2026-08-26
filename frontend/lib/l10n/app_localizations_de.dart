@@ -5782,4 +5782,113 @@ class AppLocalizationsDe extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get weeklySummaryTitle => 'Wochenrückblick';
+
+  @override
+  String weeklySummaryActivities(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Aktivitäten',
+      one: 'Aktivität',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String weeklySummaryPercentVsLastWeek(int percent) {
+    return '$percent% gegenüber letzter Woche';
+  }
+
+  @override
+  String get weeklySummarySameAsLastWeek => 'Genauso wie letzte Woche';
+
+  @override
+  String get weeklySummaryFirstWeek => 'Deine erste aktive Woche';
+
+  @override
+  String get weeklySummaryYourShareTitle => 'Dein Anteil';
+
+  @override
+  String weeklySummaryYourShareBody(int mine, int total) {
+    return 'Du hast $mine von $total beigetragen.';
+  }
+
+  @override
+  String weeklySummaryPersonalUp(int count) {
+    return '$count mehr als letzte Woche. Gut gemacht.';
+  }
+
+  @override
+  String weeklySummaryPersonalDown(int count) {
+    return '$count weniger als letzte Woche.';
+  }
+
+  @override
+  String get weeklySummaryPersonalSame => 'Genauso viele wie letzte Woche.';
+
+  @override
+  String weeklySummaryActiveMembers(int active, int total) {
+    return '$active von $total Mitbewohnern haben mitgemacht.';
+  }
+
+  @override
+  String get weeklySummaryBreakdownTitle => 'Wo es passiert ist';
+
+  @override
+  String get weeklySummaryCategoryLists => 'Listeneinträge hinzugefügt';
+
+  @override
+  String get weeklySummaryCategoryExpenses => 'Ausgaben erfasst';
+
+  @override
+  String get weeklySummaryCategoryChores => 'Aufgaben erledigt';
+
+  @override
+  String get weeklySummaryCategoryMeals => 'Mahlzeiten geplant';
+
+  @override
+  String get weeklySummaryCategoryRecipes => 'Rezepte hinzugefügt';
+
+  @override
+  String get weeklySummaryNudgeRollTitle => 'Ihr seid im Flow';
+
+  @override
+  String weeklySummaryNudgeRollBody(int total) {
+    return '$total Dinge wurden diese Woche erledigt, mehr als letzte Woche. Bleibt dran.';
+  }
+
+  @override
+  String get weeklySummaryNudgeSlipTitle => 'Eine ruhigere Woche';
+
+  @override
+  String get weeklySummaryNudgeSlipBody =>
+      'Es ging etwas langsamer zu. Ein Listeneintrag oder eine Aufgabe genügt, um das zu drehen.';
+
+  @override
+  String get weeklySummaryNudgeJoinTitle => 'Mach diese Woche mit';
+
+  @override
+  String get weeklySummaryNudgeJoinBody =>
+      'Deine Mitbewohner haben alles am Laufen gehalten. Füge etwas zur Liste hinzu, erfasse eine Ausgabe oder hake eine Aufgabe ab.';
+
+  @override
+  String get weeklySummaryOpenHousehold => 'Haushalt öffnen';
+
+  @override
+  String get weeklySummaryEmptyTitle => 'Eine ruhige Woche';
+
+  @override
+  String get weeklySummaryEmptyBody =>
+      'In den letzten sieben Tagen wurde nichts erfasst. Trage etwas ein, dann erscheint es nächste Woche hier.';
+
+  @override
+  String get weeklySummaryLoadFailed =>
+      'Deine Woche konnte nicht geladen werden';
+
+  @override
+  String get weeklySummaryTryAgain =>
+      'Prüfe deine Verbindung und versuche es erneut.';
 }

@@ -147,6 +147,10 @@ leave on). Point the Flutter app at your server and you're done.
 
 See [backend/README.md](backend/README.md) for full configuration reference, including how to [enable optional crash reporting](backend/README.md#enable-error-reporting-optional) (off by default — set `SENTRY_DSN` for the backend and the `GLITCHTIP_DSN_WEB` CI secret for the web PWA).
 
+The Flutter app's own build-time settings (`--dart-define`) are listed in
+[docs/build-configuration.md](docs/build-configuration.md) — including which
+optional features silently disappear when a define is missing.
+
 For production releases, follow the [deployment checklist](docs/DEPLOYMENT.md).
 It includes PlanetScale migration checks, the Redis-free cutover, rollback
 guidance, and the automated post-deploy smoke command.

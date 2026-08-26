@@ -52,6 +52,7 @@ const (
 	ScreenHouseholdHub      = "householdHub"
 	ScreenRecurringExpenses = "recurringExpenses"
 	ScreenSettlements       = "settlements"
+	ScreenWeeklySummary     = "weeklySummary"
 )
 
 const (

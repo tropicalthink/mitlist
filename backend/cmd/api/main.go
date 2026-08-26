@@ -199,6 +199,10 @@ func main() {
 			activityHandler := handlers.NewActivityHandler(cnt.ActivityService())
 			activityHandler.RegisterRoutes(r)
 
+			// Weekly summary
+			weeklySummaryHandler := handlers.NewWeeklySummaryHandler(cnt.WeeklySummaryService())
+			weeklySummaryHandler.RegisterRoutes(r)
+
 			// Pinwall
 			pinwallHandler := handlers.NewPinwallHandler(cnt.PinwallService())
 			pinwallHandler.RegisterRoutes(r)
