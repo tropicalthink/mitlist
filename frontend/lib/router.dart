@@ -23,6 +23,7 @@ import 'screens/money/recurring_expenses_screen.dart';
 import 'screens/calendar/calendar_screen.dart';
 import 'screens/you/account_screen.dart';
 import 'screens/you/feature_board_screen.dart';
+import 'screens/you/weekly_summary_screen.dart';
 import 'screens/you/home_assistant_connections_screen.dart';
 import 'screens/auth/welcome_screen.dart';
 import 'screens/auth/login_screen.dart';
@@ -388,6 +389,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/calendar',
         name: 'calendar',
         builder: (context, state) => const CalendarScreen(),
+      ),
+      // Root-level on purpose. The weekly digest notification opens this from
+      // the inbox, which also lives outside the stateful shell; a shell-branch
+      // route pushed from there duplicates the branch navigator GlobalKeys.
+      GoRoute(
+        path: '/weekly-summary/:groupId',
+        name: 'weeklySummary',
+        builder: (context, state) => WeeklySummaryScreen(
+          groupId: state.pathParameters['groupId']!,
+        ),
       ),
       GoRoute(
         path: '/you',
