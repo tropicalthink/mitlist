@@ -40,7 +40,22 @@ OutboxErrorDisposition classifyOutboxError(Object error) {
   // No response at all (an unwrapped SocketException and friends) — same
   // reasoning as the transport cases above: we never heard from a server.
   if (status == null) return OutboxErrorDisposition.unreachable;
-  if (status == 409) return OutboxErrorDisposition.conflict;
+  if (status == 409) {
+    // Only a 409 carrying the server's current row is an edit conflict the
+    // user can resolve ("keep mine" / "use theirs"). Other 409s — the
+    // idempotency middleware's replay answers, domain uniqueness violations —
+    // have nothing to review; recording them as conflicts pins the banner
+    // forever. An in-flight replay ("still processing") sends Retry-After and
+    // resolves itself; everything else won't succeed on retry.
+    final data = error.response?.data;
+    if (data is Map && data['current'] != null) {
+      return OutboxErrorDisposition.conflict;
+    }
+    final retryAfter = error.response?.headers.value('retry-after');
+    return retryAfter != null
+        ? OutboxErrorDisposition.transient
+        : OutboxErrorDisposition.permanent;
+  }
   if (status == 408 || status == 429) return OutboxErrorDisposition.transient;
   if (status >= 500) return OutboxErrorDisposition.transient;
   if (status >= 400) return OutboxErrorDisposition.permanent;

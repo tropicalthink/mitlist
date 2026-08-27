@@ -101,6 +101,11 @@ class _RouterRefreshListenable extends ChangeNotifier {
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
+/// Root navigator key for UI that lives above the Navigator (the offline
+/// banner in MaterialApp.builder) and needs a context *inside* it to be able
+/// to open sheets and dialogs.
+GlobalKey<NavigatorState> get rootNavigatorKey => _rootNavigatorKey;
+
 final _homeNavKey = GlobalKey<NavigatorState>(debugLabel: 'home');
 final _listsNavKey = GlobalKey<NavigatorState>(debugLabel: 'lists');
 final _choresNavKey = GlobalKey<NavigatorState>(debugLabel: 'chores');

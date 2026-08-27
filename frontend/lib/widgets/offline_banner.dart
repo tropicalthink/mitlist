@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/initial_sync_provider.dart';
 import '../providers/outbox_provider.dart';
+import '../router.dart';
 import '../sheets/conflict_resolution_sheet.dart';
 import '../sheets/failed_changes_sheet.dart';
 import '../theme/colors.dart';
@@ -174,13 +175,19 @@ class _Banner extends ConsumerWidget {
       color: color,
       child: InkWell(
         onTap: () {
+          // The banner lives in MaterialApp.builder, above the Navigator, so
+          // its own context cannot open routes — showModalBottomSheet would
+          // throw "no Navigator found" and the tap would silently do nothing.
+          // Borrow a context from inside the root navigator instead.
+          final sheetContext = rootNavigatorKey.currentContext;
+          if (sheetContext == null) return;
           if (state.hasConflicts) {
-            showConflictResolutionSheet(context);
+            showConflictResolutionSheet(sheetContext);
           } else if (state.hasErrors) {
-            showFailedChangesSheet(context);
+            showFailedChangesSheet(sheetContext);
           } else {
             if (state.isOffline) _recheck(ref);
-            _showDetails(context);
+            _showDetails(sheetContext);
           }
         },
         child: Padding(
