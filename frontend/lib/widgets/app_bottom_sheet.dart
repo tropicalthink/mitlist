@@ -241,6 +241,12 @@ Future<T?> showAppBottomSheet<T>({
     barrierColor:
         Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
     isScrollControlled: true,
+    // Without this the route wraps the sheet in MediaQuery.removePadding
+    // (removeTop), which zeroes viewPadding.top too — AppBottomSheet then
+    // sees no top inset and a tall sheet stretches under the status bar /
+    // camera cutout. With useSafeArea the route itself keeps the sheet below
+    // the top inset.
+    useSafeArea: true,
     // Guarded sheets handle dragging inside AppBottomSheet so an edited form
     // can ask for confirmation before it is dismissed.
     isDismissible: isDirtyListenable != null ? true : !isDirty,

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/pinwall_models.dart';
@@ -155,11 +156,19 @@ class PinwallRepository {
     await _db.transaction(() async {
       await _patchCachedPostPosition(groupId, postId, x, y);
       if (postId.startsWith('local-')) return;
+      // Positions are last-write-wins, so only the newest queued move for this
+      // note needs to reach the server.
+      await _db.deleteOutboxOpsByTypeAndEntity(
+          'updatePinwallPostPosition', postId);
+      // The idempotency key must be unique per *move*, not per post: the
+      // server remembers a key together with its body hash for 7 days and
+      // answers a reused key with a different x/y with a plain 409.
+      final opId = _uuid.v4();
       await _db.enqueueOutbox(
-        id: _uuid.v4(),
+        id: opId,
         type: 'updatePinwallPostPosition',
         payload: {'groupId': groupId, 'postId': postId, 'x': x, 'y': y},
-        idempotencyKey: 'updatePinwallPostPosition:$postId',
+        idempotencyKey: 'updatePinwallPostPosition:$postId:$opId',
         entityType: 'pinwallPost',
         entityId: postId,
       );
@@ -260,13 +269,21 @@ class PinwallRepository {
           // The cache already holds the new position; no refetch needed on the
           // origin device. Other members reconcile via the pinwall:post_moved
           // SSE broadcast the server emits.
-          await _remote.updatePostPosition(
-            payload['groupId'] as String,
-            payload['postId'] as String,
-            x: (payload['x'] as num).toDouble(),
-            y: (payload['y'] as num).toDouble(),
-            idempotencyKey: op.idempotencyKey,
-          );
+          try {
+            await _remote.updatePostPosition(
+              payload['groupId'] as String,
+              payload['postId'] as String,
+              x: (payload['x'] as num).toDouble(),
+              y: (payload['y'] as num).toDouble(),
+              idempotencyKey: op.idempotencyKey,
+            );
+          } on DioException catch (e) {
+            // Ops queued by older builds reused one idempotency key per post,
+            // which the server answers with a bare 409 on the next move.
+            // Position is last-write-wins, so drop the move instead of
+            // dead-lettering it and let refresh/SSE reconcile.
+            if (e.response?.statusCode != 409) rethrow;
+          }
           await _db.deleteOutboxOp(op.id);
         },
       },
