@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/api_config.dart';
 import '../config/feedback_config.dart';
+import '../models/feature_board_models.dart';
 
 const String _appVersion = '1.0.0';
 
@@ -64,6 +65,63 @@ class FeedbackService {
         },
       },
     );
+  }
+
+  Future<List<FeatureBoardItem>> listFeatureBoard() async {
+    final user = await _requireCachedUser();
+    final response = await _dio.get<Map<String, dynamic>>(
+      FeedbackConfig.boardPath,
+      options: Options(headers: {'X-Submitter-Ref': user.id}),
+    );
+    final rawItems = response.data?['items'] as List<dynamic>? ?? const [];
+    return rawItems
+        .map((item) => FeatureBoardItem.fromJson(
+              Map<String, dynamic>.from(item as Map),
+            ))
+        .toList(growable: false);
+  }
+
+  Future<void> submitBoardFeature({
+    required String title,
+    String? description,
+    String? sourcePage,
+  }) async {
+    final user = await _requireCachedUser();
+    await _dio.post<Map<String, dynamic>>(
+      FeedbackConfig.boardPath,
+      data: {
+        'title': title,
+        if (description != null && description.isNotEmpty)
+          'description': description,
+        'voterRef': user.id,
+        if (user.email != null) 'submitterContact': user.email,
+        if (sourcePage != null && sourcePage.isNotEmpty)
+          'sourcePage': sourcePage,
+        'metadata': {
+          'appVersion': _appVersion,
+          'platform': kIsWeb ? 'web' : Platform.operatingSystem,
+          'locale': PlatformDispatcher.instance.locale.toString(),
+        },
+      },
+    );
+  }
+
+  Future<FeatureBoardVote> upvoteBoardFeature(String requestId) async {
+    final user = await _requireCachedUser();
+    final response = await _dio.put<Map<String, dynamic>>(
+      '${FeedbackConfig.boardPath}/$requestId/upvote',
+      data: {'voterRef': user.id},
+    );
+    return FeatureBoardVote.fromJson(response.data!);
+  }
+
+  Future<({String id, String? email})> _requireCachedUser() async {
+    final user = await _cachedUser();
+    final id = user?['id'] as String?;
+    if (id == null || id.isEmpty) {
+      throw StateError('A signed-in user is required for the feature board.');
+    }
+    return (id: id, email: user?['email'] as String?);
   }
 
   Future<Map<String, dynamic>?> _cachedUser() async {

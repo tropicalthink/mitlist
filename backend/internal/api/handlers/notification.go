@@ -44,6 +44,33 @@ func (h *NotificationHandler) RegisterRoutes(r chi.Router) {
 	r.Delete("/notifications/{id}", h.DeleteNotification)
 	r.Get("/notifications/preferences", h.GetPreferences)
 	r.Patch("/notifications/preferences", h.UpdatePreferences)
+	r.Post("/lists/{id}/notifications/flush", h.FlushListDigest)
+}
+
+// FlushListDigest handles POST /api/v1/lists/{id}/notifications/flush. The app
+// calls it when the user leaves a list screen after adding items, releasing the
+// queued item-added digest so the household gets one summary notification now
+// instead of waiting out the idle window. Idempotent; 204 even when nothing was
+// queued.
+func (h *NotificationHandler) FlushListDigest(w http.ResponseWriter, r *http.Request) {
+	userID, err := currentUserID(r)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+
+	listID, err := parseUUIDParam(r, "id")
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+
+	if err := h.service.FlushListItemDigest(r.Context(), userID, listID); err != nil {
+		api.RespondError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *NotificationHandler) CountUnreadNotifications(w http.ResponseWriter, r *http.Request) {

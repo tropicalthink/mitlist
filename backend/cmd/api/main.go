@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"net/http"
 	"net/url"
 	"os"
@@ -30,10 +31,25 @@ import (
 var version = "dev"
 
 func main() {
+	// -check-config loads and validates configuration, then exits. It touches
+	// no database, no network and no state, so a host can run it against the
+	// real environment of an image it is about to deploy and find out whether
+	// that image would boot — while the previous one is still serving.
+	//
+	// Two production crash-loops on 2026-08-21 are the reason it exists:
+	// nothing verified that a newly built image could start until it had
+	// already replaced a working one.
+	checkConfig := flag.Bool("check-config", false, "validate configuration and exit")
+	flag.Parse()
+
 	cfg, err := config.Load()
 	if err != nil {
 		os.Stderr.WriteString("failed to load config: " + err.Error() + "\n")
 		os.Exit(1)
+	}
+	if *checkConfig {
+		os.Stdout.WriteString("config ok (" + cfg.Environment + ")\n")
+		os.Exit(0)
 	}
 	cfg.LogMasked()
 	cfg.LogIntegrationStatus()
@@ -182,6 +198,10 @@ func main() {
 			// Activity logs
 			activityHandler := handlers.NewActivityHandler(cnt.ActivityService())
 			activityHandler.RegisterRoutes(r)
+
+			// Weekly summary
+			weeklySummaryHandler := handlers.NewWeeklySummaryHandler(cnt.WeeklySummaryService())
+			weeklySummaryHandler.RegisterRoutes(r)
 
 			// Pinwall
 			pinwallHandler := handlers.NewPinwallHandler(cnt.PinwallService())

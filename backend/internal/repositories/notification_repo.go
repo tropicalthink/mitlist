@@ -458,14 +458,20 @@ func (r *NotificationRepository) CreateNotificationsBatchIdempotent(ctx context.
 	return nil
 }
 
-// QueueListItemNotification coalesces rapid additions by the same person to the
-// same list. A busy stream is capped at two minutes so a digest cannot be
-// postponed indefinitely.
+// listNotificationBatchMaxNames caps how many item names a batch remembers for
+// the digest body; the count keeps growing past it.
+const listNotificationBatchMaxNames = 8
+
+// QueueListItemNotification coalesces additions by the same person to the same
+// list into one pending digest. Each add pushes delivery out by three minutes;
+// the client flushes the batch when the person leaves the list screen, so the
+// sliding window only fires for sessions that never end cleanly (app killed,
+// offline sync). A fifteen-minute cap guarantees delivery regardless.
 func (r *NotificationRepository) QueueListItemNotification(ctx context.Context, groupID, actorID, listID uuid.UUID, actorName, listName, itemName string) error {
 	_, err := r.db.Exec(ctx, `
 		INSERT INTO list_notification_batches (
-			group_id, actor_id, list_id, actor_name, list_name, last_item_name
-		) VALUES ($1, $2, $3, $4, $5, $6)
+			group_id, actor_id, list_id, actor_name, list_name, last_item_name, item_names
+		) VALUES ($1, $2, $3, $4, $5, $6, ARRAY[$6::TEXT])
 		ON CONFLICT (group_id, actor_id, list_id) DO UPDATE SET
 			actor_name = EXCLUDED.actor_name,
 			list_name = EXCLUDED.list_name,
@@ -474,6 +480,11 @@ func (r *NotificationRepository) QueueListItemNotification(ctx context.Context, 
 				WHEN list_notification_batches.claimed_at IS NULL THEN list_notification_batches.item_count + 1
 				ELSE 1
 			END,
+			item_names = CASE
+				WHEN list_notification_batches.claimed_at IS NOT NULL THEN ARRAY[$6::TEXT]
+				WHEN COALESCE(array_length(list_notification_batches.item_names, 1), 0) >= $7 THEN list_notification_batches.item_names
+				ELSE list_notification_batches.item_names || $6::TEXT
+			END,
 			first_at = CASE
 				WHEN list_notification_batches.claimed_at IS NULL THEN list_notification_batches.first_at
 				ELSE NOW()
@@ -481,15 +492,33 @@ func (r *NotificationRepository) QueueListItemNotification(ctx context.Context, 
 			updated_at = NOW(),
 			deliver_after = CASE
 				WHEN list_notification_batches.claimed_at IS NULL THEN LEAST(
-					list_notification_batches.first_at + INTERVAL '2 minutes',
-					NOW() + INTERVAL '45 seconds'
+					list_notification_batches.first_at + INTERVAL '15 minutes',
+					NOW() + INTERVAL '3 minutes'
 				)
-				ELSE NOW() + INTERVAL '45 seconds'
+				ELSE NOW() + INTERVAL '3 minutes'
 			END,
 			claimed_at = NULL
-	`, groupID, actorID, listID, actorName, listName, itemName)
+	`, groupID, actorID, listID, actorName, listName, itemName, listNotificationBatchMaxNames)
 	if err != nil {
 		return fmt.Errorf("queue list notification: %w", err)
+	}
+	return nil
+}
+
+// FlushListNotificationBatches makes any pending list digest for this actor and
+// list deliverable immediately. Called when the person leaves the list screen so
+// the household gets one summary right after the adding session ends.
+// updated_at is intentionally left untouched: the digest job deletes a claimed
+// batch only when updated_at is unchanged, and a flush must not make a batch
+// that is mid-delivery look freshly modified.
+func (r *NotificationRepository) FlushListNotificationBatches(ctx context.Context, actorID, listID uuid.UUID) error {
+	_, err := r.db.Exec(ctx, `
+		UPDATE list_notification_batches
+		SET deliver_after = NOW()
+		WHERE actor_id = $1 AND list_id = $2 AND claimed_at IS NULL
+	`, actorID, listID)
+	if err != nil {
+		return fmt.Errorf("flush list notification batches: %w", err)
 	}
 	return nil
 }

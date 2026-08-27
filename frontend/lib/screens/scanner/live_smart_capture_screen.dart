@@ -11,9 +11,9 @@ import '../../services/scan/capture_boundary_service.dart';
 import '../../services/scan/capture_preprocessor_service.dart';
 import '../../services/scan/capture_quality_service.dart';
 import '../../services/scan/document_rectifier_service.dart';
+import '../../theme/animations.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
-import '../../widgets/app_button.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/spinner.dart';
 import 'smart_capture_screen.dart';
@@ -266,33 +266,51 @@ class _LiveSmartCaptureScreenState extends State<LiveSmartCaptureScreen>
     final ready = controller != null && controller.value.isInitialized;
     final quality = _quality;
     final boundary = _boundary;
-    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      // Black stage: the inline-camera route unfolds a dark panel over the
+      // app, then the live preview fades in on top once the controller is
+      // ready — no hard cut when the platform view attaches.
+      backgroundColor: Colors.black,
       body: SafeArea(
         child: Stack(
           fit: StackFit.expand,
           children: [
-            if (ready)
-              Stack(
-                fit: StackFit.expand,
-                children: [
-                  _CameraPreview(controller: controller),
-                  _BoundaryOverlay(boundary: boundary),
-                ],
-              )
-            else
-              Center(
-                child: _initializing
-                    ? const AppSpinner(size: AppSpinnerSize.lg)
-                    : Text(_error ?? l10n.liveSmartCaptureCameraUnavailable),
-              ),
+            AnimatedSwitcher(
+              duration: MitlistAnimations.medium,
+              child: ready
+                  ? Stack(
+                      key: const ValueKey('camera-preview'),
+                      fit: StackFit.expand,
+                      children: [
+                        _CameraPreview(controller: controller),
+                        _BoundaryOverlay(boundary: boundary),
+                      ],
+                    )
+                  : Center(
+                      key: const ValueKey('camera-initializing'),
+                      child: _initializing
+                          ? const AppSpinner(size: AppSpinnerSize.lg)
+                          : Padding(
+                              padding:
+                                  const EdgeInsets.all(MitlistSpacing.xl),
+                              child: Text(
+                                _error ??
+                                    l10n.liveSmartCaptureCameraUnavailable,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyLarge
+                                    ?.copyWith(color: Colors.white70),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                    ),
+            ),
             Positioned(
               left: MitlistSpacing.md,
               top: MitlistSpacing.md,
               child: IconButton(
-                icon: const AppIcon(name: 'arrowLeft'),
+                icon: const AppIcon(name: 'arrowLeft', color: Colors.white),
                 tooltip: l10n.commonBack,
                 onPressed: () => Navigator.of(context).pop(),
               ),
@@ -310,43 +328,136 @@ class _LiveSmartCaptureScreenState extends State<LiveSmartCaptureScreen>
                     error: _error,
                   ),
                   const SizedBox(height: MitlistSpacing.md),
+                  // Camera-style controls: gallery on the left, round shutter
+                  // in the middle. The shutter always captures — quality only
+                  // drives its color — so no separate "use anyway" escape
+                  // hatch is needed.
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Expanded(
-                        child: AppButton(
-                          text: l10n.liveSmartCaptureGallery,
-                          variant: AppButtonVariant.outline,
-                          color: AppButtonColor.neutral,
-                          onPressed: _capturing ? null : _pickGallery,
-                        ),
+                      _CameraRoundButton(
+                        icon: 'image',
+                        tooltip: l10n.liveSmartCaptureGallery,
+                        onTap: _capturing ? null : _pickGallery,
                       ),
-                      const SizedBox(width: MitlistSpacing.md),
-                      SizedBox(
-                        width: 92,
-                        height: 64,
-                        child: AppButton(
-                          text: _capturing ? '' : l10n.liveSmartCaptureScan,
-                          isLoading: _capturing,
-                          variant: quality?.level == CaptureQualityLevel.good
-                              ? AppButtonVariant.solid
-                              : AppButtonVariant.outline,
-                          onPressed: ready && !_capturing ? _capture : null,
-                        ),
+                      _ShutterButton(
+                        enabled: ready && !_capturing,
+                        capturing: _capturing,
+                        emphasized:
+                            quality?.level == CaptureQualityLevel.good,
+                        label: l10n.liveSmartCaptureScan,
+                        onTap: _capture,
                       ),
-                      const SizedBox(width: MitlistSpacing.md),
-                      Expanded(
-                        child: AppButton(
-                          text: l10n.smartCaptureUseAnyway,
-                          variant: AppButtonVariant.ghost,
-                          onPressed: ready && !_capturing ? _capture : null,
-                        ),
-                      ),
+                      // Balances the gallery button so the shutter stays
+                      // centered.
+                      const SizedBox(width: _CameraRoundButton.diameter),
                     ],
                   ),
                 ],
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Small translucent round control overlaid on the camera feed.
+class _CameraRoundButton extends StatelessWidget {
+  const _CameraRoundButton({
+    required this.icon,
+    required this.tooltip,
+    this.onTap,
+  });
+
+  static const double diameter = 48;
+
+  final String icon;
+  final String tooltip;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.black.withValues(alpha: 0.45),
+        shape: const CircleBorder(),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: SizedBox(
+            width: diameter,
+            height: diameter,
+            child: Center(
+              child: AppIcon(
+                name: icon,
+                color: onTap == null ? Colors.white38 : Colors.white,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Camera-style round shutter: a white ring whose core fills brand-primary
+/// when the live quality check says the shot is good, and shows a spinner
+/// while a capture is processing.
+class _ShutterButton extends StatelessWidget {
+  const _ShutterButton({
+    required this.enabled,
+    required this.capturing,
+    required this.emphasized,
+    required this.label,
+    required this.onTap,
+  });
+
+  final bool enabled;
+  final bool capturing;
+  final bool emphasized;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final ringColor = enabled || capturing ? Colors.white : Colors.white38;
+    final coreColor = !enabled && !capturing
+        ? Colors.white38
+        : emphasized
+            ? colorScheme.primary
+            : Colors.white;
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: label,
+      child: GestureDetector(
+        onTap: enabled ? onTap : null,
+        child: Container(
+          width: 68,
+          height: 68,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: ringColor, width: 4),
+          ),
+          padding: const EdgeInsets.all(4),
+          child: capturing
+              ? const Center(
+                  child: AppSpinner(
+                    size: AppSpinnerSize.md,
+                    color: Colors.white,
+                  ),
+                )
+              : AnimatedContainer(
+                  duration: MitlistAnimations.micro,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: coreColor,
+                  ),
+                ),
         ),
       ),
     );
@@ -360,15 +471,21 @@ class _CameraPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.sizeOf(context);
     final previewSize = controller.value.previewSize;
     if (previewSize == null) return CameraPreview(controller);
-    final previewAspect = previewSize.height / previewSize.width;
-    final screenAspect = size.width / size.height;
-    return Transform.scale(
-      scale: previewAspect / screenAspect,
-      child: Center(
-        child: CameraPreview(controller),
+    // Cover-fit the preview into whatever box hosts it (the inline camera
+    // card is a different aspect than the screen), cropping the overflow.
+    // previewSize is reported in sensor (landscape) orientation — swap it
+    // for the portrait UI.
+    return ClipRect(
+      child: FittedBox(
+        fit: BoxFit.cover,
+        clipBehavior: Clip.hardEdge,
+        child: SizedBox(
+          width: previewSize.height,
+          height: previewSize.width,
+          child: CameraPreview(controller),
+        ),
       ),
     );
   }

@@ -41,12 +41,17 @@ enum _AssignmentPolicy {
 class ChoreCreationSheet extends ConsumerStatefulWidget {
   final String? initialTitle;
   final String? initialDescription;
+
+  /// When set, the sheet edits this chore in place instead of creating a new
+  /// one: every field is prefilled and saving PATCHes the existing chore.
+  final Chore? existingChore;
   final ValueNotifier<bool>? dirtyNotifier;
 
   const ChoreCreationSheet({
     super.key,
     this.initialTitle,
     this.initialDescription,
+    this.existingChore,
     this.dirtyNotifier,
   });
 
@@ -54,16 +59,19 @@ class ChoreCreationSheet extends ConsumerStatefulWidget {
     BuildContext context, {
     String? initialTitle,
     String? initialDescription,
+    Chore? existingChore,
   }) async {
     final dirty = ValueNotifier<bool>(false);
     final l10n = AppLocalizations.of(context)!;
     final future = showAppBottomSheet<bool>(
       context: context,
-      title: l10n.choreCreationTitle,
+      title:
+          existingChore == null ? l10n.choreCreationTitle : l10n.choreEditTitle,
       isDirtyListenable: dirty,
       body: ChoreCreationSheet(
         initialTitle: initialTitle,
         initialDescription: initialDescription,
+        existingChore: existingChore,
         dirtyNotifier: dirty,
       ),
     );
@@ -118,8 +126,44 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
     if (widget.initialDescription != null) {
       _descriptionController.text = widget.initialDescription!;
     }
+    final existing = widget.existingChore;
+    if (existing != null) _prefillFrom(existing);
     _intervalController.addListener(_markDirty);
     unawaited(_loadMembers());
+  }
+
+  /// Mirrors [_onCreate]'s state→request mapping in the other direction so an
+  /// edited chore opens exactly as it was saved.
+  void _prefillFrom(Chore chore) {
+    _nameController.text = chore.name;
+    _descriptionController.text = chore.description ?? '';
+    _recurrence = switch (chore.frequency) {
+      'hourly' => _Recurrence.hourly,
+      'daily' => _Recurrence.daily,
+      'weekly' => _Recurrence.weekly,
+      'monthly' => _Recurrence.monthly,
+      'yearly' => _Recurrence.yearly,
+      'adaptive' => _Recurrence.adaptive,
+      _ => _Recurrence.none,
+    };
+    _intervalController.text = chore.periodInterval.toString();
+    if (chore.periodConfig.isNotEmpty) {
+      _weekdays
+        ..clear()
+        ..addAll(chore.periodConfig);
+    }
+    _trackDateOnly = chore.trackDateOnly;
+    _rollover = chore.rollover;
+    _category = chore.category;
+    _supplies.addAll(chore.supplies);
+    _noOne = chore.assignmentType == 'no-assignment';
+    if (!_noOne) _who.addAll(chore.assignmentConfig);
+    _assignmentPolicy = switch (chore.assignmentType) {
+      'in-alphabetical-order' => _AssignmentPolicy.alphabetical,
+      'who-least-did-first' => _AssignmentPolicy.leastDone,
+      'random' => _AssignmentPolicy.random,
+      _ => _AssignmentPolicy.roundRobin,
+    };
   }
 
   Future<void> _loadMembers() async {
@@ -274,6 +318,12 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
 
     setState(() => _isSaving = true);
 
+    final existing = widget.existingChore;
+    if (existing != null) {
+      await _onSaveEdit(existing);
+      return;
+    }
+
     try {
       final groupService = await ref.read(groupServiceProviderAsync.future);
       final choreService = await ref.read(choreServiceProviderAsync.future);
@@ -358,6 +408,56 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
           assignee == null
               ? _l10n.choreCreationChoreAdded
               : _l10n.choreCreationChoreAddedNextUp(assignee));
+      unawaited(Haptics.success());
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      AppToast.error(
+          context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
+    }
+  }
+
+  /// The backend's PATCH replaces name/schedule/assignment wholesale rather
+  /// than merging, so the full chore is sent back — including fields this
+  /// sheet doesn't edit (rotation type, start date), which are echoed
+  /// unchanged so they survive the round trip.
+  Future<void> _onSaveEdit(Chore existing) async {
+    try {
+      final choreService = await ref.read(choreServiceProviderAsync.future);
+      await choreService.updateChore(
+        existing.id,
+        UpdateChoreRequest(
+          name: _nameController.text.trim(),
+          description: _descriptionController.text.trim().isEmpty
+              ? null
+              : _descriptionController.text.trim(),
+          rotationType: existing.rotationType,
+          frequency: _frequencyValue(),
+          periodInterval: _periodInterval,
+          periodConfig:
+              _recurrence == _Recurrence.weekly ? _weekdays.toList() : const [],
+          startDate: existing.startDate,
+          trackDateOnly: _trackDateOnly,
+          rollover: _rollover,
+          assignmentType: _assignmentTypeValue(),
+          assignmentConfig: _noOne ? const [] : _who.toList(),
+          supplies: List.unmodifiable(_supplies),
+          category: _category,
+        ),
+      );
+
+      // The direct PATCH bypasses the offline cache, so pull the queue fresh
+      // before callers repaint from it. Best-effort: the server already has
+      // the edit, and the caller refreshes again on the `true` result.
+      try {
+        final choreRepo = await ref.read(choreRepositoryProvider.future);
+        await choreRepo.refreshCurrentChores(existing.groupId);
+      } catch (_) {}
+
+      if (!mounted) return;
+      widget.dirtyNotifier?.value = false;
+      Navigator.of(context).pop(true);
+      AppToast.success(context, _l10n.choreEditSaved);
       unawaited(Haptics.success());
     } catch (e) {
       if (!mounted) return;
@@ -981,7 +1081,9 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
             variant: AppButtonVariant.solid,
             color: AppButtonColor.primary,
             size: AppButtonSize.lg,
-            text: _isSaving ? l10n.commonAdding : l10n.choreAddChore,
+            text: widget.existingChore != null
+                ? (_isSaving ? l10n.commonSaving : l10n.commonSave)
+                : (_isSaving ? l10n.commonAdding : l10n.choreAddChore),
             isLoading: _isSaving,
             onPressed: _canCreate ? _onCreate : null,
           ),

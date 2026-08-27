@@ -12,6 +12,7 @@ import '../../utils/active_group_context.dart';
 import '../../utils/friendly_error.dart';
 import '../../utils/latest_request_guard.dart';
 import '../../widgets/app_button.dart';
+import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_input.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_icon.dart';
@@ -217,11 +218,10 @@ class _ShoppingLocationsScreenState
     if (!isValidGroupId(groupId)) return;
     if (!mounted) return;
 
-    final result = await showModalBottomSheet<_CreateLocationResult>(
+    final result = await showAppBottomSheet<_CreateLocationResult>(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (ctx) => _LocationCreationSheet(groupId: groupId!),
+      title: AppLocalizations.of(context)!.shoppingLocationsSheetTitle,
+      body: _CreateLocationForm(groupId: groupId!),
     );
     if (result == null) return;
 
@@ -272,48 +272,6 @@ class _LocationCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _LocationCreationSheet extends StatelessWidget {
-  final String groupId;
-
-  const _LocationCreationSheet({required this.groupId});
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return AnimatedPadding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      duration: const Duration(milliseconds: 150),
-      curve: Curves.easeOut,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(MitlistSpacing.md),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: MitlistSpacing.md),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.outlineVariant,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            Text(
-              l10n.shoppingLocationsSheetTitle,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: MitlistSpacing.md),
-            _CreateLocationForm(groupId: groupId),
           ],
         ),
       ),

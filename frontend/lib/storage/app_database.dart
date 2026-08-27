@@ -848,6 +848,16 @@ FROM list_items_table;
     );
   }
 
+  /// Drops still-queued ops of [type] targeting [entityId]. Used to coalesce
+  /// last-write-wins ops (e.g. pinwall note moves) so only the newest queued
+  /// value survives.
+  Future<void> deleteOutboxOpsByTypeAndEntity(
+      String type, String entityId) async {
+    await (delete(outboxOps)
+          ..where((t) => t.type.equals(type) & t.entityId.equals(entityId)))
+        .go();
+  }
+
   Future<List<OutboxOp>> getOutboxBatch({int limit = 50}) {
     return (select(outboxOps)
           ..orderBy([(t) => OrderingTerm(expression: t.createdAt)])
@@ -1116,6 +1126,16 @@ FROM list_items_table;
 
   Future<void> insertConflict(ConflictsCompanion entry) async {
     await into(conflicts).insert(entry, mode: InsertMode.insertOrReplace);
+  }
+
+  /// Clears every unresolved conflict recorded for the given op types.
+  /// Used to sweep conflicts that should never have been recorded (ops whose
+  /// endpoints have no edit-conflict semantics), which would otherwise pin the
+  /// "needs your review" banner forever.
+  Future<void> resolveConflictsByEntityTypes(List<String> types) async {
+    await (update(conflicts)
+          ..where((t) => t.entityType.isIn(types) & t.resolvedAt.isNull()))
+        .write(ConflictsCompanion(resolvedAt: Value(DateTime.now())));
   }
 
   Future<void> rewriteOutboxPayloadIds({

@@ -10,6 +10,7 @@ import '../../theme/typography.dart';
 import '../../utils/friendly_error.dart';
 import '../../utils/latest_request_guard.dart';
 import '../../widgets/app_button.dart';
+import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/app_icon.dart';
@@ -188,13 +189,11 @@ class _CookbooksScreenState extends ConsumerState<CookbooksScreen> {
   }
 
   Future<void> _openCreateSheet() async {
-    final result = await showModalBottomSheet<String>(
+    final l10n = AppLocalizations.of(context)!;
+    final result = await showAppBottomSheet<String>(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (ctx) => _CookbookNameSheet(
-        title: AppLocalizations.of(ctx)!.cookbooksSheetTitle,
-      ),
+      title: l10n.cookbooksSheetTitle,
+      body: const _CookbookNameForm(),
     );
     if (result == null) return;
 
@@ -215,14 +214,11 @@ class _CookbooksScreenState extends ConsumerState<CookbooksScreen> {
   }
 
   Future<void> _openRenameSheet(RecipeCollection c) async {
-    final result = await showModalBottomSheet<String>(
+    final l10n = AppLocalizations.of(context)!;
+    final result = await showAppBottomSheet<String>(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (ctx) => _CookbookNameSheet(
-        title: AppLocalizations.of(ctx)!.cookbooksRenameSheetTitle,
-        initialName: c.name,
-      ),
+      title: l10n.cookbooksRenameSheetTitle,
+      body: _CookbookNameForm(initialName: c.name),
     );
     if (result == null) return;
 
@@ -359,48 +355,6 @@ class _CookbookCard extends StatelessWidget {
                   ),
                 ],
               ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _CookbookNameSheet extends StatelessWidget {
-  final String title;
-  final String? initialName;
-
-  const _CookbookNameSheet({required this.title, this.initialName});
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedPadding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      duration: const Duration(milliseconds: 150),
-      curve: Curves.easeOut,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(MitlistSpacing.md),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: MitlistSpacing.md),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.outlineVariant,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            Text(
-              title,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: MitlistSpacing.md),
-            _CookbookNameForm(initialName: initialName),
           ],
         ),
       ),

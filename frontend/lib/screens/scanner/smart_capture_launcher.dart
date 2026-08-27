@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../services/scan/capture_preprocessor_service.dart';
+import '../../utils/inline_camera_route.dart';
 import 'live_smart_capture_screen.dart';
 import 'smart_capture_screen.dart';
 
@@ -17,10 +18,9 @@ Future<SmartCaptureResult?> pickSmartCapture(
   final l10n = AppLocalizations.of(context)!;
   final resolvedTitle = title ?? l10n.smartCaptureLaunchTitle;
   if (source == ImageSource.camera) {
-    return Navigator.of(context).push<SmartCaptureResult>(
-      MaterialPageRoute(
-        builder: (_) => LiveSmartCaptureScreen(title: resolvedTitle),
-      ),
+    return pushInlineCamera<SmartCaptureResult>(
+      context,
+      builder: (_) => LiveSmartCaptureScreen(title: resolvedTitle),
     );
   }
 

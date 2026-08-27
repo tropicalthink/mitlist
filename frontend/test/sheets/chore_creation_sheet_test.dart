@@ -110,6 +110,93 @@ void main() {
 
     expect(chores.lastCreate?.supplies, ['Dish soap']);
   });
+
+  testWidgets('editing sends the full chore back through updateChore',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 1800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final groceryDb = memoryDb();
+    addTearDown(groceryDb.close);
+    final chores = _FakeChoreService();
+    final existing = Chore(
+      id: '33333333-3333-3333-3333-333333333333',
+      groupId: groupId,
+      name: 'Water plants',
+      description: 'Balcony too',
+      rotationType: 'none',
+      frequency: 'weekly',
+      periodInterval: 2,
+      periodConfig: const ['tuesday'],
+      trackDateOnly: true,
+      rollover: true,
+      assignmentType: 'round-robin',
+      isActive: true,
+      supplies: const ['Watering can'],
+      category: 'Plants',
+      createdAt: DateTime.utc(2026, 1, 1),
+      updatedAt: DateTime.utc(2026, 1, 1),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          cachedGroupsProvider.overrideWith((ref) async => [group]),
+          groupServiceProviderAsync.overrideWith(
+            (ref) async => _FakeGroupService(),
+          ),
+          choreServiceProviderAsync.overrideWith((ref) async => chores),
+          choreRepositoryProvider
+              .overrideWith((ref) async => _FakeChoreRepository(chores)),
+          grocerySeedProvider.overrideWith((ref) async {}),
+          grocerySuggestionServiceProvider.overrideWithValue(
+            _CapturingSuggestions(groceryDb),
+          ),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: ChoreCreationSheet(existingChore: existing),
+            ),
+          ),
+        ),
+      ),
+    );
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+
+    // Prefilled from the existing chore, and the CTA reads as a save.
+    expect(find.text('Water plants'), findsOneWidget);
+    expect(find.text('Balcony too'), findsOneWidget);
+    expect(find.text('SAVE'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField).first, 'Water all plants');
+    await tester.ensureVisible(find.text('SAVE'));
+    await tester.pump();
+    await tester.tap(find.text('SAVE'));
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+
+    expect(chores.lastUpdateId, existing.id);
+    final req = chores.lastUpdate;
+    expect(req?.name, 'Water all plants');
+    // The backend PATCH replaces rather than merges, so untouched fields must
+    // round-trip unchanged.
+    expect(req?.description, 'Balcony too');
+    expect(req?.rotationType, 'none');
+    expect(req?.frequency, 'weekly');
+    expect(req?.periodInterval, 2);
+    expect(req?.periodConfig, ['tuesday']);
+    expect(req?.trackDateOnly, true);
+    expect(req?.rollover, true);
+    expect(req?.assignmentType, 'round-robin');
+    expect(req?.assignmentConfig, isEmpty);
+    expect(req?.supplies, ['Watering can']);
+    expect(req?.category, 'Plants');
+  });
 }
 
 class _FakeGroupService implements GroupService {
@@ -145,6 +232,24 @@ class _FakeChoreRepository implements ChoreRepository {
 
 class _FakeChoreService implements ChoreService {
   CreateChoreRequest? lastCreate;
+  String? lastUpdateId;
+  UpdateChoreRequest? lastUpdate;
+
+  @override
+  Future<Chore> updateChore(String id, UpdateChoreRequest req) async {
+    lastUpdateId = id;
+    lastUpdate = req;
+    return Chore(
+      id: id,
+      groupId: 'unused',
+      name: req.name ?? '',
+      rotationType: req.rotationType ?? 'none',
+      frequency: req.frequency ?? 'daily',
+      isActive: true,
+      createdAt: DateTime.utc(2026, 1, 1),
+      updatedAt: DateTime.utc(2026, 1, 1),
+    );
+  }
 
   @override
   Future<Chore> createChore(CreateChoreRequest req,

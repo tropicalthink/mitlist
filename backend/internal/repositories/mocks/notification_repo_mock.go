@@ -128,6 +128,11 @@ func (m *MockNotificationRepo) QueueListItemNotification(ctx context.Context, gr
 	return args.Error(0)
 }
 
+func (m *MockNotificationRepo) FlushListNotificationBatches(ctx context.Context, actorID, listID uuid.UUID) error {
+	args := m.Called(ctx, actorID, listID)
+	return args.Error(0)
+}
+
 func (m *MockNotificationRepo) UpsertPreference(ctx context.Context, pref *models.NotificationPreference) error {
 	args := m.Called(ctx, pref)
 	return args.Error(0)

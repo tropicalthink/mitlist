@@ -49,6 +49,15 @@ class OutboxCoordinator {
   ///
   /// Idempotent: cancels any existing subscription before re-subscribing.
   void start() {
+    // Pinwall endpoints have no edit-conflict semantics — every pinwall 409
+    // was the idempotency middleware rejecting a reused key, recorded as a
+    // conflict by mistake. Those rows kept the "needs your review" banner up
+    // with nothing to resolve; sweep any that older builds left behind.
+    unawaited(_db.resolveConflictsByEntityTypes(const [
+      'createPinwallPost',
+      'deletePinwallPost',
+      'updatePinwallPostPosition',
+    ]));
     _connectivitySub?.cancel();
     _connectivitySub = _connectivity.onStatusChange.listen((online) {
       if (online) {

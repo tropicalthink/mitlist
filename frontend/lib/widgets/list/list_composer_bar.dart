@@ -164,10 +164,23 @@ class _ComposerSuggestionCard extends StatelessWidget {
   final ListTileAccent accent;
   final VoidCallback onTap;
 
+  /// What the card says under the name. A row already on the list says so
+  /// instead of showing its category — that is the one fact that changes what
+  /// tapping the card does.
+  String _detail(AppLocalizations l10n) {
+    if (suggestion.isOnList) {
+      return suggestion.onListChecked
+          ? l10n.composerSuggestionCheckedOff
+          : l10n.composerSuggestionOnList;
+    }
+    return suggestion.category.isNotEmpty
+        ? suggestion.category
+        : suggestion.unit;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final detail =
-        suggestion.category.isNotEmpty ? suggestion.category : suggestion.unit;
+    final detail = _detail(AppLocalizations.of(context)!);
     return SizedBox(
       width: MitlistSpacing.space20 * 2,
       height: MitlistSpacing.space14,
@@ -180,7 +193,11 @@ class _ComposerSuggestionCard extends StatelessWidget {
         child: Row(
           children: [
             AppIcon(
-              name: suggestion.hasIntelligence ? 'bolt' : 'inventoryOutline',
+              name: suggestion.isOnList
+                  ? (suggestion.onListChecked
+                      ? 'checkCircle'
+                      : 'listAltOutline')
+                  : (suggestion.hasIntelligence ? 'bolt' : 'inventoryOutline'),
               size: MitlistSpacing.space5,
               color: accent.iconColor,
             ),
@@ -214,7 +231,13 @@ class _ComposerSuggestionCard extends StatelessWidget {
             ),
             const SizedBox(width: MitlistSpacing.xs),
             AppIcon(
-              name: 'plus',
+              name: switch (suggestion) {
+                // Tapping a checked-off row un-checks it; tapping one that is
+                // already open changes nothing. Neither is a "+".
+                _ when !suggestion.isOnList => 'plus',
+                _ when suggestion.onListChecked => 'removeDoneOutline',
+                _ => 'check',
+              },
               size: MitlistSpacing.space4,
               color: accent.iconColor,
             ),

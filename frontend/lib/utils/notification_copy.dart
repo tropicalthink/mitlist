@@ -56,6 +56,7 @@ NotificationText resolveNotificationText({
     case 'list_items_added':
       final list = value('list_name');
       final item = value('last_item_name');
+      final itemNames = value('item_names');
       final count = int.tryParse(value('item_count') ?? '');
       if (actor != null &&
           list != null &&
@@ -63,11 +64,18 @@ NotificationText resolveNotificationText({
           group != null &&
           count != null &&
           count > 0) {
+        final String body;
+        if (count == 1) {
+          body = l10n.notificationListUpdatedOneBody(actor, item, list, group);
+        } else if (itemNames != null) {
+          body = l10n.notificationListUpdatedManyNamesBody(
+              actor, count, list, group, itemNames);
+        } else {
+          body = l10n.notificationListUpdatedManyBody(actor, count, list, group);
+        }
         return NotificationText(
           title: l10n.notificationListUpdatedTitle(list),
-          body: count == 1
-              ? l10n.notificationListUpdatedOneBody(actor, item, list, group)
-              : l10n.notificationListUpdatedManyBody(actor, count, list, group),
+          body: body,
         );
       }
       break;

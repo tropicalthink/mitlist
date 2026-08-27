@@ -673,6 +673,14 @@
   "@choreCreationTitle": {
     "description": "Bottom sheet title for chore creation"
   },
+  "choreEditTitle": "Modifier la tâche",
+  "@choreEditTitle": {
+    "description": "Bottom sheet title and detail-sheet button when editing an existing chore"
+  },
+  "choreEditSaved": "Tâche mise à jour",
+  "@choreEditSaved": {
+    "description": "Toast shown after a chore edit is saved"
+  },
   "choreCreationNameHint": "Nom de la tâche",
   "@choreCreationNameHint": {
     "description": "Input hint for chore name"
@@ -4648,6 +4656,11 @@
   "notificationListUpdatedTitle": "{listName} mise à jour",
   "notificationListUpdatedOneBody": "{actorName} a ajouté {itemName} à {listName} dans {groupName}.",
   "notificationListUpdatedManyBody": "{actorName} a ajouté {count} éléments à {listName} dans {groupName}.",
+  "notificationListUpdatedManyNamesBody": "{actorName} a ajouté {count} éléments à {listName} dans {groupName} : {itemNames}",
+  "joinScanButton": "Scanner",
+  "joinScanTitle": "Scanner le code d'invitation",
+  "joinScanHint": "Pointez la caméra vers le code QR d'invitation du foyer",
+  "joinScanCameraError": "Impossible d'ouvrir la caméra. Vérifiez les autorisations de la caméra et réessayez.",
   "notificationExpenseCreatedTitle": "Dépense ajoutée",
   "notificationExpenseCreatedBody": "{actorName} a ajouté {expenseName} dans {groupName}.",
   "notificationRecurringExpenseTitle": "Dépense récurrente ajoutée",
@@ -5232,7 +5245,7 @@
   "@inviteQrUnavailable": {
     "description": "Error when QR code cannot be rendered"
   },
-  "joinCodeFormatHint": "Les codes ressemblent à MOT-MOT-42. Demande à la personne qui t'a invité.",
+  "joinCodeFormatHint": "Les codes ressemblent à MOT-MOT-X7WM2K9PQ6R8S. Demande à la personne qui t'a invité.",
   "@joinCodeFormatHint": {
     "description": "Hint text describing invite code format"
   },
@@ -5670,7 +5683,7 @@
   "@sheetInviteTitle": {
     "description": "Sheet title for inviting to household"
   },
-  "sheetJoinCodeExample": "SUNNY-TACO-42",
+  "sheetJoinCodeExample": "SUNNY-TACO-X7WM2K9PQ6R8S",
   "@sheetJoinCodeExample": {
     "description": "Example invite code placeholder"
   },
@@ -5844,5 +5857,65 @@
   "billingEndsOn": "Se termine le {date}",
   "billingMemberUsage": "{count} place(s) gratuite(s) sur {limit} utilisée(s)",
   "billingUnlimitedMembers": "Membres illimités",
-  "expenseCreationDatePrefix": "Date"
+  "expenseCreationDatePrefix": "Date",
+  "listDetailItemRestored": "{name} est de retour dans la liste",
+  "listDetailItemAlreadyOnList": "{name} est déjà dans la liste",
+  "composerSuggestionCheckedOff": "Coché",
+  "composerSuggestionOnList": "Dans la liste",
+  "featureBoardTitle": "Tableau des fonctionnalités",
+  "featureBoardBannerTitle": "Que devons-nous créer ensuite ?",
+  "featureBoardBannerBody": "Découvrez nos projets, proposez une idée et votez pour les fonctionnalités qui comptent.",
+  "featureBoardBannerAction": "Ouvrir le tableau",
+  "featureBoardAdd": "Proposer une fonctionnalité",
+  "featureBoardIntroTitle": "Créé avec vos idées",
+  "featureBoardIntroBody": "Votez pour vos idées préférées. Vos votes nous aident à choisir les prochaines améliorations.",
+  "featureBoardLoadFailed": "Impossible de charger le tableau",
+  "featureBoardTryAgain": "Vérifiez votre connexion et réessayez.",
+  "featureBoardNoFeaturesTitle": "Aucune idée pour le moment",
+  "featureBoardNoFeaturesBody": "Soyez la première personne à proposer une amélioration pour mitlist.",
+  "featureBoardNewTitle": "Proposer une fonctionnalité",
+  "featureBoardNewIntro": "Décrivez une amélioration pour laquelle d’autres foyers pourront aussi voter.",
+  "featureBoardTitleLabel": "Titre de la fonctionnalité",
+  "featureBoardTitleHint": "Modèles de listes de courses partagées",
+  "featureBoardDescriptionLabel": "Pourquoi serait-ce utile ? (facultatif)",
+  "featureBoardDescriptionHint": "Expliquez-nous comment vous l’utiliseriez…",
+  "featureBoardEmpty": "Ajoutez un titre court à votre idée.",
+  "featureBoardSubmit": "Ajouter au tableau",
+  "featureBoardSubmitting": "Ajout…",
+  "featureBoardCreated": "Votre idée est sur le tableau.",
+  "featureBoardFailed": "Impossible de mettre à jour le tableau. Réessayez.",
+  "featureBoardInProgress": "En cours",
+  "featureBoardPlanned": "Prévu",
+  "featureBoardShipped": "Publié",
+  "featureBoardUpvote": "Voter pour la fonctionnalité",
+  "featureBoardUpvoted": "Vote enregistré",
+  "featureBoardVotes": "{count, plural, =1{1 vote} other{{count} votes}}",
+  "weeklySummaryTitle": "Semaine en revue",
+  "weeklySummaryActivities": "{count, plural, =1{activité} other{activités}}",
+  "weeklySummaryPercentVsLastWeek": "{percent}% par rapport à la semaine dernière",
+  "weeklySummarySameAsLastWeek": "Comme la semaine dernière",
+  "weeklySummaryFirstWeek": "Votre première semaine d'activité",
+  "weeklySummaryYourShareTitle": "Votre part",
+  "weeklySummaryYourShareBody": "Vous avez contribué à {mine} sur {total}.",
+  "weeklySummaryPersonalUp": "{count} de plus que la semaine dernière. Bravo.",
+  "weeklySummaryPersonalDown": "{count} de moins que la semaine dernière.",
+  "weeklySummaryPersonalSame": "Exactement autant que la semaine dernière.",
+  "weeklySummaryActiveMembers": "{active} colocataires sur {total} ont participé.",
+  "weeklySummaryBreakdownTitle": "Où cela s'est passé",
+  "weeklySummaryCategoryLists": "Articles ajoutés",
+  "weeklySummaryCategoryExpenses": "Dépenses enregistrées",
+  "weeklySummaryCategoryChores": "Tâches terminées",
+  "weeklySummaryCategoryMeals": "Repas planifiés",
+  "weeklySummaryCategoryRecipes": "Recettes ajoutées",
+  "weeklySummaryNudgeRollTitle": "Vous êtes lancés",
+  "weeklySummaryNudgeRollBody": "{total} choses ont été gérées cette semaine, plus que la semaine dernière. Continuez.",
+  "weeklySummaryNudgeSlipTitle": "Une semaine plus calme",
+  "weeklySummaryNudgeSlipBody": "Le rythme a un peu ralenti. Un article de liste ou une tâche suffit à inverser la tendance.",
+  "weeklySummaryNudgeJoinTitle": "Participez cette semaine",
+  "weeklySummaryNudgeJoinBody": "Vos colocataires ont fait tourner la maison. Ajoutez un article, enregistrez une dépense ou cochez une tâche.",
+  "weeklySummaryOpenHousehold": "Ouvrir le foyer",
+  "weeklySummaryEmptyTitle": "Une semaine calme",
+  "weeklySummaryEmptyBody": "Rien n'a été enregistré ces sept derniers jours. Ajoutez quelque chose et cela apparaîtra ici la semaine prochaine.",
+  "weeklySummaryLoadFailed": "Impossible de charger votre semaine",
+  "weeklySummaryTryAgain": "Vérifiez votre connexion et réessayez."
 }

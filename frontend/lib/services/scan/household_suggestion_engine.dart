@@ -4,6 +4,10 @@ import 'grocery_suggestion_service.dart';
 import 'resolution/string_sim.dart';
 
 enum HouseholdSuggestionSource {
+  /// An item that is already on the list being composed — usually one that was
+  /// checked off. Re-adding it restores it instead of creating a duplicate, so
+  /// it is offered first.
+  listItem,
   restock,
   catalog,
   bundled,
@@ -17,6 +21,7 @@ class HouseholdSuggestion {
     this.canonicalItemId,
     this.category = '',
     this.unit = '',
+    this.onListChecked = false,
   });
 
   final String? canonicalItemId;
@@ -25,8 +30,16 @@ class HouseholdSuggestion {
   final String unit;
   final Set<HouseholdSuggestionSource> sources;
 
-  bool get hasIntelligence =>
-      sources.any((source) => source != HouseholdSuggestionSource.product);
+  /// Only meaningful when [isOnList]: the matching row is currently checked
+  /// off, so adding this restores it rather than doing nothing.
+  final bool onListChecked;
+
+  /// This name already has a row on the list being composed.
+  bool get isOnList => sources.contains(HouseholdSuggestionSource.listItem);
+
+  bool get hasIntelligence => sources.any((source) =>
+      source != HouseholdSuggestionSource.product &&
+      source != HouseholdSuggestionSource.listItem);
 }
 
 /// Owns cross-source identity reconciliation and ranking for the list composer.
@@ -71,6 +84,23 @@ class HouseholdSuggestionEngine {
     ];
   }
 
+  /// Rows already on the list being composed, most relevant first. Callers
+  /// pass only rows matching the current query — an empty query has nothing to
+  /// re-add.
+  void setListItemSuggestions(List<ListItem> items) {
+    _sources[HouseholdSuggestionSource.listItem] = [
+      for (var i = 0; i < items.length; i++)
+        _SourceSuggestion(
+          source: HouseholdSuggestionSource.listItem,
+          sourceIndex: i,
+          canonicalItemId: items[i].canonicalItemId,
+          name: items[i].name,
+          unit: items[i].unit,
+          checked: items[i].checked,
+        ),
+    ];
+  }
+
   void setProducts(List<Product> products) {
     _sources[HouseholdSuggestionSource.product] = [
       for (var i = 0; i < products.length; i++)
@@ -89,6 +119,7 @@ class HouseholdSuggestionEngine {
     final byName = <String, _MergedSuggestion>{};
 
     for (final source in const [
+      HouseholdSuggestionSource.listItem,
       HouseholdSuggestionSource.restock,
       HouseholdSuggestionSource.catalog,
       HouseholdSuggestionSource.bundled,
@@ -130,20 +161,26 @@ class HouseholdSuggestionEngine {
               name: candidate.name,
               category: candidate.category,
               unit: candidate.unit,
+              onListChecked: candidate.onListChecked,
               sources: Set.unmodifiable(candidate.sources),
             ))
         .toList(growable: false);
   }
 
   int _sourceRank(_MergedSuggestion candidate) {
-    if (_emptyQuery &&
-        candidate.sources.contains(HouseholdSuggestionSource.restock)) {
+    // A row already on the list outranks everything: it is the one candidate
+    // whose add is guaranteed not to duplicate what the user is looking at.
+    if (candidate.sources.contains(HouseholdSuggestionSource.listItem)) {
       return 0;
     }
-    if (candidate.sources.contains(HouseholdSuggestionSource.catalog)) return 1;
-    if (candidate.sources.contains(HouseholdSuggestionSource.bundled)) return 2;
-    if (candidate.sources.contains(HouseholdSuggestionSource.product)) return 3;
-    return 4;
+    if (_emptyQuery &&
+        candidate.sources.contains(HouseholdSuggestionSource.restock)) {
+      return 1;
+    }
+    if (candidate.sources.contains(HouseholdSuggestionSource.catalog)) return 2;
+    if (candidate.sources.contains(HouseholdSuggestionSource.bundled)) return 3;
+    if (candidate.sources.contains(HouseholdSuggestionSource.product)) return 4;
+    return 5;
   }
 }
 
@@ -155,6 +192,7 @@ class _SourceSuggestion {
     this.canonicalItemId,
     this.category = '',
     this.unit = '',
+    this.checked = false,
   });
 
   final HouseholdSuggestionSource source;
@@ -163,6 +201,7 @@ class _SourceSuggestion {
   final String name;
   final String category;
   final String unit;
+  final bool checked;
 }
 
 class _MergedSuggestion {
@@ -172,12 +211,14 @@ class _MergedSuggestion {
         category = source.category,
         unit = source.unit,
         sources = {source.source},
+        onListChecked = source.checked,
         bestSourceIndex = source.sourceIndex;
 
   String? canonicalItemId;
   String name;
   String category;
   String unit;
+  bool onListChecked;
   final Set<HouseholdSuggestionSource> sources;
   int bestSourceIndex;
 
@@ -187,6 +228,7 @@ class _MergedSuggestion {
       category = source.category;
     }
     if (unit.isEmpty && source.unit.isNotEmpty) unit = source.unit;
+    onListChecked = onListChecked || source.checked;
     sources.add(source.source);
     if (source.sourceIndex < bestSourceIndex) {
       bestSourceIndex = source.sourceIndex;

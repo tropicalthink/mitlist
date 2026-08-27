@@ -94,7 +94,7 @@ func (s *WeeklySummary) notifyMembers(ctx context.Context, groupID uuid.UUID, co
 	title := "Weekly Summary"
 	body := fmt.Sprintf("Your household had %d activities this week", count)
 	notifPayload := models.NotificationPayload{
-		Screen:  models.ScreenHouseholdHub,
+		Screen:  models.ScreenWeeklySummary,
 		GroupID: groupID.String(),
 		Copy: models.NewNotificationCopy(models.NotificationTemplateWeeklyDigest, map[string]string{
 			"activity_count": fmt.Sprintf("%d", count),

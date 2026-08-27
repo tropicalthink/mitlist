@@ -393,13 +393,16 @@ void main() {
     await tester.tap(find.byTooltip('Join with code'));
     await _pumpAfter(tester);
 
-    await tester.enterText(find.byType(TextField).first, 'sunny-taco-42');
+    // Longest code the backend can issue today (ADJ-NOUN-<13 chars>, 29
+    // chars) — guards against the input field truncating typed/pasted codes.
+    await tester.enterText(
+        find.byType(TextField).first, 'clever-notebook-x7wm2k9pq6r8s');
     await _pumpAfter(tester);
     await tester.tap(find.widgetWithText(AppButton, 'JOIN'));
     await _pumpAfter(tester);
 
     expect(groupService.lastJoinRequest, isNotNull);
-    expect(groupService.lastJoinRequest!.code, 'SUNNY-TACO-42');
+    expect(groupService.lastJoinRequest!.code, 'CLEVER-NOTEBOOK-X7WM2K9PQ6R8S');
     expect(find.text("You're in."), findsOneWidget);
   });
 
