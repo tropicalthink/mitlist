@@ -15,9 +15,38 @@ void main() {
       }
     });
 
-    test('409 is a conflict (routed to the resolution UI)', () {
-      expect(classifyOutboxError(fakeDioException(statusCode: 409)),
+    test('409 carrying the server row is a conflict (resolution UI)', () {
+      expect(
+          classifyOutboxError(fakeDioException(statusCode: 409, data: {
+            'error': 'conflict',
+            'current': {'id': 'x', 'name': 'Milk'},
+          })),
           equals(OutboxErrorDisposition.conflict));
+    });
+
+    test('bare 409 (idempotency replay / uniqueness) is permanent', () {
+      // No `current` state means there is nothing for the user to resolve;
+      // recording it as a conflict pinned the review banner forever.
+      expect(classifyOutboxError(fakeDioException(statusCode: 409)),
+          equals(OutboxErrorDisposition.permanent));
+    });
+
+    test('409 with Retry-After (replay still processing) is transient', () {
+      final requestOptions = RequestOptions(path: '/fake');
+      final error = DioException(
+        requestOptions: requestOptions,
+        type: DioExceptionType.badResponse,
+        response: Response(
+          requestOptions: requestOptions,
+          statusCode: 409,
+          data: 'request with this idempotency key is still processing',
+          headers: Headers.fromMap({
+            'retry-after': ['2'],
+          }),
+        ),
+      );
+      expect(classifyOutboxError(error),
+          equals(OutboxErrorDisposition.transient));
     });
 
     test('408 and 429 are transient', () {

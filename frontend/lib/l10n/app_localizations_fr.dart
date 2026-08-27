@@ -679,6 +679,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get choreCreationTitle => 'Ajouter une tâche';
 
   @override
+  String get choreEditTitle => 'Modifier la tâche';
+
+  @override
+  String get choreEditSaved => 'Tâche mise à jour';
+
+  @override
   String get choreCreationNameHint => 'Nom de la tâche';
 
   @override
@@ -4585,6 +4591,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get joinPasteButton => 'Paste';
 
   @override
+  String get joinScanButton => 'Scanner';
+
+  @override
+  String get joinScanTitle => 'Scanner le code d\'invitation';
+
+  @override
+  String get joinScanHint =>
+      'Pointez la caméra vers le code QR d\'invitation du foyer';
+
+  @override
+  String get joinScanCameraError =>
+      'Impossible d\'ouvrir la caméra. Vérifiez les autorisations de la caméra et réessayez.';
+
+  @override
   String get joinPasteFilled => 'Invite code pasted';
 
   @override
@@ -4942,7 +4962,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get joinCodeFormatHint =>
-      'Les codes ressemblent à MOT-MOT-42. Demande à la personne qui t\'a invité.';
+      'Les codes ressemblent à MOT-MOT-X7WM2K9PQ6R8S. Demande à la personne qui t\'a invité.';
 
   @override
   String joinEnterGroup(String name) {
@@ -5091,6 +5111,12 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String notificationListUpdatedManyNamesBody(String actorName, num count,
+      String listName, String groupName, String itemNames) {
+    return '$actorName a ajouté $count éléments à $listName dans $groupName : $itemNames';
+  }
+
+  @override
   String get notificationExpenseCreatedTitle => 'Dépense ajoutée';
 
   @override
@@ -5213,7 +5239,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get createListNoHousehold => 'Aucun foyer disponible.';
 
   @override
-  String get sheetJoinCodeExample => 'SUNNY-TACO-42';
+  String get sheetJoinCodeExample => 'SUNNY-TACO-X7WM2K9PQ6R8S';
 
   @override
   String joinMembersAlreadyInside(num count) {
@@ -5625,4 +5651,227 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get billingUnlimitedMembers => 'Membres illimités';
+
+  @override
+  String listDetailItemRestored(String name) {
+    return '$name est de retour dans la liste';
+  }
+
+  @override
+  String listDetailItemAlreadyOnList(String name) {
+    return '$name est déjà dans la liste';
+  }
+
+  @override
+  String get composerSuggestionCheckedOff => 'Coché';
+
+  @override
+  String get composerSuggestionOnList => 'Dans la liste';
+
+  @override
+  String get featureBoardTitle => 'Tableau des fonctionnalités';
+
+  @override
+  String get featureBoardBannerTitle => 'Que devons-nous créer ensuite ?';
+
+  @override
+  String get featureBoardBannerBody =>
+      'Découvrez nos projets, proposez une idée et votez pour les fonctionnalités qui comptent.';
+
+  @override
+  String get featureBoardBannerAction => 'Ouvrir le tableau';
+
+  @override
+  String get featureBoardAdd => 'Proposer une fonctionnalité';
+
+  @override
+  String get featureBoardIntroTitle => 'Créé avec vos idées';
+
+  @override
+  String get featureBoardIntroBody =>
+      'Votez pour vos idées préférées. Vos votes nous aident à choisir les prochaines améliorations.';
+
+  @override
+  String get featureBoardLoadFailed => 'Impossible de charger le tableau';
+
+  @override
+  String get featureBoardTryAgain => 'Vérifiez votre connexion et réessayez.';
+
+  @override
+  String get featureBoardNoFeaturesTitle => 'Aucune idée pour le moment';
+
+  @override
+  String get featureBoardNoFeaturesBody =>
+      'Soyez la première personne à proposer une amélioration pour mitlist.';
+
+  @override
+  String get featureBoardNewTitle => 'Proposer une fonctionnalité';
+
+  @override
+  String get featureBoardNewIntro =>
+      'Décrivez une amélioration pour laquelle d’autres foyers pourront aussi voter.';
+
+  @override
+  String get featureBoardTitleLabel => 'Titre de la fonctionnalité';
+
+  @override
+  String get featureBoardTitleHint => 'Modèles de listes de courses partagées';
+
+  @override
+  String get featureBoardDescriptionLabel =>
+      'Pourquoi serait-ce utile ? (facultatif)';
+
+  @override
+  String get featureBoardDescriptionHint =>
+      'Expliquez-nous comment vous l’utiliseriez…';
+
+  @override
+  String get featureBoardEmpty => 'Ajoutez un titre court à votre idée.';
+
+  @override
+  String get featureBoardSubmit => 'Ajouter au tableau';
+
+  @override
+  String get featureBoardSubmitting => 'Ajout…';
+
+  @override
+  String get featureBoardCreated => 'Votre idée est sur le tableau.';
+
+  @override
+  String get featureBoardFailed =>
+      'Impossible de mettre à jour le tableau. Réessayez.';
+
+  @override
+  String get featureBoardInProgress => 'En cours';
+
+  @override
+  String get featureBoardPlanned => 'Prévu';
+
+  @override
+  String get featureBoardShipped => 'Publié';
+
+  @override
+  String get featureBoardUpvote => 'Voter pour la fonctionnalité';
+
+  @override
+  String get featureBoardUpvoted => 'Vote enregistré';
+
+  @override
+  String featureBoardVotes(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count votes',
+      one: '1 vote',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get weeklySummaryTitle => 'Semaine en revue';
+
+  @override
+  String weeklySummaryActivities(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'activités',
+      one: 'activité',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String weeklySummaryPercentVsLastWeek(int percent) {
+    return '$percent% par rapport à la semaine dernière';
+  }
+
+  @override
+  String get weeklySummarySameAsLastWeek => 'Comme la semaine dernière';
+
+  @override
+  String get weeklySummaryFirstWeek => 'Votre première semaine d\'activité';
+
+  @override
+  String get weeklySummaryYourShareTitle => 'Votre part';
+
+  @override
+  String weeklySummaryYourShareBody(int mine, int total) {
+    return 'Vous avez contribué à $mine sur $total.';
+  }
+
+  @override
+  String weeklySummaryPersonalUp(int count) {
+    return '$count de plus que la semaine dernière. Bravo.';
+  }
+
+  @override
+  String weeklySummaryPersonalDown(int count) {
+    return '$count de moins que la semaine dernière.';
+  }
+
+  @override
+  String get weeklySummaryPersonalSame =>
+      'Exactement autant que la semaine dernière.';
+
+  @override
+  String weeklySummaryActiveMembers(int active, int total) {
+    return '$active colocataires sur $total ont participé.';
+  }
+
+  @override
+  String get weeklySummaryBreakdownTitle => 'Où cela s\'est passé';
+
+  @override
+  String get weeklySummaryCategoryLists => 'Articles ajoutés';
+
+  @override
+  String get weeklySummaryCategoryExpenses => 'Dépenses enregistrées';
+
+  @override
+  String get weeklySummaryCategoryChores => 'Tâches terminées';
+
+  @override
+  String get weeklySummaryCategoryMeals => 'Repas planifiés';
+
+  @override
+  String get weeklySummaryCategoryRecipes => 'Recettes ajoutées';
+
+  @override
+  String get weeklySummaryNudgeRollTitle => 'Vous êtes lancés';
+
+  @override
+  String weeklySummaryNudgeRollBody(int total) {
+    return '$total choses ont été gérées cette semaine, plus que la semaine dernière. Continuez.';
+  }
+
+  @override
+  String get weeklySummaryNudgeSlipTitle => 'Une semaine plus calme';
+
+  @override
+  String get weeklySummaryNudgeSlipBody =>
+      'Le rythme a un peu ralenti. Un article de liste ou une tâche suffit à inverser la tendance.';
+
+  @override
+  String get weeklySummaryNudgeJoinTitle => 'Participez cette semaine';
+
+  @override
+  String get weeklySummaryNudgeJoinBody =>
+      'Vos colocataires ont fait tourner la maison. Ajoutez un article, enregistrez une dépense ou cochez une tâche.';
+
+  @override
+  String get weeklySummaryOpenHousehold => 'Ouvrir le foyer';
+
+  @override
+  String get weeklySummaryEmptyTitle => 'Une semaine calme';
+
+  @override
+  String get weeklySummaryEmptyBody =>
+      'Rien n\'a été enregistré ces sept derniers jours. Ajoutez quelque chose et cela apparaîtra ici la semaine prochaine.';
+
+  @override
+  String get weeklySummaryLoadFailed => 'Impossible de charger votre semaine';
+
+  @override
+  String get weeklySummaryTryAgain => 'Vérifiez votre connexion et réessayez.';
 }

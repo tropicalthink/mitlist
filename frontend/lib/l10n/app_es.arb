@@ -673,6 +673,14 @@
   "@choreCreationTitle": {
     "description": "Bottom sheet title for chore creation"
   },
+  "choreEditTitle": "Editar tarea",
+  "@choreEditTitle": {
+    "description": "Bottom sheet title and detail-sheet button when editing an existing chore"
+  },
+  "choreEditSaved": "Tarea actualizada",
+  "@choreEditSaved": {
+    "description": "Toast shown after a chore edit is saved"
+  },
   "choreCreationNameHint": "Nombre de la tarea",
   "@choreCreationNameHint": {
     "description": "Input hint for chore name"
@@ -4648,6 +4656,11 @@
   "notificationListUpdatedTitle": "{listName} actualizada",
   "notificationListUpdatedOneBody": "{actorName} añadió {itemName} a {listName} en {groupName}.",
   "notificationListUpdatedManyBody": "{actorName} añadió {count} artículos a {listName} en {groupName}.",
+  "notificationListUpdatedManyNamesBody": "{actorName} añadió {count} artículos a {listName} en {groupName}: {itemNames}",
+  "joinScanButton": "Escanear",
+  "joinScanTitle": "Escanear código de invitación",
+  "joinScanHint": "Apunta la cámara al código QR de invitación del hogar",
+  "joinScanCameraError": "No se pudo abrir la cámara. Revisa los permisos de cámara e inténtalo de nuevo.",
   "notificationExpenseCreatedTitle": "Gasto añadido",
   "notificationExpenseCreatedBody": "{actorName} añadió {expenseName} en {groupName}.",
   "notificationRecurringExpenseTitle": "Gasto recurrente añadido",
@@ -5232,7 +5245,7 @@
   "@inviteQrUnavailable": {
     "description": "Error when QR code cannot be rendered"
   },
-  "joinCodeFormatHint": "Los códigos tienen el formato PALABRA-PALABRA-42. Pregunta a quien te invitó.",
+  "joinCodeFormatHint": "Los códigos tienen el formato PALABRA-PALABRA-X7WM2K9PQ6R8S. Pregunta a quien te invitó.",
   "@joinCodeFormatHint": {
     "description": "Hint text describing invite code format"
   },
@@ -5670,7 +5683,7 @@
   "@sheetInviteTitle": {
     "description": "Sheet title for inviting to household"
   },
-  "sheetJoinCodeExample": "SUNNY-TACO-42",
+  "sheetJoinCodeExample": "SUNNY-TACO-X7WM2K9PQ6R8S",
   "@sheetJoinCodeExample": {
     "description": "Example invite code placeholder"
   },
@@ -5844,5 +5857,65 @@
   "billingEndsOn": "Termina el {date}",
   "billingMemberUsage": "{count} de {limit} plazas gratuitas usadas",
   "billingUnlimitedMembers": "Miembros ilimitados",
-  "expenseCreationDatePrefix": "Fecha"
+  "expenseCreationDatePrefix": "Fecha",
+  "listDetailItemRestored": "{name} vuelve a la lista",
+  "listDetailItemAlreadyOnList": "{name} ya está en la lista",
+  "composerSuggestionCheckedOff": "Marcado",
+  "composerSuggestionOnList": "En la lista",
+  "featureBoardTitle": "Tablero de funciones",
+  "featureBoardBannerTitle": "¿Qué deberíamos crear después?",
+  "featureBoardBannerBody": "Consulta en qué trabajamos, propón ideas y vota las funciones que más te importan.",
+  "featureBoardBannerAction": "Abrir tablero",
+  "featureBoardAdd": "Proponer una función",
+  "featureBoardIntroTitle": "Creado con tus ideas",
+  "featureBoardIntroBody": "Vota las ideas que más quieres. Tus votos nos ayudan a decidir qué mejorar.",
+  "featureBoardLoadFailed": "No se pudo cargar el tablero",
+  "featureBoardTryAgain": "Comprueba tu conexión e inténtalo de nuevo.",
+  "featureBoardNoFeaturesTitle": "Todavía no hay ideas",
+  "featureBoardNoFeaturesBody": "Sé la primera persona en proponer algo que mejore mitlist.",
+  "featureBoardNewTitle": "Proponer una función",
+  "featureBoardNewIntro": "Describe una mejora que otros hogares también puedan votar.",
+  "featureBoardTitleLabel": "Título de la función",
+  "featureBoardTitleHint": "Plantillas de listas de compra compartidas",
+  "featureBoardDescriptionLabel": "¿Por qué sería útil? (opcional)",
+  "featureBoardDescriptionHint": "Cuéntanos cómo la usarías…",
+  "featureBoardEmpty": "Añade un título breve para tu idea.",
+  "featureBoardSubmit": "Añadir al tablero",
+  "featureBoardSubmitting": "Añadiendo…",
+  "featureBoardCreated": "Tu idea ya está en el tablero.",
+  "featureBoardFailed": "No se pudo actualizar el tablero. Inténtalo de nuevo.",
+  "featureBoardInProgress": "En curso",
+  "featureBoardPlanned": "Planificado",
+  "featureBoardShipped": "Publicado",
+  "featureBoardUpvote": "Votar función",
+  "featureBoardUpvoted": "Función votada",
+  "featureBoardVotes": "{count, plural, =1{1 voto} other{{count} votos}}",
+  "weeklySummaryTitle": "Resumen de la semana",
+  "weeklySummaryActivities": "{count, plural, =1{actividad} other{actividades}}",
+  "weeklySummaryPercentVsLastWeek": "{percent}% respecto a la semana pasada",
+  "weeklySummarySameAsLastWeek": "Igual que la semana pasada",
+  "weeklySummaryFirstWeek": "Tu primera semana de actividad",
+  "weeklySummaryYourShareTitle": "Tu parte",
+  "weeklySummaryYourShareBody": "Has aportado {mine} de {total}.",
+  "weeklySummaryPersonalUp": "{count} más que la semana pasada. Buen trabajo.",
+  "weeklySummaryPersonalDown": "{count} menos que la semana pasada.",
+  "weeklySummaryPersonalSame": "Exactamente las mismas que la semana pasada.",
+  "weeklySummaryActiveMembers": "{active} de {total} compañeros han colaborado.",
+  "weeklySummaryBreakdownTitle": "Dónde ocurrió",
+  "weeklySummaryCategoryLists": "Artículos añadidos",
+  "weeklySummaryCategoryExpenses": "Gastos registrados",
+  "weeklySummaryCategoryChores": "Tareas completadas",
+  "weeklySummaryCategoryMeals": "Comidas planificadas",
+  "weeklySummaryCategoryRecipes": "Recetas añadidas",
+  "weeklySummaryNudgeRollTitle": "Vais a buen ritmo",
+  "weeklySummaryNudgeRollBody": "Se han resuelto {total} cosas esta semana, más que la semana pasada. Seguid así.",
+  "weeklySummaryNudgeSlipTitle": "Una semana más tranquila",
+  "weeklySummaryNudgeSlipBody": "El ritmo ha bajado un poco. Con un artículo de la lista o una tarea basta para darle la vuelta.",
+  "weeklySummaryNudgeJoinTitle": "Únete esta semana",
+  "weeklySummaryNudgeJoinBody": "Tus compañeros han mantenido el ritmo. Añade un artículo, registra un gasto o marca una tarea.",
+  "weeklySummaryOpenHousehold": "Abrir hogar",
+  "weeklySummaryEmptyTitle": "Una semana tranquila",
+  "weeklySummaryEmptyBody": "No se registró nada en los últimos siete días. Añade algo y aparecerá aquí la semana que viene.",
+  "weeklySummaryLoadFailed": "No se pudo cargar tu semana",
+  "weeklySummaryTryAgain": "Comprueba tu conexión e inténtalo de nuevo."
 }

@@ -49,10 +49,24 @@ func TestNotificationRepository_QueueListItemNotification(t *testing.T) {
 	groupID, actorID, listID := uuid.New(), uuid.New(), uuid.New()
 
 	mockDB.ExpectExec("INSERT INTO list_notification_batches").
-		WithArgs(groupID, actorID, listID, "Mina", "Groceries", "Milk").
+		WithArgs(groupID, actorID, listID, "Mina", "Groceries", "Milk", listNotificationBatchMaxNames).
 		WillReturnResult(pgxmock.NewResult("INSERT", 1))
 
 	err := repo.QueueListItemNotification(context.Background(), groupID, actorID, listID, "Mina", "Groceries", "Milk")
+	require.NoError(t, err)
+	assert.NoError(t, mockDB.ExpectationsWereMet())
+}
+
+func TestNotificationRepository_FlushListNotificationBatches(t *testing.T) {
+	mockDB := newMockDB(t)
+	repo := NewNotificationRepository(mockDB)
+	actorID, listID := uuid.New(), uuid.New()
+
+	mockDB.ExpectExec("UPDATE list_notification_batches").
+		WithArgs(actorID, listID).
+		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
+
+	err := repo.FlushListNotificationBatches(context.Background(), actorID, listID)
 	require.NoError(t, err)
 	assert.NoError(t, mockDB.ExpectationsWereMet())
 }

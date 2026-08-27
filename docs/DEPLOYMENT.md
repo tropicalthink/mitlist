@@ -126,7 +126,11 @@ to start with App Check required and an empty allowlist.
 Self-hosted instances are intentionally opt-in: `FIREBASE_APP_CHECK_REQUIRED`
 defaults to `false` in `backend/.env.example`. Operators enabling it must use
 their own Firebase project and register their own application IDs; they should
-build a matching client with `--dart-define=APP_CHECK_ENABLED=true`.
+build a matching client with `--dart-define=APP_CHECK_ENABLED=true`. The
+client half of every such setting — App Check, Turnstile, crash reporting, the
+feature board — is listed in [build-configuration.md](build-configuration.md);
+the variables on this page are the API's runtime environment and are a
+separate set.
 
 The production Compose profile accepts a complete `DATABASE_URL` from the root
 `.env`. When it is present, it overrides the bundled Postgres URL:

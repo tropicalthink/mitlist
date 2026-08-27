@@ -315,6 +315,24 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     );
   }
 
+  /// Opens the prefilled edit sheet for a chore. The full chore is fetched
+  /// fresh so the sheet edits what the server has, not the row's summary.
+  Future<void> _editChore(String id, {Chore? chore}) async {
+    if (chore == null) {
+      try {
+        final service = await ref.read(choreServiceProviderAsync.future);
+        chore = (await service.getChoreDetails(id)).chore;
+      } catch (e) {
+        if (!mounted) return;
+        _showChoreActionError(friendlyErrorMessage(e, _l10n));
+        return;
+      }
+    }
+    if (!mounted) return;
+    final updated = await ChoreCreationSheet.show(context, existingChore: chore);
+    if (updated == true) await _loadChores();
+  }
+
   Future<void> _openChoreDetail(String id) async {
     var chore = _chores.firstWhereOrNull((item) => item.id == id);
     if (chore == null) {
@@ -346,6 +364,9 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     }
     if (!mounted) return;
     unawaited(Haptics.light());
+    // Editing needs the full chore to prefill the sheet, so it's only offered
+    // when the details fetch succeeded.
+    final choreForEdit = details?.chore;
     await ChoreDetailSheet.show(
       context,
       choreId: id,
@@ -438,6 +459,12 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       onAddSuppliesToList: () async {
         await _addSuppliesToList(id);
       },
+      onEdit: choreForEdit == null
+          ? null
+          : () async {
+              Navigator.of(context).pop();
+              await _editChore(id, chore: choreForEdit);
+            },
       onDelete: () => _confirmDeleteChore(id),
     );
   }
@@ -1144,6 +1171,10 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                                     chore: chore,
                                     onToggle: () => _toggleComplete(chore.id),
                                     onTap: () => _openChoreDetail(chore.id),
+                                    onLongPress: () {
+                                      unawaited(Haptics.medium());
+                                      _editChore(chore.id);
+                                    },
                                   ),
                                 ),
                               ),
@@ -1870,11 +1901,13 @@ class _ChoreItem extends StatelessWidget {
   final _Chore chore;
   final VoidCallback onToggle;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
   const _ChoreItem({
     required this.chore,
     required this.onToggle,
     required this.onTap,
+    this.onLongPress,
   });
 
   @override
@@ -1909,9 +1942,12 @@ class _ChoreItem extends StatelessWidget {
       padding: AppCardPadding.sm,
       child: InkWell(
         onTap: onTap,
+        onLongPress: onLongPress,
         child: Semantics(
           button: true,
           label: semanticLabel,
+          onLongPressHint:
+              onLongPress != null ? l10n.choreEditTitle : null,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [

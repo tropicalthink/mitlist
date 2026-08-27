@@ -3,12 +3,14 @@ import 'dart:async';
 import 'dart:math' show min;
 
 import 'package:confetti/confetti.dart';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lottie/lottie.dart';
 
 import '../models/group_models.dart';
+import '../screens/scanner/invite_qr_scan_screen.dart';
 import '../providers/group_provider.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
@@ -194,6 +196,26 @@ class _JoinHouseholdSheetState extends ConsumerState<JoinHouseholdSheet>
     AppToast.success(context, l10n.joinPasteFilled);
   }
 
+  /// The in-app QR scanner only exists on the mobile platforms; web and
+  /// desktop keep paste as the fast path.
+  bool get _canScan =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.android);
+
+  /// Opens the camera, scans the inviter's QR code, and joins straight away —
+  /// no leaving the app to use the system camera.
+  Future<void> _scanCode() async {
+    final code = await InviteQrScanScreen.show(context);
+    if (!mounted || code == null) return;
+    _codeController.value = TextEditingValue(
+      text: code,
+      selection: TextSelection.collapsed(offset: code.length),
+    );
+    setState(() => _error = null);
+    await _onJoin();
+  }
+
   Widget _buildEntry() {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
@@ -219,6 +241,15 @@ class _JoinHouseholdSheetState extends ConsumerState<JoinHouseholdSheet>
                       ),
                 ),
               ),
+              if (_canScan)
+                AppButton(
+                  variant: AppButtonVariant.ghost,
+                  color: AppButtonColor.primary,
+                  size: AppButtonSize.sm,
+                  text: l10n.joinScanButton,
+                  icon: const Icon(Icons.qr_code_scanner_rounded, size: 16),
+                  onPressed: isJoining ? null : _scanCode,
+                ),
               AppButton(
                 variant: AppButtonVariant.ghost,
                 color: AppButtonColor.primary,
@@ -235,7 +266,10 @@ class _JoinHouseholdSheetState extends ConsumerState<JoinHouseholdSheet>
             controller: _codeController,
             enabled: !isJoining,
             textInputAction: TextInputAction.done,
-            maxLength: 20,
+            // Codes are ADJ-NOUN-<13 chars> (up to 29 chars today, see the
+            // backend's generatePlayfulInviteCode); leave headroom so a longer
+            // wordlist never truncates a pasted code again.
+            maxLength: 40,
             prefixIcon: const Icon(Icons.confirmation_number_outlined),
             onChanged: (val) {
               final upper = val.toUpperCase();

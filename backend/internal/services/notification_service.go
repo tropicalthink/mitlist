@@ -205,6 +205,14 @@ func (s *NotificationService) dispatchToGroup(ctx context.Context, groupID, acto
 	return nil
 }
 
+// FlushListItemDigest releases any queued list-item digest for this user and
+// list so the digest job delivers it on its next run. Called when the person
+// leaves the list screen after adding items; a no-op when nothing is queued.
+// Only the caller's own batches are affected, so no membership check is needed.
+func (s *NotificationService) FlushListItemDigest(ctx context.Context, userID, listID uuid.UUID) error {
+	return s.notificationRepo.FlushListNotificationBatches(ctx, userID, listID)
+}
+
 // DispatchToUsers persists in-app notifications and sends push to the specified
 // users (e.g. a single assignee for a chore reminder). Preference-checked per user.
 // Persist is synchronous; push is background best-effort.

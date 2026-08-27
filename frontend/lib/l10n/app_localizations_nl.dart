@@ -678,6 +678,12 @@ class AppLocalizationsNl extends AppLocalizations {
   String get choreCreationTitle => 'Klus toevoegen';
 
   @override
+  String get choreEditTitle => 'Klus bewerken';
+
+  @override
+  String get choreEditSaved => 'Klus bijgewerkt';
+
+  @override
   String get choreCreationNameHint => 'Klusnaam';
 
   @override
@@ -4570,6 +4576,20 @@ class AppLocalizationsNl extends AppLocalizations {
   String get joinPasteButton => 'Paste';
 
   @override
+  String get joinScanButton => 'Scannen';
+
+  @override
+  String get joinScanTitle => 'Uitnodigingscode scannen';
+
+  @override
+  String get joinScanHint =>
+      'Richt je camera op de uitnodigings-QR-code van het huishouden';
+
+  @override
+  String get joinScanCameraError =>
+      'Kan de camera niet openen. Controleer de camerarechten en probeer het opnieuw.';
+
+  @override
   String get joinPasteFilled => 'Invite code pasted';
 
   @override
@@ -4926,7 +4946,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get joinCodeFormatHint =>
-      'Codes zien eruit als WOORD-WOORD-42. Vraag het aan degene die je heeft uitgenodigd.';
+      'Codes zien eruit als WOORD-WOORD-X7WM2K9PQ6R8S. Vraag het aan degene die je heeft uitgenodigd.';
 
   @override
   String joinEnterGroup(String name) {
@@ -5074,6 +5094,12 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String notificationListUpdatedManyNamesBody(String actorName, num count,
+      String listName, String groupName, String itemNames) {
+    return '$actorName voegde $count items toe aan $listName in $groupName: $itemNames';
+  }
+
+  @override
   String get notificationExpenseCreatedTitle => 'Uitgave toegevoegd';
 
   @override
@@ -5196,7 +5222,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get createListNoHousehold => 'Geen huishouden beschikbaar.';
 
   @override
-  String get sheetJoinCodeExample => 'SUNNY-TACO-42';
+  String get sheetJoinCodeExample => 'SUNNY-TACO-X7WM2K9PQ6R8S';
 
   @override
   String joinMembersAlreadyInside(num count) {
@@ -5606,4 +5632,230 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get billingUnlimitedMembers => 'Onbeperkt aantal leden';
+
+  @override
+  String listDetailItemRestored(String name) {
+    return '$name staat weer op de lijst';
+  }
+
+  @override
+  String listDetailItemAlreadyOnList(String name) {
+    return '$name staat al op de lijst';
+  }
+
+  @override
+  String get composerSuggestionCheckedOff => 'Afgevinkt';
+
+  @override
+  String get composerSuggestionOnList => 'Op de lijst';
+
+  @override
+  String get featureBoardTitle => 'Functiebord';
+
+  @override
+  String get featureBoardBannerTitle => 'Wat moeten we hierna bouwen?';
+
+  @override
+  String get featureBoardBannerBody =>
+      'Bekijk waar we aan werken, stel een idee voor en stem op belangrijke functies.';
+
+  @override
+  String get featureBoardBannerAction => 'Open functiebord';
+
+  @override
+  String get featureBoardAdd => 'Functie voorstellen';
+
+  @override
+  String get featureBoardIntroTitle => 'Gebouwd met jouw ideeën';
+
+  @override
+  String get featureBoardIntroBody =>
+      'Stem op de ideeën die je het liefst wilt. Jouw stemmen helpen ons kiezen wat we verbeteren.';
+
+  @override
+  String get featureBoardLoadFailed =>
+      'Het functiebord kon niet worden geladen';
+
+  @override
+  String get featureBoardTryAgain =>
+      'Controleer je verbinding en probeer het opnieuw.';
+
+  @override
+  String get featureBoardNoFeaturesTitle => 'Nog geen ideeën';
+
+  @override
+  String get featureBoardNoFeaturesBody =>
+      'Stel als eerste iets voor dat mitlist beter maakt.';
+
+  @override
+  String get featureBoardNewTitle => 'Functie voorstellen';
+
+  @override
+  String get featureBoardNewIntro =>
+      'Beschrijf een verbetering waarop andere huishoudens ook kunnen stemmen.';
+
+  @override
+  String get featureBoardTitleLabel => 'Titel van de functie';
+
+  @override
+  String get featureBoardTitleHint =>
+      'Sjablonen voor gedeelde boodschappenlijsten';
+
+  @override
+  String get featureBoardDescriptionLabel =>
+      'Waarom zou dit helpen? (optioneel)';
+
+  @override
+  String get featureBoardDescriptionHint =>
+      'Vertel ons hoe je het zou gebruiken…';
+
+  @override
+  String get featureBoardEmpty => 'Geef je idee een korte titel.';
+
+  @override
+  String get featureBoardSubmit => 'Aan bord toevoegen';
+
+  @override
+  String get featureBoardSubmitting => 'Toevoegen…';
+
+  @override
+  String get featureBoardCreated => 'Je idee staat op het bord.';
+
+  @override
+  String get featureBoardFailed =>
+      'Het functiebord kon niet worden bijgewerkt. Probeer het opnieuw.';
+
+  @override
+  String get featureBoardInProgress => 'In uitvoering';
+
+  @override
+  String get featureBoardPlanned => 'Gepland';
+
+  @override
+  String get featureBoardShipped => 'Uitgebracht';
+
+  @override
+  String get featureBoardUpvote => 'Stem op functie';
+
+  @override
+  String get featureBoardUpvoted => 'Op functie gestemd';
+
+  @override
+  String featureBoardVotes(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count stemmen',
+      one: '1 stem',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get weeklySummaryTitle => 'Week in beeld';
+
+  @override
+  String weeklySummaryActivities(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'activiteiten',
+      one: 'activiteit',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String weeklySummaryPercentVsLastWeek(int percent) {
+    return '$percent% ten opzichte van vorige week';
+  }
+
+  @override
+  String get weeklySummarySameAsLastWeek => 'Net zoveel als vorige week';
+
+  @override
+  String get weeklySummaryFirstWeek => 'Je eerste actieve week';
+
+  @override
+  String get weeklySummaryYourShareTitle => 'Jouw aandeel';
+
+  @override
+  String weeklySummaryYourShareBody(int mine, int total) {
+    return 'Jij hebt $mine van de $total bijgedragen.';
+  }
+
+  @override
+  String weeklySummaryPersonalUp(int count) {
+    return '$count meer dan vorige week. Goed bezig.';
+  }
+
+  @override
+  String weeklySummaryPersonalDown(int count) {
+    return '$count minder dan vorige week.';
+  }
+
+  @override
+  String get weeklySummaryPersonalSame => 'Precies evenveel als vorige week.';
+
+  @override
+  String weeklySummaryActiveMembers(int active, int total) {
+    return '$active van de $total huisgenoten deden mee.';
+  }
+
+  @override
+  String get weeklySummaryBreakdownTitle => 'Waar het gebeurde';
+
+  @override
+  String get weeklySummaryCategoryLists => 'Lijstitems toegevoegd';
+
+  @override
+  String get weeklySummaryCategoryExpenses => 'Uitgaven vastgelegd';
+
+  @override
+  String get weeklySummaryCategoryChores => 'Klusjes afgerond';
+
+  @override
+  String get weeklySummaryCategoryMeals => 'Maaltijden gepland';
+
+  @override
+  String get weeklySummaryCategoryRecipes => 'Recepten toegevoegd';
+
+  @override
+  String get weeklySummaryNudgeRollTitle => 'Jullie zijn lekker bezig';
+
+  @override
+  String weeklySummaryNudgeRollBody(int total) {
+    return 'Er zijn deze week $total dingen geregeld, meer dan vorige week. Houd het vol.';
+  }
+
+  @override
+  String get weeklySummaryNudgeSlipTitle => 'Een rustigere week';
+
+  @override
+  String get weeklySummaryNudgeSlipBody =>
+      'Het ging wat langzamer. Eén lijstitem of één klusje is genoeg om het om te draaien.';
+
+  @override
+  String get weeklySummaryNudgeJoinTitle => 'Doe deze week mee';
+
+  @override
+  String get weeklySummaryNudgeJoinBody =>
+      'Je huisgenoten hielden alles draaiende. Voeg een lijstitem toe, leg een uitgave vast of vink een klusje af.';
+
+  @override
+  String get weeklySummaryOpenHousehold => 'Huishouden openen';
+
+  @override
+  String get weeklySummaryEmptyTitle => 'Een rustige week';
+
+  @override
+  String get weeklySummaryEmptyBody =>
+      'In de afgelopen zeven dagen is niets vastgelegd. Voeg iets toe en het staat hier volgende week.';
+
+  @override
+  String get weeklySummaryLoadFailed => 'Je week kon niet worden geladen';
+
+  @override
+  String get weeklySummaryTryAgain =>
+      'Controleer je verbinding en probeer het opnieuw.';
 }

@@ -675,6 +675,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get choreCreationTitle => 'Add chore';
 
   @override
+  String get choreEditTitle => 'Edit chore';
+
+  @override
+  String get choreEditSaved => 'Chore updated';
+
+  @override
   String get choreCreationNameHint => 'Chore name';
 
   @override
@@ -4530,6 +4536,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get joinPasteButton => 'Paste';
 
   @override
+  String get joinScanButton => 'Scan';
+
+  @override
+  String get joinScanTitle => 'Scan invite code';
+
+  @override
+  String get joinScanHint =>
+      'Point your camera at the household\'s invite QR code';
+
+  @override
+  String get joinScanCameraError =>
+      'Couldn\'t open the camera. Check camera permissions and try again.';
+
+  @override
   String get joinPasteFilled => 'Invite code pasted';
 
   @override
@@ -4882,7 +4902,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get joinCodeFormatHint =>
-      'Codes look like WORD-WORD-42. Ask whoever invited you.';
+      'Codes look like WORD-WORD-X7WM2K9PQ6R8S. Ask whoever invited you.';
 
   @override
   String joinEnterGroup(String name) {
@@ -5029,6 +5049,12 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String notificationListUpdatedManyNamesBody(String actorName, num count,
+      String listName, String groupName, String itemNames) {
+    return '$actorName added $count items to $listName in $groupName: $itemNames';
+  }
+
+  @override
   String get notificationExpenseCreatedTitle => 'Expense added';
 
   @override
@@ -5149,7 +5175,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createListNoHousehold => 'No household available.';
 
   @override
-  String get sheetJoinCodeExample => 'SUNNY-TACO-42';
+  String get sheetJoinCodeExample => 'SUNNY-TACO-X7WM2K9PQ6R8S';
 
   @override
   String joinMembersAlreadyInside(num count) {
@@ -5554,4 +5580,224 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get billingUnlimitedMembers => 'Unlimited members';
+
+  @override
+  String listDetailItemRestored(String name) {
+    return 'Moved $name back to the list';
+  }
+
+  @override
+  String listDetailItemAlreadyOnList(String name) {
+    return '$name is already on the list';
+  }
+
+  @override
+  String get composerSuggestionCheckedOff => 'Checked off';
+
+  @override
+  String get composerSuggestionOnList => 'On the list';
+
+  @override
+  String get featureBoardTitle => 'Feature board';
+
+  @override
+  String get featureBoardBannerTitle => 'What should we build next?';
+
+  @override
+  String get featureBoardBannerBody =>
+      'See what we\'re working on, suggest an idea, and upvote the features that matter to you.';
+
+  @override
+  String get featureBoardBannerAction => 'Open feature board';
+
+  @override
+  String get featureBoardAdd => 'Suggest a feature';
+
+  @override
+  String get featureBoardIntroTitle => 'Built with your input';
+
+  @override
+  String get featureBoardIntroBody =>
+      'Vote for ideas you want most. Your votes help us decide what to improve next.';
+
+  @override
+  String get featureBoardLoadFailed => 'Couldn\'t load the feature board';
+
+  @override
+  String get featureBoardTryAgain => 'Check your connection and try again.';
+
+  @override
+  String get featureBoardNoFeaturesTitle => 'No ideas here yet';
+
+  @override
+  String get featureBoardNoFeaturesBody =>
+      'Be the first to suggest something that would make mitlist better.';
+
+  @override
+  String get featureBoardNewTitle => 'Suggest a feature';
+
+  @override
+  String get featureBoardNewIntro =>
+      'Describe one improvement other households could vote for too.';
+
+  @override
+  String get featureBoardTitleLabel => 'Feature title';
+
+  @override
+  String get featureBoardTitleHint => 'Shared grocery list templates';
+
+  @override
+  String get featureBoardDescriptionLabel => 'Why would this help? (optional)';
+
+  @override
+  String get featureBoardDescriptionHint => 'Tell us how you would use it…';
+
+  @override
+  String get featureBoardEmpty => 'Add a short title for your idea.';
+
+  @override
+  String get featureBoardSubmit => 'Add to board';
+
+  @override
+  String get featureBoardSubmitting => 'Adding…';
+
+  @override
+  String get featureBoardCreated => 'Your idea is on the board.';
+
+  @override
+  String get featureBoardFailed =>
+      'Couldn\'t update the feature board. Please try again.';
+
+  @override
+  String get featureBoardInProgress => 'In progress';
+
+  @override
+  String get featureBoardPlanned => 'Planned';
+
+  @override
+  String get featureBoardShipped => 'Shipped';
+
+  @override
+  String get featureBoardUpvote => 'Upvote feature';
+
+  @override
+  String get featureBoardUpvoted => 'Feature upvoted';
+
+  @override
+  String featureBoardVotes(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count votes',
+      one: '1 vote',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get weeklySummaryTitle => 'Week in review';
+
+  @override
+  String weeklySummaryActivities(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'activities',
+      one: 'activity',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String weeklySummaryPercentVsLastWeek(int percent) {
+    return '$percent% vs last week';
+  }
+
+  @override
+  String get weeklySummarySameAsLastWeek => 'Same as last week';
+
+  @override
+  String get weeklySummaryFirstWeek => 'Your first week of activity';
+
+  @override
+  String get weeklySummaryYourShareTitle => 'Your share';
+
+  @override
+  String weeklySummaryYourShareBody(int mine, int total) {
+    return 'You contributed $mine of $total.';
+  }
+
+  @override
+  String weeklySummaryPersonalUp(int count) {
+    return '$count more than you did last week. Nice work.';
+  }
+
+  @override
+  String weeklySummaryPersonalDown(int count) {
+    return '$count fewer than you did last week.';
+  }
+
+  @override
+  String get weeklySummaryPersonalSame => 'Exactly as many as last week.';
+
+  @override
+  String weeklySummaryActiveMembers(int active, int total) {
+    return '$active of $total housemates pitched in.';
+  }
+
+  @override
+  String get weeklySummaryBreakdownTitle => 'Where it happened';
+
+  @override
+  String get weeklySummaryCategoryLists => 'List items added';
+
+  @override
+  String get weeklySummaryCategoryExpenses => 'Expenses logged';
+
+  @override
+  String get weeklySummaryCategoryChores => 'Chores completed';
+
+  @override
+  String get weeklySummaryCategoryMeals => 'Meals planned';
+
+  @override
+  String get weeklySummaryCategoryRecipes => 'Recipes added';
+
+  @override
+  String get weeklySummaryNudgeRollTitle => 'You are on a roll';
+
+  @override
+  String weeklySummaryNudgeRollBody(int total) {
+    return '$total things got handled this week, more than last week. Keep the streak going.';
+  }
+
+  @override
+  String get weeklySummaryNudgeSlipTitle => 'A quieter week';
+
+  @override
+  String get weeklySummaryNudgeSlipBody =>
+      'Things slowed down a little. One list item or one chore is enough to turn it around.';
+
+  @override
+  String get weeklySummaryNudgeJoinTitle => 'Jump in this week';
+
+  @override
+  String get weeklySummaryNudgeJoinBody =>
+      'Your housemates kept things moving. Add a list item, log an expense, or tick off a chore.';
+
+  @override
+  String get weeklySummaryOpenHousehold => 'Open household';
+
+  @override
+  String get weeklySummaryEmptyTitle => 'A quiet week';
+
+  @override
+  String get weeklySummaryEmptyBody =>
+      'Nothing was logged in the last seven days. Add something and it will show up here next week.';
+
+  @override
+  String get weeklySummaryLoadFailed => 'Couldn\'t load your week';
+
+  @override
+  String get weeklySummaryTryAgain => 'Check your connection and try again.';
 }

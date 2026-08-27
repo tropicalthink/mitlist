@@ -1238,6 +1238,18 @@ abstract class AppLocalizations {
   /// **'Add chore'**
   String get choreCreationTitle;
 
+  /// Bottom sheet title and detail-sheet button when editing an existing chore
+  ///
+  /// In en, this message translates to:
+  /// **'Edit chore'**
+  String get choreEditTitle;
+
+  /// Toast shown after a chore edit is saved
+  ///
+  /// In en, this message translates to:
+  /// **'Chore updated'**
+  String get choreEditSaved;
+
   /// Input hint for chore name
   ///
   /// In en, this message translates to:
@@ -8013,6 +8025,30 @@ abstract class AppLocalizations {
   /// **'Paste'**
   String get joinPasteButton;
 
+  /// Button that opens the in-app camera to scan an invite QR code
+  ///
+  /// In en, this message translates to:
+  /// **'Scan'**
+  String get joinScanButton;
+
+  /// Title of the invite QR scanner screen
+  ///
+  /// In en, this message translates to:
+  /// **'Scan invite code'**
+  String get joinScanTitle;
+
+  /// Instruction shown on the invite QR scanner screen
+  ///
+  /// In en, this message translates to:
+  /// **'Point your camera at the household\'s invite QR code'**
+  String get joinScanHint;
+
+  /// Shown when the invite QR scanner cannot access the camera
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open the camera. Check camera permissions and try again.'**
+  String get joinScanCameraError;
+
   /// Confirmation shown after pasting a valid invite code
   ///
   /// In en, this message translates to:
@@ -8634,7 +8670,7 @@ abstract class AppLocalizations {
   /// Hint text describing invite code format
   ///
   /// In en, this message translates to:
-  /// **'Codes look like WORD-WORD-42. Ask whoever invited you.'**
+  /// **'Codes look like WORD-WORD-X7WM2K9PQ6R8S. Ask whoever invited you.'**
   String get joinCodeFormatHint;
 
   /// Semantics label to enter a household
@@ -8873,6 +8909,13 @@ abstract class AppLocalizations {
   String notificationListUpdatedManyBody(
       String actorName, num count, String listName, String groupName);
 
+  /// No description provided for @notificationListUpdatedManyNamesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{actorName} added {count} items to {listName} in {groupName}: {itemNames}'**
+  String notificationListUpdatedManyNamesBody(String actorName, num count,
+      String listName, String groupName, String itemNames);
+
   /// No description provided for @notificationExpenseCreatedTitle.
   ///
   /// In en, this message translates to:
@@ -9055,7 +9098,7 @@ abstract class AppLocalizations {
   /// Example invite code placeholder
   ///
   /// In en, this message translates to:
-  /// **'SUNNY-TACO-42'**
+  /// **'SUNNY-TACO-X7WM2K9PQ6R8S'**
   String get sheetJoinCodeExample;
 
   /// Member count after joining household
@@ -9687,6 +9730,366 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unlimited members'**
   String get billingUnlimitedMembers;
+
+  /// Snackbar when re-adding a checked-off item unchecks it
+  ///
+  /// In en, this message translates to:
+  /// **'Moved {name} back to the list'**
+  String listDetailItemRestored(String name);
+
+  /// Snackbar when the added name is already on the list, unchecked
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is already on the list'**
+  String listDetailItemAlreadyOnList(String name);
+
+  /// Composer suggestion detail: the row is on the list but checked off
+  ///
+  /// In en, this message translates to:
+  /// **'Checked off'**
+  String get composerSuggestionCheckedOff;
+
+  /// Composer suggestion detail: the row is already on the list
+  ///
+  /// In en, this message translates to:
+  /// **'On the list'**
+  String get composerSuggestionOnList;
+
+  /// Feature board screen title
+  ///
+  /// In en, this message translates to:
+  /// **'Feature board'**
+  String get featureBoardTitle;
+
+  /// Account feature-board banner title
+  ///
+  /// In en, this message translates to:
+  /// **'What should we build next?'**
+  String get featureBoardBannerTitle;
+
+  /// Account feature-board banner body
+  ///
+  /// In en, this message translates to:
+  /// **'See what we\'re working on, suggest an idea, and upvote the features that matter to you.'**
+  String get featureBoardBannerBody;
+
+  /// Button opening the feature board
+  ///
+  /// In en, this message translates to:
+  /// **'Open feature board'**
+  String get featureBoardBannerAction;
+
+  /// Action to create a feature-board request
+  ///
+  /// In en, this message translates to:
+  /// **'Suggest a feature'**
+  String get featureBoardAdd;
+
+  /// Feature-board introduction title
+  ///
+  /// In en, this message translates to:
+  /// **'Built with your input'**
+  String get featureBoardIntroTitle;
+
+  /// Feature-board introduction body
+  ///
+  /// In en, this message translates to:
+  /// **'Vote for ideas you want most. Your votes help us decide what to improve next.'**
+  String get featureBoardIntroBody;
+
+  /// Feature-board loading error
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the feature board'**
+  String get featureBoardLoadFailed;
+
+  /// Feature-board retry guidance
+  ///
+  /// In en, this message translates to:
+  /// **'Check your connection and try again.'**
+  String get featureBoardTryAgain;
+
+  /// Feature-board empty-state title
+  ///
+  /// In en, this message translates to:
+  /// **'No ideas here yet'**
+  String get featureBoardNoFeaturesTitle;
+
+  /// Feature-board empty-state body
+  ///
+  /// In en, this message translates to:
+  /// **'Be the first to suggest something that would make mitlist better.'**
+  String get featureBoardNoFeaturesBody;
+
+  /// New feature sheet title
+  ///
+  /// In en, this message translates to:
+  /// **'Suggest a feature'**
+  String get featureBoardNewTitle;
+
+  /// New feature sheet introduction
+  ///
+  /// In en, this message translates to:
+  /// **'Describe one improvement other households could vote for too.'**
+  String get featureBoardNewIntro;
+
+  /// New feature title field label
+  ///
+  /// In en, this message translates to:
+  /// **'Feature title'**
+  String get featureBoardTitleLabel;
+
+  /// New feature title field hint
+  ///
+  /// In en, this message translates to:
+  /// **'Shared grocery list templates'**
+  String get featureBoardTitleHint;
+
+  /// New feature description field label
+  ///
+  /// In en, this message translates to:
+  /// **'Why would this help? (optional)'**
+  String get featureBoardDescriptionLabel;
+
+  /// New feature description field hint
+  ///
+  /// In en, this message translates to:
+  /// **'Tell us how you would use it…'**
+  String get featureBoardDescriptionHint;
+
+  /// New feature validation error
+  ///
+  /// In en, this message translates to:
+  /// **'Add a short title for your idea.'**
+  String get featureBoardEmpty;
+
+  /// New feature submit button
+  ///
+  /// In en, this message translates to:
+  /// **'Add to board'**
+  String get featureBoardSubmit;
+
+  /// New feature submit button loading state
+  ///
+  /// In en, this message translates to:
+  /// **'Adding…'**
+  String get featureBoardSubmitting;
+
+  /// New feature success toast
+  ///
+  /// In en, this message translates to:
+  /// **'Your idea is on the board.'**
+  String get featureBoardCreated;
+
+  /// Feature-board write error
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t update the feature board. Please try again.'**
+  String get featureBoardFailed;
+
+  /// Feature-board in-progress section
+  ///
+  /// In en, this message translates to:
+  /// **'In progress'**
+  String get featureBoardInProgress;
+
+  /// Feature-board planned section
+  ///
+  /// In en, this message translates to:
+  /// **'Planned'**
+  String get featureBoardPlanned;
+
+  /// Feature-board shipped section
+  ///
+  /// In en, this message translates to:
+  /// **'Shipped'**
+  String get featureBoardShipped;
+
+  /// Upvote button semantics
+  ///
+  /// In en, this message translates to:
+  /// **'Upvote feature'**
+  String get featureBoardUpvote;
+
+  /// Upvoted button semantics
+  ///
+  /// In en, this message translates to:
+  /// **'Feature upvoted'**
+  String get featureBoardUpvoted;
+
+  /// Feature vote count
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 vote} other{{count} votes}}'**
+  String featureBoardVotes(num count);
+
+  /// Weekly summary screen title
+  ///
+  /// In en, this message translates to:
+  /// **'Week in review'**
+  String get weeklySummaryTitle;
+
+  /// Unit next to the weekly total
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{activity} other{activities}}'**
+  String weeklySummaryActivities(num count);
+
+  /// Headline week-over-week percentage
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% vs last week'**
+  String weeklySummaryPercentVsLastWeek(int percent);
+
+  /// Headline delta when the two weeks match
+  ///
+  /// In en, this message translates to:
+  /// **'Same as last week'**
+  String get weeklySummarySameAsLastWeek;
+
+  /// Headline delta when there is no previous week
+  ///
+  /// In en, this message translates to:
+  /// **'Your first week of activity'**
+  String get weeklySummaryFirstWeek;
+
+  /// Personal contribution card title
+  ///
+  /// In en, this message translates to:
+  /// **'Your share'**
+  String get weeklySummaryYourShareTitle;
+
+  /// Personal contribution out of the household total
+  ///
+  /// In en, this message translates to:
+  /// **'You contributed {mine} of {total}.'**
+  String weeklySummaryYourShareBody(int mine, int total);
+
+  /// Personal week-over-week improvement
+  ///
+  /// In en, this message translates to:
+  /// **'{count} more than you did last week. Nice work.'**
+  String weeklySummaryPersonalUp(int count);
+
+  /// Personal week-over-week decline
+  ///
+  /// In en, this message translates to:
+  /// **'{count} fewer than you did last week.'**
+  String weeklySummaryPersonalDown(int count);
+
+  /// Personal week-over-week no change
+  ///
+  /// In en, this message translates to:
+  /// **'Exactly as many as last week.'**
+  String get weeklySummaryPersonalSame;
+
+  /// How many housemates were active
+  ///
+  /// In en, this message translates to:
+  /// **'{active} of {total} housemates pitched in.'**
+  String weeklySummaryActiveMembers(int active, int total);
+
+  /// Per-category breakdown card title
+  ///
+  /// In en, this message translates to:
+  /// **'Where it happened'**
+  String get weeklySummaryBreakdownTitle;
+
+  /// Breakdown row: list items
+  ///
+  /// In en, this message translates to:
+  /// **'List items added'**
+  String get weeklySummaryCategoryLists;
+
+  /// Breakdown row: expenses
+  ///
+  /// In en, this message translates to:
+  /// **'Expenses logged'**
+  String get weeklySummaryCategoryExpenses;
+
+  /// Breakdown row: chores
+  ///
+  /// In en, this message translates to:
+  /// **'Chores completed'**
+  String get weeklySummaryCategoryChores;
+
+  /// Breakdown row: meal plans
+  ///
+  /// In en, this message translates to:
+  /// **'Meals planned'**
+  String get weeklySummaryCategoryMeals;
+
+  /// Breakdown row: recipes
+  ///
+  /// In en, this message translates to:
+  /// **'Recipes added'**
+  String get weeklySummaryCategoryRecipes;
+
+  /// Motivation title when the household improved
+  ///
+  /// In en, this message translates to:
+  /// **'You are on a roll'**
+  String get weeklySummaryNudgeRollTitle;
+
+  /// Motivation body when the household improved
+  ///
+  /// In en, this message translates to:
+  /// **'{total} things got handled this week, more than last week. Keep the streak going.'**
+  String weeklySummaryNudgeRollBody(int total);
+
+  /// Motivation title when the household slowed
+  ///
+  /// In en, this message translates to:
+  /// **'A quieter week'**
+  String get weeklySummaryNudgeSlipTitle;
+
+  /// Motivation body when the household slowed
+  ///
+  /// In en, this message translates to:
+  /// **'Things slowed down a little. One list item or one chore is enough to turn it around.'**
+  String get weeklySummaryNudgeSlipBody;
+
+  /// Motivation title when the user contributed nothing
+  ///
+  /// In en, this message translates to:
+  /// **'Jump in this week'**
+  String get weeklySummaryNudgeJoinTitle;
+
+  /// Motivation body when the user contributed nothing
+  ///
+  /// In en, this message translates to:
+  /// **'Your housemates kept things moving. Add a list item, log an expense, or tick off a chore.'**
+  String get weeklySummaryNudgeJoinBody;
+
+  /// Button leaving the summary for the household hub
+  ///
+  /// In en, this message translates to:
+  /// **'Open household'**
+  String get weeklySummaryOpenHousehold;
+
+  /// Empty state title when the week had no activity
+  ///
+  /// In en, this message translates to:
+  /// **'A quiet week'**
+  String get weeklySummaryEmptyTitle;
+
+  /// Empty state body when the week had no activity
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing was logged in the last seven days. Add something and it will show up here next week.'**
+  String get weeklySummaryEmptyBody;
+
+  /// Weekly summary load error title
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your week'**
+  String get weeklySummaryLoadFailed;
+
+  /// Weekly summary load error body
+  ///
+  /// In en, this message translates to:
+  /// **'Check your connection and try again.'**
+  String get weeklySummaryTryAgain;
 }
 
 class _AppLocalizationsDelegate
