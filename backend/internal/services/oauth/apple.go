@@ -2,8 +2,10 @@ package oauth
 
 import (
 	"context"
+	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"crypto/rsa"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -46,7 +48,7 @@ type AppleClient struct {
 }
 
 type jwkCache struct {
-	keys      map[string]*ecdsa.PublicKey
+	keys      map[string]crypto.PublicKey
 	fetchedAt time.Time
 	mu        sync.RWMutex
 }
@@ -155,10 +157,14 @@ func (c *AppleClient) ValidateIdentityToken(idToken string) (*AppleUser, error) 
 	}
 
 	parsed, err := jwt.Parse(idToken, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodECDSA); !ok {
+		// Apple signs identity tokens with RS256; ECDSA is kept for safety
+		// should they ever rotate to EC keys.
+		switch token.Method.(type) {
+		case *jwt.SigningMethodRSA, *jwt.SigningMethodECDSA:
+			return pubKey, nil
+		default:
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return pubKey, nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("verify apple id token: %w", err)
@@ -212,7 +218,7 @@ func (c *AppleClient) generateClientSecret() (string, error) {
 	return tok.SignedString(privateKey)
 }
 
-func (c *AppleClient) getPublicKey(kid string) (*ecdsa.PublicKey, error) {
+func (c *AppleClient) getPublicKey(kid string) (crypto.PublicKey, error) {
 	c.jwkCache.mu.RLock()
 	if key, ok := c.jwkCache.keys[kid]; ok && time.Since(c.jwkCache.fetchedAt) < time.Hour {
 		c.jwkCache.mu.RUnlock()
@@ -237,9 +243,9 @@ func (c *AppleClient) getPublicKey(kid string) (*ecdsa.PublicKey, error) {
 		return nil, fmt.Errorf("decode apple jwks: %w", err)
 	}
 
-	keys := make(map[string]*ecdsa.PublicKey, len(jwks.Keys))
+	keys := make(map[string]crypto.PublicKey, len(jwks.Keys))
 	for _, jwk := range jwks.Keys {
-		key, err := jwkToECPublicKey(jwk)
+		key, err := jwkToPublicKey(jwk)
 		if err != nil {
 			continue
 		}
@@ -264,12 +270,47 @@ func (c *AppleClient) getPublicKey(kid string) (*ecdsa.PublicKey, error) {
 	return nil, fmt.Errorf("apple public key %q not found", kid)
 }
 
-func jwkToECPublicKey(jwk map[string]interface{}) (*ecdsa.PublicKey, error) {
-	kty, _ := jwk["kty"].(string)
-	if kty != "EC" {
-		return nil, errors.New("not an EC key")
+// jwkToPublicKey converts a JWK to a public key. Apple's JWKS currently
+// contains only RSA (RS256) keys; EC support is kept for completeness.
+func jwkToPublicKey(jwk map[string]interface{}) (crypto.PublicKey, error) {
+	switch kty, _ := jwk["kty"].(string); kty {
+	case "RSA":
+		return jwkToRSAPublicKey(jwk)
+	case "EC":
+		return jwkToECPublicKey(jwk)
+	default:
+		return nil, fmt.Errorf("unsupported key type: %q", kty)
+	}
+}
+
+func jwkToRSAPublicKey(jwk map[string]interface{}) (*rsa.PublicKey, error) {
+	nStr, ok := jwk["n"].(string)
+	if !ok {
+		return nil, errors.New("missing modulus")
+	}
+	eStr, ok := jwk["e"].(string)
+	if !ok {
+		return nil, errors.New("missing exponent")
 	}
 
+	nBytes, err := base64.RawURLEncoding.DecodeString(nStr)
+	if err != nil {
+		return nil, err
+	}
+	eBytes, err := base64.RawURLEncoding.DecodeString(eStr)
+	if err != nil {
+		return nil, err
+	}
+
+	e := new(big.Int).SetBytes(eBytes)
+	if !e.IsInt64() || e.Int64() <= 0 || e.Int64() > 1<<31-1 {
+		return nil, errors.New("invalid exponent")
+	}
+
+	return &rsa.PublicKey{N: new(big.Int).SetBytes(nBytes), E: int(e.Int64())}, nil
+}
+
+func jwkToECPublicKey(jwk map[string]interface{}) (*ecdsa.PublicKey, error) {
 	crv, _ := jwk["crv"].(string)
 	var curve elliptic.Curve
 	switch crv {
