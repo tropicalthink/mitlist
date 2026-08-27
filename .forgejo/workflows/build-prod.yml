@@ -38,6 +38,16 @@
 # Check values at all. App Check's only web provider is reCAPTCHA Enterprise,
 # which needs GCP billing to protect exactly one endpoint, so web attests with
 # Cloudflare Turnstile and mobile keeps App Check. The API accepts either.
+#
+# What changed 2026-08-27: writes go to anansi's tailnet IP, not forgejo:3000.
+# The runner moved to ada (anansi's disk I/O fault, 2026-08-25), where the
+# compose service name resolves to nothing — every build died at docker login
+# with "lookup forgejo: no such host". The forgejo stack publishes the
+# registry on anansi's Tailscale IP for exactly this (see that compose.yml's
+# ports: note); same registry, same package, same public pull URL, and the
+# Cloudflare 100MB reasoning above still holds because the tailnet path also
+# bypasses the tunnel. Requires ada's dind to trust it as an insecure
+# registry (plain HTTP over WireGuard), per ada's stack-tofu-runner.yml.
 name: build-prod
 
 on:
@@ -49,8 +59,8 @@ env:
   # Two names for one registry. REGISTRY/PUSH_PREFIX is the LAN path used for
   # every write; IMAGE_PREFIX is the public name the mitlist stack pulls by,
   # and the only one that belongs in a MITLIST_TAG instruction.
-  REGISTRY: forgejo:3000
-  PUSH_PREFIX: forgejo:3000/tropicalthink/mitlist
+  REGISTRY: 100.123.249.48:3000
+  PUSH_PREFIX: 100.123.249.48:3000/tropicalthink/mitlist
   IMAGE_PREFIX: git.tropicalthink.com/tropicalthink/mitlist
 
 jobs:
