@@ -45,8 +45,8 @@ void main() {
           }),
         ),
       );
-      expect(classifyOutboxError(error),
-          equals(OutboxErrorDisposition.transient));
+      expect(
+          classifyOutboxError(error), equals(OutboxErrorDisposition.transient));
     });
 
     test('408 and 429 are transient', () {

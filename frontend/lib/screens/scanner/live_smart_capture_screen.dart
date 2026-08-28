@@ -292,8 +292,7 @@ class _LiveSmartCaptureScreenState extends State<LiveSmartCaptureScreen>
                       child: _initializing
                           ? const AppSpinner(size: AppSpinnerSize.lg)
                           : Padding(
-                              padding:
-                                  const EdgeInsets.all(MitlistSpacing.xl),
+                              padding: const EdgeInsets.all(MitlistSpacing.xl),
                               child: Text(
                                 _error ??
                                     l10n.liveSmartCaptureCameraUnavailable,
@@ -343,8 +342,7 @@ class _LiveSmartCaptureScreenState extends State<LiveSmartCaptureScreen>
                       _ShutterButton(
                         enabled: ready && !_capturing,
                         capturing: _capturing,
-                        emphasized:
-                            quality?.level == CaptureQualityLevel.good,
+                        emphasized: quality?.level == CaptureQualityLevel.good,
                         label: l10n.liveSmartCaptureScan,
                         onTap: _capture,
                       ),

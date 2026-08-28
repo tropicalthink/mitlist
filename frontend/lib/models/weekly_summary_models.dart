@@ -84,7 +84,8 @@ class WeeklySummary {
               WeeklyCategoryCount.fromJson((e as Map).cast<String, dynamic>()))
           .toList(),
       days: rawDays
-          .map((e) => WeeklyDayCount.fromJson((e as Map).cast<String, dynamic>()))
+          .map((e) =>
+              WeeklyDayCount.fromJson((e as Map).cast<String, dynamic>()))
           .toList(),
       activeMembers: (json['active_members'] as num?)?.toInt() ?? 0,
       memberCount: (json['member_count'] as num?)?.toInt() ?? 0,

@@ -628,8 +628,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                 variant: AppButtonVariant.outline,
                                 color: AppButtonColor.neutral,
                                 isLoading: _oauthProvider == 'google',
-                                onPressed:
-                                    (_isLoading ||
+                                onPressed: (_isLoading ||
                                         _isSuccess ||
                                         _oauthProvider != null)
                                     ? null
@@ -644,8 +643,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                 variant: AppButtonVariant.outline,
                                 color: AppButtonColor.neutral,
                                 isLoading: _oauthProvider == 'apple',
-                                onPressed:
-                                    (_isLoading ||
+                                onPressed: (_isLoading ||
                                         _isSuccess ||
                                         _oauthProvider != null)
                                     ? null
