@@ -25,11 +25,11 @@ func TestRecipeRepo_CreateRecipe(t *testing.T) {
 		CookTime:    20,
 		Servings:    4,
 		ImageURL:    "https://example.com/pasta.jpg",
-		IsPublic:    true,
+		Visibility:  models.RecipeVisibilityPrivate,
 	}
 
 	mock.ExpectExec("INSERT INTO recipes").
-		WithArgs(pgxmock.AnyArg(), rec.UserID, rec.Title, rec.Description, rec.DescriptionShort, rec.Author, rec.RatingValue, rec.RatingCount, "{}", rec.VideoURL, "{}", rec.SourceURL, rec.ImageURL, "[]", "[]", rec.PrepTime, rec.CookTime, rec.Servings, rec.IsPublic, pgxmock.AnyArg(), pgxmock.AnyArg()).
+		WithArgs(pgxmock.AnyArg(), rec.UserID, rec.GroupID, rec.Visibility, rec.Title, rec.Description, rec.DescriptionShort, rec.Author, rec.RatingValue, rec.RatingCount, "{}", rec.VideoURL, "{}", rec.SourceURL, rec.ImageURL, "[]", "[]", rec.PrepTime, rec.CookTime, rec.Servings, pgxmock.AnyArg(), pgxmock.AnyArg()).
 		WillReturnResult(pgxmock.NewResult("INSERT", 1))
 
 	err := repo.CreateRecipe(context.Background(), rec)
@@ -43,8 +43,8 @@ func TestRecipeRepo_GetRecipeByID(t *testing.T) {
 	repo := NewRecipeRepo(mock)
 	id := fixedUUID()
 
-	rows := pgxmock.NewRows([]string{"id", "user_id", "title", "description", "description_short", "author", "rating_value", "rating_count", "nutrition_json", "video_url", "equipment_json", "source_url", "image_url", "image_options", "tags", "prep_time", "cook_time", "servings", "is_public", "created_at", "updated_at"}).
-		AddRow(id, fixedUUID(), "Pasta", "Italian", "", "", 0, 0, "", "", "", "", "url", nil, nil, 10, 20, 4, true, fixedTime(), fixedTime())
+	rows := pgxmock.NewRows([]string{"id", "user_id", "group_id", "visibility", "title", "description", "description_short", "author", "rating_value", "rating_count", "nutrition_json", "video_url", "equipment_json", "source_url", "image_url", "image_options", "tags", "prep_time", "cook_time", "servings", "created_at", "updated_at"}).
+		AddRow(id, fixedUUID(), nil, "private", "Pasta", "Italian", "", "", 0, 0, "", "", "", "", "url", nil, nil, 10, 20, 4, fixedTime(), fixedTime())
 
 	mock.ExpectQuery("SELECT .* FROM recipes WHERE id = .*").
 		WithArgs(id).
@@ -110,19 +110,50 @@ func TestRecipeRepo_ListIngredientsByRecipeIDs(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
-func TestRecipeRepo_ListRecipesByUser(t *testing.T) {
+func recipeCols() []string {
+	return []string{"id", "user_id", "group_id", "visibility", "title", "description", "description_short", "author", "rating_value", "rating_count", "nutrition_json", "video_url", "equipment_json", "source_url", "image_url", "image_options", "tags", "prep_time", "cook_time", "servings", "created_at", "updated_at"}
+}
+
+func recipeRow(id, userID uuid.UUID) []any {
+	return []any{id, userID, nil, "private", "Pasta", "Italian", "", "", 0, 0, "", "", "", "", "url", nil, nil, 10, 20, 4, fixedTime(), fixedTime()}
+}
+
+func TestRecipeRepo_ListRecipes(t *testing.T) {
 	mock := newMockDB(t)
 	repo := NewRecipeRepo(mock)
 	uid := fixedUUID()
 
-	cols := []string{"id", "user_id", "title", "description", "description_short", "author", "rating_value", "rating_count", "nutrition_json", "video_url", "equipment_json", "source_url", "image_url", "image_options", "tags", "prep_time", "cook_time", "servings", "is_public", "created_at", "updated_at"}
-	rows := pgxmock.NewRows(cols).AddRow(fixedUUID(), uid, "Pasta", "Italian", "", "", 0, 0, "", "", "", "", "url", nil, nil, 10, 20, 4, true, fixedTime(), fixedTime())
+	rows := pgxmock.NewRows(recipeCols()).AddRow(recipeRow(fixedUUID(), uid)...)
 
 	mock.ExpectQuery("SELECT .* FROM recipes WHERE user_id = .*").
 		WithArgs(uid, 50, 0).
 		WillReturnRows(rows)
 
-	recipes, err := repo.ListRecipesByUser(context.Background(), uid, 50, 0)
+	recipes, err := repo.ListRecipes(context.Background(), uid, RecipeFilter{Limit: 50})
+	require.NoError(t, err)
+	assert.Len(t, recipes, 1)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+// A group_id widens the scope to household recipes and shifts the placeholder
+// numbering, so the filter arms are worth pinning separately.
+func TestRecipeRepo_ListRecipes_HouseholdAndTagFilter(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewRecipeRepo(mock)
+	uid := fixedUUID()
+	gid := uuid.New()
+
+	rows := pgxmock.NewRows(recipeCols()).AddRow(recipeRow(fixedUUID(), uid)...)
+
+	mock.ExpectQuery("SELECT .* FROM recipes WHERE .*group_id.*tags @>.*").
+		WithArgs(uid, gid, `["dessert"]`, 50, 0).
+		WillReturnRows(rows)
+
+	recipes, err := repo.ListRecipes(context.Background(), uid, RecipeFilter{
+		GroupID: &gid,
+		Tags:    []string{"dessert"},
+		Limit:   50,
+	})
 	require.NoError(t, err)
 	assert.Len(t, recipes, 1)
 	assert.NoError(t, mock.ExpectationsWereMet())
@@ -133,11 +164,11 @@ func TestRecipeRepo_UpdateRecipe(t *testing.T) {
 	repo := NewRecipeRepo(mock)
 	id := fixedUUID()
 
-	mock.ExpectExec("UPDATE recipes SET").
-		WithArgs("New Title", "New Desc", "", "", 0.0, 0, "{}", "", "{}", "", "newurl", "[]", "[]", 5, 15, 2, false, pgxmock.AnyArg(), id).
-		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
+	rec := &models.Recipe{ID: id, Title: "New Title", Description: "New Desc", PrepTime: 5, CookTime: 15, Servings: 2, ImageURL: "newurl", Visibility: models.RecipeVisibilityPrivate}
 
-	rec := &models.Recipe{ID: id, Title: "New Title", Description: "New Desc", PrepTime: 5, CookTime: 15, Servings: 2, ImageURL: "newurl", IsPublic: false}
+	mock.ExpectExec("UPDATE recipes SET").
+		WithArgs("New Title", "New Desc", "", "", 0.0, 0, "{}", "", "{}", "", "newurl", "[]", "[]", 5, 15, 2, rec.GroupID, rec.Visibility, pgxmock.AnyArg(), id).
+		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
 	err := repo.UpdateRecipe(context.Background(), rec)
 	require.NoError(t, err)
 	assert.NoError(t, mock.ExpectationsWereMet())
@@ -148,11 +179,11 @@ func TestRecipeRepo_UpdateRecipe_NotFound(t *testing.T) {
 	repo := NewRecipeRepo(mock)
 	id := fixedUUID()
 
-	mock.ExpectExec("UPDATE recipes SET").
-		WithArgs("New Title", "New Desc", "", "", 0.0, 0, "{}", "", "{}", "", "newurl", "[]", "[]", 5, 15, 2, false, pgxmock.AnyArg(), id).
-		WillReturnResult(pgxmock.NewResult("UPDATE", 0))
+	rec := &models.Recipe{ID: id, Title: "New Title", Description: "New Desc", PrepTime: 5, CookTime: 15, Servings: 2, ImageURL: "newurl", Visibility: models.RecipeVisibilityPrivate}
 
-	rec := &models.Recipe{ID: id, Title: "New Title", Description: "New Desc", PrepTime: 5, CookTime: 15, Servings: 2, ImageURL: "newurl", IsPublic: false}
+	mock.ExpectExec("UPDATE recipes SET").
+		WithArgs("New Title", "New Desc", "", "", 0.0, 0, "{}", "", "{}", "", "newurl", "[]", "[]", 5, 15, 2, rec.GroupID, rec.Visibility, pgxmock.AnyArg(), id).
+		WillReturnResult(pgxmock.NewResult("UPDATE", 0))
 	err := repo.UpdateRecipe(context.Background(), rec)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "not found")
@@ -412,7 +443,7 @@ func TestRecipeRepo_CreateCollection(t *testing.T) {
 	}
 
 	mock.ExpectExec("INSERT INTO collections").
-		WithArgs(pgxmock.AnyArg(), c.UserID, c.Name, pgxmock.AnyArg(), pgxmock.AnyArg()).
+		WithArgs(pgxmock.AnyArg(), c.UserID, c.GroupID, c.Name, pgxmock.AnyArg(), pgxmock.AnyArg()).
 		WillReturnResult(pgxmock.NewResult("INSERT", 1))
 
 	err := repo.CreateCollection(context.Background(), c)
@@ -426,10 +457,10 @@ func TestRecipeRepo_GetCollectionByID(t *testing.T) {
 	repo := NewRecipeRepo(mock)
 	id := fixedUUID()
 
-	rows := pgxmock.NewRows([]string{"id", "user_id", "name", "created_at", "updated_at"}).
-		AddRow(id, fixedUUID(), "Favorites", fixedTime(), fixedTime())
+	rows := pgxmock.NewRows([]string{"id", "user_id", "group_id", "name", "recipe_count", "created_at", "updated_at"}).
+		AddRow(id, fixedUUID(), nil, "Favorites", 0, fixedTime(), fixedTime())
 
-	mock.ExpectQuery("SELECT .* FROM collections WHERE id = .*").
+	mock.ExpectQuery("SELECT .* FROM collections c WHERE c.id = .*").
 		WithArgs(id).
 		WillReturnRows(rows)
 
@@ -444,7 +475,7 @@ func TestRecipeRepo_GetCollectionByID_NotFound(t *testing.T) {
 	repo := NewRecipeRepo(mock)
 	id := fixedUUID()
 
-	mock.ExpectQuery("SELECT .* FROM collections WHERE id = .*").
+	mock.ExpectQuery("SELECT .* FROM collections c WHERE c.id = .*").
 		WithArgs(id).
 		WillReturnError(pgx.ErrNoRows)
 
@@ -460,16 +491,18 @@ func TestRecipeRepo_ListCollections(t *testing.T) {
 	repo := NewRecipeRepo(mock)
 	uid := fixedUUID()
 
-	cols := []string{"id", "user_id", "name", "created_at", "updated_at"}
-	rows := pgxmock.NewRows(cols).AddRow(fixedUUID(), uid, "Favorites", fixedTime(), fixedTime())
+	cols := []string{"id", "user_id", "group_id", "name", "recipe_count", "created_at", "updated_at"}
+	rows := pgxmock.NewRows(cols).AddRow(fixedUUID(), uid, nil, "Favorites", 3, fixedTime(), fixedTime())
 
-	mock.ExpectQuery("SELECT .* FROM collections WHERE user_id = .*").
+	mock.ExpectQuery("SELECT .* FROM collections c WHERE .*").
 		WithArgs(uid, 50, 0).
 		WillReturnRows(rows)
 
-	collections, err := repo.ListCollections(context.Background(), uid, 50, 0)
+	collections, err := repo.ListCollections(context.Background(), uid, nil, 50, 0)
 	require.NoError(t, err)
-	assert.Len(t, collections, 1)
+	require.Len(t, collections, 1)
+	// recipe_count is derived in SQL; the client has always read this field.
+	assert.Equal(t, 3, collections[0].RecipeCount)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
@@ -479,7 +512,7 @@ func TestRecipeRepo_UpdateCollection(t *testing.T) {
 	id := fixedUUID()
 
 	mock.ExpectExec("UPDATE collections SET").
-		WithArgs("New Name", pgxmock.AnyArg(), id).
+		WithArgs("New Name", (*uuid.UUID)(nil), pgxmock.AnyArg(), id).
 		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
 
 	c := &models.Collection{ID: id, Name: "New Name"}
@@ -494,7 +527,7 @@ func TestRecipeRepo_UpdateCollection_NotFound(t *testing.T) {
 	id := fixedUUID()
 
 	mock.ExpectExec("UPDATE collections SET").
-		WithArgs("New Name", pgxmock.AnyArg(), id).
+		WithArgs("New Name", (*uuid.UUID)(nil), pgxmock.AnyArg(), id).
 		WillReturnResult(pgxmock.NewResult("UPDATE", 0))
 
 	c := &models.Collection{ID: id, Name: "New Name"}

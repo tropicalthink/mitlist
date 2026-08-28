@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/mitlist-app/mitlist/internal/models"
+	"github.com/mitlist-app/mitlist/internal/repositories"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -34,10 +35,18 @@ func (m *MockRecipeRepo) GetRecipesByIDs(ctx context.Context, ids []uuid.UUID) (
 	return nil, args.Error(1)
 }
 
-func (m *MockRecipeRepo) ListRecipesByUser(ctx context.Context, userID uuid.UUID, limit, offset int) ([]models.Recipe, error) {
-	args := m.Called(ctx, userID, limit, offset)
+func (m *MockRecipeRepo) ListRecipes(ctx context.Context, userID uuid.UUID, filter repositories.RecipeFilter) ([]models.Recipe, error) {
+	args := m.Called(ctx, userID, filter)
 	if r := args.Get(0); r != nil {
 		return r.([]models.Recipe), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
+func (m *MockRecipeRepo) ListDistinctTags(ctx context.Context, userID uuid.UUID, groupID *uuid.UUID, limit int) ([]models.RecipeTagCount, error) {
+	args := m.Called(ctx, userID, groupID, limit)
+	if r := args.Get(0); r != nil {
+		return r.([]models.RecipeTagCount), args.Error(1)
 	}
 	return nil, args.Error(1)
 }
@@ -127,8 +136,8 @@ func (m *MockRecipeRepo) GetCollectionByID(ctx context.Context, id uuid.UUID) (*
 	return nil, args.Error(1)
 }
 
-func (m *MockRecipeRepo) ListCollections(ctx context.Context, userID uuid.UUID, limit, offset int) ([]models.Collection, error) {
-	args := m.Called(ctx, userID, limit, offset)
+func (m *MockRecipeRepo) ListCollections(ctx context.Context, userID uuid.UUID, groupID *uuid.UUID, limit, offset int) ([]models.Collection, error) {
+	args := m.Called(ctx, userID, groupID, limit, offset)
 	if c := args.Get(0); c != nil {
 		return c.([]models.Collection), args.Error(1)
 	}

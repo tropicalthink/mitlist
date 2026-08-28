@@ -234,7 +234,8 @@ type RecipeRepoIface interface {
 	CreateRecipe(ctx context.Context, rec *models.Recipe) error
 	GetRecipeByID(ctx context.Context, id uuid.UUID) (*models.Recipe, error)
 	GetRecipesByIDs(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]*models.Recipe, error)
-	ListRecipesByUser(ctx context.Context, userID uuid.UUID, limit, offset int) ([]models.Recipe, error)
+	ListRecipes(ctx context.Context, userID uuid.UUID, filter RecipeFilter) ([]models.Recipe, error)
+	ListDistinctTags(ctx context.Context, userID uuid.UUID, groupID *uuid.UUID, limit int) ([]models.RecipeTagCount, error)
 	ListRecipesByCollection(ctx context.Context, collectionID uuid.UUID, limit, offset int) ([]models.Recipe, error)
 	UpdateRecipe(ctx context.Context, rec *models.Recipe) error
 	DeleteRecipe(ctx context.Context, id uuid.UUID) error
@@ -249,7 +250,7 @@ type RecipeRepoIface interface {
 	DeleteStep(ctx context.Context, id uuid.UUID) error
 	CreateCollection(ctx context.Context, c *models.Collection) error
 	GetCollectionByID(ctx context.Context, id uuid.UUID) (*models.Collection, error)
-	ListCollections(ctx context.Context, userID uuid.UUID, limit, offset int) ([]models.Collection, error)
+	ListCollections(ctx context.Context, userID uuid.UUID, groupID *uuid.UUID, limit, offset int) ([]models.Collection, error)
 	UpdateCollection(ctx context.Context, c *models.Collection) error
 	DeleteCollection(ctx context.Context, id uuid.UUID) error
 	CreateRecipeShare(ctx context.Context, share *models.RecipeShare) error
