@@ -43,8 +43,8 @@ func TestRecipeRepo_GetRecipeByID(t *testing.T) {
 	repo := NewRecipeRepo(mock)
 	id := fixedUUID()
 
-	rows := pgxmock.NewRows([]string{"id", "user_id", "group_id", "visibility", "title", "description", "description_short", "author", "rating_value", "rating_count", "nutrition_json", "video_url", "equipment_json", "source_url", "image_url", "image_options", "tags", "prep_time", "cook_time", "servings", "created_at", "updated_at"}).
-		AddRow(id, fixedUUID(), nil, "private", "Pasta", "Italian", "", "", 0, 0, "", "", "", "", "url", nil, nil, 10, 20, 4, fixedTime(), fixedTime())
+	rows := pgxmock.NewRows([]string{"id", "user_id", "group_id", "visibility", "title", "description", "description_short", "author", "rating_value", "rating_count", "nutrition_json", "video_url", "equipment_json", "source_url", "image_url", "image_options", "tags", "prep_time", "cook_time", "servings", "share_token", "share_token_created_at", "created_at", "updated_at"}).
+		AddRow(id, fixedUUID(), nil, "private", "Pasta", "Italian", "", "", 0, 0, "", "", "", "", "url", nil, nil, 10, 20, 4, nil, nil, fixedTime(), fixedTime())
 
 	mock.ExpectQuery("SELECT .* FROM recipes WHERE id = .*").
 		WithArgs(id).
@@ -111,11 +111,11 @@ func TestRecipeRepo_ListIngredientsByRecipeIDs(t *testing.T) {
 }
 
 func recipeCols() []string {
-	return []string{"id", "user_id", "group_id", "visibility", "title", "description", "description_short", "author", "rating_value", "rating_count", "nutrition_json", "video_url", "equipment_json", "source_url", "image_url", "image_options", "tags", "prep_time", "cook_time", "servings", "created_at", "updated_at"}
+	return []string{"id", "user_id", "group_id", "visibility", "title", "description", "description_short", "author", "rating_value", "rating_count", "nutrition_json", "video_url", "equipment_json", "source_url", "image_url", "image_options", "tags", "prep_time", "cook_time", "servings", "share_token", "share_token_created_at", "created_at", "updated_at"}
 }
 
 func recipeRow(id, userID uuid.UUID) []any {
-	return []any{id, userID, nil, "private", "Pasta", "Italian", "", "", 0, 0, "", "", "", "", "url", nil, nil, 10, 20, 4, fixedTime(), fixedTime()}
+	return []any{id, userID, nil, "private", "Pasta", "Italian", "", "", 0, 0, "", "", "", "", "url", nil, nil, 10, 20, 4, nil, nil, fixedTime(), fixedTime()}
 }
 
 func TestRecipeRepo_ListRecipes(t *testing.T) {

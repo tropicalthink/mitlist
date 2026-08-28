@@ -236,6 +236,8 @@ type RecipeRepoIface interface {
 	GetRecipesByIDs(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]*models.Recipe, error)
 	ListRecipes(ctx context.Context, userID uuid.UUID, filter RecipeFilter) ([]models.Recipe, error)
 	ListDistinctTags(ctx context.Context, userID uuid.UUID, groupID *uuid.UUID, limit int) ([]models.RecipeTagCount, error)
+	GetRecipeByShareToken(ctx context.Context, token string) (*models.Recipe, error)
+	SetShareToken(ctx context.Context, recipeID uuid.UUID, token *string) error
 	ListRecipesByCollection(ctx context.Context, collectionID uuid.UUID, limit, offset int) ([]models.Recipe, error)
 	UpdateRecipe(ctx context.Context, rec *models.Recipe) error
 	DeleteRecipe(ctx context.Context, id uuid.UUID) error

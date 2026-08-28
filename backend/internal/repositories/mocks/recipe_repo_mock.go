@@ -51,6 +51,19 @@ func (m *MockRecipeRepo) ListDistinctTags(ctx context.Context, userID uuid.UUID,
 	return nil, args.Error(1)
 }
 
+func (m *MockRecipeRepo) GetRecipeByShareToken(ctx context.Context, token string) (*models.Recipe, error) {
+	args := m.Called(ctx, token)
+	if r := args.Get(0); r != nil {
+		return r.(*models.Recipe), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
+func (m *MockRecipeRepo) SetShareToken(ctx context.Context, recipeID uuid.UUID, token *string) error {
+	args := m.Called(ctx, recipeID, token)
+	return args.Error(0)
+}
+
 func (m *MockRecipeRepo) ListRecipesByCollection(ctx context.Context, collectionID uuid.UUID, limit, offset int) ([]models.Recipe, error) {
 	args := m.Called(ctx, collectionID, limit, offset)
 	if r := args.Get(0); r != nil {

@@ -42,8 +42,14 @@ type Recipe struct {
 	PrepTime         int        `json:"prep_time"`
 	CookTime         int        `json:"cook_time"`
 	Servings         int        `json:"servings"`
-	CreatedAt        time.Time  `json:"created_at"`
-	UpdatedAt        time.Time  `json:"updated_at"`
+	// ShareToken is the capability that makes a share link work. Deliberately
+	// never serialised with the recipe: a household member can already read the
+	// recipe, but handing them the token would let them reshare it to the
+	// world. Only the owner sees it, and only in the share-link response.
+	ShareToken          *string    `json:"-"`
+	ShareTokenCreatedAt *time.Time `json:"-"`
+	CreatedAt           time.Time  `json:"created_at"`
+	UpdatedAt           time.Time  `json:"updated_at"`
 }
 
 // SharedWithHousehold reports whether this recipe is readable by members of a

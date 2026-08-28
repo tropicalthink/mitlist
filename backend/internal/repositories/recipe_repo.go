@@ -79,7 +79,9 @@ func recipeColumns(alias string) string {
 	       %[1]simage_url,
 	       COALESCE(%[1]simage_options, '[]'::jsonb)::text,
 	       COALESCE(%[1]stags, '[]'::jsonb)::text,
-	       %[1]sprep_time, %[1]scook_time, %[1]sservings, %[1]screated_at, %[1]supdated_at`, alias)
+	       %[1]sprep_time, %[1]scook_time, %[1]sservings,
+	       %[1]sshare_token, %[1]sshare_token_created_at,
+	       %[1]screated_at, %[1]supdated_at`, alias)
 }
 
 // recipeRowScanner is satisfied by both pgx.Row and pgx.Rows, so single-row and
@@ -113,6 +115,8 @@ func scanRecipe(s recipeRowScanner) (models.Recipe, error) {
 		&rec.PrepTime,
 		&rec.CookTime,
 		&rec.Servings,
+		&rec.ShareToken,
+		&rec.ShareTokenCreatedAt,
 		&rec.CreatedAt,
 		&rec.UpdatedAt,
 	)
@@ -205,6 +209,46 @@ func (r *RecipeRepo) GetRecipeByID(ctx context.Context, id uuid.UUID) (*models.R
 		return nil, err
 	}
 	return &rec, nil
+}
+
+// GetRecipeByShareToken resolves a share link. The token is the credential, so
+// this deliberately applies no ownership check — the caller is anonymous.
+func (r *RecipeRepo) GetRecipeByShareToken(ctx context.Context, token string) (*models.Recipe, error) {
+	row := r.pool.QueryRow(ctx, `
+		SELECT `+recipeColumns("")+`
+		FROM recipes
+		WHERE share_token = $1
+	`, token)
+
+	rec, err := scanRecipe(row)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, fmt.Errorf("recipe not found")
+		}
+		return nil, err
+	}
+	return &rec, nil
+}
+
+// SetShareToken issues or revokes (token == nil) a recipe's share link.
+func (r *RecipeRepo) SetShareToken(ctx context.Context, recipeID uuid.UUID, token *string) error {
+	var createdAt *time.Time
+	if token != nil {
+		now := time.Now().UTC()
+		createdAt = &now
+	}
+	cmd, err := r.pool.Exec(ctx, `
+		UPDATE recipes
+		SET share_token = $1, share_token_created_at = $2, updated_at = $3
+		WHERE id = $4
+	`, token, createdAt, time.Now().UTC(), recipeID)
+	if err != nil {
+		return err
+	}
+	if cmd.RowsAffected() == 0 {
+		return fmt.Errorf("recipe not found")
+	}
+	return nil
 }
 
 // ListRecipes returns the recipes owned by userID, plus — when filter.GroupID
