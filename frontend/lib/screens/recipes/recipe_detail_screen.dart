@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../models/recipe_models.dart';
@@ -24,6 +25,7 @@ import '../../widgets/app_icon.dart';
 import '../../widgets/chip.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/mitlist_app_bar.dart';
+import '../../widgets/app_toast.dart';
 import '../../widgets/skeleton.dart';
 
 class RecipeDetailScreen extends ConsumerStatefulWidget {
@@ -42,6 +44,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
   bool _isLoading = true;
   bool _hasError = false;
   bool _isDeleting = false;
+  bool _isSharing = false;
   final LatestRequestGuard _loadGuard = LatestRequestGuard();
 
   @override
@@ -109,6 +112,36 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
         _isLoading = false;
         _hasError = true;
       });
+    }
+  }
+
+  /// Hands a share link to the OS share sheet.
+  ///
+  /// The link opens the recipe inside Mitlist for anyone who has it, and falls
+  /// back to the web app — recipe visible, with a prompt to install — for
+  /// anyone who does not. The server mints the token on first share and
+  /// returns the same one afterwards, so sharing twice does not scatter extra
+  /// live links.
+  Future<void> _shareRecipe() async {
+    final recipe = _recipe;
+    if (recipe == null) return;
+    final l10n = AppLocalizations.of(context)!;
+
+    setState(() => _isSharing = true);
+    try {
+      final service = await ref.read(recipeServiceProviderAsync.future);
+      final link = await service.createShareLink(recipe.id);
+      if (!mounted) return;
+
+      await SharePlus.instance.share(
+        ShareParams(text: l10n.recipeShareText(recipe.title, link.url)),
+      );
+      unawaited(Haptics.success());
+    } catch (e) {
+      if (!mounted) return;
+      AppToast.error(context, friendlyErrorMessage(e, l10n));
+    } finally {
+      if (mounted) setState(() => _isSharing = false);
     }
   }
 
@@ -195,6 +228,12 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
           onPressed: () => context.pop(),
         ),
         actions: [
+          if (_recipe != null)
+            IconButton(
+              icon: const AppIcon(name: 'share'),
+              tooltip: l10n.recipeDetailShareTooltip,
+              onPressed: _isSharing ? null : _shareRecipe,
+            ),
           if (_recipe != null)
             IconButton(
               icon: const AppIcon(name: 'trash'),
@@ -301,7 +340,7 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppChip(
-          label: recipe.isPublic
+          label: recipe.isSharedWithHousehold
               ? l10n.recipeDetailSharedLabel
               : l10n.recipeDetailPrivateLabel,
           selected: true,

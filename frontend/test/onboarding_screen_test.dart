@@ -100,10 +100,13 @@ void main() {
 
     testWidgets('redirects to home when user already has a household',
         (tester) async {
+      // Deliberately no `isPersonal`: the backend never serializes that field,
+      // so this is what a real household looks like after `GET /groups`. The
+      // old `isPersonal == false` check failed exactly this shape and re-ran
+      // onboarding on every OAuth sign-in.
       final household = Group(
         id: '11111111-1111-1111-1111-111111111111',
         name: 'Flat 4B',
-        isPersonal: false,
         memberCount: 2,
         createdAt: DateTime.utc(2026, 1, 1),
         updatedAt: DateTime.utc(2026, 1, 1),

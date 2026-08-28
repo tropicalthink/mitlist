@@ -235,8 +235,9 @@ class _Sparkline extends StatelessWidget {
                             ? theme.colorScheme.onSurfaceVariant
                                 .withValues(alpha: 0.5)
                             : theme.colorScheme.onSurfaceVariant,
-                        fontWeight:
-                            day.count == peak ? FontWeight.w700 : FontWeight.w400,
+                        fontWeight: day.count == peak
+                            ? FontWeight.w700
+                            : FontWeight.w400,
                       ),
                     ),
                     const SizedBox(height: MitlistSpacing.xs),
@@ -354,8 +355,9 @@ class _YourShareCard extends StatelessWidget {
               color: summary.personalImprovement
                   ? MitlistColors.success600
                   : theme.colorScheme.onSurfaceVariant,
-              fontWeight:
-                  summary.personalImprovement ? FontWeight.w600 : FontWeight.w400,
+              fontWeight: summary.personalImprovement
+                  ? FontWeight.w600
+                  : FontWeight.w400,
             ),
           ),
           if (summary.memberCount > 1) ...[

@@ -579,7 +579,7 @@ func (c *Container) FinanceService() *services.FinanceService {
 // RecipeService returns the singleton recipe service.
 func (c *Container) RecipeService() *services.RecipeService {
 	c.recipeServiceOnce.Do(func() {
-		c.recipeService = services.NewRecipeService(c.RecipeRepo())
+		c.recipeService = services.NewRecipeService(c.RecipeRepo(), c.GroupRepo(), c.UserRepo())
 	})
 	return c.recipeService
 }

@@ -6,29 +6,64 @@ import (
 	"github.com/google/uuid"
 )
 
+// Recipe visibility values. A recipe is always readable by its owner; these
+// say who else can see it. There is deliberately no server-wide "public" —
+// see migration 000058.
+const (
+	// RecipeVisibilityPrivate is owner-only, plus anyone in recipe_shares.
+	RecipeVisibilityPrivate = "private"
+	// RecipeVisibilityHousehold is readable by every member of GroupID.
+	RecipeVisibilityHousehold = "household"
+)
+
 // Recipe represents a user's recipe.
 type Recipe struct {
-	ID               uuid.UUID `json:"id"`
-	UserID           uuid.UUID `json:"user_id"`
-	Title            string    `json:"title"`
-	Description      string    `json:"description"`
-	DescriptionShort string    `json:"description_short"`
-	Author           string    `json:"author"`
-	RatingValue      float64   `json:"rating_value"`
-	RatingCount      int       `json:"rating_count"`
-	NutritionJSON    string    `json:"nutrition_json"`
-	VideoURL         string    `json:"video_url"`
-	EquipmentJSON    string    `json:"equipment_json"`
-	SourceURL        string    `json:"source_url"`
-	ImageURL         string    `json:"image_url"`
-	ImageOptions     []string  `json:"image_options"`
-	Tags             []string  `json:"tags"`
-	PrepTime         int       `json:"prep_time"`
-	CookTime         int       `json:"cook_time"`
-	Servings         int       `json:"servings"`
-	IsPublic         bool      `json:"is_public"`
-	CreatedAt        time.Time `json:"created_at"`
-	UpdatedAt        time.Time `json:"updated_at"`
+	ID     uuid.UUID `json:"id"`
+	UserID uuid.UUID `json:"user_id"`
+	// GroupID is the household this recipe is shared with. Nil when the
+	// recipe is private, or when the household it belonged to was deleted —
+	// in which case Visibility may still read "household" but nobody but the
+	// owner can see it. Readers must check both fields, never Visibility alone.
+	GroupID          *uuid.UUID `json:"group_id,omitempty"`
+	Visibility       string     `json:"visibility"`
+	Title            string     `json:"title"`
+	Description      string     `json:"description"`
+	DescriptionShort string     `json:"description_short"`
+	Author           string     `json:"author"`
+	RatingValue      float64    `json:"rating_value"`
+	RatingCount      int        `json:"rating_count"`
+	NutritionJSON    string     `json:"nutrition_json"`
+	VideoURL         string     `json:"video_url"`
+	EquipmentJSON    string     `json:"equipment_json"`
+	SourceURL        string     `json:"source_url"`
+	ImageURL         string     `json:"image_url"`
+	ImageOptions     []string   `json:"image_options"`
+	Tags             []string   `json:"tags"`
+	PrepTime         int        `json:"prep_time"`
+	CookTime         int        `json:"cook_time"`
+	Servings         int        `json:"servings"`
+	// ShareToken is the capability that makes a share link work. Deliberately
+	// never serialised with the recipe: a household member can already read the
+	// recipe, but handing them the token would let them reshare it to the
+	// world. Only the owner sees it, and only in the share-link response.
+	ShareToken          *string    `json:"-"`
+	ShareTokenCreatedAt *time.Time `json:"-"`
+	CreatedAt           time.Time  `json:"created_at"`
+	UpdatedAt           time.Time  `json:"updated_at"`
+}
+
+// SharedWithHousehold reports whether this recipe is readable by members of a
+// household. It is false for a household recipe whose group has been deleted,
+// so callers cannot accidentally treat an orphan as shared.
+func (r *Recipe) SharedWithHousehold() bool {
+	return r.Visibility == RecipeVisibilityHousehold && r.GroupID != nil
+}
+
+// RecipeTagCount is one entry in the tag filter bar: a tag and how many of the
+// recipes in scope carry it.
+type RecipeTagCount struct {
+	Tag   string `json:"tag"`
+	Count int    `json:"count"`
 }
 
 // RecipeIngredient is an ingredient in a recipe.
@@ -60,13 +95,19 @@ type RecipeShare struct {
 	CreatedAt        time.Time `json:"created_at"`
 }
 
-// Collection is a recipe collection.
+// Collection is a recipe collection — a "cookbook" in the UI.
 type Collection struct {
-	ID        uuid.UUID `json:"id"`
-	UserID    uuid.UUID `json:"user_id"`
-	Name      string    `json:"name"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID     uuid.UUID `json:"id"`
+	UserID uuid.UUID `json:"user_id"`
+	// GroupID is nil for a personal cookbook, or the household every member
+	// can read and add to.
+	GroupID *uuid.UUID `json:"group_id,omitempty"`
+	Name    string     `json:"name"`
+	// RecipeCount is derived, not stored. The client has always parsed it;
+	// until 000058 the server never sent it, so every cookbook read "No recipes".
+	RecipeCount int       `json:"recipe_count"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 // CollectionRecipe links a recipe to a collection.

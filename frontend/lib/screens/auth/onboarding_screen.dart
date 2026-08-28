@@ -142,7 +142,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     try {
       final groups = await pending.timeout(const Duration(seconds: 4));
       if (!mounted) return;
-      if (groups.any((g) => g.isPersonal == false)) {
+      // `isPersonal` is absent from real API payloads (the backend has no such
+      // field), so match on "not explicitly personal" — `== false` silently
+      // treated every genuine household as missing and re-ran onboarding on
+      // each OAuth sign-in.
+      if (groups.any((g) => g.isPersonal != true)) {
         // Existing household: this screen was never for them.
         context.goNamed('home');
         return;
@@ -165,7 +169,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     try {
       final groups = await pending;
       if (!mounted) return;
-      final hasHousehold = groups.any((g) => g.isPersonal == false);
+      final hasHousehold = groups.any((g) => g.isPersonal != true);
       if (hasHousehold && _stage == _Stage.choose) {
         context.goNamed('home');
       }

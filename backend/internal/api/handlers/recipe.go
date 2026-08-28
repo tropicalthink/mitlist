@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/mitlist-app/mitlist/internal/api"
 	"github.com/mitlist-app/mitlist/internal/models"
+	"github.com/mitlist-app/mitlist/internal/repositories"
 	"github.com/mitlist-app/mitlist/internal/services"
 	"github.com/mitlist-app/mitlist/pkg/parsing"
 )
@@ -37,10 +38,14 @@ func (h *RecipeHandler) SetGroceryService(svc *services.GroceryService) {
 func (h *RecipeHandler) RegisterRoutes(r chi.Router) {
 	r.Post("/recipes", h.CreateRecipe)
 	r.Get("/recipes", h.ListRecipes)
+	r.Get("/recipes/tags", h.ListRecipeTags)
 	r.Get("/recipes/{id}", h.GetRecipe)
 	r.Patch("/recipes/{id}", h.UpdateRecipe)
 	r.Delete("/recipes/{id}", h.DeleteRecipe)
 	r.Post("/recipes/{id}/share", h.ShareRecipe)
+	r.Post("/recipes/{id}/share-link", h.CreateShareLink)
+	r.Delete("/recipes/{id}/share-link", h.RevokeShareLink)
+	r.Post("/shared-recipes/{token}/save", h.SaveSharedRecipe)
 	r.Get("/recipes/{id}/ingredients", h.GetRecipeIngredients)
 	r.Get("/recipes/{id}/steps", h.GetRecipeSteps)
 	r.Post("/recipes/{id}/add-to-list", h.AddToList)
@@ -73,7 +78,42 @@ type createStepRequest struct {
 	Description string `json:"description"`
 }
 
+// optionalGroupID reads a `group_id` query parameter. Absent is not an error —
+// it just means "my own recipes only". A malformed one is, so a typo'd
+// household never silently narrows the result to a personal library.
+func optionalGroupID(r *http.Request) (*uuid.UUID, error) {
+	raw := strings.TrimSpace(r.URL.Query().Get("group_id"))
+	if raw == "" {
+		return nil, nil
+	}
+	id, err := uuid.Parse(raw)
+	if err != nil {
+		return nil, &api.ValidationError{Field: "group_id", Message: "invalid UUID"}
+	}
+	return &id, nil
+}
+
+// queryTags reads repeated `?tag=` params, or one comma-separated `?tags=`.
+func queryTags(r *http.Request) []string {
+	out := make([]string, 0)
+	for _, t := range r.URL.Query()["tag"] {
+		if t = strings.TrimSpace(t); t != "" {
+			out = append(out, strings.ToLower(t))
+		}
+	}
+	for _, t := range strings.Split(r.URL.Query().Get("tags"), ",") {
+		if t = strings.TrimSpace(t); t != "" {
+			out = append(out, strings.ToLower(t))
+		}
+	}
+	return out
+}
+
 type createRecipeRequest struct {
+	// Visibility is "private" (default) or "household"; GroupID names the
+	// household for the latter. Replaces the old server-wide is_public flag.
+	GroupID          *uuid.UUID                `json:"group_id"`
+	Visibility       string                    `json:"visibility"`
 	Title            string                    `json:"title"`
 	Description      string                    `json:"description"`
 	DescriptionShort string                    `json:"description_short"`
@@ -90,7 +130,6 @@ type createRecipeRequest struct {
 	PrepTime         int                       `json:"prep_time"`
 	CookTime         int                       `json:"cook_time"`
 	Servings         int                       `json:"servings"`
-	IsPublic         bool                      `json:"is_public"`
 	Ingredients      []createIngredientRequest `json:"ingredients,omitempty"`
 	Steps            []createStepRequest       `json:"steps,omitempty"`
 }
@@ -125,7 +164,8 @@ func (h *RecipeHandler) CreateRecipe(w http.ResponseWriter, r *http.Request) {
 		PrepTime:         req.PrepTime,
 		CookTime:         req.CookTime,
 		Servings:         req.Servings,
-		IsPublic:         req.IsPublic,
+		GroupID:          req.GroupID,
+		Visibility:       req.Visibility,
 	}
 
 	if err := h.service.CreateRecipe(r.Context(), userID, recipe); err != nil {
@@ -171,14 +211,51 @@ func (h *RecipeHandler) ListRecipes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	groupID, err := optionalGroupID(r)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+
 	limit, offset := parsePagination(r)
-	recipes, err := h.service.ListRecipes(r.Context(), userID, limit, offset)
+	recipes, err := h.service.ListRecipes(r.Context(), userID, repositories.RecipeFilter{
+		GroupID: groupID,
+		Tags:    queryTags(r),
+		Search:  r.URL.Query().Get("q"),
+		Limit:   limit,
+		Offset:  offset,
+	})
 	if err != nil {
 		api.RespondError(w, err)
 		return
 	}
 
 	api.RespondJSON(w, http.StatusOK, recipes)
+}
+
+// ListRecipeTags backs the tag filter bar. Counts cover everything the caller
+// can see, not just the page they have loaded.
+func (h *RecipeHandler) ListRecipeTags(w http.ResponseWriter, r *http.Request) {
+	userID, err := currentUserID(r)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+
+	groupID, err := optionalGroupID(r)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+
+	limit, _ := parsePagination(r)
+	tags, err := h.service.ListTags(r.Context(), userID, groupID, limit)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+
+	api.RespondJSON(w, http.StatusOK, tags)
 }
 
 func (h *RecipeHandler) GetRecipe(w http.ResponseWriter, r *http.Request) {
@@ -220,7 +297,10 @@ type updateRecipeRequest struct {
 	PrepTime         *int     `json:"prep_time,omitempty"`
 	CookTime         *int     `json:"cook_time,omitempty"`
 	Servings         *int     `json:"servings,omitempty"`
-	IsPublic         *bool    `json:"is_public,omitempty"`
+	// Visibility and GroupID move a recipe between private and household.
+	// Sending visibility "private" clears the group server-side.
+	Visibility *string    `json:"visibility,omitempty"`
+	GroupID    *uuid.UUID `json:"group_id,omitempty"`
 }
 
 func (h *RecipeHandler) UpdateRecipe(w http.ResponseWriter, r *http.Request) {
@@ -296,8 +376,11 @@ func (h *RecipeHandler) UpdateRecipe(w http.ResponseWriter, r *http.Request) {
 	if req.Servings != nil {
 		existing.Servings = *req.Servings
 	}
-	if req.IsPublic != nil {
-		existing.IsPublic = *req.IsPublic
+	if req.Visibility != nil {
+		existing.Visibility = *req.Visibility
+	}
+	if req.GroupID != nil {
+		existing.GroupID = req.GroupID
 	}
 
 	if err := h.service.UpdateRecipe(r.Context(), userID, existing); err != nil {
@@ -650,6 +733,8 @@ func (h *RecipeHandler) ClipRecipe(w http.ResponseWriter, r *http.Request) {
 
 type createCollectionRequest struct {
 	Name string `json:"name"`
+	// GroupID shares the cookbook with a household; omit it to keep it personal.
+	GroupID *uuid.UUID `json:"group_id,omitempty"`
 }
 
 func (h *RecipeHandler) CreateCollection(w http.ResponseWriter, r *http.Request) {
@@ -666,7 +751,8 @@ func (h *RecipeHandler) CreateCollection(w http.ResponseWriter, r *http.Request)
 	}
 
 	collection := &models.Collection{
-		Name: req.Name,
+		Name:    req.Name,
+		GroupID: req.GroupID,
 	}
 
 	if err := h.service.CreateCollection(r.Context(), userID, collection); err != nil {
@@ -684,8 +770,14 @@ func (h *RecipeHandler) ListCollections(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	groupID, err := optionalGroupID(r)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+
 	limit, offset := parsePagination(r)
-	collections, err := h.service.ListCollections(r.Context(), userID, limit, offset)
+	collections, err := h.service.ListCollections(r.Context(), userID, groupID, limit, offset)
 	if err != nil {
 		api.RespondError(w, err)
 		return
@@ -742,6 +834,11 @@ func (h *RecipeHandler) GetCollectionRecipes(w http.ResponseWriter, r *http.Requ
 
 type updateCollectionRequest struct {
 	Name *string `json:"name,omitempty"`
+	// GroupID shares the cookbook with a household. Shared is an explicit
+	// state, so unsharing needs its own flag rather than a null group_id,
+	// which JSON cannot distinguish from "unchanged".
+	GroupID     *uuid.UUID `json:"group_id,omitempty"`
+	MakePrivate bool       `json:"make_private,omitempty"`
 }
 
 func (h *RecipeHandler) UpdateCollection(w http.ResponseWriter, r *http.Request) {
@@ -771,6 +868,11 @@ func (h *RecipeHandler) UpdateCollection(w http.ResponseWriter, r *http.Request)
 
 	if req.Name != nil {
 		existing.Name = *req.Name
+	}
+	if req.MakePrivate {
+		existing.GroupID = nil
+	} else if req.GroupID != nil {
+		existing.GroupID = req.GroupID
 	}
 
 	if err := h.service.UpdateCollection(r.Context(), userID, existing); err != nil {

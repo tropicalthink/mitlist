@@ -1,8 +1,8 @@
 package me.mitlist
 
 import android.content.ActivityNotFoundException
-import android.content.Intent
 import android.net.Uri
+import androidx.browser.customtabs.CustomTabsIntent
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -15,7 +15,7 @@ class MainActivity: FlutterActivity() {
             flutterEngine.dartExecutor.binaryMessenger,
             "mitlist/oauth_launcher",
         ).setMethodCallHandler { call, result ->
-            if (call.method != "launchExternalUrl") {
+            if (call.method != "startAuthSession") {
                 result.notImplemented()
                 return@setMethodCallHandler
             }
@@ -27,7 +27,16 @@ class MainActivity: FlutterActivity() {
             }
 
             try {
-                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                CustomTabsIntent.Builder()
+                    .setShowTitle(true)
+                    .setUrlBarHidingEnabled(true)
+                    .build()
+                    .launchUrl(this, Uri.parse(url))
+                // Unlike iOS's ASWebAuthenticationSession, a Custom Tab cannot
+                // hand the callback back through this channel. The mitlist://
+                // redirect lands in OAuthRedirectActivity, which dismisses the
+                // tab and forwards the deep link here. Answering null tells the
+                // caller "opened, expect the router to take it from here".
                 result.success(null)
             } catch (_: ActivityNotFoundException) {
                 result.error(

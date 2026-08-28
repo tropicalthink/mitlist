@@ -237,7 +237,6 @@ void main() {
           cookTime: 25,
           servings: 4,
           imageUrl: null,
-          isPublic: false,
           createdAt: DateTime.utc(2026, 1, 1),
           updatedAt: DateTime.utc(2026, 1, 2),
         ),
@@ -287,7 +286,6 @@ void main() {
       cookTime: 25,
       servings: 4,
       imageUrl: null,
-      isPublic: false,
       createdAt: DateTime.utc(2026, 1, 1),
       updatedAt: DateTime.utc(2026, 1, 2),
     );
@@ -1490,7 +1488,13 @@ class FakeRecipeService implements RecipeService {
   CreateRecipeRequest? lastCreateRequest;
 
   @override
-  Future<List<Recipe>> listRecipes({int limit = 50, int offset = 0}) async =>
+  Future<List<Recipe>> listRecipes({
+    int limit = 50,
+    int offset = 0,
+    String? groupId,
+    List<String> tags = const [],
+    String? search,
+  }) async =>
       _recipes.skip(offset).take(limit).toList();
 
   @override
@@ -1510,7 +1514,8 @@ class FakeRecipeService implements RecipeService {
       cookTime: req.cookTime,
       servings: req.servings,
       imageUrl: req.imageUrl,
-      isPublic: req.isPublic,
+      visibility: req.visibility,
+      groupId: req.groupId,
       createdAt: DateTime.utc(2026, 1, 1),
       updatedAt: DateTime.utc(2026, 1, 1),
     );

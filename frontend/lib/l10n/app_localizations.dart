@@ -10090,6 +10090,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Check your connection and try again.'**
   String get weeklySummaryTryAgain;
+
+  /// Switch subtitle naming the household a recipe is shared with
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone in {name} can find and use this recipe.'**
+  String recipeCreationSharedWithHousehold(String name);
+
+  /// Switch subtitle when the user has no household to share into
+  ///
+  /// In en, this message translates to:
+  /// **'Join a household to share recipes with the people you cook with.'**
+  String get recipeCreationNoHousehold;
+
+  /// Tooltip for the share button on a recipe
+  ///
+  /// In en, this message translates to:
+  /// **'Share recipe'**
+  String get recipeDetailShareTooltip;
+
+  /// Text handed to the OS share sheet for a recipe
+  ///
+  /// In en, this message translates to:
+  /// **'{title} — cook it with me on Mitlist: {url}'**
+  String recipeShareText(String title, String url);
+
+  /// Chip that clears the selected recipe tag filters
+  ///
+  /// In en, this message translates to:
+  /// **'Clear tags'**
+  String get recipeTagsClear;
+
+  /// App bar title on the shared-recipe landing screen
+  ///
+  /// In en, this message translates to:
+  /// **'Shared recipe'**
+  String get sharedRecipeTitle;
+
+  /// Attribution line on a shared recipe
+  ///
+  /// In en, this message translates to:
+  /// **'by {author}'**
+  String sharedRecipeBy(String author);
+
+  /// Button saving a shared recipe privately
+  ///
+  /// In en, this message translates to:
+  /// **'Save to my recipes'**
+  String get sharedRecipeSavePersonal;
+
+  /// Button saving a shared recipe to a household
+  ///
+  /// In en, this message translates to:
+  /// **'Save to {name}'**
+  String sharedRecipeSaveHousehold(String name);
+
+  /// Toast after saving a shared recipe
+  ///
+  /// In en, this message translates to:
+  /// **'Recipe saved'**
+  String get sharedRecipeSaved;
+
+  /// Button shown to a signed-out visitor on a shared recipe
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to save this recipe'**
+  String get sharedRecipeSignInToSave;
+
+  /// Empty state title when a share token is revoked or wrong
+  ///
+  /// In en, this message translates to:
+  /// **'This link no longer works'**
+  String get sharedRecipeNotFoundTitle;
+
+  /// Empty state body for a dead share link
+  ///
+  /// In en, this message translates to:
+  /// **'The person who shared it may have turned the link off. Ask them for a new one.'**
+  String get sharedRecipeNotFoundBody;
+
+  /// Card title prompting a web visitor to install the app
+  ///
+  /// In en, this message translates to:
+  /// **'Cook this in Mitlist'**
+  String get sharedRecipeGetAppTitle;
+
+  /// Card body prompting a web visitor to install the app
+  ///
+  /// In en, this message translates to:
+  /// **'Get the app to save recipes, plan meals and build a shopping list with your household.'**
+  String get sharedRecipeGetAppBody;
 }
 
 class _AppLocalizationsDelegate

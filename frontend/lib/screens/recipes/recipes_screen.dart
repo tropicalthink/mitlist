@@ -43,7 +43,9 @@ class _Recipe {
   final int cookTime;
   final int servings;
   final String? imageUrl;
-  final bool isPublic;
+
+  /// Whether housemates can actually see this recipe.
+  final bool isSharedWithHousehold;
   final DateTime updatedAt;
   final String author;
   final double ratingValue;
@@ -62,7 +64,7 @@ class _Recipe {
     required this.cookTime,
     required this.servings,
     this.imageUrl,
-    required this.isPublic,
+    required this.isSharedWithHousehold,
     required this.updatedAt,
     this.author = '',
     this.ratingValue = 0,
@@ -81,7 +83,7 @@ enum _ViewState { loading, error, empty, loaded }
 
 enum _SortOption { newest, oldest, az }
 
-enum _FilterOption { all, public, private }
+enum _FilterOption { all, household, private }
 
 enum _RecipeMenuAction { mealPlan, sortNewest, sortOldest, sortAz }
 
@@ -102,6 +104,11 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
   Timer? _searchTimer;
   final TextEditingController _searchController = TextEditingController();
   _FilterOption _filter = _FilterOption.all;
+
+  /// Tags offered by the server, most-used first, and the subset the user has
+  /// selected. Selection is ANDed.
+  List<RecipeTagCount> _availableTags = const [];
+  final Set<String> _selectedTags = <String>{};
   _SortOption _sort = _SortOption.newest;
 
   bool _tabLoadStarted = false;
@@ -183,8 +190,17 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
     var result = List<_Recipe>.from(_recipes);
 
     if (_filter != _FilterOption.all) {
-      final wanted = _filter == _FilterOption.public;
-      result = result.where((r) => r.isPublic == wanted).toList();
+      final wanted = _filter == _FilterOption.household;
+      result = result.where((r) => r.isSharedWithHousehold == wanted).toList();
+    }
+
+    if (_selectedTags.isNotEmpty) {
+      // ANDed, matching the server's `tags @>` semantics so the local view and
+      // a server-side query never disagree about what a selection means.
+      result = result
+          .where((r) => _selectedTags
+              .every((t) => r.tags.any((rt) => rt.toLowerCase() == t)))
+          .toList();
     }
 
     final q = _searchQuery.trim().toLowerCase();
@@ -227,7 +243,13 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
       final service = await ref.read(recipeServiceProviderAsync.future);
 
       try {
-        final recipes = await service.listRecipes(limit: _pageLimit, offset: 0);
+        // Passing the household widens the list beyond the user's own recipes
+        // to everything shared with it.
+        final recipes = await service.listRecipes(
+          limit: _pageLimit,
+          offset: 0,
+          groupId: groupId,
+        );
         if (!mounted) return;
         setState(() {
           _recipes
@@ -245,7 +267,11 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
       }
 
       try {
-        final collections = await service.listCollections(limit: 50, offset: 0);
+        final collections = await service.listCollections(
+          limit: 50,
+          offset: 0,
+          groupId: groupId,
+        );
         if (!mounted) return;
         setState(() {
           _collections
@@ -254,6 +280,20 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
         });
       } catch (_) {
         // Cookbook support is optional.
+      }
+
+      try {
+        final tags = await service.listRecipeTags(groupId: groupId);
+        if (!mounted) return;
+        setState(() {
+          _availableTags = tags;
+          // Drop any selection the new tag set no longer offers, or the bar
+          // would filter by a tag the user can no longer see or clear.
+          _selectedTags
+              .removeWhere((t) => !tags.any((available) => available.tag == t));
+        });
+      } catch (_) {
+        // The tag bar is an enhancement; the list works without it.
       }
     } catch (_) {
       if (!mounted) return;
@@ -272,7 +312,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
         cookTime: api.cookTime,
         servings: api.servings,
         imageUrl: api.imageUrl,
-        isPublic: api.isPublic,
+        isSharedWithHousehold: api.isSharedWithHousehold,
         updatedAt: api.updatedAt,
         author: api.author,
         ratingValue: api.ratingValue,
@@ -499,10 +539,11 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
         _KitchenHeader(
           recipeCount: _recipes.length,
           visibleCount: visible.length,
-          sharedCount: _recipes.where((r) => r.isPublic).length,
+          sharedCount: _recipes.where((r) => r.isSharedWithHousehold).length,
           collectionCount: _collections.length,
         ),
         _buildChipBar(),
+        _buildTagBar(),
         if (_loadMoreErrorMessage != null)
           Padding(
             padding: const EdgeInsets.fromLTRB(
@@ -529,11 +570,63 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
     );
   }
 
+  /// The tag filter bar.
+  ///
+  /// Tags come from the server across the whole library, not just the loaded
+  /// page, so "Desserts" finds every dessert rather than the ones that happen
+  /// to be in the first 50 rows. The scraper already fills these from
+  /// schema.org recipeCategory/recipeCuisine/keywords, so most clipped recipes
+  /// arrive pre-tagged.
+  Widget _buildTagBar() {
+    if (_availableTags.isEmpty) return const SizedBox.shrink();
+    final l10n = AppLocalizations.of(context)!;
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.fromLTRB(
+        MitlistSpacing.md,
+        0,
+        MitlistSpacing.md,
+        MitlistSpacing.sm,
+      ),
+      child: Row(
+        children: [
+          if (_selectedTags.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(right: MitlistSpacing.sm),
+              child: AppChip(
+                label: l10n.recipeTagsClear,
+                selected: false,
+                onSelected: (_) => setState(_selectedTags.clear),
+              ),
+            ),
+          ..._availableTags.map((t) {
+            final selected = _selectedTags.contains(t.tag);
+            return Padding(
+              padding: const EdgeInsets.only(right: MitlistSpacing.sm),
+              child: AppChip(
+                label: '${t.tag} (${t.count})',
+                selected: selected,
+                onSelected: (_) => setState(() {
+                  if (selected) {
+                    _selectedTags.remove(t.tag);
+                  } else {
+                    _selectedTags.add(t.tag);
+                  }
+                }),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
   Widget _buildChipBar() {
     final l10n = AppLocalizations.of(context)!;
     final filters = <_FilterOption, String Function()>{
       _FilterOption.all: () => l10n.recipeFilterAll,
-      _FilterOption.public: () => l10n.recipeFilterShared,
+      _FilterOption.household: () => l10n.recipeFilterShared,
       _FilterOption.private: () => l10n.recipeFilterPrivate,
     };
 
@@ -652,6 +745,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
     FocusScope.of(context).unfocus();
     setState(() {
       _filter = _FilterOption.all;
+      _selectedTags.clear();
       _searchQuery = '';
       _searchController.clear();
       _showSearch = false;
