@@ -36,7 +36,8 @@ WeeklySummary _summary({
               category: 'expenses', count: 8, previous: 10, mine: 2),
           WeeklyCategoryCount(
               category: 'chores', count: 11, previous: 5, mine: 2),
-          WeeklyCategoryCount(category: 'meals', count: 5, previous: 5, mine: 0),
+          WeeklyCategoryCount(
+              category: 'meals', count: 5, previous: 5, mine: 0),
           WeeklyCategoryCount(
               category: 'recipes', count: 2, previous: 3, mine: 0),
         ],
@@ -124,8 +125,8 @@ void main() {
     await _pump(tester, _summary());
 
     expect(find.text('You are on a roll'), findsOneWidget);
-    expect(find.text('3 more than you did last week. Nice work.'),
-        findsOneWidget);
+    expect(
+        find.text('3 more than you did last week. Nice work.'), findsOneWidget);
   });
 
   testWidgets('does not congratulate a household that slowed', (tester) async {
@@ -138,20 +139,23 @@ void main() {
 
   testWidgets('renders an empty state when the week had no activity',
       (tester) async {
-    await _pump(tester, _summary(
-      total: 0,
-      previous: 0,
-      mine: 0,
-      minePrevious: 0,
-      categories: const [
-        WeeklyCategoryCount(category: 'lists', count: 0, previous: 0, mine: 0),
-      ],
-      days: List.generate(
-        7,
-        (i) => WeeklyDayCount(date: DateTime(2026, 8, 19 + i), count: 0),
-      ),
-      activeMembers: 0,
-    ));
+    await _pump(
+        tester,
+        _summary(
+          total: 0,
+          previous: 0,
+          mine: 0,
+          minePrevious: 0,
+          categories: const [
+            WeeklyCategoryCount(
+                category: 'lists', count: 0, previous: 0, mine: 0),
+          ],
+          days: List.generate(
+            7,
+            (i) => WeeklyDayCount(date: DateTime(2026, 8, 19 + i), count: 0),
+          ),
+          activeMembers: 0,
+        ));
 
     expect(find.text('A quiet week'), findsOneWidget);
     // The breakdown and nudge belong to a week that actually happened.

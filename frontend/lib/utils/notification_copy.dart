@@ -71,7 +71,8 @@ NotificationText resolveNotificationText({
           body = l10n.notificationListUpdatedManyNamesBody(
               actor, count, list, group, itemNames);
         } else {
-          body = l10n.notificationListUpdatedManyBody(actor, count, list, group);
+          body =
+              l10n.notificationListUpdatedManyBody(actor, count, list, group);
         }
         return NotificationText(
           title: l10n.notificationListUpdatedTitle(list),

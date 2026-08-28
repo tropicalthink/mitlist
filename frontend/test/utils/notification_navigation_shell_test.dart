@@ -75,7 +75,8 @@ Future<GoRouter> _openInbox(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('opening a shell-branch destination from the inbox does not '
+  testWidgets(
+      'opening a shell-branch destination from the inbox does not '
       'duplicate the branch navigator keys', (tester) async {
     final router = await _openInbox(tester);
 
@@ -84,8 +85,7 @@ void main() {
       {'screen': 'choreDetail'},
     ]) {
       expect(
-        await navigateNotificationPayload(router, payload,
-            preserveInbox: true),
+        await navigateNotificationPayload(router, payload, preserveInbox: true),
         isTrue,
       );
       await tester.pumpAndSettle();
@@ -97,7 +97,8 @@ void main() {
     }
   });
 
-  testWidgets('a shell destination replaces the inbox rather than stacking '
+  testWidgets(
+      'a shell destination replaces the inbox rather than stacking '
       'on top of it', (tester) async {
     final router = await _openInbox(tester);
 
