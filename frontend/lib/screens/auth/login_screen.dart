@@ -31,7 +31,8 @@ class LoginScreen extends ConsumerStatefulWidget {
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends ConsumerState<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen>
+    with WidgetsBindingObserver {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _emailFocus = FocusNode();
@@ -44,11 +45,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   String? _emailError;
   String? _passwordError;
 
+  /// Provider whose in-app sign-in sheet is currently open, or null.
+  String? _oauthProvider;
+
   AppLocalizations get l10n => AppLocalizations.of(context)!;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     // A build without a baked-in server (self-compiled, no dart-define) can't
     // do anything until the user picks one — open the picker for them.
     if (!ApiConfig.isConfigured) {
@@ -59,7 +64,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Android's Custom Tab returns no result, so backing out of it would
+    // otherwise leave the button spinning forever. Coming back to the
+    // foreground with a sheet still marked open means the user left it; a
+    // successful callback routes away from this screen before this runs.
+    if (state == AppLifecycleState.resumed && _oauthProvider != null) {
+      setState(() => _oauthProvider = null);
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _emailController.dispose();
     _passwordController.dispose();
     _emailFocus.dispose();
@@ -456,14 +473,41 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
       if (supportsBrowserRedirect) {
         redirectBrowser(authUrl);
-      } else {
-        await launchNativeOAuthUrl(authUrl);
+        return;
+      }
+
+      setState(() {
+        _oauthProvider = provider;
+        _errorMessage = null;
+      });
+
+      final result = await startNativeOAuthSession(
+        authUrl,
+        callbackScheme: Uri.parse(ApiConfig.nativeOAuthCallbackUri).scheme,
+      );
+      if (!mounted) {
+        return;
+      }
+
+      switch (result.outcome) {
+        case NativeOAuthOutcome.completed:
+          // iOS's sheet captured the redirect itself, so no deep link is
+          // coming — hand the callback to the router directly.
+          final callback = Uri.parse(result.callbackUrl!);
+          context.go('/auth/callback?${callback.query}');
+        case NativeOAuthOutcome.pendingDeepLink:
+          // Android: the Custom Tab holds the screen until the mitlist://
+          // redirect re-enters the app. Nothing to do but wait.
+          break;
+        case NativeOAuthOutcome.cancelled:
+          setState(() => _oauthProvider = null);
       }
     } catch (e) {
       if (!mounted) {
         return;
       }
       setState(() {
+        _oauthProvider = null;
         _errorMessage = friendlyErrorMessage(e, AppLocalizations.of(context)!);
       });
     }
@@ -583,7 +627,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 icon: const AppIcon(name: 'login', size: 20),
                                 variant: AppButtonVariant.outline,
                                 color: AppButtonColor.neutral,
-                                onPressed: (_isLoading || _isSuccess)
+                                isLoading: _oauthProvider == 'google',
+                                onPressed:
+                                    (_isLoading ||
+                                        _isSuccess ||
+                                        _oauthProvider != null)
                                     ? null
                                     : () => _startOAuth('google'),
                               ),
@@ -595,7 +643,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 icon: const AppIcon(name: 'apple', size: 20),
                                 variant: AppButtonVariant.outline,
                                 color: AppButtonColor.neutral,
-                                onPressed: (_isLoading || _isSuccess)
+                                isLoading: _oauthProvider == 'apple',
+                                onPressed:
+                                    (_isLoading ||
+                                        _isSuccess ||
+                                        _oauthProvider != null)
                                     ? null
                                     : () => _startOAuth('apple'),
                               ),

@@ -79,6 +79,12 @@ android {
     }
 }
 
+dependencies {
+    // Chrome Custom Tabs: OAuth sign-in renders inside the app instead of
+    // handing the user off to a separate browser app.
+    implementation "androidx.browser:browser:1.8.0"
+}
+
 flutter {
     source = "../.."
 }
