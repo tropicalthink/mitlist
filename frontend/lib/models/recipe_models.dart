@@ -19,6 +19,30 @@ String _normalizeJsonForApi(String value, {String emptyFallback = '{}'}) {
   return jsonEncode({'text': trimmed});
 }
 
+/// Recipe visibility values, mirroring the backend's models.Recipe constants.
+class RecipeVisibility {
+  const RecipeVisibility._();
+
+  /// Owner-only, plus anyone holding an explicit share.
+  static const String private = 'private';
+
+  /// Readable by every member of the recipe's household.
+  static const String household = 'household';
+}
+
+/// One entry in the tag filter bar: a tag and how many visible recipes use it.
+class RecipeTagCount {
+  final String tag;
+  final int count;
+
+  const RecipeTagCount({required this.tag, required this.count});
+
+  factory RecipeTagCount.fromJson(Map<String, dynamic> json) => RecipeTagCount(
+        tag: json['tag'] as String? ?? '',
+        count: json['count'] as int? ?? 0,
+      );
+}
+
 class Recipe {
   final String id;
   final String title;
@@ -37,9 +61,21 @@ class Recipe {
   final String? imageUrl;
   final List<String> imageOptions;
   final List<String> tags;
-  final bool isPublic;
+
+  /// 'private' or 'household'. There is no server-wide public state — see
+  /// backend migration 000058.
+  final String visibility;
+
+  /// The household this recipe is shared with, or null when private.
+  final String? groupId;
   final DateTime createdAt;
   final DateTime updatedAt;
+
+  /// Whether housemates can actually see this. False for a household recipe
+  /// whose group was deleted, which the server reports as visibility
+  /// 'household' with no group.
+  bool get isSharedWithHousehold =>
+      visibility == RecipeVisibility.household && groupId != null;
 
   const Recipe({
     required this.id,
@@ -59,7 +95,8 @@ class Recipe {
     this.imageUrl,
     this.imageOptions = const [],
     this.tags = const [],
-    required this.isPublic,
+    this.visibility = RecipeVisibility.private,
+    this.groupId,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -86,7 +123,8 @@ class Recipe {
         tags: (json['tags'] is List)
             ? (json['tags'] as List).whereType<String>().toList()
             : const [],
-        isPublic: json['is_public'] as bool? ?? false,
+        visibility: json['visibility'] as String? ?? RecipeVisibility.private,
+        groupId: json['group_id'] as String?,
         createdAt: DateTime.parse(json['created_at'] as String),
         updatedAt: DateTime.parse(json['updated_at'] as String),
       );
@@ -109,7 +147,8 @@ class Recipe {
         'image_url': imageUrl,
         'image_options': imageOptions,
         'tags': tags,
-        'is_public': isPublic,
+        'visibility': visibility,
+        'group_id': groupId,
         'created_at': createdAt.toIso8601String(),
         'updated_at': updatedAt.toIso8601String(),
       };
@@ -143,20 +182,27 @@ class RecipeCollection {
   final String id;
   final String name;
   final int? recipeCount;
+
+  /// The household this cookbook is shared with, or null when it is personal.
+  final String? groupId;
   final DateTime createdAt;
 
   const RecipeCollection({
     required this.id,
     required this.name,
     this.recipeCount,
+    this.groupId,
     required this.createdAt,
   });
+
+  bool get isSharedWithHousehold => groupId != null;
 
   factory RecipeCollection.fromJson(Map<String, dynamic> json) =>
       RecipeCollection(
         id: json['id'] as String,
         name: json['name'] as String,
         recipeCount: json['recipe_count'] as int?,
+        groupId: json['group_id'] as String?,
         createdAt: DateTime.parse(json['created_at'] as String),
       );
 }
@@ -207,7 +253,8 @@ class CreateRecipeRequest {
   final String? imageUrl;
   final List<String> imageOptions;
   final List<String> tags;
-  final bool isPublic;
+  final String visibility;
+  final String? groupId;
   final List<CreateIngredientRequest> ingredients;
   final List<CreateStepRequest> steps;
   const CreateRecipeRequest({
@@ -227,7 +274,8 @@ class CreateRecipeRequest {
     this.imageUrl,
     this.imageOptions = const [],
     this.tags = const [],
-    this.isPublic = false,
+    this.visibility = RecipeVisibility.private,
+    this.groupId,
     this.ingredients = const [],
     this.steps = const [],
   });
@@ -248,7 +296,8 @@ class CreateRecipeRequest {
         'image_url': imageUrl,
         'image_options': imageOptions,
         'tags': tags,
-        'is_public': isPublic,
+        'visibility': visibility,
+        if (groupId != null) 'group_id': groupId,
         'ingredients': ingredients.map((i) => i.toJson()).toList(),
         'steps': steps.map((s) => s.toJson()).toList(),
       };
@@ -271,7 +320,8 @@ class UpdateRecipeRequest {
   final String? imageUrl;
   final List<String>? imageOptions;
   final List<String>? tags;
-  final bool? isPublic;
+  final String? visibility;
+  final String? groupId;
 
   const UpdateRecipeRequest({
     this.title,
@@ -290,7 +340,8 @@ class UpdateRecipeRequest {
     this.imageUrl,
     this.imageOptions,
     this.tags,
-    this.isPublic,
+    this.visibility,
+    this.groupId,
   });
 
   Map<String, dynamic> toJson() {
@@ -315,7 +366,8 @@ class UpdateRecipeRequest {
     if (imageUrl != null) m['image_url'] = imageUrl;
     if (imageOptions != null) m['image_options'] = imageOptions;
     if (tags != null) m['tags'] = tags;
-    if (isPublic != null) m['is_public'] = isPublic;
+    if (visibility != null) m['visibility'] = visibility;
+    if (groupId != null) m['group_id'] = groupId;
     return m;
   }
 }
@@ -489,4 +541,48 @@ class RecipeIngredient {
     }
     return 0;
   }
+}
+
+/// A recipe opened through a share link.
+///
+/// The server strips owner id, household and visibility before sending this,
+/// so a recipient sees the cooking content and nothing about where the recipe
+/// lives in the sharer's library.
+class SharedRecipe {
+  final Recipe recipe;
+  final List<RecipeIngredient> ingredients;
+  final List<RecipeStep> steps;
+
+  const SharedRecipe({
+    required this.recipe,
+    this.ingredients = const [],
+    this.steps = const [],
+  });
+
+  factory SharedRecipe.fromJson(Map<String, dynamic> json) => SharedRecipe(
+        recipe:
+            Recipe.fromJson((json['recipe'] as Map).cast<String, dynamic>()),
+        ingredients: (json['ingredients'] as List? ?? const [])
+            .whereType<Map>()
+            .map((e) => RecipeIngredient.fromJson(e.cast<String, dynamic>()))
+            .toList(),
+        steps: (json['steps'] as List? ?? const [])
+            .whereType<Map>()
+            .map((e) => RecipeStep.fromJson(e.cast<String, dynamic>()))
+            .toList(),
+      );
+}
+
+/// The result of asking the server for a recipe's share link.
+class RecipeShareLink {
+  final String token;
+  final String url;
+
+  const RecipeShareLink({required this.token, required this.url});
+
+  factory RecipeShareLink.fromJson(Map<String, dynamic> json) =>
+      RecipeShareLink(
+        token: json['token'] as String? ?? '',
+        url: json['url'] as String? ?? '',
+      );
 }

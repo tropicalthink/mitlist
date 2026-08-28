@@ -383,23 +383,23 @@
   },
   "choreDoneSnackbar": "{choreTitle} hecha",
   "@choreDoneSnackbar": {
-  "choreDoneRecently": "Hecho recientemente",
-  "choreLedgerYou": "Tú",
-  "choreLedgerSomeone": "Alguien",
-  "choreLedgerDoneBy": "{who} · {when}",
-  "choreLedgerJustNow": "ahora mismo",
-  "choreLedgerHoursAgo": "hace {count} h",
-  "choreLedgerYesterday": "ayer",
-  "choreBackOnDate": "vuelve el {date}",
-  "choreUpForGrabs": "Sin asignar",
-  "choreDoneBackSnackbar": "{choreTitle} hecho — vuelve el {date}",
-  "choreWhoEveryone": "Todos",
-  "choreWhoNoOne": "Nadie",
-  "choreWhoAlways": "Siempre {name}",
-  "choreWhoAmongSelected": "Rota entre las {count} personas elegidas.",
-  "choreWhoOrderLabel": "Orden",
-  "choreDetailRhythm": "Se repite",
-  "choreLoadSummary": "{count, plural, =1{1 tarea hecha} other{{count} tareas hechas}} en los últimos {days} días",
+    "choreDoneRecently": "Hecho recientemente",
+    "choreLedgerYou": "Tú",
+    "choreLedgerSomeone": "Alguien",
+    "choreLedgerDoneBy": "{who} · {when}",
+    "choreLedgerJustNow": "ahora mismo",
+    "choreLedgerHoursAgo": "hace {count} h",
+    "choreLedgerYesterday": "ayer",
+    "choreBackOnDate": "vuelve el {date}",
+    "choreUpForGrabs": "Sin asignar",
+    "choreDoneBackSnackbar": "{choreTitle} hecho — vuelve el {date}",
+    "choreWhoEveryone": "Todos",
+    "choreWhoNoOne": "Nadie",
+    "choreWhoAlways": "Siempre {name}",
+    "choreWhoAmongSelected": "Rota entre las {count} personas elegidas.",
+    "choreWhoOrderLabel": "Orden",
+    "choreDetailRhythm": "Se repite",
+    "choreLoadSummary": "{count, plural, =1{1 tarea hecha} other{{count} tareas hechas}} en los últimos {days} días",
     "description": "Snackbar when a chore is marked done",
     "placeholders": {
       "choreTitle": {
@@ -1550,7 +1550,14 @@
     "description": "Switch subtitle when private"
   },
   "recipeCreationSharedWithGroups": "Compartido con {names}",
-  "@recipeCreationSharedWithGroups": { "description": "Switch subtitle listing group names when recipe is public", "placeholders": { "names": { "type": "String" } } },
+  "@recipeCreationSharedWithGroups": {
+    "description": "Switch subtitle listing group names when recipe is public",
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
   "recipeCreationIngredients": "Ingredientes",
   "@recipeCreationIngredients": {
     "description": "Section header for ingredients"
@@ -2364,7 +2371,14 @@
     "description": "Tooltip for list options menu"
   },
   "listSharedWith": "Compartido con {name}",
-  "@listSharedWith": { "description": "Label showing which household a list is shared with", "placeholders": { "name": { "type": "String" } } },
+  "@listSharedWith": {
+    "description": "Label showing which household a list is shared with",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "listDetailEditName": "Editar nombre de lista, {name}",
   "@listDetailEditName": {
     "description": "Semantics for editing list name",
@@ -3690,7 +3704,11 @@
   "scanReviewBestGuess": "Suposición: {name}",
   "@scanReviewBestGuess": {
     "description": "Tentative resolver guess under the user's OCR text on a low-confidence scan-review row",
-    "placeholders": { "name": { "type": "String" } }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "shareTargetAppBarTitle": "Guardar en mitlist",
   "@shareTargetAppBarTitle": {
@@ -4057,9 +4075,13 @@
   "offlineBannerBarOffline": "Sin conexión — los cambios se sincronizarán al reconectar",
   "offlineBannerSyncingCount": "Sincronizando {count} cambios…",
   "initialSyncRefreshing": "Actualizando…",
-  "@initialSyncRefreshing": { "description": "Banner text while the cold-start refresh pulls fresh data" },
+  "@initialSyncRefreshing": {
+    "description": "Banner text while the cold-start refresh pulls fresh data"
+  },
   "initialSyncFailed": "No se pudo actualizar — toca para reintentar",
-  "@initialSyncFailed": { "description": "Banner text when the cold-start refresh failed; tapping retries" },
+  "@initialSyncFailed": {
+    "description": "Banner text when the cold-start refresh failed; tapping retries"
+  },
   "offlineBannerSyncing": "Sincronizando cambios…",
   "offlineBannerFailedCount": "No se pudieron sincronizar {count} cambios",
   "offlineBannerFailedOne": "No se pudo sincronizar un cambio",
@@ -5793,15 +5815,30 @@
     "description": "Fallback recipe title for tonight card"
   },
   "runningLowHeading": "Se acaba",
-  "@runningLowHeading": { "description": "Section header for the restock suggestion strip above the list" },
+  "@runningLowHeading": {
+    "description": "Section header for the restock suggestion strip above the list"
+  },
   "runningLowDaysAgo": "hace {days}d",
-  "@runningLowDaysAgo": { "description": "Per-chip cadence hint showing how many days since last purchase", "placeholders": { "days": { "type": "num" } } },
+  "@runningLowDaysAgo": {
+    "description": "Per-chip cadence hint showing how many days since last purchase",
+    "placeholders": {
+      "days": {
+        "type": "num"
+      }
+    }
+  },
   "restockReasonDue": "Toca reponer",
-  "@restockReasonDue": { "description": "Reason shown when a household suggestion is due based on purchase cadence" },
+  "@restockReasonDue": {
+    "description": "Reason shown when a household suggestion is due based on purchase cadence"
+  },
   "restockReasonUsual": "Compra habitual",
-  "@restockReasonUsual": { "description": "Reason shown when a household suggestion is a familiar recurring purchase" },
+  "@restockReasonUsual": {
+    "description": "Reason shown when a household suggestion is a familiar recurring purchase"
+  },
   "restockReasonGoesWith": "Va con esta lista",
-  "@restockReasonGoesWith": { "description": "Reason shown when a household suggestion commonly occurs with current list items" },
+  "@restockReasonGoesWith": {
+    "description": "Reason shown when a household suggestion commonly occurs with current list items"
+  },
   "householdStorageTitle": "Almacenamiento del hogar",
   "householdStorageUsedOf": "{used} de {limit} usados",
   "householdStorageUsedUnlimited": "{used} usados · sin límite",
@@ -5827,7 +5864,6 @@
   "accountOcrTrainingExportEmpty": "Todavía no hay líneas OCR corregidas para exportar.",
   "accountOcrTrainingClearTitle": "¿Eliminar los datos de entrenamiento OCR?",
   "accountOcrTrainingClearBody": "Esto elimina permanentemente todos los recortes de líneas guardados en este dispositivo.",
-
   "billingPremiumTitle": "mitlist premium",
   "billingLimitReachedTitle": "Esta casa está completa",
   "billingLimitReachedBody": "Las casas de hasta {limit} personas son gratuitas. Para añadir a la {next}.ª persona, alguien necesita premium, y cubre a todos los de aquí.",
@@ -5917,5 +5953,20 @@
   "weeklySummaryEmptyTitle": "Una semana tranquila",
   "weeklySummaryEmptyBody": "No se registró nada en los últimos siete días. Añade algo y aparecerá aquí la semana que viene.",
   "weeklySummaryLoadFailed": "No se pudo cargar tu semana",
-  "weeklySummaryTryAgain": "Comprueba tu conexión e inténtalo de nuevo."
+  "weeklySummaryTryAgain": "Comprueba tu conexión e inténtalo de nuevo.",
+  "recipeCreationSharedWithHousehold": "Todos en {name} pueden encontrar y usar esta receta.",
+  "recipeCreationNoHousehold": "Únete a un hogar para compartir recetas con quienes cocinas.",
+  "recipeDetailShareTooltip": "Compartir receta",
+  "recipeShareText": "{title} — cocínala conmigo en Mitlist: {url}",
+  "recipeTagsClear": "Quitar etiquetas",
+  "sharedRecipeTitle": "Receta compartida",
+  "sharedRecipeBy": "de {author}",
+  "sharedRecipeSavePersonal": "Guardar en mis recetas",
+  "sharedRecipeSaveHousehold": "Guardar en {name}",
+  "sharedRecipeSaved": "Receta guardada",
+  "sharedRecipeSignInToSave": "Inicia sesión para guardar esta receta",
+  "sharedRecipeNotFoundTitle": "Este enlace ya no funciona",
+  "sharedRecipeNotFoundBody": "Quien lo compartió puede haberlo desactivado. Pídele uno nuevo.",
+  "sharedRecipeGetAppTitle": "Cocina esto en Mitlist",
+  "sharedRecipeGetAppBody": "Consigue la app para guardar recetas, planificar comidas y hacer la compra con tu hogar."
 }

@@ -43,12 +43,20 @@
                 <data
                     android:scheme="mitlist"
                     android:pathPrefix="/join" />
+                <!-- Shared recipe: /r/<share token>. -->
+                <data
+                    android:scheme="mitlist"
+                    android:pathPrefix="/r" />
             </intent-filter>
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="app.mitlist.me" android:pathPrefix="/join" />
+                <!-- Keep in step with web/.well-known/apple-app-site-association
+                     and assetlinks.json: a path claimed here but missing there
+                     opens the browser instead of the app. -->
+                <data android:scheme="https" android:host="app.mitlist.me" android:pathPrefix="/r" />
             </intent-filter>
         </activity>
         <!-- Ends the in-app Custom Tab OAuth flow. singleTask so the redirect

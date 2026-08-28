@@ -64,7 +64,11 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
   final TextEditingController _cookTimeController = TextEditingController();
   final TextEditingController _servingsController =
       TextEditingController(text: '1');
-  bool _isPublic = false;
+
+  /// Whether to share the new recipe with the active household. Backed by a
+  /// real group id at save time — the old flag set a server-wide public bit
+  /// while this switch promised household-only sharing.
+  bool _shareWithHousehold = false;
   bool _isSaving = false;
   bool _isScraping = false;
   _RecipeEntryMode _mode = _RecipeEntryMode.url;
@@ -293,7 +297,10 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
                   .where((t) => t.isNotEmpty)
                   .toList()
               : const [],
-          isPublic: _isPublic,
+          visibility: _shareWithHousehold
+              ? RecipeVisibility.household
+              : RecipeVisibility.private,
+          groupId: _shareWithHousehold ? _activeGroupId() : null,
           ingredients: ingredients,
           steps: _buildSteps(),
         ),
@@ -422,6 +429,20 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
       );
     }).toList();
   }
+
+  /// The household a shared recipe would land in: the one the user is
+  /// currently looking at, falling back to their only household.
+  Group? _activeGroup() {
+    final id = _activeGroupId();
+    if (id == null) return null;
+    for (final g in _groups) {
+      if (g.id == id) return g;
+    }
+    return null;
+  }
+
+  String? _activeGroupId() =>
+      resolveActiveGroupId(_groups, ref.read(currentGroupIdProvider));
 
   Future<List<CreateIngredientRequest>> _buildEnrichedIngredients() async {
     final ingredients = _buildIngredients();
@@ -962,15 +983,17 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
         const SizedBox(height: MitlistSpacing.md),
         AppSwitchListTile(
           title: l10n.recipeCreationSaveForHousehold,
-          subtitle: _isPublic
-              ? (_groups.isEmpty
-                  ? l10n.recipeCreationSaveForHouseholdDesc
-                  : l10n.recipeCreationSharedWithGroups(
-                      _groups.map((g) => g.name).join(', ')))
-              : l10n.recipeCreationSaveForHouseholdPrivate,
-          value: _isPublic,
-          onChanged:
-              _isSaving ? null : (value) => setState(() => _isPublic = value),
+          // Without a household there is nobody to share with, so the switch
+          // is disabled and says so rather than silently doing nothing.
+          subtitle: _activeGroup() == null
+              ? l10n.recipeCreationNoHousehold
+              : (_shareWithHousehold
+                  ? l10n.recipeCreationSharedWithHousehold(_activeGroup()!.name)
+                  : l10n.recipeCreationSaveForHouseholdPrivate),
+          value: _shareWithHousehold,
+          onChanged: _isSaving || _activeGroup() == null
+              ? null
+              : (value) => setState(() => _shareWithHousehold = value),
         ),
       ],
     );

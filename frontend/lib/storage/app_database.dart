@@ -137,7 +137,19 @@ class RecipesTable extends Table {
   IntColumn get cookTime => integer().named('cook_time')();
   IntColumn get servings => integer()();
   TextColumn get imageUrl => text().named('image_url').nullable()();
-  BoolColumn get isPublic => boolean().named('is_public')();
+
+  /// 'private' or 'household'. Replaces the old is_public boolean, which the
+  /// server dropped in migration 000058.
+  TextColumn get visibility => text().withDefault(const Constant('private'))();
+
+  /// The household a 'household' recipe is shared with, else null.
+  TextColumn get groupId => text().named('group_id').nullable()();
+
+  /// Tags as a JSON array. The cache used to drop them entirely, so any recipe
+  /// served from here came back untagged and the offline edit path could not
+  /// touch them.
+  TextColumn get tagsJson =>
+      text().named('tags_json').withDefault(const Constant('[]'))();
   DateTimeColumn get createdAt => dateTime().named('created_at')();
   DateTimeColumn get updatedAt => dateTime().named('updated_at')();
 
@@ -425,7 +437,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 14;
+  int get schemaVersion => 15;
 
   /// The prebuilt read-only global grocery brain (canonical items, seed/OFF
   /// aliases + FTS, store aisles). Attached by [GroceryReferenceInstaller] once
@@ -740,6 +752,59 @@ FROM list_items_table;
             // have no known server version, and a null base means the edit
             // falls back to last-write-wins rather than conflicting falsely.
             await m.addColumn(expensesTable, expensesTable.updatedAt);
+          }
+          if (from < 15) {
+            // Recipes moved from a public/private boolean to household scoping,
+            // and the cache finally keeps tags. is_public is NOT NULL with no
+            // default, so it has to go rather than linger — an insert that
+            // omits it would fail. Rebuild, same as the from < 2 step above.
+            //
+            // Guarded because a partial database (migration tests build one,
+            // and a half-created install could too) may not have the table at
+            // all, and a cache migration should not be the thing that bricks
+            // the app.
+            final hasRecipes = await customSelect(
+              "SELECT 1 FROM sqlite_master "
+              "WHERE type = 'table' AND name = 'recipes_table';",
+            ).get();
+            if (hasRecipes.isEmpty) {
+              await m.createTable(recipesTable);
+            } else {
+              await customStatement('''
+CREATE TABLE recipes_table__new (
+  id TEXT NOT NULL PRIMARY KEY,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  prep_time INTEGER NOT NULL,
+  cook_time INTEGER NOT NULL,
+  servings INTEGER NOT NULL,
+  image_url TEXT,
+  visibility TEXT NOT NULL DEFAULT 'private',
+  group_id TEXT,
+  tags_json TEXT NOT NULL DEFAULT '[]',
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+''');
+
+              // Everything carries over as private regardless of the old flag.
+              // The cache cannot know which household the server's own backfill
+              // chose, and showing an unearned "shared" badge is the worse error
+              // — the next sync writes the real value.
+              await customStatement('''
+INSERT INTO recipes_table__new (
+  id, title, description, prep_time, cook_time, servings, image_url,
+  visibility, group_id, tags_json, created_at, updated_at
+)
+SELECT id, title, description, prep_time, cook_time, servings, image_url,
+       'private', NULL, '[]', created_at, updated_at
+FROM recipes_table;
+''');
+
+              await customStatement('DROP TABLE recipes_table;');
+              await customStatement(
+                  'ALTER TABLE recipes_table__new RENAME TO recipes_table;');
+            }
           }
         },
         beforeOpen: (details) async {

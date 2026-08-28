@@ -38,7 +38,17 @@ const authRoutePrefixes = [
   '/auth/callback',
 ];
 
+/// Routes a signed-out visitor is allowed to see.
+///
+/// A shared recipe link has to render for someone who has neither the app nor
+/// an account — that is the whole point of the fallback — so it cannot bounce
+/// to /welcome like every other route.
+const publicRoutePrefixes = ['/r/'];
+
 final _inviteCodePattern = RegExp(r'^[A-Za-z0-9\-]{4,}$');
+
+bool isPublicRoute(String location) =>
+    publicRoutePrefixes.any((prefix) => location.startsWith(prefix));
 
 bool isSessionBootstrapPath(String location) =>
     location.startsWith(sessionBootstrapPath);
@@ -85,6 +95,9 @@ AppRedirectResult resolveAppRedirect(AppRedirectInput input) {
   }
 
   if (!input.authState && !isAuthRoute) {
+    if (isPublicRoute(location)) {
+      return const AppRedirectResult();
+    }
     if (location.startsWith('/join/')) {
       final code = location.substring('/join/'.length);
       if (isPlausibleInviteCode(code)) {
