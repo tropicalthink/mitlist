@@ -329,7 +329,8 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       }
     }
     if (!mounted) return;
-    final updated = await ChoreCreationSheet.show(context, existingChore: chore);
+    final updated =
+        await ChoreCreationSheet.show(context, existingChore: chore);
     if (updated == true) await _loadChores();
   }
 
@@ -1946,8 +1947,7 @@ class _ChoreItem extends StatelessWidget {
         child: Semantics(
           button: true,
           label: semanticLabel,
-          onLongPressHint:
-              onLongPress != null ? l10n.choreEditTitle : null,
+          onLongPressHint: onLongPress != null ? l10n.choreEditTitle : null,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [

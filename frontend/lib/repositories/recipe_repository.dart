@@ -1,4 +1,5 @@
 import 'dart:async' show unawaited;
+import 'dart:convert' show jsonDecode, jsonEncode;
 
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
@@ -54,7 +55,9 @@ class RecipeRepository {
       cookTime: req.cookTime,
       servings: req.servings,
       imageUrl: req.imageUrl,
-      isPublic: req.isPublic,
+      tags: req.tags,
+      visibility: req.visibility,
+      groupId: req.groupId,
       createdAt: now,
       updatedAt: now,
     );
@@ -93,7 +96,13 @@ class RecipeRepository {
         cookTime: req.cookTime ?? e.cookTime,
         servings: req.servings ?? e.servings,
         imageUrl: req.imageUrl ?? e.imageUrl,
-        isPublic: req.isPublic ?? e.isPublic,
+        tags: req.tags ?? e.tags,
+        visibility: req.visibility ?? e.visibility,
+        // A patch that only names a visibility of 'private' clears the group;
+        // otherwise keep whichever household the recipe already had.
+        groupId: req.visibility == api.RecipeVisibility.private
+            ? null
+            : (req.groupId ?? e.groupId),
         createdAt: e.createdAt,
         updatedAt: DateTime.now(),
       );
@@ -184,7 +193,12 @@ class RecipeRepository {
       cookTime: requestRaw['cook_time'] as int? ?? 0,
       servings: requestRaw['servings'] as int? ?? 1,
       imageUrl: requestRaw['image_url'] as String?,
-      isPublic: requestRaw['is_public'] as bool? ?? false,
+      tags: (requestRaw['tags'] is List)
+          ? (requestRaw['tags'] as List).whereType<String>().toList()
+          : const [],
+      visibility:
+          requestRaw['visibility'] as String? ?? api.RecipeVisibility.private,
+      groupId: requestRaw['group_id'] as String?,
     );
 
     final created =
@@ -212,7 +226,11 @@ class RecipeRepository {
       cookTime: patch['cook_time'] as int?,
       servings: patch['servings'] as int?,
       imageUrl: patch['image_url'] as String?,
-      isPublic: patch['is_public'] as bool?,
+      tags: (patch['tags'] is List)
+          ? (patch['tags'] as List).whereType<String>().toList()
+          : null,
+      visibility: patch['visibility'] as String?,
+      groupId: patch['group_id'] as String?,
     );
 
     final updated = await _remote.updateRecipe(recipeId, req,
@@ -241,10 +259,25 @@ class RecipeRepository {
       cookTime: Value(r.cookTime),
       servings: Value(r.servings),
       imageUrl: Value(r.imageUrl),
-      isPublic: Value(r.isPublic),
+      visibility: Value(r.visibility),
+      groupId: Value(r.groupId),
+      tagsJson: Value(jsonEncode(r.tags)),
       createdAt: Value(r.createdAt),
       updatedAt: Value(r.updatedAt),
     );
+  }
+
+  /// Tags round-trip through the cache as a JSON array. A row written before
+  /// schema 15 decodes to empty rather than throwing.
+  static List<String> _decodeTags(String raw) {
+    if (raw.isEmpty) return const [];
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is List) return decoded.whereType<String>().toList();
+    } catch (_) {
+      // Corrupt cache entry: treat as untagged, the next sync repairs it.
+    }
+    return const [];
   }
 
   api.Recipe _toRecipe(RecipesTableData row) {
@@ -256,7 +289,9 @@ class RecipeRepository {
       cookTime: row.cookTime,
       servings: row.servings,
       imageUrl: row.imageUrl,
-      isPublic: row.isPublic,
+      visibility: row.visibility,
+      groupId: row.groupId,
+      tags: _decodeTags(row.tagsJson),
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     );

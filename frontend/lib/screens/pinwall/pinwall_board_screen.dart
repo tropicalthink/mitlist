@@ -1608,8 +1608,7 @@ class _BoardAddNoteButton extends StatelessWidget {
         onTap: onTap,
         child: Container(
           height: 44,
-          padding:
-              const EdgeInsets.symmetric(horizontal: MitlistSpacing.md),
+          padding: const EdgeInsets.symmetric(horizontal: MitlistSpacing.md),
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: bg,

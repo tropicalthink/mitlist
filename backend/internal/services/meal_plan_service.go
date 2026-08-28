@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -91,13 +92,25 @@ func (s *MealPlanService) requireMembership(ctx context.Context, userID, groupID
 	return requireGroupMember(ctx, s.groupRepo, groupID, userID)
 }
 
+// requireRecipeAccess mirrors RecipeService.GetRecipe: the owner, a member of
+// the household the recipe is shared with, or someone holding an explicit
+// share. Keep the two in step — a recipe you can see is one you can plan.
 func (s *MealPlanService) requireRecipeAccess(ctx context.Context, userID, recipeID uuid.UUID) error {
 	recipe, err := s.recipeRepo.GetRecipeByID(ctx, recipeID)
 	if err != nil {
 		return err
 	}
-	if recipe.UserID == userID || recipe.IsPublic {
+	if recipe.UserID == userID {
 		return nil
+	}
+	if recipe.SharedWithHousehold() {
+		err := s.requireMembership(ctx, userID, *recipe.GroupID)
+		if err == nil {
+			return nil
+		}
+		if !errors.Is(err, api.ErrPermissionDenied) {
+			return err
+		}
 	}
 	if _, err := s.recipeRepo.GetRecipeShareByUser(ctx, recipeID, userID); err == nil {
 		return nil

@@ -533,7 +533,7 @@ func newFinanceRouter(t *testing.T) (chi.Router, *FinanceHandler) {
 
 func newRecipeRouterWithGrocery(t *testing.T) (chi.Router, *RecipeHandler) {
 	recipeRepo := newTestRecipeRepo()
-	svc := services.NewRecipeService(recipeRepo)
+	svc := services.NewRecipeService(recipeRepo, newTestGroupRepo(), newTestUserRepo())
 	listSvc := services.NewListService(newTestListRepo(), newTestGroupRepo())
 	h := NewRecipeHandler(svc, services.NewRecipeScrapingService(), listSvc)
 	h.SetGroceryService(newTestGroceryService())
@@ -563,7 +563,7 @@ func newRecipeRouterWithGrocery(t *testing.T) (chi.Router, *RecipeHandler) {
 
 func newRecipeRouter(t *testing.T) (chi.Router, *RecipeHandler) {
 	recipeRepo := newTestRecipeRepo()
-	svc := services.NewRecipeService(recipeRepo)
+	svc := services.NewRecipeService(recipeRepo, newTestGroupRepo(), newTestUserRepo())
 	listSvc := services.NewListService(newTestListRepo(), newTestGroupRepo())
 	h := NewRecipeHandler(svc, services.NewRecipeScrapingService(), listSvc)
 

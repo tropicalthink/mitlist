@@ -24,7 +24,6 @@ Recipe _fakeRecipe({int servings = 4}) => Recipe(
       equipmentJson: '',
       imageOptions: const [],
       tags: const [],
-      isPublic: false,
       ratingValue: 0,
       ratingCount: 0,
       createdAt: DateTime(2024),

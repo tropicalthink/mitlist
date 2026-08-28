@@ -154,6 +154,17 @@ func main() {
 		http.Redirect(w, r, target, http.StatusFound)
 	})
 
+	// Same canonicalization as /join above, for recipe share links.
+	srv.Router().Get("/r/{token}", func(w http.ResponseWriter, r *http.Request) {
+		token := chi.URLParam(r, "token")
+		if len(token) < 8 {
+			http.Error(w, "invalid share link", http.StatusBadRequest)
+			return
+		}
+		target := strings.TrimRight(cfg.FrontendURL, "/") + "/r/" + url.PathEscape(token)
+		http.Redirect(w, r, target, http.StatusFound)
+	})
+
 	appCheckVerifier, err := appcheckservice.New(cfg)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to initialize Firebase App Check verifier")
@@ -169,6 +180,13 @@ func main() {
 
 		// Public configuration endpoints
 		r.Get("/vapid", handlers.NewVAPIDHandler(cfg).ServeHTTP)
+
+		// Recipe share links resolve without authentication: the token is the
+		// credential, and a recipient who does not have the app has no session.
+		// Read-only — saving a shared recipe is authenticated, and lives on the
+		// protected recipe handler.
+		handlers.ShareLinkBaseURL = cfg.FrontendURL
+		r.Get("/shared-recipes/{token}", handlers.NewRecipeHandler(cnt.RecipeService(), nil).GetSharedRecipe)
 
 		// OAuth (public initiation + callback)
 		oauthHandler := handlers.NewOAuthHandler(cfg, cnt.OAuthService())

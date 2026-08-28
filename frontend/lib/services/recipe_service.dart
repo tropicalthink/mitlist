@@ -27,15 +27,53 @@ class RecipeService {
     }
   }
 
-  Future<List<Recipe>> listRecipes({int limit = 50, int offset = 0}) async {
+  /// Lists the caller's recipes, plus everything shared with [groupId] when
+  /// one is given.
+  ///
+  /// [tags] and [search] filter server-side, so they narrow the whole library
+  /// rather than whichever page happens to be loaded.
+  Future<List<Recipe>> listRecipes({
+    int limit = 50,
+    int offset = 0,
+    String? groupId,
+    List<String> tags = const [],
+    String? search,
+  }) async {
     try {
-      final r = await _dio
-          .get('/recipes', queryParameters: {'limit': limit, 'offset': offset});
+      final r = await _dio.get('/recipes', queryParameters: {
+        'limit': limit,
+        'offset': offset,
+        if (groupId != null) 'group_id': groupId,
+        if (tags.isNotEmpty) 'tag': tags,
+        if (search != null && search.trim().isNotEmpty) 'q': search.trim(),
+      });
       final data = r.data;
       if (data is! List) return [];
       return data.map((j) => Recipe.fromJson(j)).toList();
     } on DioException catch (e) {
       _logger.e('List recipes failed: ${e.response?.data}');
+      throw apiException(e);
+    }
+  }
+
+  /// The tags in use across everything the caller can see, most-used first.
+  Future<List<RecipeTagCount>> listRecipeTags({
+    String? groupId,
+    int limit = 30,
+  }) async {
+    try {
+      final r = await _dio.get('/recipes/tags', queryParameters: {
+        'limit': limit,
+        if (groupId != null) 'group_id': groupId,
+      });
+      final data = r.data;
+      if (data is! List) return [];
+      return data
+          .whereType<Map>()
+          .map((j) => RecipeTagCount.fromJson(j.cast<String, dynamic>()))
+          .toList();
+    } on DioException catch (e) {
+      _logger.e('List recipe tags failed: ${e.response?.data}');
       throw apiException(e);
     }
   }
@@ -81,10 +119,13 @@ class RecipeService {
   }
 
   Future<List<RecipeCollection>> listCollections(
-      {int limit = 50, int offset = 0}) async {
+      {int limit = 50, int offset = 0, String? groupId}) async {
     try {
-      final r = await _dio.get('/collections',
-          queryParameters: {'limit': limit, 'offset': offset});
+      final r = await _dio.get('/collections', queryParameters: {
+        'limit': limit,
+        'offset': offset,
+        if (groupId != null) 'group_id': groupId,
+      });
       final data = r.data;
       if (data is! List) return [];
       return data.map((j) => RecipeCollection.fromJson(j)).toList();
@@ -164,6 +205,61 @@ class RecipeService {
       await _dio.delete('/collections/$collectionId/recipes/$recipeId');
     } on DioException catch (e) {
       _logger.e('Remove recipe from collection failed: ${e.response?.data}');
+      throw apiException(e);
+    }
+  }
+
+  /// Returns the recipe's share link, minting one on first call.
+  ///
+  /// Idempotent server-side, so tapping Share repeatedly hands out the same
+  /// URL rather than leaving extra live links behind.
+  Future<RecipeShareLink> createShareLink(String recipeId) async {
+    try {
+      final r = await _dio.post('/recipes/$recipeId/share-link');
+      return RecipeShareLink.fromJson((r.data as Map).cast<String, dynamic>());
+    } on DioException catch (e) {
+      _logger.e('Create share link failed: ${e.response?.data}');
+      throw apiException(e);
+    }
+  }
+
+  /// Invalidates every share link already handed out for this recipe.
+  Future<void> revokeShareLink(String recipeId) async {
+    try {
+      await _dio.delete('/recipes/$recipeId/share-link');
+    } on DioException catch (e) {
+      _logger.e('Revoke share link failed: ${e.response?.data}');
+      throw apiException(e);
+    }
+  }
+
+  /// Resolves a share link. Unauthenticated on the server — the token is the
+  /// credential — so this works before the recipient has signed in.
+  Future<SharedRecipe> getSharedRecipe(String token) async {
+    try {
+      final r = await _dio.get('/shared-recipes/$token');
+      return SharedRecipe.fromJson((r.data as Map).cast<String, dynamic>());
+    } on DioException catch (e) {
+      _logger.e('Get shared recipe failed: ${e.response?.data}');
+      throw apiException(e);
+    }
+  }
+
+  /// Copies a shared recipe into the caller's library. Pass a [groupId] with
+  /// [RecipeVisibility.household] to save it for the whole household.
+  Future<Recipe> saveSharedRecipe(
+    String token, {
+    String visibility = RecipeVisibility.private,
+    String? groupId,
+  }) async {
+    try {
+      final r = await _dio.post('/shared-recipes/$token/save', data: {
+        'visibility': visibility,
+        if (groupId != null) 'group_id': groupId,
+      });
+      return Recipe.fromJson((r.data as Map).cast<String, dynamic>());
+    } on DioException catch (e) {
+      _logger.e('Save shared recipe failed: ${e.response?.data}');
       throw apiException(e);
     }
   }

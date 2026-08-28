@@ -51,7 +51,6 @@ func TestRecipe_ListRecipes(t *testing.T) {
 		CookTime:    0,
 		Servings:    1,
 		ImageURL:    "",
-		IsPublic:    false,
 		CreatedAt:   time.Now().UTC(),
 		UpdatedAt:   time.Now().UTC(),
 	}))
@@ -90,7 +89,6 @@ func TestRecipe_UpdateRecipe(t *testing.T) {
 		CookTime:    0,
 		Servings:    1,
 		ImageURL:    "",
-		IsPublic:    false,
 		CreatedAt:   time.Now().UTC(),
 		UpdatedAt:   time.Now().UTC(),
 	}
@@ -121,7 +119,6 @@ func TestRecipe_DeleteRecipe(t *testing.T) {
 		CookTime:    0,
 		Servings:    1,
 		ImageURL:    "",
-		IsPublic:    false,
 		CreatedAt:   time.Now().UTC(),
 		UpdatedAt:   time.Now().UTC(),
 	}
@@ -147,7 +144,6 @@ func TestRecipe_GetRecipeIngredients(t *testing.T) {
 		CookTime:    0,
 		Servings:    1,
 		ImageURL:    "",
-		IsPublic:    false,
 		CreatedAt:   time.Now().UTC(),
 		UpdatedAt:   time.Now().UTC(),
 	}
@@ -198,7 +194,6 @@ func TestRecipe_GetRecipeSteps(t *testing.T) {
 		CookTime:    0,
 		Servings:    1,
 		ImageURL:    "",
-		IsPublic:    false,
 		CreatedAt:   time.Now().UTC(),
 		UpdatedAt:   time.Now().UTC(),
 	}
@@ -254,7 +249,6 @@ func TestRecipe_AddToList(t *testing.T) {
 		CookTime:    0,
 		Servings:    2,
 		ImageURL:    "",
-		IsPublic:    false,
 		CreatedAt:   time.Now().UTC(),
 		UpdatedAt:   time.Now().UTC(),
 	}
@@ -324,7 +318,6 @@ func TestRecipe_AddMissingToList(t *testing.T) {
 		CookTime:    0,
 		Servings:    1,
 		ImageURL:    "",
-		IsPublic:    false,
 		CreatedAt:   time.Now().UTC(),
 		UpdatedAt:   time.Now().UTC(),
 	}

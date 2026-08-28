@@ -19,8 +19,12 @@ import (
 
 func newMealPlanService(mpRepo *mocks.MockMealPlanRepo, groupRepo *mocks.MockGroupRepo, recipeRepo *mocks.MockRecipeRepo, listRepo *mocks.MockListRepo) *MealPlanService {
 	if recipeRepo == nil {
+		// A recipe every caller may plan with. Since 000058 there is no
+		// server-wide public flag to express that, so grant an explicit share
+		// instead — the third arm of the same access rule.
 		recipeRepo = new(mocks.MockRecipeRepo)
-		recipeRepo.On("GetRecipeByID", mock.Anything, mock.Anything).Return(&models.Recipe{IsPublic: true}, nil).Maybe()
+		recipeRepo.On("GetRecipeByID", mock.Anything, mock.Anything).Return(&models.Recipe{UserID: uuid.Nil}, nil).Maybe()
+		recipeRepo.On("GetRecipeShareByUser", mock.Anything, mock.Anything, mock.Anything).Return(&models.RecipeShare{}, nil).Maybe()
 	}
 	return NewMealPlanService(mpRepo, groupRepo, recipeRepo, listRepo)
 }

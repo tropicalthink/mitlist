@@ -101,78 +101,85 @@ class _AppBottomSheetState extends State<AppBottomSheet> {
             ),
             boxShadow: MitlistShadows.shadowFloating,
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onVerticalDragStart: widget.onDragDismissRequested == null
-                    ? null
-                    : (_) => _resetDrag(),
-                onVerticalDragUpdate: widget.onDragDismissRequested == null
-                    ? null
-                    : (details) => _trackDrag(details.delta.dy),
-                onVerticalDragEnd: widget.onDragDismissRequested == null
-                    ? null
-                    : (_) => _resetDrag(),
-                child: Column(
-                  children: [
-                    const SizedBox(height: MitlistSpacing.sm),
-                    Center(
-                      child: Container(
-                        width: MitlistSpacing.space10,
-                        height: MitlistSpacing.space1,
-                        decoration: BoxDecoration(
-                          color: colorScheme.onSurfaceVariant
-                              .withValues(alpha: 0.3),
-                          borderRadius: const BorderRadius.all(
-                            Radius.circular(MitlistTheme.radiusFull),
+          // Transparent Material, not decoration: a ListTile paints its
+          // background and ink on the nearest Material ancestor, and without
+          // one here that is the sheet's own Material — below the decoration
+          // above, so splashes were painted behind it and never showed.
+          child: Material(
+            type: MaterialType.transparency,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onVerticalDragStart: widget.onDragDismissRequested == null
+                      ? null
+                      : (_) => _resetDrag(),
+                  onVerticalDragUpdate: widget.onDragDismissRequested == null
+                      ? null
+                      : (details) => _trackDrag(details.delta.dy),
+                  onVerticalDragEnd: widget.onDragDismissRequested == null
+                      ? null
+                      : (_) => _resetDrag(),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: MitlistSpacing.sm),
+                      Center(
+                        child: Container(
+                          width: MitlistSpacing.space10,
+                          height: MitlistSpacing.space1,
+                          decoration: BoxDecoration(
+                            color: colorScheme.onSurfaceVariant
+                                .withValues(alpha: 0.3),
+                            borderRadius: const BorderRadius.all(
+                              Radius.circular(MitlistTheme.radiusFull),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: MitlistSpacing.sm),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: MitlistSpacing.lg,
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              widget.title,
-                              style: textTheme.titleMedium,
+                      const SizedBox(height: MitlistSpacing.sm),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: MitlistSpacing.lg,
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                widget.title,
+                                style: textTheme.titleMedium,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: MitlistSpacing.md),
-                  ],
-                ),
-              ),
-              Flexible(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    MitlistSpacing.lg,
-                    MitlistSpacing.space0,
-                    MitlistSpacing.lg,
-                    MitlistSpacing.lg,
-                  ),
-                  child: NotificationListener<ScrollNotification>(
-                    onNotification: _handleScrollNotification,
-                    child: SingleChildScrollView(
-                      physics: widget.onDragDismissRequested == null
-                          ? null
-                          : const AlwaysScrollableScrollPhysics(
-                              parent: ClampingScrollPhysics(),
-                            ),
-                      child: widget.body,
-                    ),
+                      const SizedBox(height: MitlistSpacing.md),
+                    ],
                   ),
                 ),
-              ),
-            ],
+                Flexible(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      MitlistSpacing.lg,
+                      MitlistSpacing.space0,
+                      MitlistSpacing.lg,
+                      MitlistSpacing.lg,
+                    ),
+                    child: NotificationListener<ScrollNotification>(
+                      onNotification: _handleScrollNotification,
+                      child: SingleChildScrollView(
+                        physics: widget.onDragDismissRequested == null
+                            ? null
+                            : const AlwaysScrollableScrollPhysics(
+                                parent: ClampingScrollPhysics(),
+                              ),
+                        child: widget.body,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

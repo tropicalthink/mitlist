@@ -5858,4 +5858,60 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get weeklySummaryTryAgain =>
       'Controleer je verbinding en probeer het opnieuw.';
+
+  @override
+  String recipeCreationSharedWithHousehold(String name) {
+    return 'Iedereen in $name kan dit recept vinden en gebruiken.';
+  }
+
+  @override
+  String get recipeCreationNoHousehold =>
+      'Word lid van een huishouden om recepten te delen met wie je mee kookt.';
+
+  @override
+  String get recipeDetailShareTooltip => 'Recept delen';
+
+  @override
+  String recipeShareText(String title, String url) {
+    return '$title — kook het met mij op Mitlist: $url';
+  }
+
+  @override
+  String get recipeTagsClear => 'Tags wissen';
+
+  @override
+  String get sharedRecipeTitle => 'Gedeeld recept';
+
+  @override
+  String sharedRecipeBy(String author) {
+    return 'van $author';
+  }
+
+  @override
+  String get sharedRecipeSavePersonal => 'Opslaan bij mijn recepten';
+
+  @override
+  String sharedRecipeSaveHousehold(String name) {
+    return 'Opslaan in $name';
+  }
+
+  @override
+  String get sharedRecipeSaved => 'Recept opgeslagen';
+
+  @override
+  String get sharedRecipeSignInToSave => 'Log in om dit recept op te slaan';
+
+  @override
+  String get sharedRecipeNotFoundTitle => 'Deze link werkt niet meer';
+
+  @override
+  String get sharedRecipeNotFoundBody =>
+      'Degene die hem deelde heeft hem misschien uitgezet. Vraag om een nieuwe.';
+
+  @override
+  String get sharedRecipeGetAppTitle => 'Kook dit in Mitlist';
+
+  @override
+  String get sharedRecipeGetAppBody =>
+      'Download de app om recepten te bewaren, maaltijden te plannen en samen boodschappen te doen.';
 }

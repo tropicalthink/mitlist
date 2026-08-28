@@ -3,6 +3,34 @@ import 'package:mitlist/router_redirect.dart';
 
 void main() {
   group('resolveAppRedirect', () {
+    test('a signed-out visitor may open a shared recipe', () {
+      // The whole point of a share link is that it renders for someone with
+      // neither the app nor an account. Bouncing to /welcome would strand them.
+      final result = resolveAppRedirect(
+        const AppRedirectInput(
+          location: '/r/ABCDEFGH',
+          queryParameters: {},
+          authBootstrapLoading: false,
+          authState: false,
+        ),
+      );
+
+      expect(result.redirect, isNull);
+    });
+
+    test('a signed-out visitor is still bounced off a private route', () {
+      final result = resolveAppRedirect(
+        const AppRedirectInput(
+          location: '/recipes',
+          queryParameters: {},
+          authBootstrapLoading: false,
+          authState: false,
+        ),
+      );
+
+      expect(result.redirect, '/welcome');
+    });
+
     test('while bootstrap is loading, deep links use session gate', () {
       final result = resolveAppRedirect(
         const AppRedirectInput(
