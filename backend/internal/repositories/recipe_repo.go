@@ -49,6 +49,98 @@ func NewRecipeRepo(pool DBTX) *RecipeRepo {
 // Recipes
 // ------------------------------------------------------------------
 
+// RecipeFilter narrows a recipe listing. The zero value returns everything the
+// caller's scope allows, newest first.
+type RecipeFilter struct {
+	// GroupID, when set, widens the listing beyond the user's own recipes to
+	// include the ones shared with that household. The service is responsible
+	// for proving membership before setting it.
+	GroupID *uuid.UUID
+	// Tags matches recipes carrying ALL of these (jsonb @>, GIN-indexed).
+	Tags []string
+	// Search matches title or description, case-insensitively.
+	Search string
+	Limit  int
+	Offset int
+}
+
+// recipeColumns is the SELECT list every recipe query shares. `alias` is the
+// table alias to qualify each column with, or "" for an unaliased query.
+func recipeColumns(alias string) string {
+	if alias != "" {
+		alias += "."
+	}
+	return fmt.Sprintf(`%[1]sid, %[1]suser_id, %[1]sgroup_id, %[1]svisibility, %[1]stitle, %[1]sdescription,
+	       %[1]sdescription_short, %[1]sauthor, %[1]srating_value, %[1]srating_count,
+	       COALESCE(%[1]snutrition_json, '{}'::jsonb)::text,
+	       %[1]svideo_url,
+	       COALESCE(%[1]sequipment_json, '{}'::jsonb)::text,
+	       %[1]ssource_url,
+	       %[1]simage_url,
+	       COALESCE(%[1]simage_options, '[]'::jsonb)::text,
+	       COALESCE(%[1]stags, '[]'::jsonb)::text,
+	       %[1]sprep_time, %[1]scook_time, %[1]sservings, %[1]screated_at, %[1]supdated_at`, alias)
+}
+
+// recipeRowScanner is satisfied by both pgx.Row and pgx.Rows, so single-row and
+// multi-row callers share one scan.
+type recipeRowScanner interface {
+	Scan(dest ...any) error
+}
+
+// scanRecipe reads one row shaped by recipeColumns.
+func scanRecipe(s recipeRowScanner) (models.Recipe, error) {
+	var rec models.Recipe
+	var imageOptionsJSON, tagsJSON string
+	err := s.Scan(
+		&rec.ID,
+		&rec.UserID,
+		&rec.GroupID,
+		&rec.Visibility,
+		&rec.Title,
+		&rec.Description,
+		&rec.DescriptionShort,
+		&rec.Author,
+		&rec.RatingValue,
+		&rec.RatingCount,
+		&rec.NutritionJSON,
+		&rec.VideoURL,
+		&rec.EquipmentJSON,
+		&rec.SourceURL,
+		&rec.ImageURL,
+		&imageOptionsJSON,
+		&tagsJSON,
+		&rec.PrepTime,
+		&rec.CookTime,
+		&rec.Servings,
+		&rec.CreatedAt,
+		&rec.UpdatedAt,
+	)
+	if err != nil {
+		return rec, err
+	}
+	_ = json.Unmarshal([]byte(imageOptionsJSON), &rec.ImageOptions)
+	_ = json.Unmarshal([]byte(tagsJSON), &rec.Tags)
+	return rec, nil
+}
+
+// collectRecipes drains rows shaped by recipeColumns. It closes rows.
+func collectRecipes(rows pgx.Rows) ([]models.Recipe, error) {
+	defer rows.Close()
+	out := make([]models.Recipe, 0)
+	for rows.Next() {
+		rec, err := scanRecipe(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, rec)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CreateRecipe inserts a new recipe.
 func (r *RecipeRepo) CreateRecipe(ctx context.Context, rec *models.Recipe) error {
 	if rec.ID == uuid.Nil {
@@ -64,9 +156,9 @@ func (r *RecipeRepo) CreateRecipe(ctx context.Context, rec *models.Recipe) error
 	tags := mustJSONArrayText(rec.Tags)
 
 	_, err := r.pool.Exec(ctx, `
-		INSERT INTO recipes (id, user_id, title, description, description_short, author, rating_value, rating_count, nutrition_json, video_url, equipment_json, source_url, image_url, image_options, tags, prep_time, cook_time, servings, is_public, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10, $11::jsonb, $12, $13, $14::jsonb, $15::jsonb, $16, $17, $18, $19, $20, $21)
-	`, rec.ID, rec.UserID, rec.Title, rec.Description, rec.DescriptionShort, rec.Author, rec.RatingValue, rec.RatingCount, nutrition, rec.VideoURL, equipment, rec.SourceURL, rec.ImageURL, imageOptions, tags, rec.PrepTime, rec.CookTime, rec.Servings, rec.IsPublic, rec.CreatedAt, rec.UpdatedAt)
+		INSERT INTO recipes (id, user_id, group_id, visibility, title, description, description_short, author, rating_value, rating_count, nutrition_json, video_url, equipment_json, source_url, image_url, image_options, tags, prep_time, cook_time, servings, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb, $12, $13::jsonb, $14, $15, $16::jsonb, $17::jsonb, $18, $19, $20, $21, $22)
+	`, rec.ID, rec.UserID, rec.GroupID, rec.Visibility, rec.Title, rec.Description, rec.DescriptionShort, rec.Author, rec.RatingValue, rec.RatingCount, nutrition, rec.VideoURL, equipment, rec.SourceURL, rec.ImageURL, imageOptions, tags, rec.PrepTime, rec.CookTime, rec.Servings, rec.CreatedAt, rec.UpdatedAt)
 	return err
 }
 
@@ -96,121 +188,104 @@ func (r *RecipeRepo) GetRecipesByIDs(ctx context.Context, ids []uuid.UUID) (map[
 	return out, rows.Err()
 }
 
-// GetRecipeByID retrieves a recipe by its ID.
+// GetRecipeByID retrieves a recipe by its ID. It applies no access control —
+// RecipeService.GetRecipe decides who may see the result.
 func (r *RecipeRepo) GetRecipeByID(ctx context.Context, id uuid.UUID) (*models.Recipe, error) {
 	row := r.pool.QueryRow(ctx, `
-		SELECT id, user_id, title, description, description_short, author, rating_value, rating_count,
-		       COALESCE(nutrition_json, '{}'::jsonb)::text AS nutrition_json,
-		       video_url,
-		       COALESCE(equipment_json, '{}'::jsonb)::text AS equipment_json,
-		       source_url,
-		       image_url,
-		       COALESCE(image_options, '[]'::jsonb)::text AS image_options,
-		       COALESCE(tags, '[]'::jsonb)::text AS tags,
-		       prep_time, cook_time, servings, is_public, created_at, updated_at
+		SELECT `+recipeColumns("")+`
 		FROM recipes
 		WHERE id = $1
 	`, id)
 
-	var rec models.Recipe
-	var imageOptionsJSON, tagsJSON string
-	err := row.Scan(
-		&rec.ID,
-		&rec.UserID,
-		&rec.Title,
-		&rec.Description,
-		&rec.DescriptionShort,
-		&rec.Author,
-		&rec.RatingValue,
-		&rec.RatingCount,
-		&rec.NutritionJSON,
-		&rec.VideoURL,
-		&rec.EquipmentJSON,
-		&rec.SourceURL,
-		&rec.ImageURL,
-		&imageOptionsJSON,
-		&tagsJSON,
-		&rec.PrepTime,
-		&rec.CookTime,
-		&rec.Servings,
-		&rec.IsPublic,
-		&rec.CreatedAt,
-		&rec.UpdatedAt,
-	)
+	rec, err := scanRecipe(row)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, fmt.Errorf("recipe not found")
 		}
 		return nil, err
 	}
-
-	_ = json.Unmarshal([]byte(imageOptionsJSON), &rec.ImageOptions)
-	_ = json.Unmarshal([]byte(tagsJSON), &rec.Tags)
 	return &rec, nil
 }
 
-// ListRecipesByUser returns paginated recipes for a user.
-func (r *RecipeRepo) ListRecipesByUser(ctx context.Context, userID uuid.UUID, limit, offset int) ([]models.Recipe, error) {
-	limit = clampLimit(limit)
+// ListRecipes returns the recipes owned by userID, plus — when filter.GroupID
+// is set — the ones shared with that household, newest first.
+//
+// Callers must prove membership of filter.GroupID before setting it; this
+// query trusts it.
+func (r *RecipeRepo) ListRecipes(ctx context.Context, userID uuid.UUID, filter RecipeFilter) ([]models.Recipe, error) {
+	args := []any{userID}
+	scope := "user_id = $1"
+	if filter.GroupID != nil {
+		args = append(args, *filter.GroupID)
+		scope = fmt.Sprintf("(user_id = $1 OR (group_id = $%d AND visibility = '%s'))",
+			len(args), models.RecipeVisibilityHousehold)
+	}
 
-	rows, err := r.pool.Query(ctx, `
-		SELECT id, user_id, title, description, description_short, author, rating_value, rating_count,
-		       COALESCE(nutrition_json, '{}'::jsonb)::text AS nutrition_json,
-		       video_url,
-		       COALESCE(equipment_json, '{}'::jsonb)::text AS equipment_json,
-		       source_url,
-		       image_url,
-		       COALESCE(image_options, '[]'::jsonb)::text AS image_options,
-		       COALESCE(tags, '[]'::jsonb)::text AS tags,
-		       prep_time, cook_time, servings, is_public, created_at, updated_at
+	where := []string{scope}
+
+	if len(filter.Tags) > 0 {
+		// @> asks "contains all of these", which is what the GIN index serves.
+		args = append(args, mustJSONArrayText(filter.Tags))
+		where = append(where, fmt.Sprintf("tags @> $%d::jsonb", len(args)))
+	}
+
+	if search := strings.TrimSpace(filter.Search); search != "" {
+		args = append(args, "%"+search+"%")
+		where = append(where, fmt.Sprintf("(title ILIKE $%d OR description ILIKE $%d)", len(args), len(args)))
+	}
+
+	args = append(args, clampLimit(filter.Limit))
+	limitIdx := len(args)
+	args = append(args, filter.Offset)
+
+	rows, err := r.pool.Query(ctx, fmt.Sprintf(`
+		SELECT %s
 		FROM recipes
-		WHERE user_id = $1
+		WHERE %s
 		ORDER BY created_at DESC
-		LIMIT $2 OFFSET $3
-	`, userID, limit, offset)
+		LIMIT $%d OFFSET $%d
+	`, recipeColumns(""), strings.Join(where, " AND "), limitIdx, limitIdx+1), args...)
+	if err != nil {
+		return nil, err
+	}
+	return collectRecipes(rows)
+}
+
+// ListDistinctTags returns the tags in use across the recipes userID can see,
+// most-used first, so the client can offer a real filter bar instead of
+// guessing from the current page.
+func (r *RecipeRepo) ListDistinctTags(ctx context.Context, userID uuid.UUID, groupID *uuid.UUID, limit int) ([]models.RecipeTagCount, error) {
+	args := []any{userID}
+	scope := "user_id = $1"
+	if groupID != nil {
+		args = append(args, *groupID)
+		scope = fmt.Sprintf("(user_id = $1 OR (group_id = $%d AND visibility = '%s'))",
+			len(args), models.RecipeVisibilityHousehold)
+	}
+	args = append(args, clampLimit(limit))
+
+	rows, err := r.pool.Query(ctx, fmt.Sprintf(`
+		SELECT tag, COUNT(*) AS uses
+		FROM recipes, LATERAL jsonb_array_elements_text(COALESCE(tags, '[]'::jsonb)) AS tag
+		WHERE %s
+		GROUP BY tag
+		ORDER BY uses DESC, tag ASC
+		LIMIT $%d
+	`, scope, len(args)), args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	out := make([]models.Recipe, 0)
+	out := make([]models.RecipeTagCount, 0)
 	for rows.Next() {
-		var rec models.Recipe
-		var imageOptionsJSON, tagsJSON string
-		err := rows.Scan(
-			&rec.ID,
-			&rec.UserID,
-			&rec.Title,
-			&rec.Description,
-			&rec.DescriptionShort,
-			&rec.Author,
-			&rec.RatingValue,
-			&rec.RatingCount,
-			&rec.NutritionJSON,
-			&rec.VideoURL,
-			&rec.EquipmentJSON,
-			&rec.SourceURL,
-			&rec.ImageURL,
-			&imageOptionsJSON,
-			&tagsJSON,
-			&rec.PrepTime,
-			&rec.CookTime,
-			&rec.Servings,
-			&rec.IsPublic,
-			&rec.CreatedAt,
-			&rec.UpdatedAt,
-		)
-		if err != nil {
+		var t models.RecipeTagCount
+		if err := rows.Scan(&t.Tag, &t.Count); err != nil {
 			return nil, err
 		}
-		_ = json.Unmarshal([]byte(imageOptionsJSON), &rec.ImageOptions)
-		_ = json.Unmarshal([]byte(tagsJSON), &rec.Tags)
-		out = append(out, rec)
+		out = append(out, t)
 	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return out, rows.Err()
 }
 
 // ListRecipesByCollection returns the recipes belonging to a collection,
@@ -219,15 +294,7 @@ func (r *RecipeRepo) ListRecipesByCollection(ctx context.Context, collectionID u
 	limit = clampLimit(limit)
 
 	rows, err := r.pool.Query(ctx, `
-		SELECT rec.id, rec.user_id, rec.title, rec.description, rec.description_short, rec.author, rec.rating_value, rec.rating_count,
-		       COALESCE(rec.nutrition_json, '{}'::jsonb)::text AS nutrition_json,
-		       rec.video_url,
-		       COALESCE(rec.equipment_json, '{}'::jsonb)::text AS equipment_json,
-		       rec.source_url,
-		       rec.image_url,
-		       COALESCE(rec.image_options, '[]'::jsonb)::text AS image_options,
-		       COALESCE(rec.tags, '[]'::jsonb)::text AS tags,
-		       rec.prep_time, rec.cook_time, rec.servings, rec.is_public, rec.created_at, rec.updated_at
+		SELECT `+recipeColumns("rec")+`
 		FROM recipes rec
 		JOIN collection_recipes cr ON cr.recipe_id = rec.id
 		WHERE cr.collection_id = $1
@@ -237,46 +304,7 @@ func (r *RecipeRepo) ListRecipesByCollection(ctx context.Context, collectionID u
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	out := make([]models.Recipe, 0)
-	for rows.Next() {
-		var rec models.Recipe
-		var imageOptionsJSON, tagsJSON string
-		err := rows.Scan(
-			&rec.ID,
-			&rec.UserID,
-			&rec.Title,
-			&rec.Description,
-			&rec.DescriptionShort,
-			&rec.Author,
-			&rec.RatingValue,
-			&rec.RatingCount,
-			&rec.NutritionJSON,
-			&rec.VideoURL,
-			&rec.EquipmentJSON,
-			&rec.SourceURL,
-			&rec.ImageURL,
-			&imageOptionsJSON,
-			&tagsJSON,
-			&rec.PrepTime,
-			&rec.CookTime,
-			&rec.Servings,
-			&rec.IsPublic,
-			&rec.CreatedAt,
-			&rec.UpdatedAt,
-		)
-		if err != nil {
-			return nil, err
-		}
-		_ = json.Unmarshal([]byte(imageOptionsJSON), &rec.ImageOptions)
-		_ = json.Unmarshal([]byte(tagsJSON), &rec.Tags)
-		out = append(out, rec)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return collectRecipes(rows)
 }
 
 // UpdateRecipe updates an existing recipe.
@@ -290,9 +318,9 @@ func (r *RecipeRepo) UpdateRecipe(ctx context.Context, rec *models.Recipe) error
 
 	cmd, err := r.pool.Exec(ctx, `
 		UPDATE recipes
-		SET title = $1, description = $2, description_short = $3, author = $4, rating_value = $5, rating_count = $6, nutrition_json = $7::jsonb, video_url = $8, equipment_json = $9::jsonb, source_url = $10, image_url = $11, image_options = $12::jsonb, tags = $13::jsonb, prep_time = $14, cook_time = $15, servings = $16, is_public = $17, updated_at = $18
-		WHERE id = $19
-	`, rec.Title, rec.Description, rec.DescriptionShort, rec.Author, rec.RatingValue, rec.RatingCount, nutrition, rec.VideoURL, equipment, rec.SourceURL, rec.ImageURL, imageOptions, tags, rec.PrepTime, rec.CookTime, rec.Servings, rec.IsPublic, rec.UpdatedAt, rec.ID)
+		SET title = $1, description = $2, description_short = $3, author = $4, rating_value = $5, rating_count = $6, nutrition_json = $7::jsonb, video_url = $8, equipment_json = $9::jsonb, source_url = $10, image_url = $11, image_options = $12::jsonb, tags = $13::jsonb, prep_time = $14, cook_time = $15, servings = $16, group_id = $17, visibility = $18, updated_at = $19
+		WHERE id = $20
+	`, rec.Title, rec.Description, rec.DescriptionShort, rec.Author, rec.RatingValue, rec.RatingCount, nutrition, rec.VideoURL, equipment, rec.SourceURL, rec.ImageURL, imageOptions, tags, rec.PrepTime, rec.CookTime, rec.Servings, rec.GroupID, rec.Visibility, rec.UpdatedAt, rec.ID)
 	if err != nil {
 		return err
 	}
@@ -493,22 +521,35 @@ func (r *RecipeRepo) CreateCollection(ctx context.Context, c *models.Collection)
 	c.UpdatedAt = now
 
 	_, err := r.pool.Exec(ctx, `
-		INSERT INTO collections (id, user_id, name, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5)
-	`, c.ID, c.UserID, c.Name, c.CreatedAt, c.UpdatedAt)
+		INSERT INTO collections (id, user_id, group_id, name, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6)
+	`, c.ID, c.UserID, c.GroupID, c.Name, c.CreatedAt, c.UpdatedAt)
 	return err
 }
 
-// GetCollectionByID retrieves a collection by its ID.
+// collectionColumns is the SELECT list shared by the collection reads.
+// recipe_count is derived per row rather than stored, so a cookbook can never
+// report a stale total.
+const collectionColumns = `c.id, c.user_id, c.group_id, c.name,
+	       (SELECT COUNT(*) FROM collection_recipes cr WHERE cr.collection_id = c.id),
+	       c.created_at, c.updated_at`
+
+func scanCollection(s recipeRowScanner) (models.Collection, error) {
+	var c models.Collection
+	err := s.Scan(&c.ID, &c.UserID, &c.GroupID, &c.Name, &c.RecipeCount, &c.CreatedAt, &c.UpdatedAt)
+	return c, err
+}
+
+// GetCollectionByID retrieves a collection by its ID. Access control lives in
+// RecipeService.
 func (r *RecipeRepo) GetCollectionByID(ctx context.Context, id uuid.UUID) (*models.Collection, error) {
 	row := r.pool.QueryRow(ctx, `
-		SELECT id, user_id, name, created_at, updated_at
-		FROM collections
-		WHERE id = $1
+		SELECT `+collectionColumns+`
+		FROM collections c
+		WHERE c.id = $1
 	`, id)
 
-	var c models.Collection
-	err := row.Scan(&c.ID, &c.UserID, &c.Name, &c.CreatedAt, &c.UpdatedAt)
+	c, err := scanCollection(row)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, fmt.Errorf("collection not found")
@@ -518,23 +559,40 @@ func (r *RecipeRepo) GetCollectionByID(ctx context.Context, id uuid.UUID) (*mode
 	return &c, nil
 }
 
-// ListCollections returns paginated collections for a user.
-func (r *RecipeRepo) ListCollections(ctx context.Context, userID uuid.UUID, limit, offset int) ([]models.Collection, error) {
-	limit = clampLimit(limit)
+// ListCollections returns the cookbooks owned by userID, plus — when groupID is
+// set — the ones shared with that household.
+//
+// Callers must prove membership of groupID before passing it.
+func (r *RecipeRepo) ListCollections(ctx context.Context, userID uuid.UUID, groupID *uuid.UUID, limit, offset int) ([]models.Collection, error) {
+	args := []any{userID}
+	scope := "c.user_id = $1"
+	if groupID != nil {
+		args = append(args, *groupID)
+		scope = fmt.Sprintf("(c.user_id = $1 OR c.group_id = $%d)", len(args))
+	}
+	args = append(args, clampLimit(limit), offset)
 
-	rows, err := r.pool.Query(ctx, `
-		SELECT id, user_id, name, created_at, updated_at
-		FROM collections
-		WHERE user_id = $1
-		ORDER BY created_at DESC
-		LIMIT $2 OFFSET $3
-	`, userID, limit, offset)
+	rows, err := r.pool.Query(ctx, fmt.Sprintf(`
+		SELECT %s
+		FROM collections c
+		WHERE %s
+		ORDER BY c.created_at DESC
+		LIMIT $%d OFFSET $%d
+	`, collectionColumns, scope, len(args)-1, len(args)), args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	return pgx.CollectRows(rows, pgx.RowToStructByName[models.Collection])
+	out := make([]models.Collection, 0)
+	for rows.Next() {
+		c, err := scanCollection(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, c)
+	}
+	return out, rows.Err()
 }
 
 // UpdateCollection updates an existing collection.
@@ -543,9 +601,9 @@ func (r *RecipeRepo) UpdateCollection(ctx context.Context, c *models.Collection)
 
 	cmd, err := r.pool.Exec(ctx, `
 		UPDATE collections
-		SET name = $1, updated_at = $2
-		WHERE id = $3
-	`, c.Name, c.UpdatedAt, c.ID)
+		SET name = $1, group_id = $2, updated_at = $3
+		WHERE id = $4
+	`, c.Name, c.GroupID, c.UpdatedAt, c.ID)
 	if err != nil {
 		return err
 	}
