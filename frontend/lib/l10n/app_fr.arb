@@ -383,23 +383,23 @@
   },
   "choreDoneSnackbar": "{choreTitle} terminée",
   "@choreDoneSnackbar": {
-  "choreDoneRecently": "Fait récemment",
-  "choreLedgerYou": "Toi",
-  "choreLedgerSomeone": "Quelqu'un",
-  "choreLedgerDoneBy": "{who} · {when}",
-  "choreLedgerJustNow": "à l'instant",
-  "choreLedgerHoursAgo": "il y a {count} h",
-  "choreLedgerYesterday": "hier",
-  "choreBackOnDate": "revient le {date}",
-  "choreUpForGrabs": "À prendre",
-  "choreDoneBackSnackbar": "{choreTitle} fait — revient le {date}",
-  "choreWhoEveryone": "Tout le monde",
-  "choreWhoNoOne": "Personne",
-  "choreWhoAlways": "Toujours {name}",
-  "choreWhoAmongSelected": "Tourne entre les {count} personnes choisies.",
-  "choreWhoOrderLabel": "Ordre",
-  "choreDetailRhythm": "Se répète",
-  "choreLoadSummary": "{count, plural, =1{1 tâche faite} other{{count} tâches faites}} sur les {days} derniers jours",
+    "choreDoneRecently": "Fait récemment",
+    "choreLedgerYou": "Toi",
+    "choreLedgerSomeone": "Quelqu'un",
+    "choreLedgerDoneBy": "{who} · {when}",
+    "choreLedgerJustNow": "à l'instant",
+    "choreLedgerHoursAgo": "il y a {count} h",
+    "choreLedgerYesterday": "hier",
+    "choreBackOnDate": "revient le {date}",
+    "choreUpForGrabs": "À prendre",
+    "choreDoneBackSnackbar": "{choreTitle} fait — revient le {date}",
+    "choreWhoEveryone": "Tout le monde",
+    "choreWhoNoOne": "Personne",
+    "choreWhoAlways": "Toujours {name}",
+    "choreWhoAmongSelected": "Tourne entre les {count} personnes choisies.",
+    "choreWhoOrderLabel": "Ordre",
+    "choreDetailRhythm": "Se répète",
+    "choreLoadSummary": "{count, plural, =1{1 tâche faite} other{{count} tâches faites}} sur les {days} derniers jours",
     "description": "Snackbar when a chore is marked done",
     "placeholders": {
       "choreTitle": {
@@ -1550,7 +1550,14 @@
     "description": "Switch subtitle when private"
   },
   "recipeCreationSharedWithGroups": "Partagé avec {names}",
-  "@recipeCreationSharedWithGroups": { "description": "Switch subtitle listing group names when recipe is public", "placeholders": { "names": { "type": "String" } } },
+  "@recipeCreationSharedWithGroups": {
+    "description": "Switch subtitle listing group names when recipe is public",
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
   "recipeCreationIngredients": "Ingrédients",
   "@recipeCreationIngredients": {
     "description": "Section header for ingredients"
@@ -2364,7 +2371,14 @@
     "description": "Tooltip for list options menu"
   },
   "listSharedWith": "Partagé avec {name}",
-  "@listSharedWith": { "description": "Label showing which household a list is shared with", "placeholders": { "name": { "type": "String" } } },
+  "@listSharedWith": {
+    "description": "Label showing which household a list is shared with",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "listDetailEditName": "Modifier le nom de la liste, {name}",
   "@listDetailEditName": {
     "description": "Semantics for editing list name",
@@ -3179,10 +3193,10 @@
       }
     }
   },
-  "notificationsSectionToday": "Aujourd\u2019hui",
+  "notificationsSectionToday": "Aujourd’hui",
   "notificationsSectionYesterday": "Hier",
   "notificationsSectionEarlier": "Plus ancien",
-  "notificationsTimeNow": "\u00e0 l\u2019instant",
+  "notificationsTimeNow": "à l’instant",
   "notificationsTimeMinutes": "{minutes} min",
   "notificationsTimeHours": "{hours} h",
   "notificationsTimeDays": "{days} j",
@@ -3690,7 +3704,11 @@
   "scanReviewBestGuess": "Suggestion : {name}",
   "@scanReviewBestGuess": {
     "description": "Tentative resolver guess under the user's OCR text on a low-confidence scan-review row",
-    "placeholders": { "name": { "type": "String" } }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "shareTargetAppBarTitle": "Enregistrer dans mitlist",
   "@shareTargetAppBarTitle": {
@@ -4057,9 +4075,13 @@
   "offlineBannerBarOffline": "Hors ligne — les modifications seront synchronisées à la reconnexion",
   "offlineBannerSyncingCount": "Synchronisation de {count} modifications…",
   "initialSyncRefreshing": "Actualisation…",
-  "@initialSyncRefreshing": { "description": "Banner text while the cold-start refresh pulls fresh data" },
+  "@initialSyncRefreshing": {
+    "description": "Banner text while the cold-start refresh pulls fresh data"
+  },
   "initialSyncFailed": "Échec de l'actualisation — touchez pour réessayer",
-  "@initialSyncFailed": { "description": "Banner text when the cold-start refresh failed; tapping retries" },
+  "@initialSyncFailed": {
+    "description": "Banner text when the cold-start refresh failed; tapping retries"
+  },
   "offlineBannerSyncing": "Synchronisation des modifications…",
   "offlineBannerFailedCount": "Impossible de synchroniser {count} modifications",
   "offlineBannerFailedOne": "Impossible de synchroniser une modification",
@@ -5793,15 +5815,30 @@
     "description": "Fallback recipe title for tonight card"
   },
   "runningLowHeading": "Presque épuisé",
-  "@runningLowHeading": { "description": "Section header for the restock suggestion strip above the list" },
+  "@runningLowHeading": {
+    "description": "Section header for the restock suggestion strip above the list"
+  },
   "runningLowDaysAgo": "il y a {days}j",
-  "@runningLowDaysAgo": { "description": "Per-chip cadence hint showing how many days since last purchase", "placeholders": { "days": { "type": "num" } } },
+  "@runningLowDaysAgo": {
+    "description": "Per-chip cadence hint showing how many days since last purchase",
+    "placeholders": {
+      "days": {
+        "type": "num"
+      }
+    }
+  },
   "restockReasonDue": "À racheter",
-  "@restockReasonDue": { "description": "Reason shown when a household suggestion is due based on purchase cadence" },
+  "@restockReasonDue": {
+    "description": "Reason shown when a household suggestion is due based on purchase cadence"
+  },
   "restockReasonUsual": "Achat habituel",
-  "@restockReasonUsual": { "description": "Reason shown when a household suggestion is a familiar recurring purchase" },
+  "@restockReasonUsual": {
+    "description": "Reason shown when a household suggestion is a familiar recurring purchase"
+  },
   "restockReasonGoesWith": "Va avec cette liste",
-  "@restockReasonGoesWith": { "description": "Reason shown when a household suggestion commonly occurs with current list items" },
+  "@restockReasonGoesWith": {
+    "description": "Reason shown when a household suggestion commonly occurs with current list items"
+  },
   "householdStorageTitle": "Stockage du foyer",
   "householdStorageUsedOf": "{used} utilisés sur {limit}",
   "householdStorageUsedUnlimited": "{used} utilisés · sans limite",
@@ -5827,7 +5864,6 @@
   "accountOcrTrainingExportEmpty": "Il n’y a pas encore de lignes OCR corrigées à exporter.",
   "accountOcrTrainingClearTitle": "Supprimer les données d’entraînement OCR ?",
   "accountOcrTrainingClearBody": "Cette action supprime définitivement toutes les lignes enregistrées sur cet appareil.",
-
   "billingPremiumTitle": "mitlist premium",
   "billingLimitReachedTitle": "Ce foyer est complet",
   "billingLimitReachedBody": "Les foyers jusqu’à {limit} personnes sont gratuits. Pour ajouter un {next}e membre, une personne doit prendre premium — et cela couvre tout le monde ici.",
@@ -5917,5 +5953,20 @@
   "weeklySummaryEmptyTitle": "Une semaine calme",
   "weeklySummaryEmptyBody": "Rien n'a été enregistré ces sept derniers jours. Ajoutez quelque chose et cela apparaîtra ici la semaine prochaine.",
   "weeklySummaryLoadFailed": "Impossible de charger votre semaine",
-  "weeklySummaryTryAgain": "Vérifiez votre connexion et réessayez."
+  "weeklySummaryTryAgain": "Vérifiez votre connexion et réessayez.",
+  "recipeCreationSharedWithHousehold": "Tout le monde dans {name} peut trouver et utiliser cette recette.",
+  "recipeCreationNoHousehold": "Rejoins un foyer pour partager des recettes avec ceux qui cuisinent avec toi.",
+  "recipeDetailShareTooltip": "Partager la recette",
+  "recipeShareText": "{title} — cuisine-la avec moi sur Mitlist : {url}",
+  "recipeTagsClear": "Effacer les tags",
+  "sharedRecipeTitle": "Recette partagée",
+  "sharedRecipeBy": "par {author}",
+  "sharedRecipeSavePersonal": "Enregistrer dans mes recettes",
+  "sharedRecipeSaveHousehold": "Enregistrer dans {name}",
+  "sharedRecipeSaved": "Recette enregistrée",
+  "sharedRecipeSignInToSave": "Connecte-toi pour enregistrer cette recette",
+  "sharedRecipeNotFoundTitle": "Ce lien ne fonctionne plus",
+  "sharedRecipeNotFoundBody": "La personne qui l'a partagé l'a peut-être désactivé. Demande-lui un nouveau lien.",
+  "sharedRecipeGetAppTitle": "Cuisine ça dans Mitlist",
+  "sharedRecipeGetAppBody": "Télécharge l'app pour enregistrer des recettes, planifier les repas et faire les courses avec ton foyer."
 }

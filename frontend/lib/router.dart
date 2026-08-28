@@ -40,6 +40,7 @@ import 'screens/notifications/notification_preferences_screen.dart';
 import 'screens/recipes/recipes_screen.dart';
 import 'screens/recipes/recipe_creation_screen.dart';
 import 'screens/recipes/recipe_detail_screen.dart';
+import 'screens/recipes/shared_recipe_screen.dart';
 import 'screens/recipes/cook_mode_screen.dart';
 import 'screens/recipes/cookbooks_screen.dart';
 import 'screens/recipes/cookbook_detail_screen.dart';
@@ -222,6 +223,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/share-target',
         name: 'shareTarget',
         builder: (context, state) => const ShareTargetScreen(),
+      ),
+      GoRoute(
+        // Public: a shared recipe renders for signed-out visitors too, so
+        // router_redirect exempts this prefix from the /welcome bounce.
+        path: '/r/:token',
+        name: 'sharedRecipe',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => SharedRecipeScreen(
+          token: state.pathParameters['token']!,
+        ),
       ),
       GoRoute(
         path: '/join/:code',

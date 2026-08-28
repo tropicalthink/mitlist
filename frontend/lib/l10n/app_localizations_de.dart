@@ -5891,4 +5891,60 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get weeklySummaryTryAgain =>
       'Prüfe deine Verbindung und versuche es erneut.';
+
+  @override
+  String recipeCreationSharedWithHousehold(String name) {
+    return 'Alle in $name können dieses Rezept finden und nutzen.';
+  }
+
+  @override
+  String get recipeCreationNoHousehold =>
+      'Tritt einem Haushalt bei, um Rezepte mit deinen Mitköchen zu teilen.';
+
+  @override
+  String get recipeDetailShareTooltip => 'Rezept teilen';
+
+  @override
+  String recipeShareText(String title, String url) {
+    return '$title — koch mit mir auf Mitlist: $url';
+  }
+
+  @override
+  String get recipeTagsClear => 'Tags zurücksetzen';
+
+  @override
+  String get sharedRecipeTitle => 'Geteiltes Rezept';
+
+  @override
+  String sharedRecipeBy(String author) {
+    return 'von $author';
+  }
+
+  @override
+  String get sharedRecipeSavePersonal => 'Zu meinen Rezepten';
+
+  @override
+  String sharedRecipeSaveHousehold(String name) {
+    return 'In $name speichern';
+  }
+
+  @override
+  String get sharedRecipeSaved => 'Rezept gespeichert';
+
+  @override
+  String get sharedRecipeSignInToSave => 'Anmelden, um das Rezept zu speichern';
+
+  @override
+  String get sharedRecipeNotFoundTitle => 'Dieser Link funktioniert nicht mehr';
+
+  @override
+  String get sharedRecipeNotFoundBody =>
+      'Wer ihn geteilt hat, hat ihn vielleicht deaktiviert. Frag nach einem neuen.';
+
+  @override
+  String get sharedRecipeGetAppTitle => 'Koch das in Mitlist';
+
+  @override
+  String get sharedRecipeGetAppBody =>
+      'Hol dir die App, um Rezepte zu speichern, Mahlzeiten zu planen und mit deinem Haushalt einzukaufen.';
 }

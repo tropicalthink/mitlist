@@ -383,23 +383,23 @@
   },
   "choreDoneSnackbar": "{choreTitle} gedaan",
   "@choreDoneSnackbar": {
-  "choreDoneRecently": "Onlangs gedaan",
-  "choreLedgerYou": "Jij",
-  "choreLedgerSomeone": "Iemand",
-  "choreLedgerDoneBy": "{who} · {when}",
-  "choreLedgerJustNow": "zojuist",
-  "choreLedgerHoursAgo": "{count} u geleden",
-  "choreLedgerYesterday": "gisteren",
-  "choreBackOnDate": "terug op {date}",
-  "choreUpForGrabs": "Voor het oprapen",
-  "choreDoneBackSnackbar": "{choreTitle} gedaan — terug op {date}",
-  "choreWhoEveryone": "Iedereen",
-  "choreWhoNoOne": "Niemand",
-  "choreWhoAlways": "Altijd {name}",
-  "choreWhoAmongSelected": "Wisselt tussen de {count} gekozen personen.",
-  "choreWhoOrderLabel": "Volgorde",
-  "choreDetailRhythm": "Herhaalt zich",
-  "choreLoadSummary": "{count, plural, =1{1 klusje} other{{count} klusjes}} gedaan in de laatste {days} dagen",
+    "choreDoneRecently": "Onlangs gedaan",
+    "choreLedgerYou": "Jij",
+    "choreLedgerSomeone": "Iemand",
+    "choreLedgerDoneBy": "{who} · {when}",
+    "choreLedgerJustNow": "zojuist",
+    "choreLedgerHoursAgo": "{count} u geleden",
+    "choreLedgerYesterday": "gisteren",
+    "choreBackOnDate": "terug op {date}",
+    "choreUpForGrabs": "Voor het oprapen",
+    "choreDoneBackSnackbar": "{choreTitle} gedaan — terug op {date}",
+    "choreWhoEveryone": "Iedereen",
+    "choreWhoNoOne": "Niemand",
+    "choreWhoAlways": "Altijd {name}",
+    "choreWhoAmongSelected": "Wisselt tussen de {count} gekozen personen.",
+    "choreWhoOrderLabel": "Volgorde",
+    "choreDetailRhythm": "Herhaalt zich",
+    "choreLoadSummary": "{count, plural, =1{1 klusje} other{{count} klusjes}} gedaan in de laatste {days} dagen",
     "description": "Snackbar when a chore is marked done",
     "placeholders": {
       "choreTitle": {
@@ -1550,7 +1550,14 @@
     "description": "Switch subtitle when private"
   },
   "recipeCreationSharedWithGroups": "Gedeeld met {names}",
-  "@recipeCreationSharedWithGroups": { "description": "Switch subtitle listing group names when recipe is public", "placeholders": { "names": { "type": "String" } } },
+  "@recipeCreationSharedWithGroups": {
+    "description": "Switch subtitle listing group names when recipe is public",
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
   "recipeCreationIngredients": "Ingrediënten",
   "@recipeCreationIngredients": {
     "description": "Section header for ingredients"
@@ -2364,7 +2371,14 @@
     "description": "Tooltip for list options menu"
   },
   "listSharedWith": "Gedeeld met {name}",
-  "@listSharedWith": { "description": "Label showing which household a list is shared with", "placeholders": { "name": { "type": "String" } } },
+  "@listSharedWith": {
+    "description": "Label showing which household a list is shared with",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "listDetailEditName": "Lijstnaam bewerken, {name}",
   "@listDetailEditName": {
     "description": "Semantics for editing list name",
@@ -3690,7 +3704,11 @@
   "scanReviewBestGuess": "Beste gok: {name}",
   "@scanReviewBestGuess": {
     "description": "Tentative resolver guess under the user's OCR text on a low-confidence scan-review row",
-    "placeholders": { "name": { "type": "String" } }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "shareTargetAppBarTitle": "Opslaan in mitlist",
   "@shareTargetAppBarTitle": {
@@ -4057,9 +4075,13 @@
   "offlineBannerBarOffline": "Offline — wijzigingen worden gesynchroniseerd bij verbinding",
   "offlineBannerSyncingCount": "{count} wijzigingen synchroniseren…",
   "initialSyncRefreshing": "Vernieuwen…",
-  "@initialSyncRefreshing": { "description": "Banner text while the cold-start refresh pulls fresh data" },
+  "@initialSyncRefreshing": {
+    "description": "Banner text while the cold-start refresh pulls fresh data"
+  },
   "initialSyncFailed": "Vernieuwen mislukt — tik om opnieuw te proberen",
-  "@initialSyncFailed": { "description": "Banner text when the cold-start refresh failed; tapping retries" },
+  "@initialSyncFailed": {
+    "description": "Banner text when the cold-start refresh failed; tapping retries"
+  },
   "offlineBannerSyncing": "Wijzigingen synchroniseren…",
   "offlineBannerFailedCount": "Kon {count} wijzigingen niet synchroniseren",
   "offlineBannerFailedOne": "Kon een wijziging niet synchroniseren",
@@ -5793,15 +5815,30 @@
     "description": "Fallback recipe title for tonight card"
   },
   "runningLowHeading": "Bijna op",
-  "@runningLowHeading": { "description": "Section header for the restock suggestion strip above the list" },
+  "@runningLowHeading": {
+    "description": "Section header for the restock suggestion strip above the list"
+  },
   "runningLowDaysAgo": "{days}d geleden",
-  "@runningLowDaysAgo": { "description": "Per-chip cadence hint showing how many days since last purchase", "placeholders": { "days": { "type": "num" } } },
+  "@runningLowDaysAgo": {
+    "description": "Per-chip cadence hint showing how many days since last purchase",
+    "placeholders": {
+      "days": {
+        "type": "num"
+      }
+    }
+  },
   "restockReasonDue": "Weer nodig",
-  "@restockReasonDue": { "description": "Reason shown when a household suggestion is due based on purchase cadence" },
+  "@restockReasonDue": {
+    "description": "Reason shown when a household suggestion is due based on purchase cadence"
+  },
   "restockReasonUsual": "Vaste aankoop",
-  "@restockReasonUsual": { "description": "Reason shown when a household suggestion is a familiar recurring purchase" },
+  "@restockReasonUsual": {
+    "description": "Reason shown when a household suggestion is a familiar recurring purchase"
+  },
   "restockReasonGoesWith": "Past bij deze lijst",
-  "@restockReasonGoesWith": { "description": "Reason shown when a household suggestion commonly occurs with current list items" },
+  "@restockReasonGoesWith": {
+    "description": "Reason shown when a household suggestion commonly occurs with current list items"
+  },
   "householdStorageTitle": "Huishoudopslag",
   "householdStorageUsedOf": "{used} van {limit} gebruikt",
   "householdStorageUsedUnlimited": "{used} gebruikt · geen limiet",
@@ -5827,7 +5864,6 @@
   "accountOcrTrainingExportEmpty": "Er zijn nog geen gecorrigeerde OCR-regels om te exporteren.",
   "accountOcrTrainingClearTitle": "OCR-trainingsgegevens verwijderen?",
   "accountOcrTrainingClearBody": "Hiermee worden alle opgeslagen regeluitsneden permanent van dit apparaat verwijderd.",
-
   "billingPremiumTitle": "mitlist premium",
   "billingLimitReachedTitle": "Dit huishouden is vol",
   "billingLimitReachedBody": "Huishoudens tot {limit} personen zijn gratis. Om een {next}e lid toe te voegen heeft één persoon premium nodig — en dat geldt voor iedereen hier.",
@@ -5917,5 +5953,20 @@
   "weeklySummaryEmptyTitle": "Een rustige week",
   "weeklySummaryEmptyBody": "In de afgelopen zeven dagen is niets vastgelegd. Voeg iets toe en het staat hier volgende week.",
   "weeklySummaryLoadFailed": "Je week kon niet worden geladen",
-  "weeklySummaryTryAgain": "Controleer je verbinding en probeer het opnieuw."
+  "weeklySummaryTryAgain": "Controleer je verbinding en probeer het opnieuw.",
+  "recipeCreationSharedWithHousehold": "Iedereen in {name} kan dit recept vinden en gebruiken.",
+  "recipeCreationNoHousehold": "Word lid van een huishouden om recepten te delen met wie je mee kookt.",
+  "recipeDetailShareTooltip": "Recept delen",
+  "recipeShareText": "{title} — kook het met mij op Mitlist: {url}",
+  "recipeTagsClear": "Tags wissen",
+  "sharedRecipeTitle": "Gedeeld recept",
+  "sharedRecipeBy": "van {author}",
+  "sharedRecipeSavePersonal": "Opslaan bij mijn recepten",
+  "sharedRecipeSaveHousehold": "Opslaan in {name}",
+  "sharedRecipeSaved": "Recept opgeslagen",
+  "sharedRecipeSignInToSave": "Log in om dit recept op te slaan",
+  "sharedRecipeNotFoundTitle": "Deze link werkt niet meer",
+  "sharedRecipeNotFoundBody": "Degene die hem deelde heeft hem misschien uitgezet. Vraag om een nieuwe.",
+  "sharedRecipeGetAppTitle": "Kook dit in Mitlist",
+  "sharedRecipeGetAppBody": "Download de app om recepten te bewaren, maaltijden te plannen en samen boodschappen te doen."
 }

@@ -2147,15 +2147,28 @@ class $RecipesTableTable extends RecipesTable
   late final GeneratedColumn<String> imageUrl = GeneratedColumn<String>(
       'image_url', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
-  static const VerificationMeta _isPublicMeta =
-      const VerificationMeta('isPublic');
+  static const VerificationMeta _visibilityMeta =
+      const VerificationMeta('visibility');
   @override
-  late final GeneratedColumn<bool> isPublic = GeneratedColumn<bool>(
-      'is_public', aliasedName, false,
-      type: DriftSqlType.bool,
-      requiredDuringInsert: true,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('CHECK ("is_public" IN (0, 1))'));
+  late final GeneratedColumn<String> visibility = GeneratedColumn<String>(
+      'visibility', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('private'));
+  static const VerificationMeta _groupIdMeta =
+      const VerificationMeta('groupId');
+  @override
+  late final GeneratedColumn<String> groupId = GeneratedColumn<String>(
+      'group_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _tagsJsonMeta =
+      const VerificationMeta('tagsJson');
+  @override
+  late final GeneratedColumn<String> tagsJson = GeneratedColumn<String>(
+      'tags_json', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('[]'));
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -2177,7 +2190,9 @@ class $RecipesTableTable extends RecipesTable
         cookTime,
         servings,
         imageUrl,
-        isPublic,
+        visibility,
+        groupId,
+        tagsJson,
         createdAt,
         updatedAt
       ];
@@ -2232,11 +2247,19 @@ class $RecipesTableTable extends RecipesTable
       context.handle(_imageUrlMeta,
           imageUrl.isAcceptableOrUnknown(data['image_url']!, _imageUrlMeta));
     }
-    if (data.containsKey('is_public')) {
-      context.handle(_isPublicMeta,
-          isPublic.isAcceptableOrUnknown(data['is_public']!, _isPublicMeta));
-    } else if (isInserting) {
-      context.missing(_isPublicMeta);
+    if (data.containsKey('visibility')) {
+      context.handle(
+          _visibilityMeta,
+          visibility.isAcceptableOrUnknown(
+              data['visibility']!, _visibilityMeta));
+    }
+    if (data.containsKey('group_id')) {
+      context.handle(_groupIdMeta,
+          groupId.isAcceptableOrUnknown(data['group_id']!, _groupIdMeta));
+    }
+    if (data.containsKey('tags_json')) {
+      context.handle(_tagsJsonMeta,
+          tagsJson.isAcceptableOrUnknown(data['tags_json']!, _tagsJsonMeta));
     }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
@@ -2273,8 +2296,12 @@ class $RecipesTableTable extends RecipesTable
           .read(DriftSqlType.int, data['${effectivePrefix}servings'])!,
       imageUrl: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}image_url']),
-      isPublic: attachedDatabase.typeMapping
-          .read(DriftSqlType.bool, data['${effectivePrefix}is_public'])!,
+      visibility: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}visibility'])!,
+      groupId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}group_id']),
+      tagsJson: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}tags_json'])!,
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       updatedAt: attachedDatabase.typeMapping
@@ -2297,7 +2324,18 @@ class RecipesTableData extends DataClass
   final int cookTime;
   final int servings;
   final String? imageUrl;
-  final bool isPublic;
+
+  /// 'private' or 'household'. Replaces the old is_public boolean, which the
+  /// server dropped in migration 000058.
+  final String visibility;
+
+  /// The household a 'household' recipe is shared with, else null.
+  final String? groupId;
+
+  /// Tags as a JSON array. The cache used to drop them entirely, so any recipe
+  /// served from here came back untagged and the offline edit path could not
+  /// touch them.
+  final String tagsJson;
   final DateTime createdAt;
   final DateTime updatedAt;
   const RecipesTableData(
@@ -2308,7 +2346,9 @@ class RecipesTableData extends DataClass
       required this.cookTime,
       required this.servings,
       this.imageUrl,
-      required this.isPublic,
+      required this.visibility,
+      this.groupId,
+      required this.tagsJson,
       required this.createdAt,
       required this.updatedAt});
   @override
@@ -2323,7 +2363,11 @@ class RecipesTableData extends DataClass
     if (!nullToAbsent || imageUrl != null) {
       map['image_url'] = Variable<String>(imageUrl);
     }
-    map['is_public'] = Variable<bool>(isPublic);
+    map['visibility'] = Variable<String>(visibility);
+    if (!nullToAbsent || groupId != null) {
+      map['group_id'] = Variable<String>(groupId);
+    }
+    map['tags_json'] = Variable<String>(tagsJson);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
@@ -2340,7 +2384,11 @@ class RecipesTableData extends DataClass
       imageUrl: imageUrl == null && nullToAbsent
           ? const Value.absent()
           : Value(imageUrl),
-      isPublic: Value(isPublic),
+      visibility: Value(visibility),
+      groupId: groupId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(groupId),
+      tagsJson: Value(tagsJson),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -2357,7 +2405,9 @@ class RecipesTableData extends DataClass
       cookTime: serializer.fromJson<int>(json['cookTime']),
       servings: serializer.fromJson<int>(json['servings']),
       imageUrl: serializer.fromJson<String?>(json['imageUrl']),
-      isPublic: serializer.fromJson<bool>(json['isPublic']),
+      visibility: serializer.fromJson<String>(json['visibility']),
+      groupId: serializer.fromJson<String?>(json['groupId']),
+      tagsJson: serializer.fromJson<String>(json['tagsJson']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -2373,7 +2423,9 @@ class RecipesTableData extends DataClass
       'cookTime': serializer.toJson<int>(cookTime),
       'servings': serializer.toJson<int>(servings),
       'imageUrl': serializer.toJson<String?>(imageUrl),
-      'isPublic': serializer.toJson<bool>(isPublic),
+      'visibility': serializer.toJson<String>(visibility),
+      'groupId': serializer.toJson<String?>(groupId),
+      'tagsJson': serializer.toJson<String>(tagsJson),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -2387,7 +2439,9 @@ class RecipesTableData extends DataClass
           int? cookTime,
           int? servings,
           Value<String?> imageUrl = const Value.absent(),
-          bool? isPublic,
+          String? visibility,
+          Value<String?> groupId = const Value.absent(),
+          String? tagsJson,
           DateTime? createdAt,
           DateTime? updatedAt}) =>
       RecipesTableData(
@@ -2398,7 +2452,9 @@ class RecipesTableData extends DataClass
         cookTime: cookTime ?? this.cookTime,
         servings: servings ?? this.servings,
         imageUrl: imageUrl.present ? imageUrl.value : this.imageUrl,
-        isPublic: isPublic ?? this.isPublic,
+        visibility: visibility ?? this.visibility,
+        groupId: groupId.present ? groupId.value : this.groupId,
+        tagsJson: tagsJson ?? this.tagsJson,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
       );
@@ -2412,7 +2468,10 @@ class RecipesTableData extends DataClass
       cookTime: data.cookTime.present ? data.cookTime.value : this.cookTime,
       servings: data.servings.present ? data.servings.value : this.servings,
       imageUrl: data.imageUrl.present ? data.imageUrl.value : this.imageUrl,
-      isPublic: data.isPublic.present ? data.isPublic.value : this.isPublic,
+      visibility:
+          data.visibility.present ? data.visibility.value : this.visibility,
+      groupId: data.groupId.present ? data.groupId.value : this.groupId,
+      tagsJson: data.tagsJson.present ? data.tagsJson.value : this.tagsJson,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -2428,7 +2487,9 @@ class RecipesTableData extends DataClass
           ..write('cookTime: $cookTime, ')
           ..write('servings: $servings, ')
           ..write('imageUrl: $imageUrl, ')
-          ..write('isPublic: $isPublic, ')
+          ..write('visibility: $visibility, ')
+          ..write('groupId: $groupId, ')
+          ..write('tagsJson: $tagsJson, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -2437,7 +2498,7 @@ class RecipesTableData extends DataClass
 
   @override
   int get hashCode => Object.hash(id, title, description, prepTime, cookTime,
-      servings, imageUrl, isPublic, createdAt, updatedAt);
+      servings, imageUrl, visibility, groupId, tagsJson, createdAt, updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2449,7 +2510,9 @@ class RecipesTableData extends DataClass
           other.cookTime == this.cookTime &&
           other.servings == this.servings &&
           other.imageUrl == this.imageUrl &&
-          other.isPublic == this.isPublic &&
+          other.visibility == this.visibility &&
+          other.groupId == this.groupId &&
+          other.tagsJson == this.tagsJson &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -2462,7 +2525,9 @@ class RecipesTableCompanion extends UpdateCompanion<RecipesTableData> {
   final Value<int> cookTime;
   final Value<int> servings;
   final Value<String?> imageUrl;
-  final Value<bool> isPublic;
+  final Value<String> visibility;
+  final Value<String?> groupId;
+  final Value<String> tagsJson;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
@@ -2474,7 +2539,9 @@ class RecipesTableCompanion extends UpdateCompanion<RecipesTableData> {
     this.cookTime = const Value.absent(),
     this.servings = const Value.absent(),
     this.imageUrl = const Value.absent(),
-    this.isPublic = const Value.absent(),
+    this.visibility = const Value.absent(),
+    this.groupId = const Value.absent(),
+    this.tagsJson = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -2487,7 +2554,9 @@ class RecipesTableCompanion extends UpdateCompanion<RecipesTableData> {
     required int cookTime,
     required int servings,
     this.imageUrl = const Value.absent(),
-    required bool isPublic,
+    this.visibility = const Value.absent(),
+    this.groupId = const Value.absent(),
+    this.tagsJson = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
@@ -2497,7 +2566,6 @@ class RecipesTableCompanion extends UpdateCompanion<RecipesTableData> {
         prepTime = Value(prepTime),
         cookTime = Value(cookTime),
         servings = Value(servings),
-        isPublic = Value(isPublic),
         createdAt = Value(createdAt),
         updatedAt = Value(updatedAt);
   static Insertable<RecipesTableData> custom({
@@ -2508,7 +2576,9 @@ class RecipesTableCompanion extends UpdateCompanion<RecipesTableData> {
     Expression<int>? cookTime,
     Expression<int>? servings,
     Expression<String>? imageUrl,
-    Expression<bool>? isPublic,
+    Expression<String>? visibility,
+    Expression<String>? groupId,
+    Expression<String>? tagsJson,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
@@ -2521,7 +2591,9 @@ class RecipesTableCompanion extends UpdateCompanion<RecipesTableData> {
       if (cookTime != null) 'cook_time': cookTime,
       if (servings != null) 'servings': servings,
       if (imageUrl != null) 'image_url': imageUrl,
-      if (isPublic != null) 'is_public': isPublic,
+      if (visibility != null) 'visibility': visibility,
+      if (groupId != null) 'group_id': groupId,
+      if (tagsJson != null) 'tags_json': tagsJson,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -2536,7 +2608,9 @@ class RecipesTableCompanion extends UpdateCompanion<RecipesTableData> {
       Value<int>? cookTime,
       Value<int>? servings,
       Value<String?>? imageUrl,
-      Value<bool>? isPublic,
+      Value<String>? visibility,
+      Value<String?>? groupId,
+      Value<String>? tagsJson,
       Value<DateTime>? createdAt,
       Value<DateTime>? updatedAt,
       Value<int>? rowid}) {
@@ -2548,7 +2622,9 @@ class RecipesTableCompanion extends UpdateCompanion<RecipesTableData> {
       cookTime: cookTime ?? this.cookTime,
       servings: servings ?? this.servings,
       imageUrl: imageUrl ?? this.imageUrl,
-      isPublic: isPublic ?? this.isPublic,
+      visibility: visibility ?? this.visibility,
+      groupId: groupId ?? this.groupId,
+      tagsJson: tagsJson ?? this.tagsJson,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -2579,8 +2655,14 @@ class RecipesTableCompanion extends UpdateCompanion<RecipesTableData> {
     if (imageUrl.present) {
       map['image_url'] = Variable<String>(imageUrl.value);
     }
-    if (isPublic.present) {
-      map['is_public'] = Variable<bool>(isPublic.value);
+    if (visibility.present) {
+      map['visibility'] = Variable<String>(visibility.value);
+    }
+    if (groupId.present) {
+      map['group_id'] = Variable<String>(groupId.value);
+    }
+    if (tagsJson.present) {
+      map['tags_json'] = Variable<String>(tagsJson.value);
     }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
@@ -2604,7 +2686,9 @@ class RecipesTableCompanion extends UpdateCompanion<RecipesTableData> {
           ..write('cookTime: $cookTime, ')
           ..write('servings: $servings, ')
           ..write('imageUrl: $imageUrl, ')
-          ..write('isPublic: $isPublic, ')
+          ..write('visibility: $visibility, ')
+          ..write('groupId: $groupId, ')
+          ..write('tagsJson: $tagsJson, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -10826,7 +10910,9 @@ typedef $$RecipesTableTableCreateCompanionBuilder = RecipesTableCompanion
   required int cookTime,
   required int servings,
   Value<String?> imageUrl,
-  required bool isPublic,
+  Value<String> visibility,
+  Value<String?> groupId,
+  Value<String> tagsJson,
   required DateTime createdAt,
   required DateTime updatedAt,
   Value<int> rowid,
@@ -10840,7 +10926,9 @@ typedef $$RecipesTableTableUpdateCompanionBuilder = RecipesTableCompanion
   Value<int> cookTime,
   Value<int> servings,
   Value<String?> imageUrl,
-  Value<bool> isPublic,
+  Value<String> visibility,
+  Value<String?> groupId,
+  Value<String> tagsJson,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
   Value<int> rowid,
@@ -10876,8 +10964,14 @@ class $$RecipesTableTableFilterComposer
   ColumnFilters<String> get imageUrl => $composableBuilder(
       column: $table.imageUrl, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<bool> get isPublic => $composableBuilder(
-      column: $table.isPublic, builder: (column) => ColumnFilters(column));
+  ColumnFilters<String> get visibility => $composableBuilder(
+      column: $table.visibility, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get groupId => $composableBuilder(
+      column: $table.groupId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get tagsJson => $composableBuilder(
+      column: $table.tagsJson, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
@@ -10916,8 +11010,14 @@ class $$RecipesTableTableOrderingComposer
   ColumnOrderings<String> get imageUrl => $composableBuilder(
       column: $table.imageUrl, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<bool> get isPublic => $composableBuilder(
-      column: $table.isPublic, builder: (column) => ColumnOrderings(column));
+  ColumnOrderings<String> get visibility => $composableBuilder(
+      column: $table.visibility, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get groupId => $composableBuilder(
+      column: $table.groupId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get tagsJson => $composableBuilder(
+      column: $table.tagsJson, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
@@ -10956,8 +11056,14 @@ class $$RecipesTableTableAnnotationComposer
   GeneratedColumn<String> get imageUrl =>
       $composableBuilder(column: $table.imageUrl, builder: (column) => column);
 
-  GeneratedColumn<bool> get isPublic =>
-      $composableBuilder(column: $table.isPublic, builder: (column) => column);
+  GeneratedColumn<String> get visibility => $composableBuilder(
+      column: $table.visibility, builder: (column) => column);
+
+  GeneratedColumn<String> get groupId =>
+      $composableBuilder(column: $table.groupId, builder: (column) => column);
+
+  GeneratedColumn<String> get tagsJson =>
+      $composableBuilder(column: $table.tagsJson, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -10999,7 +11105,9 @@ class $$RecipesTableTableTableManager extends RootTableManager<
             Value<int> cookTime = const Value.absent(),
             Value<int> servings = const Value.absent(),
             Value<String?> imageUrl = const Value.absent(),
-            Value<bool> isPublic = const Value.absent(),
+            Value<String> visibility = const Value.absent(),
+            Value<String?> groupId = const Value.absent(),
+            Value<String> tagsJson = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
@@ -11012,7 +11120,9 @@ class $$RecipesTableTableTableManager extends RootTableManager<
             cookTime: cookTime,
             servings: servings,
             imageUrl: imageUrl,
-            isPublic: isPublic,
+            visibility: visibility,
+            groupId: groupId,
+            tagsJson: tagsJson,
             createdAt: createdAt,
             updatedAt: updatedAt,
             rowid: rowid,
@@ -11025,7 +11135,9 @@ class $$RecipesTableTableTableManager extends RootTableManager<
             required int cookTime,
             required int servings,
             Value<String?> imageUrl = const Value.absent(),
-            required bool isPublic,
+            Value<String> visibility = const Value.absent(),
+            Value<String?> groupId = const Value.absent(),
+            Value<String> tagsJson = const Value.absent(),
             required DateTime createdAt,
             required DateTime updatedAt,
             Value<int> rowid = const Value.absent(),
@@ -11038,7 +11150,9 @@ class $$RecipesTableTableTableManager extends RootTableManager<
             cookTime: cookTime,
             servings: servings,
             imageUrl: imageUrl,
-            isPublic: isPublic,
+            visibility: visibility,
+            groupId: groupId,
+            tagsJson: tagsJson,
             createdAt: createdAt,
             updatedAt: updatedAt,
             rowid: rowid,

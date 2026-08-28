@@ -1023,9 +1023,13 @@
   "offlineBannerBarOffline": "Offline – Änderungen werden bei Verbindung synchronisiert",
   "offlineBannerSyncingCount": "Synchronisiere {count} Änderungen…",
   "initialSyncRefreshing": "Aktualisiere…",
-  "@initialSyncRefreshing": { "description": "Banner text while the cold-start refresh pulls fresh data" },
+  "@initialSyncRefreshing": {
+    "description": "Banner text while the cold-start refresh pulls fresh data"
+  },
   "initialSyncFailed": "Aktualisierung fehlgeschlagen — zum Wiederholen tippen",
-  "@initialSyncFailed": { "description": "Banner text when the cold-start refresh failed; tapping retries" },
+  "@initialSyncFailed": {
+    "description": "Banner text when the cold-start refresh failed; tapping retries"
+  },
   "offlineBannerSyncing": "Synchronisiere Änderungen…",
   "offlineBannerFailedCount": "Konnte {count} Änderungen nicht synchronisieren",
   "offlineBannerFailedOne": "Konnte eine Änderung nicht synchronisieren",
@@ -1908,15 +1912,30 @@
     "description": "Store picker sheet title"
   },
   "runningLowHeading": "Wird knapp",
-  "@runningLowHeading": { "description": "Section header for the restock suggestion strip above the list" },
+  "@runningLowHeading": {
+    "description": "Section header for the restock suggestion strip above the list"
+  },
   "runningLowDaysAgo": "vor {days}T",
-  "@runningLowDaysAgo": { "description": "Per-chip cadence hint showing how many days since last purchase", "placeholders": { "days": { "type": "num" } } },
+  "@runningLowDaysAgo": {
+    "description": "Per-chip cadence hint showing how many days since last purchase",
+    "placeholders": {
+      "days": {
+        "type": "num"
+      }
+    }
+  },
   "restockReasonDue": "Wieder fällig",
-  "@restockReasonDue": { "description": "Reason shown when a household suggestion is due based on purchase cadence" },
+  "@restockReasonDue": {
+    "description": "Reason shown when a household suggestion is due based on purchase cadence"
+  },
   "restockReasonUsual": "Oft gekauft",
-  "@restockReasonUsual": { "description": "Reason shown when a household suggestion is a familiar recurring purchase" },
+  "@restockReasonUsual": {
+    "description": "Reason shown when a household suggestion is a familiar recurring purchase"
+  },
   "restockReasonGoesWith": "Passt zu dieser Liste",
-  "@restockReasonGoesWith": { "description": "Reason shown when a household suggestion commonly occurs with current list items" },
+  "@restockReasonGoesWith": {
+    "description": "Reason shown when a household suggestion commonly occurs with current list items"
+  },
   "householdStorageTitle": "Haushaltsspeicher",
   "householdStorageUsedOf": "{used} von {limit} verwendet",
   "householdStorageUsedUnlimited": "{used} verwendet · ohne Limit",
@@ -1942,7 +1961,6 @@
   "accountOcrTrainingExportEmpty": "Es gibt noch keine korrigierten OCR-Zeilen zum Exportieren.",
   "accountOcrTrainingClearTitle": "OCR-Trainingsdaten löschen?",
   "accountOcrTrainingClearBody": "Dadurch werden alle gespeicherten Zeilenausschnitte dauerhaft von diesem Gerät entfernt.",
-
   "billingPremiumTitle": "mitlist Premium",
   "billingLimitReachedTitle": "Dieser Haushalt ist voll",
   "billingLimitReachedBody": "Haushalte mit bis zu {limit} Personen sind kostenlos. Für ein {next}. Mitglied braucht eine Person Premium – und das gilt dann für alle hier.",
@@ -2032,5 +2050,20 @@
   "weeklySummaryEmptyTitle": "Eine ruhige Woche",
   "weeklySummaryEmptyBody": "In den letzten sieben Tagen wurde nichts erfasst. Trage etwas ein, dann erscheint es nächste Woche hier.",
   "weeklySummaryLoadFailed": "Deine Woche konnte nicht geladen werden",
-  "weeklySummaryTryAgain": "Prüfe deine Verbindung und versuche es erneut."
+  "weeklySummaryTryAgain": "Prüfe deine Verbindung und versuche es erneut.",
+  "recipeCreationSharedWithHousehold": "Alle in {name} können dieses Rezept finden und nutzen.",
+  "recipeCreationNoHousehold": "Tritt einem Haushalt bei, um Rezepte mit deinen Mitköchen zu teilen.",
+  "recipeDetailShareTooltip": "Rezept teilen",
+  "recipeShareText": "{title} — koch mit mir auf Mitlist: {url}",
+  "recipeTagsClear": "Tags zurücksetzen",
+  "sharedRecipeTitle": "Geteiltes Rezept",
+  "sharedRecipeBy": "von {author}",
+  "sharedRecipeSavePersonal": "Zu meinen Rezepten",
+  "sharedRecipeSaveHousehold": "In {name} speichern",
+  "sharedRecipeSaved": "Rezept gespeichert",
+  "sharedRecipeSignInToSave": "Anmelden, um das Rezept zu speichern",
+  "sharedRecipeNotFoundTitle": "Dieser Link funktioniert nicht mehr",
+  "sharedRecipeNotFoundBody": "Wer ihn geteilt hat, hat ihn vielleicht deaktiviert. Frag nach einem neuen.",
+  "sharedRecipeGetAppTitle": "Koch das in Mitlist",
+  "sharedRecipeGetAppBody": "Hol dir die App, um Rezepte zu speichern, Mahlzeiten zu planen und mit deinem Haushalt einzukaufen."
 }
