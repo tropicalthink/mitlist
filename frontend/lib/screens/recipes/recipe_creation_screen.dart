@@ -1016,7 +1016,9 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
             ref.watch(currentGroupIdProvider),
           ),
         ),
-        const SizedBox(height: MitlistSpacing.md),
+        // Wider than the md used elsewhere: with the cards gone, this gap is
+        // the only thing separating the two editors.
+        const SizedBox(height: MitlistSpacing.lg),
         _RecipeLineEditor(
           title: l10n.recipeCreationSteps,
           helperText: l10n.recipeCreationStepsHelper,
@@ -1257,130 +1259,130 @@ class _RecipeLineEditorState extends ConsumerState<_RecipeLineEditor> {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return AppCard(
-      variant: AppCardVariant.outlined,
-      padding: AppCardPadding.md,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  widget.title,
-                  style: textTheme.titleSmall,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              Text(
-                _countLabel(l10n),
-                style: textTheme.labelSmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: MitlistSpacing.xs),
-          Text(
-            widget.helperText,
-            style: textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: MitlistSpacing.md),
-          if (_controllers.isEmpty)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(MitlistSpacing.md),
-              decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerLow,
-                border: Border.all(color: colorScheme.outline, width: 1),
-              ),
+    // Deliberately not an AppCard: the ingredient and step editors are the
+    // main body of this page, not asides. Boxing them nested a bordered card
+    // inside the bordered page for the two sections the user is actually
+    // filling in, and left them looking heavier than the plain inputs below.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
               child: Text(
-                l10n.recipeCreationNoItemsYet(widget.title.toLowerCase()),
-                style: textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
+                widget.title,
+                style: textTheme.titleSmall,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-            )
-          else
-            for (var i = 0; i < _controllers.length; i++) ...[
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: MitlistSpacing.space7,
-                    height: MitlistSpacing.space11,
-                    alignment: Alignment.center,
-                    child: Text(
-                      widget.numbered ? '${i + 1}' : '\u2022',
-                      style: textTheme.labelMedium?.copyWith(
-                        color: colorScheme.primary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: MitlistSpacing.xs),
-                  Expanded(
-                    child: AppInput(
-                      hint: widget.emptyHint,
-                      controller: _controllers[i],
-                      minLines: 1,
-                      maxLines: 3,
-                      onChanged: (_) => _emit(),
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: l10n.recipeCreationRemoveItem(_itemLabel, i + 1),
-                    icon: const AppIcon(name: 'xMark', size: 18),
-                    onPressed: () => _removeAt(i),
-                  ),
-                ],
+            ),
+            Text(
+              _countLabel(l10n),
+              style: textTheme.labelSmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
               ),
-              if (i != _controllers.length - 1)
-                const SizedBox(height: MitlistSpacing.sm),
-            ],
-          const SizedBox(height: MitlistSpacing.md),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: AppInput(
-                  hint: widget.emptyHint,
-                  controller: _draftController,
-                  focusNode: _draftFocusNode,
-                  textInputAction: TextInputAction.done,
-                  onSubmitted: (_) => _addDraft(),
-                ),
-              ),
-              const SizedBox(width: MitlistSpacing.sm),
-              AppButton(
-                text: widget.addLabel,
-                size: AppButtonSize.sm,
-                variant: AppButtonVariant.outline,
-                icon: const AppIcon(name: 'plus', size: 16),
-                semanticLabel: widget.addLabel,
-                onPressed: _canAddDraft ? _addDraft : null,
-              ),
-            ],
-          ),
-          if (_suggestions.isNotEmpty) ...[
-            const SizedBox(height: MitlistSpacing.sm),
-            Wrap(
-              spacing: MitlistSpacing.xs,
-              runSpacing: MitlistSpacing.xs,
-              children: [
-                for (final suggestion in _suggestions)
-                  AppChip(
-                    label: suggestion.name,
-                    onSelected: (_) => _selectSuggestion(suggestion),
-                  ),
-              ],
             ),
           ],
+        ),
+        const SizedBox(height: MitlistSpacing.xs),
+        Text(
+          widget.helperText,
+          style: textTheme.bodySmall?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: MitlistSpacing.md),
+        if (_controllers.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(MitlistSpacing.md),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerLow,
+              border: Border.all(color: colorScheme.outline, width: 1),
+            ),
+            child: Text(
+              l10n.recipeCreationNoItemsYet(widget.title.toLowerCase()),
+              style: textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          )
+        else
+          for (var i = 0; i < _controllers.length; i++) ...[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: MitlistSpacing.space7,
+                  height: MitlistSpacing.space11,
+                  alignment: Alignment.center,
+                  child: Text(
+                    widget.numbered ? '${i + 1}' : '\u2022',
+                    style: textTheme.labelMedium?.copyWith(
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: MitlistSpacing.xs),
+                Expanded(
+                  child: AppInput(
+                    hint: widget.emptyHint,
+                    controller: _controllers[i],
+                    minLines: 1,
+                    maxLines: 3,
+                    onChanged: (_) => _emit(),
+                  ),
+                ),
+                IconButton(
+                  tooltip: l10n.recipeCreationRemoveItem(_itemLabel, i + 1),
+                  icon: const AppIcon(name: 'xMark', size: 18),
+                  onPressed: () => _removeAt(i),
+                ),
+              ],
+            ),
+            if (i != _controllers.length - 1)
+              const SizedBox(height: MitlistSpacing.sm),
+          ],
+        const SizedBox(height: MitlistSpacing.md),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: AppInput(
+                hint: widget.emptyHint,
+                controller: _draftController,
+                focusNode: _draftFocusNode,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => _addDraft(),
+              ),
+            ),
+            const SizedBox(width: MitlistSpacing.sm),
+            AppButton(
+              text: widget.addLabel,
+              size: AppButtonSize.sm,
+              variant: AppButtonVariant.outline,
+              icon: const AppIcon(name: 'plus', size: 16),
+              semanticLabel: widget.addLabel,
+              onPressed: _canAddDraft ? _addDraft : null,
+            ),
+          ],
+        ),
+        if (_suggestions.isNotEmpty) ...[
+          const SizedBox(height: MitlistSpacing.sm),
+          Wrap(
+            spacing: MitlistSpacing.xs,
+            runSpacing: MitlistSpacing.xs,
+            children: [
+              for (final suggestion in _suggestions)
+                AppChip(
+                  label: suggestion.name,
+                  onSelected: (_) => _selectSuggestion(suggestion),
+                ),
+            ],
+          ),
         ],
-      ),
+      ],
     );
   }
 }
