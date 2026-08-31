@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -99,10 +100,32 @@ func (s *RecipeService) CreateRecipe(ctx context.Context, userID uuid.UUID, reci
 	if recipe.Title == "" {
 		return api.ErrValidation
 	}
+	recipe.Tags = normalizeTags(recipe.Tags)
 	if err := s.applyVisibility(ctx, userID, recipe); err != nil {
 		return err
 	}
 	return s.recipeRepo.CreateRecipe(ctx, recipe)
+}
+
+// normalizeTags folds tags to trimmed lowercase and drops empties and
+// duplicates. The tag filter is an exact jsonb containment match with the
+// handler lowercasing the query, and the scraper already stores this shape;
+// hand-entered tags have to land the same way or they can never be filtered.
+func normalizeTags(tags []string) []string {
+	seen := make(map[string]struct{}, len(tags))
+	out := make([]string, 0, len(tags))
+	for _, t := range tags {
+		t = strings.ToLower(strings.TrimSpace(t))
+		if t == "" {
+			continue
+		}
+		if _, dup := seen[t]; dup {
+			continue
+		}
+		seen[t] = struct{}{}
+		out = append(out, t)
+	}
+	return out
 }
 
 // GetRecipe returns a recipe if the user owns it, is a member of the household
@@ -202,6 +225,7 @@ func (s *RecipeService) UpdateRecipe(ctx context.Context, userID uuid.UUID, reci
 	if err := s.requireOwner(existing, userID); err != nil {
 		return err
 	}
+	recipe.Tags = normalizeTags(recipe.Tags)
 	if err := s.applyVisibility(ctx, userID, recipe); err != nil {
 		return err
 	}
