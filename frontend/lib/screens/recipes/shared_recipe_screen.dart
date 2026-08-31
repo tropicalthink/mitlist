@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../models/group_models.dart';
@@ -119,7 +120,7 @@ class _SharedRecipeScreenState extends ConsumerState<SharedRecipeScreen> {
       AppToast.success(context, l10n.sharedRecipeSaved);
       // Straight into the user's own copy — the shared view is a preview and
       // has nothing more to offer once it has been saved.
-      context.goNamed('recipeDetail', pathParameters: {'id': saved.id});
+      context.goNamed('recipeDetail', pathParameters: {'recipeId': saved.id});
     } catch (e) {
       if (!mounted) return;
       setState(() => _phase = _Phase.ready);
@@ -261,6 +262,18 @@ class _SharedRecipeScreenState extends ConsumerState<SharedRecipeScreen> {
                   Text(
                     l10n.sharedRecipeGetAppBody,
                     style: theme.textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: MitlistSpacing.md),
+                  // The custom scheme opens the installed app even where the
+                  // https App Link has not been verified on the device.
+                  AppButton(
+                    text: l10n.sharedRecipeOpenInApp,
+                    variant: AppButtonVariant.outline,
+                    icon: const AppIcon(name: 'openInNew'),
+                    onPressed: () => launchUrl(
+                      Uri.parse('mitlist://r/${widget.token}'),
+                      webOnlyWindowName: '_self',
+                    ),
                   ),
                 ],
               ),

@@ -5903,4 +5903,130 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get sharedRecipeGetAppBody =>
       'Consigue la app para guardar recetas, planificar comidas y hacer la compra con tu hogar.';
+
+  @override
+  String get recipeQuickCookbooks => 'Recetarios';
+
+  @override
+  String recipeQuickCookbooksDesc(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count recetarios',
+      one: '1 recetario',
+      zero: 'Agrupa tus recetas',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get recipeQuickMealPlan => 'Plan de comidas';
+
+  @override
+  String recipeQuickMealPlanDesc(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count comidas esta semana',
+      one: '1 comida esta semana',
+      zero: 'Planifica la semana',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String recipeSortChip(String label) {
+    return 'Orden: $label';
+  }
+
+  @override
+  String get recipeFiltersClear => 'Borrar filtros';
+
+  @override
+  String recipeTagsMore(num count) {
+    return '+$count más';
+  }
+
+  @override
+  String get recipeTagsLess => 'Mostrar menos';
+
+  @override
+  String get cookbooksShareWithHousehold => 'Compartir con el hogar';
+
+  @override
+  String cookbooksShareWithHouseholdDesc(String name) {
+    return 'Todos en $name pueden ver y añadir a este recetario.';
+  }
+
+  @override
+  String get cookbooksPersonalDesc => 'Solo tú puedes ver este recetario.';
+
+  @override
+  String get cookbooksEditSheetTitle => 'Editar recetario';
+
+  @override
+  String get cookbooksEdit => 'Editar';
+
+  @override
+  String cookbooksOpen(String name) {
+    return 'Abrir recetario $name';
+  }
+
+  @override
+  String get cookbookAddRecipesSearchHint => 'Buscar recetas';
+
+  @override
+  String cookbookAddRecipesSubmit(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Añadir $count recetas',
+      one: 'Añadir 1 receta',
+      zero: 'Selecciona recetas',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get cookbookAddRecipesNoMatch => 'Ninguna receta coincide';
+
+  @override
+  String get cookbookAddRecipesAlreadyIn => 'Ya está en este recetario';
+
+  @override
+  String cookbookDetailSharedWith(String name) {
+    return 'Compartido con $name';
+  }
+
+  @override
+  String get cookbookDetailPersonal => 'Recetario personal';
+
+  @override
+  String get recipeDetailAddToCookbook => 'Añadir a recetario';
+
+  @override
+  String get recipeAddToCookbookEmptyTitle => 'Aún no hay recetarios';
+
+  @override
+  String get recipeAddToCookbookEmptyDesc =>
+      'Crea un recetario para empezar a agrupar recetas.';
+
+  @override
+  String get recipeAddToCookbookNewName => 'Nombre del nuevo recetario';
+
+  @override
+  String recipeAddedToCookbook(String name) {
+    return 'Añadido a $name';
+  }
+
+  @override
+  String get recipeAddToCookbookFailed => 'No se pudo añadir al recetario';
+
+  @override
+  String get sharedRecipeOpenInApp => 'Abrir en Mitlist';
+
+  @override
+  String recipeShareSubject(String title) {
+    return '$title en Mitlist';
+  }
 }

@@ -8,23 +8,26 @@ import '../../providers/recipe_provider.dart';
 import '../../theme/spacing.dart';
 import '../../utils/friendly_error.dart';
 import '../../utils/latest_request_guard.dart';
-import '../../widgets/animated_check_toggle.dart';
-import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_icon.dart';
+import '../../widgets/app_toast.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/list_entrance.dart';
 import '../../widgets/mitlist_app_bar.dart';
 import '../../widgets/skeleton.dart';
 
 class CookbookDetailScreen extends ConsumerStatefulWidget {
   final String collectionId;
-  final String? initialName;
+
+  /// The cookbook as the list screen knew it, so the header renders before
+  /// the first fetch lands. Null when arriving by deep link.
+  final RecipeCollection? initial;
 
   const CookbookDetailScreen({
     super.key,
     required this.collectionId,
-    this.initialName,
+    this.initial,
   });
 
   @override
@@ -35,13 +38,16 @@ class CookbookDetailScreen extends ConsumerStatefulWidget {
 class _CookbookDetailScreenState extends ConsumerState<CookbookDetailScreen> {
   bool _isLoading = true;
   String? _error;
+  RecipeCollection? _collection;
   final List<Recipe> _recipes = [];
   String? _submittingId;
+  bool _changed = false;
   final LatestRequestGuard _loadGuard = LatestRequestGuard();
 
   @override
   void initState() {
     super.initState();
+    _collection = widget.initial;
     _load();
   }
 
@@ -51,6 +57,7 @@ class _CookbookDetailScreenState extends ConsumerState<CookbookDetailScreen> {
     if (oldWidget.collectionId == widget.collectionId) return;
     _loadGuard.invalidate();
     _recipes.clear();
+    _collection = widget.initial;
     _error = null;
     _submittingId = null;
     _isLoading = true;
@@ -72,12 +79,16 @@ class _CookbookDetailScreenState extends ConsumerState<CookbookDetailScreen> {
     });
     try {
       final svc = await ref.read(recipeServiceProviderAsync.future);
-      final recipes =
-          await svc.getCollectionRecipes(widget.collectionId, limit: 200);
+      final results = await Future.wait([
+        svc.getCollectionRecipes(widget.collectionId, limit: 200),
+        svc.getCollection(widget.collectionId),
+      ]);
       if (!mounted || !_loadGuard.isCurrent(request)) return;
       setState(() {
-        _recipes.clear();
-        _recipes.addAll(recipes);
+        _recipes
+          ..clear()
+          ..addAll(results[0] as List<Recipe>);
+        _collection = results[1] as RecipeCollection;
         _isLoading = false;
       });
     } catch (e) {
@@ -85,9 +96,7 @@ class _CookbookDetailScreenState extends ConsumerState<CookbookDetailScreen> {
       final message = friendlyErrorMessage(e, AppLocalizations.of(context)!);
       if (hadContent) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message)),
-        );
+        AppToast.error(context, message);
         return;
       }
       setState(() {
@@ -100,19 +109,33 @@ class _CookbookDetailScreenState extends ConsumerState<CookbookDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return Scaffold(
-      appBar: MitlistAppBar(
-        title: Text(widget.initialName ?? l10n.cookbooksTitle),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        // Tell the list screen whether counts need refreshing.
+        context.pop(_changed);
+      },
+      child: Scaffold(
+        appBar: MitlistAppBar(
+          title: Text(
+            _collection?.name ?? l10n.cookbooksTitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          showStandardActions: false,
+        ),
+        body: _buildBody(),
+        floatingActionButton: _isLoading || _error != null
+            ? null
+            : AppButton(
+                size: AppButtonSize.lg,
+                onPressed: _openAddRecipes,
+                text: l10n.cookbookDetailAddRecipes,
+                icon: const AppIcon(name: 'plus'),
+                tooltip: l10n.cookbookDetailAddRecipes,
+              ),
       ),
-      body: _buildBody(),
-      floatingActionButton: _isLoading
-          ? null
-          : AppButton(
-              size: AppButtonSize.lg,
-              onPressed: _openAddRecipesSheet,
-              text: l10n.cookbookDetailAddRecipes,
-              icon: const AppIcon(name: 'plus'),
-            ),
     );
   }
 
@@ -138,6 +161,44 @@ class _CookbookDetailScreenState extends ConsumerState<CookbookDetailScreen> {
     );
   }
 
+  Widget _buildHeader() {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final collection = _collection;
+    final shared = collection?.isSharedWithHousehold ?? false;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        MitlistSpacing.md,
+        MitlistSpacing.md,
+        MitlistSpacing.md,
+        MitlistSpacing.sm,
+      ),
+      child: Row(
+        children: [
+          AppIcon(
+            name: shared ? 'userGroup' : 'keyOutline',
+            size: 16,
+            color: colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: MitlistSpacing.xs),
+          Expanded(
+            child: Text(
+              '${l10n.cookbooksRecipeCount(_recipes.length)} · '
+              '${shared ? l10n.recipeDetailSharedLabel : l10n.cookbookDetailPersonal}',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildBodyContent() {
     final l10n = AppLocalizations.of(context)!;
     if (_isLoading) {
@@ -147,7 +208,7 @@ class _CookbookDetailScreenState extends ConsumerState<CookbookDetailScreen> {
         itemCount: 6,
         itemBuilder: (_, __) => const Padding(
           padding: EdgeInsets.only(bottom: MitlistSpacing.sm),
-          child: AppSkeleton(width: double.infinity, height: 72),
+          child: AppSkeleton(width: double.infinity, height: 96),
         ),
       );
     }
@@ -158,6 +219,7 @@ class _CookbookDetailScreenState extends ConsumerState<CookbookDetailScreen> {
             icon: const AppIcon(name: 'alertCircleOutline'),
             title: l10n.commonSomethingWentWrong,
             description: _error,
+            isError: true,
             actions: [
               AppButton(
                 variant: AppButtonVariant.outline,
@@ -173,38 +235,60 @@ class _CookbookDetailScreenState extends ConsumerState<CookbookDetailScreen> {
       return _wrapForRefresh(
         Center(
           child: AppEmptyState(
-            icon: const AppIcon(name: 'squares2x2'),
+            icon: const AppIcon(name: 'restaurantMenu', size: 56),
             title: l10n.cookbookDetailEmptyTitle,
             description: l10n.cookbookDetailEmptyDesc,
             actions: [
               AppButton(
-                variant: AppButtonVariant.outline,
-                size: AppButtonSize.sm,
                 text: l10n.cookbookDetailAddRecipes,
-                onPressed: _openAddRecipesSheet,
+                icon: const AppIcon(name: 'plus'),
+                onPressed: _openAddRecipes,
               ),
             ],
           ),
         ),
       );
     }
-    return ListView.builder(
+    return ListView.separated(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(MitlistSpacing.md),
-      itemCount: _recipes.length,
+      padding: const EdgeInsets.fromLTRB(
+        0,
+        0,
+        0,
+        MitlistSpacing.xxl + MitlistSpacing.xl,
+      ),
+      itemCount: _recipes.length + 1,
+      separatorBuilder: (_, index) => index == 0
+          ? const SizedBox.shrink()
+          : const SizedBox(height: MitlistSpacing.sm),
       itemBuilder: (context, index) {
-        final r = _recipes[index];
-        return _RecipeRow(
-          recipe: r,
-          isSubmitting: _submittingId == r.id,
-          onOpen: () => context.pushNamed(
-            'recipeDetail',
-            pathParameters: {'recipeId': r.id},
+        if (index == 0) return _buildHeader();
+        final r = _recipes[index - 1];
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: MitlistSpacing.md),
+          child: ListEntrance(
+            index: index - 1,
+            child: _RecipeRow(
+              recipe: r,
+              isSubmitting: _submittingId == r.id,
+              onOpen: () => _openRecipe(r),
+              onRemove: () => _removeRecipe(r),
+            ),
           ),
-          onRemove: () => _removeRecipe(r),
         );
       },
     );
+  }
+
+  Future<void> _openRecipe(Recipe r) async {
+    final changed = await context.pushNamed<bool>(
+      'recipeDetail',
+      pathParameters: {'recipeId': r.id},
+    );
+    if (changed == true && mounted) {
+      _changed = true;
+      await _load();
+    }
   }
 
   Future<void> _removeRecipe(Recipe r) async {
@@ -213,33 +297,26 @@ class _CookbookDetailScreenState extends ConsumerState<CookbookDetailScreen> {
     try {
       final svc = await ref.read(recipeServiceProviderAsync.future);
       await svc.removeRecipeFromCollection(widget.collectionId, r.id);
+      _changed = true;
       await _load();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.cookbookRecipeRemoved)),
-      );
+      AppToast.success(context, l10n.cookbookRecipeRemoved);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e, l10n))),
-      );
+      AppToast.error(context, friendlyErrorMessage(e, l10n));
     } finally {
       if (mounted) setState(() => _submittingId = null);
     }
   }
 
-  Future<void> _openAddRecipesSheet() async {
-    final l10n = AppLocalizations.of(context)!;
-    final existingIds = _recipes.map((r) => r.id).toSet();
-    final added = await showAppBottomSheet<bool>(
-      context: context,
-      title: l10n.cookbookAddRecipesSheetTitle,
-      body: _AddRecipesSheet(
-        collectionId: widget.collectionId,
-        excludedRecipeIds: existingIds,
-      ),
+  Future<void> _openAddRecipes() async {
+    final added = await context.pushNamed<bool>(
+      'cookbookAddRecipes',
+      pathParameters: {'collectionId': widget.collectionId},
+      extra: _recipes.map((r) => r.id).toSet(),
     );
-    if (added == true) {
+    if (added == true && mounted) {
+      _changed = true;
       await _load();
     }
   }
@@ -258,209 +335,128 @@ class _RecipeRow extends StatelessWidget {
     required this.onRemove,
   });
 
+  String _metaLine(AppLocalizations l10n) {
+    final parts = <String>[];
+    final minutes = recipe.prepTime + recipe.cookTime;
+    if (minutes > 0) parts.add(l10n.recipeMinLabel(minutes));
+    if (recipe.servings > 0) parts.add(l10n.recipeServesLabel(recipe.servings));
+    parts.add(recipe.isSharedWithHousehold
+        ? l10n.recipeDetailSharedLabel
+        : l10n.recipeDetailPrivateLabel);
+    return parts.join(' · ');
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final textTheme = Theme.of(context).textTheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
-      child: AppCard(
-        variant: AppCardVariant.outlined,
-        padding: AppCardPadding.md,
-        onTap: isSubmitting ? null : onOpen,
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                recipe.title,
-                style: textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
+    return AppCard(
+      variant: AppCardVariant.outlined,
+      padding: AppCardPadding.md,
+      interactive: !isSubmitting,
+      animated: true,
+      onTap: isSubmitting ? null : onOpen,
+      semanticLabel: l10n.recipeOpenRecipe(recipe.title),
+      child: Row(
+        children: [
+          RecipeThumbnail(imageUrl: recipe.imageUrl, title: recipe.title),
+          const SizedBox(width: MitlistSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  recipe.title,
+                  style: theme.textTheme.titleSmall,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+                const SizedBox(height: MitlistSpacing.space1),
+                Text(
+                  _metaLine(l10n),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
-            if (isSubmitting)
-              const SizedBox(
-                width: MitlistSpacing.space5,
-                height: MitlistSpacing.space5,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            else
-              IconButton(
-                icon: const AppIcon(name: 'trashOutline'),
-                tooltip: l10n.cookbookRemoveRecipe,
-                onPressed: onRemove,
+          ),
+          if (isSubmitting)
+            SizedBox(
+              width: MitlistSpacing.space5,
+              height: MitlistSpacing.space5,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: colorScheme.primary,
               ),
-          ],
-        ),
+            )
+          else
+            IconButton(
+              icon: const AppIcon(name: 'minusCircleOutline'),
+              tooltip: l10n.cookbookRemoveRecipe,
+              onPressed: onRemove,
+            ),
+        ],
       ),
     );
   }
 }
 
-class _AddRecipesSheet extends ConsumerStatefulWidget {
-  final String collectionId;
-  final Set<String> excludedRecipeIds;
+/// Square recipe thumbnail with the same placeholder and error treatment the
+/// kitchen list uses, so a recipe looks the same wherever it is listed.
+class RecipeThumbnail extends StatelessWidget {
+  final String? imageUrl;
+  final String title;
+  final double size;
 
-  const _AddRecipesSheet({
-    required this.collectionId,
-    required this.excludedRecipeIds,
+  const RecipeThumbnail({
+    super.key,
+    required this.imageUrl,
+    required this.title,
+    this.size = MitlistSpacing.space16,
   });
-
-  @override
-  ConsumerState<_AddRecipesSheet> createState() => _AddRecipesSheetState();
-}
-
-class _AddRecipesSheetState extends ConsumerState<_AddRecipesSheet> {
-  bool _isLoading = true;
-  String? _error;
-  final List<Recipe> _available = [];
-  final Set<String> _selectedIds = {};
-  bool _isSubmitting = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    try {
-      final svc = await ref.read(recipeServiceProviderAsync.future);
-      final recipes = await svc.listRecipes(limit: 200);
-      if (!mounted) return;
-      setState(() {
-        _available
-          ..clear()
-          ..addAll(
-              recipes.where((r) => !widget.excludedRecipeIds.contains(r.id)));
-        _isLoading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = friendlyErrorMessage(e, AppLocalizations.of(context)!);
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _submit() async {
-    if (_selectedIds.isEmpty) return;
-    final l10n = AppLocalizations.of(context)!;
-    setState(() => _isSubmitting = true);
-    try {
-      final svc = await ref.read(recipeServiceProviderAsync.future);
-      final selected = _selectedIds.toList();
-      for (final id in selected) {
-        await svc.addRecipeToCollection(
-          widget.collectionId,
-          AddRecipeToCollectionRequest(recipeId: id),
-        );
-      }
-      if (!mounted) return;
-      Navigator.of(context).pop(true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.cookbookRecipesAdded(selected.length))),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _isSubmitting = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(friendlyErrorMessage(e, l10n))),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+    final url = imageUrl;
 
-    if (_isLoading) {
-      return const SizedBox(
-        height: 200,
-        child: Center(child: CircularProgressIndicator()),
-      );
+    Widget placeholder(String icon) => Container(
+          width: size,
+          height: size,
+          color: colorScheme.surfaceContainerHighest,
+          alignment: Alignment.center,
+          child: AppIcon(name: icon, color: colorScheme.onSurfaceVariant),
+        );
+
+    if (url == null || url.isEmpty) {
+      return placeholder('restaurantOutline');
     }
 
-    if (_error != null) {
-      return AppEmptyState(
-        icon: const AppIcon(name: 'alertCircleOutline'),
-        title: l10n.commonSomethingWentWrong,
-        description: _error,
-        actions: [
-          AppButton(
-            variant: AppButtonVariant.outline,
-            text: l10n.commonRetry,
-            onPressed: () {
-              setState(() {
-                _isLoading = true;
-                _error = null;
-              });
-              _load();
-            },
-          ),
-        ],
-      );
-    }
-
-    if (_available.isEmpty) {
-      return AppEmptyState(
-        icon: const AppIcon(name: 'squares2x2'),
-        title: l10n.cookbookAddRecipesEmpty,
-      );
-    }
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        ..._available.map((r) {
-          final isSelected = _selectedIds.contains(r.id);
-          return Padding(
-            padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
-            child: Row(
-              children: [
-                AnimatedCheckToggle(
-                  value: isSelected,
-                  onChanged: _isSubmitting
-                      ? null
-                      : (_) {
-                          setState(() {
-                            if (isSelected) {
-                              _selectedIds.remove(r.id);
-                            } else {
-                              _selectedIds.add(r.id);
-                            }
-                          });
-                        },
-                ),
-                const SizedBox(width: MitlistSpacing.sm),
-                Expanded(
-                  child: Text(
-                    r.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }),
-        const SizedBox(height: MitlistSpacing.md),
-        SizedBox(
-          width: double.infinity,
-          child: AppButton(
-            variant: AppButtonVariant.solid,
-            text: l10n.cookbookAddRecipesSheetTitle,
-            isLoading: _isSubmitting,
-            onPressed:
-                _selectedIds.isNotEmpty && !_isSubmitting ? _submit : null,
-          ),
-        ),
-      ],
+    return Semantics(
+      label: l10n.recipeImageSemantics(title),
+      child: Image.network(
+        url,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        cacheWidth:
+            (size * MediaQuery.devicePixelRatioOf(context) * 1.5).round(),
+        loadingBuilder: (context, child, progress) => progress == null
+            ? child
+            : Container(
+                width: size,
+                height: size,
+                color: colorScheme.surfaceContainerHighest,
+              ),
+        errorBuilder: (_, __, ___) => placeholder('imageNotSupportedOutline'),
+      ),
     );
   }
 }

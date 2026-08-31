@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +11,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/recipe_models.dart';
 import '../../providers/recipe_provider.dart';
+import '../../sheets/recipe_add_to_cookbook_sheet.dart';
 import '../../sheets/recipe_add_to_list_sheet.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
@@ -133,8 +135,20 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
       final link = await service.createShareLink(recipe.id);
       if (!mounted) return;
 
+      // iOS renders a shared URL as a link card; everywhere else a URL is
+      // plain text anyway, so the text form carries the title too.
+      final box = context.findRenderObject() as RenderBox?;
+      final origin =
+          box == null ? null : box.localToGlobal(Offset.zero) & box.size;
+      final asLink = !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
       await SharePlus.instance.share(
-        ShareParams(text: l10n.recipeShareText(recipe.title, link.url)),
+        ShareParams(
+          uri: asLink ? Uri.parse(link.url) : null,
+          text: asLink ? null : l10n.recipeShareText(recipe.title, link.url),
+          subject: l10n.recipeShareSubject(recipe.title),
+          title: recipe.title,
+          sharePositionOrigin: origin,
+        ),
       );
       unawaited(Haptics.success());
     } catch (e) {
@@ -228,6 +242,15 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
           onPressed: () => context.pop(),
         ),
         actions: [
+          if (_recipe != null)
+            IconButton(
+              icon: const AppIcon(name: 'squares2x2'),
+              tooltip: l10n.recipeDetailAddToCookbook,
+              onPressed: () => RecipeAddToCookbookSheet.show(
+                context,
+                recipeId: _recipe!.id,
+              ),
+            ),
           if (_recipe != null)
             IconButton(
               icon: const AppIcon(name: 'share'),
