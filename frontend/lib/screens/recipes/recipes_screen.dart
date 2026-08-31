@@ -18,7 +18,10 @@ import '../../theme/typography.dart';
 import '../../utils/shell_tab_load.dart';
 import '../../utils/active_group_context.dart';
 import '../../utils/haptics.dart';
+import '../../services/recipe_service.dart';
 import '../../widgets/alert.dart';
+import '../../widgets/app_bottom_sheet.dart';
+import '../../widgets/app_input.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_icon.dart';
@@ -85,8 +88,6 @@ enum _SortOption { newest, oldest, az }
 
 enum _FilterOption { all, household, private }
 
-enum _RecipeMenuAction { mealPlan, sortNewest, sortOldest, sortAz }
-
 class _RecipesScreenState extends ConsumerState<RecipesScreen> {
   static const int _pageLimit = 50;
 
@@ -99,17 +100,22 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
   final ScrollController _scrollController = ScrollController();
   bool _isLoadingMore = false;
   bool _hasMore = true;
-  bool _showSearch = false;
   String _searchQuery = '';
   Timer? _searchTimer;
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocus = FocusNode();
   _FilterOption _filter = _FilterOption.all;
 
   /// Tags offered by the server, most-used first, and the subset the user has
-  /// selected. Selection is ANDed.
+  /// selected. Selection is ANDed and filters server-side, so it narrows the
+  /// whole library, not just the loaded pages.
   List<RecipeTagCount> _availableTags = const [];
   final Set<String> _selectedTags = <String>{};
+
+  /// Discards responses that arrive after a newer recipes request started.
+  int _recipesRequestSeq = 0;
   _SortOption _sort = _SortOption.newest;
+  String? _groupId;
 
   bool _tabLoadStarted = false;
 
@@ -137,6 +143,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
     _scrollController.dispose();
     _searchTimer?.cancel();
     _searchController.dispose();
+    _searchFocus.dispose();
     super.dispose();
   }
 
@@ -149,6 +156,11 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
       _loadMoreRecipes();
     }
   }
+
+  bool get _hasActiveFilters =>
+      _filter != _FilterOption.all ||
+      _selectedTags.isNotEmpty ||
+      _searchQuery.trim().isNotEmpty;
 
   Future<void> _onAddRecipe() async {
     unawaited(Haptics.light());
@@ -169,20 +181,27 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
     }
   }
 
+  Future<void> _openCookbooks() async {
+    unawaited(Haptics.light());
+    await context.pushNamed('cookbooks');
+    // Cookbooks may have been created or deleted; the tile count should not
+    // lag behind what the user just did.
+    if (mounted) await _reloadCollections();
+  }
+
+  Future<void> _openMealPlan() async {
+    unawaited(Haptics.light());
+    final groupId = await _resolveGroupId();
+    if (!mounted || groupId == null) return;
+    await context.pushNamed('mealPlan');
+    if (mounted) ref.invalidate(weekMealPlansSummaryProvider(groupId));
+  }
+
   void _onSearchChanged(String value) {
     _searchTimer?.cancel();
     _searchTimer = Timer(const Duration(milliseconds: 300), () {
       if (!mounted) return;
       setState(() => _searchQuery = value);
-    });
-  }
-
-  void _clearSearch() {
-    FocusScope.of(context).unfocus();
-    setState(() {
-      _showSearch = false;
-      _searchQuery = '';
-      _searchController.clear();
     });
   }
 
@@ -195,11 +214,11 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
     }
 
     if (_selectedTags.isNotEmpty) {
-      // ANDed, matching the server's `tags @>` semantics so the local view and
-      // a server-side query never disagree about what a selection means.
+      // Exact and ANDed, matching the server's `tags @>` semantics so rows
+      // still in flight from an older query filter the same way the server
+      // filters the new one.
       result = result
-          .where((r) => _selectedTags
-              .every((t) => r.tags.any((rt) => rt.toLowerCase() == t)))
+          .where((r) => _selectedTags.every(r.tags.contains))
           .toList();
     }
 
@@ -243,12 +262,14 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
       final service = await ref.read(recipeServiceProviderAsync.future);
 
       try {
+        _recipesRequestSeq++;
         // Passing the household widens the list beyond the user's own recipes
         // to everything shared with it.
         final recipes = await service.listRecipes(
           limit: _pageLimit,
           offset: 0,
           groupId: groupId,
+          tags: _selectedTags.toList(),
         );
         if (!mounted) return;
         setState(() {
@@ -256,7 +277,11 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
             ..clear()
             ..addAll(recipes.map(_fromApi));
           _hasMore = recipes.length == _pageLimit;
-          _viewState = _recipes.isEmpty ? _ViewState.empty : _ViewState.loaded;
+          // With a tag filter active an empty page means "no matches", not an
+          // empty kitchen; the loaded body renders that with a way out.
+          _viewState = _recipes.isEmpty && _selectedTags.isEmpty
+              ? _ViewState.empty
+              : _ViewState.loaded;
         });
       } catch (_) {
         if (!mounted) return;
@@ -266,21 +291,7 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
         });
       }
 
-      try {
-        final collections = await service.listCollections(
-          limit: 50,
-          offset: 0,
-          groupId: groupId,
-        );
-        if (!mounted) return;
-        setState(() {
-          _collections
-            ..clear()
-            ..addAll(collections);
-        });
-      } catch (_) {
-        // Cookbook support is optional.
-      }
+      await _reloadCollections(service: service);
 
       try {
         final tags = await service.listRecipeTags(groupId: groupId);
@@ -304,6 +315,26 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
     }
   }
 
+  Future<void> _reloadCollections({RecipeService? service}) async {
+    try {
+      final RecipeService svc =
+          service ?? await ref.read(recipeServiceProviderAsync.future);
+      final collections = await svc.listCollections(
+        limit: 50,
+        offset: 0,
+        groupId: _groupId,
+      );
+      if (!mounted) return;
+      setState(() {
+        _collections
+          ..clear()
+          ..addAll(collections);
+      });
+    } catch (_) {
+      // Cookbook support is optional.
+    }
+  }
+
   _Recipe _fromApi(Recipe api) => _Recipe(
         id: api.id,
         title: api.title,
@@ -321,7 +352,9 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
         videoUrl: api.videoUrl,
         nutritionJson: api.nutritionJson,
         equipmentJson: api.equipmentJson,
-        tags: api.tags.take(5).toList(),
+        // All of them, not a prefix: the tag filter matches against these, and
+        // the card already caps how many it draws.
+        tags: api.tags,
       );
 
   Future<void> _loadMoreRecipes() async {
@@ -338,9 +371,13 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
 
     try {
       final service = await ref.read(recipeServiceProviderAsync.future);
+      // Same scope and tag filter as the first page, or page two would
+      // silently mix in rows the bar says are filtered out.
       final recipes = await service.listRecipes(
         limit: _pageLimit,
         offset: _recipes.length,
+        groupId: _groupId,
+        tags: _selectedTags.toList(),
       );
       if (!mounted) return;
       setState(() {
@@ -365,8 +402,12 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
         ref.read(currentGroupIdProvider),
       );
       if (!mounted) return null;
-      setState(() => _hasHousehold = groups.isNotEmpty);
-      return isValidGroupId(groupId) ? groupId : null;
+      final valid = isValidGroupId(groupId) ? groupId : null;
+      setState(() {
+        _hasHousehold = groups.isNotEmpty;
+        _groupId = valid;
+      });
+      return valid;
     } catch (_) {
       if (mounted) {
         setState(() => _hasHousehold = true);
@@ -374,6 +415,79 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
       return null;
     }
   }
+
+  void _toggleTag(String tag) {
+    setState(() {
+      if (!_selectedTags.remove(tag)) {
+        _selectedTags.add(tag);
+      }
+    });
+    unawaited(_reloadRecipes());
+  }
+
+  /// Refetches page one for the current tag selection, without the full-screen
+  /// skeleton of [_loadKitchen]: the already-loaded rows stay up (locally
+  /// filtered the same way) until the server answers.
+  Future<void> _reloadRecipes() async {
+    final l10n = AppLocalizations.of(context)!;
+    final seq = ++_recipesRequestSeq;
+    try {
+      final service = await ref.read(recipeServiceProviderAsync.future);
+      final recipes = await service.listRecipes(
+        limit: _pageLimit,
+        offset: 0,
+        groupId: _groupId,
+        tags: _selectedTags.toList(),
+      );
+      if (!mounted || seq != _recipesRequestSeq) return;
+      setState(() {
+        _recipes
+          ..clear()
+          ..addAll(recipes.map(_fromApi));
+        _hasMore = recipes.length == _pageLimit;
+        _loadMoreErrorMessage = null;
+        _viewState = _recipes.isEmpty && _selectedTags.isEmpty
+            ? _ViewState.empty
+            : _ViewState.loaded;
+      });
+    } catch (_) {
+      if (!mounted || seq != _recipesRequestSeq) return;
+      setState(() => _loadMoreErrorMessage = l10n.recipeFailedLoad);
+    }
+  }
+
+  void _resetFilters() {
+    FocusScope.of(context).unfocus();
+    _searchTimer?.cancel();
+    final hadTags = _selectedTags.isNotEmpty;
+    setState(() {
+      _filter = _FilterOption.all;
+      _selectedTags.clear();
+      _searchQuery = '';
+      _searchController.clear();
+    });
+    // Tags filtered server-side, so clearing them needs the wide list back.
+    if (hadTags) unawaited(_reloadRecipes());
+  }
+
+  Future<void> _pickSort() async {
+    final l10n = AppLocalizations.of(context)!;
+    final picked = await showAppBottomSheet<_SortOption>(
+      context: context,
+      title: l10n.recipeSortLabel,
+      body: _SortPicker(current: _sort),
+    );
+    if (picked != null && mounted) {
+      setState(() => _sort = picked);
+    }
+  }
+
+  String _sortLabel(AppLocalizations l10n, _SortOption option) =>
+      switch (option) {
+        _SortOption.newest => l10n.recipeSortNewest,
+        _SortOption.oldest => l10n.recipeSortOldest,
+        _SortOption.az => l10n.recipeSortAZ,
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -384,112 +498,11 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
     return Scaffold(
       appBar: MitlistAppBar(
         centerTitle: false,
-        leading: _showSearch
-            ? IconButton(
-                icon: const AppIcon(name: 'arrowLeft'),
-                tooltip: l10n.commonBack,
-                onPressed: _clearSearch,
-              )
-            : null,
-        title: _showSearch
-            ? TextField(
-                controller: _searchController,
-                autofocus: true,
-                decoration: InputDecoration(
-                  labelText: l10n.recipeSearchLabel,
-                  hintText: l10n.recipeSearchHint,
-                  border: InputBorder.none,
-                ),
-                onChanged: _onSearchChanged,
-              )
-            : Text(
-                l10n.recipeAppBarTitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-        actions: [
-          if (!_showSearch) ...[
-            IconButton(
-              icon: const AppIcon(name: 'magnifyingGlass'),
-              tooltip: l10n.recipeSearchTooltip,
-              onPressed: () => setState(() => _showSearch = true),
-            ),
-            PopupMenuButton<_RecipeMenuAction>(
-              icon: const AppIcon(name: 'ellipsisVertical'),
-              tooltip: l10n.commonOptions,
-              onSelected: (action) async {
-                if (action == _RecipeMenuAction.mealPlan) {
-                  final router = GoRouter.of(context);
-                  final groupId = await _resolveGroupId();
-                  if (!mounted) return;
-                  if (groupId != null) {
-                    unawaited(router.pushNamed('mealPlan'));
-                  }
-                  return;
-                }
-                setState(() {
-                  switch (action) {
-                    case _RecipeMenuAction.mealPlan:
-                      break;
-                    case _RecipeMenuAction.sortNewest:
-                      _sort = _SortOption.newest;
-                      break;
-                    case _RecipeMenuAction.sortOldest:
-                      _sort = _SortOption.oldest;
-                      break;
-                    case _RecipeMenuAction.sortAz:
-                      _sort = _SortOption.az;
-                      break;
-                  }
-                });
-              },
-              itemBuilder: (context) => [
-                PopupMenuItem(
-                  value: _RecipeMenuAction.mealPlan,
-                  child: Row(
-                    children: [
-                      AppIcon(
-                          name: 'calendarDays',
-                          size: 18,
-                          color: Theme.of(context).colorScheme.onSurface),
-                      const SizedBox(width: MitlistSpacing.sm),
-                      Text(l10n.recipeMealPlanTooltip),
-                    ],
-                  ),
-                ),
-                const PopupMenuDivider(),
-                PopupMenuItem(
-                  enabled: false,
-                  child: Text(
-                    l10n.recipeSortLabel,
-                    style: Theme.of(context).textTheme.labelMedium,
-                  ),
-                ),
-                CheckedPopupMenuItem(
-                  value: _RecipeMenuAction.sortNewest,
-                  checked: _sort == _SortOption.newest,
-                  child: Text(l10n.recipeSortNewest),
-                ),
-                CheckedPopupMenuItem(
-                  value: _RecipeMenuAction.sortOldest,
-                  checked: _sort == _SortOption.oldest,
-                  child: Text(l10n.recipeSortOldest),
-                ),
-                CheckedPopupMenuItem(
-                  value: _RecipeMenuAction.sortAz,
-                  checked: _sort == _SortOption.az,
-                  child: Text(l10n.recipeSortAZ),
-                ),
-              ],
-            ),
-          ] else ...[
-            IconButton(
-              icon: const AppIcon(name: 'xMark'),
-              tooltip: l10n.commonClearSearch,
-              onPressed: _clearSearch,
-            ),
-          ],
-        ],
+        title: Text(
+          l10n.recipeAppBarTitle,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
       ),
       body: _buildBody(),
       floatingActionButton: AppButton(
@@ -534,122 +547,247 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
 
   Widget _buildLoadedBody() {
     final visible = _filteredRecipes;
-    return Column(
-      children: [
-        _KitchenHeader(
-          recipeCount: _recipes.length,
-          visibleCount: visible.length,
-          sharedCount: _recipes.where((r) => r.isSharedWithHousehold).length,
-          collectionCount: _collections.length,
-        ),
-        _buildChipBar(),
-        _buildTagBar(),
-        if (_loadMoreErrorMessage != null)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              MitlistSpacing.md,
-              MitlistSpacing.md,
-              MitlistSpacing.md,
-              0,
-            ),
-            child: AppAlert(
-              type: AppAlertType.error,
-              message: _loadMoreErrorMessage!,
+    final footerCount = _isLoadingMore || _loadMoreErrorMessage != null ? 1 : 0;
+
+    return RefreshIndicator(
+      color: Theme.of(context).colorScheme.primary,
+      onRefresh: _loadKitchen,
+      child: CustomScrollView(
+        controller: _scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        slivers: [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                MitlistSpacing.md,
+                MitlistSpacing.md,
+                MitlistSpacing.md,
+                MitlistSpacing.sm,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _QuickActions(
+                    collectionCount: _collections.length,
+                    groupId: _groupId,
+                    onCookbooks: _openCookbooks,
+                    onMealPlan: _openMealPlan,
+                  ),
+                  const SizedBox(height: MitlistSpacing.md),
+                  _buildSearchField(),
+                  const SizedBox(height: MitlistSpacing.sm),
+                  _buildFilterRow(),
+                  if (_availableTags.isNotEmpty) ...[
+                    const SizedBox(height: MitlistSpacing.sm),
+                    _buildTagRow(),
+                  ],
+                  const SizedBox(height: MitlistSpacing.md),
+                  _buildCountLine(visible.length),
+                ],
+              ),
             ),
           ),
-        Expanded(
-          child: RefreshIndicator(
-            color: Theme.of(context).colorScheme.primary,
-            onRefresh: _loadKitchen,
-            child: visible.isEmpty
-                ? _buildNoMatchState()
-                : _buildRecipeList(visible),
-          ),
-        ),
-      ],
+          if (_loadMoreErrorMessage != null && visible.isNotEmpty)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  MitlistSpacing.md,
+                  0,
+                  MitlistSpacing.md,
+                  MitlistSpacing.sm,
+                ),
+                child: AppAlert(
+                  type: AppAlertType.error,
+                  message: _loadMoreErrorMessage!,
+                ),
+              ),
+            ),
+          if (visible.isEmpty)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: _buildNoMatchState(),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(
+                MitlistSpacing.md,
+                0,
+                MitlistSpacing.md,
+                // Room for the floating "Add recipe" button.
+                MitlistSpacing.xxl + MitlistSpacing.xl,
+              ),
+              sliver: SliverList.separated(
+                itemCount: visible.length + footerCount,
+                separatorBuilder: (_, __) =>
+                    const SizedBox(height: MitlistSpacing.sm),
+                itemBuilder: (context, index) {
+                  if (index >= visible.length) {
+                    return _buildLoadMoreFooter();
+                  }
+                  final recipe = visible[index];
+                  return ListEntrance(
+                    index: index,
+                    child: _RecipeCard(
+                      recipe: recipe,
+                      onTap: () => _openRecipeDetail(recipe),
+                      onAddToList: () => RecipeAddToListSheet.show(
+                        context,
+                        recipeId: recipe.id,
+                        recipeTitle: recipe.title,
+                        defaultServings: recipe.servings,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+        ],
+      ),
     );
   }
 
-  /// The tag filter bar.
+  Widget _buildSearchField() {
+    final l10n = AppLocalizations.of(context)!;
+    return AppInput(
+      controller: _searchController,
+      focusNode: _searchFocus,
+      hint: l10n.recipeSearchHint,
+      prefixIcon: const AppIcon(name: 'magnifyingGlass'),
+      clearable: true,
+      textInputAction: TextInputAction.search,
+      onChanged: _onSearchChanged,
+    );
+  }
+
+  /// Scope chips (all / shared / private) and the sort chip share a row: they
+  /// are the two controls that change *which* recipes are listed and in what
+  /// order, so they belong together and next to the list they act on.
+  Widget _buildFilterRow() {
+    final l10n = AppLocalizations.of(context)!;
+    final filters = <_FilterOption, String>{
+      _FilterOption.all: l10n.recipeFilterAll,
+      _FilterOption.household: l10n.recipeFilterShared,
+      _FilterOption.private: l10n.recipeFilterPrivate,
+    };
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      clipBehavior: Clip.none,
+      child: Row(
+        children: [
+          for (final entry in filters.entries) ...[
+            AppChip(
+              label: entry.value,
+              selected: _filter == entry.key,
+              onSelected: (_) => setState(() => _filter = entry.key),
+            ),
+            const SizedBox(width: MitlistSpacing.sm),
+          ],
+          AppChip(
+            label: l10n.recipeSortChip(_sortLabel(l10n, _sort)),
+            leading: const AppIcon(name: 'tune'),
+            selected: false,
+            onSelected: (_) => _pickSort(),
+          ),
+          if (_hasActiveFilters) ...[
+            const SizedBox(width: MitlistSpacing.sm),
+            AppChip(
+              label: l10n.recipeFiltersClear,
+              leading: const AppIcon(name: 'xMark'),
+              selected: false,
+              onSelected: (_) => _resetFilters(),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// The tag filter: one horizontally scrolling line, never taller than a
+  /// single chip row.
   ///
   /// Tags come from the server across the whole library, not just the loaded
   /// page, so "Desserts" finds every dessert rather than the ones that happen
   /// to be in the first 50 rows. The scraper already fills these from
   /// schema.org recipeCategory/recipeCuisine/keywords, so most clipped recipes
   /// arrive pre-tagged.
-  Widget _buildTagBar() {
-    if (_availableTags.isEmpty) return const SizedBox.shrink();
-    final l10n = AppLocalizations.of(context)!;
+  Widget _buildTagRow() {
+    // Selected tags lead the line so an active filter always has its chip in
+    // reach to turn off; the rest keep the server's most-used-first order.
+    final ordered = <RecipeTagCount>[
+      ..._availableTags.where((t) => _selectedTags.contains(t.tag)),
+      ..._availableTags.where((t) => !_selectedTags.contains(t.tag)),
+    ];
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.fromLTRB(
-        MitlistSpacing.md,
-        0,
-        MitlistSpacing.md,
-        MitlistSpacing.sm,
-      ),
+      clipBehavior: Clip.none,
       child: Row(
         children: [
-          if (_selectedTags.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(right: MitlistSpacing.sm),
-              child: AppChip(
-                label: l10n.recipeTagsClear,
-                selected: false,
-                onSelected: (_) => setState(_selectedTags.clear),
-              ),
+          for (var i = 0; i < ordered.length; i++) ...[
+            if (i > 0) const SizedBox(width: MitlistSpacing.sm),
+            AppChip(
+              label: '${ordered[i].tag} · ${ordered[i].count}',
+              selected: _selectedTags.contains(ordered[i].tag),
+              onSelected: (_) => _toggleTag(ordered[i].tag),
             ),
-          ..._availableTags.map((t) {
-            final selected = _selectedTags.contains(t.tag);
-            return Padding(
-              padding: const EdgeInsets.only(right: MitlistSpacing.sm),
-              child: AppChip(
-                label: '${t.tag} (${t.count})',
-                selected: selected,
-                onSelected: (_) => setState(() {
-                  if (selected) {
-                    _selectedTags.remove(t.tag);
-                  } else {
-                    _selectedTags.add(t.tag);
-                  }
-                }),
-              ),
-            );
-          }),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildChipBar() {
+  Widget _buildCountLine(int visibleCount) {
     final l10n = AppLocalizations.of(context)!;
-    final filters = <_FilterOption, String Function()>{
-      _FilterOption.all: () => l10n.recipeFilterAll,
-      _FilterOption.household: () => l10n.recipeFilterShared,
-      _FilterOption.private: () => l10n.recipeFilterPrivate,
-    };
+    final colorScheme = Theme.of(context).colorScheme;
+    final total = _recipes.length;
+    final shared = _recipes.where((r) => r.isSharedWithHousehold).length;
+    final countLabel = visibleCount == total
+        ? l10n.recipeCountLabelAll(total)
+        : l10n.recipeCountLabel(visibleCount, total);
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.fromLTRB(
-        MitlistSpacing.md,
-        0,
-        MitlistSpacing.md,
-        MitlistSpacing.sm,
-      ),
-      child: Row(
-        children: filters.entries.map((entry) {
-          final option = entry.key;
-          return Padding(
-            padding: const EdgeInsets.only(right: MitlistSpacing.sm),
-            child: AppChip(
-              label: entry.value(),
-              selected: _filter == option,
-              onSelected: (_) => setState(() => _filter = option),
-            ),
-          );
-        }).toList(),
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            countLabel,
+            style: Theme.of(context).textTheme.titleSmall,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        const SizedBox(width: MitlistSpacing.sm),
+        Text(
+          l10n.recipeSharedPrivate(shared, total - shared),
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLoadMoreFooter() {
+    if (_loadMoreErrorMessage != null) {
+      return _LoadMoreErrorTile(
+        message: _loadMoreErrorMessage!,
+        onRetry: _loadMoreRecipes,
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.md),
+      child: Center(
+        child: SizedBox(
+          width: MitlistSpacing.lg,
+          height: MitlistSpacing.lg,
+          child: CircularProgressIndicator(
+            strokeWidth: 2.5,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
       ),
     );
   }
@@ -679,229 +817,242 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
 
   Widget _buildEmptyState() {
     final l10n = AppLocalizations.of(context)!;
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        return SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: Center(
+    return RefreshIndicator(
+      color: Theme.of(context).colorScheme.primary,
+      onRefresh: _loadKitchen,
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          return SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
               child: Padding(
                 padding: const EdgeInsets.all(MitlistSpacing.md),
-                child: AppEmptyState(
-                  lottieAsset: 'assets/animations/lottie/Recipes.lottie',
-                  icon: const AppIcon(name: 'restaurantMenu', size: 56),
-                  title: l10n.recipeBuildKitchen,
-                  description: l10n.recipeBuildKitchenDesc,
-                  actions: <Widget>[
-                    AppButton(
-                      text: l10n.recipeAddRecipe,
-                      icon: const AppIcon(name: 'plus'),
-                      onPressed: _onAddRecipe,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _QuickActions(
+                      collectionCount: _collections.length,
+                      groupId: _groupId,
+                      onCookbooks: _openCookbooks,
+                      onMealPlan: _openMealPlan,
+                    ),
+                    const SizedBox(height: MitlistSpacing.lg),
+                    AppEmptyState(
+                      lottieAsset: 'assets/animations/lottie/Recipes.lottie',
+                      icon: const AppIcon(name: 'restaurantMenu', size: 56),
+                      title: l10n.recipeBuildKitchen,
+                      description: l10n.recipeBuildKitchenDesc,
+                      actions: <Widget>[
+                        AppButton(
+                          text: l10n.recipeAddRecipe,
+                          icon: const AppIcon(name: 'plus'),
+                          onPressed: _onAddRecipe,
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
   Widget _buildNoMatchState() {
     final l10n = AppLocalizations.of(context)!;
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        return SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(MitlistSpacing.md),
-                child: AppEmptyState(
-                  paddingPreset: AppEmptyStatePadding.md,
-                  icon: const AppIcon(name: 'magnifyingGlass', size: 56),
-                  title: l10n.recipeNoMatchTitle,
-                  description: l10n.recipeNoMatchDesc,
-                  actions: <Widget>[
-                    AppButton(
-                      text: l10n.recipeShowAllRecipes,
-                      variant: AppButtonVariant.outline,
-                      onPressed: _resetFilters,
-                    ),
-                  ],
-                ),
-              ),
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(MitlistSpacing.md),
+        child: AppEmptyState(
+          paddingPreset: AppEmptyStatePadding.md,
+          icon: const AppIcon(name: 'magnifyingGlass', size: 56),
+          title: l10n.recipeNoMatchTitle,
+          description: l10n.recipeNoMatchDesc,
+          actions: <Widget>[
+            AppButton(
+              text: l10n.recipeShowAllRecipes,
+              variant: AppButtonVariant.outline,
+              onPressed: _resetFilters,
             ),
-          ),
-        );
-      },
-    );
-  }
-
-  void _resetFilters() {
-    FocusScope.of(context).unfocus();
-    setState(() {
-      _filter = _FilterOption.all;
-      _selectedTags.clear();
-      _searchQuery = '';
-      _searchController.clear();
-      _showSearch = false;
-    });
-  }
-
-  Widget _buildRecipeList(List<_Recipe> visible) {
-    return ListView.separated(
-      controller: _scrollController,
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(MitlistSpacing.md),
-      itemCount: visible.length +
-          (_isLoadingMore || _loadMoreErrorMessage != null ? 1 : 0),
-      separatorBuilder: (BuildContext context, int index) =>
-          const SizedBox(height: MitlistSpacing.sm),
-      itemBuilder: (BuildContext context, int index) {
-        if (index >= visible.length) {
-          if (_loadMoreErrorMessage != null) {
-            return _LoadMoreErrorTile(
-              message: _loadMoreErrorMessage!,
-              onRetry: _loadMoreRecipes,
-            );
-          }
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.md),
-            child: Center(
-              child: SizedBox(
-                width: MitlistSpacing.lg,
-                height: MitlistSpacing.lg,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-            ),
-          );
-        }
-
-        final recipe = visible[index];
-        return ListEntrance(
-          index: index,
-          child: _RecipeCard(
-            recipe: recipe,
-            onTap: () => _openRecipeDetail(recipe),
-            onAddToList: () => RecipeAddToListSheet.show(
-              context,
-              recipeId: recipe.id,
-              recipeTitle: recipe.title,
-              defaultServings: recipe.servings,
-            ),
-          ),
-        );
-      },
+          ],
+        ),
+      ),
     );
   }
 }
 
-class _KitchenHeader extends ConsumerWidget {
-  final int recipeCount;
-  final int visibleCount;
-  final int sharedCount;
-  final int collectionCount;
+/// Sort options as a picker sheet rather than an overflow menu: the choice is
+/// a view control and belongs where the view is, not behind three dots.
+class _SortPicker extends StatelessWidget {
+  final _SortOption current;
 
-  const _KitchenHeader({
-    required this.recipeCount,
-    required this.visibleCount,
-    required this.sharedCount,
-    required this.collectionCount,
-  });
+  const _SortPicker({required this.current});
 
-  Future<void> _openMealPlan(BuildContext context, WidgetRef ref) async {
-    unawaited(Haptics.light());
-    final groups = ref.read(cachedGroupsProvider).valueOrNull;
-    if (groups == null) return;
-    final groupId = resolveActiveGroupId(
-      groups,
-      ref.read(currentGroupIdProvider),
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+    final options = <(_SortOption, String)>[
+      (_SortOption.newest, l10n.recipeSortNewest),
+      (_SortOption.oldest, l10n.recipeSortOldest),
+      (_SortOption.az, l10n.recipeSortAZ),
+    ];
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final (option, label) in options)
+          Padding(
+            padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
+            child: AppCard(
+              variant: AppCardVariant.outlined,
+              padding: AppCardPadding.md,
+              interactive: true,
+              onTap: () => Navigator.of(context).pop(option),
+              semanticLabel: label,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontWeight: option == current
+                                ? FontWeight.w600
+                                : FontWeight.w400,
+                          ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (option == current)
+                    AppIcon(name: 'check', color: colorScheme.primary),
+                ],
+              ),
+            ),
+          ),
+      ],
     );
-    if (!context.mounted || !isValidGroupId(groupId)) return;
-    await context.pushNamed('mealPlan');
   }
+}
+
+/// The two places the kitchen leads to besides a recipe. Tiles, not icon
+/// buttons: cookbooks and the meal plan were the two most-missed features when
+/// they hid behind an unlabelled grid icon.
+class _QuickActions extends ConsumerWidget {
+  final int collectionCount;
+  final String? groupId;
+  final VoidCallback onCookbooks;
+  final VoidCallback onMealPlan;
+
+  const _QuickActions({
+    required this.collectionCount,
+    required this.groupId,
+    required this.onCookbooks,
+    required this.onMealPlan,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final colorScheme = Theme.of(context).colorScheme;
-    final privateCount = recipeCount - sharedCount;
-
-    final countLabel = visibleCount == recipeCount
-        ? l10n.recipeCountLabelAll(recipeCount)
-        : l10n.recipeCountLabel(visibleCount, recipeCount);
-
-    final groups = ref.watch(cachedGroupsProvider).valueOrNull;
-    final groupId = groups == null
-        ? null
-        : resolveActiveGroupId(groups, ref.watch(currentGroupIdProvider));
     final mealPlansAsync = isValidGroupId(groupId)
         ? ref.watch(weekMealPlansSummaryProvider(groupId!))
         : null;
-    final mealPlanCount = mealPlansAsync?.whenOrNull(
-      data: (plans) => plans.isEmpty ? null : plans.length,
+    final mealCount = mealPlansAsync?.whenOrNull(
+          data: (plans) => plans.length,
+        ) ??
+        0;
+
+    return Row(
+      children: [
+        Expanded(
+          child: _QuickActionTile(
+            icon: 'squares2x2',
+            title: l10n.recipeQuickCookbooks,
+            subtitle: l10n.recipeQuickCookbooksDesc(collectionCount),
+            onTap: onCookbooks,
+          ),
+        ),
+        const SizedBox(width: MitlistSpacing.sm),
+        Expanded(
+          child: _QuickActionTile(
+            icon: 'calendarDays',
+            title: l10n.recipeQuickMealPlan,
+            subtitle: l10n.recipeQuickMealPlanDesc(mealCount),
+            onTap: groupId == null ? null : onMealPlan,
+          ),
+        ),
+      ],
     );
+  }
+}
 
-    final detailLabel = l10n.recipeSharedPrivate(sharedCount, privateCount) +
-        (collectionCount > 0
-            ? l10n.recipeCookbooksLabel(collectionCount)
-            : '') +
-        (mealPlanCount != null
-            ? ' · ${l10n.recipeMealsPlanned(mealPlanCount)}'
-            : '');
+class _QuickActionTile extends StatelessWidget {
+  final String icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback? onTap;
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        MitlistSpacing.md,
-        MitlistSpacing.md,
-        MitlistSpacing.md,
-        MitlistSpacing.sm,
-      ),
+  const _QuickActionTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return AppCard(
+      variant: AppCardVariant.outlined,
+      padding: AppCardPadding.md,
+      interactive: onTap != null,
+      animated: true,
+      onTap: onTap,
+      semanticLabel: title,
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          Container(
+            width: MitlistSpacing.space10,
+            height: MitlistSpacing.space10,
+            decoration: BoxDecoration(
+              color: colorScheme.primaryContainer,
+              border: Border.all(color: colorScheme.outline, width: 2),
+            ),
+            alignment: Alignment.center,
+            child: AppIcon(
+              name: icon,
+              size: 20,
+              color: colorScheme.onPrimaryContainer,
+            ),
+          ),
+          const SizedBox(width: MitlistSpacing.sm),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  countLabel,
-                  style: Theme.of(context).textTheme.titleSmall,
+                  title,
+                  style: theme.textTheme.titleSmall,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
-                  detailLabel,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                  maxLines: 2,
+                  subtitle,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
-          ),
-          const SizedBox(width: MitlistSpacing.sm),
-          IconButton(
-            icon: const AppIcon(name: 'squares2x2', size: 18),
-            tooltip: l10n.cookbooksButton,
-            onPressed: () => context.pushNamed('cookbooks'),
-          ),
-          const SizedBox(width: MitlistSpacing.space1),
-          AppButton(
-            text: l10n.recipePlanButton,
-            size: AppButtonSize.sm,
-            variant: AppButtonVariant.outline,
-            icon: const AppIcon(name: 'calendarDays', size: 16),
-            tooltip: l10n.recipeMealPlanTooltip,
-            onPressed: () => _openMealPlan(context, ref),
           ),
         ],
       ),
@@ -1021,7 +1172,11 @@ class _RecipeCard extends StatelessWidget {
   }
 
   String _metaLine(AppLocalizations l10n) {
-    final parts = <String>[];
+    final parts = <String>[
+      recipe.isSharedWithHousehold
+          ? l10n.recipeDetailSharedLabel
+          : l10n.recipeDetailPrivateLabel,
+    ];
     if (recipe.totalMinutes > 0) {
       parts.add(l10n.recipeMinLabel(recipe.totalMinutes));
     }
@@ -1063,13 +1218,27 @@ class _RecipeCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: MitlistSpacing.space6),
-                Text(
-                  _metaLine(l10n),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
+                Row(
+                  children: [
+                    AppIcon(
+                      name: recipe.isSharedWithHousehold
+                          ? 'userGroup'
+                          : 'keyOutline',
+                      size: 14,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: MitlistSpacing.xs),
+                    Expanded(
+                      child: Text(
+                        _metaLine(l10n),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
                 if (tags.isNotEmpty) ...[
                   const SizedBox(height: MitlistSpacing.xs),
