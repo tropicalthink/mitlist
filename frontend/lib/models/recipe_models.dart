@@ -374,14 +374,33 @@ class UpdateRecipeRequest {
 
 class CreateCollectionRequest {
   final String name;
-  const CreateCollectionRequest({required this.name});
-  Map<String, dynamic> toJson() => {'name': name};
+
+  /// Shares the cookbook with a household; null keeps it personal.
+  final String? groupId;
+  const CreateCollectionRequest({required this.name, this.groupId});
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        if (groupId != null) 'group_id': groupId,
+      };
 }
 
 class UpdateCollectionRequest {
   final String? name;
-  const UpdateCollectionRequest({this.name});
-  Map<String, dynamic> toJson() => {if (name != null) 'name': name};
+
+  /// Shares the cookbook with a household. Shared is an explicit state on the
+  /// server, so unsharing goes through [makePrivate] rather than a null id.
+  final String? groupId;
+  final bool makePrivate;
+  const UpdateCollectionRequest({
+    this.name,
+    this.groupId,
+    this.makePrivate = false,
+  });
+  Map<String, dynamic> toJson() => {
+        if (name != null) 'name': name,
+        if (groupId != null) 'group_id': groupId,
+        if (makePrivate) 'make_private': true,
+      };
 }
 
 class AddRecipeToCollectionRequest {

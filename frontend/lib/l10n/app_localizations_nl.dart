@@ -5914,4 +5914,130 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get sharedRecipeGetAppBody =>
       'Download de app om recepten te bewaren, maaltijden te plannen en samen boodschappen te doen.';
+
+  @override
+  String get recipeQuickCookbooks => 'Kookboeken';
+
+  @override
+  String recipeQuickCookbooksDesc(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count kookboeken',
+      one: '1 kookboek',
+      zero: 'Groepeer je recepten',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get recipeQuickMealPlan => 'Maaltijdplan';
+
+  @override
+  String recipeQuickMealPlanDesc(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count maaltijden deze week',
+      one: '1 maaltijd deze week',
+      zero: 'Plan de week',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String recipeSortChip(String label) {
+    return 'Sorteer: $label';
+  }
+
+  @override
+  String get recipeFiltersClear => 'Filters wissen';
+
+  @override
+  String recipeTagsMore(num count) {
+    return '+$count meer';
+  }
+
+  @override
+  String get recipeTagsLess => 'Minder tonen';
+
+  @override
+  String get cookbooksShareWithHousehold => 'Delen met huishouden';
+
+  @override
+  String cookbooksShareWithHouseholdDesc(String name) {
+    return 'Iedereen in $name kan dit kookboek zien en aanvullen.';
+  }
+
+  @override
+  String get cookbooksPersonalDesc => 'Alleen jij kunt dit kookboek zien.';
+
+  @override
+  String get cookbooksEditSheetTitle => 'Kookboek bewerken';
+
+  @override
+  String get cookbooksEdit => 'Bewerken';
+
+  @override
+  String cookbooksOpen(String name) {
+    return 'Kookboek $name openen';
+  }
+
+  @override
+  String get cookbookAddRecipesSearchHint => 'Recepten zoeken';
+
+  @override
+  String cookbookAddRecipesSubmit(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count recepten toevoegen',
+      one: '1 recept toevoegen',
+      zero: 'Selecteer recepten',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get cookbookAddRecipesNoMatch => 'Geen recepten gevonden';
+
+  @override
+  String get cookbookAddRecipesAlreadyIn => 'Al in dit kookboek';
+
+  @override
+  String cookbookDetailSharedWith(String name) {
+    return 'Gedeeld met $name';
+  }
+
+  @override
+  String get cookbookDetailPersonal => 'Persoonlijk kookboek';
+
+  @override
+  String get recipeDetailAddToCookbook => 'Toevoegen aan kookboek';
+
+  @override
+  String get recipeAddToCookbookEmptyTitle => 'Nog geen kookboeken';
+
+  @override
+  String get recipeAddToCookbookEmptyDesc =>
+      'Maak een kookboek om recepten te groeperen.';
+
+  @override
+  String get recipeAddToCookbookNewName => 'Naam nieuw kookboek';
+
+  @override
+  String recipeAddedToCookbook(String name) {
+    return 'Toegevoegd aan $name';
+  }
+
+  @override
+  String get recipeAddToCookbookFailed => 'Kon niet aan kookboek toevoegen';
+
+  @override
+  String get sharedRecipeOpenInApp => 'Openen in Mitlist';
+
+  @override
+  String recipeShareSubject(String title) {
+    return '$title op Mitlist';
+  }
 }
