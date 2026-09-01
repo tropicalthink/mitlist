@@ -5,17 +5,20 @@ import (
 	"errors"
 	"fmt"
 	"mime"
+	"net/http"
 	"path"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/rs/zerolog/log"
 
 	"github.com/mitlist-app/mitlist/internal/api"
 	"github.com/mitlist-app/mitlist/internal/config"
 	"github.com/mitlist-app/mitlist/internal/models"
 	"github.com/mitlist-app/mitlist/internal/repositories"
+	imagesvc "github.com/mitlist-app/mitlist/internal/services/image"
 	storagesvc "github.com/mitlist-app/mitlist/internal/services/storage"
 	"github.com/mitlist-app/mitlist/internal/sse"
 )
@@ -38,6 +41,7 @@ type AttachmentService struct {
 	repo      repositories.AttachmentRepo
 	groupRepo repositories.GroupRepo
 	storage   attachmentStorage
+	imaging   *imagesvc.Service
 	hub       *sse.Hub
 }
 
@@ -49,6 +53,8 @@ type attachmentStorage interface {
 	GetURL(key string) string
 	Delete(key string) error
 	HeadObjectSize(ctx context.Context, key string) (int64, error)
+	Download(ctx context.Context, key string) ([]byte, error)
+	Upload(key string, data []byte, contentType string) error
 }
 
 func NewAttachmentService(cfg *config.Config, repo repositories.AttachmentRepo, groupRepo repositories.GroupRepo, storage *storagesvc.Service) *AttachmentService {
@@ -61,6 +67,7 @@ func NewAttachmentServiceWithStorage(cfg *config.Config, repo repositories.Attac
 		repo:      repo,
 		groupRepo: groupRepo,
 		storage:   storage,
+		imaging:   imagesvc.New(),
 	}
 }
 
@@ -253,6 +260,15 @@ func (s *AttachmentService) FinalizeUpload(ctx context.Context, user *models.Use
 		return nil, &api.ValidationError{Message: "uploaded file exceeds size limit"}
 	}
 
+	// Photos are recompressed server-side before the quota is charged, so the
+	// household pays for the compressed bytes, not the camera original. Best
+	// effort by design: an image that cannot be recompressed (HEIC, animated
+	// GIF, corrupt bytes) is stored as uploaded rather than rejected.
+	if newSize, newType, ok := s.recompressImage(ctx, a); ok {
+		realSize = newSize
+		a.ContentType = newType
+	}
+
 	if err := s.repo.FinalizeReservation(ctx, attachmentID, realSize, s.storageLimitBytes()); err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, &api.NotFoundError{Resource: "attachment", ID: attachmentID.String()}
@@ -272,6 +288,56 @@ func (s *AttachmentService) FinalizeUpload(ctx context.Context, user *models.Use
 	a.ByteSize = realSize
 	publishDomainEvent(s.hub, "attachment:ready", groupID, map[string]string{"attachment_id": attachmentID.String()})
 	return a, nil
+}
+
+// Recompression targets: what the household actually stores for photos.
+const (
+	recompressedContentType = "image/webp"
+	recompressMaxDimension  = 2048
+	recompressQuality       = 75
+)
+
+// recompressImage rewrites an uploaded image in place as downscaled lossy
+// WebP and reports the new size and content type. Returns ok=false — leaving
+// the original object untouched — whenever the upload is not a decodable
+// image or recompression would not make it smaller.
+func (s *AttachmentService) recompressImage(ctx context.Context, a *models.Attachment) (int64, string, bool) {
+	switch a.ContentType {
+	// application/octet-stream is included because shipped clients upload
+	// images under wildcard types the intent normalizes to octet-stream; the
+	// sniff below sorts real images out of that bucket.
+	case "image/jpeg", "image/png", "image/webp", "application/octet-stream":
+	default:
+		return 0, "", false
+	}
+
+	data, err := s.storage.Download(ctx, a.ObjectKey)
+	if err != nil {
+		log.Warn().Err(err).Str("attachment_id", a.ID.String()).Msg("recompress: download failed; keeping original")
+		return 0, "", false
+	}
+	if a.ContentType == "application/octet-stream" {
+		switch http.DetectContentType(data) {
+		case "image/jpeg", "image/png", "image/webp":
+		default:
+			return 0, "", false
+		}
+	}
+
+	out, err := s.imaging.CompressToWebP(data, recompressMaxDimension, recompressQuality)
+	if err != nil || len(out) >= len(data) {
+		return 0, "", false
+	}
+	if err := s.storage.Upload(a.ObjectKey, out, recompressedContentType); err != nil {
+		log.Warn().Err(err).Str("attachment_id", a.ID.String()).Msg("recompress: rewrite failed; keeping original")
+		return 0, "", false
+	}
+	if err := s.repo.UpdateContentType(ctx, a.ID, recompressedContentType); err != nil {
+		// The object is already WebP; a stale content_type row only mislabels
+		// the download header, which clients decode by sniffing anyway.
+		log.Warn().Err(err).Str("attachment_id", a.ID.String()).Msg("recompress: content_type update failed")
+	}
+	return int64(len(out)), recompressedContentType, true
 }
 
 func (s *AttachmentService) storageLimitBytes() int64 {

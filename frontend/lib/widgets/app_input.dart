@@ -243,6 +243,9 @@ class _AppInputState extends State<AppInput>
 
   void _clear() {
     _controller.clear();
+    // TextField.onChanged only fires for user edits, not programmatic ones,
+    // so owners listening via onChanged would keep the stale value.
+    widget.onChanged?.call('');
   }
 
   Widget? _buildSuffixIcon() {

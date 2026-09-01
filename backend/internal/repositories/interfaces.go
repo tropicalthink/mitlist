@@ -310,6 +310,7 @@ type AttachmentRepo interface {
 	GetStorageUsage(ctx context.Context, groupID uuid.UUID) (*models.AttachmentStorageUsage, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*models.Attachment, error)
 	UpdateObjectKey(ctx context.Context, id uuid.UUID, objectKey string) error
+	UpdateContentType(ctx context.Context, id uuid.UUID, contentType string) error
 	FinalizeReservation(ctx context.Context, id uuid.UUID, byteSize, limitBytes int64) error
 	MarkFailed(ctx context.Context, id uuid.UUID) error
 	ListCleanupCandidates(ctx context.Context, expiredBefore time.Time, limit int) ([]models.Attachment, error)
