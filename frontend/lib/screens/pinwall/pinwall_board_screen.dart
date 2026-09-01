@@ -20,6 +20,7 @@ import '../../theme/typography.dart';
 import '../../l10n/app_localizations.dart';
 import '../../utils/haptics.dart';
 import '../../utils/hub_helpers.dart';
+import '../../sheets/pinwall_note_editor_sheet.dart';
 import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/pinwall/pinwall_composer.dart';
@@ -213,7 +214,8 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
       } else if (p.id != _activeId && p.posX != null && p.posY != null) {
         // Adopt a placement made on another device (or the server's confirmed
         // value), but never yank a card the user is actively dragging.
-        final confirmed = _clamp(Offset(p.posX!, p.posY!), _kCardW, _kCardH);
+        final confirmed =
+            _clamp(Offset(p.posX!, p.posY!), _noteWidth(p), _kCardH);
         _positions[p.id] = confirmed;
         _persistedPositions[p.id] = confirmed;
       }
@@ -229,13 +231,28 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
     });
   }
 
+  /// A note's rendered width on the board, which follows its chosen size.
+  /// Used for clamping so a large note can't hang off the cork's edge.
+  static double _noteWidth(PinwallPost post) {
+    return switch (post.size) {
+      'small' => 150,
+      'large' => 250,
+      _ => _kCardW,
+    };
+  }
+
+  double _noteWidthById(String id) {
+    final post = _posts.firstWhereOrNull((p) => p.id == id);
+    return post == null ? _kCardW : _noteWidth(post);
+  }
+
   /// A note's board position: its saved placement when the server has one,
   /// otherwise a stable grid slot so never-placed notes still fan out.
   Offset _positionFor(PinwallPost post, int index) {
     final px = post.posX;
     final py = post.posY;
     if (px != null && py != null) {
-      return _clamp(Offset(px, py), _kCardW, _kCardH);
+      return _clamp(Offset(px, py), _noteWidth(post), _kCardH);
     }
     return _gridPosition(index, post.id.hashCode);
   }
@@ -298,7 +315,8 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
   void _onNoteDrag(String postId, DragUpdateDetails details) {
     setState(() {
       final cur = _positions[postId] ?? Offset.zero;
-      _positions[postId] = _clamp(cur + details.delta, _kCardW, _kCardH);
+      _positions[postId] =
+          _clamp(cur + details.delta, _noteWidthById(postId), _kCardH);
     });
   }
 
@@ -437,6 +455,14 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
             me: widget.me,
             post: post,
             onOpenLinkedEntity: (ctx) => _openLinkedEntity(ctx, post),
+            onEdit: () {
+              unawaited(Haptics.light());
+              showPinwallNoteEditorSheet(
+                context,
+                groupId: widget.groupId,
+                post: post,
+              );
+            },
           );
           if (isLive) card = _PinOnEntrance(child: card);
           return (

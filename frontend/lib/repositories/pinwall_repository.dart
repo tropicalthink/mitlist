@@ -53,6 +53,7 @@ class PinwallRepository {
     switch (event.type) {
       case 'pinwall:post_created':
       case 'pinwall:post_moved':
+      case 'pinwall:post_updated':
         // The event body is untrusted, so refetch the canonical list — this
         // also carries the new positions so open boards reconcile a move.
         await refreshPosts(event.groupId).catchError((_) {});
@@ -175,8 +176,64 @@ class PinwallRepository {
     });
   }
 
-  Future<void> _patchCachedPostPosition(
-      String groupId, String postId, double x, double y) async {
+  /// Edits a note's content and presentation (color/size). Patches the cached
+  /// blob so the edit shows immediately/offline, then queues the server sync
+  /// (which broadcasts pinwall:post_updated via SSE). Callers pass the full
+  /// desired state — content plus color/size ('' clears a choice) — so a
+  /// newer queued edit for the same note can simply replace an older one.
+  /// Edits to not-yet-synced local posts are cached only, like positions:
+  /// they can't sync until the create resolves and the note earns a server id.
+  Future<void> updatePostOfflineFirst(
+    String groupId,
+    String postId, {
+    required String content,
+    required String color,
+    required String size,
+  }) async {
+    await _db.transaction(() async {
+      await _patchCachedPost(groupId, postId, (e) {
+        e['content'] = content;
+        if (color.isEmpty) {
+          e.remove('color');
+        } else {
+          e['color'] = color;
+        }
+        if (size.isEmpty) {
+          e.remove('size');
+        } else {
+          e['size'] = size;
+        }
+      });
+      if (postId.startsWith('local-')) return;
+      // The edit sheet always submits the complete state, so only the newest
+      // queued edit for this note needs to reach the server.
+      await _db.deleteOutboxOpsByTypeAndEntity('updatePinwallPost', postId);
+      // Unique per *edit*, not per post: the server remembers a key with its
+      // body hash for 7 days and answers a reused key with a new body as 409.
+      final opId = _uuid.v4();
+      await _db.enqueueOutbox(
+        id: opId,
+        type: 'updatePinwallPost',
+        payload: {
+          'groupId': groupId,
+          'postId': postId,
+          'content': content,
+          'color': color,
+          'size': size,
+        },
+        idempotencyKey: 'updatePinwallPost:$postId:$opId',
+        entityType: 'pinwallPost',
+        entityId: postId,
+      );
+    });
+  }
+
+  /// Applies [patch] to the cached JSON entry for [postId], best-effort.
+  Future<void> _patchCachedPost(
+    String groupId,
+    String postId,
+    void Function(Map<dynamic, dynamic> entry) patch,
+  ) async {
     final row = await _db.getPinwallPostsOnce(groupId);
     final raw = row?.postsJson;
     if (raw == null || raw.isEmpty) return;
@@ -186,8 +243,7 @@ class PinwallRepository {
       var changed = false;
       for (final e in decoded) {
         if (e is Map && e['id'] == postId) {
-          e['pos_x'] = x;
-          e['pos_y'] = y;
+          patch(e);
           changed = true;
           break;
         }
@@ -200,6 +256,14 @@ class PinwallRepository {
     } catch (_) {
       // Best-effort; a later refresh reconciles from the server.
     }
+  }
+
+  Future<void> _patchCachedPostPosition(
+      String groupId, String postId, double x, double y) {
+    return _patchCachedPost(groupId, postId, (e) {
+      e['pos_x'] = x;
+      e['pos_y'] = y;
+    });
   }
 
   /// Prepends [post] to the cached posts blob (most-recent-first).
@@ -242,6 +306,7 @@ class PinwallRepository {
       types: const [
         'createPinwallPost',
         'deletePinwallPost',
+        'updatePinwallPost',
         'updatePinwallPostPosition',
       ],
       handlers: {
@@ -263,6 +328,26 @@ class PinwallRepository {
             idempotencyKey: op.idempotencyKey,
           );
           await refreshPosts(payload['groupId'] as String);
+          await _db.deleteOutboxOp(op.id);
+        },
+        'updatePinwallPost': (op, payload) async {
+          // The cache already holds the edited note; no refetch needed on the
+          // origin device. Other members reconcile via pinwall:post_updated.
+          try {
+            await _remote.updatePost(
+              payload['groupId'] as String,
+              payload['postId'] as String,
+              content: payload['content'] as String,
+              color: payload['color'] as String? ?? '',
+              size: payload['size'] as String? ?? '',
+              idempotencyKey: op.idempotencyKey,
+            );
+          } on DioException catch (e) {
+            // Edits are last-write-wins; a 409 means an idempotency-key clash,
+            // not a conflict to resolve. Drop the op and let refresh/SSE
+            // reconcile rather than dead-lettering it.
+            if (e.response?.statusCode != 409) rethrow;
+          }
           await _db.deleteOutboxOp(op.id);
         },
         'updatePinwallPostPosition': (op, payload) async {

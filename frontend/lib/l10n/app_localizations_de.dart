@@ -3653,6 +3653,50 @@ class AppLocalizationsDe extends AppLocalizations {
       'Dieser Pin wird dauerhaft gelöscht. Dies kann nicht rückgängig gemacht werden.';
 
   @override
+  String get pinwallEditNote => 'Notiz bearbeiten';
+
+  @override
+  String get pinwallNoteColor => 'Farbe';
+
+  @override
+  String get pinwallNoteSize => 'Größe';
+
+  @override
+  String get pinwallNoteSizeSmall => 'Klein';
+
+  @override
+  String get pinwallNoteSizeMedium => 'Mittel';
+
+  @override
+  String get pinwallNoteSizeLarge => 'Groß';
+
+  @override
+  String get pinwallColorYellow => 'Gelb';
+
+  @override
+  String get pinwallColorPeach => 'Pfirsich';
+
+  @override
+  String get pinwallColorMint => 'Mint';
+
+  @override
+  String get pinwallColorSky => 'Himmelblau';
+
+  @override
+  String get pinwallColorBlush => 'Rosé';
+
+  @override
+  String get pinwallColorLavender => 'Lavendel';
+
+  @override
+  String get pinwallCouldNotSaveNote =>
+      'Notiz konnte nicht gespeichert werden.';
+
+  @override
+  String get sheetFailedChangesOpUpdatePinwallPost =>
+      'Pinnwand-Notiz bearbeiten';
+
+  @override
   String get pinwallAddPhotoMenu => 'Foto hinzufügen';
 
   @override

@@ -51,6 +51,7 @@ class PinwallNoteCard extends ConsumerWidget {
     required this.me,
     required this.post,
     required this.onOpenLinkedEntity,
+    this.onEdit,
     this.width,
   });
 
@@ -59,6 +60,11 @@ class PinwallNoteCard extends ConsumerWidget {
   final String groupId;
   final User? me;
   final PinwallPost post;
+
+  /// Opens the note editor (text, color, size). On the board a tap on the
+  /// card triggers it; on the hub it appears as an "Edit" menu item. Null
+  /// hides the affordance.
+  final VoidCallback? onEdit;
 
   /// Overrides the variant's default card width.
   ///
@@ -250,8 +256,14 @@ class PinwallNoteCard extends ConsumerWidget {
     final idHash = post.id.hashCode;
     final rot = ((idHash % 13) - 6) * 0.012;
 
+    // An explicitly chosen color wins; otherwise fall back to the stable
+    // id-hash palette pick so legacy notes keep the color they always had.
     final palette = dark ? _kNotePaletteDark : _kNotePalette;
-    final bg = palette[(idHash.abs()) % palette.length];
+    final paletteByName = dark
+        ? MitlistColors.notePaletteByNameDark
+        : MitlistColors.notePaletteByName;
+    final bg = paletteByName[post.color] ??
+        palette[(idHash.abs()) % palette.length];
     final border = bg.withValues(alpha: dark ? 0.3 : 0.6);
 
     final pinColors = [
@@ -279,17 +291,38 @@ class PinwallNoteCard extends ConsumerWidget {
         : DateFormat('MMM d · h:mm a').format(remindAt.toLocal());
 
     // ── Variant-tuned card dimensions/chrome ──────────────────────────────
-    final double cardWidth = width ?? (_isHub ? 160 : 180);
+    // On the board a note's chosen size drives its footprint. The hub keeps
+    // its uniform row-filling width — size is a spatial property of the board.
+    final String sizeKey = post.size ?? 'medium';
+    final double boardWidth = switch (sizeKey) {
+      'small' => 150,
+      'large' => 250,
+      _ => 180,
+    };
+    final double cardWidth = width ?? (_isHub ? 160 : boardWidth);
     // The screen-relative clamp only guards the fixed fallback width; an
     // explicit width is already derived from the available space.
     final BoxConstraints? cardConstraints = (_isHub && width == null)
         ? BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.7)
         : null;
     final double borderRadius = _isHub ? 6 : MitlistTheme.radiusSm;
-    final int contentMaxLines = _isHub ? 8 : 10;
+    final int contentMaxLines = _isHub
+        ? 8
+        : switch (sizeKey) {
+            'small' => 6,
+            'large' => 16,
+            _ => 10,
+          };
     final Size pinSize = _isHub ? const Size(22, 28) : const Size(26, 32);
     final int mediaMaxCount = _isHub ? 5 : 4;
     final double mediaThumbSize = _isHub ? 42 : 48;
+    // Height of the board's lead photo; scales with the note size so a large
+    // note shows a genuinely large picture.
+    final double mediaHeroHeight = switch (sizeKey) {
+      'small' => 76,
+      'large' => 150,
+      _ => 100,
+    };
 
     Future<void> onDelete() async {
       unawaited(Haptics.light());
@@ -329,6 +362,103 @@ class PinwallNoteCard extends ConsumerWidget {
         error: (_, __) => const SizedBox.shrink(),
         data: (items) {
           if (items.isEmpty) return const SizedBox.shrink();
+          if (!_isHub) {
+            // Board: the first photo renders large so pictures actually read
+            // from the cork; the rest line up as tappable thumbnails below.
+            final primary = items.first;
+            final rest = items.skip(1).take(mediaMaxCount - 1).toList();
+            Widget photo(PinwallMediaItem m, Widget child) {
+              return Semantics(
+                button: true,
+                label: l10n.listItemViewPhoto,
+                child: GestureDetector(
+                  onTap: () => _openMediaViewer(context, m),
+                  onLongPress: () => _showMediaActions(context, ref, media: m),
+                  child: child,
+                ),
+              );
+            }
+
+            return Padding(
+              padding: const EdgeInsets.only(top: MitlistSpacing.xs),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  photo(
+                    primary,
+                    ClipRRect(
+                      borderRadius:
+                          BorderRadius.circular(MitlistTheme.radiusSm),
+                      child: SizedBox(
+                        height: mediaHeroHeight,
+                        child: Image.network(
+                          primary.url,
+                          fit: BoxFit.cover,
+                          cacheWidth: (cardWidth *
+                                  MediaQuery.devicePixelRatioOf(context) *
+                                  1.5)
+                              .round(),
+                          errorBuilder: (_, __, ___) => Container(
+                            color: border.withValues(alpha: 0.3),
+                            alignment: Alignment.center,
+                            child: const Icon(
+                              Icons.image_not_supported_outlined,
+                              size: 18,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (rest.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: MitlistSpacing.xs),
+                      child: SizedBox(
+                        height: mediaThumbSize,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: rest.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(width: MitlistSpacing.xs),
+                          itemBuilder: (context, i) {
+                            final m = rest[i];
+                            return photo(
+                              m,
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(
+                                    MitlistTheme.radiusSm),
+                                child: AspectRatio(
+                                  aspectRatio: 1,
+                                  child: Image.network(
+                                    m.url,
+                                    fit: BoxFit.cover,
+                                    cacheWidth: (mediaThumbSize *
+                                            MediaQuery.devicePixelRatioOf(
+                                                context) *
+                                            1.5)
+                                        .round(),
+                                    errorBuilder: (_, __, ___) => Container(
+                                      color: border.withValues(alpha: 0.3),
+                                      alignment: Alignment.center,
+                                      child: const Icon(
+                                        Icons.image_not_supported_outlined,
+                                        size: 14,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            );
+          }
           final show = items.length > mediaMaxCount
               ? items.take(mediaMaxCount).toList()
               : items;
@@ -374,7 +504,6 @@ class PinwallNoteCard extends ConsumerWidget {
                       ),
                     ),
                   );
-                  if (!_isHub) return thumb;
                   return GestureDetector(
                     onTap: () => _openMediaViewer(context, m),
                     onLongPress: () =>
@@ -459,6 +588,10 @@ class PinwallNoteCard extends ConsumerWidget {
           PopupMenuButton<String>(
             tooltip: l10n.pinwallPostOptions,
             onSelected: (v) async {
+              if (v == 'edit') {
+                onEdit?.call();
+                return;
+              }
               if (v == 'photo') {
                 await _addMediaToPost(context, ref);
                 return;
@@ -493,6 +626,8 @@ class PinwallNoteCard extends ConsumerWidget {
               }
             },
             itemBuilder: (_) => [
+              if (onEdit != null)
+                PopupMenuItem(value: 'edit', child: Text(l10n.pinwallEditNote)),
               PopupMenuItem(
                   value: 'photo', child: Text(l10n.pinwallAddPhotoMenu)),
               PopupMenuItem(value: 'delete', child: Text(l10n.commonDelete)),
@@ -623,9 +758,17 @@ class PinwallNoteCard extends ConsumerWidget {
     );
 
     if (_isHub) return card;
+    // On the board a plain tap opens the editor. Child gestures (photos,
+    // linked-entity chip) still win their own taps; the board's drag wrapper
+    // keeps handling pans.
+    final Widget boardCard = onEdit == null
+        ? card
+        : GestureDetector(onTap: onEdit, child: card);
     return Semantics(
       label: l10n.pinwallNoteSemantics(userLabel, content),
-      child: card,
+      button: onEdit != null,
+      hint: onEdit != null ? l10n.pinwallEditNote : null,
+      child: boardCard,
     );
   }
 }

@@ -22,4 +22,28 @@ type PinwallPost struct {
 	// the client then lays it out on its grid.
 	PosX *float64 `json:"pos_x,omitempty"`
 	PosY *float64 `json:"pos_y,omitempty"`
+	// Color and Size are the note's chosen presentation. Nil means no explicit
+	// choice: the client derives a palette color from the note id and renders
+	// the default size. See ValidPinwallNoteColors / ValidPinwallNoteSizes.
+	Color *string `json:"color,omitempty"`
+	Size  *string `json:"size,omitempty"`
+}
+
+// ValidPinwallNoteColors are the sticky-note palette names a client may pick.
+// They are palette *keys*, not raw color values, so light/dark themes each
+// resolve them to their own shade.
+var ValidPinwallNoteColors = map[string]bool{
+	"yellow":   true,
+	"peach":    true,
+	"mint":     true,
+	"sky":      true,
+	"blush":    true,
+	"lavender": true,
+}
+
+// ValidPinwallNoteSizes are the card sizes a client may pick.
+var ValidPinwallNoteSizes = map[string]bool{
+	"small":  true,
+	"medium": true,
+	"large":  true,
 }
