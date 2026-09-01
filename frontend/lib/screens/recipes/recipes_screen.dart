@@ -199,6 +199,12 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
 
   void _onSearchChanged(String value) {
     _searchTimer?.cancel();
+    // An emptied field (typically the clear button) should restore the full
+    // list immediately; the debounce is only worth it while typing.
+    if (value.trim().isEmpty) {
+      setState(() => _searchQuery = '');
+      return;
+    }
     _searchTimer = Timer(const Duration(milliseconds: 300), () {
       if (!mounted) return;
       setState(() => _searchQuery = value);
@@ -720,18 +726,36 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
       ..._availableTags.where((t) => !_selectedTags.contains(t.tag)),
     ];
 
+    final colorScheme = Theme.of(context).colorScheme;
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       clipBehavior: Clip.none,
       child: Row(
         children: [
+          // A muted tag glyph marks this row as the tag filter, so it doesn't
+          // read as a second copy of the scope chips above it.
+          AppIcon(
+            name: 'tagOutline',
+            size: MitlistSpacing.space4,
+            color: colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: MitlistSpacing.sm),
           for (var i = 0; i < ordered.length; i++) ...[
             if (i > 0) const SizedBox(width: MitlistSpacing.sm),
-            AppChip(
-              label: '${ordered[i].tag} · ${ordered[i].count}',
-              selected: _selectedTags.contains(ordered[i].tag),
-              onSelected: (_) => _toggleTag(ordered[i].tag),
-            ),
+            if (_selectedTags.contains(ordered[i].tag))
+              // Active tags carry an × so it's obvious a tap removes them.
+              AppChip(
+                label: '${ordered[i].tag} · ${ordered[i].count}',
+                leading: const AppIcon(name: 'xMark'),
+                selected: true,
+                onSelected: (_) => _toggleTag(ordered[i].tag),
+              )
+            else
+              AppChip(
+                label: '${ordered[i].tag} · ${ordered[i].count}',
+                selected: false,
+                onSelected: (_) => _toggleTag(ordered[i].tag),
+              ),
           ],
         ],
       ),
