@@ -44,6 +44,7 @@ import 'screens/recipes/shared_recipe_screen.dart';
 import 'screens/recipes/cook_mode_screen.dart';
 import 'screens/recipes/cookbooks_screen.dart';
 import 'screens/recipes/cookbook_detail_screen.dart';
+import 'screens/recipes/cookbook_add_recipes_screen.dart';
 import 'screens/lists/products_screen.dart';
 import 'screens/lists/shopping_locations_screen.dart';
 import 'models/recipe_models.dart';
@@ -312,8 +313,22 @@ final routerProvider = Provider<GoRouter>((ref) {
                         parentNavigatorKey: _rootNavigatorKey,
                         builder: (context, state) => CookbookDetailScreen(
                           collectionId: state.pathParameters['collectionId']!,
-                          initialName: state.extra as String?,
+                          initial: state.extra as RecipeCollection?,
                         ),
+                        routes: [
+                          GoRoute(
+                            path: 'add',
+                            name: 'cookbookAddRecipes',
+                            parentNavigatorKey: _rootNavigatorKey,
+                            builder: (context, state) =>
+                                CookbookAddRecipesScreen(
+                              collectionId:
+                                  state.pathParameters['collectionId']!,
+                              excludedRecipeIds:
+                                  state.extra as Set<String>? ?? const {},
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),

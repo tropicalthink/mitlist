@@ -1004,7 +1004,7 @@ class ListDetailController extends ChangeNotifier {
       groupId: groupId,
       purpose: 'list_item_photo',
       filename: file.name,
-      contentType: 'image/*',
+      contentType: file.mimeType ?? '',
       bytes: Uint8List.fromList(bytes),
     );
     final svc = await ref.read(listServiceProviderAsync.future);

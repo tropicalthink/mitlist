@@ -718,9 +718,13 @@ func (r *RecipeRepo) CreateCollectionRecipe(ctx context.Context, cr *models.Coll
 		cr.ID = uuid.New()
 	}
 	cr.AddedAt = time.Now().UTC()
+	// Filing a recipe that is already in the cookbook is a no-op rather than
+	// a unique-violation: the client offers "add to cookbook" from several
+	// places and cannot cheaply know what is already there.
 	_, err := r.pool.Exec(ctx, `
 		INSERT INTO collection_recipes (id, collection_id, recipe_id, added_at)
 		VALUES ($1, $2, $3, $4)
+		ON CONFLICT (collection_id, recipe_id) DO NOTHING
 	`, cr.ID, cr.CollectionID, cr.RecipeID, cr.AddedAt)
 	return err
 }

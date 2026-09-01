@@ -174,7 +174,7 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
               groupId: groupId,
               purpose: 'pinwall_media',
               filename: f.name,
-              contentType: 'image/*',
+              contentType: f.mimeType ?? '',
               bytes: bytes,
             );
             await pinwallSvc.attachPostAttachment(

@@ -10180,6 +10180,174 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Get the app to save recipes, plan meals and build a shopping list with your household.'**
   String get sharedRecipeGetAppBody;
+
+  /// Kitchen quick-action tile title
+  ///
+  /// In en, this message translates to:
+  /// **'Cookbooks'**
+  String get recipeQuickCookbooks;
+
+  /// Kitchen quick-action tile subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Group your recipes} =1{1 cookbook} other{{count} cookbooks}}'**
+  String recipeQuickCookbooksDesc(num count);
+
+  /// Kitchen quick-action tile title
+  ///
+  /// In en, this message translates to:
+  /// **'Meal plan'**
+  String get recipeQuickMealPlan;
+
+  /// Kitchen quick-action tile subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Plan the week} =1{1 meal this week} other{{count} meals this week}}'**
+  String recipeQuickMealPlanDesc(num count);
+
+  /// Chip that opens the sort picker, showing the active sort
+  ///
+  /// In en, this message translates to:
+  /// **'Sort: {label}'**
+  String recipeSortChip(String label);
+
+  /// Clears search, scope and tag filters
+  ///
+  /// In en, this message translates to:
+  /// **'Clear filters'**
+  String get recipeFiltersClear;
+
+  /// Reveals the rest of the tag filter row
+  ///
+  /// In en, this message translates to:
+  /// **'+{count} more'**
+  String recipeTagsMore(num count);
+
+  /// Collapses the tag filter row
+  ///
+  /// In en, this message translates to:
+  /// **'Show fewer'**
+  String get recipeTagsLess;
+
+  /// Toggle on the cookbook form
+  ///
+  /// In en, this message translates to:
+  /// **'Share with household'**
+  String get cookbooksShareWithHousehold;
+
+  /// Toggle subtitle when sharing is on
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone in {name} can see and add to this cookbook.'**
+  String cookbooksShareWithHouseholdDesc(String name);
+
+  /// Toggle subtitle when the cookbook is personal
+  ///
+  /// In en, this message translates to:
+  /// **'Only you can see this cookbook.'**
+  String get cookbooksPersonalDesc;
+
+  /// Sheet title for renaming / resharing a cookbook
+  ///
+  /// In en, this message translates to:
+  /// **'Edit cookbook'**
+  String get cookbooksEditSheetTitle;
+
+  /// Menu item
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get cookbooksEdit;
+
+  /// Semantic label on a cookbook card
+  ///
+  /// In en, this message translates to:
+  /// **'Open cookbook {name}'**
+  String cookbooksOpen(String name);
+
+  /// Search field hint in the add-recipes picker
+  ///
+  /// In en, this message translates to:
+  /// **'Search recipes'**
+  String get cookbookAddRecipesSearchHint;
+
+  /// Submit button in the add-recipes picker
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Select recipes} =1{Add 1 recipe} other{Add {count} recipes}}'**
+  String cookbookAddRecipesSubmit(num count);
+
+  /// Picker empty state after a search
+  ///
+  /// In en, this message translates to:
+  /// **'No recipes match'**
+  String get cookbookAddRecipesNoMatch;
+
+  /// Row subtitle in the picker
+  ///
+  /// In en, this message translates to:
+  /// **'Already in this cookbook'**
+  String get cookbookAddRecipesAlreadyIn;
+
+  /// Cookbook detail header subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Shared with {name}'**
+  String cookbookDetailSharedWith(String name);
+
+  /// Cookbook detail header subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Personal cookbook'**
+  String get cookbookDetailPersonal;
+
+  /// Recipe detail action
+  ///
+  /// In en, this message translates to:
+  /// **'Add to cookbook'**
+  String get recipeDetailAddToCookbook;
+
+  /// Empty state in the add-to-cookbook sheet
+  ///
+  /// In en, this message translates to:
+  /// **'No cookbooks yet'**
+  String get recipeAddToCookbookEmptyTitle;
+
+  /// Empty state body in the add-to-cookbook sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Create a cookbook to start grouping recipes.'**
+  String get recipeAddToCookbookEmptyDesc;
+
+  /// Inline create field label
+  ///
+  /// In en, this message translates to:
+  /// **'New cookbook name'**
+  String get recipeAddToCookbookNewName;
+
+  /// Toast after filing a recipe
+  ///
+  /// In en, this message translates to:
+  /// **'Added to {name}'**
+  String recipeAddedToCookbook(String name);
+
+  /// Error toast
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t add to cookbook'**
+  String get recipeAddToCookbookFailed;
+
+  /// Button on the web share page that deep-links into the installed app
+  ///
+  /// In en, this message translates to:
+  /// **'Open in Mitlist'**
+  String get sharedRecipeOpenInApp;
+
+  /// Share sheet subject line
+  ///
+  /// In en, this message translates to:
+  /// **'{title} on Mitlist'**
+  String recipeShareSubject(String title);
 }
 
 class _AppLocalizationsDelegate

@@ -318,7 +318,7 @@ class _PinwallComposerState extends ConsumerState<PinwallComposer> {
               groupId: widget.groupId,
               purpose: 'pinwall_media',
               filename: f.name,
-              contentType: 'image/*',
+              contentType: f.mimeType ?? '',
               bytes: bytes,
             );
             await svc.attachPostAttachment(
@@ -326,6 +326,13 @@ class _PinwallComposerState extends ConsumerState<PinwallComposer> {
               postId: post.id,
               attachmentId: a.id,
             );
+          }
+        } catch (_) {
+          // The note itself is already pinned; failing silently here left
+          // users thinking the photo saved when it never reached storage.
+          if (mounted) {
+            unawaited(Haptics.failure());
+            AppToast.error(context, l10n.pinwallCouldNotAddPhoto);
           }
         } finally {
           if (mounted) {
