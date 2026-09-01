@@ -342,12 +342,18 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     try {
       final authService = await ref.read(authServiceProviderAsync.future);
       await authService.logout();
-      await ref.read(appDatabaseProvider).clearAllUserData();
-      ref.read(authStateProvider.notifier).state = false;
-      unawaited(ref.read(currentGroupIdProvider.notifier).set(null));
-      ref.invalidate(cachedGroupsProvider);
-      ref.invalidate(hubQuickStartDismissedProvider);
     } catch (_) {}
+    // logout() clears the tokens even when its network cleanup fails, so the
+    // auth state must flip regardless of what the wipe below does — otherwise
+    // a throw leaves a tokenless session the router still treats as signed in
+    // and bounces straight back into the app.
+    ref.read(authStateProvider.notifier).state = false;
+    try {
+      await ref.read(appDatabaseProvider).clearAllUserData();
+    } catch (_) {}
+    unawaited(ref.read(currentGroupIdProvider.notifier).set(null));
+    ref.invalidate(cachedGroupsProvider);
+    ref.invalidate(hubQuickStartDismissedProvider);
     if (mounted) context.goNamed('welcome');
     _isSaving = false;
   }

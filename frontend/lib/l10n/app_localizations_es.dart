@@ -159,92 +159,95 @@ class AppLocalizationsEs extends AppLocalizations {
   String get commonLoadingMembers => 'Cargando miembros...';
 
   @override
-  String get integrationsTitle => 'Integrations';
+  String get integrationsTitle => 'Integraciones';
 
   @override
   String get homeAssistantTitle => 'Home Assistant';
 
   @override
   String get homeAssistantDescription =>
-      'Connect your household to dashboards, voice control, and automations.';
+      'Conecta tu hogar con paneles, control por voz y automatizaciones.';
 
   @override
-  String get homeAssistantConnections => 'Connections';
+  String get homeAssistantConnections => 'Conexiones';
 
   @override
-  String get homeAssistantNoConnections => 'No Home Assistant connections yet.';
+  String get homeAssistantNoConnections =>
+      'Aún no hay conexiones de Home Assistant.';
 
   @override
-  String get homeAssistantCreateConnection => 'Create connection';
+  String get homeAssistantCreateConnection => 'Crear conexión';
 
   @override
-  String get homeAssistantConnectionName => 'Connection name';
+  String get homeAssistantConnectionName => 'Nombre de la conexión';
 
   @override
   String get homeAssistantConnectionNameHint => 'Home Assistant';
 
   @override
-  String get homeAssistantHouseholds => 'Households';
+  String get homeAssistantHouseholds => 'Hogares';
 
   @override
-  String get homeAssistantPermissions => 'Permissions';
+  String get homeAssistantPermissions => 'Permisos';
 
   @override
-  String get homeAssistantWriteAccess => 'Allow Home Assistant to make changes';
+  String get homeAssistantWriteAccess =>
+      'Permitir que Home Assistant haga cambios';
 
   @override
-  String get homeAssistantFinanceAccess => 'Include financial data';
+  String get homeAssistantFinanceAccess => 'Incluir datos financieros';
 
   @override
-  String get homeAssistantTokenTitle => 'Connection token';
+  String get homeAssistantTokenTitle => 'Token de conexión';
 
   @override
   String get homeAssistantTokenBody =>
-      'Copy this token into Home Assistant now. For security, mitlist cannot show it again.';
+      'Copia este token en Home Assistant ahora. Por seguridad, mitlist no puede mostrarlo de nuevo.';
 
   @override
-  String get homeAssistantTokenCopied => 'Connection token copied';
+  String get homeAssistantTokenCopied => 'Token de conexión copiado';
 
   @override
-  String get homeAssistantRevoke => 'Revoke connection';
+  String get homeAssistantRevoke => 'Revocar conexión';
 
   @override
   String get homeAssistantRevokeConfirm =>
-      'This immediately disconnects Home Assistant. You can create a new connection later.';
+      'Esto desconecta Home Assistant de inmediato. Puedes crear una nueva conexión más adelante.';
 
   @override
-  String get homeAssistantRevoked => 'Revoked';
+  String get homeAssistantRevoked => 'Revocada';
 
   @override
-  String get homeAssistantNeverUsed => 'Never used';
+  String get homeAssistantNeverUsed => 'Sin usar';
 
   @override
   String homeAssistantLastUsed(String date) {
-    return 'Last used $date';
+    return 'Último uso: $date';
   }
 
   @override
-  String get homeAssistantSelectHousehold => 'Select at least one household.';
+  String get homeAssistantSelectHousehold => 'Selecciona al menos un hogar.';
 
   @override
-  String get homeAssistantCreated => 'Home Assistant connection created';
+  String get homeAssistantCreated => 'Conexión con Home Assistant creada';
 
   @override
-  String get homeAssistantRevokedSuccess => 'Home Assistant connection revoked';
+  String get homeAssistantRevokedSuccess =>
+      'Conexión de Home Assistant revocada';
 
   @override
   String get homeAssistantLoadFailed =>
-      'Could not load Home Assistant connections.';
+      'No se pudieron cargar las conexiones de Home Assistant.';
 
   @override
   String get homeAssistantSaveFailed =>
-      'Could not create the connection. Please try again.';
+      'No se pudo crear la conexión. Inténtalo de nuevo.';
 
   @override
-  String get homeAssistantReadOnly => 'Read only';
+  String get homeAssistantReadOnly => 'Solo lectura';
 
   @override
-  String get homeAssistantReadWrite => 'Read and write';
+  String get homeAssistantReadWrite => 'Lectura y escritura';
 
   @override
   String get welcomeTagline => 'Tu hogar, organizado.';
@@ -410,13 +413,13 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get choreDoneRecently => 'Done recently';
+  String get choreDoneRecently => 'Hechas hace poco';
 
   @override
-  String get choreLedgerYou => 'You';
+  String get choreLedgerYou => 'Tú';
 
   @override
-  String get choreLedgerSomeone => 'Someone';
+  String get choreLedgerSomeone => 'Alguien';
 
   @override
   String choreLedgerDoneBy(String who, String when) {
@@ -424,60 +427,60 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get choreLedgerJustNow => 'just now';
+  String get choreLedgerJustNow => 'ahora mismo';
 
   @override
   String choreLedgerHoursAgo(int count) {
-    return '${count}h ago';
+    return 'hace $count h';
   }
 
   @override
-  String get choreLedgerYesterday => 'yesterday';
+  String get choreLedgerYesterday => 'ayer';
 
   @override
   String choreBackOnDate(String date) {
-    return 'back $date';
+    return 'vuelve el $date';
   }
 
   @override
-  String get choreUpForGrabs => 'Up for grabs';
+  String get choreUpForGrabs => 'Para quien quiera';
 
   @override
   String choreDoneBackSnackbar(String choreTitle, String date) {
-    return '$choreTitle done — back $date';
+    return '$choreTitle hecha — vuelve el $date';
   }
 
   @override
-  String get choreWhoEveryone => 'Everyone';
+  String get choreWhoEveryone => 'Todos';
 
   @override
-  String get choreWhoNoOne => 'No one';
+  String get choreWhoNoOne => 'Nadie';
 
   @override
   String choreWhoAlways(String name) {
-    return 'Always $name';
+    return 'Siempre $name';
   }
 
   @override
   String choreWhoAmongSelected(int count) {
-    return 'Rotates between the $count people you picked.';
+    return 'Rota entre las $count personas que elegiste.';
   }
 
   @override
-  String get choreWhoOrderLabel => 'Order';
+  String get choreWhoOrderLabel => 'Orden';
 
   @override
-  String get choreDetailRhythm => 'Repeats';
+  String get choreDetailRhythm => 'Se repite';
 
   @override
   String choreLoadSummary(num count, int days) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count chores',
-      one: '1 chore',
+      other: '$count tareas hechas',
+      one: '1 tarea hecha',
     );
-    return '$_temp0 done in the last $days days';
+    return '$_temp0 en los últimos $days días';
   }
 
   @override
@@ -2686,7 +2689,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get accountCopyJSON => 'Copiar gastos (JSON)';
 
   @override
-  String get accountExportCalendar => 'Export calendar (.ics)';
+  String get accountExportCalendar => 'Exportar calendario (.ics)';
 
   @override
   String get accountJSONCopied => 'Gastos en JSON copiados al portapapeles';
@@ -3259,34 +3262,34 @@ class AppLocalizationsEs extends AppLocalizations {
   String get expenseCreationWhatsItFor => '¿Para qué es esto?';
 
   @override
-  String get expenseCreationCategoryLabel => 'Category';
+  String get expenseCreationCategoryLabel => 'Categoría';
 
   @override
   String get expenseCreationDatePrefix => 'Fecha';
 
   @override
-  String get expenseCategoryGroceries => 'Groceries';
+  String get expenseCategoryGroceries => 'Supermercado';
 
   @override
-  String get expenseCategoryDining => 'Dining';
+  String get expenseCategoryDining => 'Restaurantes';
 
   @override
-  String get expenseCategoryTransport => 'Transport';
+  String get expenseCategoryTransport => 'Transporte';
 
   @override
-  String get expenseCategoryUtilities => 'Utilities';
+  String get expenseCategoryUtilities => 'Suministros';
 
   @override
-  String get expenseCategoryHousehold => 'Household';
+  String get expenseCategoryHousehold => 'Hogar';
 
   @override
-  String get expenseCategoryEntertainment => 'Entertainment';
+  String get expenseCategoryEntertainment => 'Ocio';
 
   @override
-  String get expenseCategoryHealth => 'Health';
+  String get expenseCategoryHealth => 'Salud';
 
   @override
-  String get expenseCategoryOther => 'Other';
+  String get expenseCategoryOther => 'Otros';
 
   @override
   String get expenseCreationNotesHint => 'Notas (opcional)';
@@ -3484,7 +3487,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String pinwallPresenceHere(String names) {
-    return '$names here now';
+    return '$names aquí ahora';
   }
 
   @override
@@ -4077,36 +4080,36 @@ class AppLocalizationsEs extends AppLocalizations {
   String get authSignupPasswordRequired => 'La contraseña es obligatoria.';
 
   @override
-  String get authSignupConfirmPassword => 'Confirm password';
+  String get authSignupConfirmPassword => 'Confirmar contraseña';
 
   @override
-  String get authSignupConfirmPasswordHint => 'Re-enter your password';
+  String get authSignupConfirmPasswordHint =>
+      'Vuelve a introducir tu contraseña';
 
   @override
-  String get authSignupConfirmPasswordRequired =>
-      'Please confirm your password.';
+  String get authSignupConfirmPasswordRequired => 'Confirma tu contraseña.';
 
   @override
-  String get authSignupPasswordMismatch => 'Passwords do not match.';
+  String get authSignupPasswordMismatch => 'Las contraseñas no coinciden.';
 
   @override
   String get authSignupPasswordRequirementsNotMet =>
-      'Password does not meet the requirements below.';
+      'La contraseña no cumple los requisitos indicados abajo.';
 
   @override
-  String get passwordRequirementsTitle => 'Your password must contain:';
+  String get passwordRequirementsTitle => 'Tu contraseña debe contener:';
 
   @override
-  String get passwordRequirementLength => 'At least 8 characters';
+  String get passwordRequirementLength => 'Al menos 8 caracteres';
 
   @override
-  String get passwordRequirementUppercase => 'One uppercase letter';
+  String get passwordRequirementUppercase => 'Una letra mayúscula';
 
   @override
-  String get passwordRequirementDigit => 'One number';
+  String get passwordRequirementDigit => 'Un número';
 
   @override
-  String get passwordRequirementSpecial => 'One special character';
+  String get passwordRequirementSpecial => 'Un carácter especial';
 
   @override
   String get authSignupGenericError =>
@@ -4561,7 +4564,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get sheetJoinJoin => 'Unirse';
 
   @override
-  String get joinPasteButton => 'Paste';
+  String get joinPasteButton => 'Pegar';
 
   @override
   String get joinScanButton => 'Escanear';
@@ -4578,11 +4581,11 @@ class AppLocalizationsEs extends AppLocalizations {
       'No se pudo abrir la cámara. Revisa los permisos de cámara e inténtalo de nuevo.';
 
   @override
-  String get joinPasteFilled => 'Invite code pasted';
+  String get joinPasteFilled => 'Código de invitación pegado';
 
   @override
   String get joinPasteNoCode =>
-      'No invite code or link found on your clipboard';
+      'No se encontró ningún código o enlace de invitación en el portapapeles';
 
   @override
   String get sheetCreateHouseholdTitle => 'Crear hogar';
@@ -5576,17 +5579,17 @@ class AppLocalizationsEs extends AppLocalizations {
       'Termina en el navegador y vuelve: premium se activa automáticamente.';
 
   @override
-  String get billingProcessing => 'Processing your purchase...';
+  String get billingProcessing => 'Procesando tu compra...';
 
   @override
-  String get billingRestore => 'Restore purchases';
+  String get billingRestore => 'Restaurar compras';
 
   @override
   String get billingAutoRenewDisclosure =>
-      'Payment is charged to your store account. The subscription renews automatically unless canceled at least 24 hours before the current period ends. Manage or cancel it in your App Store or Google Play account.';
+      'El pago se carga a tu cuenta de la tienda. La suscripción se renueva automáticamente salvo que se cancele al menos 24 horas antes de que termine el periodo actual. Gestiónala o cancélala en tu cuenta de App Store o Google Play.';
 
   @override
-  String get billingPurchased => 'Premium is active. Thanks!';
+  String get billingPurchased => 'Premium está activo. ¡Gracias!';
 
   @override
   String get billingAccountCardTitle => 'Premium';
