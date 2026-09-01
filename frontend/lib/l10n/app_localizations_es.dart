@@ -3614,6 +3614,48 @@ class AppLocalizationsEs extends AppLocalizations {
       'Este pin se eliminará permanentemente. No se puede deshacer.';
 
   @override
+  String get pinwallEditNote => 'Editar nota';
+
+  @override
+  String get pinwallNoteColor => 'Color';
+
+  @override
+  String get pinwallNoteSize => 'Tamaño';
+
+  @override
+  String get pinwallNoteSizeSmall => 'Pequeña';
+
+  @override
+  String get pinwallNoteSizeMedium => 'Mediana';
+
+  @override
+  String get pinwallNoteSizeLarge => 'Grande';
+
+  @override
+  String get pinwallColorYellow => 'Amarillo';
+
+  @override
+  String get pinwallColorPeach => 'Melocotón';
+
+  @override
+  String get pinwallColorMint => 'Menta';
+
+  @override
+  String get pinwallColorSky => 'Cielo';
+
+  @override
+  String get pinwallColorBlush => 'Rosa';
+
+  @override
+  String get pinwallColorLavender => 'Lavanda';
+
+  @override
+  String get pinwallCouldNotSaveNote => 'No se pudo guardar la nota.';
+
+  @override
+  String get sheetFailedChangesOpUpdatePinwallPost => 'Editar nota del tablón';
+
+  @override
   String get pinwallAddPhotoMenu => 'Añadir foto';
 
   @override

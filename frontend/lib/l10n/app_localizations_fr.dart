@@ -3635,6 +3635,49 @@ class AppLocalizationsFr extends AppLocalizations {
       'Cette épingle sera définitivement supprimée. Cette action est irréversible.';
 
   @override
+  String get pinwallEditNote => 'Modifier la note';
+
+  @override
+  String get pinwallNoteColor => 'Couleur';
+
+  @override
+  String get pinwallNoteSize => 'Taille';
+
+  @override
+  String get pinwallNoteSizeSmall => 'Petite';
+
+  @override
+  String get pinwallNoteSizeMedium => 'Moyenne';
+
+  @override
+  String get pinwallNoteSizeLarge => 'Grande';
+
+  @override
+  String get pinwallColorYellow => 'Jaune';
+
+  @override
+  String get pinwallColorPeach => 'Pêche';
+
+  @override
+  String get pinwallColorMint => 'Menthe';
+
+  @override
+  String get pinwallColorSky => 'Ciel';
+
+  @override
+  String get pinwallColorBlush => 'Rose';
+
+  @override
+  String get pinwallColorLavender => 'Lavande';
+
+  @override
+  String get pinwallCouldNotSaveNote => 'Impossible d\'enregistrer la note.';
+
+  @override
+  String get sheetFailedChangesOpUpdatePinwallPost =>
+      'Modifier la note du tableau';
+
+  @override
   String get pinwallAddPhotoMenu => 'Ajouter une photo';
 
   @override

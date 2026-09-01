@@ -13,6 +13,7 @@ import '../../providers/list_provider.dart';
 import '../../providers/meal_plan_provider.dart';
 import '../../repositories/pinwall_repository.dart';
 import '../../screens/pinwall/pinwall_board_screen.dart';
+import '../../sheets/pinwall_note_editor_sheet.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/theme.dart';
@@ -324,6 +325,11 @@ class _PinwallPostsList extends ConsumerWidget {
                     width: layout.cardWidth,
                     onOpenLinkedEntity: (ctx) =>
                         _navigateToLinkedEntity(ctx, show[i]),
+                    onEdit: () => showPinwallNoteEditorSheet(
+                      context,
+                      groupId: groupId,
+                      post: show[i],
+                    ),
                   ),
               ],
             );

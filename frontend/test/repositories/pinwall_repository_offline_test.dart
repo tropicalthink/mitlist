@@ -92,6 +92,84 @@ void main() {
       expect(await db.outboxCount(), greaterThan(0));
     });
 
+    test('updatePost patches content/color/size and queues sync', () async {
+      final post = PinwallPost(
+        id: 'server-1',
+        groupId: groupId,
+        userId: 'u1',
+        content: 'old text',
+        createdAt: DateTime.utc(2026, 1, 1),
+      );
+      await db.upsertPinwallPosts(
+        groupId: groupId,
+        postsJson: jsonEncode([post.toJson()]),
+      );
+
+      await repo.updatePostOfflineFirst(
+        groupId,
+        'server-1',
+        content: 'new text',
+        color: 'mint',
+        size: 'large',
+      );
+
+      final posts = await repo.getPostsOnce(groupId);
+      expect(posts.single.content, 'new text');
+      expect(posts.single.color, 'mint');
+      expect(posts.single.size, 'large');
+      expect(await db.outboxCount(), greaterThan(0));
+    });
+
+    test('updatePost with empty color/size clears the choice in the cache',
+        () async {
+      final post = PinwallPost(
+        id: 'server-1',
+        groupId: groupId,
+        userId: 'u1',
+        content: 'note',
+        createdAt: DateTime.utc(2026, 1, 1),
+        color: 'blush',
+        size: 'small',
+      );
+      await db.upsertPinwallPosts(
+        groupId: groupId,
+        postsJson: jsonEncode([post.toJson()]),
+      );
+
+      await repo.updatePostOfflineFirst(
+        groupId,
+        'server-1',
+        content: 'note',
+        color: '',
+        size: '',
+      );
+
+      final posts = await repo.getPostsOnce(groupId);
+      expect(posts.single.color, isNull);
+      expect(posts.single.size, isNull);
+    });
+
+    test('updatePost for an unsynced local post caches only, no outbox op',
+        () async {
+      final tempId = await repo.createPostOfflineFirst(groupId,
+          content: 'temp', userId: 'u1');
+      final beforeCount = await db.outboxCount(); // just the create op
+
+      await repo.updatePostOfflineFirst(
+        groupId,
+        tempId,
+        content: 'edited',
+        color: 'sky',
+        size: 'medium',
+      );
+
+      final posts = await repo.getPostsOnce(groupId);
+      expect(posts.single.content, 'edited');
+      expect(posts.single.color, 'sky');
+      // No sync op enqueued for a temp id — it can't target a server row yet.
+      expect(await db.outboxCount(), beforeCount);
+    });
+
     test('updatePosition for an unsynced local post caches only, no outbox op',
         () async {
       final tempId = await repo.createPostOfflineFirst(groupId,

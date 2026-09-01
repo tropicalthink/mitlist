@@ -272,3 +272,131 @@ func TestPinwallService_UpdatePostPosition(t *testing.T) {
 		require.Error(t, err)
 	})
 }
+
+func TestPinwallService_UpdatePost(t *testing.T) {
+	ctx := context.Background()
+	groupID := uuid.New()
+	userID := uuid.New()
+	postID := uuid.New()
+	user := newActiveUser(userID)
+
+	t.Run("success updates content, color and size", func(t *testing.T) {
+		pinwallRepo := new(mocks.MockPinwallRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewPinwallService(pinwallRepo, groupRepo)
+
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+		pinwallRepo.On("GetPostByID", ctx, postID).Return(&models.PinwallPost{ID: postID, GroupID: groupID, Content: "old"}, nil)
+		pinwallRepo.On("UpdatePost", ctx, postID, "new text", strPtr("mint"), strPtr("large")).Return(nil)
+
+		post, err := svc.UpdatePost(ctx, user, groupID, postID, strPtr("  new text  "), strPtr("mint"), strPtr("large"))
+		require.NoError(t, err)
+		require.NotNil(t, post)
+		assert.Equal(t, "new text", post.Content)
+		require.NotNil(t, post.Color)
+		assert.Equal(t, "mint", *post.Color)
+		require.NotNil(t, post.Size)
+		assert.Equal(t, "large", *post.Size)
+	})
+
+	t.Run("nil fields leave existing values unchanged", func(t *testing.T) {
+		pinwallRepo := new(mocks.MockPinwallRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewPinwallService(pinwallRepo, groupRepo)
+
+		existingColor := "sky"
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+		pinwallRepo.On("GetPostByID", ctx, postID).Return(&models.PinwallPost{ID: postID, GroupID: groupID, Content: "keep me", Color: &existingColor}, nil)
+		pinwallRepo.On("UpdatePost", ctx, postID, "keep me", &existingColor, (*string)(nil)).Return(nil)
+
+		post, err := svc.UpdatePost(ctx, user, groupID, postID, nil, nil, strPtr(""))
+		require.NoError(t, err)
+		assert.Equal(t, "keep me", post.Content)
+		require.NotNil(t, post.Color)
+		assert.Equal(t, "sky", *post.Color)
+		assert.Nil(t, post.Size)
+	})
+
+	t.Run("empty string clears color", func(t *testing.T) {
+		pinwallRepo := new(mocks.MockPinwallRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewPinwallService(pinwallRepo, groupRepo)
+
+		existingColor := "blush"
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+		pinwallRepo.On("GetPostByID", ctx, postID).Return(&models.PinwallPost{ID: postID, GroupID: groupID, Content: "note", Color: &existingColor}, nil)
+		pinwallRepo.On("UpdatePost", ctx, postID, "note", (*string)(nil), (*string)(nil)).Return(nil)
+
+		post, err := svc.UpdatePost(ctx, user, groupID, postID, nil, strPtr(""), nil)
+		require.NoError(t, err)
+		assert.Nil(t, post.Color)
+	})
+
+	t.Run("blank content rejected", func(t *testing.T) {
+		pinwallRepo := new(mocks.MockPinwallRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewPinwallService(pinwallRepo, groupRepo)
+
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+		pinwallRepo.On("GetPostByID", ctx, postID).Return(&models.PinwallPost{ID: postID, GroupID: groupID, Content: "old"}, nil)
+
+		_, err := svc.UpdatePost(ctx, user, groupID, postID, strPtr("   "), nil, nil)
+		require.Error(t, err)
+		var ve *api.ValidationError
+		assert.ErrorAs(t, err, &ve)
+	})
+
+	t.Run("unknown color rejected", func(t *testing.T) {
+		pinwallRepo := new(mocks.MockPinwallRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewPinwallService(pinwallRepo, groupRepo)
+
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+		pinwallRepo.On("GetPostByID", ctx, postID).Return(&models.PinwallPost{ID: postID, GroupID: groupID, Content: "old"}, nil)
+
+		_, err := svc.UpdatePost(ctx, user, groupID, postID, nil, strPtr("chartreuse"), nil)
+		require.Error(t, err)
+		var ve *api.ValidationError
+		assert.ErrorAs(t, err, &ve)
+	})
+
+	t.Run("unknown size rejected", func(t *testing.T) {
+		pinwallRepo := new(mocks.MockPinwallRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewPinwallService(pinwallRepo, groupRepo)
+
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+		pinwallRepo.On("GetPostByID", ctx, postID).Return(&models.PinwallPost{ID: postID, GroupID: groupID, Content: "old"}, nil)
+
+		_, err := svc.UpdatePost(ctx, user, groupID, postID, nil, nil, strPtr("huge"))
+		require.Error(t, err)
+		var ve *api.ValidationError
+		assert.ErrorAs(t, err, &ve)
+	})
+
+	t.Run("post from different group rejected", func(t *testing.T) {
+		pinwallRepo := new(mocks.MockPinwallRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewPinwallService(pinwallRepo, groupRepo)
+
+		otherGroupID := uuid.New()
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+		pinwallRepo.On("GetPostByID", ctx, postID).Return(&models.PinwallPost{ID: postID, GroupID: otherGroupID, Content: "old"}, nil)
+
+		_, err := svc.UpdatePost(ctx, user, groupID, postID, strPtr("new"), nil, nil)
+		require.Error(t, err)
+		var pe *api.PermissionDeniedError
+		assert.ErrorAs(t, err, &pe)
+	})
+
+	t.Run("non-member rejected", func(t *testing.T) {
+		pinwallRepo := new(mocks.MockPinwallRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewPinwallService(pinwallRepo, groupRepo)
+
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(nil, pgx.ErrNoRows)
+
+		_, err := svc.UpdatePost(ctx, user, groupID, postID, strPtr("new"), nil, nil)
+		require.Error(t, err)
+	})
+}

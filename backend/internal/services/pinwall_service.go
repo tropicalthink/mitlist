@@ -133,6 +133,84 @@ func (s *PinwallService) DeletePost(ctx context.Context, user *models.User, grou
 	return nil
 }
 
+// UpdatePost edits a note's content and/or presentation (color, size). Any
+// group member may edit, matching delete's household-owned semantics. A nil
+// field is left unchanged; an empty-string color/size clears the choice back
+// to the client default. Broadcasts pinwall:post_updated so open boards and
+// hubs reconcile.
+func (s *PinwallService) UpdatePost(
+	ctx context.Context,
+	user *models.User,
+	groupID, postID uuid.UUID,
+	content, color, size *string,
+) (*models.PinwallPost, error) {
+	if !user.IsActive || !user.IsVerified {
+		return nil, &api.PermissionDeniedError{Message: "user is not active or verified"}
+	}
+	if err := s.requireMembership(ctx, user.ID, groupID); err != nil {
+		return nil, err
+	}
+
+	existing, err := s.repo.GetPostByID(ctx, postID)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, &api.NotFoundError{Resource: "pinwall post", ID: postID.String()}
+		}
+		return nil, err
+	}
+	if existing.GroupID != groupID {
+		return nil, &api.PermissionDeniedError{Message: "post does not belong to this group"}
+	}
+
+	newContent := existing.Content
+	if content != nil {
+		trimmed := strings.TrimSpace(*content)
+		if trimmed == "" {
+			return nil, &api.ValidationError{Field: "content", Message: "content is required"}
+		}
+		if len(trimmed) > 2000 {
+			return nil, &api.ValidationError{Field: "content", Message: "content is too long"}
+		}
+		newContent = trimmed
+	}
+
+	newColor := existing.Color
+	if color != nil {
+		v := strings.TrimSpace(*color)
+		if v == "" {
+			newColor = nil
+		} else if !models.ValidPinwallNoteColors[v] {
+			return nil, &api.ValidationError{Field: "color", Message: "unknown note color"}
+		} else {
+			newColor = &v
+		}
+	}
+
+	newSize := existing.Size
+	if size != nil {
+		v := strings.TrimSpace(*size)
+		if v == "" {
+			newSize = nil
+		} else if !models.ValidPinwallNoteSizes[v] {
+			return nil, &api.ValidationError{Field: "size", Message: "unknown note size"}
+		} else {
+			newSize = &v
+		}
+	}
+
+	if err := s.repo.UpdatePost(ctx, postID, newContent, newColor, newSize); err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, &api.NotFoundError{Resource: "pinwall post", ID: postID.String()}
+		}
+		return nil, err
+	}
+	existing.Content = newContent
+	existing.Color = newColor
+	existing.Size = newSize
+	s.publishPost("pinwall:post_updated", groupID, postID)
+	return existing, nil
+}
+
 // UpdatePostPosition moves a note on the shared cork board. Any group member may
 // rearrange the board. Broadcasts pinwall:post_moved so open boards reconcile.
 func (s *PinwallService) UpdatePostPosition(

@@ -3591,6 +3591,48 @@ class AppLocalizationsEn extends AppLocalizations {
       'This pin will be permanently deleted. This cannot be undone.';
 
   @override
+  String get pinwallEditNote => 'Edit note';
+
+  @override
+  String get pinwallNoteColor => 'Color';
+
+  @override
+  String get pinwallNoteSize => 'Size';
+
+  @override
+  String get pinwallNoteSizeSmall => 'Small';
+
+  @override
+  String get pinwallNoteSizeMedium => 'Medium';
+
+  @override
+  String get pinwallNoteSizeLarge => 'Large';
+
+  @override
+  String get pinwallColorYellow => 'Yellow';
+
+  @override
+  String get pinwallColorPeach => 'Peach';
+
+  @override
+  String get pinwallColorMint => 'Mint';
+
+  @override
+  String get pinwallColorSky => 'Sky';
+
+  @override
+  String get pinwallColorBlush => 'Blush';
+
+  @override
+  String get pinwallColorLavender => 'Lavender';
+
+  @override
+  String get pinwallCouldNotSaveNote => 'Couldn\'t save the note.';
+
+  @override
+  String get sheetFailedChangesOpUpdatePinwallPost => 'Edit pinwall post';
+
+  @override
   String get pinwallAddPhotoMenu => 'Add photo';
 
   @override

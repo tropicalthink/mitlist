@@ -1,3 +1,18 @@
+/// Sticky-note palette names a note may pick. They are palette *keys*, not
+/// raw color values, so light/dark themes each resolve them to their own
+/// shade. Order matches `MitlistColors.notePalette`.
+const List<String> kPinwallNoteColors = [
+  'yellow',
+  'peach',
+  'mint',
+  'sky',
+  'blush',
+  'lavender',
+];
+
+/// Card sizes a note may pick. Null on a post means the default (medium).
+const List<String> kPinwallNoteSizes = ['small', 'medium', 'large'];
+
 class PinwallPost {
   final String id;
   final String groupId;
@@ -15,6 +30,12 @@ class PinwallPost {
   final double? posX;
   final double? posY;
 
+  /// Chosen sticky-note color (a name from [kPinwallNoteColors]) and card
+  /// size (from [kPinwallNoteSizes]). Null means no explicit choice: the
+  /// card derives a palette color from the note id / renders medium.
+  final String? color;
+  final String? size;
+
   const PinwallPost({
     required this.id,
     required this.groupId,
@@ -27,6 +48,8 @@ class PinwallPost {
     this.linkedEntityId,
     this.posX,
     this.posY,
+    this.color,
+    this.size,
   });
 
   factory PinwallPost.fromJson(Map<String, dynamic> json) => PinwallPost(
@@ -45,6 +68,8 @@ class PinwallPost {
         linkedEntityId: json['linked_entity_id'] as String?,
         posX: (json['pos_x'] as num?)?.toDouble(),
         posY: (json['pos_y'] as num?)?.toDouble(),
+        color: json['color'] as String?,
+        size: json['size'] as String?,
       );
 
   Map<String, dynamic> toJson() => {
@@ -59,6 +84,8 @@ class PinwallPost {
         if (linkedEntityId != null) 'linked_entity_id': linkedEntityId,
         if (posX != null) 'pos_x': posX,
         if (posY != null) 'pos_y': posY,
+        if (color != null) 'color': color,
+        if (size != null) 'size': size,
       };
 
   PinwallPost copyWith({double? posX, double? posY}) => PinwallPost(
@@ -73,5 +100,7 @@ class PinwallPost {
         linkedEntityId: linkedEntityId,
         posX: posX ?? this.posX,
         posY: posY ?? this.posY,
+        color: color,
+        size: size,
       );
 }
