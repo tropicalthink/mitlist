@@ -160,92 +160,96 @@ class AppLocalizationsDe extends AppLocalizations {
   String get commonLoadingMembers => 'Mitglieder werden geladen…';
 
   @override
-  String get integrationsTitle => 'Integrations';
+  String get integrationsTitle => 'Integrationen';
 
   @override
   String get homeAssistantTitle => 'Home Assistant';
 
   @override
   String get homeAssistantDescription =>
-      'Connect your household to dashboards, voice control, and automations.';
+      'Verbinde deinen Haushalt mit Dashboards, Sprachsteuerung und Automationen.';
 
   @override
-  String get homeAssistantConnections => 'Connections';
+  String get homeAssistantConnections => 'Verbindungen';
 
   @override
-  String get homeAssistantNoConnections => 'No Home Assistant connections yet.';
+  String get homeAssistantNoConnections =>
+      'Noch keine Home-Assistant-Verbindungen.';
 
   @override
-  String get homeAssistantCreateConnection => 'Create connection';
+  String get homeAssistantCreateConnection => 'Verbindung erstellen';
 
   @override
-  String get homeAssistantConnectionName => 'Connection name';
+  String get homeAssistantConnectionName => 'Name der Verbindung';
 
   @override
   String get homeAssistantConnectionNameHint => 'Home Assistant';
 
   @override
-  String get homeAssistantHouseholds => 'Households';
+  String get homeAssistantHouseholds => 'Haushalte';
 
   @override
-  String get homeAssistantPermissions => 'Permissions';
+  String get homeAssistantPermissions => 'Berechtigungen';
 
   @override
-  String get homeAssistantWriteAccess => 'Allow Home Assistant to make changes';
+  String get homeAssistantWriteAccess =>
+      'Home Assistant darf Änderungen vornehmen';
 
   @override
-  String get homeAssistantFinanceAccess => 'Include financial data';
+  String get homeAssistantFinanceAccess => 'Finanzdaten einbeziehen';
 
   @override
-  String get homeAssistantTokenTitle => 'Connection token';
+  String get homeAssistantTokenTitle => 'Verbindungstoken';
 
   @override
   String get homeAssistantTokenBody =>
-      'Copy this token into Home Assistant now. For security, mitlist cannot show it again.';
+      'Kopiere dieses Token jetzt in Home Assistant. Aus Sicherheitsgründen kann mitlist es nicht erneut anzeigen.';
 
   @override
-  String get homeAssistantTokenCopied => 'Connection token copied';
+  String get homeAssistantTokenCopied => 'Verbindungstoken kopiert';
 
   @override
-  String get homeAssistantRevoke => 'Revoke connection';
+  String get homeAssistantRevoke => 'Verbindung widerrufen';
 
   @override
   String get homeAssistantRevokeConfirm =>
-      'This immediately disconnects Home Assistant. You can create a new connection later.';
+      'Dadurch wird Home Assistant sofort getrennt. Du kannst später eine neue Verbindung erstellen.';
 
   @override
-  String get homeAssistantRevoked => 'Revoked';
+  String get homeAssistantRevoked => 'Widerrufen';
 
   @override
-  String get homeAssistantNeverUsed => 'Never used';
+  String get homeAssistantNeverUsed => 'Nie verwendet';
 
   @override
   String homeAssistantLastUsed(String date) {
-    return 'Last used $date';
+    return 'Zuletzt verwendet: $date';
   }
 
   @override
-  String get homeAssistantSelectHousehold => 'Select at least one household.';
+  String get homeAssistantSelectHousehold =>
+      'Wähle mindestens einen Haushalt aus.';
 
   @override
-  String get homeAssistantCreated => 'Home Assistant connection created';
+  String get homeAssistantCreated => 'Home-Assistant-Verbindung erstellt';
 
   @override
-  String get homeAssistantRevokedSuccess => 'Home Assistant connection revoked';
+  String get homeAssistantRevokedSuccess =>
+      'Home-Assistant-Verbindung widerrufen';
 
   @override
   String get homeAssistantLoadFailed =>
-      'Could not load Home Assistant connections.';
+      'Home-Assistant-Verbindungen konnten nicht geladen werden.';
 
   @override
   String get homeAssistantSaveFailed =>
-      'Could not create the connection. Please try again.';
+      'Verbindung konnte nicht erstellt werden. Bitte versuche es erneut.';
 
   @override
-  String get homeAssistantReadOnly => 'Read only';
+  String get homeAssistantReadOnly => 'Nur lesen';
 
   @override
-  String get homeAssistantReadWrite => 'Read and write';
+  String get homeAssistantReadWrite => 'Lesen und Schreiben';
 
   @override
   String get welcomeTagline => 'Dein Haushalt, organisiert.';
@@ -2710,7 +2714,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get accountCopyJSON => 'Ausgaben kopieren (JSON)';
 
   @override
-  String get accountExportCalendar => 'Export calendar (.ics)';
+  String get accountExportCalendar => 'Kalender exportieren (.ics)';
 
   @override
   String get accountJSONCopied => 'Ausgaben-JSON in die Zwischenablage kopiert';
@@ -3293,34 +3297,34 @@ class AppLocalizationsDe extends AppLocalizations {
   String get expenseCreationWhatsItFor => 'Wofür ist das?';
 
   @override
-  String get expenseCreationCategoryLabel => 'Category';
+  String get expenseCreationCategoryLabel => 'Kategorie';
 
   @override
   String get expenseCreationDatePrefix => 'Datum';
 
   @override
-  String get expenseCategoryGroceries => 'Groceries';
+  String get expenseCategoryGroceries => 'Lebensmittel';
 
   @override
-  String get expenseCategoryDining => 'Dining';
+  String get expenseCategoryDining => 'Essen gehen';
 
   @override
   String get expenseCategoryTransport => 'Transport';
 
   @override
-  String get expenseCategoryUtilities => 'Utilities';
+  String get expenseCategoryUtilities => 'Nebenkosten';
 
   @override
-  String get expenseCategoryHousehold => 'Household';
+  String get expenseCategoryHousehold => 'Haushalt';
 
   @override
-  String get expenseCategoryEntertainment => 'Entertainment';
+  String get expenseCategoryEntertainment => 'Unterhaltung';
 
   @override
-  String get expenseCategoryHealth => 'Health';
+  String get expenseCategoryHealth => 'Gesundheit';
 
   @override
-  String get expenseCategoryOther => 'Other';
+  String get expenseCategoryOther => 'Sonstiges';
 
   @override
   String get expenseCreationNotesHint => 'Notizen (optional)';
@@ -3522,7 +3526,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String pinwallPresenceHere(String names) {
-    return '$names here now';
+    return '$names jetzt hier';
   }
 
   @override
@@ -4602,7 +4606,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get sheetJoinJoin => 'Beitreten';
 
   @override
-  String get joinPasteButton => 'Paste';
+  String get joinPasteButton => 'Einfügen';
 
   @override
   String get joinScanButton => 'Scannen';
@@ -4619,11 +4623,11 @@ class AppLocalizationsDe extends AppLocalizations {
       'Kamera konnte nicht geöffnet werden. Prüfe die Kameraberechtigung und versuche es erneut.';
 
   @override
-  String get joinPasteFilled => 'Invite code pasted';
+  String get joinPasteFilled => 'Einladungscode eingefügt';
 
   @override
   String get joinPasteNoCode =>
-      'No invite code or link found on your clipboard';
+      'Kein Einladungscode oder Link in der Zwischenablage gefunden';
 
   @override
   String get sheetCreateHouseholdTitle => 'Haushalt erstellen';
@@ -5618,17 +5622,17 @@ class AppLocalizationsDe extends AppLocalizations {
       'Schließe den Vorgang im Browser ab und komm zurück – Premium wird automatisch aktiviert.';
 
   @override
-  String get billingProcessing => 'Processing your purchase...';
+  String get billingProcessing => 'Dein Kauf wird verarbeitet...';
 
   @override
-  String get billingRestore => 'Restore purchases';
+  String get billingRestore => 'Käufe wiederherstellen';
 
   @override
   String get billingAutoRenewDisclosure =>
-      'Payment is charged to your store account. The subscription renews automatically unless canceled at least 24 hours before the current period ends. Manage or cancel it in your App Store or Google Play account.';
+      'Die Zahlung wird über dein Store-Konto abgerechnet. Das Abo verlängert sich automatisch, wenn es nicht mindestens 24 Stunden vor Ende des laufenden Zeitraums gekündigt wird. Verwalte oder kündige es in deinem App-Store- oder Google-Play-Konto.';
 
   @override
-  String get billingPurchased => 'Premium is active. Thanks!';
+  String get billingPurchased => 'Premium ist aktiv. Danke!';
 
   @override
   String get billingAccountCardTitle => 'Premium';
