@@ -297,6 +297,7 @@ type PinwallRepo interface {
 	GetPostByID(ctx context.Context, id uuid.UUID) (*models.PinwallPost, error)
 	DeletePost(ctx context.Context, id uuid.UUID) error
 	UpdatePostPosition(ctx context.Context, id uuid.UUID, x, y float64) error
+	UpdatePost(ctx context.Context, id uuid.UUID, content string, color, size *string) error
 }
 
 // CalendarPinwallRepo lists pinwall reminders for calendar aggregation.

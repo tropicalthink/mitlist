@@ -56,6 +56,7 @@ class OutboxCoordinator {
     unawaited(_db.resolveConflictsByEntityTypes(const [
       'createPinwallPost',
       'deletePinwallPost',
+      'updatePinwallPost',
       'updatePinwallPostPosition',
     ]));
     _connectivitySub?.cancel();

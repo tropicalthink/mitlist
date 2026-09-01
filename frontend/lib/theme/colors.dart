@@ -110,6 +110,25 @@ class MitlistColors {
     noteLavenderDark,
   ];
 
+  /// Note palette keyed by the server-side color names on pinwall posts.
+  /// Order matches [notePalette] / `kPinwallNoteColors`.
+  static const Map<String, Color> notePaletteByName = {
+    'yellow': noteYellow,
+    'peach': notePeach,
+    'mint': noteMint,
+    'sky': noteSky,
+    'blush': noteBlush,
+    'lavender': noteLavender,
+  };
+  static const Map<String, Color> notePaletteByNameDark = {
+    'yellow': noteYellowDark,
+    'peach': notePeachDark,
+    'mint': noteMintDark,
+    'sky': noteSkyDark,
+    'blush': noteBlushDark,
+    'lavender': noteLavenderDark,
+  };
+
   static const Color pinwallBoard = Color(0xFFC8A97A);
   static const Color pinwallBoardDark = Color(0xFF2A211A);
   static const Color pinwallBoardBorder = Color(0xFF8B5E3C);
