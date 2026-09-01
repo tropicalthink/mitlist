@@ -78,6 +78,10 @@ func (r *fakeAttachmentRepo) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
+func (r *fakeAttachmentRepo) UpdateContentType(ctx context.Context, id uuid.UUID, contentType string) error {
+	return nil
+}
+
 type fakeAttachmentStorage struct {
 	size      int64
 	deleted   *bool
@@ -102,6 +106,16 @@ func (s fakeAttachmentStorage) Delete(key string) error {
 
 func (s fakeAttachmentStorage) HeadObjectSize(ctx context.Context, key string) (int64, error) {
 	return s.size, nil
+}
+
+// Download returns bytes that never sniff as an image, so finalize tests keep
+// exercising the "store as uploaded" path rather than recompression.
+func (s fakeAttachmentStorage) Download(ctx context.Context, key string) ([]byte, error) {
+	return []byte("not an image"), nil
+}
+
+func (s fakeAttachmentStorage) Upload(key string, data []byte, contentType string) error {
+	return nil
 }
 
 func TestAttachmentService_FinalizeUploadVerifiesRealSize(t *testing.T) {

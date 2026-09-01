@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
@@ -74,10 +75,14 @@ func New(cfg *config.Config) *Service {
 	}
 }
 
-// Upload stores data at the given key in the configured bucket.
-func (s *Service) Upload(key string, data []byte) error {
+// Upload stores data at the given key in the configured bucket. The content
+// type is stored as object metadata and echoed on downloads.
+func (s *Service) Upload(key string, data []byte, contentType string) error {
 	if s.client == nil || s.bucket == "" {
 		return fmt.Errorf("storage not configured")
+	}
+	if contentType == "" {
+		contentType = "application/octet-stream"
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -87,12 +92,38 @@ func (s *Service) Upload(key string, data []byte) error {
 		Bucket:      aws.String(s.bucket),
 		Key:         aws.String(key),
 		Body:        bytes.NewReader(data),
-		ContentType: aws.String("application/octet-stream"),
+		ContentType: aws.String(contentType),
 	})
 	if err != nil {
 		return fmt.Errorf("upload to s3: %w", err)
 	}
 	return nil
+}
+
+// Download fetches the object at the given key into memory. Callers own
+// bounding the size (attachments are already capped at upload time).
+func (s *Service) Download(ctx context.Context, key string) ([]byte, error) {
+	if s.client == nil || s.bucket == "" {
+		return nil, fmt.Errorf("storage not configured")
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
+	defer cancel()
+
+	out, err := s.client.GetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(s.bucket),
+		Key:    aws.String(key),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("download from s3: %w", err)
+	}
+	defer out.Body.Close()
+
+	data, err := io.ReadAll(out.Body)
+	if err != nil {
+		return nil, fmt.Errorf("read s3 object body: %w", err)
+	}
+	return data, nil
 }
 
 // GetUploadURL returns a presigned PUT URL for the given key.
@@ -104,18 +135,21 @@ func (s *Service) GetUploadURL(key string, contentType string, contentLength int
 	if expires <= 0 {
 		expires = 15 * time.Minute
 	}
-	if contentType == "" {
-		contentType = "application/octet-stream"
-	}
+	_ = contentType // recorded on the attachment at intent time; not signed (see below)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
 	presignClient := s3.NewPresignClient(s.client)
+	// Content-Type is deliberately NOT part of the signature. Binding it means
+	// the client's PUT must echo the exact type the intent was signed with;
+	// shipped app versions send types the intent normalizes away (`image/*`),
+	// so their uploads fail with a signature mismatch. The type is validated
+	// and recorded at intent time; the signed Content-Length still pins the
+	// upload to the reserved size.
 	req, err := presignClient.PresignPutObject(ctx, &s3.PutObjectInput{
 		Bucket:        aws.String(s.bucket),
 		Key:           aws.String(key),
-		ContentType:   aws.String(contentType),
 		ContentLength: aws.Int64(contentLength),
 	}, s3.WithPresignExpires(expires))
 	if err != nil {

@@ -34,6 +34,13 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.25.1'   # match backend/go.mod
+      # cwebp backs the image-recompression tests (they skip without it), the
+      # same binary Dockerfile.prod installs for the running API.
+      - name: Install cwebp
+        # No sudo assumption: the runner may execute jobs as root in a container.
+        run: |
+          if command -v sudo >/dev/null 2>&1; then SUDO=sudo; else SUDO=; fi
+          $SUDO apt-get update -qq && $SUDO apt-get install -y -qq webp
       - name: Build
         run: cd backend && go build ./...
       - name: Vet

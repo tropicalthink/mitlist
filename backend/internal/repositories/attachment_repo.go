@@ -139,6 +139,20 @@ func (r *AttachmentRepository) GetByID(ctx context.Context, id uuid.UUID) (*mode
 	return &a, nil
 }
 
+// UpdateContentType records the type an attachment was transcoded to after
+// upload (server-side image recompression rewrites the stored object).
+func (r *AttachmentRepository) UpdateContentType(ctx context.Context, id uuid.UUID, contentType string) error {
+	const q = `UPDATE attachments SET content_type = $1 WHERE id = $2`
+	ct, err := r.db.Exec(ctx, q, contentType, id)
+	if err != nil {
+		return fmt.Errorf("update attachment content_type: %w", err)
+	}
+	if ct.RowsAffected() == 0 {
+		return pgx.ErrNoRows
+	}
+	return nil
+}
+
 func (r *AttachmentRepository) UpdateObjectKey(ctx context.Context, id uuid.UUID, objectKey string) error {
 	const q = `UPDATE attachments SET object_key = $1 WHERE id = $2`
 	ct, err := r.db.Exec(ctx, q, objectKey, id)
