@@ -148,6 +148,7 @@ class _FailedOpCard extends ConsumerWidget {
       'undoChore' => l10n.sheetFailedChangesOpUndoChore,
       'createPinwallPost' => l10n.sheetFailedChangesOpCreatePinwallPost,
       'deletePinwallPost' => l10n.sheetFailedChangesOpDeletePinwallPost,
+      'updatePinwallPost' => l10n.sheetFailedChangesOpUpdatePinwallPost,
       _ => l10n.sheetFailedChangesOpChange,
     };
     final name = _payloadName(op.payloadJson);

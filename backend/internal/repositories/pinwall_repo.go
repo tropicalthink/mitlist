@@ -24,10 +24,10 @@ func (r *PinwallRepository) CreatePost(ctx context.Context, p *models.PinwallPos
 	const q = `
 		INSERT INTO pinwall_posts (group_id, user_id, content, remind_at, linked_entity_type, linked_entity_id)
 		VALUES ($1, $2, $3, $4, $5, $6)
-		RETURNING id, created_at, remind_at, reminder_sent_at, linked_entity_type, linked_entity_id, pos_x, pos_y
+		RETURNING id, created_at, remind_at, reminder_sent_at, linked_entity_type, linked_entity_id, pos_x, pos_y, color, size
 	`
 	if err := r.db.QueryRow(ctx, q, p.GroupID, p.UserID, p.Content, p.RemindAt, p.LinkedEntityType, p.LinkedEntityID).
-		Scan(&p.ID, &p.CreatedAt, &p.RemindAt, &p.ReminderSentAt, &p.LinkedEntityType, &p.LinkedEntityID, &p.PosX, &p.PosY); err != nil {
+		Scan(&p.ID, &p.CreatedAt, &p.RemindAt, &p.ReminderSentAt, &p.LinkedEntityType, &p.LinkedEntityID, &p.PosX, &p.PosY, &p.Color, &p.Size); err != nil {
 		return fmt.Errorf("create pinwall post: %w", err)
 	}
 	return nil
@@ -35,7 +35,7 @@ func (r *PinwallRepository) CreatePost(ctx context.Context, p *models.PinwallPos
 
 func (r *PinwallRepository) ListPostsByGroup(ctx context.Context, groupID uuid.UUID, limit, offset int) ([]models.PinwallPost, error) {
 	const q = `
-		SELECT id, group_id, user_id, content, created_at, remind_at, reminder_sent_at, linked_entity_type, linked_entity_id, pos_x, pos_y
+		SELECT id, group_id, user_id, content, created_at, remind_at, reminder_sent_at, linked_entity_type, linked_entity_id, pos_x, pos_y, color, size
 		FROM pinwall_posts
 		WHERE group_id = $1
 		ORDER BY created_at DESC
@@ -62,6 +62,8 @@ func (r *PinwallRepository) ListPostsByGroup(ctx context.Context, groupID uuid.U
 			&p.LinkedEntityID,
 			&p.PosX,
 			&p.PosY,
+			&p.Color,
+			&p.Size,
 		); err != nil {
 			return nil, fmt.Errorf("scan pinwall post: %w", err)
 		}
@@ -72,7 +74,7 @@ func (r *PinwallRepository) ListPostsByGroup(ctx context.Context, groupID uuid.U
 
 func (r *PinwallRepository) GetPostByID(ctx context.Context, id uuid.UUID) (*models.PinwallPost, error) {
 	const q = `
-		SELECT id, group_id, user_id, content, created_at, remind_at, reminder_sent_at, linked_entity_type, linked_entity_id, pos_x, pos_y
+		SELECT id, group_id, user_id, content, created_at, remind_at, reminder_sent_at, linked_entity_type, linked_entity_id, pos_x, pos_y, color, size
 		FROM pinwall_posts
 		WHERE id = $1
 	`
@@ -89,6 +91,8 @@ func (r *PinwallRepository) GetPostByID(ctx context.Context, id uuid.UUID) (*mod
 		&p.LinkedEntityID,
 		&p.PosX,
 		&p.PosY,
+		&p.Color,
+		&p.Size,
 	); err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, err
@@ -96,6 +100,21 @@ func (r *PinwallRepository) GetPostByID(ctx context.Context, id uuid.UUID) (*mod
 		return nil, fmt.Errorf("get pinwall post: %w", err)
 	}
 	return &p, nil
+}
+
+// UpdatePost rewrites a note's content and presentation (color/size). The
+// service passes the fully merged values; nil color/size clears the choice
+// back to the client default.
+func (r *PinwallRepository) UpdatePost(ctx context.Context, id uuid.UUID, content string, color, size *string) error {
+	const q = `UPDATE pinwall_posts SET content = $2, color = $3, size = $4 WHERE id = $1`
+	ct, err := r.db.Exec(ctx, q, id, content, color, size)
+	if err != nil {
+		return fmt.Errorf("update pinwall post: %w", err)
+	}
+	if ct.RowsAffected() == 0 {
+		return pgx.ErrNoRows
+	}
+	return nil
 }
 
 // UpdatePostPosition sets a note's placement on the shared cork board.

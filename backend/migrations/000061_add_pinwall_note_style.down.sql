@@ -1,0 +1,3 @@
+ALTER TABLE pinwall_posts
+    DROP COLUMN IF EXISTS color,
+    DROP COLUMN IF EXISTS size;

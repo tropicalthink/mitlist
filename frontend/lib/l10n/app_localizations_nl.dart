@@ -3624,6 +3624,49 @@ class AppLocalizationsNl extends AppLocalizations {
       'Deze pin wordt permanent verwijderd. Dit kan niet ongedaan worden gemaakt.';
 
   @override
+  String get pinwallEditNote => 'Notitie bewerken';
+
+  @override
+  String get pinwallNoteColor => 'Kleur';
+
+  @override
+  String get pinwallNoteSize => 'Formaat';
+
+  @override
+  String get pinwallNoteSizeSmall => 'Klein';
+
+  @override
+  String get pinwallNoteSizeMedium => 'Middel';
+
+  @override
+  String get pinwallNoteSizeLarge => 'Groot';
+
+  @override
+  String get pinwallColorYellow => 'Geel';
+
+  @override
+  String get pinwallColorPeach => 'Perzik';
+
+  @override
+  String get pinwallColorMint => 'Mint';
+
+  @override
+  String get pinwallColorSky => 'Lichtblauw';
+
+  @override
+  String get pinwallColorBlush => 'Roze';
+
+  @override
+  String get pinwallColorLavender => 'Lavendel';
+
+  @override
+  String get pinwallCouldNotSaveNote => 'Kon de notitie niet opslaan.';
+
+  @override
+  String get sheetFailedChangesOpUpdatePinwallPost =>
+      'Prikbordnotitie bewerken';
+
+  @override
   String get pinwallAddPhotoMenu => 'Foto toevoegen';
 
   @override

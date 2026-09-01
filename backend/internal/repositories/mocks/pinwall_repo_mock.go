@@ -44,3 +44,8 @@ func (m *MockPinwallRepo) UpdatePostPosition(ctx context.Context, id uuid.UUID, 
 	args := m.Called(ctx, id, x, y)
 	return args.Error(0)
 }
+
+func (m *MockPinwallRepo) UpdatePost(ctx context.Context, id uuid.UUID, content string, color, size *string) error {
+	args := m.Called(ctx, id, content, color, size)
+	return args.Error(0)
+}

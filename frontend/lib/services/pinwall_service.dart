@@ -88,6 +88,36 @@ class PinwallService {
     }
   }
 
+  /// Edits a note's content and/or presentation. Absent fields are left
+  /// unchanged on the server; an empty-string color/size clears the choice
+  /// back to the default. Returns the updated post.
+  Future<PinwallPost> updatePost(
+    String groupId,
+    String postId, {
+    String? content,
+    String? color,
+    String? size,
+    String? idempotencyKey,
+  }) async {
+    ensureValidGroupId(groupId);
+    try {
+      final r = await _dio.put(
+        '/pinwall/posts/$postId',
+        data: {
+          'group_id': groupId,
+          if (content != null) 'content': content,
+          if (color != null) 'color': color,
+          if (size != null) 'size': size,
+        },
+        options: outboxOptions(idempotencyKey),
+      );
+      return PinwallPost.fromJson((r.data as Map).cast<String, dynamic>());
+    } on DioException catch (e) {
+      _logger.e('Update pinwall post failed: ${e.response?.data}');
+      rethrow;
+    }
+  }
+
   /// Persists a note's placement on the shared cork board. Coordinates are in
   /// the board's fixed logical space. Returns the updated post.
   Future<PinwallPost> updatePostPosition(

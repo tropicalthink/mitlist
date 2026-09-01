@@ -6339,6 +6339,90 @@ abstract class AppLocalizations {
   /// **'This pin will be permanently deleted. This cannot be undone.'**
   String get pinwallDeletePinBody;
 
+  /// Title of the pinwall note editor sheet and the edit menu item
+  ///
+  /// In en, this message translates to:
+  /// **'Edit note'**
+  String get pinwallEditNote;
+
+  /// Label for the note color picker in the editor
+  ///
+  /// In en, this message translates to:
+  /// **'Color'**
+  String get pinwallNoteColor;
+
+  /// Label for the note size picker in the editor
+  ///
+  /// In en, this message translates to:
+  /// **'Size'**
+  String get pinwallNoteSize;
+
+  /// Small note size option
+  ///
+  /// In en, this message translates to:
+  /// **'Small'**
+  String get pinwallNoteSizeSmall;
+
+  /// Medium (default) note size option
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get pinwallNoteSizeMedium;
+
+  /// Large note size option
+  ///
+  /// In en, this message translates to:
+  /// **'Large'**
+  String get pinwallNoteSizeLarge;
+
+  /// Note color swatch name
+  ///
+  /// In en, this message translates to:
+  /// **'Yellow'**
+  String get pinwallColorYellow;
+
+  /// Note color swatch name
+  ///
+  /// In en, this message translates to:
+  /// **'Peach'**
+  String get pinwallColorPeach;
+
+  /// Note color swatch name
+  ///
+  /// In en, this message translates to:
+  /// **'Mint'**
+  String get pinwallColorMint;
+
+  /// Note color swatch name
+  ///
+  /// In en, this message translates to:
+  /// **'Sky'**
+  String get pinwallColorSky;
+
+  /// Note color swatch name
+  ///
+  /// In en, this message translates to:
+  /// **'Blush'**
+  String get pinwallColorBlush;
+
+  /// Note color swatch name
+  ///
+  /// In en, this message translates to:
+  /// **'Lavender'**
+  String get pinwallColorLavender;
+
+  /// Error toast when saving a note edit fails
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save the note.'**
+  String get pinwallCouldNotSaveNote;
+
+  /// Outbox op label: edit pinwall post
+  ///
+  /// In en, this message translates to:
+  /// **'Edit pinwall post'**
+  String get sheetFailedChangesOpUpdatePinwallPost;
+
   /// Menu item to add photo to post
   ///
   /// In en, this message translates to:

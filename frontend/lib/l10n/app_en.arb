@@ -4832,6 +4832,62 @@
   "@pinwallDeletePinBody": {
     "description": "Dialog body for pinwall post deletion"
   },
+  "pinwallEditNote": "Edit note",
+  "@pinwallEditNote": {
+    "description": "Title of the pinwall note editor sheet and the edit menu item"
+  },
+  "pinwallNoteColor": "Color",
+  "@pinwallNoteColor": {
+    "description": "Label for the note color picker in the editor"
+  },
+  "pinwallNoteSize": "Size",
+  "@pinwallNoteSize": {
+    "description": "Label for the note size picker in the editor"
+  },
+  "pinwallNoteSizeSmall": "Small",
+  "@pinwallNoteSizeSmall": {
+    "description": "Small note size option"
+  },
+  "pinwallNoteSizeMedium": "Medium",
+  "@pinwallNoteSizeMedium": {
+    "description": "Medium (default) note size option"
+  },
+  "pinwallNoteSizeLarge": "Large",
+  "@pinwallNoteSizeLarge": {
+    "description": "Large note size option"
+  },
+  "pinwallColorYellow": "Yellow",
+  "@pinwallColorYellow": {
+    "description": "Note color swatch name"
+  },
+  "pinwallColorPeach": "Peach",
+  "@pinwallColorPeach": {
+    "description": "Note color swatch name"
+  },
+  "pinwallColorMint": "Mint",
+  "@pinwallColorMint": {
+    "description": "Note color swatch name"
+  },
+  "pinwallColorSky": "Sky",
+  "@pinwallColorSky": {
+    "description": "Note color swatch name"
+  },
+  "pinwallColorBlush": "Blush",
+  "@pinwallColorBlush": {
+    "description": "Note color swatch name"
+  },
+  "pinwallColorLavender": "Lavender",
+  "@pinwallColorLavender": {
+    "description": "Note color swatch name"
+  },
+  "pinwallCouldNotSaveNote": "Couldn't save the note.",
+  "@pinwallCouldNotSaveNote": {
+    "description": "Error toast when saving a note edit fails"
+  },
+  "sheetFailedChangesOpUpdatePinwallPost": "Edit pinwall post",
+  "@sheetFailedChangesOpUpdatePinwallPost": {
+    "description": "Outbox op label: edit pinwall post"
+  },
   "pinwallAddPhotoMenu": "Add photo",
   "@pinwallAddPhotoMenu": {
     "description": "Menu item to add photo to post"
