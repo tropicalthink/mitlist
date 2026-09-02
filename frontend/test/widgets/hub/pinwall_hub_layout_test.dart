@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mitlist/models/pinwall_models.dart';
 import 'package:mitlist/theme/spacing.dart';
 import 'package:mitlist/widgets/hub/pinwall_section.dart';
 
@@ -37,6 +38,34 @@ void main() {
 
     test('never exceeds four columns', () {
       expect(pinwallHubLayout(4000).columns, 4);
+    });
+  });
+
+  group('latestPinwallPosts', () {
+    PinwallPost post(String id, int day) => PinwallPost(
+          id: id,
+          groupId: 'g',
+          userId: 'u',
+          content: id,
+          createdAt: DateTime.utc(2026, 1, day),
+        );
+
+    test('caps the hub preview at kPinwallHubMaxNotes, newest first', () {
+      final rows = [for (var d = 1; d <= 12; d++) post('p$d', d)];
+      final shown = latestPinwallPosts(rows, kPinwallHubMaxNotes);
+      expect(shown, hasLength(6));
+      expect(shown.map((p) => p.id),
+          ['p12', 'p11', 'p10', 'p9', 'p8', 'p7']);
+    });
+
+    test('does not rely on the cache already being sorted', () {
+      final rows = [post('old', 1), post('new', 9), post('mid', 5)];
+      expect(latestPinwallPosts(rows, 2).map((p) => p.id), ['new', 'mid']);
+    });
+
+    test('shows everything when there are fewer notes than the cap', () {
+      final rows = [post('a', 1), post('b', 2)];
+      expect(latestPinwallPosts(rows, kPinwallHubMaxNotes), hasLength(2));
     });
   });
 }
