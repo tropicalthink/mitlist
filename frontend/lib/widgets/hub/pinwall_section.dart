@@ -237,6 +237,20 @@ class _PinwallOpenBoardButton extends ConsumerWidget {
   }
 }
 
+/// How many notes the hub preview shows before the rest is left to the board.
+@visibleForTesting
+const int kPinwallHubMaxNotes = 6;
+
+/// The [limit] most recently created posts, newest first. The cache is
+/// normally already newest-first (server order plus offline creates at the
+/// front), but the hub should not depend on that.
+@visibleForTesting
+List<PinwallPost> latestPinwallPosts(List<PinwallPost> rows, int limit) {
+  final sorted = List<PinwallPost>.of(rows)
+    ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+  return sorted.take(limit).toList();
+}
+
 class _PinwallPostsList extends ConsumerWidget {
   const _PinwallPostsList({
     required this.groupId,
@@ -306,7 +320,10 @@ class _PinwallPostsList extends ConsumerWidget {
             ),
           );
         }
-        final show = rows.take(10).toList();
+        // The hub is a preview, not the whole board: only the newest few
+        // notes, so a busy household doesn't push the rest of the home screen
+        // off the bottom. The full set lives on the board (header button).
+        final show = latestPinwallPosts(rows, kPinwallHubMaxNotes);
         return LayoutBuilder(
           builder: (context, constraints) {
             final layout = pinwallHubLayout(constraints.maxWidth);
