@@ -4355,7 +4355,6 @@
   "authJoinDecline": "Rechazar",
   "authJoinCheckingInvite": "Comprobando la invitación…",
   "authJoinExpired": "Esta invitación ha caducado. Pide una nueva.",
-  "authJoinAlreadyUsed": "Esta invitación ya se ha usado.",
   "authJoinAlreadyMember": "Ya eres miembro de {name}.",
   "authJoinTitle": "Unirse al hogar",
   "@authJoinTitle": {
@@ -6198,6 +6197,5 @@
   "tourFinishEyebrow": "Tu hogar",
   "tourFinishHeadline": "Ahora hazlo con la gente con la que vives de verdad.",
   "tourFinishBody": "Crea una cuenta para montar tu hogar e invitarlos. Gratis para hogares de hasta 4 personas.",
-  "tourFinishEmail": "Continuar con correo",
-  "tourFinishSignIn": "Mejor iniciar sesión"
+  "tourFinishEmail": "Continuar con correo"
 }

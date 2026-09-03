@@ -31,23 +31,13 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- mitlist:///auth/callback is deliberately NOT here: it is
-                 claimed by OAuthRedirectActivity, which dismisses the Custom
-                 Tab before forwarding the deep link back to this activity.
-                 Declaring it in both places would make Android show an app
-                 chooser for our own redirect. -->
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data
-                    android:scheme="mitlist"
-                    android:pathPrefix="/join" />
-                <!-- Shared recipe: /r/<share token>. -->
-                <data
-                    android:scheme="mitlist"
-                    android:pathPrefix="/r" />
-            </intent-filter>
+            <!-- No mitlist:// filter here, on purpose. DeepLinkActivity owns
+                 the whole custom scheme and forwards every link to this
+                 activity. Android ignores pathPrefix on a filter without a
+                 host (these URIs have none), so a second mitlist filter here,
+                 however narrow its paths look, matches every link too and
+                 makes Android show an app chooser listing "mitlist" twice
+                 for our own OAuth redirect. -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -59,11 +49,14 @@
                 <data android:scheme="https" android:host="app.mitlist.me" android:pathPrefix="/r" />
             </intent-filter>
         </activity>
-        <!-- Ends the in-app Custom Tab OAuth flow. singleTask so the redirect
-             clears the browser tab out of the task instead of burying it under
-             a second Flutter activity. -->
+        <!-- The one activity for every mitlist:// link: the OAuth callback
+             (/auth/callback), invites (/join/<code>) and shared recipes
+             (/r/<token>). It forwards the link to MainActivity. singleTask so
+             the OAuth redirect clears the Custom Tab out of the task instead
+             of burying it under a second Flutter activity. Keep the scheme
+             claimed here and nowhere else: see the note on MainActivity. -->
         <activity
-            android:name=".OAuthRedirectActivity"
+            android:name=".DeepLinkActivity"
             android:exported="true"
             android:launchMode="singleTask"
             android:taskAffinity=""
@@ -73,9 +66,7 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data
-                    android:scheme="mitlist"
-                    android:pathPrefix="/auth/callback" />
+                <data android:scheme="mitlist" />
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.

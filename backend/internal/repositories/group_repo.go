@@ -209,11 +209,11 @@ func (r *GroupRepository) CreateInvite(ctx context.Context, invite *models.Group
 	}
 
 	query := `
-		INSERT INTO group_invites (id, group_id, code, expires_at, used_by, used_at)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO group_invites (id, group_id, code, expires_at)
+		VALUES ($1, $2, $3, $4)
 	`
 	_, err := r.pool.Exec(ctx, query,
-		invite.ID, invite.GroupID, invite.Code, invite.ExpiresAt, invite.UsedBy, invite.UsedAt,
+		invite.ID, invite.GroupID, invite.Code, invite.ExpiresAt,
 	)
 	return err
 }
@@ -221,38 +221,18 @@ func (r *GroupRepository) CreateInvite(ctx context.Context, invite *models.Group
 // GetInviteByCode retrieves an invite by its code.
 func (r *GroupRepository) GetInviteByCode(ctx context.Context, code string) (*models.GroupInvite, error) {
 	query := `
-		SELECT id, group_id, code, expires_at, used_by, used_at
+		SELECT id, group_id, code, expires_at
 		FROM group_invites
 		WHERE code = $1
 	`
 	row := r.pool.QueryRow(ctx, query, code)
 
 	var i models.GroupInvite
-	err := row.Scan(&i.ID, &i.GroupID, &i.Code, &i.ExpiresAt, &i.UsedBy, &i.UsedAt)
+	err := row.Scan(&i.ID, &i.GroupID, &i.Code, &i.ExpiresAt)
 	if err != nil {
 		return nil, err
 	}
 	return &i, nil
-}
-
-// ConsumeInvite atomically consumes a one-use invite. The used_at predicate is
-// intentional: two simultaneous join requests can both read an unused invite,
-// but only one transaction may mark it consumed.
-func (r *GroupRepository) ConsumeInvite(ctx context.Context, inviteID, userID uuid.UUID) error {
-	now := time.Now().UTC()
-	query := `
-		UPDATE group_invites
-		SET used_by = $1, used_at = $2
-		WHERE id = $3 AND used_at IS NULL
-	`
-	result, err := r.pool.Exec(ctx, query, userID, now, inviteID)
-	if err != nil {
-		return err
-	}
-	if result.RowsAffected() != 1 {
-		return ErrInviteAlreadyUsed
-	}
-	return nil
 }
 
 // CreatePendingClaim inserts a new pending claim.

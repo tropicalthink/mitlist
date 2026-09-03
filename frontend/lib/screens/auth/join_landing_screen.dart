@@ -84,6 +84,14 @@ class _JoinLandingScreenState extends ConsumerState<JoinLandingScreen> {
       final svc = await ref.read(groupServiceProviderAsync.future);
       final group = await svc.joinGroup(JoinGroupRequest(code: _code));
       if (!mounted) return;
+      // Seed the household cache before anyone reads it. The hub decides
+      // "no household, go to setup" from that cache, so without this a new
+      // member was sent into the create-a-household flow for the house they
+      // had just joined. Best-effort: the join itself already succeeded.
+      try {
+        await refreshCachedGroups(ref, ensure: group);
+      } catch (_) {}
+      if (!mounted) return;
       unawaited(ref.read(currentGroupIdProvider.notifier).set(group.id));
       setState(() {
         _phase = _Phase.success;
@@ -182,8 +190,7 @@ class _JoinLandingScreenState extends ConsumerState<JoinLandingScreen> {
     final preview = _preview;
     final status = preview?.status;
     final alreadyMember = status == InviteStatus.alreadyMember;
-    final dead =
-        status == InviteStatus.expired || status == InviteStatus.used;
+    final dead = status == InviteStatus.expired;
 
     return KeyedSubtree(
       key: const ValueKey('entry'),
@@ -201,15 +208,12 @@ class _JoinLandingScreenState extends ConsumerState<JoinLandingScreen> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: MitlistSpacing.lg),
-
             if (preview != null) ...[
               _HouseholdCard(preview: preview),
               const SizedBox(height: MitlistSpacing.md),
             ],
-
             _CodeLine(code: _code),
             const SizedBox(height: MitlistSpacing.xl),
-
             if (alreadyMember)
               AppAlert(
                 type: AppAlertType.info,
@@ -220,11 +224,6 @@ class _JoinLandingScreenState extends ConsumerState<JoinLandingScreen> {
                 type: AppAlertType.warning,
                 message: l10n.authJoinExpired,
               )
-            else if (status == InviteStatus.used)
-              AppAlert(
-                type: AppAlertType.warning,
-                message: l10n.authJoinAlreadyUsed,
-              )
             else if (_previewError != null)
               AppAlert(
                 type: AppAlertType.warning,
@@ -232,7 +231,6 @@ class _JoinLandingScreenState extends ConsumerState<JoinLandingScreen> {
               ),
             if (alreadyMember || dead || _previewError != null)
               const SizedBox(height: MitlistSpacing.md),
-
             if (_joinError != null) ...[
               AppAlert(
                 type: AppAlertType.error,
@@ -240,7 +238,6 @@ class _JoinLandingScreenState extends ConsumerState<JoinLandingScreen> {
               ),
               const SizedBox(height: MitlistSpacing.md),
             ],
-
             if (alreadyMember)
               AppButton(
                 variant: AppButtonVariant.solid,

@@ -88,15 +88,23 @@ The API offers three doors and reports which are open at
   it. A self-hosted instance without OAuth credentials needs it on;
   `backend/.env.example` ships with it set. Turning it off on a server that
   already has password accounts locks those people out until it is on again.
-- **Guest** — always on, subject to the attestation below.
+- **Guest** — on only with `GUEST_AUTH_ENABLED=true`, and then subject to
+  the attestation below. It defaults to off because an unauthenticated
+  endpoint that mints working accounts is the easiest thing on the API to
+  abuse; the hosted service keeps it off. Turning it off never strands an
+  existing guest: refresh, upgrade and provider linking stay open, only the
+  creation of new guests is refused. The app reads the flag and hides the
+  guest button when it is off.
 
 ```dotenv
 PASSWORD_AUTH_ENABLED=true
+GUEST_AUTH_ENABLED=false
 ```
 
 The API logs a warning at startup when neither OAuth nor passwords are
-configured: guests can still be created, but nobody can sign back in on a
-second device.
+configured: with guests on, accounts can still be created but nobody can sign
+back in on a second device; with guests off as well, nobody can get in at
+all.
 
 ### Guest sign-up attestation
 

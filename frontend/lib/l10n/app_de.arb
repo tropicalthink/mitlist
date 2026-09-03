@@ -1207,7 +1207,6 @@
   "authJoinDecline": "Ablehnen",
   "authJoinCheckingInvite": "Einladung wird geprüft…",
   "authJoinExpired": "Diese Einladung ist abgelaufen. Bitte um eine neue.",
-  "authJoinAlreadyUsed": "Diese Einladung wurde bereits verwendet.",
   "authJoinAlreadyMember": "Du bist bereits Mitglied von {name}.",
   "authJoinTitle": "Haushalt beitreten",
   "authJoinInvitedBy": "{name} hat dich eingeladen",
@@ -2268,6 +2267,5 @@
   "tourFinishEyebrow": "Dein Haushalt",
   "tourFinishHeadline": "Jetzt mit den Leuten, mit denen du wirklich wohnst.",
   "tourFinishBody": "Erstell ein Konto, richte deinen Haushalt ein und lad sie ein. Kostenlos für Haushalte bis 4 Personen.",
-  "tourFinishEmail": "Mit E-Mail fortfahren",
-  "tourFinishSignIn": "Stattdessen anmelden"
+  "tourFinishEmail": "Mit E-Mail fortfahren"
 }

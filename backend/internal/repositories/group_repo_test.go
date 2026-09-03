@@ -209,7 +209,7 @@ func TestGroupRepository_CreateInvite(t *testing.T) {
 	}
 
 	mock.ExpectExec("INSERT INTO group_invites").
-		WithArgs(pgxmock.AnyArg(), invite.GroupID, invite.Code, invite.ExpiresAt, pgxmock.AnyArg(), pgxmock.AnyArg()).
+		WithArgs(pgxmock.AnyArg(), invite.GroupID, invite.Code, invite.ExpiresAt).
 		WillReturnResult(pgxmock.NewResult("INSERT", 1))
 
 	err := repo.CreateInvite(context.Background(), invite)
@@ -222,8 +222,8 @@ func TestGroupRepository_GetInviteByCode(t *testing.T) {
 	repo := NewGroupRepository(mock)
 
 	id := fixedUUID()
-	rows := pgxmock.NewRows([]string{"id", "group_id", "code", "expires_at", "used_by", "used_at"}).
-		AddRow(id, fixedUUID(), "code123", fixedTime(), nil, nil)
+	rows := pgxmock.NewRows([]string{"id", "group_id", "code", "expires_at"}).
+		AddRow(id, fixedUUID(), "code123", fixedTime())
 
 	mock.ExpectQuery("SELECT .* FROM group_invites WHERE code = .*").
 		WithArgs("code123").
@@ -246,36 +246,6 @@ func TestGroupRepository_GetInviteByCode_NotFound(t *testing.T) {
 	invite, err := repo.GetInviteByCode(context.Background(), "missing")
 	require.Error(t, err)
 	assert.Nil(t, invite)
-	assert.NoError(t, mock.ExpectationsWereMet())
-}
-
-func TestGroupRepository_ConsumeInvite(t *testing.T) {
-	mock := newMockDB(t)
-	repo := NewGroupRepository(mock)
-	inviteID := fixedUUID()
-	userID := fixedUUID()
-
-	mock.ExpectExec("UPDATE group_invites SET used_by = .* WHERE id = .* AND used_at IS NULL").
-		WithArgs(userID, pgxmock.AnyArg(), inviteID).
-		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
-
-	err := repo.ConsumeInvite(context.Background(), inviteID, userID)
-	require.NoError(t, err)
-	assert.NoError(t, mock.ExpectationsWereMet())
-}
-
-func TestGroupRepository_ConsumeInvite_AlreadyUsed(t *testing.T) {
-	mock := newMockDB(t)
-	repo := NewGroupRepository(mock)
-	inviteID := fixedUUID()
-	userID := fixedUUID()
-
-	mock.ExpectExec("UPDATE group_invites SET used_by = .* WHERE id = .* AND used_at IS NULL").
-		WithArgs(userID, pgxmock.AnyArg(), inviteID).
-		WillReturnResult(pgxmock.NewResult("UPDATE", 0))
-
-	err := repo.ConsumeInvite(context.Background(), inviteID, userID)
-	assert.ErrorIs(t, err, ErrInviteAlreadyUsed)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 

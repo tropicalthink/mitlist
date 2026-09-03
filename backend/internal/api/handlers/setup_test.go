@@ -87,6 +87,7 @@ func mustLoadTestConfig() *config.Config {
 		APIPrefix:                "/api",
 		AccessTokenExpireMinutes: 60,
 		PasswordAuthEnabled:      true,
+		GuestAuthEnabled:         true,
 	}
 }
 
@@ -382,7 +383,7 @@ func newAuthRouterWithConfig(t *testing.T, cfg *config.Config) (chi.Router, *Aut
 	r.Route("/api/v1/auth", func(r chi.Router) {
 		r.Post("/token/refresh", h.Refresh)
 		r.Post("/logout", h.Logout)
-		r.Post("/guest", h.CreateGuest)
+		r.With(h.requireGuestAuth).Post("/guest", h.CreateGuest)
 		// Mounted like the real router: the password surface sits behind the
 		// PASSWORD_AUTH_ENABLED gate, and registration hands back no tokens,
 		// so a test that needs an authenticated user has to complete
