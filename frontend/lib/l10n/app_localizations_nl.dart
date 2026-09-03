@@ -6326,6 +6326,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get sharedRecipeOpenInApp => 'Openen in Mitlist';
 
   @override
+  String get openInAppButton => 'Openen in Mitlist';
+
+  @override
   String recipeShareSubject(String title) {
     return '$title op Mitlist';
   }

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../models/group_models.dart';
@@ -11,6 +12,7 @@ import '../../router.dart' show currentGroupIdProvider;
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../utils/friendly_error.dart';
+import '../../utils/open_in_app.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_icon.dart';
@@ -97,6 +99,17 @@ class _JoinLandingScreenState extends ConsumerState<JoinLandingScreen> {
   }
 
   void _decline() => context.goNamed('home');
+
+  /// The browser is where the invite lands when the phone has not claimed
+  /// the https link for the app; this is the one-tap hop back into it.
+  Future<void> _openInApp() => launchUrl(
+        openInAppUri(
+          '/join/$_code',
+          isAndroid: isAndroidBrowser,
+          fallbackUrl: Uri.base,
+        ),
+        webOnlyWindowName: '_self',
+      );
 
   void _openExistingHousehold() {
     final preview = _preview;
@@ -261,6 +274,19 @@ class _JoinLandingScreenState extends ConsumerState<JoinLandingScreen> {
                 text: l10n.authJoinDecline,
                 onPressed: isJoining ? null : _decline,
               ),
+              // Signed in on a phone browser: the household belongs in the
+              // app, so offer the hop before they accept in a tab.
+              if (isMobileBrowser) ...[
+                const SizedBox(height: MitlistSpacing.sm),
+                AppButton(
+                  variant: AppButtonVariant.outline,
+                  color: AppButtonColor.primary,
+                  size: AppButtonSize.lg,
+                  text: l10n.openInAppButton,
+                  icon: const AppIcon(name: 'openInNew'),
+                  onPressed: isJoining ? null : _openInApp,
+                ),
+              ],
             ],
           ],
         ),

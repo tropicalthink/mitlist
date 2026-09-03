@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/oauth_provider.dart';
@@ -13,6 +14,7 @@ import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../utils/friendly_error.dart';
+import '../../utils/open_in_app.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/board/artifact_scraps.dart';
 import '../../widgets/board/cork_board.dart';
@@ -186,11 +188,38 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
                       ),
                       const SizedBox(height: MitlistSpacing.space6),
                       if (invited) ...[
+                        // A phone browser is where the invite lands when the
+                        // device has not claimed the link for the app. Someone
+                        // who already has the app installed is signed in
+                        // there, not here, so the hop comes first.
+                        if (isMobileBrowser) ...[
+                          SizedBox(
+                            width: double.infinity,
+                            child: AppButton(
+                              text: l10n.openInAppButton,
+                              variant: AppButtonVariant.solid,
+                              color: AppButtonColor.primary,
+                              size: AppButtonSize.lg,
+                              onPressed: () => launchUrl(
+                                openInAppUri(
+                                  '/join/${invite.trim().toUpperCase()}',
+                                  isAndroid: isAndroidBrowser,
+                                  fallbackUrl: Uri.base,
+                                ),
+                                webOnlyWindowName: '_self',
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: MitlistSpacing.space3),
+                        ],
                         SizedBox(
                           width: double.infinity,
                           child: AppButton(
                             text: l10n.authJoinCreateToJoin,
-                            variant: AppButtonVariant.solid,
+                            // Secondary once the app hop is the headline.
+                            variant: isMobileBrowser
+                                ? AppButtonVariant.outline
+                                : AppButtonVariant.solid,
                             color: AppButtonColor.primary,
                             size: AppButtonSize.lg,
                             onPressed: () => _goToAuth(createRoute),
