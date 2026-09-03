@@ -285,5 +285,44 @@ void main() {
 
       expect(result.redirect, '/welcome');
     });
+
+    test('a signed-out visitor may take the tour', () {
+      final result = resolveAppRedirect(
+        const AppRedirectInput(
+          location: '/tour',
+          queryParameters: {},
+          authBootstrapLoading: false,
+          authState: false,
+        ),
+      );
+
+      expect(result.redirect, isNull);
+    });
+
+    test('a signed-in user on the tour is sent home', () {
+      final result = resolveAppRedirect(
+        const AppRedirectInput(
+          location: '/tour',
+          queryParameters: {},
+          authBootstrapLoading: false,
+          authState: true,
+        ),
+      );
+
+      expect(result.redirect, '/home');
+    });
+
+    test('unauthenticated bootstrap honors continue to the tour', () {
+      final result = resolveAppRedirect(
+        const AppRedirectInput(
+          location: '/_session',
+          queryParameters: {'continue': '/tour'},
+          authBootstrapLoading: false,
+          authState: false,
+        ),
+      );
+
+      expect(result.redirect, '/tour');
+    });
   });
 }

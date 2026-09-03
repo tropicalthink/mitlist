@@ -10798,6 +10798,342 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{title} on Mitlist'**
   String recipeShareSubject(String title);
+
+  /// Primary button on the welcome screen; opens the feature tour
+  ///
+  /// In en, this message translates to:
+  /// **'Get started'**
+  String get welcomeGetStarted;
+
+  /// Secondary button on the welcome screen; goes to sign in
+  ///
+  /// In en, this message translates to:
+  /// **'I have an account'**
+  String get welcomeHaveAccount;
+
+  /// Top-right button on tour pages that jumps to the last page
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get tourSkip;
+
+  /// Bottom button on tour pages that advances one page
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get tourNext;
+
+  /// Bottom button on the first tour page
+  ///
+  /// In en, this message translates to:
+  /// **'Show me'**
+  String get tourShowMe;
+
+  /// Semantic label of the back chevron on tour pages
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get tourBack;
+
+  /// Semantic label of the tour progress bar
+  ///
+  /// In en, this message translates to:
+  /// **'Step {step} of {total}'**
+  String tourStepOf(int step, int total);
+
+  /// Small tag on tour cards saying the content is a sample household
+  ///
+  /// In en, this message translates to:
+  /// **'Sample'**
+  String get tourSampleTag;
+
+  /// Eyebrow label above the first tour headline
+  ///
+  /// In en, this message translates to:
+  /// **'Your household'**
+  String get tourWhyEyebrow;
+
+  /// Headline of the first tour page
+  ///
+  /// In en, this message translates to:
+  /// **'Who bought milk, who owes what, whose turn is it?'**
+  String get tourWhyHeadline;
+
+  /// Body text of the first tour page
+  ///
+  /// In en, this message translates to:
+  /// **'mitlist is the shared notebook for the people you live with. Here is a sample flat to poke at.'**
+  String get tourWhyBody;
+
+  /// Sample sticky note pinned on the first tour page
+  ///
+  /// In en, this message translates to:
+  /// **'Landlord coming Thursday 10am'**
+  String get tourWhyNote;
+
+  /// Unchecked item count on the sample list
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 to buy} other{{count} to buy}}'**
+  String tourWhyToBuy(int count);
+
+  /// The overdue chore on the first tour page
+  ///
+  /// In en, this message translates to:
+  /// **'{title} is overdue'**
+  String tourWhyOverdue(String title);
+
+  /// Eyebrow label on the lists tour page
+  ///
+  /// In en, this message translates to:
+  /// **'Lists'**
+  String get tourListsEyebrow;
+
+  /// Headline of the lists tour page
+  ///
+  /// In en, this message translates to:
+  /// **'One list. Everyone adds. Whoever is at the shop buys.'**
+  String get tourListsHeadline;
+
+  /// Body text of the lists tour page
+  ///
+  /// In en, this message translates to:
+  /// **'Tick things off, add what is missing. Everyone in the flat sees it change.'**
+  String get tourListsBody;
+
+  /// Placeholder of the add-item field on the lists tour page
+  ///
+  /// In en, this message translates to:
+  /// **'Add something…'**
+  String get tourListsAddHint;
+
+  /// Under a sample list item, who put it there
+  ///
+  /// In en, this message translates to:
+  /// **'{name} added this'**
+  String tourListsAddedBy(String name);
+
+  /// Eyebrow label on the money tour page
+  ///
+  /// In en, this message translates to:
+  /// **'Money'**
+  String get tourMoneyEyebrow;
+
+  /// Headline of the money tour page
+  ///
+  /// In en, this message translates to:
+  /// **'Split the pizza. Stop doing mental maths.'**
+  String get tourMoneyHeadline;
+
+  /// Body text of the money tour page
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a name to leave them out of the split. The balance updates on its own.'**
+  String get tourMoneyBody;
+
+  /// Title of the sample expense the person paid
+  ///
+  /// In en, this message translates to:
+  /// **'Pizza night'**
+  String get tourMoneyPizza;
+
+  /// Title of the sample expense someone else paid
+  ///
+  /// In en, this message translates to:
+  /// **'Washing machine repair'**
+  String get tourMoneyRepair;
+
+  /// Who paid, when it was the person
+  ///
+  /// In en, this message translates to:
+  /// **'paid by you'**
+  String get tourMoneyPaidByYou;
+
+  /// Who paid, when it was someone else
+  ///
+  /// In en, this message translates to:
+  /// **'paid by {name}'**
+  String tourMoneyPaidBy(String name);
+
+  /// Label above the member chips of the pizza expense
+  ///
+  /// In en, this message translates to:
+  /// **'Split between'**
+  String get tourMoneySplitBetween;
+
+  /// One member's share of the pizza
+  ///
+  /// In en, this message translates to:
+  /// **'{name} owes you {amount}'**
+  String tourMoneyOwesYou(String name, String amount);
+
+  /// Shown when everyone else is removed from the pizza split
+  ///
+  /// In en, this message translates to:
+  /// **'Just you. Nothing to split.'**
+  String get tourMoneyJustYou;
+
+  /// Net balance when others owe the person
+  ///
+  /// In en, this message translates to:
+  /// **'Overall, you are owed {amount}'**
+  String tourMoneyOverallOwed(String amount);
+
+  /// Net balance when the person owes
+  ///
+  /// In en, this message translates to:
+  /// **'Overall, you owe {amount}'**
+  String tourMoneyOverallOwe(String amount);
+
+  /// Net balance when nothing is owed
+  ///
+  /// In en, this message translates to:
+  /// **'Overall, all square'**
+  String get tourMoneyOverallSquare;
+
+  /// Eyebrow label on the chores tour page
+  ///
+  /// In en, this message translates to:
+  /// **'Chores'**
+  String get tourChoresEyebrow;
+
+  /// Headline of the chores tour page; Ines is a sample flatmate
+  ///
+  /// In en, this message translates to:
+  /// **'Bins go out Thursday. It is Ines\'s turn, and she knows.'**
+  String get tourChoresHeadline;
+
+  /// Body text of the chores tour page
+  ///
+  /// In en, this message translates to:
+  /// **'Chores rotate. Tick yours off and it moves to the next person.'**
+  String get tourChoresBody;
+
+  /// Due label on an overdue sample chore
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue'**
+  String get tourChoresOverdue;
+
+  /// Due label on a sample chore due today
+  ///
+  /// In en, this message translates to:
+  /// **'Due today'**
+  String get tourChoresDueToday;
+
+  /// Due label on a sample chore
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, =1{Due tomorrow} other{Due in {days} days}}'**
+  String tourChoresDueIn(int days);
+
+  /// Recurrence chip on a sample chore
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly'**
+  String get tourChoresWeekly;
+
+  /// Turn chip when the sample chore is the person's
+  ///
+  /// In en, this message translates to:
+  /// **'Your turn'**
+  String get tourChoresYourTurn;
+
+  /// Turn chip when the sample chore is someone else's
+  ///
+  /// In en, this message translates to:
+  /// **'{name}\'s turn'**
+  String tourChoresTurnOf(String name);
+
+  /// Shown after ticking a sample chore off: who gets it next
+  ///
+  /// In en, this message translates to:
+  /// **'Next: {name}, in {days} days'**
+  String tourChoresNext(String name, int days);
+
+  /// Eyebrow label on the recipes tour page
+  ///
+  /// In en, this message translates to:
+  /// **'Recipes'**
+  String get tourRecipesEyebrow;
+
+  /// Headline of the recipes tour page
+  ///
+  /// In en, this message translates to:
+  /// **'Thursday is shakshuka. The eggs are already on the list.'**
+  String get tourRecipesHeadline;
+
+  /// Body text of the recipes tour page
+  ///
+  /// In en, this message translates to:
+  /// **'Plan a meal and send its ingredients straight to the shopping list.'**
+  String get tourRecipesBody;
+
+  /// Title of the sample recipe
+  ///
+  /// In en, this message translates to:
+  /// **'Shakshuka'**
+  String get tourRecipesTitle;
+
+  /// Meta line of the sample recipe
+  ///
+  /// In en, this message translates to:
+  /// **'4 servings · 30 min'**
+  String get tourRecipesServings;
+
+  /// Meal plan line on the sample recipe
+  ///
+  /// In en, this message translates to:
+  /// **'Planned for Thursday'**
+  String get tourRecipesPlanned;
+
+  /// Button on the sample recipe that pushes ingredients to the sample list
+  ///
+  /// In en, this message translates to:
+  /// **'Add to the list'**
+  String get tourRecipesAddIngredients;
+
+  /// Button label once ingredients were added
+  ///
+  /// In en, this message translates to:
+  /// **'On the list'**
+  String get tourRecipesAddedButton;
+
+  /// Toast after ingredients were added
+  ///
+  /// In en, this message translates to:
+  /// **'{count} items added to {list}'**
+  String tourRecipesAddedToast(int count, String list);
+
+  /// Eyebrow label on the last tour page
+  ///
+  /// In en, this message translates to:
+  /// **'Your household'**
+  String get tourFinishEyebrow;
+
+  /// Headline of the last tour page
+  ///
+  /// In en, this message translates to:
+  /// **'Now do it with the people you actually live with.'**
+  String get tourFinishHeadline;
+
+  /// Body text of the last tour page
+  ///
+  /// In en, this message translates to:
+  /// **'Create an account to set up your household and invite them. Free for households up to 4.'**
+  String get tourFinishBody;
+
+  /// Email sign-up button on the last tour page
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with email'**
+  String get tourFinishEmail;
+
+  /// Ghost link on the last tour page to the login screen
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in instead'**
+  String get tourFinishSignIn;
 }
 
 class _AppLocalizationsDelegate
