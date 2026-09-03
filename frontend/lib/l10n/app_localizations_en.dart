@@ -6266,4 +6266,219 @@ class AppLocalizationsEn extends AppLocalizations {
   String recipeShareSubject(String title) {
     return '$title on Mitlist';
   }
+
+  @override
+  String get welcomeGetStarted => 'Get started';
+
+  @override
+  String get welcomeHaveAccount => 'I have an account';
+
+  @override
+  String get tourSkip => 'Skip';
+
+  @override
+  String get tourNext => 'Next';
+
+  @override
+  String get tourShowMe => 'Show me';
+
+  @override
+  String get tourBack => 'Back';
+
+  @override
+  String tourStepOf(int step, int total) {
+    return 'Step $step of $total';
+  }
+
+  @override
+  String get tourSampleTag => 'Sample';
+
+  @override
+  String get tourWhyEyebrow => 'Your household';
+
+  @override
+  String get tourWhyHeadline =>
+      'Who bought milk, who owes what, whose turn is it?';
+
+  @override
+  String get tourWhyBody =>
+      'mitlist is the shared notebook for the people you live with. Here is a sample flat to poke at.';
+
+  @override
+  String get tourWhyNote => 'Landlord coming Thursday 10am';
+
+  @override
+  String tourWhyToBuy(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count to buy',
+      one: '1 to buy',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String tourWhyOverdue(String title) {
+    return '$title is overdue';
+  }
+
+  @override
+  String get tourListsEyebrow => 'Lists';
+
+  @override
+  String get tourListsHeadline =>
+      'One list. Everyone adds. Whoever is at the shop buys.';
+
+  @override
+  String get tourListsBody =>
+      'Tick things off, add what is missing. Everyone in the flat sees it change.';
+
+  @override
+  String get tourListsAddHint => 'Add something…';
+
+  @override
+  String tourListsAddedBy(String name) {
+    return '$name added this';
+  }
+
+  @override
+  String get tourMoneyEyebrow => 'Money';
+
+  @override
+  String get tourMoneyHeadline => 'Split the pizza. Stop doing mental maths.';
+
+  @override
+  String get tourMoneyBody =>
+      'Tap a name to leave them out of the split. The balance updates on its own.';
+
+  @override
+  String get tourMoneyPizza => 'Pizza night';
+
+  @override
+  String get tourMoneyRepair => 'Washing machine repair';
+
+  @override
+  String get tourMoneyPaidByYou => 'paid by you';
+
+  @override
+  String tourMoneyPaidBy(String name) {
+    return 'paid by $name';
+  }
+
+  @override
+  String get tourMoneySplitBetween => 'Split between';
+
+  @override
+  String tourMoneyOwesYou(String name, String amount) {
+    return '$name owes you $amount';
+  }
+
+  @override
+  String get tourMoneyJustYou => 'Just you. Nothing to split.';
+
+  @override
+  String tourMoneyOverallOwed(String amount) {
+    return 'Overall, you are owed $amount';
+  }
+
+  @override
+  String tourMoneyOverallOwe(String amount) {
+    return 'Overall, you owe $amount';
+  }
+
+  @override
+  String get tourMoneyOverallSquare => 'Overall, all square';
+
+  @override
+  String get tourChoresEyebrow => 'Chores';
+
+  @override
+  String get tourChoresHeadline =>
+      'Bins go out Thursday. It is Ines\'s turn, and she knows.';
+
+  @override
+  String get tourChoresBody =>
+      'Chores rotate. Tick yours off and it moves to the next person.';
+
+  @override
+  String get tourChoresOverdue => 'Overdue';
+
+  @override
+  String get tourChoresDueToday => 'Due today';
+
+  @override
+  String tourChoresDueIn(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Due in $days days',
+      one: 'Due tomorrow',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tourChoresWeekly => 'Weekly';
+
+  @override
+  String get tourChoresYourTurn => 'Your turn';
+
+  @override
+  String tourChoresTurnOf(String name) {
+    return '$name\'s turn';
+  }
+
+  @override
+  String tourChoresNext(String name, int days) {
+    return 'Next: $name, in $days days';
+  }
+
+  @override
+  String get tourRecipesEyebrow => 'Recipes';
+
+  @override
+  String get tourRecipesHeadline =>
+      'Thursday is shakshuka. The eggs are already on the list.';
+
+  @override
+  String get tourRecipesBody =>
+      'Plan a meal and send its ingredients straight to the shopping list.';
+
+  @override
+  String get tourRecipesTitle => 'Shakshuka';
+
+  @override
+  String get tourRecipesServings => '4 servings · 30 min';
+
+  @override
+  String get tourRecipesPlanned => 'Planned for Thursday';
+
+  @override
+  String get tourRecipesAddIngredients => 'Add to the list';
+
+  @override
+  String get tourRecipesAddedButton => 'On the list';
+
+  @override
+  String tourRecipesAddedToast(int count, String list) {
+    return '$count items added to $list';
+  }
+
+  @override
+  String get tourFinishEyebrow => 'Your household';
+
+  @override
+  String get tourFinishHeadline =>
+      'Now do it with the people you actually live with.';
+
+  @override
+  String get tourFinishBody =>
+      'Create an account to set up your household and invite them. Free for households up to 4.';
+
+  @override
+  String get tourFinishEmail => 'Continue with email';
+
+  @override
+  String get tourFinishSignIn => 'Sign in instead';
 }

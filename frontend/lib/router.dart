@@ -27,6 +27,7 @@ import 'screens/you/feature_board_screen.dart';
 import 'screens/you/weekly_summary_screen.dart';
 import 'screens/you/home_assistant_connections_screen.dart';
 import 'screens/auth/welcome_screen.dart';
+import 'screens/tour/tour_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/signup_screen.dart';
 import 'screens/auth/onboarding_screen.dart';
@@ -201,6 +202,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: 'welcome',
         pageBuilder: (context, state) =>
             _boardPage(state, const WelcomeScreen()),
+      ),
+      GoRoute(
+        // "Get started" on the welcome screen: the feature tour, ending on
+        // the account choice. Signed-out only; router_redirect bounces a
+        // signed-in visitor home.
+        path: '/tour',
+        name: 'tour',
+        pageBuilder: (context, state) => _boardPage(state, const TourScreen()),
       ),
       GoRoute(
         path: '/login',

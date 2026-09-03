@@ -6366,4 +6366,219 @@ class AppLocalizationsDe extends AppLocalizations {
   String recipeShareSubject(String title) {
     return '$title auf Mitlist';
   }
+
+  @override
+  String get welcomeGetStarted => 'Loslegen';
+
+  @override
+  String get welcomeHaveAccount => 'Ich habe ein Konto';
+
+  @override
+  String get tourSkip => 'Überspringen';
+
+  @override
+  String get tourNext => 'Weiter';
+
+  @override
+  String get tourShowMe => 'Zeig mir';
+
+  @override
+  String get tourBack => 'Zurück';
+
+  @override
+  String tourStepOf(int step, int total) {
+    return 'Schritt $step von $total';
+  }
+
+  @override
+  String get tourSampleTag => 'Beispiel';
+
+  @override
+  String get tourWhyEyebrow => 'Dein Haushalt';
+
+  @override
+  String get tourWhyHeadline =>
+      'Wer hat Milch gekauft, wer schuldet was, wer ist dran?';
+
+  @override
+  String get tourWhyBody =>
+      'mitlist ist das gemeinsame Notizbuch für die Leute, mit denen du wohnst. Hier ist eine Beispiel-WG zum Ausprobieren.';
+
+  @override
+  String get tourWhyNote => 'Vermieter kommt Donnerstag 10 Uhr';
+
+  @override
+  String tourWhyToBuy(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count zu kaufen',
+      one: '1 zu kaufen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String tourWhyOverdue(String title) {
+    return '$title ist überfällig';
+  }
+
+  @override
+  String get tourListsEyebrow => 'Listen';
+
+  @override
+  String get tourListsHeadline =>
+      'Eine Liste. Alle tragen ein. Wer im Laden ist, kauft.';
+
+  @override
+  String get tourListsBody =>
+      'Hak ab, was erledigt ist, und ergänze, was fehlt. Alle in der WG sehen es sofort.';
+
+  @override
+  String get tourListsAddHint => 'Etwas hinzufügen …';
+
+  @override
+  String tourListsAddedBy(String name) {
+    return 'Von $name eingetragen';
+  }
+
+  @override
+  String get tourMoneyEyebrow => 'Geld';
+
+  @override
+  String get tourMoneyHeadline => 'Teil die Pizza. Schluss mit Kopfrechnen.';
+
+  @override
+  String get tourMoneyBody =>
+      'Tipp auf einen Namen, um ihn aus der Aufteilung zu nehmen. Der Saldo passt sich von selbst an.';
+
+  @override
+  String get tourMoneyPizza => 'Pizzaabend';
+
+  @override
+  String get tourMoneyRepair => 'Waschmaschinenreparatur';
+
+  @override
+  String get tourMoneyPaidByYou => 'von dir bezahlt';
+
+  @override
+  String tourMoneyPaidBy(String name) {
+    return 'von $name bezahlt';
+  }
+
+  @override
+  String get tourMoneySplitBetween => 'Aufgeteilt zwischen';
+
+  @override
+  String tourMoneyOwesYou(String name, String amount) {
+    return '$name schuldet dir $amount';
+  }
+
+  @override
+  String get tourMoneyJustYou => 'Nur du. Nichts aufzuteilen.';
+
+  @override
+  String tourMoneyOverallOwed(String amount) {
+    return 'Insgesamt bekommst du $amount';
+  }
+
+  @override
+  String tourMoneyOverallOwe(String amount) {
+    return 'Insgesamt schuldest du $amount';
+  }
+
+  @override
+  String get tourMoneyOverallSquare => 'Insgesamt quitt';
+
+  @override
+  String get tourChoresEyebrow => 'Aufgaben';
+
+  @override
+  String get tourChoresHeadline =>
+      'Donnerstag ist Mülltag. Ines ist dran, und sie weiß es.';
+
+  @override
+  String get tourChoresBody =>
+      'Aufgaben rotieren. Hak deine ab und sie wandert zur nächsten Person.';
+
+  @override
+  String get tourChoresOverdue => 'Überfällig';
+
+  @override
+  String get tourChoresDueToday => 'Heute fällig';
+
+  @override
+  String tourChoresDueIn(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Fällig in $days Tagen',
+      one: 'Morgen fällig',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tourChoresWeekly => 'Wöchentlich';
+
+  @override
+  String get tourChoresYourTurn => 'Du bist dran';
+
+  @override
+  String tourChoresTurnOf(String name) {
+    return '$name ist dran';
+  }
+
+  @override
+  String tourChoresNext(String name, int days) {
+    return 'Als Nächstes: $name, in $days Tagen';
+  }
+
+  @override
+  String get tourRecipesEyebrow => 'Rezepte';
+
+  @override
+  String get tourRecipesHeadline =>
+      'Donnerstag gibt es Shakshuka. Die Eier stehen schon auf der Liste.';
+
+  @override
+  String get tourRecipesBody =>
+      'Plan eine Mahlzeit und schick die Zutaten direkt auf die Einkaufsliste.';
+
+  @override
+  String get tourRecipesTitle => 'Shakshuka';
+
+  @override
+  String get tourRecipesServings => '4 Portionen · 30 Min.';
+
+  @override
+  String get tourRecipesPlanned => 'Geplant für Donnerstag';
+
+  @override
+  String get tourRecipesAddIngredients => 'Auf die Liste';
+
+  @override
+  String get tourRecipesAddedButton => 'Auf der Liste';
+
+  @override
+  String tourRecipesAddedToast(int count, String list) {
+    return '$count Einträge zu $list hinzugefügt';
+  }
+
+  @override
+  String get tourFinishEyebrow => 'Dein Haushalt';
+
+  @override
+  String get tourFinishHeadline =>
+      'Jetzt mit den Leuten, mit denen du wirklich wohnst.';
+
+  @override
+  String get tourFinishBody =>
+      'Erstell ein Konto, richte deinen Haushalt ein und lad sie ein. Kostenlos für Haushalte bis 4 Personen.';
+
+  @override
+  String get tourFinishEmail => 'Mit E-Mail fortfahren';
+
+  @override
+  String get tourFinishSignIn => 'Stattdessen anmelden';
 }

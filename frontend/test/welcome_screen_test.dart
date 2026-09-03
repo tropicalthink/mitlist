@@ -165,9 +165,7 @@ void main() {
       );
     });
 
-    testWidgets('guest continue without invite queues onboarding navigation',
-        (tester) async {
-      final authService = _GuestAuthService(user: guestUser);
+    testWidgets('get started opens the tour', (tester) async {
       final router = GoRouter(
         initialLocation: '/welcome',
         routes: [
@@ -176,33 +174,66 @@ void main() {
             name: 'welcome',
             builder: (context, state) => const WelcomeScreen(),
           ),
+          GoRoute(
+            path: '/tour',
+            name: 'tour',
+            builder: (context, state) => const Scaffold(body: Text('tour')),
+          ),
         ],
       );
 
-      late ProviderContainer container;
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            authServiceProviderAsync.overrideWith((ref) async => authService),
-          ],
-          child: Builder(
-            builder: (context) {
-              container = ProviderScope.containerOf(context);
-              return MaterialApp.router(
-                routerConfig: router,
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
-                supportedLocales: AppLocalizations.supportedLocales,
-              );
-            },
+          child: MaterialApp.router(
+            routerConfig: router,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
           ),
         ),
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Continue as guest'));
+      // The guest door is no longer on the welcome screen.
+      expect(find.text('Continue as guest'), findsNothing);
+
+      await tester.tap(find.text('GET STARTED'));
       await tester.pumpAndSettle();
 
-      expect(container.read(pendingAuthNavigationProvider), '/onboarding');
+      expect(find.text('tour'), findsOneWidget);
+    });
+
+    testWidgets('have an account goes to login', (tester) async {
+      final router = GoRouter(
+        initialLocation: '/welcome',
+        routes: [
+          GoRoute(
+            path: '/welcome',
+            name: 'welcome',
+            builder: (context, state) => const WelcomeScreen(),
+          ),
+          GoRoute(
+            path: '/login',
+            name: 'login',
+            builder: (context, state) => const Scaffold(body: Text('login')),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp.router(
+            routerConfig: router,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('I HAVE AN ACCOUNT'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('login'), findsOneWidget);
     });
   });
 }

@@ -38,6 +38,7 @@ const sessionBootstrapPath = '/_session';
 
 const authRoutePrefixes = [
   '/welcome',
+  '/tour',
   '/login',
   '/signup',
   '/auth/callback',
@@ -155,7 +156,9 @@ AppRedirectResult resolveAppRedirect(AppRedirectInput input) {
         location.startsWith('/auth/callback')) {
       return const AppRedirectResult(redirect: '/onboarding');
     }
-    if (location.startsWith('/welcome') || location.startsWith('/login')) {
+    if (location.startsWith('/welcome') ||
+        location.startsWith('/tour') ||
+        location.startsWith('/login')) {
       return const AppRedirectResult(redirect: '/home');
     }
     return const AppRedirectResult();
