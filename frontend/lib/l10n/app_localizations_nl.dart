@@ -4006,6 +4006,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get authLoginApple => 'Doorgaan met Apple';
 
   @override
+  String get authLoginNoMethods =>
+      'Deze server heeft geen aanmeldmethode ingeschakeld. Wie hem beheert moet aanmelden via e-mail inschakelen of Google of Apple koppelen.';
+
+  @override
+  String get authLoginWithEmailButton => 'Aanmelden met e-mail';
+
+  @override
   String authLoginOAuthUnsupported(String provider) {
     return '$provider-inloggen is momenteel alleen beschikbaar op web, Android en iOS.';
   }
@@ -4207,6 +4214,41 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get authSignupPrivacyP3 =>
       'Geef alleen informatie door die je prettig vindt in een gedeelde huishoudenwerkruimte.';
+
+  @override
+  String get authJoinInvitedTo => 'Je bent uitgenodigd voor';
+
+  @override
+  String authJoinMemberCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count leden',
+      one: '1 lid',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get authJoinAccept => 'Uitnodiging accepteren';
+
+  @override
+  String get authJoinDecline => 'Weigeren';
+
+  @override
+  String get authJoinCheckingInvite => 'Uitnodiging controleren…';
+
+  @override
+  String get authJoinExpired =>
+      'Deze uitnodiging is verlopen. Vraag om een nieuwe.';
+
+  @override
+  String get authJoinAlreadyUsed => 'Deze uitnodiging is al gebruikt.';
+
+  @override
+  String authJoinAlreadyMember(String name) {
+    return 'Je bent al lid van $name.';
+  }
 
   @override
   String get authJoinTitle => 'Deelnemen aan huishouden';
@@ -5935,11 +5977,11 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get sharedRecipeSavePersonal => 'Opslaan bij mijn recepten';
+  String get sharedRecipeSavePersonal => 'Toevoegen aan mijn keuken';
 
   @override
   String sharedRecipeSaveHousehold(String name) {
-    return 'Opslaan in $name';
+    return 'Toevoegen aan de keuken van $name';
   }
 
   @override

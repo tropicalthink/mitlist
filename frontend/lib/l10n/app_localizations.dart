@@ -7029,6 +7029,18 @@ abstract class AppLocalizations {
   /// **'Continue with Apple'**
   String get authLoginApple;
 
+  /// Shown on the login screen when the server offers neither OAuth nor password sign-in
+  ///
+  /// In en, this message translates to:
+  /// **'This server has no sign-in method turned on. Whoever runs it needs to enable email sign-in or connect Google or Apple.'**
+  String get authLoginNoMethods;
+
+  /// Button at the bottom of the login screen that unfolds the email/password form
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with email'**
+  String get authLoginWithEmailButton;
+
   /// Error when OAuth is unsupported on platform
   ///
   /// In en, this message translates to:
@@ -7394,6 +7406,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Only provide information you are comfortable keeping in a shared household workspace.'**
   String get authSignupPrivacyP3;
+
+  /// Eyebrow above the household name on the invite accept page
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve been invited to join'**
+  String get authJoinInvitedTo;
+
+  /// Household size shown under its name on the invite accept page
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 member} other{{count} members}}'**
+  String authJoinMemberCount(int count);
+
+  /// Primary button that joins the household from an invite
+  ///
+  /// In en, this message translates to:
+  /// **'Accept invite'**
+  String get authJoinAccept;
+
+  /// Secondary button that leaves the invite page without joining
+  ///
+  /// In en, this message translates to:
+  /// **'Decline'**
+  String get authJoinDecline;
+
+  /// Loading text while the invite is being looked up
+  ///
+  /// In en, this message translates to:
+  /// **'Checking your invite…'**
+  String get authJoinCheckingInvite;
+
+  /// Shown when the invite code has expired
+  ///
+  /// In en, this message translates to:
+  /// **'This invite has expired. Ask for a fresh one.'**
+  String get authJoinExpired;
+
+  /// Shown when the one-use invite code was already redeemed
+  ///
+  /// In en, this message translates to:
+  /// **'This invite has already been used.'**
+  String get authJoinAlreadyUsed;
+
+  /// Shown when the user already belongs to the invited household
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re already a member of {name}.'**
+  String authJoinAlreadyMember(String name);
 
   /// Join landing screen title
   ///
@@ -10217,16 +10277,16 @@ abstract class AppLocalizations {
   /// **'by {author}'**
   String sharedRecipeBy(String author);
 
-  /// Button saving a shared recipe privately
+  /// Button copying a shared recipe into the user's own kitchen (private)
   ///
   /// In en, this message translates to:
-  /// **'Save to my recipes'**
+  /// **'Add to my kitchen'**
   String get sharedRecipeSavePersonal;
 
-  /// Button saving a shared recipe to a household
+  /// Button copying a shared recipe into a household's shared kitchen; name is the household name
   ///
   /// In en, this message translates to:
-  /// **'Save to {name}'**
+  /// **'Add to {name}\'s kitchen'**
   String sharedRecipeSaveHousehold(String name);
 
   /// Toast after saving a shared recipe

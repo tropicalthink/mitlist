@@ -4038,6 +4038,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get authLoginApple => 'Mit Apple fortfahren';
 
   @override
+  String get authLoginNoMethods =>
+      'Auf diesem Server ist keine Anmeldemethode aktiviert. Wer ihn betreibt, muss die E-Mail-Anmeldung einschalten oder Google bzw. Apple verbinden.';
+
+  @override
+  String get authLoginWithEmailButton => 'Mit E-Mail anmelden';
+
+  @override
   String authLoginOAuthUnsupported(String provider) {
     return '$provider-Anmeldung ist derzeit nur im Web, auf Android und iOS verfügbar.';
   }
@@ -4240,6 +4247,41 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get authSignupPrivacyP3 =>
       'Gib nur Informationen an, die du in einem gemeinsamen Haushaltsarbeitsbereich teilen möchtest.';
+
+  @override
+  String get authJoinInvitedTo => 'Du wurdest eingeladen zu';
+
+  @override
+  String authJoinMemberCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Mitglieder',
+      one: '1 Mitglied',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get authJoinAccept => 'Einladung annehmen';
+
+  @override
+  String get authJoinDecline => 'Ablehnen';
+
+  @override
+  String get authJoinCheckingInvite => 'Einladung wird geprüft…';
+
+  @override
+  String get authJoinExpired =>
+      'Diese Einladung ist abgelaufen. Bitte um eine neue.';
+
+  @override
+  String get authJoinAlreadyUsed => 'Diese Einladung wurde bereits verwendet.';
+
+  @override
+  String authJoinAlreadyMember(String name) {
+    return 'Du bist bereits Mitglied von $name.';
+  }
 
   @override
   String get authJoinTitle => 'Haushalt beitreten';
@@ -5969,11 +6011,11 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get sharedRecipeSavePersonal => 'Zu meinen Rezepten';
+  String get sharedRecipeSavePersonal => 'In meine Küche';
 
   @override
   String sharedRecipeSaveHousehold(String name) {
-    return 'In $name speichern';
+    return 'In die Küche von $name';
   }
 
   @override

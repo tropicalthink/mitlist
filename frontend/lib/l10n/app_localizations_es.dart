@@ -3995,6 +3995,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get authLoginApple => 'Continuar con Apple';
 
   @override
+  String get authLoginNoMethods =>
+      'Este servidor no tiene ningún método de inicio de sesión activado. Quien lo administra debe activar el acceso por correo o conectar Google o Apple.';
+
+  @override
+  String get authLoginWithEmailButton => 'Iniciar sesión con correo';
+
+  @override
   String authLoginOAuthUnsupported(String provider) {
     return 'El inicio de sesión con $provider solo está disponible en web, Android e iOS por ahora.';
   }
@@ -4195,6 +4202,40 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get authSignupPrivacyP3 =>
       'Solo proporciona información que te sientas cómodo compartiendo en un espacio de hogar compartido.';
+
+  @override
+  String get authJoinInvitedTo => 'Te han invitado a unirte a';
+
+  @override
+  String authJoinMemberCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count miembros',
+      one: '1 miembro',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get authJoinAccept => 'Aceptar invitación';
+
+  @override
+  String get authJoinDecline => 'Rechazar';
+
+  @override
+  String get authJoinCheckingInvite => 'Comprobando la invitación…';
+
+  @override
+  String get authJoinExpired => 'Esta invitación ha caducado. Pide una nueva.';
+
+  @override
+  String get authJoinAlreadyUsed => 'Esta invitación ya se ha usado.';
+
+  @override
+  String authJoinAlreadyMember(String name) {
+    return 'Ya eres miembro de $name.';
+  }
 
   @override
   String get authJoinTitle => 'Unirse al hogar';
@@ -5921,11 +5962,11 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get sharedRecipeSavePersonal => 'Guardar en mis recetas';
+  String get sharedRecipeSavePersonal => 'Añadir a mi cocina';
 
   @override
   String sharedRecipeSaveHousehold(String name) {
-    return 'Guardar en $name';
+    return 'Añadir a la cocina de $name';
   }
 
   @override

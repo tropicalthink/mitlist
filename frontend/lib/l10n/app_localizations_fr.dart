@@ -4019,6 +4019,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get authLoginApple => 'Continuer avec Apple';
 
   @override
+  String get authLoginNoMethods =>
+      'Ce serveur n’a aucune méthode de connexion activée. La personne qui l’administre doit activer la connexion par e-mail ou connecter Google ou Apple.';
+
+  @override
+  String get authLoginWithEmailButton => 'Se connecter par e-mail';
+
+  @override
   String authLoginOAuthUnsupported(String provider) {
     return 'La connexion $provider n\'est disponible que sur le web, Android et iOS pour l\'instant.';
   }
@@ -4220,6 +4227,41 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get authSignupPrivacyP3 =>
       'Ne fournis que les informations que tu es prêt à partager dans un espace de foyer partagé.';
+
+  @override
+  String get authJoinInvitedTo => 'Tu es invité·e à rejoindre';
+
+  @override
+  String authJoinMemberCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count membres',
+      one: '1 membre',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get authJoinAccept => 'Accepter l\'invitation';
+
+  @override
+  String get authJoinDecline => 'Refuser';
+
+  @override
+  String get authJoinCheckingInvite => 'Vérification de l\'invitation…';
+
+  @override
+  String get authJoinExpired =>
+      'Cette invitation a expiré. Demande-en une nouvelle.';
+
+  @override
+  String get authJoinAlreadyUsed => 'Cette invitation a déjà été utilisée.';
+
+  @override
+  String authJoinAlreadyMember(String name) {
+    return 'Tu fais déjà partie de $name.';
+  }
 
   @override
   String get authJoinTitle => 'Rejoindre un foyer';
@@ -5950,11 +5992,11 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get sharedRecipeSavePersonal => 'Enregistrer dans mes recettes';
+  String get sharedRecipeSavePersonal => 'Ajouter à ma cuisine';
 
   @override
   String sharedRecipeSaveHousehold(String name) {
-    return 'Enregistrer dans $name';
+    return 'Ajouter à la cuisine de $name';
   }
 
   @override

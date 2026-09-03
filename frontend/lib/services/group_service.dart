@@ -86,6 +86,20 @@ class GroupService {
     }
   }
 
+  /// Describes the household behind an invite code without joining it, so
+  /// the accept page can show what the user is saying yes to.
+  Future<InvitePreview> previewInvite(String code) async {
+    try {
+      final response = await _dio.get(
+        '/groups/invites/${Uri.encodeComponent(code.trim().toUpperCase())}',
+      );
+      return InvitePreview.fromJson(response.data);
+    } on DioException catch (e) {
+      _logger.e('Preview invite failed: ${e.response?.data}');
+      throw apiException(e);
+    }
+  }
+
   /// Joins a group with an invite code.
   Future<Group> joinGroup(JoinGroupRequest request) async {
     try {
