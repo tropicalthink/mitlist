@@ -7,6 +7,7 @@ class AppRedirectInput {
     required this.authState,
     this.pendingAuthNavigation,
     this.requestedPathWithQuery,
+    this.isOAuthLinkCallback = false,
   });
 
   final String location;
@@ -17,6 +18,10 @@ class AppRedirectInput {
 
   /// Full path + query of the route being redirected (e.g. `/lists?foo=bar`).
   final String? requestedPathWithQuery;
+
+  /// The callback is a guest's provider upgrade (`link=1`), which arrives
+  /// already signed in and must reach the callback screen untouched.
+  final bool isOAuthLinkCallback;
 }
 
 class AppRedirectResult {
@@ -125,6 +130,12 @@ AppRedirectResult resolveAppRedirect(AppRedirectInput input) {
     final welcome = welcomeWithInviteFor(location);
     if (welcome != null) return AppRedirectResult(redirect: welcome);
     return const AppRedirectResult(redirect: '/welcome');
+  }
+
+  if (input.authState &&
+      input.isOAuthLinkCallback &&
+      location.startsWith('/auth/callback')) {
+    return const AppRedirectResult();
   }
 
   if (input.authState && isAuthRoute) {

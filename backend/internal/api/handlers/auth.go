@@ -116,6 +116,7 @@ func (h *AuthHandler) RegisterRoutes(r chi.Router) {
 			r.With(h.requirePasswordAuth).Post("/change-password", h.ChangePassword)
 			r.With(h.requirePasswordAuth).Post("/guest/convert", h.ConvertGuest)
 			r.With(h.requirePasswordAuth).Post("/claim-account", h.ClaimAccount)
+			r.Post("/oauth-link", h.CreateOAuthLink)
 
 			// Push subscriptions (web push)
 			r.Post("/push-subscriptions", h.CreatePushSubscription)
@@ -586,6 +587,32 @@ func (h *AuthHandler) ConvertGuest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	tokenResponse(w, r, http.StatusOK, user, access, refresh)
+}
+
+// CreateOAuthLink mints the one-time token a guest hands to GET /oauth/{provider}
+// (as `link`) so that finishing the provider round-trip upgrades this guest
+// rather than signing in someone new.
+func (h *AuthHandler) CreateOAuthLink(w http.ResponseWriter, r *http.Request) {
+	userID, err := currentUserID(r)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	user, err := h.userService.GetMe(r.Context(), userID)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	if !user.IsGuest {
+		api.RespondError(w, &api.ValidationError{Field: "user", Message: "only a guest account can be linked to a provider"})
+		return
+	}
+	token, err := h.oauthService.CreateLinkToken(r.Context(), userID)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	api.RespondJSON(w, http.StatusCreated, map[string]any{"link_token": token, "expires_in": 600})
 }
 
 func (h *AuthHandler) ClaimAccount(w http.ResponseWriter, r *http.Request) {

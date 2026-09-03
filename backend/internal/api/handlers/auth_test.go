@@ -132,6 +132,29 @@ func TestAuth_CodeEmailsAreThrottledPerAddress(t *testing.T) {
 	assert.Len(t, mail.messages, 6)
 }
 
+func TestAuth_OAuthLinkTokenIsForGuestsOnly(t *testing.T) {
+	clearTables(t)
+	router, _ := newAuthRouter(t)
+
+	rec := execRequest(t, router, "POST", "/api/v1/auth/guest", map[string]any{}, "")
+	requireStatus(t, rec, http.StatusCreated)
+	var guest map[string]any
+	parseJSONResponse(t, rec, &guest)
+	guestToken, _ := guest["access_token"].(string)
+
+	rec = execRequest(t, router, "POST", "/api/v1/auth/oauth-link", nil, guestToken)
+	requireStatus(t, rec, http.StatusCreated)
+	var resp map[string]any
+	parseJSONResponse(t, rec, &resp)
+	token, _ := resp["link_token"].(string)
+	require.NotEmpty(t, token)
+
+	// A real account has nothing to upgrade.
+	full := createTestUser(t, "linked@example.com", "Password123!")
+	rec = execRequest(t, router, "POST", "/api/v1/auth/oauth-link", nil, generateTestToken(full.ID))
+	requireStatus(t, rec, http.StatusBadRequest)
+}
+
 func TestAuth_PasswordRoutesDisabled(t *testing.T) {
 	clearTables(t)
 	cfg := *testCfg

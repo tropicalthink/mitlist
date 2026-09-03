@@ -972,6 +972,60 @@ void main() {
     expect(container.read(pendingAuthNavigationProvider), '/onboarding');
   });
 
+  testWidgets('oauth callback for a guest upgrade returns to the account page',
+      (tester) async {
+    await _setLargeSurface(tester);
+    final authService = FakeAuthService(currentUser: user)
+      ..pendingOAuthRememberMe = true;
+    final router = GoRouter(
+      initialLocation: '/auth/callback',
+      routes: [
+        GoRoute(
+          path: '/auth/callback',
+          builder: (context, state) => OAuthCallbackScreen(
+            uri: Uri(
+              path: '/auth/callback',
+              queryParameters: const {
+                'provider': 'google',
+                'handoff': 'one-time-code',
+                'link': '1',
+              },
+            ),
+          ),
+        ),
+        GoRoute(
+          path: '/you',
+          builder: (context, state) => const Scaffold(
+            body: Text('account page'),
+          ),
+        ),
+      ],
+    );
+
+    late ProviderContainer container;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          routerProvider.overrideWith((ref) => router),
+          authServiceProviderAsync.overrideWith((ref) async => authService),
+          isGuestProvider.overrideWith((ref) => true),
+        ],
+        child: Builder(builder: (context) {
+          container = ProviderScope.containerOf(context);
+          return _testMaterialAppRouter(router);
+        }),
+      ),
+    );
+    await _pumpUi(tester);
+
+    // The handoff was cashed in, the guest flag dropped, and the person is
+    // back on their account rather than in onboarding.
+    expect(authService.lastHandoffCode, 'one-time-code');
+    expect(container.read(isGuestProvider), isFalse);
+    expect(container.read(pendingAuthNavigationProvider), isNull);
+    expect(find.text('account page'), findsOneWidget);
+  });
+
   testWidgets('signup screen exposes actionable terms and privacy',
       (tester) async {
     await _setLargeSurface(tester);
@@ -1581,6 +1635,23 @@ class FakeAuthService implements AuthService {
   @override
   Future<void> requestPasswordReset(String email) async {
     lastPasswordResetEmail = email;
+  }
+
+  String? lastHandoffCode;
+  bool? lastHandoffRememberMe;
+
+  @override
+  Future<TokenPair> exchangeOAuthHandoff(
+    String code, {
+    required bool rememberMe,
+  }) async {
+    lastHandoffCode = code;
+    lastHandoffRememberMe = rememberMe;
+    return TokenPair(
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+      user: currentUser,
+    );
   }
 
   @override

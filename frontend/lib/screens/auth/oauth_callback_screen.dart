@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../providers/auth_provider.dart';
 import '../../theme/spacing.dart';
 import '../../widgets/alert.dart';
+import '../../widgets/app_button.dart';
+import '../../widgets/app_toast.dart';
 import '../../widgets/mitlist_app_bar.dart';
 import '../../utils/friendly_error.dart';
 import '../../l10n/app_localizations.dart';
@@ -23,6 +26,11 @@ class OAuthCallbackScreen extends ConsumerStatefulWidget {
 
 class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
   String? _error;
+
+  /// True when this round-trip upgraded a guest rather than signing someone
+  /// in: the backend marks it with `link=1`. The person is already signed in
+  /// and belongs back on their account page, not in onboarding.
+  bool get _isLink => _callbackParams(widget.uri)['link'] == '1';
 
   @override
   void initState() {
@@ -83,6 +91,15 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
           rememberMe: rememberMe,
         );
       }
+      if (_isLink) {
+        // The handoff already saved the upgraded account's tokens. Auth state
+        // is unchanged (a guest was signed in all along), so navigate by hand.
+        ref.read(isGuestProvider.notifier).state = false;
+        if (!mounted) return;
+        AppToast.success(context, l10n.accountCreatedWelcome);
+        context.go('/you');
+        return;
+      }
       // Preserve a destination set before the OAuth round-trip (e.g. an invite
       // accept set '/join/<code>'); only default to onboarding when none.
       if (ref.read(pendingAuthNavigationProvider) == null) {
@@ -125,7 +142,22 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
           padding: const EdgeInsets.all(MitlistSpacing.md),
           child: _error == null
               ? const CircularProgressIndicator()
-              : AppAlert(type: AppAlertType.error, message: _error!),
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    AppAlert(type: AppAlertType.error, message: _error!),
+                    if (_isLink) ...[
+                      const SizedBox(height: MitlistSpacing.md),
+                      AppButton(
+                        text: l10n.oauthBackToAccount,
+                        variant: AppButtonVariant.outline,
+                        color: AppButtonColor.neutral,
+                        onPressed: () => context.go('/you'),
+                      ),
+                    ],
+                  ],
+                ),
         ),
       ),
     );
