@@ -307,6 +307,26 @@ func TestAuth_Guest(t *testing.T) {
 	assert.True(t, resp["user"].(map[string]any)["is_guest"].(bool))
 }
 
+func TestAuth_GuestCreationDisabled(t *testing.T) {
+	clearTables(t)
+	cfg := *testCfg
+	cfg.GuestAuthEnabled = false
+	router, _, _ := newAuthRouterWithConfig(t, &cfg)
+
+	// No new guests: one stable, explained refusal rather than a 404.
+	rec := execRequest(t, router, "POST", "/api/v1/auth/guest", nil, "")
+	requireStatus(t, rec, http.StatusForbidden)
+	var resp map[string]any
+	parseJSONResponse(t, rec, &resp)
+	assert.Equal(t, "permission_denied", resp["code"])
+
+	// Everything else stays open: the flag gates creation, not sign-in.
+	createTestUser(t, "still-open@example.com", "Password123!")
+	rec = execRequest(t, router, "POST", "/api/v1/auth/login",
+		map[string]any{"email": "still-open@example.com", "password": "Password123!"}, "")
+	requireStatus(t, rec, http.StatusOK)
+}
+
 func TestAuth_GuestRejectsMissingRequiredAppCheckToken(t *testing.T) {
 	clearTables(t)
 	router, handler := newAuthRouter(t)

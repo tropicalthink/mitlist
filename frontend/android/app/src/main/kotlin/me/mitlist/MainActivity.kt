@@ -34,7 +34,7 @@ class MainActivity: FlutterActivity() {
                     .launchUrl(this, Uri.parse(url))
                 // Unlike iOS's ASWebAuthenticationSession, a Custom Tab cannot
                 // hand the callback back through this channel. The mitlist://
-                // redirect lands in OAuthRedirectActivity, which dismisses the
+                // redirect lands in DeepLinkActivity, which dismisses the
                 // tab and forwards the deep link here. Answering null tells the
                 // caller "opened, expect the router to take it from here".
                 result.success(null)

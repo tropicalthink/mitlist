@@ -223,9 +223,8 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
       // Exact and ANDed, matching the server's `tags @>` semantics so rows
       // still in flight from an older query filter the same way the server
       // filters the new one.
-      result = result
-          .where((r) => _selectedTags.every(r.tags.contains))
-          .toList();
+      result =
+          result.where((r) => _selectedTags.every(r.tags.contains)).toList();
     }
 
     final q = _searchQuery.trim().toLowerCase();
@@ -500,6 +499,11 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
     final l10n = AppLocalizations.of(context)!;
     ref.listen(shellVisitedTabsProvider, (previous, next) {
       _activateTabIfNeeded();
+    });
+    ref.listen<String?>(currentGroupIdProvider, (previous, next) {
+      if (previous != next && _tabLoadStarted) {
+        _loadKitchen();
+      }
     });
     return Scaffold(
       appBar: MitlistAppBar(
