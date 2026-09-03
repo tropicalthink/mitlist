@@ -286,10 +286,18 @@ class _AppButtonState extends State<AppButton> {
     ];
 
     if (widget.text != null) {
+      // Flexible so a long label (translations, large system fonts) wraps
+      // inside the border instead of spilling past it. Two lines keep the
+      // whole label readable; an ellipsis only appears beyond that.
       rowChildren.add(
-        Text(
-          _displayText!,
-          style: textStyle,
+        Flexible(
+          child: Text(
+            _displayText!,
+            style: textStyle,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
       );
       if (widget.suffixIcon != null) {
