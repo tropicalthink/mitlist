@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/auth_models.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/oauth_provider.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../widgets/alert.dart';
@@ -37,6 +38,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   bool _isLoading = false;
   bool _isSuccess = false;
   bool _awaitingVerification = false;
+  bool _redirectedToLogin = false;
   String? _errorMessage;
   String? _nameError;
   String? _emailError;
@@ -47,6 +49,15 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   String? get _inviteCode =>
       GoRouterState.of(context).uri.queryParameters['invite'];
+
+  void _goToLogin() {
+    final invite = _inviteCode;
+    if (invite != null && invite.isNotEmpty) {
+      context.goNamed('login', queryParameters: {'invite': invite});
+    } else {
+      context.goNamed('login');
+    }
+  }
 
   @override
   void initState() {
@@ -170,8 +181,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   Future<void> _verifyEmail() async {
     final code = _verificationController.text.trim();
     if (code.isEmpty) {
-      setState(
-          () => _errorMessage = 'Enter the verification code from your email.');
+      setState(() => _errorMessage = l10n.authVerifyCodeRequired);
       return;
     }
     setState(() {
@@ -196,8 +206,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       ref.read(authStateProvider.notifier).state = true;
     } catch (_) {
       if (mounted) {
-        setState(() =>
-            _errorMessage = 'That verification code is invalid or expired.');
+        setState(() => _errorMessage = l10n.authVerifyInvalid);
       }
     } finally {
       if (mounted && !_isSuccess) setState(() => _isLoading = false);
@@ -210,7 +219,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       final authService = await ref.read(authServiceProviderAsync.future);
       await authService.resendEmailVerification(_emailController.text.trim());
       if (mounted) {
-        setState(() => _errorMessage = 'A new verification code was sent.');
+        setState(() => _errorMessage = l10n.authVerifySent);
       }
     } catch (_) {
       if (mounted) setState(() => _errorMessage = l10n.authSignupGenericError);
@@ -240,6 +249,18 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Registration here is email + password. A server without it signs new
+    // people up through Google or Apple, which live on the login screen.
+    final providers = ref.watch(oauthProvidersProvider).valueOrNull;
+    if (providers != null && !providers.password) {
+      if (!_redirectedToLogin) {
+        _redirectedToLogin = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _goToLogin();
+        });
+      }
+      return const Scaffold(body: CorkBoardBackground());
+    }
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
@@ -332,13 +353,14 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                               const SizedBox(height: MitlistSpacing.space3),
                             ] else ...[
                               Text(
-                                'Check ${_emailController.text.trim()} for your verification code.',
+                                l10n.authVerifyBody(
+                                    _emailController.text.trim()),
                                 style: Theme.of(context).textTheme.bodyMedium,
                               ),
                               const SizedBox(height: MitlistSpacing.space3),
                               AppInput(
-                                label: 'Verification code',
-                                hint: 'Paste the code from your email',
+                                label: l10n.authVerifyCodeLabel,
+                                hint: l10n.authVerifyCodeHint,
                                 controller: _verificationController,
                                 focusNode: _verificationFocus,
                                 textInputAction: TextInputAction.done,
@@ -349,7 +371,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                               ),
                               const SizedBox(height: MitlistSpacing.space2),
                               AppButton(
-                                text: 'Send a new code',
+                                text: l10n.authVerifyResend,
                                 variant: AppButtonVariant.ghost,
                                 color: AppButtonColor.primary,
                                 onPressed:
@@ -368,7 +390,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                               width: double.infinity,
                               child: AppButton(
                                 text: _awaitingVerification
-                                    ? 'Verify email'
+                                    ? l10n.authVerifyButton
                                     : l10n.authSignupCreateAccount,
                                 variant: AppButtonVariant.solid,
                                 color: AppButtonColor.primary,
@@ -392,7 +414,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                   variant: AppButtonVariant.ghost,
                                   color: AppButtonColor.primary,
                                   text: l10n.authSignupSignInLink,
-                                  onPressed: () => context.goNamed('login'),
+                                  onPressed: _goToLogin,
                                 ),
                               ],
                             ),

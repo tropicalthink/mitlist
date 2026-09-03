@@ -7029,6 +7029,114 @@ abstract class AppLocalizations {
   /// **'Continue with Apple'**
   String get authLoginApple;
 
+  /// Shown on the login screen when the server offers neither OAuth nor password sign-in
+  ///
+  /// In en, this message translates to:
+  /// **'This server has no sign-in method turned on. Whoever runs it needs to enable email sign-in or connect Google or Apple.'**
+  String get authLoginNoMethods;
+
+  /// Button at the bottom of the login screen that unfolds the email/password form
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with email'**
+  String get authLoginWithEmailButton;
+
+  /// Title of the email verification sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Verify your email'**
+  String get authVerifyTitle;
+
+  /// Body of the email verification sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the code we emailed to {email}.'**
+  String authVerifyBody(String email);
+
+  /// Label of the verification code field
+  ///
+  /// In en, this message translates to:
+  /// **'Verification code'**
+  String get authVerifyCodeLabel;
+
+  /// Hint of the verification code field
+  ///
+  /// In en, this message translates to:
+  /// **'8-character code from the email'**
+  String get authVerifyCodeHint;
+
+  /// Submits the verification code
+  ///
+  /// In en, this message translates to:
+  /// **'Verify'**
+  String get authVerifyButton;
+
+  /// Requests a fresh verification code
+  ///
+  /// In en, this message translates to:
+  /// **'Send a new code'**
+  String get authVerifyResend;
+
+  /// Shown after a verification code was resent
+  ///
+  /// In en, this message translates to:
+  /// **'A new code is on its way. Check your inbox and spam folder.'**
+  String get authVerifySent;
+
+  /// Shown when the server rejected the verification code
+  ///
+  /// In en, this message translates to:
+  /// **'That code is invalid or expired.'**
+  String get authVerifyInvalid;
+
+  /// Shown when the verification code field is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the code from your email.'**
+  String get authVerifyCodeRequired;
+
+  /// Login error when the verification sheet was dismissed without a code
+  ///
+  /// In en, this message translates to:
+  /// **'Your email isn’t verified yet. Verify it to sign in.'**
+  String get authLoginUnverified;
+
+  /// Title of the account card for a guest whose email is not verified yet
+  ///
+  /// In en, this message translates to:
+  /// **'Finish setting up your account'**
+  String get accountVerifyPendingTitle;
+
+  /// Body of the account card for a guest whose email is not verified yet
+  ///
+  /// In en, this message translates to:
+  /// **'We emailed a code to {email}. Enter it to finish creating your account.'**
+  String accountVerifyPendingBody(String email);
+
+  /// Opens the verification sheet from the account page
+  ///
+  /// In en, this message translates to:
+  /// **'Enter code'**
+  String get accountVerifyEnterCode;
+
+  /// Toast when the verification sheet is dismissed after guest conversion
+  ///
+  /// In en, this message translates to:
+  /// **'You can enter the code any time from your account page.'**
+  String get accountVerifyLater;
+
+  /// Secondary guest-upgrade option below the Google and Apple buttons
+  ///
+  /// In en, this message translates to:
+  /// **'Use email and password'**
+  String get accountUpgradeWithEmail;
+
+  /// Button on the OAuth callback screen after a failed guest upgrade
+  ///
+  /// In en, this message translates to:
+  /// **'Back to account'**
+  String get oauthBackToAccount;
+
   /// Error when OAuth is unsupported on platform
   ///
   /// In en, this message translates to:
@@ -7394,6 +7502,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Only provide information you are comfortable keeping in a shared household workspace.'**
   String get authSignupPrivacyP3;
+
+  /// Eyebrow above the household name on the invite accept page
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve been invited to join'**
+  String get authJoinInvitedTo;
+
+  /// Household size shown under its name on the invite accept page
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 member} other{{count} members}}'**
+  String authJoinMemberCount(int count);
+
+  /// Primary button that joins the household from an invite
+  ///
+  /// In en, this message translates to:
+  /// **'Accept invite'**
+  String get authJoinAccept;
+
+  /// Secondary button that leaves the invite page without joining
+  ///
+  /// In en, this message translates to:
+  /// **'Decline'**
+  String get authJoinDecline;
+
+  /// Loading text while the invite is being looked up
+  ///
+  /// In en, this message translates to:
+  /// **'Checking your invite…'**
+  String get authJoinCheckingInvite;
+
+  /// Shown when the invite code has expired
+  ///
+  /// In en, this message translates to:
+  /// **'This invite has expired. Ask for a fresh one.'**
+  String get authJoinExpired;
+
+  /// Shown when the one-use invite code was already redeemed
+  ///
+  /// In en, this message translates to:
+  /// **'This invite has already been used.'**
+  String get authJoinAlreadyUsed;
+
+  /// Shown when the user already belongs to the invited household
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re already a member of {name}.'**
+  String authJoinAlreadyMember(String name);
 
   /// Join landing screen title
   ///
@@ -9866,7 +10022,7 @@ abstract class AppLocalizations {
   /// Action to create a feature-board request
   ///
   /// In en, this message translates to:
-  /// **'Suggest a feature'**
+  /// **'Add a request'**
   String get featureBoardAdd;
 
   /// Feature-board introduction title
@@ -9878,7 +10034,7 @@ abstract class AppLocalizations {
   /// Feature-board introduction body
   ///
   /// In en, this message translates to:
-  /// **'Vote for ideas you want most. Your votes help us decide what to improve next.'**
+  /// **'Vote for ideas you want most, report what\'s broken, and follow along as we work on it.'**
   String get featureBoardIntroBody;
 
   /// Feature-board loading error
@@ -9908,7 +10064,7 @@ abstract class AppLocalizations {
   /// New feature sheet title
   ///
   /// In en, this message translates to:
-  /// **'Suggest a feature'**
+  /// **'New request'**
   String get featureBoardNewTitle;
 
   /// New feature sheet introduction
@@ -9977,12 +10133,6 @@ abstract class AppLocalizations {
   /// **'In progress'**
   String get featureBoardInProgress;
 
-  /// Feature-board planned section
-  ///
-  /// In en, this message translates to:
-  /// **'Planned'**
-  String get featureBoardPlanned;
-
   /// Feature-board shipped section
   ///
   /// In en, this message translates to:
@@ -10006,6 +10156,210 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 vote} other{{count} votes}}'**
   String featureBoardVotes(num count);
+
+  /// Board status: the team has seen the request but not started it
+  ///
+  /// In en, this message translates to:
+  /// **'Under review'**
+  String get featureBoardUnderReview;
+
+  /// Board filter chip: every kind of request
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get featureBoardFilterAll;
+
+  /// Board filter chip: feature requests only
+  ///
+  /// In en, this message translates to:
+  /// **'Features'**
+  String get featureBoardFilterFeatures;
+
+  /// Board filter chip: bug reports only
+  ///
+  /// In en, this message translates to:
+  /// **'Bugs'**
+  String get featureBoardFilterBugs;
+
+  /// Board sort chip: most votes first
+  ///
+  /// In en, this message translates to:
+  /// **'Top'**
+  String get featureBoardSortTop;
+
+  /// Board sort chip: newest first
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get featureBoardSortNew;
+
+  /// Label above the feature/bug selector when creating a request
+  ///
+  /// In en, this message translates to:
+  /// **'What is it?'**
+  String get featureBoardKindLabel;
+
+  /// Selector option: the request is a feature idea
+  ///
+  /// In en, this message translates to:
+  /// **'Feature request'**
+  String get featureBoardKindFeature;
+
+  /// Selector option: the request is a bug report
+  ///
+  /// In en, this message translates to:
+  /// **'Bug report'**
+  String get featureBoardKindBug;
+
+  /// Small chip marking a board item as a bug report
+  ///
+  /// In en, this message translates to:
+  /// **'Bug'**
+  String get featureBoardBugChip;
+
+  /// Intro text on the create sheet when reporting a bug
+  ///
+  /// In en, this message translates to:
+  /// **'Tell us what broke. Others who hit the same thing can upvote it.'**
+  String get featureBoardNewBugIntro;
+
+  /// Title field label when reporting a bug
+  ///
+  /// In en, this message translates to:
+  /// **'What went wrong?'**
+  String get featureBoardBugTitleLabel;
+
+  /// Title field example when reporting a bug
+  ///
+  /// In en, this message translates to:
+  /// **'Totals don\'t add up after splitting an expense'**
+  String get featureBoardBugTitleHint;
+
+  /// Description field label when reporting a bug
+  ///
+  /// In en, this message translates to:
+  /// **'Steps to reproduce (optional)'**
+  String get featureBoardBugDescriptionLabel;
+
+  /// Description field example when reporting a bug
+  ///
+  /// In en, this message translates to:
+  /// **'What did you do, and what happened instead?'**
+  String get featureBoardBugDescriptionHint;
+
+  /// Validation message when a bug report has no title
+  ///
+  /// In en, this message translates to:
+  /// **'Add a short summary of the bug.'**
+  String get featureBoardBugEmpty;
+
+  /// Toast after a bug report was posted
+  ///
+  /// In en, this message translates to:
+  /// **'Thanks, your report is on the board.'**
+  String get featureBoardBugCreated;
+
+  /// Comment count on a board item
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No comments} =1{1 comment} other{{count} comments}}'**
+  String featureBoardComments(int count);
+
+  /// Heading above the comment thread
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation'**
+  String get featureBoardCommentsHeading;
+
+  /// Badge on comments written by the team
+  ///
+  /// In en, this message translates to:
+  /// **'mitlist team'**
+  String get featureBoardTeamBadge;
+
+  /// Author label on the reader's own comments
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get featureBoardYou;
+
+  /// Author label when a commenter shared no name
+  ///
+  /// In en, this message translates to:
+  /// **'A mitlist user'**
+  String get featureBoardAnonymous;
+
+  /// Placeholder of the comment composer
+  ///
+  /// In en, this message translates to:
+  /// **'Add a comment…'**
+  String get featureBoardCommentHint;
+
+  /// Accessibility label of the comment send button
+  ///
+  /// In en, this message translates to:
+  /// **'Post comment'**
+  String get featureBoardCommentSend;
+
+  /// Error when posting a comment fails
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t post your comment. Please try again.'**
+  String get featureBoardCommentFailed;
+
+  /// Empty state of the comment thread
+  ///
+  /// In en, this message translates to:
+  /// **'No comments yet. Have a question or a use case? Start the conversation.'**
+  String get featureBoardNoComments;
+
+  /// Error when a board item fails to load
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load this request'**
+  String get featureBoardDetailLoadFailed;
+
+  /// Relative time: under a minute ago
+  ///
+  /// In en, this message translates to:
+  /// **'Just now'**
+  String get featureBoardTimeJustNow;
+
+  /// Relative time in minutes
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 min ago} other{{count} min ago}}'**
+  String featureBoardTimeMinutesAgo(int count);
+
+  /// Relative time in hours
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 hour ago} other{{count} hours ago}}'**
+  String featureBoardTimeHoursAgo(int count);
+
+  /// Relative time in days
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Yesterday} other{{count} days ago}}'**
+  String featureBoardTimeDaysAgo(int count);
+
+  /// Explanation under the in-progress status on a board item
+  ///
+  /// In en, this message translates to:
+  /// **'We\'re building this right now.'**
+  String get featureBoardStatusInProgressHint;
+
+  /// Explanation under the under-review status on a board item
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ve seen this and are weighing it up. Votes and comments help.'**
+  String get featureBoardStatusUnderReviewHint;
+
+  /// Explanation under the shipped status on a board item
+  ///
+  /// In en, this message translates to:
+  /// **'This is live. Update the app if you don\'t see it yet.'**
+  String get featureBoardStatusShippedHint;
 
   /// Weekly summary screen title
   ///
@@ -10217,16 +10571,16 @@ abstract class AppLocalizations {
   /// **'by {author}'**
   String sharedRecipeBy(String author);
 
-  /// Button saving a shared recipe privately
+  /// Button copying a shared recipe into the user's own kitchen (private)
   ///
   /// In en, this message translates to:
-  /// **'Save to my recipes'**
+  /// **'Add to my kitchen'**
   String get sharedRecipeSavePersonal;
 
-  /// Button saving a shared recipe to a household
+  /// Button copying a shared recipe into a household's shared kitchen; name is the household name
   ///
   /// In en, this message translates to:
-  /// **'Save to {name}'**
+  /// **'Add to {name}\'s kitchen'**
   String sharedRecipeSaveHousehold(String name);
 
   /// Toast after saving a shared recipe

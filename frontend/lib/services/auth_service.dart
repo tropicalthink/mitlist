@@ -331,6 +331,18 @@ class AuthService {
     }
   }
 
+  /// Mints the one-time token that turns a provider round-trip into an
+  /// upgrade of the current guest account rather than a fresh sign-in.
+  Future<String> createOAuthLinkToken() async {
+    try {
+      final response = await _dio.post('/auth/oauth-link');
+      return response.data['link_token'] as String;
+    } on DioException catch (e) {
+      _logFailure('OAuth link token', e);
+      throw apiException(e);
+    }
+  }
+
   /// Persists the remember-me choice before handing off to a browser OAuth flow.
   Future<void> setPendingOAuthRememberMe(bool rememberMe) async {
     await _prefs.setBool(ApiConfig.pendingOAuthRememberMeKey, rememberMe);

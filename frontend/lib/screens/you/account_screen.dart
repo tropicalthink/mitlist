@@ -15,8 +15,9 @@ import '../../config/feedback_config.dart';
 import '../../models/auth_models.dart';
 import '../../models/group_models.dart';
 import '../../providers/auth_provider.dart'
-    show authServiceProviderAsync, authStateProvider;
+    show authServiceProviderAsync, authStateProvider, isGuestProvider;
 import '../../providers/group_provider.dart';
+import '../../providers/oauth_provider.dart';
 import '../../providers/onboarding_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/locale_provider.dart';
@@ -27,6 +28,7 @@ import '../../router.dart' show currentGroupIdProvider;
 import '../../services/scan/ocr_training_data_service.dart';
 import '../../providers/billing_provider.dart';
 import '../../config/iap_config.dart';
+import '../../sheets/email_verification_sheet.dart';
 import '../../sheets/feedback_sheet.dart';
 import '../../sheets/premium_sheet.dart';
 import '../../theme/spacing.dart';
@@ -42,6 +44,7 @@ import '../../widgets/mitlist_app_bar.dart';
 import '../../widgets/skeleton.dart';
 import '../../l10n/app_localizations.dart';
 import '../../utils/friendly_error.dart';
+import '../../utils/oauth_flow.dart';
 import '../../utils/active_group_context.dart';
 
 import '../../widgets/app_toast.dart';
@@ -66,6 +69,11 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   String _email = '';
   String? _userId;
   bool _isGuest = false;
+  /// False only for a guest who gave an email but has not entered the code
+  /// yet: the account exists on the server, half-made.
+  bool _isVerified = true;
+  /// Provider whose upgrade round-trip is in flight, or null.
+  String? _linkingProvider;
   bool _isEditingName = false;
   bool _isExporting = false;
   bool _ocrTrainingEnabled = false;
@@ -150,6 +158,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       _email = user.email;
       _userId = user.id;
       _isGuest = user.isGuest;
+      _isVerified = user.isVerified;
       _households = households;
       _isLoading = false;
       _error = null;
@@ -682,6 +691,11 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     );
   }
 
+  /// Whether the server offers email + password sign-in. Assumed on until
+  /// the server says otherwise, matching the login screen's fallback.
+  bool get _passwordAuthEnabled =>
+      ref.watch(oauthProvidersProvider).valueOrNull?.password ?? true;
+
   Widget _buildSecurityCard() {
     final l10n = AppLocalizations.of(context)!;
     return AppCard(
@@ -1139,10 +1153,10 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               lastName: parts.length > 1 ? parts.sublist(1).join(' ') : '',
             ));
             if (ctx.mounted) Navigator.of(ctx).pop();
-            if (mounted) {
-              ref.read(authStateProvider.notifier).state = true;
-              AppToast.success(context, l10n.accountCreatedWelcome);
-            }
+            if (!mounted) return;
+            // The server mailed a code and keeps the account a guest until
+            // it is entered; the conversion is not real before that.
+            await _finishVerification(email);
           } catch (e) {
             setLocal(() {
               isConverting = false;
@@ -1206,9 +1220,31 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     passCtrl.dispose();
   }
 
-  Widget _buildGuestUpgradeCard() {
+  /// Runs the verification sheet for [email] and, on success, turns the
+  /// half-made guest into the real account it now is.
+  Future<void> _finishVerification(String email) async {
     final l10n = AppLocalizations.of(context)!;
-    if (!_isGuest) return const SizedBox.shrink();
+    final verified = await showEmailVerificationSheet(
+      context: context,
+      ref: ref,
+      email: email,
+    );
+    if (!mounted) return;
+    if (verified) {
+      ref.read(isGuestProvider.notifier).state = false;
+      ref.read(authStateProvider.notifier).state = true;
+      AppToast.success(context, l10n.accountCreatedWelcome);
+    } else {
+      AppToast.info(context, l10n.accountVerifyLater);
+    }
+    await _loadData();
+  }
+
+  /// A guest who gave an email but never entered the code. Shown in place
+  /// of the upgrade card until the address is proven.
+  Widget _buildPendingVerificationCard() {
+    final l10n = AppLocalizations.of(context)!;
+    if (!_isGuest || _isVerified) return const SizedBox.shrink();
 
     return Padding(
       padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
@@ -1217,6 +1253,100 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         padding: AppCardPadding.md,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                AppIcon(
+                  name: 'informationCircle',
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: MitlistSpacing.sm),
+                Expanded(
+                  child: Text(
+                    l10n.accountVerifyPendingTitle,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: MitlistSpacing.sm),
+            Text(
+              l10n.accountVerifyPendingBody(_email),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+            const SizedBox(height: MitlistSpacing.md),
+            SizedBox(
+              width: double.infinity,
+              child: AppButton(
+                text: l10n.accountVerifyEnterCode,
+                variant: AppButtonVariant.solid,
+                color: AppButtonColor.primary,
+                onPressed: () => _finishVerification(_email),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Upgrades the guest through [provider]. The backend carries the link
+  /// token through the round-trip and the callback screen brings us back.
+  Future<void> _startOAuthLink(String provider) async {
+    final l10n = AppLocalizations.of(context)!;
+    setState(() => _linkingProvider = provider);
+    try {
+      final authService = await ref.read(authServiceProviderAsync.future);
+      final linkToken = await authService.createOAuthLinkToken();
+      final launch = await launchOAuthProvider(
+        ref,
+        provider: provider,
+        rememberMe: true,
+        linkToken: linkToken,
+      );
+      if (!mounted) return;
+      switch (launch.outcome) {
+        case OAuthLaunchOutcome.unsupported:
+          setState(() => _linkingProvider = null);
+          AppToast.error(context, l10n.authLoginOAuthUnsupported(provider));
+        case OAuthLaunchOutcome.redirecting:
+          break;
+        case OAuthLaunchOutcome.completed:
+          setState(() => _linkingProvider = null);
+          final callback = Uri.parse(launch.callbackUrl!);
+          context.go('/auth/callback?${callback.query}');
+        case OAuthLaunchOutcome.pendingDeepLink:
+        case OAuthLaunchOutcome.cancelled:
+          setState(() => _linkingProvider = null);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _linkingProvider = null);
+      AppToast.error(context, friendlyErrorMessage(e, l10n));
+    }
+  }
+
+  /// Google and Apple first: one tap, no code to type, no password to
+  /// remember. Email and password stays as the fallback for people without
+  /// either, or on a server that offers nothing else.
+  Widget _buildGuestUpgradeCard() {
+    final l10n = AppLocalizations.of(context)!;
+    if (!_isGuest || !_isVerified) return const SizedBox.shrink();
+    final providers = ref.watch(oauthProvidersProvider).valueOrNull ??
+        (google: false, apple: false, password: true);
+    final hasOAuth = providers.google || providers.apple;
+    if (!hasOAuth && !providers.password) return const SizedBox.shrink();
+    final busy = _linkingProvider != null;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
+      child: AppCard(
+        variant: AppCardVariant.filled,
+        padding: AppCardPadding.md,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(
               children: [
@@ -1241,15 +1371,38 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                   ),
             ),
             const SizedBox(height: MitlistSpacing.md),
-            SizedBox(
-              width: double.infinity,
-              child: AppButton(
-                text: l10n.accountCreateFullAccount,
-                variant: AppButtonVariant.solid,
-                color: AppButtonColor.primary,
-                onPressed: _showConvertGuestSheet,
+            if (providers.google) ...[
+              AppButton(
+                text: l10n.authLoginGoogle,
+                icon: const AppIcon(name: 'login', size: 20),
+                variant: AppButtonVariant.outline,
+                color: AppButtonColor.neutral,
+                isLoading: _linkingProvider == 'google',
+                onPressed: busy ? null : () => _startOAuthLink('google'),
               ),
-            ),
+              const SizedBox(height: MitlistSpacing.sm),
+            ],
+            if (providers.apple) ...[
+              AppButton(
+                text: l10n.authLoginApple,
+                icon: const AppIcon(name: 'apple', size: 20),
+                variant: AppButtonVariant.outline,
+                color: AppButtonColor.neutral,
+                isLoading: _linkingProvider == 'apple',
+                onPressed: busy ? null : () => _startOAuthLink('apple'),
+              ),
+              const SizedBox(height: MitlistSpacing.sm),
+            ],
+            if (providers.password)
+              AppButton(
+                text: hasOAuth
+                    ? l10n.accountUpgradeWithEmail
+                    : l10n.accountCreateFullAccount,
+                variant:
+                    hasOAuth ? AppButtonVariant.ghost : AppButtonVariant.solid,
+                color: hasOAuth ? AppButtonColor.neutral : AppButtonColor.primary,
+                onPressed: busy ? null : _showConvertGuestSheet,
+              ),
           ],
         ),
       ),
@@ -1383,6 +1536,11 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // The OAuth callback flips this once a guest has been upgraded; the
+    // profile on screen is stale from that moment.
+    ref.listen<bool>(isGuestProvider, (previous, next) {
+      if (previous != null && previous != next) _loadData();
+    });
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: MitlistAppBar.titleText(
@@ -1415,12 +1573,13 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             _buildHouseholdCard(),
             if (_households.length >= 2)
               const SizedBox(height: MitlistSpacing.md),
+            _buildPendingVerificationCard(),
             _buildGuestUpgradeCard(),
             _buildPreferencesCard(),
             const SizedBox(height: MitlistSpacing.md),
             _buildPremiumCard(),
             _buildFeedbackCard(),
-            if (!_isGuest) ...[
+            if (!_isGuest && _passwordAuthEnabled) ...[
               _buildSecurityCard(),
               const SizedBox(height: MitlistSpacing.md),
             ],

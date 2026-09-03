@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/oauth_provider.dart';
 import '../../theme/animations.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
@@ -132,6 +133,11 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     final l10n = AppLocalizations.of(context)!;
     final invite = _inviteCode;
     final invited = invite != null && invite.isNotEmpty;
+    // Sign-up is an email + password form; without passwords a new account is
+    // made by Google or Apple on the login screen, so "create" goes there.
+    final passwordAuth =
+        ref.watch(oauthProvidersProvider).valueOrNull?.password ?? true;
+    final createRoute = passwordAuth ? 'signup' : 'login';
 
     return Scaffold(
       body: Stack(
@@ -187,7 +193,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
                             variant: AppButtonVariant.solid,
                             color: AppButtonColor.primary,
                             size: AppButtonSize.lg,
-                            onPressed: () => _goToAuth('signup'),
+                            onPressed: () => _goToAuth(createRoute),
                           ),
                         ),
                         const SizedBox(height: MitlistSpacing.space3),
@@ -209,7 +215,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
                             variant: AppButtonVariant.solid,
                             color: AppButtonColor.primary,
                             size: AppButtonSize.lg,
-                            onPressed: () => _goToAuth('signup'),
+                            onPressed: () => _goToAuth(createRoute),
                           ),
                         ),
                         const SizedBox(height: MitlistSpacing.space3),

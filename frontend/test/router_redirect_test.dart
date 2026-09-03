@@ -3,6 +3,29 @@ import 'package:mitlist/router_redirect.dart';
 
 void main() {
   group('resolveAppRedirect', () {
+    test('a signed-in guest finishing a provider upgrade stays on the callback',
+        () {
+      const input = AppRedirectInput(
+        location: '/auth/callback',
+        queryParameters: {'provider': 'google', 'handoff': 'h', 'link': '1'},
+        authBootstrapLoading: false,
+        authState: true,
+        isOAuthLinkCallback: true,
+      );
+      // Without the marker an authenticated callback is bounced to
+      // onboarding; with it the callback screen must be allowed to run.
+      expect(resolveAppRedirect(input).redirect, isNull);
+      expect(
+        resolveAppRedirect(const AppRedirectInput(
+          location: '/auth/callback',
+          queryParameters: {'provider': 'google', 'handoff': 'h'},
+          authBootstrapLoading: false,
+          authState: true,
+        )).redirect,
+        '/onboarding',
+      );
+    });
+
     test('a signed-out visitor may open a shared recipe', () {
       // The whole point of a share link is that it renders for someone with
       // neither the app nor an account. Bouncing to /welcome would strand them.
@@ -122,6 +145,65 @@ void main() {
       );
 
       expect(result.redirect, '/login');
+    });
+
+    test('unauthenticated bootstrap honors continue to a shared recipe', () {
+      // A share link opened in a fresh browser goes through the session gate
+      // before the public-route exemption gets a look in; it must come out the
+      // other side still pointing at the recipe.
+      final result = resolveAppRedirect(
+        const AppRedirectInput(
+          location: '/_session',
+          queryParameters: {'continue': '/r/ABCDEFGH'},
+          authBootstrapLoading: false,
+          authState: false,
+        ),
+      );
+
+      expect(result.redirect, '/r/ABCDEFGH');
+    });
+
+    test('unauthenticated bootstrap keeps the invite from a join link', () {
+      // Opening an invite link in a fresh browser goes through the session
+      // gate first. The recipient must come out on welcome *with* the code,
+      // otherwise sign-in drops them on home and the invite is lost.
+      final result = resolveAppRedirect(
+        const AppRedirectInput(
+          location: '/_session',
+          queryParameters: {'continue': '/join/SUNNY-TACO-ABC123'},
+          authBootstrapLoading: false,
+          authState: false,
+        ),
+      );
+
+      expect(result.redirect, '/welcome?invite=SUNNY-TACO-ABC123');
+    });
+
+    test('unauthenticated bootstrap with an implausible join code falls back',
+        () {
+      final result = resolveAppRedirect(
+        const AppRedirectInput(
+          location: '/_session',
+          queryParameters: {'continue': '/join/x'},
+          authBootstrapLoading: false,
+          authState: false,
+        ),
+      );
+
+      expect(result.redirect, '/welcome');
+    });
+
+    test('authenticated bootstrap sends a join link straight to the page', () {
+      final result = resolveAppRedirect(
+        const AppRedirectInput(
+          location: '/_session',
+          queryParameters: {'continue': '/join/SUNNY-TACO-ABC123'},
+          authBootstrapLoading: false,
+          authState: true,
+        ),
+      );
+
+      expect(result.redirect, '/join/SUNNY-TACO-ABC123');
     });
 
     test('authenticated user on login is redirected to home', () {

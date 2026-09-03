@@ -145,7 +145,10 @@ func TestUserService_Login(t *testing.T) {
 
 		_, _, _, err := svc.Login(ctx, "test@example.com", "Password123!")
 		require.Error(t, err)
-		assert.IsType(t, &api.ValidationError{}, err)
+		// Actionable, not a plain validation failure: the client opens the
+		// verification step on this.
+		assert.IsType(t, &api.EmailUnverifiedError{}, err)
+		assert.ErrorIs(t, err, api.ErrEmailUnverified)
 		assert.Equal(t, "account is not verified", err.Error())
 	})
 
@@ -342,6 +345,7 @@ func TestUserService_RequestPasswordReset(t *testing.T) {
 
 		user := &models.User{ID: uuid.New(), Email: "test@example.com", IsActive: true, IsVerified: true}
 		userRepo.On("GetByEmail", ctx, "test@example.com").Return(user, nil)
+		authRepo.On("ReserveLoginAttempt", ctx, "password-reset:test@example.com", emailCodeSendLimit, emailCodeSendWindow).Return(true, nil)
 		authRepo.On("CreatePasswordResetToken", ctx, mock.AnythingOfType("*models.PasswordResetToken")).Return(nil)
 		mailSvc.On("Send", user.Email, "Password Reset", mock.AnythingOfType("string"), false).Return(nil)
 
@@ -357,6 +361,20 @@ func TestUserService_RequestPasswordReset(t *testing.T) {
 
 		err := svc.RequestPasswordReset(ctx, "missing@example.com")
 		require.NoError(t, err)
+	})
+
+	t.Run("throttled request sends nothing and says nothing", func(t *testing.T) {
+		userRepo := new(mocks.MockUserRepo)
+		authRepo := new(mocks.MockAuthRepo)
+		mailSvc := new(mocks.MockMailService)
+		svc := NewUserService(userRepo, authRepo, nil, nil, mailSvc)
+
+		authRepo.On("ReserveLoginAttempt", ctx, "password-reset:test@example.com", emailCodeSendLimit, emailCodeSendWindow).Return(false, nil)
+
+		err := svc.RequestPasswordReset(ctx, "test@example.com")
+		require.NoError(t, err)
+		userRepo.AssertNotCalled(t, "GetByEmail", mock.Anything, mock.Anything)
+		mailSvc.AssertNotCalled(t, "Send", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 	})
 }
 

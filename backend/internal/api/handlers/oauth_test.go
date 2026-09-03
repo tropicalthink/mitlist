@@ -138,21 +138,21 @@ func TestOAuth_GetProviders_ReflectsConfiguration(t *testing.T) {
 		{
 			name: "none configured",
 			cfg:  func() *config.Config { return &config.Config{} },
-			want: `{"apple":false,"google":false}`,
+			want: `{"apple":false,"google":false,"password":false}`,
 		},
 		{
 			name: "google only",
 			cfg: func() *config.Config {
 				return &config.Config{GoogleClientID: "id", GoogleClientSecret: "secret"}
 			},
-			want: `{"apple":false,"google":true}`,
+			want: `{"apple":false,"google":true,"password":false}`,
 		},
 		{
 			name: "google secret missing",
 			cfg: func() *config.Config {
 				return &config.Config{GoogleClientID: "id"}
 			},
-			want: `{"apple":false,"google":false}`,
+			want: `{"apple":false,"google":false,"password":false}`,
 		},
 		{
 			name: "both configured",
@@ -166,14 +166,21 @@ func TestOAuth_GetProviders_ReflectsConfiguration(t *testing.T) {
 					ApplePrivateKey:    "pem",
 				}
 			},
-			want: `{"apple":true,"google":true}`,
+			want: `{"apple":true,"google":true,"password":false}`,
 		},
 		{
 			name: "apple partially configured",
 			cfg: func() *config.Config {
 				return &config.Config{AppleClientID: "me.mitlist", AppleTeamID: "TEAM"}
 			},
-			want: `{"apple":false,"google":false}`,
+			want: `{"apple":false,"google":false,"password":false}`,
+		},
+		{
+			name: "password only, the self-hosted default",
+			cfg: func() *config.Config {
+				return &config.Config{PasswordAuthEnabled: true}
+			},
+			want: `{"apple":false,"google":false,"password":true}`,
 		},
 	}
 
@@ -195,7 +202,7 @@ func TestOAuth_GetProviders_ReflectsConfiguration(t *testing.T) {
 
 func TestOAuth_redirectWithHandoff_MitlistUsesQuery(t *testing.T) {
 	h := NewOAuthHandler(testCfg, nil)
-	got := h.redirectWithHandoff("mitlist:///auth/callback", "google", "one-time-code")
+	got := h.redirectWithHandoff("mitlist:///auth/callback", "google", "one-time-code", false)
 
 	u, err := url.Parse(got)
 	require.NoError(t, err)
@@ -206,9 +213,34 @@ func TestOAuth_redirectWithHandoff_MitlistUsesQuery(t *testing.T) {
 	assert.Empty(t, u.Fragment)
 }
 
+func TestOAuth_redirectWithHandoff_MarksUpgrades(t *testing.T) {
+	h := NewOAuthHandler(testCfg, nil)
+
+	// The app keys off link=1 to return to the account page rather than
+	// start onboarding; it travels with the handoff on both shapes.
+	deep := h.redirectWithHandoff("mitlist:///auth/callback", "google", "code", true)
+	u, err := url.Parse(deep)
+	require.NoError(t, err)
+	assert.Equal(t, "1", u.Query().Get("link"))
+
+	web := h.redirectWithHandoff("https://app.mitlist.me/auth/callback", "apple", "code", true)
+	u, err = url.Parse(web)
+	require.NoError(t, err)
+	frag, err := url.ParseQuery(u.Fragment)
+	require.NoError(t, err)
+	assert.Equal(t, "1", frag.Get("link"))
+
+	// And a failed upgrade still says it was one.
+	failed := h.redirectWithError("https://app.mitlist.me/auth/callback", "apple", "email is not available", true)
+	u, err = url.Parse(failed)
+	require.NoError(t, err)
+	assert.Equal(t, "1", u.Query().Get("link"))
+	assert.Equal(t, "email is not available", u.Query().Get("error"))
+}
+
 func TestOAuth_redirectWithHandoff_HttpsUsesFragment(t *testing.T) {
 	h := NewOAuthHandler(testCfg, nil)
-	got := h.redirectWithHandoff("https://app.mitlist.me/auth/callback", "google", "one-time-code")
+	got := h.redirectWithHandoff("https://app.mitlist.me/auth/callback", "google", "one-time-code", false)
 
 	u, err := url.Parse(got)
 	require.NoError(t, err)

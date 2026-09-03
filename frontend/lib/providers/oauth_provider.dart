@@ -2,12 +2,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../services/api_client.dart';
 
-/// Which OAuth providers the backend is configured for.
-typedef OAuthProviderAvailability = ({bool google, bool apple});
+/// Which sign-in methods the backend offers. `password` covers the whole
+/// email + password surface: login, registration, reset and change-password.
+typedef OAuthProviderAvailability = ({bool google, bool apple, bool password});
 
-/// Fetches `/oauth/providers` so sign-in buttons for unconfigured providers
-/// can be hidden instead of dead-ending at the backend. Fails safe to hiding
-/// both buttons: email/password login is always available.
+/// What to assume when the server cannot be asked: no OAuth buttons (they
+/// would dead-end), but the password form, because a backend too old to
+/// report the flag offers passwords unconditionally.
+const OAuthProviderAvailability _unknownAvailability =
+    (google: false, apple: false, password: true);
+
+/// Fetches `/oauth/providers` so sign-in buttons and forms for methods the
+/// server does not offer can be hidden instead of dead-ending at the backend.
 final oauthProvidersProvider = FutureProvider<OAuthProviderAvailability>((
   ref,
 ) async {
@@ -16,10 +22,15 @@ final oauthProvidersProvider = FutureProvider<OAuthProviderAvailability>((
     final response = await dio.get('/oauth/providers');
     final data = response.data;
     if (data is! Map) {
-      return (google: false, apple: false);
+      return _unknownAvailability;
     }
-    return (google: data['google'] == true, apple: data['apple'] == true);
+    return (
+      google: data['google'] == true,
+      apple: data['apple'] == true,
+      // Missing key: a backend that predates PASSWORD_AUTH_ENABLED.
+      password: data['password'] != false,
+    );
   } catch (_) {
-    return (google: false, apple: false);
+    return _unknownAvailability;
   }
 });
