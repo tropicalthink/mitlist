@@ -12,11 +12,24 @@ class ApiException implements Exception {
   /// localize network/status failures.
   final DioException? cause;
 
-  const ApiException(this.message, {this.serverMessage, this.cause});
+  /// The backend's stable error code (`email_unverified`, `conflict`, ...),
+  /// for the few refusals a screen acts on rather than displays.
+  final String? code;
+
+  const ApiException(
+    this.message, {
+    this.serverMessage,
+    this.cause,
+    this.code,
+  });
 
   /// True when the backend refused because the household needs premium
   /// (HTTP 402). Callers show the premium sheet instead of a plain error.
   bool get isPaymentRequired => cause?.response?.statusCode == 402;
+
+  /// True when the credentials were right but the address is unproven.
+  /// Callers open the verification step instead of showing an error.
+  bool get isEmailUnverified => code == 'email_unverified';
 
   @override
   String toString() => message;
@@ -26,6 +39,7 @@ Exception apiException(DioException e) => ApiException(
       ApiErrorMapper.fromDio(e),
       serverMessage: ApiErrorMapper.serverMessage(e),
       cause: e,
+      code: ApiErrorMapper.serverCode(e),
     );
 
 /// Maps backend error responses and network failures into stable,
@@ -42,6 +56,16 @@ class ApiErrorMapper {
     if (data is Map<String, dynamic>) {
       final message = data['message']?.toString();
       if (message != null && message.isNotEmpty) return message;
+    }
+    return null;
+  }
+
+  /// The backend's stable error code from the payload, or null.
+  static String? serverCode(DioException e) {
+    final data = e.response?.data;
+    if (data is Map<String, dynamic>) {
+      final code = data['error']?.toString();
+      if (code != null && code.isNotEmpty && code != 'ok') return code;
     }
     return null;
   }

@@ -181,8 +181,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   Future<void> _verifyEmail() async {
     final code = _verificationController.text.trim();
     if (code.isEmpty) {
-      setState(
-          () => _errorMessage = 'Enter the verification code from your email.');
+      setState(() => _errorMessage = l10n.authVerifyCodeRequired);
       return;
     }
     setState(() {
@@ -207,8 +206,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       ref.read(authStateProvider.notifier).state = true;
     } catch (_) {
       if (mounted) {
-        setState(() =>
-            _errorMessage = 'That verification code is invalid or expired.');
+        setState(() => _errorMessage = l10n.authVerifyInvalid);
       }
     } finally {
       if (mounted && !_isSuccess) setState(() => _isLoading = false);
@@ -221,7 +219,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       final authService = await ref.read(authServiceProviderAsync.future);
       await authService.resendEmailVerification(_emailController.text.trim());
       if (mounted) {
-        setState(() => _errorMessage = 'A new verification code was sent.');
+        setState(() => _errorMessage = l10n.authVerifySent);
       }
     } catch (_) {
       if (mounted) setState(() => _errorMessage = l10n.authSignupGenericError);
@@ -355,13 +353,14 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                               const SizedBox(height: MitlistSpacing.space3),
                             ] else ...[
                               Text(
-                                'Check ${_emailController.text.trim()} for your verification code.',
+                                l10n.authVerifyBody(
+                                    _emailController.text.trim()),
                                 style: Theme.of(context).textTheme.bodyMedium,
                               ),
                               const SizedBox(height: MitlistSpacing.space3),
                               AppInput(
-                                label: 'Verification code',
-                                hint: 'Paste the code from your email',
+                                label: l10n.authVerifyCodeLabel,
+                                hint: l10n.authVerifyCodeHint,
                                 controller: _verificationController,
                                 focusNode: _verificationFocus,
                                 textInputAction: TextInputAction.done,
@@ -372,7 +371,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                               ),
                               const SizedBox(height: MitlistSpacing.space2),
                               AppButton(
-                                text: 'Send a new code',
+                                text: l10n.authVerifyResend,
                                 variant: AppButtonVariant.ghost,
                                 color: AppButtonColor.primary,
                                 onPressed:
@@ -391,7 +390,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                               width: double.infinity,
                               child: AppButton(
                                 text: _awaitingVerification
-                                    ? 'Verify email'
+                                    ? l10n.authVerifyButton
                                     : l10n.authSignupCreateAccount,
                                 variant: AppButtonVariant.solid,
                                 color: AppButtonColor.primary,

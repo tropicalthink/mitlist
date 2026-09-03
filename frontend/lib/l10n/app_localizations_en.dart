@@ -3977,6 +3977,55 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authLoginWithEmailButton => 'Sign in with email';
 
   @override
+  String get authVerifyTitle => 'Verify your email';
+
+  @override
+  String authVerifyBody(String email) {
+    return 'Enter the code we emailed to $email.';
+  }
+
+  @override
+  String get authVerifyCodeLabel => 'Verification code';
+
+  @override
+  String get authVerifyCodeHint => '8-character code from the email';
+
+  @override
+  String get authVerifyButton => 'Verify';
+
+  @override
+  String get authVerifyResend => 'Send a new code';
+
+  @override
+  String get authVerifySent =>
+      'A new code is on its way. Check your inbox and spam folder.';
+
+  @override
+  String get authVerifyInvalid => 'That code is invalid or expired.';
+
+  @override
+  String get authVerifyCodeRequired => 'Enter the code from your email.';
+
+  @override
+  String get authLoginUnverified =>
+      'Your email isn’t verified yet. Verify it to sign in.';
+
+  @override
+  String get accountVerifyPendingTitle => 'Finish setting up your account';
+
+  @override
+  String accountVerifyPendingBody(String email) {
+    return 'We emailed a code to $email. Enter it to finish creating your account.';
+  }
+
+  @override
+  String get accountVerifyEnterCode => 'Enter code';
+
+  @override
+  String get accountVerifyLater =>
+      'You can enter the code any time from your account page.';
+
+  @override
   String authLoginOAuthUnsupported(String provider) {
     return '$provider sign-in is only available on web, Android, and iOS right now.';
   }

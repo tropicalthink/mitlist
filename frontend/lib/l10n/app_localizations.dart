@@ -7041,6 +7041,90 @@ abstract class AppLocalizations {
   /// **'Sign in with email'**
   String get authLoginWithEmailButton;
 
+  /// Title of the email verification sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Verify your email'**
+  String get authVerifyTitle;
+
+  /// Body of the email verification sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the code we emailed to {email}.'**
+  String authVerifyBody(String email);
+
+  /// Label of the verification code field
+  ///
+  /// In en, this message translates to:
+  /// **'Verification code'**
+  String get authVerifyCodeLabel;
+
+  /// Hint of the verification code field
+  ///
+  /// In en, this message translates to:
+  /// **'8-character code from the email'**
+  String get authVerifyCodeHint;
+
+  /// Submits the verification code
+  ///
+  /// In en, this message translates to:
+  /// **'Verify'**
+  String get authVerifyButton;
+
+  /// Requests a fresh verification code
+  ///
+  /// In en, this message translates to:
+  /// **'Send a new code'**
+  String get authVerifyResend;
+
+  /// Shown after a verification code was resent
+  ///
+  /// In en, this message translates to:
+  /// **'A new code is on its way. Check your inbox and spam folder.'**
+  String get authVerifySent;
+
+  /// Shown when the server rejected the verification code
+  ///
+  /// In en, this message translates to:
+  /// **'That code is invalid or expired.'**
+  String get authVerifyInvalid;
+
+  /// Shown when the verification code field is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the code from your email.'**
+  String get authVerifyCodeRequired;
+
+  /// Login error when the verification sheet was dismissed without a code
+  ///
+  /// In en, this message translates to:
+  /// **'Your email isn’t verified yet. Verify it to sign in.'**
+  String get authLoginUnverified;
+
+  /// Title of the account card for a guest whose email is not verified yet
+  ///
+  /// In en, this message translates to:
+  /// **'Finish setting up your account'**
+  String get accountVerifyPendingTitle;
+
+  /// Body of the account card for a guest whose email is not verified yet
+  ///
+  /// In en, this message translates to:
+  /// **'We emailed a code to {email}. Enter it to finish creating your account.'**
+  String accountVerifyPendingBody(String email);
+
+  /// Opens the verification sheet from the account page
+  ///
+  /// In en, this message translates to:
+  /// **'Enter code'**
+  String get accountVerifyEnterCode;
+
+  /// Toast when the verification sheet is dismissed after guest conversion
+  ///
+  /// In en, this message translates to:
+  /// **'You can enter the code any time from your account page.'**
+  String get accountVerifyLater;
+
   /// Error when OAuth is unsupported on platform
   ///
   /// In en, this message translates to:

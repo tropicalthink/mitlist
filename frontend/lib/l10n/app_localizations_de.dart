@@ -4045,6 +4045,55 @@ class AppLocalizationsDe extends AppLocalizations {
   String get authLoginWithEmailButton => 'Mit E-Mail anmelden';
 
   @override
+  String get authVerifyTitle => 'E-Mail bestätigen';
+
+  @override
+  String authVerifyBody(String email) {
+    return 'Gib den Code ein, den wir an $email geschickt haben.';
+  }
+
+  @override
+  String get authVerifyCodeLabel => 'Bestätigungscode';
+
+  @override
+  String get authVerifyCodeHint => '8-stelliger Code aus der E-Mail';
+
+  @override
+  String get authVerifyButton => 'Bestätigen';
+
+  @override
+  String get authVerifyResend => 'Neuen Code senden';
+
+  @override
+  String get authVerifySent =>
+      'Ein neuer Code ist unterwegs. Sieh im Posteingang und im Spam-Ordner nach.';
+
+  @override
+  String get authVerifyInvalid => 'Dieser Code ist ungültig oder abgelaufen.';
+
+  @override
+  String get authVerifyCodeRequired => 'Gib den Code aus deiner E-Mail ein.';
+
+  @override
+  String get authLoginUnverified =>
+      'Deine E-Mail ist noch nicht bestätigt. Bestätige sie, um dich anzumelden.';
+
+  @override
+  String get accountVerifyPendingTitle => 'Konto fertig einrichten';
+
+  @override
+  String accountVerifyPendingBody(String email) {
+    return 'Wir haben einen Code an $email geschickt. Gib ihn ein, um dein Konto fertigzustellen.';
+  }
+
+  @override
+  String get accountVerifyEnterCode => 'Code eingeben';
+
+  @override
+  String get accountVerifyLater =>
+      'Du kannst den Code jederzeit auf deiner Kontoseite eingeben.';
+
+  @override
   String authLoginOAuthUnsupported(String provider) {
     return '$provider-Anmeldung ist derzeit nur im Web, auf Android und iOS verfügbar.';
   }

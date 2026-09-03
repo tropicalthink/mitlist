@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -79,6 +80,56 @@ func TestAuth_Login_InvalidCredentials(t *testing.T) {
 	}
 	rec := execRequest(t, router, "POST", "/api/v1/auth/login", body, "")
 	requireStatus(t, rec, http.StatusBadRequest)
+}
+
+func TestAuth_Login_UnverifiedIsActionable(t *testing.T) {
+	clearTables(t)
+	router, _ := newAuthRouter(t)
+	user := createTestUser(t, "unverified@example.com", "Password123!")
+	user.IsVerified = false
+	require.NoError(t, newTestUserRepo().Update(context.Background(), user))
+
+	body := map[string]any{"email": "unverified@example.com", "password": "Password123!"}
+	rec := execRequest(t, router, "POST", "/api/v1/auth/login", body, "")
+	requireStatus(t, rec, http.StatusForbidden)
+
+	var resp map[string]any
+	parseJSONResponse(t, rec, &resp)
+	// The client keys off this code to open the verification step, so it
+	// must stay distinct from a wrong password's validation_error.
+	assert.Equal(t, "email_unverified", resp["error"])
+
+	// A wrong password on the same account must not leak the unverified
+	// state: it is a plain credential failure.
+	body["password"] = "wrong"
+	rec = execRequest(t, router, "POST", "/api/v1/auth/login", body, "")
+	requireStatus(t, rec, http.StatusBadRequest)
+}
+
+func TestAuth_CodeEmailsAreThrottledPerAddress(t *testing.T) {
+	clearTables(t)
+	router, _, mail := newAuthRouterWithMail(t)
+	user := createTestUser(t, "throttle@example.com", "Password123!")
+	user.IsVerified = false
+	require.NoError(t, newTestUserRepo().Update(context.Background(), user))
+
+	body := map[string]any{"email": "throttle@example.com"}
+	for i := 0; i < 5; i++ {
+		rec := execRequest(t, router, "POST", "/api/v1/auth/verify-email/resend", body, "")
+		// Same answer every time: a throttled request is indistinguishable
+		// from a delivered one, so the address is never confirmed.
+		requireStatus(t, rec, http.StatusOK)
+	}
+	assert.Len(t, mail.messages, 3, "only the first three resends reach the mailer")
+
+	// Password reset has its own budget under a separate key.
+	user.IsVerified = true
+	require.NoError(t, newTestUserRepo().Update(context.Background(), user))
+	for i := 0; i < 5; i++ {
+		rec := execRequest(t, router, "POST", "/api/v1/auth/password-reset", body, "")
+		requireStatus(t, rec, http.StatusAccepted)
+	}
+	assert.Len(t, mail.messages, 6)
 }
 
 func TestAuth_PasswordRoutesDisabled(t *testing.T) {

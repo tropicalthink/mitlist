@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:drift/native.dart';
+import 'package:mitlist/services/api_error_mapper.dart';
 import 'package:mitlist/models/activity_models.dart';
 import 'package:mitlist/models/auth_models.dart';
 import 'package:mitlist/models/chore_models.dart';
@@ -796,6 +797,52 @@ void main() {
     expect(authService.lastLoginRememberMe, isFalse);
   });
 
+  testWidgets('login screen finishes verification for an unproven address',
+      (tester) async {
+    await _setLargeSurface(tester);
+    final authService = FakeAuthService(currentUser: user)
+      ..throwOnLogin = const ApiException(
+        'account is not verified',
+        code: 'email_unverified',
+      );
+    late ProviderContainer container;
+
+    await _pumpScreen(
+      tester,
+      child: Builder(builder: (context) {
+        container = ProviderScope.containerOf(context);
+        return const LoginScreen();
+      }),
+      overrides: [
+        authServiceProviderAsync.overrideWith((ref) async => authService),
+        oauthProvidersProvider.overrideWith(
+          (ref) async => (google: false, apple: false, password: true),
+        ),
+      ],
+    );
+
+    // The harness starts signed in; this flow begins signed out.
+    container.read(authStateProvider.notifier).state = false;
+    await tester.enterText(find.byType(TextField).at(0), 'new@example.com');
+    await tester.enterText(find.byType(TextField).at(1), 'Password123!');
+    await tester.tap(find.text('SIGN IN'));
+    await _pumpAfter(tester);
+
+    // Not an error: the verification sheet opens and a fresh code goes out.
+    expect(find.text('Verify your email'), findsOneWidget);
+    expect(authService.lastResendEmail, 'new@example.com');
+    expect(container.read(authStateProvider), isFalse);
+
+    await tester.enterText(find.byType(TextField).last, 'ABCD2345');
+    await tester.tap(find.text('VERIFY')); // solid variant renders uppercase
+    await _pumpAfter(tester);
+    await tester.pump(const Duration(milliseconds: 700));
+
+    expect(authService.lastVerifyToken, 'ABCD2345');
+    expect(authService.lastVerifyRememberMe, isTrue);
+    expect(container.read(authStateProvider), isTrue);
+  });
+
   testWidgets('login screen hides the password form when the server has none',
       (tester) async {
     await _setLargeSurface(tester);
@@ -1474,6 +1521,10 @@ class FakeAuthService implements AuthService {
   String? lastPasswordResetEmail;
   LoginRequest? lastLoginRequest;
   bool? lastLoginRememberMe;
+  Exception? throwOnLogin;
+  String? lastVerifyToken;
+  bool? lastVerifyRememberMe;
+  String? lastResendEmail;
   String? lastConfirmPasswordResetToken;
   String? lastConfirmPasswordResetPassword;
   String? lastOAuthProvider;
@@ -1494,11 +1545,32 @@ class FakeAuthService implements AuthService {
   }) async {
     lastLoginRequest = request;
     lastLoginRememberMe = rememberMe;
+    if (throwOnLogin != null) {
+      final err = throwOnLogin!;
+      throwOnLogin = null;
+      throw err;
+    }
     return TokenPair(
       accessToken: 'access-token',
       refreshToken: 'refresh-token',
       user: currentUser,
     );
+  }
+
+  @override
+  Future<TokenPair> verifyEmail(String token, {bool rememberMe = true}) async {
+    lastVerifyToken = token;
+    lastVerifyRememberMe = rememberMe;
+    return TokenPair(
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+      user: currentUser,
+    );
+  }
+
+  @override
+  Future<void> resendEmailVerification(String email) async {
+    lastResendEmail = email;
   }
 
   @override

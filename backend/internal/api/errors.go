@@ -18,7 +18,17 @@ var (
 	ErrConflict         = errors.New("resource conflict")
 	ErrUnauthorized     = errors.New("unauthorized")
 	ErrPaymentRequired  = errors.New("payment required")
+	ErrEmailUnverified  = errors.New("email not verified")
 )
+
+// EmailUnverifiedError is the one refusal a client should act on rather than
+// display: the credentials were right, the address just has not been proven
+// yet. Clients open the verification step instead of showing an error.
+type EmailUnverifiedError struct{}
+
+func (e *EmailUnverifiedError) Error() string { return "account is not verified" }
+
+func (e *EmailUnverifiedError) Unwrap() error { return ErrEmailUnverified }
 
 // NotFoundError indicates a requested resource does not exist.
 type NotFoundError struct {
@@ -150,6 +160,9 @@ func CodeForError(err error) string {
 	if errors.As(err, &pr) || errors.Is(err, ErrPaymentRequired) {
 		return "payment_required"
 	}
+	if errors.Is(err, ErrEmailUnverified) {
+		return "email_unverified"
+	}
 	if errors.Is(err, ErrUnauthorized) {
 		return "unauthorized"
 	}
@@ -167,6 +180,9 @@ func HTTPStatusForError(err error) int {
 	}
 	var pd *PermissionDeniedError
 	if errors.As(err, &pd) || errors.Is(err, ErrPermissionDenied) {
+		return http.StatusForbidden
+	}
+	if errors.Is(err, ErrEmailUnverified) {
 		return http.StatusForbidden
 	}
 	var ve *ValidationError

@@ -4013,6 +4013,55 @@ class AppLocalizationsNl extends AppLocalizations {
   String get authLoginWithEmailButton => 'Aanmelden met e-mail';
 
   @override
+  String get authVerifyTitle => 'Bevestig je e-mail';
+
+  @override
+  String authVerifyBody(String email) {
+    return 'Voer de code in die we naar $email hebben gestuurd.';
+  }
+
+  @override
+  String get authVerifyCodeLabel => 'Verificatiecode';
+
+  @override
+  String get authVerifyCodeHint => 'Code van 8 tekens uit de e-mail';
+
+  @override
+  String get authVerifyButton => 'Bevestigen';
+
+  @override
+  String get authVerifyResend => 'Nieuwe code sturen';
+
+  @override
+  String get authVerifySent =>
+      'Er is een nieuwe code onderweg. Kijk in je inbox en je spam-map.';
+
+  @override
+  String get authVerifyInvalid => 'Die code is ongeldig of verlopen.';
+
+  @override
+  String get authVerifyCodeRequired => 'Voer de code uit je e-mail in.';
+
+  @override
+  String get authLoginUnverified =>
+      'Je e-mail is nog niet bevestigd. Bevestig hem om aan te melden.';
+
+  @override
+  String get accountVerifyPendingTitle => 'Maak je account af';
+
+  @override
+  String accountVerifyPendingBody(String email) {
+    return 'We hebben een code naar $email gestuurd. Voer hem in om je account af te maken.';
+  }
+
+  @override
+  String get accountVerifyEnterCode => 'Code invoeren';
+
+  @override
+  String get accountVerifyLater =>
+      'Je kunt de code op elk moment invoeren via je accountpagina.';
+
+  @override
   String authLoginOAuthUnsupported(String provider) {
     return '$provider-inloggen is momenteel alleen beschikbaar op web, Android en iOS.';
   }
