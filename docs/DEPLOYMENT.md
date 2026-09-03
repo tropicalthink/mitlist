@@ -96,6 +96,14 @@ The API offers three doors and reports which are open at
   creation of new guests is refused. The app reads the flag and hides the
   guest button when it is off.
 
+  **Upgrading an existing deployment:** guests used to be always on, and the
+  flag is read from the stack's environment with no fallback. A stack that
+  never set `GUEST_AUTH_ENABLED` therefore stops offering guest sign-up the
+  moment it runs this version. If that is not what you want, add
+  `GUEST_AUTH_ENABLED=true` to the stack secrets alongside `MITLIST_TAG`
+  before, or together with, the image bump; the hosted anansi stack does not
+  set it on purpose.
+
 ```dotenv
 PASSWORD_AUTH_ENABLED=true
 GUEST_AUTH_ENABLED=false
