@@ -15,7 +15,7 @@ import '../../config/feedback_config.dart';
 import '../../models/auth_models.dart';
 import '../../models/group_models.dart';
 import '../../providers/auth_provider.dart'
-    show authServiceProviderAsync, authStateProvider;
+    show authServiceProviderAsync, authStateProvider, isGuestProvider;
 import '../../providers/group_provider.dart';
 import '../../providers/oauth_provider.dart';
 import '../../providers/onboarding_provider.dart';
@@ -28,6 +28,7 @@ import '../../router.dart' show currentGroupIdProvider;
 import '../../services/scan/ocr_training_data_service.dart';
 import '../../providers/billing_provider.dart';
 import '../../config/iap_config.dart';
+import '../../sheets/email_verification_sheet.dart';
 import '../../sheets/feedback_sheet.dart';
 import '../../sheets/premium_sheet.dart';
 import '../../theme/spacing.dart';
@@ -67,6 +68,9 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   String _email = '';
   String? _userId;
   bool _isGuest = false;
+  /// False only for a guest who gave an email but has not entered the code
+  /// yet: the account exists on the server, half-made.
+  bool _isVerified = true;
   bool _isEditingName = false;
   bool _isExporting = false;
   bool _ocrTrainingEnabled = false;
@@ -151,6 +155,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       _email = user.email;
       _userId = user.id;
       _isGuest = user.isGuest;
+      _isVerified = user.isVerified;
       _households = households;
       _isLoading = false;
       _error = null;
@@ -1145,10 +1150,10 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               lastName: parts.length > 1 ? parts.sublist(1).join(' ') : '',
             ));
             if (ctx.mounted) Navigator.of(ctx).pop();
-            if (mounted) {
-              ref.read(authStateProvider.notifier).state = true;
-              AppToast.success(context, l10n.accountCreatedWelcome);
-            }
+            if (!mounted) return;
+            // The server mailed a code and keeps the account a guest until
+            // it is entered; the conversion is not real before that.
+            await _finishVerification(email);
           } catch (e) {
             setLocal(() {
               isConverting = false;
@@ -1212,9 +1217,81 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     passCtrl.dispose();
   }
 
+  /// Runs the verification sheet for [email] and, on success, turns the
+  /// half-made guest into the real account it now is.
+  Future<void> _finishVerification(String email) async {
+    final l10n = AppLocalizations.of(context)!;
+    final verified = await showEmailVerificationSheet(
+      context: context,
+      ref: ref,
+      email: email,
+    );
+    if (!mounted) return;
+    if (verified) {
+      ref.read(isGuestProvider.notifier).state = false;
+      ref.read(authStateProvider.notifier).state = true;
+      AppToast.success(context, l10n.accountCreatedWelcome);
+    } else {
+      AppToast.info(context, l10n.accountVerifyLater);
+    }
+    await _loadData();
+  }
+
+  /// A guest who gave an email but never entered the code. Shown in place
+  /// of the upgrade card until the address is proven.
+  Widget _buildPendingVerificationCard() {
+    final l10n = AppLocalizations.of(context)!;
+    if (!_isGuest || _isVerified) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
+      child: AppCard(
+        variant: AppCardVariant.filled,
+        padding: AppCardPadding.md,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                AppIcon(
+                  name: 'informationCircle',
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: MitlistSpacing.sm),
+                Expanded(
+                  child: Text(
+                    l10n.accountVerifyPendingTitle,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: MitlistSpacing.sm),
+            Text(
+              l10n.accountVerifyPendingBody(_email),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+            const SizedBox(height: MitlistSpacing.md),
+            SizedBox(
+              width: double.infinity,
+              child: AppButton(
+                text: l10n.accountVerifyEnterCode,
+                variant: AppButtonVariant.solid,
+                color: AppButtonColor.primary,
+                onPressed: () => _finishVerification(_email),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildGuestUpgradeCard() {
     final l10n = AppLocalizations.of(context)!;
-    if (!_isGuest) return const SizedBox.shrink();
+    if (!_isGuest || !_isVerified) return const SizedBox.shrink();
     // Converting a guest means giving it an email and a password; a server
     // without password sign-in has no upgrade to offer.
     if (!_passwordAuthEnabled) return const SizedBox.shrink();
@@ -1424,6 +1501,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             _buildHouseholdCard(),
             if (_households.length >= 2)
               const SizedBox(height: MitlistSpacing.md),
+            _buildPendingVerificationCard(),
             _buildGuestUpgradeCard(),
             _buildPreferencesCard(),
             const SizedBox(height: MitlistSpacing.md),

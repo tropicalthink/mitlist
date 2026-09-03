@@ -5358,6 +5358,72 @@
   "@authLoginWithEmailButton": {
     "description": "Button at the bottom of the login screen that unfolds the email/password form"
   },
+  "authVerifyTitle": "Verify your email",
+  "@authVerifyTitle": {
+    "description": "Title of the email verification sheet"
+  },
+  "authVerifyBody": "Enter the code we emailed to {email}.",
+  "@authVerifyBody": {
+    "description": "Body of the email verification sheet",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "authVerifyCodeLabel": "Verification code",
+  "@authVerifyCodeLabel": {
+    "description": "Label of the verification code field"
+  },
+  "authVerifyCodeHint": "8-character code from the email",
+  "@authVerifyCodeHint": {
+    "description": "Hint of the verification code field"
+  },
+  "authVerifyButton": "Verify",
+  "@authVerifyButton": {
+    "description": "Submits the verification code"
+  },
+  "authVerifyResend": "Send a new code",
+  "@authVerifyResend": {
+    "description": "Requests a fresh verification code"
+  },
+  "authVerifySent": "A new code is on its way. Check your inbox and spam folder.",
+  "@authVerifySent": {
+    "description": "Shown after a verification code was resent"
+  },
+  "authVerifyInvalid": "That code is invalid or expired.",
+  "@authVerifyInvalid": {
+    "description": "Shown when the server rejected the verification code"
+  },
+  "authVerifyCodeRequired": "Enter the code from your email.",
+  "@authVerifyCodeRequired": {
+    "description": "Shown when the verification code field is empty"
+  },
+  "authLoginUnverified": "Your email isn’t verified yet. Verify it to sign in.",
+  "@authLoginUnverified": {
+    "description": "Login error when the verification sheet was dismissed without a code"
+  },
+  "accountVerifyPendingTitle": "Finish setting up your account",
+  "@accountVerifyPendingTitle": {
+    "description": "Title of the account card for a guest whose email is not verified yet"
+  },
+  "accountVerifyPendingBody": "We emailed a code to {email}. Enter it to finish creating your account.",
+  "@accountVerifyPendingBody": {
+    "description": "Body of the account card for a guest whose email is not verified yet",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "accountVerifyEnterCode": "Enter code",
+  "@accountVerifyEnterCode": {
+    "description": "Opens the verification sheet from the account page"
+  },
+  "accountVerifyLater": "You can enter the code any time from your account page.",
+  "@accountVerifyLater": {
+    "description": "Toast when the verification sheet is dismissed after guest conversion"
+  },
   "authLoginOAuthUnsupported": "{provider} sign-in is only available on web, Android, and iOS right now.",
   "@authLoginOAuthUnsupported": {
     "description": "Error when OAuth is unsupported on platform",

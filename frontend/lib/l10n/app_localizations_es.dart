@@ -4002,6 +4002,55 @@ class AppLocalizationsEs extends AppLocalizations {
   String get authLoginWithEmailButton => 'Iniciar sesión con correo';
 
   @override
+  String get authVerifyTitle => 'Verifica tu correo';
+
+  @override
+  String authVerifyBody(String email) {
+    return 'Introduce el código que enviamos a $email.';
+  }
+
+  @override
+  String get authVerifyCodeLabel => 'Código de verificación';
+
+  @override
+  String get authVerifyCodeHint => 'Código de 8 caracteres del correo';
+
+  @override
+  String get authVerifyButton => 'Verificar';
+
+  @override
+  String get authVerifyResend => 'Enviar un código nuevo';
+
+  @override
+  String get authVerifySent =>
+      'Te enviamos un código nuevo. Revisa tu bandeja de entrada y la carpeta de spam.';
+
+  @override
+  String get authVerifyInvalid => 'Ese código no es válido o ha caducado.';
+
+  @override
+  String get authVerifyCodeRequired => 'Introduce el código de tu correo.';
+
+  @override
+  String get authLoginUnverified =>
+      'Tu correo aún no está verificado. Verifícalo para iniciar sesión.';
+
+  @override
+  String get accountVerifyPendingTitle => 'Termina de configurar tu cuenta';
+
+  @override
+  String accountVerifyPendingBody(String email) {
+    return 'Enviamos un código a $email. Introdúcelo para terminar de crear tu cuenta.';
+  }
+
+  @override
+  String get accountVerifyEnterCode => 'Introducir código';
+
+  @override
+  String get accountVerifyLater =>
+      'Puedes introducir el código en cualquier momento desde tu página de cuenta.';
+
+  @override
   String authLoginOAuthUnsupported(String provider) {
     return 'El inicio de sesión con $provider solo está disponible en web, Android e iOS por ahora.';
   }

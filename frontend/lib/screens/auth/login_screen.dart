@@ -10,6 +10,8 @@ import '../../models/auth_models.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/oauth_provider.dart';
 import '../../services/api_client.dart';
+import '../../services/api_error_mapper.dart';
+import '../../sheets/email_verification_sheet.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../utils/browser_redirect.dart';
@@ -116,32 +118,55 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       // Make actual API call
       final request = LoginRequest(email: email, password: password);
       await authService.login(request, rememberMe: _rememberMe);
-
-      // Update auth state after the success animation so redirect does not
-      // dispose this screen before the checkmark is visible.
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _isSuccess = true;
-        });
-        await Future.delayed(const Duration(milliseconds: 650));
-        if (mounted) {
-          final invite = _inviteCode;
-          if (invite != null && invite.isNotEmpty) {
-            ref.read(pendingAuthNavigationProvider.notifier).state =
-                '/join/${Uri.encodeComponent(invite)}';
-          }
-          ref.read(authStateProvider.notifier).state = true;
-        }
-      }
+      await _completeSignIn();
       return;
     } catch (e) {
+      if (e is ApiException && e.isEmailUnverified) {
+        // Right password, address never proven: someone who closed the app
+        // before entering the sign-up code. Finish that here rather than
+        // sending them back to sign up. A fresh code is requested because
+        // the old one has most likely expired.
+        if (!mounted) return;
+        setState(() => _isLoading = false);
+        final verified = await showEmailVerificationSheet(
+          context: context,
+          ref: ref,
+          email: email,
+          rememberMe: _rememberMe,
+          sendCodeOnOpen: true,
+        );
+        if (!mounted) return;
+        if (verified) {
+          await _completeSignIn();
+        } else {
+          setState(() => _errorMessage = l10n.authLoginUnverified);
+        }
+        return;
+      }
       setState(() {
         _errorMessage = l10n.authLoginGenericError;
       });
     } finally {
       if (mounted && !_isSuccess) setState(() => _isLoading = false);
     }
+  }
+
+  /// Flips auth state after the success animation, so the redirect does not
+  /// dispose this screen before the checkmark is visible.
+  Future<void> _completeSignIn() async {
+    if (!mounted) return;
+    setState(() {
+      _isLoading = false;
+      _isSuccess = true;
+    });
+    await Future.delayed(const Duration(milliseconds: 650));
+    if (!mounted) return;
+    final invite = _inviteCode;
+    if (invite != null && invite.isNotEmpty) {
+      ref.read(pendingAuthNavigationProvider.notifier).state =
+          '/join/${Uri.encodeComponent(invite)}';
+    }
+    ref.read(authStateProvider.notifier).state = true;
   }
 
   void _showPasswordResetSheet() {
@@ -437,8 +462,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     ).whenComplete(urlController.dispose);
   }
 
-  String? get _inviteCode =>
-      GoRouterState.of(context).uri.queryParameters['invite'];
+  /// The invite code carried on the URL, or null when there is none — or no
+  /// router at all, as when the screen is built on its own.
+  String? get _inviteCode => GoRouter.maybeOf(context) == null
+      ? null
+      : GoRouterState.of(context).uri.queryParameters['invite'];
 
   Future<void> _startOAuth(String provider) async {
     if (!supportsBrowserRedirect && !supportsNativeOAuthLaunch) {
