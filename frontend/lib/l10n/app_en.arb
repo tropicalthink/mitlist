@@ -7785,7 +7785,7 @@
   "@featureBoardBannerAction": {
     "description": "Button opening the feature board"
   },
-  "featureBoardAdd": "Suggest a feature",
+  "featureBoardAdd": "Add a request",
   "@featureBoardAdd": {
     "description": "Action to create a feature-board request"
   },
@@ -7793,7 +7793,7 @@
   "@featureBoardIntroTitle": {
     "description": "Feature-board introduction title"
   },
-  "featureBoardIntroBody": "Vote for ideas you want most. Your votes help us decide what to improve next.",
+  "featureBoardIntroBody": "Vote for ideas you want most, report what's broken, and follow along as we work on it.",
   "@featureBoardIntroBody": {
     "description": "Feature-board introduction body"
   },
@@ -7813,7 +7813,7 @@
   "@featureBoardNoFeaturesBody": {
     "description": "Feature-board empty-state body"
   },
-  "featureBoardNewTitle": "Suggest a feature",
+  "featureBoardNewTitle": "New request",
   "@featureBoardNewTitle": {
     "description": "New feature sheet title"
   },
@@ -7861,10 +7861,6 @@
   "@featureBoardInProgress": {
     "description": "Feature-board in-progress section"
   },
-  "featureBoardPlanned": "Planned",
-  "@featureBoardPlanned": {
-    "description": "Feature-board planned section"
-  },
   "featureBoardShipped": "Shipped",
   "@featureBoardShipped": {
     "description": "Feature-board shipped section"
@@ -7885,6 +7881,162 @@
         "type": "num"
       }
     }
+  },
+  "featureBoardUnderReview": "Under review",
+  "@featureBoardUnderReview": {
+    "description": "Board status: the team has seen the request but not started it"
+  },
+  "featureBoardFilterAll": "All",
+  "@featureBoardFilterAll": {
+    "description": "Board filter chip: every kind of request"
+  },
+  "featureBoardFilterFeatures": "Features",
+  "@featureBoardFilterFeatures": {
+    "description": "Board filter chip: feature requests only"
+  },
+  "featureBoardFilterBugs": "Bugs",
+  "@featureBoardFilterBugs": {
+    "description": "Board filter chip: bug reports only"
+  },
+  "featureBoardSortTop": "Top",
+  "@featureBoardSortTop": {
+    "description": "Board sort chip: most votes first"
+  },
+  "featureBoardSortNew": "New",
+  "@featureBoardSortNew": {
+    "description": "Board sort chip: newest first"
+  },
+  "featureBoardKindLabel": "What is it?",
+  "@featureBoardKindLabel": {
+    "description": "Label above the feature/bug selector when creating a request"
+  },
+  "featureBoardKindFeature": "Feature request",
+  "@featureBoardKindFeature": {
+    "description": "Selector option: the request is a feature idea"
+  },
+  "featureBoardKindBug": "Bug report",
+  "@featureBoardKindBug": {
+    "description": "Selector option: the request is a bug report"
+  },
+  "featureBoardBugChip": "Bug",
+  "@featureBoardBugChip": {
+    "description": "Small chip marking a board item as a bug report"
+  },
+  "featureBoardNewBugIntro": "Tell us what broke. Others who hit the same thing can upvote it.",
+  "@featureBoardNewBugIntro": {
+    "description": "Intro text on the create sheet when reporting a bug"
+  },
+  "featureBoardBugTitleLabel": "What went wrong?",
+  "@featureBoardBugTitleLabel": {
+    "description": "Title field label when reporting a bug"
+  },
+  "featureBoardBugTitleHint": "Totals don't add up after splitting an expense",
+  "@featureBoardBugTitleHint": {
+    "description": "Title field example when reporting a bug"
+  },
+  "featureBoardBugDescriptionLabel": "Steps to reproduce (optional)",
+  "@featureBoardBugDescriptionLabel": {
+    "description": "Description field label when reporting a bug"
+  },
+  "featureBoardBugDescriptionHint": "What did you do, and what happened instead?",
+  "@featureBoardBugDescriptionHint": {
+    "description": "Description field example when reporting a bug"
+  },
+  "featureBoardBugEmpty": "Add a short summary of the bug.",
+  "@featureBoardBugEmpty": {
+    "description": "Validation message when a bug report has no title"
+  },
+  "featureBoardBugCreated": "Thanks, your report is on the board.",
+  "@featureBoardBugCreated": {
+    "description": "Toast after a bug report was posted"
+  },
+  "featureBoardComments": "{count, plural, =0{No comments} =1{1 comment} other{{count} comments}}",
+  "@featureBoardComments": {
+    "description": "Comment count on a board item",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "featureBoardCommentsHeading": "Conversation",
+  "@featureBoardCommentsHeading": {
+    "description": "Heading above the comment thread"
+  },
+  "featureBoardTeamBadge": "mitlist team",
+  "@featureBoardTeamBadge": {
+    "description": "Badge on comments written by the team"
+  },
+  "featureBoardYou": "You",
+  "@featureBoardYou": {
+    "description": "Author label on the reader's own comments"
+  },
+  "featureBoardAnonymous": "A mitlist user",
+  "@featureBoardAnonymous": {
+    "description": "Author label when a commenter shared no name"
+  },
+  "featureBoardCommentHint": "Add a comment…",
+  "@featureBoardCommentHint": {
+    "description": "Placeholder of the comment composer"
+  },
+  "featureBoardCommentSend": "Post comment",
+  "@featureBoardCommentSend": {
+    "description": "Accessibility label of the comment send button"
+  },
+  "featureBoardCommentFailed": "Couldn't post your comment. Please try again.",
+  "@featureBoardCommentFailed": {
+    "description": "Error when posting a comment fails"
+  },
+  "featureBoardNoComments": "No comments yet. Have a question or a use case? Start the conversation.",
+  "@featureBoardNoComments": {
+    "description": "Empty state of the comment thread"
+  },
+  "featureBoardDetailLoadFailed": "Couldn't load this request",
+  "@featureBoardDetailLoadFailed": {
+    "description": "Error when a board item fails to load"
+  },
+  "featureBoardTimeJustNow": "Just now",
+  "@featureBoardTimeJustNow": {
+    "description": "Relative time: under a minute ago"
+  },
+  "featureBoardTimeMinutesAgo": "{count, plural, =1{1 min ago} other{{count} min ago}}",
+  "@featureBoardTimeMinutesAgo": {
+    "description": "Relative time in minutes",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "featureBoardTimeHoursAgo": "{count, plural, =1{1 hour ago} other{{count} hours ago}}",
+  "@featureBoardTimeHoursAgo": {
+    "description": "Relative time in hours",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "featureBoardTimeDaysAgo": "{count, plural, =1{Yesterday} other{{count} days ago}}",
+  "@featureBoardTimeDaysAgo": {
+    "description": "Relative time in days",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "featureBoardStatusInProgressHint": "We're building this right now.",
+  "@featureBoardStatusInProgressHint": {
+    "description": "Explanation under the in-progress status on a board item"
+  },
+  "featureBoardStatusUnderReviewHint": "We've seen this and are weighing it up. Votes and comments help.",
+  "@featureBoardStatusUnderReviewHint": {
+    "description": "Explanation under the under-review status on a board item"
+  },
+  "featureBoardStatusShippedHint": "This is live. Update the app if you don't see it yet.",
+  "@featureBoardStatusShippedHint": {
+    "description": "Explanation under the shipped status on a board item"
   },
   "weeklySummaryTitle": "Week in review",
   "@weeklySummaryTitle": {

@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../l10n/app_localizations.dart';
+import '../models/feature_board_models.dart';
+import '../screens/you/feature_board_widgets.dart';
 import '../services/feedback_service.dart';
 import '../theme/spacing.dart';
 import '../utils/route_history.dart';
@@ -10,7 +12,6 @@ import '../widgets/alert.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_input.dart';
-
 import '../widgets/app_toast.dart';
 
 /// Opens the "Send feedback" bottom sheet.
@@ -31,6 +32,7 @@ Future<void> showFeedbackSheet(BuildContext context, WidgetRef ref) {
   final previousPage = RouteHistory.previous;
 
   final textController = TextEditingController();
+  var kind = FeatureBoardKind.feature;
   var isSending = false;
   String? error;
 
@@ -52,6 +54,7 @@ Future<void> showFeedbackSheet(BuildContext context, WidgetRef ref) {
           try {
             await ref.read(feedbackServiceProvider).submitFeatureRequest(
                   text: text,
+                  kind: kind,
                   sourcePage: sourcePage,
                   previousPage: previousPage,
                 );
@@ -74,6 +77,11 @@ Future<void> showFeedbackSheet(BuildContext context, WidgetRef ref) {
             Text(
               l10n.feedbackSheetIntro,
               style: Theme.of(sheetContext).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: MitlistSpacing.md),
+            FeatureBoardKindSelector(
+              value: kind,
+              onChanged: (value) => setSheetState(() => kind = value),
             ),
             const SizedBox(height: MitlistSpacing.md),
             if (error != null) ...[

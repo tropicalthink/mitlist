@@ -10022,7 +10022,7 @@ abstract class AppLocalizations {
   /// Action to create a feature-board request
   ///
   /// In en, this message translates to:
-  /// **'Suggest a feature'**
+  /// **'Add a request'**
   String get featureBoardAdd;
 
   /// Feature-board introduction title
@@ -10034,7 +10034,7 @@ abstract class AppLocalizations {
   /// Feature-board introduction body
   ///
   /// In en, this message translates to:
-  /// **'Vote for ideas you want most. Your votes help us decide what to improve next.'**
+  /// **'Vote for ideas you want most, report what\'s broken, and follow along as we work on it.'**
   String get featureBoardIntroBody;
 
   /// Feature-board loading error
@@ -10064,7 +10064,7 @@ abstract class AppLocalizations {
   /// New feature sheet title
   ///
   /// In en, this message translates to:
-  /// **'Suggest a feature'**
+  /// **'New request'**
   String get featureBoardNewTitle;
 
   /// New feature sheet introduction
@@ -10133,12 +10133,6 @@ abstract class AppLocalizations {
   /// **'In progress'**
   String get featureBoardInProgress;
 
-  /// Feature-board planned section
-  ///
-  /// In en, this message translates to:
-  /// **'Planned'**
-  String get featureBoardPlanned;
-
   /// Feature-board shipped section
   ///
   /// In en, this message translates to:
@@ -10162,6 +10156,210 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 vote} other{{count} votes}}'**
   String featureBoardVotes(num count);
+
+  /// Board status: the team has seen the request but not started it
+  ///
+  /// In en, this message translates to:
+  /// **'Under review'**
+  String get featureBoardUnderReview;
+
+  /// Board filter chip: every kind of request
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get featureBoardFilterAll;
+
+  /// Board filter chip: feature requests only
+  ///
+  /// In en, this message translates to:
+  /// **'Features'**
+  String get featureBoardFilterFeatures;
+
+  /// Board filter chip: bug reports only
+  ///
+  /// In en, this message translates to:
+  /// **'Bugs'**
+  String get featureBoardFilterBugs;
+
+  /// Board sort chip: most votes first
+  ///
+  /// In en, this message translates to:
+  /// **'Top'**
+  String get featureBoardSortTop;
+
+  /// Board sort chip: newest first
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get featureBoardSortNew;
+
+  /// Label above the feature/bug selector when creating a request
+  ///
+  /// In en, this message translates to:
+  /// **'What is it?'**
+  String get featureBoardKindLabel;
+
+  /// Selector option: the request is a feature idea
+  ///
+  /// In en, this message translates to:
+  /// **'Feature request'**
+  String get featureBoardKindFeature;
+
+  /// Selector option: the request is a bug report
+  ///
+  /// In en, this message translates to:
+  /// **'Bug report'**
+  String get featureBoardKindBug;
+
+  /// Small chip marking a board item as a bug report
+  ///
+  /// In en, this message translates to:
+  /// **'Bug'**
+  String get featureBoardBugChip;
+
+  /// Intro text on the create sheet when reporting a bug
+  ///
+  /// In en, this message translates to:
+  /// **'Tell us what broke. Others who hit the same thing can upvote it.'**
+  String get featureBoardNewBugIntro;
+
+  /// Title field label when reporting a bug
+  ///
+  /// In en, this message translates to:
+  /// **'What went wrong?'**
+  String get featureBoardBugTitleLabel;
+
+  /// Title field example when reporting a bug
+  ///
+  /// In en, this message translates to:
+  /// **'Totals don\'t add up after splitting an expense'**
+  String get featureBoardBugTitleHint;
+
+  /// Description field label when reporting a bug
+  ///
+  /// In en, this message translates to:
+  /// **'Steps to reproduce (optional)'**
+  String get featureBoardBugDescriptionLabel;
+
+  /// Description field example when reporting a bug
+  ///
+  /// In en, this message translates to:
+  /// **'What did you do, and what happened instead?'**
+  String get featureBoardBugDescriptionHint;
+
+  /// Validation message when a bug report has no title
+  ///
+  /// In en, this message translates to:
+  /// **'Add a short summary of the bug.'**
+  String get featureBoardBugEmpty;
+
+  /// Toast after a bug report was posted
+  ///
+  /// In en, this message translates to:
+  /// **'Thanks, your report is on the board.'**
+  String get featureBoardBugCreated;
+
+  /// Comment count on a board item
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No comments} =1{1 comment} other{{count} comments}}'**
+  String featureBoardComments(int count);
+
+  /// Heading above the comment thread
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation'**
+  String get featureBoardCommentsHeading;
+
+  /// Badge on comments written by the team
+  ///
+  /// In en, this message translates to:
+  /// **'mitlist team'**
+  String get featureBoardTeamBadge;
+
+  /// Author label on the reader's own comments
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get featureBoardYou;
+
+  /// Author label when a commenter shared no name
+  ///
+  /// In en, this message translates to:
+  /// **'A mitlist user'**
+  String get featureBoardAnonymous;
+
+  /// Placeholder of the comment composer
+  ///
+  /// In en, this message translates to:
+  /// **'Add a comment…'**
+  String get featureBoardCommentHint;
+
+  /// Accessibility label of the comment send button
+  ///
+  /// In en, this message translates to:
+  /// **'Post comment'**
+  String get featureBoardCommentSend;
+
+  /// Error when posting a comment fails
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t post your comment. Please try again.'**
+  String get featureBoardCommentFailed;
+
+  /// Empty state of the comment thread
+  ///
+  /// In en, this message translates to:
+  /// **'No comments yet. Have a question or a use case? Start the conversation.'**
+  String get featureBoardNoComments;
+
+  /// Error when a board item fails to load
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load this request'**
+  String get featureBoardDetailLoadFailed;
+
+  /// Relative time: under a minute ago
+  ///
+  /// In en, this message translates to:
+  /// **'Just now'**
+  String get featureBoardTimeJustNow;
+
+  /// Relative time in minutes
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 min ago} other{{count} min ago}}'**
+  String featureBoardTimeMinutesAgo(int count);
+
+  /// Relative time in hours
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 hour ago} other{{count} hours ago}}'**
+  String featureBoardTimeHoursAgo(int count);
+
+  /// Relative time in days
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Yesterday} other{{count} days ago}}'**
+  String featureBoardTimeDaysAgo(int count);
+
+  /// Explanation under the in-progress status on a board item
+  ///
+  /// In en, this message translates to:
+  /// **'We\'re building this right now.'**
+  String get featureBoardStatusInProgressHint;
+
+  /// Explanation under the under-review status on a board item
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ve seen this and are weighing it up. Votes and comments help.'**
+  String get featureBoardStatusUnderReviewHint;
+
+  /// Explanation under the shipped status on a board item
+  ///
+  /// In en, this message translates to:
+  /// **'This is live. Update the app if you don\'t see it yet.'**
+  String get featureBoardStatusShippedHint;
 
   /// Weekly summary screen title
   ///
