@@ -75,6 +75,29 @@ DATABASE_URL="$DATABASE_URL" go run ./cmd/migrate version
 - [ ] Keep coarse IP abuse protection enabled at the edge. Fine-grained API
       rate-limit buckets are process-local, so replicas do not share them.
 
+### Sign-in methods
+
+The API offers three doors and reports which are open at
+`GET /api/v1/oauth/providers`, so the app only shows what will work:
+
+- **Google / Apple OAuth** — on whenever the provider's credentials are set.
+  This is how the official service signs people in.
+- **Email + password** — on only with `PASSWORD_AUTH_ENABLED=true`. It
+  defaults to off because it exposes register, login, reset and
+  change-password on the public API, and the hosted service has no need for
+  it. A self-hosted instance without OAuth credentials needs it on;
+  `backend/.env.example` ships with it set. Turning it off on a server that
+  already has password accounts locks those people out until it is on again.
+- **Guest** — always on, subject to the attestation below.
+
+```dotenv
+PASSWORD_AUTH_ENABLED=true
+```
+
+The API logs a warning at startup when neither OAuth nor passwords are
+configured: guests can still be created, but nobody can sign back in on a
+second device.
+
 ### Guest sign-up attestation
 
 The guest endpoint is the only unauthenticated, abuse-sensitive route, and the

@@ -21,6 +21,7 @@ type OAuthHandler struct {
 	googleClient *oauthclient.GoogleClient
 	appleClient  *oauthclient.AppleClient
 	frontendURL  string
+	passwordAuth bool
 }
 
 const (
@@ -36,15 +37,18 @@ func NewOAuthHandler(cfg *config.Config, service *services.OAuthService) *OAuthH
 		googleClient: oauthclient.NewGoogleClient(cfg),
 		appleClient:  oauthclient.NewAppleClient(cfg),
 		frontendURL:  cfg.FrontendURL,
+		passwordAuth: cfg.PasswordAuthEnabled,
 	}
 }
 
-// GetProviders reports which OAuth providers the server is configured for,
-// so clients can hide sign-in buttons that would dead-end.
+// GetProviders reports which sign-in methods the server offers, so clients
+// can hide buttons and forms that would dead-end. "password" covers the whole
+// email + password surface: login, registration, reset and change-password.
 func (h *OAuthHandler) GetProviders(w http.ResponseWriter, r *http.Request) {
 	api.RespondJSON(w, http.StatusOK, map[string]bool{
-		"google": h.googleClient.Configured(),
-		"apple":  h.appleClient.Configured(),
+		"google":   h.googleClient.Configured(),
+		"apple":    h.appleClient.Configured(),
+		"password": h.passwordAuth,
 	})
 }
 

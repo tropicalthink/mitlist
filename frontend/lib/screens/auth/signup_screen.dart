@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/auth_models.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/oauth_provider.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../widgets/alert.dart';
@@ -37,6 +38,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   bool _isLoading = false;
   bool _isSuccess = false;
   bool _awaitingVerification = false;
+  bool _redirectedToLogin = false;
   String? _errorMessage;
   String? _nameError;
   String? _emailError;
@@ -47,6 +49,15 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   String? get _inviteCode =>
       GoRouterState.of(context).uri.queryParameters['invite'];
+
+  void _goToLogin() {
+    final invite = _inviteCode;
+    if (invite != null && invite.isNotEmpty) {
+      context.goNamed('login', queryParameters: {'invite': invite});
+    } else {
+      context.goNamed('login');
+    }
+  }
 
   @override
   void initState() {
@@ -240,6 +251,18 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Registration here is email + password. A server without it signs new
+    // people up through Google or Apple, which live on the login screen.
+    final providers = ref.watch(oauthProvidersProvider).valueOrNull;
+    if (providers != null && !providers.password) {
+      if (!_redirectedToLogin) {
+        _redirectedToLogin = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _goToLogin();
+        });
+      }
+      return const Scaffold(body: CorkBoardBackground());
+    }
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
@@ -392,7 +415,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                   variant: AppButtonVariant.ghost,
                                   color: AppButtonColor.primary,
                                   text: l10n.authSignupSignInLink,
-                                  onPressed: () => context.goNamed('login'),
+                                  onPressed: _goToLogin,
                                 ),
                               ],
                             ),

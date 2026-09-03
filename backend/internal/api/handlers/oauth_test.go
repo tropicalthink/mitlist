@@ -138,21 +138,21 @@ func TestOAuth_GetProviders_ReflectsConfiguration(t *testing.T) {
 		{
 			name: "none configured",
 			cfg:  func() *config.Config { return &config.Config{} },
-			want: `{"apple":false,"google":false}`,
+			want: `{"apple":false,"google":false,"password":false}`,
 		},
 		{
 			name: "google only",
 			cfg: func() *config.Config {
 				return &config.Config{GoogleClientID: "id", GoogleClientSecret: "secret"}
 			},
-			want: `{"apple":false,"google":true}`,
+			want: `{"apple":false,"google":true,"password":false}`,
 		},
 		{
 			name: "google secret missing",
 			cfg: func() *config.Config {
 				return &config.Config{GoogleClientID: "id"}
 			},
-			want: `{"apple":false,"google":false}`,
+			want: `{"apple":false,"google":false,"password":false}`,
 		},
 		{
 			name: "both configured",
@@ -166,14 +166,21 @@ func TestOAuth_GetProviders_ReflectsConfiguration(t *testing.T) {
 					ApplePrivateKey:    "pem",
 				}
 			},
-			want: `{"apple":true,"google":true}`,
+			want: `{"apple":true,"google":true,"password":false}`,
 		},
 		{
 			name: "apple partially configured",
 			cfg: func() *config.Config {
 				return &config.Config{AppleClientID: "me.mitlist", AppleTeamID: "TEAM"}
 			},
-			want: `{"apple":false,"google":false}`,
+			want: `{"apple":false,"google":false,"password":false}`,
+		},
+		{
+			name: "password only, the self-hosted default",
+			cfg: func() *config.Config {
+				return &config.Config{PasswordAuthEnabled: true}
+			},
+			want: `{"apple":false,"google":false,"password":true}`,
 		},
 	}
 

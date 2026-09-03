@@ -34,6 +34,7 @@ services:
       API_PREFIX: /api
       ACCESS_TOKEN_EXPIRE_MINUTES: "15"
       RUN_MIGRATIONS_ON_STARTUP: "true"
+      PASSWORD_AUTH_ENABLED: "true"
       LOG_LEVEL: DEBUG
       SCRAPER_FLARESOLVER_URL: http://flaresolverr:8191
     env_file:

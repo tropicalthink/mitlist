@@ -717,7 +717,7 @@ void main() {
       overrides: [
         authServiceProviderAsync.overrideWith((ref) async => authService),
         oauthProvidersProvider.overrideWith(
-          (ref) async => (google: true, apple: true),
+          (ref) async => (google: true, apple: true, password: true),
         ),
       ],
     );
@@ -727,6 +727,12 @@ void main() {
     expect(find.text('CONTINUE WITH APPLE'),
         findsOneWidget); // outline variant renders uppercase
     expect(find.text('Remember me'), findsOneWidget);
+
+    // The form waits behind a button at the bottom while OAuth is on offer.
+    expect(find.byType(TextField), findsNothing);
+    await tester.tap(find.text('Sign in with email'));
+    await _pumpAfter(tester);
+    expect(find.byType(TextField), findsNWidgets(2));
 
     await tester.tap(find.text('Forgot password?'));
     await _pumpAfter(tester);
@@ -768,7 +774,7 @@ void main() {
       overrides: [
         authServiceProviderAsync.overrideWith((ref) async => authService),
         oauthProvidersProvider.overrideWith(
-          (ref) async => (google: false, apple: false),
+          (ref) async => (google: false, apple: false, password: true),
         ),
       ],
     );
@@ -788,6 +794,88 @@ void main() {
     expect(authService.lastLoginRequest!.email, 'user@example.com');
     expect(authService.lastLoginRequest!.password, 'secret123');
     expect(authService.lastLoginRememberMe, isFalse);
+  });
+
+  testWidgets('login screen hides the password form when the server has none',
+      (tester) async {
+    await _setLargeSurface(tester);
+    final authService = FakeAuthService(currentUser: user);
+
+    await _pumpScreen(
+      tester,
+      child: const LoginScreen(),
+      overrides: [
+        authServiceProviderAsync.overrideWith((ref) async => authService),
+        oauthProvidersProvider.overrideWith(
+          (ref) async => (google: true, apple: false, password: false),
+        ),
+      ],
+    );
+
+    // OAuth is the whole panel: no fields, no sign-in button, no links that
+    // would dead-end at a 403.
+    expect(find.text('CONTINUE WITH GOOGLE'), findsOneWidget);
+    expect(find.byType(TextField), findsNothing);
+    expect(find.text('SIGN IN'), findsNothing);
+    expect(find.text('Forgot password?'), findsNothing);
+    expect(find.text('Create account'), findsNothing);
+    expect(find.text('Sign in with email'), findsNothing);
+    // Remember me still applies to the OAuth flow.
+    expect(find.text('Remember me'), findsOneWidget);
+  });
+
+  testWidgets('login screen puts the password form after the OAuth buttons',
+      (tester) async {
+    await _setLargeSurface(tester);
+    final authService = FakeAuthService(currentUser: user);
+
+    await _pumpScreen(
+      tester,
+      child: const LoginScreen(),
+      overrides: [
+        authServiceProviderAsync.overrideWith((ref) async => authService),
+        oauthProvidersProvider.overrideWith(
+          (ref) async => (google: true, apple: false, password: true),
+        ),
+      ],
+    );
+
+    // Folded: a button at the bottom, no fields yet.
+    final googleY = tester.getTopLeft(find.text('CONTINUE WITH GOOGLE')).dy;
+    final buttonY = tester.getTopLeft(find.text('Sign in with email')).dy;
+    expect(googleY, lessThan(buttonY));
+    expect(find.byType(TextField), findsNothing);
+
+    // Unfolded: the form takes the button's place, still under Google.
+    await tester.tap(find.text('Sign in with email'));
+    await _pumpAfter(tester);
+    expect(find.text('Sign in with email'), findsNothing);
+    final emailY = tester.getTopLeft(find.byType(TextField).first).dy;
+    expect(googleY, lessThan(emailY));
+    expect(find.text('Forgot password?'), findsOneWidget);
+  });
+
+  testWidgets('login screen explains a server with no sign-in method',
+      (tester) async {
+    await _setLargeSurface(tester);
+    final authService = FakeAuthService(currentUser: user);
+
+    await _pumpScreen(
+      tester,
+      child: const LoginScreen(),
+      overrides: [
+        authServiceProviderAsync.overrideWith((ref) async => authService),
+        oauthProvidersProvider.overrideWith(
+          (ref) async => (google: false, apple: false, password: false),
+        ),
+      ],
+    );
+
+    expect(find.byType(TextField), findsNothing);
+    expect(
+      find.textContaining('no sign-in method turned on'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('oauth callback screen completes session and queues onboarding',

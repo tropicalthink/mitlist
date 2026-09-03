@@ -86,6 +86,7 @@ func mustLoadTestConfig() *config.Config {
 		FrontendURL:              "http://localhost:5173",
 		APIPrefix:                "/api",
 		AccessTokenExpireMinutes: 60,
+		PasswordAuthEnabled:      true,
 	}
 }
 
@@ -361,6 +362,10 @@ func newAuthRouter(t *testing.T) (chi.Router, *AuthHandler) {
 }
 
 func newAuthRouterWithMail(t *testing.T) (chi.Router, *AuthHandler, *captureMailService) {
+	return newAuthRouterWithConfig(t, testCfg)
+}
+
+func newAuthRouterWithConfig(t *testing.T, cfg *config.Config) (chi.Router, *AuthHandler, *captureMailService) {
 	userRepo := newTestUserRepo()
 	authRepo := newTestAuthRepo()
 	ps := newTestPasswordService()
@@ -371,29 +376,34 @@ func newAuthRouterWithMail(t *testing.T) (chi.Router, *AuthHandler, *captureMail
 	guestSvc := services.NewGuestServiceWithAuth(userRepo, jwtSvc, ps, authRepo, ms)
 	oauthSvc := services.NewOAuthService(userRepo, authRepo, jwtSvc, nil, nil)
 
-	h := NewAuthHandler(testCfg, userSvc, guestSvc, oauthSvc, jwtSvc)
+	h := NewAuthHandler(cfg, userSvc, guestSvc, oauthSvc, jwtSvc)
 
 	r := chi.NewRouter()
 	r.Route("/api/v1/auth", func(r chi.Router) {
-		r.Post("/register", h.Register)
-		// Mounted like the real router: registration hands back no tokens, so a
-		// test that needs an authenticated user has to complete verification.
-		r.Post("/verify-email", h.VerifyEmail)
-		r.Post("/verify-email/resend", h.ResendEmailVerification)
-		r.Post("/login", h.Login)
 		r.Post("/token/refresh", h.Refresh)
 		r.Post("/logout", h.Logout)
-		r.Post("/password-reset", h.PasswordReset)
-		r.Post("/password-reset/confirm", h.PasswordResetConfirm)
 		r.Post("/guest", h.CreateGuest)
+		// Mounted like the real router: the password surface sits behind the
+		// PASSWORD_AUTH_ENABLED gate, and registration hands back no tokens,
+		// so a test that needs an authenticated user has to complete
+		// verification.
+		r.Group(func(r chi.Router) {
+			r.Use(h.requirePasswordAuth)
+			r.Post("/register", h.Register)
+			r.Post("/verify-email", h.VerifyEmail)
+			r.Post("/verify-email/resend", h.ResendEmailVerification)
+			r.Post("/login", h.Login)
+			r.Post("/password-reset", h.PasswordReset)
+			r.Post("/password-reset/confirm", h.PasswordResetConfirm)
+		})
 		r.Group(func(r chi.Router) {
 			r.Use(testAuthMiddleware)
 			r.Get("/me", h.GetMe)
 			r.Patch("/me", h.UpdateMe)
 			r.Delete("/me", h.DeleteMe)
-			r.Post("/change-password", h.ChangePassword)
-			r.Post("/guest/convert", h.ConvertGuest)
-			r.Post("/claim-account", h.ClaimAccount)
+			r.With(h.requirePasswordAuth).Post("/change-password", h.ChangePassword)
+			r.With(h.requirePasswordAuth).Post("/guest/convert", h.ConvertGuest)
+			r.With(h.requirePasswordAuth).Post("/claim-account", h.ClaimAccount)
 		})
 	})
 	return r, h, ms
@@ -414,6 +424,7 @@ func newGroupRouter(t *testing.T) (chi.Router, *GroupHandler) {
 	r.Delete("/api/v1/groups/{id}", h.DeleteGroup)
 	r.Get("/api/v1/groups/{id}/members", h.ListMembers)
 	r.Post("/api/v1/groups/{id}/members", h.InviteMember)
+	r.Get("/api/v1/groups/invites/{code}", h.PreviewInvite)
 	r.Post("/api/v1/groups/join", h.JoinGroup)
 	r.Delete("/api/v1/groups/{id}/members/{user_id}", h.RemoveMember)
 	r.Patch("/api/v1/groups/{id}/members/{user_id}", h.UpdateMemberRole)
