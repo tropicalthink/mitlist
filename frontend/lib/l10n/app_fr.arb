@@ -6070,6 +6070,7 @@
   "recipeAddedToCookbook": "Ajouté à {name}",
   "recipeAddToCookbookFailed": "Impossible d’ajouter au livre",
   "sharedRecipeOpenInApp": "Ouvrir dans Mitlist",
+  "openInAppButton": "Ouvrir dans Mitlist",
   "recipeShareSubject": "{title} sur Mitlist",
   "accountExportCalendar": "Exporter le calendrier (.ics)",
   "authSignupConfirmPassword": "Confirmer le mot de passe",

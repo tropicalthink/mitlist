@@ -8332,6 +8332,8 @@
   "@recipeAddToCookbookFailed": {"description": "Error toast"},
   "sharedRecipeOpenInApp": "Open in Mitlist",
   "@sharedRecipeOpenInApp": {"description": "Button on the web share page that deep-links into the installed app"},
+  "openInAppButton": "Open in Mitlist",
+  "@openInAppButton": {"description": "Button shown in a phone browser that hands the current invite or share link to the installed app"},
   "recipeShareSubject": "{title} on Mitlist",
   "@recipeShareSubject": {"description": "Share sheet subject line", "placeholders": {"title": {"type": "String"}}}
 }
