@@ -55,6 +55,14 @@ type Config struct {
 	// public API. Clients read the flag from GET /oauth/providers.
 	PasswordAuthEnabled bool `env:"PASSWORD_AUTH_ENABLED" default:"false"`
 
+	// Guest accounts: a one-tap "continue without signing up" session. Off by
+	// default because an unauthenticated POST that mints working accounts is
+	// the easiest thing on the API to abuse, and the hosted service no longer
+	// offers it. Existing guests keep refreshing and upgrading either way;
+	// only the creation of new ones is gated. Clients read the flag from
+	// GET /oauth/providers and hide the door when it is off.
+	GuestAuthEnabled bool `env:"GUEST_AUTH_ENABLED" default:"false"`
+
 	// Web Push
 	VapidPrivateKey string `env:"VAPID_PRIVATE_KEY"`
 	VapidPublicKey  string `env:"VAPID_PUBLIC_KEY"`
@@ -249,6 +257,7 @@ func (c *Config) LogIntegrationStatus() {
 	storageOn := c.S3BucketName != ""
 	oauthOn := c.GoogleClientID != "" || c.AppleClientID != ""
 	passwordOn := c.PasswordAuthEnabled
+	guestOn := c.GuestAuthEnabled
 	errorReportingOn := c.SentryDSN != ""
 	errorTracingOn := errorReportingOn && c.SentryTracesSampleRate > 0
 	fxOn := c.FxRateAPIURL != ""
@@ -262,6 +271,7 @@ func (c *Config) LogIntegrationStatus() {
 		Bool("file_storage", storageOn).
 		Bool("oauth", oauthOn).
 		Bool("password_auth", passwordOn).
+		Bool("guest_auth", guestOn).
 		Bool("error_reporting", errorReportingOn).
 		Bool("error_tracing", errorTracingOn).
 		Bool("fx_rates", fxOn).
@@ -295,7 +305,11 @@ func (c *Config) LogIntegrationStatus() {
 			Msg("some optional integrations are disabled; features depending on them will not work")
 	}
 	if !oauthOn && !passwordOn {
-		log.Warn().Msg("no sign-in method is configured: only guest accounts can be created, and nobody can sign back in on another device. Set PASSWORD_AUTH_ENABLED=true or configure Google/Apple OAuth")
+		if guestOn {
+			log.Warn().Msg("no sign-in method is configured: only guest accounts can be created, and nobody can sign back in on another device. Set PASSWORD_AUTH_ENABLED=true or configure Google/Apple OAuth")
+		} else {
+			log.Warn().Msg("no way to create an account is configured: guests are off and there is no sign-in method. Set PASSWORD_AUTH_ENABLED=true, configure Google/Apple OAuth, or set GUEST_AUTH_ENABLED=true")
+		}
 	}
 }
 

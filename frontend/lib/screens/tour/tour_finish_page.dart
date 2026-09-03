@@ -9,13 +9,19 @@ import '../../utils/oauth_flow.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_icon.dart';
+import '../../widgets/google_logo.dart';
 import '../../widgets/guest_continue_button.dart';
 import 'tour_screen.dart';
 
 /// The last tour page: the account choice. Every door leads to household
-/// setup; the guest door is the "later" that the tour's references all keep,
-/// and it is the same guest account the rest of the app already knows how to
-/// upgrade.
+/// setup. The guest door only appears when the server offers guest accounts
+/// (`GUEST_AUTH_ENABLED`); the hosted service keeps it closed, so most people
+/// see Google, Apple, email and sign-in only.
+///
+/// The sheet reads top to bottom as three groups: the ways to create an
+/// account (providers outlined, email as a text button), then the guest door
+/// with its footnote, then a one-line "Have an account? Sign in" under a
+/// rule so it never gets mistaken for another way to sign up.
 class TourFinishPage extends ConsumerStatefulWidget {
   const TourFinishPage({super.key});
 
@@ -36,14 +42,21 @@ class _TourFinishPageState extends ConsumerState<TourFinishPage>
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
     final providers = ref.watch(oauthProvidersProvider).valueOrNull;
     final google = providers?.google ?? false;
     final apple = providers?.apple ?? false;
     // Sign-up is an email + password form; without passwords a new account is
     // made by Google or Apple on the login screen, so "email" goes there.
     final passwordAuth = providers?.password ?? true;
+    final guestAuth = providers?.guest ?? false;
     final createRoute = passwordAuth ? 'signup' : 'login';
     final oauthBusy = oauthProvider != null;
+    final rule = Divider(
+      height: 1,
+      thickness: 1,
+      color: theme.colorScheme.outlineVariant,
+    );
 
     return TourPageSheet(
       eyebrow: l10n.tourFinishEyebrow,
@@ -59,7 +72,7 @@ class _TourFinishPageState extends ConsumerState<TourFinishPage>
           if (google) ...[
             AppButton(
               text: l10n.authLoginGoogle,
-              icon: const AppIcon(name: 'login', size: 20),
+              icon: const GoogleLogo(size: 20),
               variant: AppButtonVariant.outline,
               color: AppButtonColor.neutral,
               size: AppButtonSize.lg,
@@ -89,15 +102,35 @@ class _TourFinishPageState extends ConsumerState<TourFinishPage>
             size: AppButtonSize.lg,
             onPressed: oauthBusy ? null : () => context.goNamed(createRoute),
           ),
-          const SizedBox(height: MitlistSpacing.space3),
-          const GuestContinueButton(),
-          const SizedBox(height: MitlistSpacing.space3),
-          AppButton(
-            text: l10n.tourFinishSignIn,
-            variant: AppButtonVariant.ghost,
-            color: AppButtonColor.primary,
-            size: AppButtonSize.md,
-            onPressed: oauthBusy ? null : () => context.goNamed('login'),
+          if (guestAuth) ...[
+            const SizedBox(height: MitlistSpacing.space3),
+            rule,
+            const SizedBox(height: MitlistSpacing.space3),
+            GuestContinueButton(
+              footnoteColor: theme.colorScheme.onSurfaceVariant,
+            ),
+          ],
+          const SizedBox(height: MitlistSpacing.space4),
+          rule,
+          const SizedBox(height: MitlistSpacing.space2),
+          Wrap(
+            alignment: WrapAlignment.center,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Text(
+                l10n.authSignupHaveAccount,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              AppButton(
+                text: l10n.authSignupSignInLink,
+                variant: AppButtonVariant.ghost,
+                color: AppButtonColor.primary,
+                size: AppButtonSize.sm,
+                onPressed: oauthBusy ? null : () => context.goNamed('login'),
+              ),
+            ],
           ),
         ],
       ),

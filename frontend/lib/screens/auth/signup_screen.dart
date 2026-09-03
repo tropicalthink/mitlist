@@ -10,6 +10,7 @@ import '../../theme/typography.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_button.dart';
+import '../../widgets/google_logo.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/app_input.dart';
 import '../../widgets/board/cork_board.dart';
@@ -354,7 +355,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
           if (providers.google) ...[
             AppButton(
               text: l10n.authLoginGoogle,
-              icon: const AppIcon(name: 'login', size: 20),
+              icon: const GoogleLogo(size: 20),
               variant: AppButtonVariant.outline,
               color: AppButtonColor.neutral,
               isLoading: oauthProvider == 'google',

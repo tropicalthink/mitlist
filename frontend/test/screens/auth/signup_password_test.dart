@@ -44,7 +44,8 @@ Future<void> _pumpSignup(WidgetTester tester) async {
         // Password-only: no provider buttons, so the form is unfolded from
         // the first frame and these cases reach it without a tap.
         oauthProvidersProvider.overrideWith(
-          (ref) async => (google: false, apple: false, password: true),
+          (ref) async =>
+              (google: false, apple: false, password: true, guest: false),
         ),
       ],
       child: MaterialApp.router(

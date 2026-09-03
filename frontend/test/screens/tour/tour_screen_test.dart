@@ -73,6 +73,7 @@ void main() {
   Future<ProviderContainer> pumpTour(
     WidgetTester tester, {
     required _GuestAuthService authService,
+    bool guest = false,
   }) async {
     late ProviderContainer container;
     await tester.pumpWidget(
@@ -80,7 +81,8 @@ void main() {
         overrides: [
           authServiceProviderAsync.overrideWith((ref) async => authService),
           oauthProvidersProvider.overrideWith(
-            (ref) async => (google: true, apple: false, password: true),
+            (ref) async =>
+                (google: true, apple: false, password: true, guest: guest),
           ),
         ],
         child: Builder(
@@ -112,7 +114,8 @@ void main() {
       addTearDown(tester.view.reset);
 
       final authService = _GuestAuthService(user: guestUser);
-      final container = await pumpTour(tester, authService: authService);
+      final container =
+          await pumpTour(tester, authService: authService, guest: true);
 
       // 1 — why
       expect(find.text('Who bought milk, who owes what, whose turn is it?'),
@@ -155,7 +158,7 @@ void main() {
       await tester.pumpAndSettle();
       await next(tester, 'NEXT');
 
-      // 6 — account choice, with the guest door.
+      // 6 — account choice, with the guest door (the server opted in).
       expect(find.text('Now do it with the people you actually live with.'),
           findsOneWidget);
       expect(find.text('NEXT'), findsNothing);
@@ -167,6 +170,26 @@ void main() {
       expect(container.read(authStateProvider), isTrue);
       expect(container.read(isGuestProvider), isTrue);
       expect(container.read(pendingAuthNavigationProvider), '/onboarding');
+    });
+
+    testWidgets('the guest door is closed unless the server offers it',
+        (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.reset);
+
+      final authService = _GuestAuthService(user: guestUser);
+      await pumpTour(tester, authService: authService);
+
+      await tester.tap(find.text('Skip'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Now do it with the people you actually live with.'),
+          findsOneWidget);
+      expect(find.text('CONTINUE WITH GOOGLE'), findsOneWidget);
+      expect(find.text('Continue with email'), findsOneWidget);
+      expect(find.text('Continue as guest'), findsNothing);
+      expect(authService.guestCreated, isFalse);
     });
 
     testWidgets('skip jumps to the account page and email goes to signup',

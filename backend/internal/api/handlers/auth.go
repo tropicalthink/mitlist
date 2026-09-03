@@ -76,6 +76,27 @@ var errPasswordAuthDisabled = &api.PermissionDeniedError{
 	Message: "email and password sign-in is disabled on this server",
 }
 
+// errGuestAuthDisabled is the answer for guest creation on a server that runs
+// without GUEST_AUTH_ENABLED. Same shape as errPasswordAuthDisabled: a 403
+// with a stable message, so a client that skipped /oauth/providers learns
+// the door is closed rather than retrying.
+var errGuestAuthDisabled = &api.PermissionDeniedError{
+	Message: "guest accounts are disabled on this server",
+}
+
+// requireGuestAuth guards the creation of new guest accounts. Only creation:
+// a guest who already exists must still be able to refresh, convert and
+// link a provider, or turning the flag off would strand them.
+func (h *AuthHandler) requireGuestAuth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if h.cfg == nil || !h.cfg.GuestAuthEnabled {
+			api.RespondError(w, errGuestAuthDisabled)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 // requirePasswordAuth guards every route that creates, checks or changes a
 // password. Registration is included: an account registered here can only
 // ever sign in with a password, so it is pointless where passwords are off.
@@ -94,7 +115,7 @@ func (h *AuthHandler) RegisterRoutes(r chi.Router) {
 	r.Route("/auth", func(r chi.Router) {
 		r.Post("/token/refresh", h.Refresh)
 		r.Post("/logout", h.Logout)
-		r.Post("/guest", h.CreateGuest)
+		r.With(h.requireGuestAuth).Post("/guest", h.CreateGuest)
 
 		// Email + password (public), only where the operator turned it on.
 		r.Group(func(r chi.Router) {

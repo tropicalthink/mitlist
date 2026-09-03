@@ -24,6 +24,7 @@ type OAuthHandler struct {
 	appleClient  *oauthclient.AppleClient
 	frontendURL  string
 	passwordAuth bool
+	guestAuth    bool
 }
 
 const (
@@ -43,17 +44,21 @@ func NewOAuthHandler(cfg *config.Config, service *services.OAuthService) *OAuthH
 		appleClient:  oauthclient.NewAppleClient(cfg),
 		frontendURL:  cfg.FrontendURL,
 		passwordAuth: cfg.PasswordAuthEnabled,
+		guestAuth:    cfg.GuestAuthEnabled,
 	}
 }
 
 // GetProviders reports which sign-in methods the server offers, so clients
 // can hide buttons and forms that would dead-end. "password" covers the whole
 // email + password surface: login, registration, reset and change-password.
+// "guest" is whether new guest accounts can be created; a missing key on an
+// older server means the client should assume they cannot.
 func (h *OAuthHandler) GetProviders(w http.ResponseWriter, r *http.Request) {
 	api.RespondJSON(w, http.StatusOK, map[string]bool{
 		"google":   h.googleClient.Configured(),
 		"apple":    h.appleClient.Configured(),
 		"password": h.passwordAuth,
+		"guest":    h.guestAuth,
 	})
 }
 

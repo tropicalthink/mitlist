@@ -69,6 +69,20 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
   }
 
   @override
+  void didUpdateWidget(covariant PinwallSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // The hub keeps this widget across a household switch, so the realtime
+    // stream has to move with it or the wall keeps listening to the old house.
+    if (oldWidget.groupId != widget.groupId) {
+      final repo = _repo;
+      if (repo != null) {
+        repo.detachSse();
+        repo.attachSse(ref.read(sseServiceProvider), widget.groupId);
+      }
+    }
+  }
+
+  @override
   void dispose() {
     _repo?.detachSse();
     super.dispose();

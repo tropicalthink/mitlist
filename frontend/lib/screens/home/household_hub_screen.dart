@@ -139,11 +139,26 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
         unawaited(ref.read(currentGroupIdProvider.notifier).set(gid));
         unawaited(_loadData());
       } else {
+        // The cache says no household, but the cache can be behind: an
+        // invite accepted a moment ago, a household created on another
+        // device. Ask the server once before concluding there is nothing
+        // here, or a brand-new member is bounced into the setup flow for the
+        // very household they just joined.
+        final fresh = await _refetchGroups() ?? groups;
+        final freshGid =
+            resolveActiveGroupId(fresh, ref.read(currentGroupIdProvider));
+        if (!mounted) return;
+        if (isValidGroupId(freshGid)) {
+          _resolvedGroupId = freshGid;
+          unawaited(ref.read(currentGroupIdProvider.notifier).set(freshGid));
+          unawaited(_loadData());
+          return;
+        }
         // No household on this account. The board setup flow owns that state;
         // an empty hub behind dead tabs would only restate it with less help.
         // The skeleton stays up for the frame or two the redirect takes.
         _resolvedGroupId = null;
-        _households = groups;
+        _households = fresh;
         context.goNamed('onboarding');
       }
     } catch (e) {
@@ -153,6 +168,17 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
           _error = e;
         });
       }
+    }
+  }
+
+  /// A network refresh of the household list, or null when it could not be
+  /// done (offline, or a test harness without a repository behind the cache).
+  Future<List<Group>?> _refetchGroups() async {
+    try {
+      await refreshCachedGroups(ref);
+      return await ref.read(cachedGroupsProvider.future);
+    } catch (_) {
+      return null;
     }
   }
 
@@ -610,6 +636,19 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Other screens switch household by writing the provider and coming
+    // here: the account page, the households list, a notification tap. This
+    // screen lives in the shell's IndexedStack, so nothing rebuilds it for
+    // that; it has to follow the provider itself or it keeps showing the
+    // house it loaded first. Its own switcher goes through _switchGroup and
+    // writes the same id, which this ignores as already current.
+    ref.listen<String?>(currentGroupIdProvider, (previous, next) {
+      if (next == null || next == previous) return;
+      if (widget.groupId != null && widget.groupId!.isNotEmpty) return;
+      if (_resolvedGroupId == null || next == _resolvedGroupId) return;
+      unawaited(_switchGroup(next));
+    });
+
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       floatingActionButton:

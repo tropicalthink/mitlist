@@ -63,6 +63,12 @@ Future<OAuthLaunch> launchOAuthProvider(
 
   final authService = await ref.read(authServiceProviderAsync.future);
   await authService.setPendingOAuthRememberMe(rememberMe);
+  // The screen parked its destination (an invite accept page, say) in
+  // memory; on web the redirect below is a full page load, so it has to be
+  // written down for the callback screen to find.
+  await authService.setPendingOAuthNavigation(
+    linkToken == null ? ref.read(pendingAuthNavigationProvider) : null,
+  );
 
   final authUrl = Uri(
     scheme: baseUri.scheme,

@@ -4264,9 +4264,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authJoinExpired => 'This invite has expired. Ask for a fresh one.';
 
   @override
-  String get authJoinAlreadyUsed => 'This invite has already been used.';
-
-  @override
   String authJoinAlreadyMember(String name) {
     return 'You\'re already a member of $name.';
   }
@@ -6478,7 +6475,4 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tourFinishEmail => 'Continue with email';
-
-  @override
-  String get tourFinishSignIn => 'Sign in instead';
 }

@@ -19,6 +19,7 @@ import '../../widgets/alert.dart';
 import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/animated_check_toggle.dart';
 import '../../widgets/app_button.dart';
+import '../../widgets/google_logo.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/app_input.dart';
 import '../../widgets/board/cork_board.dart';
@@ -160,6 +161,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           '/join/${Uri.encodeComponent(invite)}';
     }
     ref.read(authStateProvider.notifier).state = true;
+  }
+
+  void _goToSignup() {
+    final invite = inviteCode;
+    if (invite != null && invite.isNotEmpty) {
+      context.goNamed('signup', queryParameters: {'invite': invite});
+    } else {
+      context.goNamed('signup');
+    }
   }
 
   void _showPasswordResetSheet() {
@@ -549,7 +559,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           if (providers.google) ...[
             AppButton(
               text: l10n.authLoginGoogle,
-              icon: const AppIcon(name: 'login', size: 20),
+              icon: const GoogleLogo(size: 20),
               variant: AppButtonVariant.outline,
               color: AppButtonColor.neutral,
               isLoading: oauthProvider == 'google',
@@ -631,7 +641,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   variant: AppButtonVariant.ghost,
                   color: AppButtonColor.primary,
                   text: l10n.authSignupCreateAccount,
-                  onPressed: () => context.goNamed('signup'),
+                  onPressed: _goToSignup,
                 ),
               ],
             ),

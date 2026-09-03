@@ -4334,9 +4334,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Diese Einladung ist abgelaufen. Bitte um eine neue.';
 
   @override
-  String get authJoinAlreadyUsed => 'Diese Einladung wurde bereits verwendet.';
-
-  @override
   String authJoinAlreadyMember(String name) {
     return 'Du bist bereits Mitglied von $name.';
   }
@@ -6578,7 +6575,4 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tourFinishEmail => 'Mit E-Mail fortfahren';
-
-  @override
-  String get tourFinishSignIn => 'Stattdessen anmelden';
 }

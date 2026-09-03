@@ -356,6 +356,24 @@ class AuthService {
     return rememberMe;
   }
 
+  /// Parks the post-sign-in destination before handing off to a browser
+  /// OAuth flow. Null or empty clears any earlier one, so a plain sign-in
+  /// never inherits a stale invite.
+  Future<void> setPendingOAuthNavigation(String? path) async {
+    if (path == null || path.isEmpty) {
+      await _prefs.remove(ApiConfig.pendingOAuthNavigationKey);
+      return;
+    }
+    await _prefs.setString(ApiConfig.pendingOAuthNavigationKey, path);
+  }
+
+  /// Returns and clears the parked post-sign-in destination.
+  Future<String?> consumePendingOAuthNavigation() async {
+    final path = _prefs.getString(ApiConfig.pendingOAuthNavigationKey);
+    await _prefs.remove(ApiConfig.pendingOAuthNavigationKey);
+    return path;
+  }
+
   /// Creates a guest account.
   ///
   /// Returns a [TokenPair] with access and refresh tokens.

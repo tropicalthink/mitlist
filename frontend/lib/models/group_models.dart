@@ -172,12 +172,10 @@ class InvitePreview {
 enum InviteStatus {
   valid,
   expired,
-  used,
   alreadyMember;
 
   static InviteStatus fromWire(String? raw) => switch (raw) {
         'expired' => InviteStatus.expired,
-        'used' => InviteStatus.used,
         'already_member' => InviteStatus.alreadyMember,
         _ => InviteStatus.valid,
       };
