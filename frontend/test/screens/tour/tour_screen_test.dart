@@ -186,7 +186,8 @@ void main() {
       expect(find.text('CONTINUE WITH GOOGLE'), findsOneWidget);
       expect(find.text('CONTINUE WITH APPLE'), findsNothing);
 
-      await tester.tap(find.text('CONTINUE WITH EMAIL'));
+      // Ghost buttons keep their case; only the provider buttons shout.
+      await tester.tap(find.text('Continue with email'));
       await tester.pumpAndSettle();
 
       expect(find.text('signup'), findsOneWidget);
