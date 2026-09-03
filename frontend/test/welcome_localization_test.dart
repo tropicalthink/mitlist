@@ -34,16 +34,20 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Your household, organized.'), findsOneWidget);
-      // Ghost button is not uppercased
-      expect(find.text('Continue as guest'), findsOneWidget);
+      // Solid and outline buttons are uppercased.
+      expect(find.text('GET STARTED'), findsOneWidget);
+      expect(find.text('I HAVE AN ACCOUNT'), findsOneWidget);
+      // The guest door lives at the end of the tour now, not here.
+      expect(find.text('Continue as guest'), findsNothing);
     });
 
-    testWidgets('renders German tagline and guest button', (tester) async {
+    testWidgets('renders German tagline and buttons', (tester) async {
       await tester.pumpWidget(_buildApp(locale: const Locale('de')));
       await tester.pumpAndSettle();
 
       expect(find.text('Dein Haushalt, organisiert.'), findsOneWidget);
-      expect(find.text('Als Gast fortfahren'), findsOneWidget);
+      expect(find.text('LOSLEGEN'), findsOneWidget);
+      expect(find.text('ICH HABE EIN KONTO'), findsOneWidget);
     });
   });
 }

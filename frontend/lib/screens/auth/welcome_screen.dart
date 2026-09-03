@@ -7,19 +7,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../l10n/app_localizations.dart';
-import '../../providers/auth_provider.dart';
 import '../../providers/oauth_provider.dart';
 import '../../theme/animations.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
-import '../../utils/friendly_error.dart';
 import '../../utils/open_in_app.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/board/artifact_scraps.dart';
 import '../../widgets/board/cork_board.dart';
-
-import '../../widgets/app_toast.dart';
 
 /// The first thing a new user sees: the cork board itself, with the app's name
 /// taped to it and four pinned scraps — a shopping list, a receipt, a chore
@@ -35,8 +31,6 @@ class WelcomeScreen extends ConsumerStatefulWidget {
 
 class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     with SingleTickerProviderStateMixin {
-  bool _isGuestLoading = false;
-
   late final AnimationController _controller;
   late final Animation<double> _logoT;
   late final List<Animation<double>> _scrapT;
@@ -103,30 +97,6 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
       context.goNamed(routeName, queryParameters: {'invite': invite});
     } else {
       context.goNamed(routeName);
-    }
-  }
-
-  Future<void> _onGuestContinue() async {
-    unawaited(HapticFeedback.lightImpact());
-    if (_isGuestLoading) return;
-    setState(() => _isGuestLoading = true);
-    try {
-      final authService = await ref.read(authServiceProviderAsync.future);
-      await authService.createGuest();
-      final invite = _inviteCode;
-      if (invite != null && invite.isNotEmpty) {
-        ref.read(pendingAuthNavigationProvider.notifier).state =
-            '/join/${Uri.encodeComponent(invite)}';
-      } else {
-        ref.read(pendingAuthNavigationProvider.notifier).state = '/onboarding';
-      }
-      ref.read(authStateProvider.notifier).state = true;
-      ref.read(isGuestProvider.notifier).state = true;
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _isGuestLoading = false);
-      AppToast.error(
-          context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
     }
   }
 
@@ -237,53 +207,29 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
                           ),
                         ),
                       ] else ...[
+                        // Two doors. "Get started" is the tour, which ends
+                        // on the account choice (including guest); the
+                        // sign-in door is for people who already have one.
                         SizedBox(
                           width: double.infinity,
                           child: AppButton(
-                            text: l10n.welcomeCreateHousehold,
+                            text: l10n.welcomeGetStarted,
                             variant: AppButtonVariant.solid,
                             color: AppButtonColor.primary,
                             size: AppButtonSize.lg,
-                            onPressed: () => _goToAuth(createRoute),
+                            onPressed: () => context.goNamed('tour'),
                           ),
                         ),
                         const SizedBox(height: MitlistSpacing.space3),
                         SizedBox(
                           width: double.infinity,
                           child: AppButton(
-                            text: l10n.welcomeSignIn,
+                            text: l10n.welcomeHaveAccount,
                             variant: AppButtonVariant.outline,
                             color: AppButtonColor.primary,
                             size: AppButtonSize.lg,
                             onPressed: () => _goToAuth('login'),
                           ),
-                        ),
-                        const SizedBox(height: MitlistSpacing.space3),
-                        SizedBox(
-                          width: double.infinity,
-                          child: AppButton(
-                            text: _isGuestLoading
-                                ? l10n.welcomeGuestLoading
-                                : l10n.welcomeContinueAsGuest,
-                            variant: AppButtonVariant.ghost,
-                            // Neutral ink, not the orange accent: mid-tone
-                            // orange on mid-tone cork fails contrast.
-                            color: AppButtonColor.neutral,
-                            size: AppButtonSize.lg,
-                            onPressed:
-                                _isGuestLoading ? null : _onGuestContinue,
-                          ),
-                        ),
-                        const SizedBox(height: MitlistSpacing.sm),
-                        Text(
-                          l10n.welcomeGuestFootnote,
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodySmall
-                              ?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
-                          textAlign: TextAlign.center,
                         ),
                       ],
                     ],

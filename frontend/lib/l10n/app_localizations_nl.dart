@@ -6332,4 +6332,219 @@ class AppLocalizationsNl extends AppLocalizations {
   String recipeShareSubject(String title) {
     return '$title op Mitlist';
   }
+
+  @override
+  String get welcomeGetStarted => 'Aan de slag';
+
+  @override
+  String get welcomeHaveAccount => 'Ik heb al een account';
+
+  @override
+  String get tourSkip => 'Overslaan';
+
+  @override
+  String get tourNext => 'Volgende';
+
+  @override
+  String get tourShowMe => 'Laat zien';
+
+  @override
+  String get tourBack => 'Terug';
+
+  @override
+  String tourStepOf(int step, int total) {
+    return 'Stap $step van $total';
+  }
+
+  @override
+  String get tourSampleTag => 'Voorbeeld';
+
+  @override
+  String get tourWhyEyebrow => 'Jouw huishouden';
+
+  @override
+  String get tourWhyHeadline =>
+      'Wie kocht de melk, wie is wat schuldig, wie is aan de beurt?';
+
+  @override
+  String get tourWhyBody =>
+      'mitlist is het gedeelde notitieboek voor de mensen met wie je woont. Hier is een voorbeeldhuis om mee te spelen.';
+
+  @override
+  String get tourWhyNote => 'Huisbaas komt donderdag 10 uur';
+
+  @override
+  String tourWhyToBuy(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count te kopen',
+      one: '1 te kopen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String tourWhyOverdue(String title) {
+    return '$title is te laat';
+  }
+
+  @override
+  String get tourListsEyebrow => 'Lijsten';
+
+  @override
+  String get tourListsHeadline =>
+      'Eén lijst. Iedereen vult aan. Wie in de winkel staat, koopt.';
+
+  @override
+  String get tourListsBody =>
+      'Vink af wat gedaan is en voeg toe wat ontbreekt. Het hele huis ziet het meteen.';
+
+  @override
+  String get tourListsAddHint => 'Iets toevoegen…';
+
+  @override
+  String tourListsAddedBy(String name) {
+    return 'Toegevoegd door $name';
+  }
+
+  @override
+  String get tourMoneyEyebrow => 'Geld';
+
+  @override
+  String get tourMoneyHeadline => 'Deel de pizza. Klaar met hoofdrekenen.';
+
+  @override
+  String get tourMoneyBody =>
+      'Tik op een naam om die uit de verdeling te halen. Het saldo past zich vanzelf aan.';
+
+  @override
+  String get tourMoneyPizza => 'Pizza-avond';
+
+  @override
+  String get tourMoneyRepair => 'Reparatie wasmachine';
+
+  @override
+  String get tourMoneyPaidByYou => 'betaald door jou';
+
+  @override
+  String tourMoneyPaidBy(String name) {
+    return 'betaald door $name';
+  }
+
+  @override
+  String get tourMoneySplitBetween => 'Verdeeld over';
+
+  @override
+  String tourMoneyOwesYou(String name, String amount) {
+    return '$name is jou $amount schuldig';
+  }
+
+  @override
+  String get tourMoneyJustYou => 'Alleen jij. Niets te verdelen.';
+
+  @override
+  String tourMoneyOverallOwed(String amount) {
+    return 'In totaal krijg je $amount';
+  }
+
+  @override
+  String tourMoneyOverallOwe(String amount) {
+    return 'In totaal ben je $amount schuldig';
+  }
+
+  @override
+  String get tourMoneyOverallSquare => 'In totaal staan jullie quitte';
+
+  @override
+  String get tourChoresEyebrow => 'Taken';
+
+  @override
+  String get tourChoresHeadline =>
+      'Donderdag gaat het vuilnis buiten. Ines is aan de beurt, en ze weet het.';
+
+  @override
+  String get tourChoresBody =>
+      'Taken rouleren. Vink de jouwe af en hij gaat naar de volgende.';
+
+  @override
+  String get tourChoresOverdue => 'Te laat';
+
+  @override
+  String get tourChoresDueToday => 'Vandaag';
+
+  @override
+  String tourChoresDueIn(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Over $days dagen',
+      one: 'Morgen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tourChoresWeekly => 'Wekelijks';
+
+  @override
+  String get tourChoresYourTurn => 'Jouw beurt';
+
+  @override
+  String tourChoresTurnOf(String name) {
+    return '$name is aan de beurt';
+  }
+
+  @override
+  String tourChoresNext(String name, int days) {
+    return 'Daarna: $name, over $days dagen';
+  }
+
+  @override
+  String get tourRecipesEyebrow => 'Recepten';
+
+  @override
+  String get tourRecipesHeadline =>
+      'Donderdag is het shakshuka. De eieren staan al op de lijst.';
+
+  @override
+  String get tourRecipesBody =>
+      'Plan een maaltijd en stuur de ingrediënten rechtstreeks naar de boodschappenlijst.';
+
+  @override
+  String get tourRecipesTitle => 'Shakshuka';
+
+  @override
+  String get tourRecipesServings => '4 porties · 30 min';
+
+  @override
+  String get tourRecipesPlanned => 'Gepland voor donderdag';
+
+  @override
+  String get tourRecipesAddIngredients => 'Op de lijst zetten';
+
+  @override
+  String get tourRecipesAddedButton => 'Op de lijst';
+
+  @override
+  String tourRecipesAddedToast(int count, String list) {
+    return '$count items toegevoegd aan $list';
+  }
+
+  @override
+  String get tourFinishEyebrow => 'Jouw huishouden';
+
+  @override
+  String get tourFinishHeadline =>
+      'Doe het nu met de mensen met wie je echt woont.';
+
+  @override
+  String get tourFinishBody =>
+      'Maak een account om je huishouden op te zetten en ze uit te nodigen. Gratis voor huishoudens tot 4 personen.';
+
+  @override
+  String get tourFinishEmail => 'Doorgaan met e-mail';
+
+  @override
+  String get tourFinishSignIn => 'Liever inloggen';
 }
