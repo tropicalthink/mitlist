@@ -22,6 +22,7 @@ import 'screens/money/expenses_screen.dart';
 import 'screens/money/recurring_expenses_screen.dart';
 import 'screens/calendar/calendar_screen.dart';
 import 'screens/you/account_screen.dart';
+import 'screens/you/feature_board_detail_screen.dart';
 import 'screens/you/feature_board_screen.dart';
 import 'screens/you/weekly_summary_screen.dart';
 import 'screens/you/home_assistant_connections_screen.dart';
@@ -47,6 +48,7 @@ import 'screens/recipes/cookbook_detail_screen.dart';
 import 'screens/recipes/cookbook_add_recipes_screen.dart';
 import 'screens/lists/products_screen.dart';
 import 'screens/lists/shopping_locations_screen.dart';
+import 'models/feature_board_models.dart';
 import 'models/recipe_models.dart';
 import 'screens/meal_plans/meal_plan_screen.dart';
 import 'screens/shopping/shopping_trip_screen.dart';
@@ -454,6 +456,18 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: 'feature-board',
             name: 'featureBoard',
             builder: (context, state) => const FeatureBoardScreen(),
+            routes: [
+              GoRoute(
+                path: ':id',
+                name: 'featureBoardItem',
+                builder: (context, state) => FeatureBoardDetailScreen(
+                  requestId: state.pathParameters['id']!,
+                  initialItem: state.extra is FeatureBoardItem
+                      ? state.extra as FeatureBoardItem
+                      : null,
+                ),
+              ),
+            ],
           ),
           GoRoute(
             path: 'products',

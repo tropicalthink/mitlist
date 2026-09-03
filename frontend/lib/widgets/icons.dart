@@ -120,6 +120,10 @@ class AppIcons {
   static const IconData heart = Icons.favorite_border;
   static const IconData server = Icons.dns_outlined;
   static const IconData chatBubbleLeftRight = Icons.forum_outlined;
+  static const IconData bugReport = Icons.bug_report_outlined;
+  static const IconData lightbulb = Icons.lightbulb_outline;
+  static const IconData send = Icons.send_rounded;
+  static const IconData verified = Icons.verified_outlined;
   static const IconData groceryProduce = Icons.eco_outlined;
   static const IconData groceryDairy = Icons.water_drop_outlined;
   static const IconData groceryBakery = Icons.bakery_dining_outlined;
@@ -246,6 +250,10 @@ class AppIcons {
       'removeDoneOutline' => removeDoneOutline,
       'dragHandle' => dragHandle,
       'chatBubbleLeftRight' => chatBubbleLeftRight,
+      'bugReport' => bugReport,
+      'lightbulb' => lightbulb,
+      'send' => send,
+      'verified' => verified,
       'groceryProduce' => groceryProduce,
       'groceryDairy' => groceryDairy,
       'groceryBakery' => groceryBakery,

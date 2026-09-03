@@ -5807,14 +5807,14 @@ class AppLocalizationsNl extends AppLocalizations {
   String get featureBoardBannerAction => 'Open functiebord';
 
   @override
-  String get featureBoardAdd => 'Functie voorstellen';
+  String get featureBoardAdd => 'Verzoek toevoegen';
 
   @override
   String get featureBoardIntroTitle => 'Gebouwd met jouw ideeën';
 
   @override
   String get featureBoardIntroBody =>
-      'Stem op de ideeën die je het liefst wilt. Jouw stemmen helpen ons kiezen wat we verbeteren.';
+      'Stem op de ideeën die je het liefst wilt, meld wat kapot is en volg waar we aan werken.';
 
   @override
   String get featureBoardLoadFailed =>
@@ -5832,7 +5832,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Stel als eerste iets voor dat mitlist beter maakt.';
 
   @override
-  String get featureBoardNewTitle => 'Functie voorstellen';
+  String get featureBoardNewTitle => 'Nieuw verzoek';
 
   @override
   String get featureBoardNewIntro =>
@@ -5873,9 +5873,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get featureBoardInProgress => 'In uitvoering';
 
   @override
-  String get featureBoardPlanned => 'Gepland';
-
-  @override
   String get featureBoardShipped => 'Uitgebracht';
 
   @override
@@ -5894,6 +5891,151 @@ class AppLocalizationsNl extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get featureBoardUnderReview => 'In beoordeling';
+
+  @override
+  String get featureBoardFilterAll => 'Alles';
+
+  @override
+  String get featureBoardFilterFeatures => 'Functies';
+
+  @override
+  String get featureBoardFilterBugs => 'Bugs';
+
+  @override
+  String get featureBoardSortTop => 'Top';
+
+  @override
+  String get featureBoardSortNew => 'Nieuw';
+
+  @override
+  String get featureBoardKindLabel => 'Wat is het?';
+
+  @override
+  String get featureBoardKindFeature => 'Functieverzoek';
+
+  @override
+  String get featureBoardKindBug => 'Bugmelding';
+
+  @override
+  String get featureBoardBugChip => 'Bug';
+
+  @override
+  String get featureBoardNewBugIntro =>
+      'Vertel ons wat kapot is. Wie hetzelfde tegenkomt, kan het upvoten.';
+
+  @override
+  String get featureBoardBugTitleLabel => 'Wat ging er mis?';
+
+  @override
+  String get featureBoardBugTitleHint =>
+      'Totalen kloppen niet na het splitsen van een uitgave';
+
+  @override
+  String get featureBoardBugDescriptionLabel =>
+      'Stappen om te reproduceren (optioneel)';
+
+  @override
+  String get featureBoardBugDescriptionHint =>
+      'Wat deed je, en wat gebeurde er in plaats daarvan?';
+
+  @override
+  String get featureBoardBugEmpty =>
+      'Voeg een korte samenvatting van de bug toe.';
+
+  @override
+  String get featureBoardBugCreated => 'Bedankt, je melding staat op het bord.';
+
+  @override
+  String featureBoardComments(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count reacties',
+      one: '1 reactie',
+      zero: 'Geen reacties',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get featureBoardCommentsHeading => 'Gesprek';
+
+  @override
+  String get featureBoardTeamBadge => 'mitlist-team';
+
+  @override
+  String get featureBoardYou => 'Jij';
+
+  @override
+  String get featureBoardAnonymous => 'Een mitlist-gebruiker';
+
+  @override
+  String get featureBoardCommentHint => 'Reactie toevoegen…';
+
+  @override
+  String get featureBoardCommentSend => 'Reactie plaatsen';
+
+  @override
+  String get featureBoardCommentFailed =>
+      'Je reactie kon niet worden geplaatst. Probeer het opnieuw.';
+
+  @override
+  String get featureBoardNoComments =>
+      'Nog geen reacties. Heb je een vraag of een use case? Begin het gesprek.';
+
+  @override
+  String get featureBoardDetailLoadFailed =>
+      'Dit verzoek kon niet worden geladen';
+
+  @override
+  String get featureBoardTimeJustNow => 'Zojuist';
+
+  @override
+  String featureBoardTimeMinutesAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count min geleden',
+      one: '1 min geleden',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String featureBoardTimeHoursAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count uur geleden',
+      one: '1 uur geleden',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String featureBoardTimeDaysAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dagen geleden',
+      one: 'Gisteren',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get featureBoardStatusInProgressHint => 'We werken hier nu aan.';
+
+  @override
+  String get featureBoardStatusUnderReviewHint =>
+      'We hebben het gezien en bekijken het. Stemmen en reacties helpen.';
+
+  @override
+  String get featureBoardStatusShippedHint =>
+      'Dit is live. Werk de app bij als je het nog niet ziet.';
 
   @override
   String get weeklySummaryTitle => 'Week in beeld';
