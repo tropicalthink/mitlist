@@ -4349,6 +4349,14 @@
   "@authJoinSignInToJoin": {
     "description": "Sign in CTA with invite context"
   },
+  "authJoinInvitedTo": "Je bent uitgenodigd voor",
+  "authJoinMemberCount": "{count, plural, =1{1 lid} other{{count} leden}}",
+  "authJoinAccept": "Uitnodiging accepteren",
+  "authJoinDecline": "Weigeren",
+  "authJoinCheckingInvite": "Uitnodiging controleren…",
+  "authJoinExpired": "Deze uitnodiging is verlopen. Vraag om een nieuwe.",
+  "authJoinAlreadyUsed": "Deze uitnodiging is al gebruikt.",
+  "authJoinAlreadyMember": "Je bent al lid van {name}.",
   "authJoinTitle": "Deelnemen aan huishouden",
   "@authJoinTitle": {
     "description": "Join landing screen title"
@@ -4358,6 +4366,8 @@
     "description": "Success message after joining"
   },
   "authLoginApple": "Doorgaan met Apple",
+  "authLoginNoMethods": "Deze server heeft geen aanmeldmethode ingeschakeld. Wie hem beheert moet aanmelden via e-mail inschakelen of Google of Apple koppelen.",
+  "authLoginWithEmailButton": "Aanmelden met e-mail",
   "@authLoginApple": {
     "description": "OAuth button: Apple"
   },
@@ -5975,8 +5985,8 @@
   "recipeTagsClear": "Tags wissen",
   "sharedRecipeTitle": "Gedeeld recept",
   "sharedRecipeBy": "van {author}",
-  "sharedRecipeSavePersonal": "Opslaan bij mijn recepten",
-  "sharedRecipeSaveHousehold": "Opslaan in {name}",
+  "sharedRecipeSavePersonal": "Toevoegen aan mijn keuken",
+  "sharedRecipeSaveHousehold": "Toevoegen aan de keuken van {name}",
   "sharedRecipeSaved": "Recept opgeslagen",
   "sharedRecipeSignInToSave": "Log in om dit recept op te slaan",
   "sharedRecipeNotFoundTitle": "Deze link werkt niet meer",

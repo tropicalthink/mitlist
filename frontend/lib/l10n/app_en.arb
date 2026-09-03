@@ -5350,6 +5350,14 @@
   "@authLoginApple": {
     "description": "OAuth button: Apple"
   },
+  "authLoginNoMethods": "This server has no sign-in method turned on. Whoever runs it needs to enable email sign-in or connect Google or Apple.",
+  "@authLoginNoMethods": {
+    "description": "Shown on the login screen when the server offers neither OAuth nor password sign-in"
+  },
+  "authLoginWithEmailButton": "Sign in with email",
+  "@authLoginWithEmailButton": {
+    "description": "Button at the bottom of the login screen that unfolds the email/password form"
+  },
   "authLoginOAuthUnsupported": "{provider} sign-in is only available on web, Android, and iOS right now.",
   "@authLoginOAuthUnsupported": {
     "description": "Error when OAuth is unsupported on platform",
@@ -5598,6 +5606,48 @@
   "authSignupPrivacyP3": "Only provide information you are comfortable keeping in a shared household workspace.",
   "@authSignupPrivacyP3": {
     "description": "Privacy paragraph 3"
+  },
+  "authJoinInvitedTo": "You've been invited to join",
+  "@authJoinInvitedTo": {
+    "description": "Eyebrow above the household name on the invite accept page"
+  },
+  "authJoinMemberCount": "{count, plural, =1{1 member} other{{count} members}}",
+  "@authJoinMemberCount": {
+    "description": "Household size shown under its name on the invite accept page",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "authJoinAccept": "Accept invite",
+  "@authJoinAccept": {
+    "description": "Primary button that joins the household from an invite"
+  },
+  "authJoinDecline": "Decline",
+  "@authJoinDecline": {
+    "description": "Secondary button that leaves the invite page without joining"
+  },
+  "authJoinCheckingInvite": "Checking your invite…",
+  "@authJoinCheckingInvite": {
+    "description": "Loading text while the invite is being looked up"
+  },
+  "authJoinExpired": "This invite has expired. Ask for a fresh one.",
+  "@authJoinExpired": {
+    "description": "Shown when the invite code has expired"
+  },
+  "authJoinAlreadyUsed": "This invite has already been used.",
+  "@authJoinAlreadyUsed": {
+    "description": "Shown when the one-use invite code was already redeemed"
+  },
+  "authJoinAlreadyMember": "You're already a member of {name}.",
+  "@authJoinAlreadyMember": {
+    "description": "Shown when the user already belongs to the invited household",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "authJoinTitle": "Join household",
   "@authJoinTitle": {
@@ -7961,13 +8011,13 @@
       }
     }
   },
-  "sharedRecipeSavePersonal": "Save to my recipes",
+  "sharedRecipeSavePersonal": "Add to my kitchen",
   "@sharedRecipeSavePersonal": {
-    "description": "Button saving a shared recipe privately"
+    "description": "Button copying a shared recipe into the user's own kitchen (private)"
   },
-  "sharedRecipeSaveHousehold": "Save to {name}",
+  "sharedRecipeSaveHousehold": "Add to {name}'s kitchen",
   "@sharedRecipeSaveHousehold": {
-    "description": "Button saving a shared recipe to a household",
+    "description": "Button copying a shared recipe into a household's shared kitchen; name is the household name",
     "placeholders": {
       "name": {
         "type": "String"

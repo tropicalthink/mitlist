@@ -4349,6 +4349,14 @@
   "@authJoinSignInToJoin": {
     "description": "Sign in CTA with invite context"
   },
+  "authJoinInvitedTo": "Tu es invité·e à rejoindre",
+  "authJoinMemberCount": "{count, plural, =1{1 membre} other{{count} membres}}",
+  "authJoinAccept": "Accepter l'invitation",
+  "authJoinDecline": "Refuser",
+  "authJoinCheckingInvite": "Vérification de l'invitation…",
+  "authJoinExpired": "Cette invitation a expiré. Demande-en une nouvelle.",
+  "authJoinAlreadyUsed": "Cette invitation a déjà été utilisée.",
+  "authJoinAlreadyMember": "Tu fais déjà partie de {name}.",
   "authJoinTitle": "Rejoindre un foyer",
   "@authJoinTitle": {
     "description": "Join landing screen title"
@@ -4358,6 +4366,8 @@
     "description": "Success message after joining"
   },
   "authLoginApple": "Continuer avec Apple",
+  "authLoginNoMethods": "Ce serveur n’a aucune méthode de connexion activée. La personne qui l’administre doit activer la connexion par e-mail ou connecter Google ou Apple.",
+  "authLoginWithEmailButton": "Se connecter par e-mail",
   "@authLoginApple": {
     "description": "OAuth button: Apple"
   },
@@ -5975,8 +5985,8 @@
   "recipeTagsClear": "Effacer les tags",
   "sharedRecipeTitle": "Recette partagée",
   "sharedRecipeBy": "par {author}",
-  "sharedRecipeSavePersonal": "Enregistrer dans mes recettes",
-  "sharedRecipeSaveHousehold": "Enregistrer dans {name}",
+  "sharedRecipeSavePersonal": "Ajouter à ma cuisine",
+  "sharedRecipeSaveHousehold": "Ajouter à la cuisine de {name}",
   "sharedRecipeSaved": "Recette enregistrée",
   "sharedRecipeSignInToSave": "Connecte-toi pour enregistrer cette recette",
   "sharedRecipeNotFoundTitle": "Ce lien ne fonctionne plus",

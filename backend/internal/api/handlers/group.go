@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -30,6 +31,7 @@ func (h *GroupHandler) RegisterRoutes(r chi.Router) {
 	r.Delete("/groups/{id}", h.DeleteGroup)
 	r.Get("/groups/{id}/members", h.ListMembers)
 	r.Post("/groups/{id}/members", h.InviteMember)
+	r.Get("/groups/invites/{code}", h.PreviewInvite)
 	r.Post("/groups/join", h.JoinGroup)
 	r.Delete("/groups/{id}/members/{user_id}", h.RemoveMember)
 	r.Patch("/groups/{id}/members/{user_id}", h.UpdateMemberRole)
@@ -211,6 +213,32 @@ func (h *GroupHandler) ListMembers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	api.RespondJSON(w, http.StatusOK, members)
+}
+
+// PreviewInvite handles GET /api/v1/groups/invites/{code}. It describes the
+// household behind an invite code without joining it.
+func (h *GroupHandler) PreviewInvite(w http.ResponseWriter, r *http.Request) {
+	user, ok := api.UserFromContext(r.Context())
+	if !ok {
+		api.RespondError(w, api.ErrUnauthorized)
+		return
+	}
+
+	code := strings.TrimSpace(chi.URLParam(r, "code"))
+	if len(code) < 4 {
+		api.RespondError(w, &api.ValidationError{Field: "code", Message: "invalid invite code"})
+		return
+	}
+
+	preview, err := h.service.PreviewInvite(r.Context(), user.ID, code)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	// An invite code is a capability; never let a shared proxy cache the
+	// household it points at.
+	w.Header().Set("Cache-Control", "no-store")
+	api.RespondJSON(w, http.StatusOK, preview)
 }
 
 // JoinGroup handles POST /api/v1/groups/join.

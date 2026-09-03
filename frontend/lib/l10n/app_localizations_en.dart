@@ -3970,6 +3970,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authLoginApple => 'Continue with Apple';
 
   @override
+  String get authLoginNoMethods =>
+      'This server has no sign-in method turned on. Whoever runs it needs to enable email sign-in or connect Google or Apple.';
+
+  @override
+  String get authLoginWithEmailButton => 'Sign in with email';
+
+  @override
   String authLoginOAuthUnsupported(String provider) {
     return '$provider sign-in is only available on web, Android, and iOS right now.';
   }
@@ -4171,6 +4178,40 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get authSignupPrivacyP3 =>
       'Only provide information you are comfortable keeping in a shared household workspace.';
+
+  @override
+  String get authJoinInvitedTo => 'You\'ve been invited to join';
+
+  @override
+  String authJoinMemberCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count members',
+      one: '1 member',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get authJoinAccept => 'Accept invite';
+
+  @override
+  String get authJoinDecline => 'Decline';
+
+  @override
+  String get authJoinCheckingInvite => 'Checking your invite…';
+
+  @override
+  String get authJoinExpired => 'This invite has expired. Ask for a fresh one.';
+
+  @override
+  String get authJoinAlreadyUsed => 'This invite has already been used.';
+
+  @override
+  String authJoinAlreadyMember(String name) {
+    return 'You\'re already a member of $name.';
+  }
 
   @override
   String get authJoinTitle => 'Join household';
@@ -5872,11 +5913,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get sharedRecipeSavePersonal => 'Save to my recipes';
+  String get sharedRecipeSavePersonal => 'Add to my kitchen';
 
   @override
   String sharedRecipeSaveHousehold(String name) {
-    return 'Save to $name';
+    return 'Add to $name\'s kitchen';
   }
 
   @override
