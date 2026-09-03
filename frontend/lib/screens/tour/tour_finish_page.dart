@@ -80,9 +80,11 @@ class _TourFinishPageState extends ConsumerState<TourFinishPage>
             ),
             const SizedBox(height: MitlistSpacing.space3),
           ],
+          // Email is the quiet option under the provider buttons: plain
+          // text, no outline, so Google and Apple stay the headline.
           AppButton(
             text: l10n.tourFinishEmail,
-            variant: AppButtonVariant.solid,
+            variant: AppButtonVariant.ghost,
             color: AppButtonColor.primary,
             size: AppButtonSize.lg,
             onPressed: oauthBusy ? null : () => context.goNamed(createRoute),
