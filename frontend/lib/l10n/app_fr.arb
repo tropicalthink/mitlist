@@ -4355,7 +4355,6 @@
   "authJoinDecline": "Refuser",
   "authJoinCheckingInvite": "Vérification de l'invitation…",
   "authJoinExpired": "Cette invitation a expiré. Demande-en une nouvelle.",
-  "authJoinAlreadyUsed": "Cette invitation a déjà été utilisée.",
   "authJoinAlreadyMember": "Tu fais déjà partie de {name}.",
   "authJoinTitle": "Rejoindre un foyer",
   "@authJoinTitle": {
@@ -6198,6 +6197,5 @@
   "tourFinishEyebrow": "Ton foyer",
   "tourFinishHeadline": "Maintenant, fais-le avec les gens avec qui tu vis vraiment.",
   "tourFinishBody": "Crée un compte pour monter ton foyer et les inviter. Gratuit jusqu'à 4 personnes.",
-  "tourFinishEmail": "Continuer avec un e-mail",
-  "tourFinishSignIn": "Plutôt se connecter"
+  "tourFinishEmail": "Continuer avec un e-mail"
 }

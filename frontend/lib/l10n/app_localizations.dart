@@ -7545,12 +7545,6 @@ abstract class AppLocalizations {
   /// **'This invite has expired. Ask for a fresh one.'**
   String get authJoinExpired;
 
-  /// Shown when the one-use invite code was already redeemed
-  ///
-  /// In en, this message translates to:
-  /// **'This invite has already been used.'**
-  String get authJoinAlreadyUsed;
-
   /// Shown when the user already belongs to the invited household
   ///
   /// In en, this message translates to:
@@ -11128,12 +11122,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Continue with email'**
   String get tourFinishEmail;
-
-  /// Ghost link on the last tour page to the login screen
-  ///
-  /// In en, this message translates to:
-  /// **'Sign in instead'**
-  String get tourFinishSignIn;
 }
 
 class _AppLocalizationsDelegate

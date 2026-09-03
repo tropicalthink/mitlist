@@ -5714,10 +5714,6 @@
   "@authJoinExpired": {
     "description": "Shown when the invite code has expired"
   },
-  "authJoinAlreadyUsed": "This invite has already been used.",
-  "@authJoinAlreadyUsed": {
-    "description": "Shown when the one-use invite code was already redeemed"
-  },
   "authJoinAlreadyMember": "You're already a member of {name}.",
   "@authJoinAlreadyMember": {
     "description": "Shown when the user already belongs to the invited household",
@@ -8445,7 +8441,5 @@
   "tourFinishBody": "Create an account to set up your household and invite them. Free for households up to 4.",
   "@tourFinishBody": {"description": "Body text of the last tour page"},
   "tourFinishEmail": "Continue with email",
-  "@tourFinishEmail": {"description": "Email sign-up button on the last tour page"},
-  "tourFinishSignIn": "Sign in instead",
-  "@tourFinishSignIn": {"description": "Ghost link on the last tour page to the login screen"}
+  "@tourFinishEmail": {"description": "Email sign-up button on the last tour page"}
 }

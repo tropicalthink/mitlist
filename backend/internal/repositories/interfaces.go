@@ -2,16 +2,11 @@ package repositories
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/mitlist-app/mitlist/internal/models"
 )
-
-// ErrInviteAlreadyUsed is returned when a concurrent or repeated redemption
-// attempts to consume a one-use invite.
-var ErrInviteAlreadyUsed = errors.New("invite already used")
 
 // UserRepo is the interface for user repository operations.
 type UserRepo interface {
@@ -92,7 +87,6 @@ type GroupRepo interface {
 	DeleteMembership(ctx context.Context, id uuid.UUID) error
 	CreateInvite(ctx context.Context, invite *models.GroupInvite) error
 	GetInviteByCode(ctx context.Context, code string) (*models.GroupInvite, error)
-	ConsumeInvite(ctx context.Context, inviteID, userID uuid.UUID) error
 	CreatePendingClaim(ctx context.Context, claim *models.PendingClaim) error
 	GetPendingClaimByCode(ctx context.Context, code string) (*models.PendingClaim, error)
 	GetPendingClaimByID(ctx context.Context, id uuid.UUID) (*models.PendingClaim, error)

@@ -69,6 +69,7 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
     try {
       final authService = await ref.read(authServiceProviderAsync.future);
       final rememberMe = await authService.consumePendingOAuthRememberMe();
+      final parkedNavigation = await authService.consumePendingOAuthNavigation();
       if (handoff != null && handoff.isNotEmpty) {
         await authService.exchangeOAuthHandoff(
           handoff,
@@ -101,9 +102,11 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
         return;
       }
       // Preserve a destination set before the OAuth round-trip (e.g. an invite
-      // accept set '/join/<code>'); only default to onboarding when none.
+      // accept set '/join/<code>'). In memory when the app survived the trip,
+      // otherwise the copy parked in preferences; onboarding only when neither.
       if (ref.read(pendingAuthNavigationProvider) == null) {
-        ref.read(pendingAuthNavigationProvider.notifier).state = '/onboarding';
+        ref.read(pendingAuthNavigationProvider.notifier).state =
+            _isLocalPath(parkedNavigation) ? parkedNavigation : '/onboarding';
       }
       ref.read(authStateProvider.notifier).state = true;
     } catch (e) {
@@ -112,6 +115,11 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
           _error = friendlyErrorMessage(e, AppLocalizations.of(context)!));
     }
   }
+
+  /// Only an in-app path may be restored from storage; anything else falls
+  /// back to onboarding rather than navigating somewhere unexpected.
+  static bool _isLocalPath(String? path) =>
+      path != null && path.startsWith('/') && !path.startsWith('//');
 
   /// Merges query params with URL fragment params. The backend used to put
   /// mobile tokens in the fragment; Android deep links only surface queries.

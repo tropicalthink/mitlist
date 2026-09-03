@@ -4288,9 +4288,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get authJoinExpired => 'Esta invitación ha caducado. Pide una nueva.';
 
   @override
-  String get authJoinAlreadyUsed => 'Esta invitación ya se ha usado.';
-
-  @override
   String authJoinAlreadyMember(String name) {
     return 'Ya eres miembro de $name.';
   }
@@ -6531,7 +6528,4 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tourFinishEmail => 'Continuar con correo';
-
-  @override
-  String get tourFinishSignIn => 'Mejor iniciar sesión';
 }

@@ -201,7 +201,8 @@ func (s *GroupService) DeleteGroup(ctx context.Context, userID, groupID uuid.UUI
 	return nil
 }
 
-// InviteMember creates a one-use invite code for the group.
+// InviteMember creates an invite code for the group. The code admits anyone
+// who presents it for a week; accepting does not use it up.
 func (s *GroupService) InviteMember(ctx context.Context, userID, groupID uuid.UUID, role string) (*models.GroupInvite, error) {
 	if err := s.requireAdmin(ctx, userID, groupID); err != nil {
 		return nil, err
@@ -240,9 +241,9 @@ func (s *GroupService) InviteMember(ctx context.Context, userID, groupID uuid.UU
 }
 
 // PreviewInvite resolves an invite code to the household it opens without
-// consuming it, so the recipient can decide whether to accept. Unknown codes
-// are a 404; expired, used and already-a-member codes still resolve so the
-// page can explain why accepting will not work.
+// joining, so the recipient can decide whether to accept. Unknown codes are
+// a 404; expired and already-a-member codes still resolve so the page can
+// explain why accepting will not work.
 func (s *GroupService) PreviewInvite(ctx context.Context, userID uuid.UUID, code string) (*models.InvitePreview, error) {
 	code = strings.ToUpper(strings.TrimSpace(code))
 
@@ -268,10 +269,7 @@ func (s *GroupService) PreviewInvite(ctx context.Context, userID uuid.UUID, code
 	}
 
 	status := models.InviteStatusValid
-	switch {
-	case invite.UsedAt != nil:
-		status = models.InviteStatusUsed
-	case time.Now().UTC().After(invite.ExpiresAt):
+	if time.Now().UTC().After(invite.ExpiresAt) {
 		status = models.InviteStatusExpired
 	}
 	for _, m := range members {
@@ -291,7 +289,9 @@ func (s *GroupService) PreviewInvite(ctx context.Context, userID uuid.UUID, code
 	}, nil
 }
 
-// JoinGroup allows a user to join a group using an invite code.
+// JoinGroup allows a user to join a group using an invite code. The code is
+// reusable until it expires, so joining only checks the deadline and adds
+// the membership.
 func (s *GroupService) JoinGroup(ctx context.Context, userID uuid.UUID, code string) (*models.Group, error) {
 	code = strings.ToUpper(strings.TrimSpace(code))
 
@@ -305,9 +305,6 @@ func (s *GroupService) JoinGroup(ctx context.Context, userID uuid.UUID, code str
 
 	if time.Now().UTC().After(invite.ExpiresAt) {
 		return nil, &api.ValidationError{Message: "invite expired"}
-	}
-	if invite.UsedAt != nil {
-		return nil, &api.ValidationError{Message: "invite already used"}
 	}
 
 	existing, _ := s.groupRepo.GetMembership(ctx, invite.GroupID, userID)
@@ -324,15 +321,7 @@ func (s *GroupService) JoinGroup(ctx context.Context, userID uuid.UUID, code str
 		UserID:  userID,
 		Role:    "member",
 	}
-	if err := s.groupRepo.WithTx(ctx, func(txRepo repositories.GroupRepo) error {
-		if err := txRepo.ConsumeInvite(ctx, invite.ID, userID); err != nil {
-			if errors.Is(err, repositories.ErrInviteAlreadyUsed) {
-				return &api.ValidationError{Message: "invite already used"}
-			}
-			return err
-		}
-		return txRepo.CreateMembership(ctx, membership)
-	}); err != nil {
+	if err := s.groupRepo.CreateMembership(ctx, membership); err != nil {
 		return nil, err
 	}
 
