@@ -55,6 +55,18 @@ bool isSessionBootstrapPath(String location) =>
 
 bool isPlausibleInviteCode(String code) => _inviteCodePattern.hasMatch(code);
 
+/// A signed-out visitor holding an invite link is sent to /welcome with the
+/// code pinned to the query, so it survives sign-in and lands them on the
+/// accept page afterwards. Returns null when [location] is not a join link.
+String? welcomeWithInviteFor(String location) {
+  if (!location.startsWith('/join/')) return null;
+  var code = location.substring('/join/'.length);
+  final cut = code.indexOf(RegExp(r'[?#]'));
+  if (cut >= 0) code = code.substring(0, cut);
+  if (!isPlausibleInviteCode(code)) return null;
+  return '/welcome?invite=${Uri.encodeComponent(code)}';
+}
+
 AppRedirectResult resolveAppRedirect(AppRedirectInput input) {
   final location = input.location;
   final isAuthRoute =
@@ -87,9 +99,21 @@ AppRedirectResult resolveAppRedirect(AppRedirectInput input) {
       return AppRedirectResult(redirect: continueTarget ?? '/home');
     }
 
+    // A signed-out visitor may still land where they asked to go when it is
+    // an auth route or a public one. A share link opened in a fresh browser
+    // passes through this gate first; bouncing it to /welcome would lose the
+    // recipe they were sent.
     if (continueTarget != null &&
-        authRoutePrefixes.any((p) => continueTarget!.startsWith(p))) {
+        (authRoutePrefixes.any((p) => continueTarget!.startsWith(p)) ||
+            isPublicRoute(continueTarget))) {
       return AppRedirectResult(redirect: continueTarget);
+    }
+    // Same for an invite link: every fresh page load passes through this gate
+    // before the /join/ handling below gets a look in, so without this the
+    // code was dropped and the recipient ended up on a bare welcome page.
+    if (continueTarget != null) {
+      final welcome = welcomeWithInviteFor(continueTarget);
+      if (welcome != null) return AppRedirectResult(redirect: welcome);
     }
     return const AppRedirectResult(redirect: '/welcome');
   }
@@ -98,14 +122,8 @@ AppRedirectResult resolveAppRedirect(AppRedirectInput input) {
     if (isPublicRoute(location)) {
       return const AppRedirectResult();
     }
-    if (location.startsWith('/join/')) {
-      final code = location.substring('/join/'.length);
-      if (isPlausibleInviteCode(code)) {
-        return AppRedirectResult(
-          redirect: '/welcome?invite=${Uri.encodeComponent(code)}',
-        );
-      }
-    }
+    final welcome = welcomeWithInviteFor(location);
+    if (welcome != null) return AppRedirectResult(redirect: welcome);
     return const AppRedirectResult(redirect: '/welcome');
   }
 
