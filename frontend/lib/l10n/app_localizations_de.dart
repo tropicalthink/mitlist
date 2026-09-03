@@ -6360,6 +6360,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get sharedRecipeOpenInApp => 'In Mitlist öffnen';
 
   @override
+  String get openInAppButton => 'In Mitlist öffnen';
+
+  @override
   String recipeShareSubject(String title) {
     return '$title auf Mitlist';
   }

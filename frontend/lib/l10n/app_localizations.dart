@@ -10787,6 +10787,12 @@ abstract class AppLocalizations {
   /// **'Open in Mitlist'**
   String get sharedRecipeOpenInApp;
 
+  /// Button shown in a phone browser that hands the current invite or share link to the installed app
+  ///
+  /// In en, this message translates to:
+  /// **'Open in Mitlist'**
+  String get openInAppButton;
+
   /// Share sheet subject line
   ///
   /// In en, this message translates to:
