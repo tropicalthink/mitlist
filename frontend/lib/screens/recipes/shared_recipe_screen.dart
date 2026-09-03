@@ -1,6 +1,7 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -173,10 +174,31 @@ class _SharedRecipeScreenState extends ConsumerState<SharedRecipeScreen> {
     }
   }
 
+  /// True in a phone browser, the one place a `mitlist://` link can reach an
+  /// installed app. On a desktop browser the same link only produces a
+  /// "no application" error, so the button is not offered there.
+  bool get _isMobileBrowser =>
+      kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS);
+
+  /// Hops from the web page into the installed app.
+  ///
+  /// The triple slash matters: Flutter hands the router the URL's *path*, so
+  /// `mitlist:///r/<token>` arrives as `/r/<token>` and matches the route,
+  /// whereas `mitlist://r/<token>` would make `r` the host and leave the
+  /// router looking at `/<token>`. The Android intent filter is written for
+  /// the same shape. See invite_link.dart for the matching join link.
+  Future<void> _openInApp() => launchUrl(
+        Uri.parse('mitlist:///r/${widget.token}'),
+        webOnlyWindowName: '_self',
+      );
+
   Widget _buildRecipe() {
     final shared = _shared!;
     final recipe = shared.recipe;
     final theme = Theme.of(context);
+    final signedIn = ref.watch(authStateProvider);
 
     return ListView(
       padding: const EdgeInsets.all(MitlistSpacing.md),
@@ -244,9 +266,11 @@ class _SharedRecipeScreenState extends ConsumerState<SharedRecipeScreen> {
                 ),
               ),
         ],
-        // Web is where a link lands when the recipient has no app, so that is
-        // the only place the install prompt earns its space.
-        if (kIsWeb && !ref.watch(authStateProvider)) ...[
+        // The browser is where a link lands when the device has not claimed
+        // it for the app. Signed out, that is the moment to pitch the app.
+        // Signed in on a phone, a one-tap hop into the installed app is still
+        // worth offering: the recipe belongs in the app's kitchen, not a tab.
+        if (kIsWeb && (!signedIn || _isMobileBrowser)) ...[
           const SizedBox(height: MitlistSpacing.lg),
           AppCard(
             child: Padding(
@@ -254,26 +278,25 @@ class _SharedRecipeScreenState extends ConsumerState<SharedRecipeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    l10n.sharedRecipeGetAppTitle,
-                    style: theme.textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: MitlistSpacing.xs),
-                  Text(
-                    l10n.sharedRecipeGetAppBody,
-                    style: theme.textTheme.bodySmall,
-                  ),
-                  const SizedBox(height: MitlistSpacing.md),
+                  if (!signedIn) ...[
+                    Text(
+                      l10n.sharedRecipeGetAppTitle,
+                      style: theme.textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: MitlistSpacing.xs),
+                    Text(
+                      l10n.sharedRecipeGetAppBody,
+                      style: theme.textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: MitlistSpacing.md),
+                  ],
                   // The custom scheme opens the installed app even where the
                   // https App Link has not been verified on the device.
                   AppButton(
                     text: l10n.sharedRecipeOpenInApp,
                     variant: AppButtonVariant.outline,
                     icon: const AppIcon(name: 'openInNew'),
-                    onPressed: () => launchUrl(
-                      Uri.parse('mitlist://r/${widget.token}'),
-                      webOnlyWindowName: '_self',
-                    ),
+                    onPressed: _openInApp,
                   ),
                 ],
               ),
@@ -290,13 +313,19 @@ class _SharedRecipeScreenState extends ConsumerState<SharedRecipeScreen> {
     final household = _activeGroup();
 
     // Signed out, there is no library to save into: point at sign-in instead of
-    // showing buttons that would only bounce them there anyway.
+    // showing buttons that would only bounce them there anyway. The share
+    // link is pinned as the post-login destination so signing in brings them
+    // straight back to this recipe rather than dropping them on /home.
     if (!ref.watch(authStateProvider)) {
       return Padding(
         padding: const EdgeInsets.all(MitlistSpacing.md),
         child: AppButton(
           text: l10n.sharedRecipeSignInToSave,
-          onPressed: () => context.goNamed('welcome'),
+          onPressed: () {
+            ref.read(pendingAuthNavigationProvider.notifier).state =
+                '/r/${widget.token}';
+            context.goNamed('welcome');
+          },
         ),
       );
     }

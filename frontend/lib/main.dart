@@ -3,6 +3,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'app.dart';
@@ -21,6 +22,16 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Web routes on the URL path, not the default `#/` fragment. Every link
+  // that reaches the web app from outside — recipe share links (/r/<token>),
+  // household invites (/join/<code>), the OAuth callback (/auth/callback) and
+  // push notification clicks — is a plain path. Under the hash strategy the
+  // browser loads index.html for that path but Flutter only reads the
+  // fragment, so the route was silently dropped and every deep link landed
+  // on /home or /welcome. nginx/default.conf serves index.html for unknown
+  // paths so a direct request still reaches the router. No-op off the web.
+  usePathUrlStrategy();
 
   // Apply a self-hoster's server choice before anything touches the network.
   final prefs = await SharedPreferences.getInstance();
