@@ -49,7 +49,7 @@ All config via environment variables (see `.env.example`):
 | `MAX_FILE_SIZE_BYTES` | No | `10485760` | Maximum attachment size (10 MiB) |
 | `MAX_STORAGE_PER_GROUP_GB` | No | `1` | Storage quota per household; `0` disables it for self-hosters |
 | `PASSWORD_AUTH_ENABLED` | No | `false` | Offer email + password sign-in (register, login, reset, change-password). Self-hosts without Google/Apple OAuth need this on; `.env.example` sets it |
-| `GUEST_AUTH_ENABLED` | No | `false` | Allow new guest accounts (`POST /auth/guest`). Off by default to stop drive-by account creation; existing guests can still refresh and upgrade |
+| `GUEST_AUTH_ENABLED` | No | `false` | Allow new guest accounts (`POST /auth/guest`). Off by default to stop drive-by account creation; existing guests can still refresh and upgrade. Deployments that never set it lose guest sign-up on upgrade, so set it explicitly if you rely on guests |
 | `FIREBASE_APP_CHECK_REQUIRED` | No | `false` | Require a valid Firebase App Check token for guest creation; production must fail closed when enabled |
 | `FIREBASE_PROJECT_NUMBER` | When App Check is enabled | — | Numeric Firebase project number used for App Check issuer/audience checks |
 | `FIREBASE_APP_CHECK_ALLOWED_APP_IDS` | When App Check is enabled | — | Comma-separated Firebase App IDs permitted to create guests |
