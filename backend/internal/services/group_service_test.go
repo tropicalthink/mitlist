@@ -136,6 +136,29 @@ func TestGroupService_InviteMember(t *testing.T) {
 		assert.Equal(t, groupID, invite.GroupID)
 	})
 
+	t.Run("plain members can invite too", func(t *testing.T) {
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewGroupService(groupRepo, nil)
+
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+		groupRepo.On("CreateInvite", ctx, mock.AnythingOfType("*models.GroupInvite")).Return(nil)
+
+		invite, err := svc.InviteMember(ctx, userID, groupID, "")
+		require.NoError(t, err)
+		assert.NotEmpty(t, invite.Code)
+	})
+
+	t.Run("non-members cannot invite", func(t *testing.T) {
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewGroupService(groupRepo, nil)
+
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(nil, pgx.ErrNoRows)
+
+		_, err := svc.InviteMember(ctx, userID, groupID, "")
+		require.Error(t, err)
+		assert.IsType(t, &api.PermissionDeniedError{}, err)
+	})
+
 	t.Run("invalid role", func(t *testing.T) {
 		groupRepo := new(mocks.MockGroupRepo)
 		svc := NewGroupService(groupRepo, nil)

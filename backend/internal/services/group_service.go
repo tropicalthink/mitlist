@@ -201,10 +201,11 @@ func (s *GroupService) DeleteGroup(ctx context.Context, userID, groupID uuid.UUI
 	return nil
 }
 
-// InviteMember creates an invite code for the group. The code admits anyone
-// who presents it for a week; accepting does not use it up.
+// InviteMember creates an invite code for the group. Any member of the
+// household may invite; the code admits anyone who presents it for a week,
+// and accepting does not use it up.
 func (s *GroupService) InviteMember(ctx context.Context, userID, groupID uuid.UUID, role string) (*models.GroupInvite, error) {
-	if err := s.requireAdmin(ctx, userID, groupID); err != nil {
+	if _, err := s.requireMembership(ctx, userID, groupID); err != nil {
 		return nil, err
 	}
 	if role == "" {
