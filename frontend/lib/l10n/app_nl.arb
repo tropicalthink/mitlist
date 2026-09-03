@@ -4382,6 +4382,8 @@
   "accountVerifyPendingBody": "We hebben een code naar {email} gestuurd. Voer hem in om je account af te maken.",
   "accountVerifyEnterCode": "Code invoeren",
   "accountVerifyLater": "Je kunt de code op elk moment invoeren via je accountpagina.",
+  "accountUpgradeWithEmail": "E-mail en wachtwoord gebruiken",
+  "oauthBackToAccount": "Terug naar account",
   "@authLoginApple": {
     "description": "OAuth button: Apple"
   },

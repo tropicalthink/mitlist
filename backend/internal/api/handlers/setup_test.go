@@ -404,6 +404,7 @@ func newAuthRouterWithConfig(t *testing.T, cfg *config.Config) (chi.Router, *Aut
 			r.With(h.requirePasswordAuth).Post("/change-password", h.ChangePassword)
 			r.With(h.requirePasswordAuth).Post("/guest/convert", h.ConvertGuest)
 			r.With(h.requirePasswordAuth).Post("/claim-account", h.ClaimAccount)
+			r.Post("/oauth-link", h.CreateOAuthLink)
 		})
 	})
 	return r, h, ms

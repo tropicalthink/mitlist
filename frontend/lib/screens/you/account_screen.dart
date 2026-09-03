@@ -44,6 +44,7 @@ import '../../widgets/mitlist_app_bar.dart';
 import '../../widgets/skeleton.dart';
 import '../../l10n/app_localizations.dart';
 import '../../utils/friendly_error.dart';
+import '../../utils/oauth_flow.dart';
 import '../../utils/active_group_context.dart';
 
 import '../../widgets/app_toast.dart';
@@ -71,6 +72,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   /// False only for a guest who gave an email but has not entered the code
   /// yet: the account exists on the server, half-made.
   bool _isVerified = true;
+  /// Provider whose upgrade round-trip is in flight, or null.
+  String? _linkingProvider;
   bool _isEditingName = false;
   bool _isExporting = false;
   bool _ocrTrainingEnabled = false;
@@ -1289,12 +1292,53 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     );
   }
 
+  /// Upgrades the guest through [provider]. The backend carries the link
+  /// token through the round-trip and the callback screen brings us back.
+  Future<void> _startOAuthLink(String provider) async {
+    final l10n = AppLocalizations.of(context)!;
+    setState(() => _linkingProvider = provider);
+    try {
+      final authService = await ref.read(authServiceProviderAsync.future);
+      final linkToken = await authService.createOAuthLinkToken();
+      final launch = await launchOAuthProvider(
+        ref,
+        provider: provider,
+        rememberMe: true,
+        linkToken: linkToken,
+      );
+      if (!mounted) return;
+      switch (launch.outcome) {
+        case OAuthLaunchOutcome.unsupported:
+          setState(() => _linkingProvider = null);
+          AppToast.error(context, l10n.authLoginOAuthUnsupported(provider));
+        case OAuthLaunchOutcome.redirecting:
+          break;
+        case OAuthLaunchOutcome.completed:
+          setState(() => _linkingProvider = null);
+          final callback = Uri.parse(launch.callbackUrl!);
+          context.go('/auth/callback?${callback.query}');
+        case OAuthLaunchOutcome.pendingDeepLink:
+        case OAuthLaunchOutcome.cancelled:
+          setState(() => _linkingProvider = null);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _linkingProvider = null);
+      AppToast.error(context, friendlyErrorMessage(e, l10n));
+    }
+  }
+
+  /// Google and Apple first: one tap, no code to type, no password to
+  /// remember. Email and password stays as the fallback for people without
+  /// either, or on a server that offers nothing else.
   Widget _buildGuestUpgradeCard() {
     final l10n = AppLocalizations.of(context)!;
     if (!_isGuest || !_isVerified) return const SizedBox.shrink();
-    // Converting a guest means giving it an email and a password; a server
-    // without password sign-in has no upgrade to offer.
-    if (!_passwordAuthEnabled) return const SizedBox.shrink();
+    final providers = ref.watch(oauthProvidersProvider).valueOrNull ??
+        (google: false, apple: false, password: true);
+    final hasOAuth = providers.google || providers.apple;
+    if (!hasOAuth && !providers.password) return const SizedBox.shrink();
+    final busy = _linkingProvider != null;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
@@ -1302,7 +1346,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         variant: AppCardVariant.filled,
         padding: AppCardPadding.md,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(
               children: [
@@ -1327,15 +1371,38 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                   ),
             ),
             const SizedBox(height: MitlistSpacing.md),
-            SizedBox(
-              width: double.infinity,
-              child: AppButton(
-                text: l10n.accountCreateFullAccount,
-                variant: AppButtonVariant.solid,
-                color: AppButtonColor.primary,
-                onPressed: _showConvertGuestSheet,
+            if (providers.google) ...[
+              AppButton(
+                text: l10n.authLoginGoogle,
+                icon: const AppIcon(name: 'login', size: 20),
+                variant: AppButtonVariant.outline,
+                color: AppButtonColor.neutral,
+                isLoading: _linkingProvider == 'google',
+                onPressed: busy ? null : () => _startOAuthLink('google'),
               ),
-            ),
+              const SizedBox(height: MitlistSpacing.sm),
+            ],
+            if (providers.apple) ...[
+              AppButton(
+                text: l10n.authLoginApple,
+                icon: const AppIcon(name: 'apple', size: 20),
+                variant: AppButtonVariant.outline,
+                color: AppButtonColor.neutral,
+                isLoading: _linkingProvider == 'apple',
+                onPressed: busy ? null : () => _startOAuthLink('apple'),
+              ),
+              const SizedBox(height: MitlistSpacing.sm),
+            ],
+            if (providers.password)
+              AppButton(
+                text: hasOAuth
+                    ? l10n.accountUpgradeWithEmail
+                    : l10n.accountCreateFullAccount,
+                variant:
+                    hasOAuth ? AppButtonVariant.ghost : AppButtonVariant.solid,
+                color: hasOAuth ? AppButtonColor.neutral : AppButtonColor.primary,
+                onPressed: busy ? null : _showConvertGuestSheet,
+              ),
           ],
         ),
       ),
@@ -1469,6 +1536,11 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // The OAuth callback flips this once a guest has been upgraded; the
+    // profile on screen is stale from that moment.
+    ref.listen<bool>(isGuestProvider, (previous, next) {
+      if (previous != null && previous != next) _loadData();
+    });
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: MitlistAppBar.titleText(

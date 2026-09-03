@@ -3,6 +3,29 @@ import 'package:mitlist/router_redirect.dart';
 
 void main() {
   group('resolveAppRedirect', () {
+    test('a signed-in guest finishing a provider upgrade stays on the callback',
+        () {
+      const input = AppRedirectInput(
+        location: '/auth/callback',
+        queryParameters: {'provider': 'google', 'handoff': 'h', 'link': '1'},
+        authBootstrapLoading: false,
+        authState: true,
+        isOAuthLinkCallback: true,
+      );
+      // Without the marker an authenticated callback is bounced to
+      // onboarding; with it the callback screen must be allowed to run.
+      expect(resolveAppRedirect(input).redirect, isNull);
+      expect(
+        resolveAppRedirect(const AppRedirectInput(
+          location: '/auth/callback',
+          queryParameters: {'provider': 'google', 'handoff': 'h'},
+          authBootstrapLoading: false,
+          authState: true,
+        )).redirect,
+        '/onboarding',
+      );
+    });
+
     test('a signed-out visitor may open a shared recipe', () {
       // The whole point of a share link is that it renders for someone with
       // neither the app nor an account. Bouncing to /welcome would strand them.

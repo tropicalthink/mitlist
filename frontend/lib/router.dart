@@ -177,6 +177,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           pendingAuthNavigation: ref.read(pendingAuthNavigationProvider),
           requestedPathWithQuery:
               '${state.uri.path}${state.uri.hasQuery ? '?${state.uri.query}' : ''}',
+          // The backend puts the upgrade marker next to the handoff: in the
+          // query for deep links, in the fragment for web.
+          isOAuthLinkCallback: state.uri.queryParameters['link'] == '1' ||
+              Uri.splitQueryString(state.uri.fragment)['link'] == '1',
         ),
       );
       if (result.clearPendingAuth) {

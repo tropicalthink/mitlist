@@ -7125,6 +7125,18 @@ abstract class AppLocalizations {
   /// **'You can enter the code any time from your account page.'**
   String get accountVerifyLater;
 
+  /// Secondary guest-upgrade option below the Google and Apple buttons
+  ///
+  /// In en, this message translates to:
+  /// **'Use email and password'**
+  String get accountUpgradeWithEmail;
+
+  /// Button on the OAuth callback screen after a failed guest upgrade
+  ///
+  /// In en, this message translates to:
+  /// **'Back to account'**
+  String get oauthBackToAccount;
+
   /// Error when OAuth is unsupported on platform
   ///
   /// In en, this message translates to:

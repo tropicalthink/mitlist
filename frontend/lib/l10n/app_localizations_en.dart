@@ -4026,6 +4026,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'You can enter the code any time from your account page.';
 
   @override
+  String get accountUpgradeWithEmail => 'Use email and password';
+
+  @override
+  String get oauthBackToAccount => 'Back to account';
+
+  @override
   String authLoginOAuthUnsupported(String provider) {
     return '$provider sign-in is only available on web, Android, and iOS right now.';
   }

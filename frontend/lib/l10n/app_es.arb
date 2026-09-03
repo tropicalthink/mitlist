@@ -4382,6 +4382,8 @@
   "accountVerifyPendingBody": "Enviamos un código a {email}. Introdúcelo para terminar de crear tu cuenta.",
   "accountVerifyEnterCode": "Introducir código",
   "accountVerifyLater": "Puedes introducir el código en cualquier momento desde tu página de cuenta.",
+  "accountUpgradeWithEmail": "Usar correo y contraseña",
+  "oauthBackToAccount": "Volver a la cuenta",
   "@authLoginApple": {
     "description": "OAuth button: Apple"
   },

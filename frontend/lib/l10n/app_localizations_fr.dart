@@ -4076,6 +4076,12 @@ class AppLocalizationsFr extends AppLocalizations {
       'Vous pourrez saisir le code à tout moment depuis la page de votre compte.';
 
   @override
+  String get accountUpgradeWithEmail => 'Utiliser un e-mail et un mot de passe';
+
+  @override
+  String get oauthBackToAccount => 'Retour au compte';
+
+  @override
   String authLoginOAuthUnsupported(String provider) {
     return 'La connexion $provider n\'est disponible que sur le web, Android et iOS pour l\'instant.';
   }

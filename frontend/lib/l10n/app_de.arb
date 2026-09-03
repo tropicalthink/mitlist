@@ -1135,6 +1135,8 @@
   "accountVerifyPendingBody": "Wir haben einen Code an {email} geschickt. Gib ihn ein, um dein Konto fertigzustellen.",
   "accountVerifyEnterCode": "Code eingeben",
   "accountVerifyLater": "Du kannst den Code jederzeit auf deiner Kontoseite eingeben.",
+  "accountUpgradeWithEmail": "E-Mail und Passwort verwenden",
+  "oauthBackToAccount": "Zurück zum Konto",
   "authLoginOAuthUnsupported": "{provider}-Anmeldung ist derzeit nur im Web, auf Android und iOS verfügbar.",
   "authLoginResetPasswordTitle": "Passwort zurücksetzen",
   "authLoginSendResetCode": "Code senden",

@@ -5424,6 +5424,14 @@
   "@accountVerifyLater": {
     "description": "Toast when the verification sheet is dismissed after guest conversion"
   },
+  "accountUpgradeWithEmail": "Use email and password",
+  "@accountUpgradeWithEmail": {
+    "description": "Secondary guest-upgrade option below the Google and Apple buttons"
+  },
+  "oauthBackToAccount": "Back to account",
+  "@oauthBackToAccount": {
+    "description": "Button on the OAuth callback screen after a failed guest upgrade"
+  },
   "authLoginOAuthUnsupported": "{provider} sign-in is only available on web, Android, and iOS right now.",
   "@authLoginOAuthUnsupported": {
     "description": "Error when OAuth is unsupported on platform",

@@ -14,9 +14,8 @@ import '../../services/api_error_mapper.dart';
 import '../../sheets/email_verification_sheet.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
-import '../../utils/browser_redirect.dart';
 import '../../utils/friendly_error.dart';
-import '../../utils/native_oauth_launcher.dart';
+import '../../utils/oauth_flow.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/animated_check_toggle.dart';
@@ -469,78 +468,51 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
       : GoRouterState.of(context).uri.queryParameters['invite'];
 
   Future<void> _startOAuth(String provider) async {
-    if (!supportsBrowserRedirect && !supportsNativeOAuthLaunch) {
-      setState(() {
-        _errorMessage = l10n.authLoginOAuthUnsupported(provider);
-      });
-      return;
+    final l10n = AppLocalizations.of(context)!;
+    final invite = _inviteCode;
+    if (invite != null && invite.isNotEmpty) {
+      ref.read(pendingAuthNavigationProvider.notifier).state =
+          '/join/${Uri.encodeComponent(invite)}';
     }
+    setState(() {
+      _oauthProvider = provider;
+      _errorMessage = null;
+    });
 
-    final baseUri = Uri.parse(ApiConfig.baseUrl);
-    final redirectUri = supportsBrowserRedirect
-        ? Uri(
-            scheme: browserCurrentUri().scheme,
-            host: browserCurrentUri().host,
-            port: browserCurrentUri().hasPort ? browserCurrentUri().port : null,
-            path: '/auth/callback',
-          ).toString()
-        : ApiConfig.nativeOAuthCallbackUri;
-
-    final authService = await ref.read(authServiceProviderAsync.future);
     try {
-      final invite = _inviteCode;
-      if (invite != null && invite.isNotEmpty) {
-        ref.read(pendingAuthNavigationProvider.notifier).state =
-            '/join/${Uri.encodeComponent(invite)}';
-      }
-      await authService.setPendingOAuthRememberMe(_rememberMe);
-
-      final authUrl = Uri(
-        scheme: baseUri.scheme,
-        host: baseUri.host,
-        port: baseUri.hasPort ? baseUri.port : null,
-        path: '${ApiConfig.apiPrefix}/oauth/$provider',
-        queryParameters: {'redirect_uri': redirectUri},
-      ).toString();
-
-      if (supportsBrowserRedirect) {
-        redirectBrowser(authUrl);
-        return;
-      }
-
-      setState(() {
-        _oauthProvider = provider;
-        _errorMessage = null;
-      });
-
-      final result = await startNativeOAuthSession(
-        authUrl,
-        callbackScheme: Uri.parse(ApiConfig.nativeOAuthCallbackUri).scheme,
+      final launch = await launchOAuthProvider(
+        ref,
+        provider: provider,
+        rememberMe: _rememberMe,
       );
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
-      switch (result.outcome) {
-        case NativeOAuthOutcome.completed:
+      switch (launch.outcome) {
+        case OAuthLaunchOutcome.unsupported:
+          setState(() {
+            _oauthProvider = null;
+            _errorMessage = l10n.authLoginOAuthUnsupported(provider);
+          });
+        case OAuthLaunchOutcome.redirecting:
+          // The browser is leaving this page; nothing more to do here.
+          break;
+        case OAuthLaunchOutcome.completed:
           // iOS's sheet captured the redirect itself, so no deep link is
           // coming — hand the callback to the router directly.
-          final callback = Uri.parse(result.callbackUrl!);
+          final callback = Uri.parse(launch.callbackUrl!);
           context.go('/auth/callback?${callback.query}');
-        case NativeOAuthOutcome.pendingDeepLink:
+        case OAuthLaunchOutcome.pendingDeepLink:
           // Android: the Custom Tab holds the screen until the mitlist://
           // redirect re-enters the app. Nothing to do but wait.
           break;
-        case NativeOAuthOutcome.cancelled:
+        case OAuthLaunchOutcome.cancelled:
           setState(() => _oauthProvider = null);
       }
     } catch (e) {
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
       setState(() {
         _oauthProvider = null;
-        _errorMessage = friendlyErrorMessage(e, AppLocalizations.of(context)!);
+        _errorMessage = friendlyErrorMessage(e, l10n);
       });
     }
   }

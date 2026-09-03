@@ -4062,6 +4062,12 @@ class AppLocalizationsNl extends AppLocalizations {
       'Je kunt de code op elk moment invoeren via je accountpagina.';
 
   @override
+  String get accountUpgradeWithEmail => 'E-mail en wachtwoord gebruiken';
+
+  @override
+  String get oauthBackToAccount => 'Terug naar account';
+
+  @override
   String authLoginOAuthUnsupported(String provider) {
     return '$provider-inloggen is momenteel alleen beschikbaar op web, Android en iOS.';
   }

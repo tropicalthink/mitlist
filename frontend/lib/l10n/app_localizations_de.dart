@@ -4094,6 +4094,12 @@ class AppLocalizationsDe extends AppLocalizations {
       'Du kannst den Code jederzeit auf deiner Kontoseite eingeben.';
 
   @override
+  String get accountUpgradeWithEmail => 'E-Mail und Passwort verwenden';
+
+  @override
+  String get oauthBackToAccount => 'Zurück zum Konto';
+
+  @override
   String authLoginOAuthUnsupported(String provider) {
     return '$provider-Anmeldung ist derzeit nur im Web, auf Android und iOS verfügbar.';
   }
