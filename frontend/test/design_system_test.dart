@@ -60,6 +60,28 @@ void main() {
       expect(find.text('WITH ICON'), findsOneWidget);
     });
 
+    testWidgets('a long label wraps inside a narrow button', (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        home: Center(
+          child: SizedBox(
+            width: 200,
+            child: AppButton(
+              text: 'Continue with a very long provider name indeed',
+              icon: const AppIcon(name: 'apple'),
+              variant: AppButtonVariant.outline,
+              size: AppButtonSize.lg,
+              onPressed: () {},
+            ),
+          ),
+        ),
+      ));
+      expect(tester.takeException(), isNull);
+      final button = tester.getSize(find.byType(AppButton));
+      expect(button.width, 200);
+      final label = tester.getRect(find.byType(Text));
+      expect(label.right, lessThanOrEqualTo(200 + (800 - 200) / 2));
+    });
+
     testWidgets('renders all size variants', (tester) async {
       for (final size in AppButtonSize.values) {
         await tester.pumpWidget(MaterialApp(
