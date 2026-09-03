@@ -152,13 +152,20 @@ AppRedirectResult resolveAppRedirect(AppRedirectInput input) {
         redirect: '/join/${Uri.encodeComponent(invite)}',
       );
     }
-    if (location.startsWith('/signup') ||
-        location.startsWith('/auth/callback')) {
+    if (location.startsWith('/signup')) {
       return const AppRedirectResult(redirect: '/onboarding');
     }
+    // A signed-in visit to the callback with nothing pending is a replay, not
+    // a sign-in: a genuine callback parks its destination in
+    // pendingAuthNavigation before flipping auth state. Android re-delivers
+    // the OAuth deep link as the launch intent on every cold start after a
+    // provider sign-in, so treating it as a fresh sign-in put a household
+    // member on the setup screen at each boot. Home decides for itself
+    // whether onboarding is needed.
     if (location.startsWith('/welcome') ||
         location.startsWith('/tour') ||
-        location.startsWith('/login')) {
+        location.startsWith('/login') ||
+        location.startsWith('/auth/callback')) {
       return const AppRedirectResult(redirect: '/home');
     }
     return const AppRedirectResult();
