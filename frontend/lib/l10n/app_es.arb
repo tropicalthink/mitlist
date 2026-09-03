@@ -4368,6 +4368,7 @@
   "authLoginApple": "Continuar con Apple",
   "authLoginNoMethods": "Este servidor no tiene ningún método de inicio de sesión activado. Quien lo administra debe activar el acceso por correo o conectar Google o Apple.",
   "authLoginWithEmailButton": "Iniciar sesión con correo",
+  "authSignupWithEmailButton": "Registrarse con correo",
   "authVerifyTitle": "Verifica tu correo",
   "authVerifyBody": "Introduce el código que enviamos a {email}.",
   "authVerifyCodeLabel": "Código de verificación",

@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mitlist/l10n/app_localizations.dart';
 import 'package:mitlist/providers/auth_provider.dart';
+import 'package:mitlist/providers/oauth_provider.dart';
 import 'package:mitlist/screens/auth/signup_screen.dart';
 
 /// Covers the registration password rules: the confirmation field, the
@@ -39,6 +40,11 @@ Future<void> _pumpSignup(WidgetTester tester) async {
       overrides: [
         authServiceProviderAsync.overrideWith(
           (ref) async => throw UnimplementedError('network must not be used'),
+        ),
+        // Password-only: no provider buttons, so the form is unfolded from
+        // the first frame and these cases reach it without a tap.
+        oauthProvidersProvider.overrideWith(
+          (ref) async => (google: false, apple: false, password: true),
         ),
       ],
       child: MaterialApp.router(

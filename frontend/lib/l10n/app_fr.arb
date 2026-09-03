@@ -4368,6 +4368,7 @@
   "authLoginApple": "Continuer avec Apple",
   "authLoginNoMethods": "Ce serveur n’a aucune méthode de connexion activée. La personne qui l’administre doit activer la connexion par e-mail ou connecter Google ou Apple.",
   "authLoginWithEmailButton": "Se connecter par e-mail",
+  "authSignupWithEmailButton": "S'inscrire par e-mail",
   "authVerifyTitle": "Vérifiez votre e-mail",
   "authVerifyBody": "Saisissez le code envoyé à {email}.",
   "authVerifyCodeLabel": "Code de vérification",

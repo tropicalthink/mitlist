@@ -4368,6 +4368,7 @@
   "authLoginApple": "Doorgaan met Apple",
   "authLoginNoMethods": "Deze server heeft geen aanmeldmethode ingeschakeld. Wie hem beheert moet aanmelden via e-mail inschakelen of Google of Apple koppelen.",
   "authLoginWithEmailButton": "Aanmelden met e-mail",
+  "authSignupWithEmailButton": "Registreren met e-mail",
   "authVerifyTitle": "Bevestig je e-mail",
   "authVerifyBody": "Voer de code in die we naar {email} hebben gestuurd.",
   "authVerifyCodeLabel": "Verificatiecode",

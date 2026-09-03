@@ -4045,6 +4045,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get authLoginWithEmailButton => 'Mit E-Mail anmelden';
 
   @override
+  String get authSignupWithEmailButton => 'Mit E-Mail registrieren';
+
+  @override
   String get authVerifyTitle => 'E-Mail bestätigen';
 
   @override

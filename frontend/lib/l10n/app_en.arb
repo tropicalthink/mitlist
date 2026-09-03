@@ -5358,6 +5358,10 @@
   "@authLoginWithEmailButton": {
     "description": "Button at the bottom of the login screen that unfolds the email/password form"
   },
+  "authSignupWithEmailButton": "Sign up with email",
+  "@authSignupWithEmailButton": {
+    "description": "Button on the signup screen that unfolds the name/email/password form"
+  },
   "authVerifyTitle": "Verify your email",
   "@authVerifyTitle": {
     "description": "Title of the email verification sheet"

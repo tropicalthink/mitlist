@@ -10,10 +10,12 @@ import '../../theme/typography.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_button.dart';
+import '../../widgets/app_icon.dart';
 import '../../widgets/app_input.dart';
 import '../../widgets/board/cork_board.dart';
 import '../../widgets/password_requirements.dart';
 import '../../widgets/password_strength_bar.dart';
+import '../../utils/oauth_flow.dart';
 import '../../utils/password_policy.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
@@ -23,7 +25,8 @@ class SignupScreen extends ConsumerStatefulWidget {
   ConsumerState<SignupScreen> createState() => _SignupScreenState();
 }
 
-class _SignupScreenState extends ConsumerState<SignupScreen> {
+class _SignupScreenState extends ConsumerState<SignupScreen>
+    with WidgetsBindingObserver, OAuthLaunchHandler {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -39,6 +42,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   bool _isSuccess = false;
   bool _awaitingVerification = false;
   bool _redirectedToLogin = false;
+
+  /// Whether the name + email + password form is unfolded. It starts
+  /// folded behind a button whenever OAuth is on offer, so the provider
+  /// buttons stay the headline.
+  bool _showEmailForm = false;
   String? _errorMessage;
   String? _nameError;
   String? _emailError;
@@ -47,11 +55,21 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   AppLocalizations get l10n => AppLocalizations.of(context)!;
 
-  String? get _inviteCode =>
-      GoRouterState.of(context).uri.queryParameters['invite'];
+  @override
+  void showOAuthError(String? message) {
+    if (!mounted) return;
+    setState(() => _errorMessage = message);
+  }
+
+  void _unfoldEmailForm() {
+    setState(() => _showEmailForm = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _nameFocus.requestFocus();
+    });
+  }
 
   void _goToLogin() {
-    final invite = _inviteCode;
+    final invite = inviteCode;
     if (invite != null && invite.isNotEmpty) {
       context.goNamed('login', queryParameters: {'invite': invite});
     } else {
@@ -198,7 +216,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       });
       await Future.delayed(const Duration(milliseconds: 650));
       if (!mounted) return;
-      final invite = _inviteCode;
+      final invite = inviteCode;
       ref.read(pendingAuthNavigationProvider.notifier).state =
           (invite != null && invite.isNotEmpty)
               ? '/join/${Uri.encodeComponent(invite)}'
@@ -286,206 +304,16 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       const SizedBox(height: MitlistSpacing.space8),
                       TapedPanel(
                         padding: const EdgeInsets.all(MitlistSpacing.space6),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            if (!_awaitingVerification) ...[
-                              AppInput(
-                                label: l10n.commonName,
-                                hint: l10n.authSignupNameHint,
-                                controller: _nameController,
-                                focusNode: _nameFocus,
-                                textInputAction: TextInputAction.next,
-                                autofillHints: const [AutofillHints.name],
-                                onSubmitted: (_) => _emailFocus.requestFocus(),
-                                errorText: _nameError,
-                              ),
-                              const SizedBox(height: MitlistSpacing.space3),
-                              AppInput(
-                                label: l10n.authSignupEmail,
-                                hint: l10n.authSignupEmailHint,
-                                controller: _emailController,
-                                focusNode: _emailFocus,
-                                keyboardType: TextInputType.emailAddress,
-                                textInputAction: TextInputAction.next,
-                                autofillHints: const [AutofillHints.email],
-                                onSubmitted: (_) =>
-                                    _passwordFocus.requestFocus(),
-                                errorText: _emailError,
-                              ),
-                              const SizedBox(height: MitlistSpacing.space3),
-                              AppInput(
-                                label: l10n.authSignupPassword,
-                                hint: '••••••••',
-                                controller: _passwordController,
-                                focusNode: _passwordFocus,
-                                obscureText: true,
-                                textInputAction: TextInputAction.next,
-                                autofillHints: const [
-                                  AutofillHints.newPassword
-                                ],
-                                onSubmitted: (_) =>
-                                    _confirmPasswordFocus.requestFocus(),
-                                errorText: _passwordError,
-                              ),
-                              const SizedBox(height: MitlistSpacing.space2),
-                              PasswordStrengthBar(
-                                password: _passwordController.text,
-                              ),
-                              const SizedBox(height: MitlistSpacing.space2),
-                              PasswordRequirements(
-                                password: _passwordController.text,
-                              ),
-                              const SizedBox(height: MitlistSpacing.space3),
-                              AppInput(
-                                label: l10n.authSignupConfirmPassword,
-                                hint: l10n.authSignupConfirmPasswordHint,
-                                controller: _confirmPasswordController,
-                                focusNode: _confirmPasswordFocus,
-                                obscureText: true,
-                                textInputAction: TextInputAction.done,
-                                autofillHints: const [
-                                  AutofillHints.newPassword
-                                ],
-                                onSubmitted: (_) => _submit(),
-                                errorText: _confirmPasswordError,
-                              ),
-                              const SizedBox(height: MitlistSpacing.space3),
-                            ] else ...[
-                              Text(
-                                l10n.authVerifyBody(
-                                    _emailController.text.trim()),
-                                style: Theme.of(context).textTheme.bodyMedium,
-                              ),
-                              const SizedBox(height: MitlistSpacing.space3),
-                              AppInput(
-                                label: l10n.authVerifyCodeLabel,
-                                hint: l10n.authVerifyCodeHint,
-                                controller: _verificationController,
-                                focusNode: _verificationFocus,
-                                textInputAction: TextInputAction.done,
-                                autofillHints: const [
-                                  AutofillHints.oneTimeCode
-                                ],
-                                onSubmitted: (_) => _submit(),
-                              ),
-                              const SizedBox(height: MitlistSpacing.space2),
-                              AppButton(
-                                text: l10n.authVerifyResend,
-                                variant: AppButtonVariant.ghost,
-                                color: AppButtonColor.primary,
-                                onPressed:
-                                    _isLoading ? null : _resendVerification,
-                              ),
-                              const SizedBox(height: MitlistSpacing.space3),
-                            ],
-                            if (_errorMessage != null) ...[
-                              AppAlert(
-                                type: AppAlertType.error,
-                                message: _errorMessage!,
-                              ),
-                              const SizedBox(height: MitlistSpacing.space3),
-                            ],
-                            SizedBox(
-                              width: double.infinity,
-                              child: AppButton(
-                                text: _awaitingVerification
-                                    ? l10n.authVerifyButton
-                                    : l10n.authSignupCreateAccount,
-                                variant: AppButtonVariant.solid,
-                                color: AppButtonColor.primary,
-                                size: AppButtonSize.lg,
-                                isLoading: _isLoading,
-                                isSuccess: _isSuccess,
-                                onPressed:
-                                    (_isLoading || _isSuccess) ? null : _submit,
-                              ),
-                            ),
-                            const SizedBox(height: MitlistSpacing.space4),
-                            Wrap(
-                              alignment: WrapAlignment.center,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              children: [
-                                Text(
-                                  l10n.authSignupHaveAccount,
-                                  style: Theme.of(context).textTheme.bodySmall,
+                        child: providers == null
+                            ? const Padding(
+                                padding: EdgeInsets.symmetric(
+                                  vertical: MitlistSpacing.xl,
                                 ),
-                                AppButton(
-                                  variant: AppButtonVariant.ghost,
-                                  color: AppButtonColor.primary,
-                                  text: l10n.authSignupSignInLink,
-                                  onPressed: _goToLogin,
+                                child: Center(
+                                  child: CircularProgressIndicator(),
                                 ),
-                              ],
-                            ),
-                            const SizedBox(height: MitlistSpacing.space2),
-                            Wrap(
-                              alignment: WrapAlignment.center,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              children: [
-                                Text(
-                                  l10n.authSignupTermsPrefix,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurfaceVariant,
-                                      ),
-                                ),
-                                AppButton(
-                                  variant: AppButtonVariant.ghost,
-                                  color: AppButtonColor.neutral,
-                                  text: l10n.accountTermsTitle,
-                                  onPressed: () => _showLegalSheet(
-                                    title: l10n.accountTermsTitle,
-                                    paragraphs: [
-                                      l10n.authSignupTermsP1,
-                                      l10n.authSignupTermsP2,
-                                      l10n.authSignupTermsP3,
-                                    ],
-                                  ),
-                                ),
-                                Text(
-                                  l10n.authSignupAnd,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurfaceVariant,
-                                      ),
-                                ),
-                                AppButton(
-                                  variant: AppButtonVariant.ghost,
-                                  color: AppButtonColor.neutral,
-                                  text: l10n.authSignupPrivacyPolicy,
-                                  onPressed: () => _showLegalSheet(
-                                    title: l10n.authSignupPrivacyPolicy,
-                                    paragraphs: [
-                                      l10n.authSignupPrivacyP1,
-                                      l10n.authSignupPrivacyP2,
-                                      l10n.authSignupPrivacyP3,
-                                    ],
-                                  ),
-                                ),
-                                Text(
-                                  l10n.authSignupPeriod,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurfaceVariant,
-                                      ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
+                              )
+                            : _buildSignUpMethods(l10n, providers),
                       ),
                     ],
                   ),
@@ -495,6 +323,238 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  /// OAuth first, the registration form last. A server with providers turned
+  /// on leads with them and folds the form behind a button; a self-host with
+  /// nothing but passwords shows the form straight away.
+  Widget _buildSignUpMethods(
+    AppLocalizations l10n,
+    OAuthProviderAvailability providers,
+  ) {
+    final busy = _isLoading || _isSuccess;
+    final hasOAuth = providers.google || providers.apple;
+    final showForm = !hasOAuth || _showEmailForm;
+    final scheme = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (_errorMessage != null) ...[
+          AppAlert(
+            type: AppAlertType.error,
+            message: _errorMessage!,
+          ),
+          const SizedBox(height: MitlistSpacing.space3),
+        ],
+        // Nothing but the code field once registration has been sent: the
+        // provider buttons would abandon a half-finished account.
+        if (!_awaitingVerification) ...[
+          if (providers.google) ...[
+            AppButton(
+              text: l10n.authLoginGoogle,
+              icon: const AppIcon(name: 'login', size: 20),
+              variant: AppButtonVariant.outline,
+              color: AppButtonColor.neutral,
+              isLoading: oauthProvider == 'google',
+              onPressed: (busy || oauthProvider != null)
+                  ? null
+                  : () => startOAuth('google'),
+            ),
+            const SizedBox(height: MitlistSpacing.space3),
+          ],
+          if (providers.apple) ...[
+            AppButton(
+              text: l10n.authLoginApple,
+              icon: const AppIcon(name: 'apple', size: 20),
+              variant: AppButtonVariant.outline,
+              color: AppButtonColor.neutral,
+              isLoading: oauthProvider == 'apple',
+              onPressed: (busy || oauthProvider != null)
+                  ? null
+                  : () => startOAuth('apple'),
+            ),
+            const SizedBox(height: MitlistSpacing.space3),
+          ],
+          if (hasOAuth) ...[
+            Divider(color: scheme.outlineVariant, thickness: 2, height: 2),
+            const SizedBox(height: MitlistSpacing.space3),
+          ],
+          if (hasOAuth && !_showEmailForm)
+            AppButton(
+              text: l10n.authSignupWithEmailButton,
+              variant: AppButtonVariant.ghost,
+              color: AppButtonColor.neutral,
+              onPressed: busy ? null : _unfoldEmailForm,
+            ),
+        ],
+        if (!_awaitingVerification) ...[
+          if (showForm) ...[
+            AppInput(
+              label: l10n.commonName,
+              hint: l10n.authSignupNameHint,
+              controller: _nameController,
+              focusNode: _nameFocus,
+              textInputAction: TextInputAction.next,
+              autofillHints: const [AutofillHints.name],
+              onSubmitted: (_) => _emailFocus.requestFocus(),
+              errorText: _nameError,
+            ),
+            const SizedBox(height: MitlistSpacing.space3),
+            AppInput(
+              label: l10n.authSignupEmail,
+              hint: l10n.authSignupEmailHint,
+              controller: _emailController,
+              focusNode: _emailFocus,
+              keyboardType: TextInputType.emailAddress,
+              textInputAction: TextInputAction.next,
+              autofillHints: const [AutofillHints.email],
+              onSubmitted: (_) => _passwordFocus.requestFocus(),
+              errorText: _emailError,
+            ),
+            const SizedBox(height: MitlistSpacing.space3),
+            AppInput(
+              label: l10n.authSignupPassword,
+              hint: '••••••••',
+              controller: _passwordController,
+              focusNode: _passwordFocus,
+              obscureText: true,
+              textInputAction: TextInputAction.next,
+              autofillHints: const [AutofillHints.newPassword],
+              onSubmitted: (_) => _confirmPasswordFocus.requestFocus(),
+              errorText: _passwordError,
+            ),
+            const SizedBox(height: MitlistSpacing.space2),
+            PasswordStrengthBar(
+              password: _passwordController.text,
+            ),
+            const SizedBox(height: MitlistSpacing.space2),
+            PasswordRequirements(
+              password: _passwordController.text,
+            ),
+            const SizedBox(height: MitlistSpacing.space3),
+            AppInput(
+              label: l10n.authSignupConfirmPassword,
+              hint: l10n.authSignupConfirmPasswordHint,
+              controller: _confirmPasswordController,
+              focusNode: _confirmPasswordFocus,
+              obscureText: true,
+              textInputAction: TextInputAction.done,
+              autofillHints: const [AutofillHints.newPassword],
+              onSubmitted: (_) => _submit(),
+              errorText: _confirmPasswordError,
+            ),
+            const SizedBox(height: MitlistSpacing.space3),
+          ],
+        ] else ...[
+          Text(
+            l10n.authVerifyBody(_emailController.text.trim()),
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: MitlistSpacing.space3),
+          AppInput(
+            label: l10n.authVerifyCodeLabel,
+            hint: l10n.authVerifyCodeHint,
+            controller: _verificationController,
+            focusNode: _verificationFocus,
+            textInputAction: TextInputAction.done,
+            autofillHints: const [AutofillHints.oneTimeCode],
+            onSubmitted: (_) => _submit(),
+          ),
+          const SizedBox(height: MitlistSpacing.space2),
+          AppButton(
+            text: l10n.authVerifyResend,
+            variant: AppButtonVariant.ghost,
+            color: AppButtonColor.primary,
+            onPressed: _isLoading ? null : _resendVerification,
+          ),
+          const SizedBox(height: MitlistSpacing.space3),
+        ],
+        if (showForm || _awaitingVerification)
+          SizedBox(
+            width: double.infinity,
+            child: AppButton(
+              text: _awaitingVerification
+                  ? l10n.authVerifyButton
+                  : l10n.authSignupCreateAccount,
+              variant: AppButtonVariant.solid,
+              color: AppButtonColor.primary,
+              size: AppButtonSize.lg,
+              isLoading: _isLoading,
+              isSuccess: _isSuccess,
+              onPressed: (_isLoading || _isSuccess) ? null : _submit,
+            ),
+          ),
+        const SizedBox(height: MitlistSpacing.space4),
+        Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Text(
+              l10n.authSignupHaveAccount,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            AppButton(
+              variant: AppButtonVariant.ghost,
+              color: AppButtonColor.primary,
+              text: l10n.authSignupSignInLink,
+              onPressed: _goToLogin,
+            ),
+          ],
+        ),
+        const SizedBox(height: MitlistSpacing.space2),
+        Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Text(
+              l10n.authSignupTermsPrefix,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+            AppButton(
+              variant: AppButtonVariant.ghost,
+              color: AppButtonColor.neutral,
+              text: l10n.accountTermsTitle,
+              onPressed: () => _showLegalSheet(
+                title: l10n.accountTermsTitle,
+                paragraphs: [
+                  l10n.authSignupTermsP1,
+                  l10n.authSignupTermsP2,
+                  l10n.authSignupTermsP3,
+                ],
+              ),
+            ),
+            Text(
+              l10n.authSignupAnd,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+            AppButton(
+              variant: AppButtonVariant.ghost,
+              color: AppButtonColor.neutral,
+              text: l10n.authSignupPrivacyPolicy,
+              onPressed: () => _showLegalSheet(
+                title: l10n.authSignupPrivacyPolicy,
+                paragraphs: [
+                  l10n.authSignupPrivacyP1,
+                  l10n.authSignupPrivacyP2,
+                  l10n.authSignupPrivacyP3,
+                ],
+              ),
+            ),
+            Text(
+              l10n.authSignupPeriod,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
