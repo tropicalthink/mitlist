@@ -4002,6 +4002,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get authLoginWithEmailButton => 'Iniciar sesión con correo';
 
   @override
+  String get authSignupWithEmailButton => 'Registrarse con correo';
+
+  @override
   String get authVerifyTitle => 'Verifica tu correo';
 
   @override

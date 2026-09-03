@@ -4026,6 +4026,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get authLoginWithEmailButton => 'Se connecter par e-mail';
 
   @override
+  String get authSignupWithEmailButton => 'S\'inscrire par e-mail';
+
+  @override
   String get authVerifyTitle => 'Vérifiez votre e-mail';
 
   @override

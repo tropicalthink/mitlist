@@ -1121,6 +1121,7 @@
   "authLoginApple": "Mit Apple fortfahren",
   "authLoginNoMethods": "Auf diesem Server ist keine Anmeldemethode aktiviert. Wer ihn betreibt, muss die E-Mail-Anmeldung einschalten oder Google bzw. Apple verbinden.",
   "authLoginWithEmailButton": "Mit E-Mail anmelden",
+  "authSignupWithEmailButton": "Mit E-Mail registrieren",
   "authVerifyTitle": "E-Mail bestätigen",
   "authVerifyBody": "Gib den Code ein, den wir an {email} geschickt haben.",
   "authVerifyCodeLabel": "Bestätigungscode",

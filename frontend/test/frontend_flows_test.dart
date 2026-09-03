@@ -1026,6 +1026,34 @@ void main() {
     expect(find.text('account page'), findsOneWidget);
   });
 
+  testWidgets('signup screen leads with OAuth and folds the form away',
+      (tester) async {
+    await _setLargeSurface(tester);
+
+    await _pumpScreen(
+      tester,
+      child: const SignupScreen(),
+      overrides: [
+        oauthProvidersProvider.overrideWith(
+          (ref) async => (google: true, apple: true, password: true),
+        ),
+      ],
+    );
+
+    // Reached from "create a household", so the providers have to be here.
+    expect(find.text('CONTINUE WITH GOOGLE'),
+        findsOneWidget); // outline variant renders uppercase
+    expect(find.text('CONTINUE WITH APPLE'),
+        findsOneWidget); // outline variant renders uppercase
+
+    // Registration waits behind a button while OAuth is on offer.
+    expect(find.byType(TextField), findsNothing);
+    await tester.tap(find.text('Sign up with email'));
+    await _pumpAfter(tester);
+    expect(find.byType(TextField), findsNWidgets(4));
+    expect(find.text('CREATE ACCOUNT'), findsOneWidget);
+  });
+
   testWidgets('signup screen exposes actionable terms and privacy',
       (tester) async {
     await _setLargeSurface(tester);
@@ -1033,7 +1061,11 @@ void main() {
     await _pumpScreen(
       tester,
       child: const SignupScreen(),
-      overrides: const [],
+      overrides: [
+        oauthProvidersProvider.overrideWith(
+          (ref) async => (google: false, apple: false, password: true),
+        ),
+      ],
     );
 
     await tester.tap(find.text(

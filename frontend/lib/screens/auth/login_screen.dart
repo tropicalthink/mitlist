@@ -14,7 +14,6 @@ import '../../services/api_error_mapper.dart';
 import '../../sheets/email_verification_sheet.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
-import '../../utils/friendly_error.dart';
 import '../../utils/oauth_flow.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_bottom_sheet.dart';
@@ -33,7 +32,7 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen>
-    with WidgetsBindingObserver {
+    with WidgetsBindingObserver, OAuthLaunchHandler {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _emailFocus = FocusNode();
@@ -46,19 +45,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   String? _emailError;
   String? _passwordError;
 
-  /// Provider whose in-app sign-in sheet is currently open, or null.
-  String? _oauthProvider;
-
   /// Whether the email + password form is unfolded. It starts folded behind
   /// a button whenever OAuth is on offer, so the buttons stay the headline.
   bool _showEmailForm = false;
 
   AppLocalizations get l10n => AppLocalizations.of(context)!;
 
+  /// Both doors honour the checkbox: the mixin passes it to the provider
+  /// round-trip, `_submit` passes it to the password login.
+  @override
+  bool get oauthRememberMe => _rememberMe;
+
+  @override
+  void showOAuthError(String? message) {
+    if (!mounted) return;
+    setState(() => _errorMessage = message);
+  }
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     // A build without a baked-in server (self-compiled, no dart-define) can't
     // do anything until the user picks one — open the picker for them.
     if (!ApiConfig.isConfigured) {
@@ -69,19 +75,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Android's Custom Tab returns no result, so backing out of it would
-    // otherwise leave the button spinning forever. Coming back to the
-    // foreground with a sheet still marked open means the user left it; a
-    // successful callback routes away from this screen before this runs.
-    if (state == AppLifecycleState.resumed && _oauthProvider != null) {
-      setState(() => _oauthProvider = null);
-    }
-  }
-
-  @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
     _emailController.dispose();
     _passwordController.dispose();
     _emailFocus.dispose();
@@ -160,7 +154,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     });
     await Future.delayed(const Duration(milliseconds: 650));
     if (!mounted) return;
-    final invite = _inviteCode;
+    final invite = inviteCode;
     if (invite != null && invite.isNotEmpty) {
       ref.read(pendingAuthNavigationProvider.notifier).state =
           '/join/${Uri.encodeComponent(invite)}';
@@ -461,62 +455,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     ).whenComplete(urlController.dispose);
   }
 
-  /// The invite code carried on the URL, or null when there is none — or no
-  /// router at all, as when the screen is built on its own.
-  String? get _inviteCode => GoRouter.maybeOf(context) == null
-      ? null
-      : GoRouterState.of(context).uri.queryParameters['invite'];
-
-  Future<void> _startOAuth(String provider) async {
-    final l10n = AppLocalizations.of(context)!;
-    final invite = _inviteCode;
-    if (invite != null && invite.isNotEmpty) {
-      ref.read(pendingAuthNavigationProvider.notifier).state =
-          '/join/${Uri.encodeComponent(invite)}';
-    }
-    setState(() {
-      _oauthProvider = provider;
-      _errorMessage = null;
-    });
-
-    try {
-      final launch = await launchOAuthProvider(
-        ref,
-        provider: provider,
-        rememberMe: _rememberMe,
-      );
-      if (!mounted) return;
-
-      switch (launch.outcome) {
-        case OAuthLaunchOutcome.unsupported:
-          setState(() {
-            _oauthProvider = null;
-            _errorMessage = l10n.authLoginOAuthUnsupported(provider);
-          });
-        case OAuthLaunchOutcome.redirecting:
-          // The browser is leaving this page; nothing more to do here.
-          break;
-        case OAuthLaunchOutcome.completed:
-          // iOS's sheet captured the redirect itself, so no deep link is
-          // coming — hand the callback to the router directly.
-          final callback = Uri.parse(launch.callbackUrl!);
-          context.go('/auth/callback?${callback.query}');
-        case OAuthLaunchOutcome.pendingDeepLink:
-          // Android: the Custom Tab holds the screen until the mitlist://
-          // redirect re-enters the app. Nothing to do but wait.
-          break;
-        case OAuthLaunchOutcome.cancelled:
-          setState(() => _oauthProvider = null);
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _oauthProvider = null;
-        _errorMessage = friendlyErrorMessage(e, l10n);
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -614,10 +552,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               icon: const AppIcon(name: 'login', size: 20),
               variant: AppButtonVariant.outline,
               color: AppButtonColor.neutral,
-              isLoading: _oauthProvider == 'google',
-              onPressed: (busy || _oauthProvider != null)
+              isLoading: oauthProvider == 'google',
+              onPressed: (busy || oauthProvider != null)
                   ? null
-                  : () => _startOAuth('google'),
+                  : () => startOAuth('google'),
             ),
             const SizedBox(height: MitlistSpacing.space3),
           ],
@@ -627,10 +565,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               icon: const AppIcon(name: 'apple', size: 20),
               variant: AppButtonVariant.outline,
               color: AppButtonColor.neutral,
-              isLoading: _oauthProvider == 'apple',
-              onPressed: (busy || _oauthProvider != null)
+              isLoading: oauthProvider == 'apple',
+              onPressed: (busy || oauthProvider != null)
                   ? null
-                  : () => _startOAuth('apple'),
+                  : () => startOAuth('apple'),
             ),
             const SizedBox(height: MitlistSpacing.space3),
           ],

@@ -4013,6 +4013,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get authLoginWithEmailButton => 'Aanmelden met e-mail';
 
   @override
+  String get authSignupWithEmailButton => 'Registreren met e-mail';
+
+  @override
   String get authVerifyTitle => 'Bevestig je e-mail';
 
   @override
