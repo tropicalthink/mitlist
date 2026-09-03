@@ -1,7 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart'
-    show TargetPlatform, defaultTargetPlatform, kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -18,6 +17,7 @@ import '../../theme/spacing.dart';
 import '../../utils/active_group_context.dart';
 import '../../utils/friendly_error.dart';
 import '../../utils/haptics.dart';
+import '../../utils/open_in_app.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
@@ -174,23 +174,15 @@ class _SharedRecipeScreenState extends ConsumerState<SharedRecipeScreen> {
     }
   }
 
-  /// True in a phone browser, the one place a `mitlist://` link can reach an
-  /// installed app. On a desktop browser the same link only produces a
-  /// "no application" error, so the button is not offered there.
-  bool get _isMobileBrowser =>
-      kIsWeb &&
-      (defaultTargetPlatform == TargetPlatform.android ||
-          defaultTargetPlatform == TargetPlatform.iOS);
-
-  /// Hops from the web page into the installed app.
-  ///
-  /// The triple slash matters: Flutter hands the router the URL's *path*, so
-  /// `mitlist:///r/<token>` arrives as `/r/<token>` and matches the route,
-  /// whereas `mitlist://r/<token>` would make `r` the host and leave the
-  /// router looking at `/<token>`. The Android intent filter is written for
-  /// the same shape. See invite_link.dart for the matching join link.
+  /// Hops from the web page into the installed app. When the app is missing
+  /// Android stays on this page rather than showing an error; see
+  /// open_in_app.dart for the URL shapes.
   Future<void> _openInApp() => launchUrl(
-        Uri.parse('mitlist:///r/${widget.token}'),
+        openInAppUri(
+          '/r/${widget.token}',
+          isAndroid: isAndroidBrowser,
+          fallbackUrl: Uri.base,
+        ),
         webOnlyWindowName: '_self',
       );
 
@@ -270,7 +262,7 @@ class _SharedRecipeScreenState extends ConsumerState<SharedRecipeScreen> {
         // it for the app. Signed out, that is the moment to pitch the app.
         // Signed in on a phone, a one-tap hop into the installed app is still
         // worth offering: the recipe belongs in the app's kitchen, not a tab.
-        if (kIsWeb && (!signedIn || _isMobileBrowser)) ...[
+        if (kIsWeb && (!signedIn || isMobileBrowser)) ...[
           const SizedBox(height: MitlistSpacing.lg),
           AppCard(
             child: Padding(

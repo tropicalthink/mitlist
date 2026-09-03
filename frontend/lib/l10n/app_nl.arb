@@ -6070,6 +6070,7 @@
   "recipeAddedToCookbook": "Toegevoegd aan {name}",
   "recipeAddToCookbookFailed": "Kon niet aan kookboek toevoegen",
   "sharedRecipeOpenInApp": "Openen in Mitlist",
+  "openInAppButton": "Openen in Mitlist",
   "recipeShareSubject": "{title} op Mitlist",
   "accountExportCalendar": "Agenda exporteren (.ics)",
   "authSignupConfirmPassword": "Wachtwoord bevestigen",
