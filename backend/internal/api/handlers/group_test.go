@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"testing"
 	"time"
@@ -184,6 +185,53 @@ func TestGroup_JoinGroup(t *testing.T) {
 	body := map[string]any{"code": invite.Code}
 	rec := execRequest(t, router, "POST", "/api/v1/groups/join", body, memberToken)
 	requireStatus(t, rec, http.StatusOK)
+}
+
+func TestGroup_PreviewInvite(t *testing.T) {
+	clearTables(t)
+	router, _ := newGroupRouter(t)
+	owner := createTestUser(t, "preview-owner@example.com", "Password123!")
+	invitee := createTestUser(t, "preview-invitee@example.com", "Password123!")
+	inviteeToken := generateTestToken(invitee.ID)
+
+	groupRepo := newTestGroupRepo()
+	group := &models.Group{
+		ID:        uuid.New(),
+		Name:      "Preview House",
+		Currency:  "USD",
+		CreatedBy: owner.ID,
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
+	}
+	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, owner.ID, "admin")
+
+	invite := &models.GroupInvite{
+		ID:        uuid.New(),
+		GroupID:   group.ID,
+		Code:      "PREVIEWCODE1",
+		ExpiresAt: time.Now().Add(24 * time.Hour),
+	}
+	require.NoError(t, groupRepo.CreateInvite(context.Background(), invite))
+
+	rec := execRequest(t, router, "GET", "/api/v1/groups/invites/previewcode1", nil, inviteeToken)
+	requireStatus(t, rec, http.StatusOK)
+
+	var preview models.InvitePreview
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &preview))
+	assert.Equal(t, "Preview House", preview.GroupName)
+	assert.Equal(t, group.ID, preview.GroupID)
+	assert.Equal(t, 1, preview.MemberCount)
+	assert.Equal(t, models.InviteStatusValid, preview.Status)
+
+	// Looking does not join.
+	membership, err := groupRepo.GetMembership(context.Background(), group.ID, invitee.ID)
+	assert.Error(t, err)
+	assert.Nil(t, membership)
+
+	// Unknown codes are a 404, not a validation error.
+	rec = execRequest(t, router, "GET", "/api/v1/groups/invites/NOSUCHCODE", nil, inviteeToken)
+	requireStatus(t, rec, http.StatusNotFound)
 }
 
 func TestGroup_RemoveMember(t *testing.T) {

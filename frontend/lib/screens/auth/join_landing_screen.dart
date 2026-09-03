@@ -16,12 +16,14 @@ import '../../widgets/app_button.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/mitlist_app_bar.dart';
 
-enum _Phase { idle, joining, success }
+enum _Phase { loading, idle, joining, success }
 
-/// Full-screen landing for an invite deep link (`mitlist:///join/<code>`).
+/// Full-screen accept/decline page for an invite link
+/// (`mitlist:///join/<code>` or `https://app.mitlist.me/join/<code>`).
 ///
-/// Shows the code, lets the user confirm or dismiss, and on success sets the
-/// joined group as the current group before navigating to home.
+/// Looks the code up first so the recipient sees *which* household they are
+/// being asked into and how big it is, then lets them accept or decline. On
+/// success the joined group becomes the current group before heading home.
 class JoinLandingScreen extends ConsumerStatefulWidget {
   const JoinLandingScreen({super.key, required this.code});
 
@@ -32,23 +34,53 @@ class JoinLandingScreen extends ConsumerStatefulWidget {
 }
 
 class _JoinLandingScreenState extends ConsumerState<JoinLandingScreen> {
-  _Phase _phase = _Phase.idle;
-  String? _error;
+  _Phase _phase = _Phase.loading;
+  InvitePreview? _preview;
+  String? _previewError;
+  String? _joinError;
   Group? _joinedGroup;
 
   AppLocalizations get l10n => AppLocalizations.of(context)!;
 
-  Future<void> _join() async {
+  String get _code => widget.code.trim().toUpperCase();
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_loadPreview());
+  }
+
+  Future<void> _loadPreview() async {
+    try {
+      final svc = await ref.read(groupServiceProviderAsync.future);
+      final preview = await svc.previewInvite(_code);
+      if (!mounted) return;
+      setState(() {
+        _preview = preview;
+        _previewError = null;
+        _phase = _Phase.idle;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      // The lookup is a courtesy; joining is still the authoritative check,
+      // so a failed preview degrades to the code-only page rather than a
+      // dead end.
+      setState(() {
+        _previewError = friendlyErrorMessage(e, l10n);
+        _phase = _Phase.idle;
+      });
+    }
+  }
+
+  Future<void> _accept() async {
     if (_phase != _Phase.idle) return;
     setState(() {
       _phase = _Phase.joining;
-      _error = null;
+      _joinError = null;
     });
     try {
       final svc = await ref.read(groupServiceProviderAsync.future);
-      final group = await svc.joinGroup(
-        JoinGroupRequest(code: widget.code.trim().toUpperCase()),
-      );
+      final group = await svc.joinGroup(JoinGroupRequest(code: _code));
       if (!mounted) return;
       unawaited(ref.read(currentGroupIdProvider.notifier).set(group.id));
       setState(() {
@@ -59,14 +91,23 @@ class _JoinLandingScreenState extends ConsumerState<JoinLandingScreen> {
       if (!mounted) return;
       setState(() {
         _phase = _Phase.idle;
-        _error = friendlyErrorMessage(e, AppLocalizations.of(context)!);
+        _joinError = friendlyErrorMessage(e, l10n);
       });
     }
   }
 
+  void _decline() => context.goNamed('home');
+
+  void _openExistingHousehold() {
+    final preview = _preview;
+    if (preview != null) {
+      unawaited(ref.read(currentGroupIdProvider.notifier).set(preview.groupId));
+    }
+    context.goNamed('home');
+  }
+
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
@@ -76,7 +117,7 @@ class _JoinLandingScreenState extends ConsumerState<JoinLandingScreen> {
         title: const SizedBox.shrink(),
         leading: IconButton(
           icon: const AppIcon(name: 'xMark'),
-          onPressed: () => context.goNamed('home'),
+          onPressed: _decline,
           tooltip: l10n.commonDismiss,
         ),
       ),
@@ -88,103 +129,141 @@ class _JoinLandingScreenState extends ConsumerState<JoinLandingScreen> {
           ),
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 300),
-            child: _phase == _Phase.success
-                ? _buildSuccess(textTheme, colorScheme)
-                : _buildEntry(textTheme, colorScheme),
+            child: switch (_phase) {
+              _Phase.loading => _buildLoading(textTheme, colorScheme),
+              _Phase.success => _buildSuccess(textTheme, colorScheme),
+              _ => _buildEntry(textTheme, colorScheme),
+            },
           ),
         ),
       ),
     );
   }
 
-  Widget _buildEntry(TextTheme textTheme, ColorScheme colorScheme) {
-    final isJoining = _phase == _Phase.joining;
-    final codeParts = widget.code.trim().toUpperCase().split('-');
-
+  Widget _buildLoading(TextTheme textTheme, ColorScheme colorScheme) {
     return KeyedSubtree(
-      key: const ValueKey('entry'),
+      key: const ValueKey('loading'),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          const SizedBox(
+            width: 32,
+            height: 32,
+            child: CircularProgressIndicator(strokeWidth: 3),
+          ),
+          const SizedBox(height: MitlistSpacing.md),
           Text(
-            l10n.authJoinTitle,
-            style: textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.5,
+            l10n.authJoinCheckingInvite,
+            style: textTheme.bodyLarge?.copyWith(
+              color: colorScheme.onSurfaceVariant,
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: MitlistSpacing.lg),
-
-          // Code displayed in segmented mono style
-          Semantics(
-            label: l10n
-                .authJoinInviteCodeSemantic(widget.code.trim().toUpperCase()),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                for (var i = 0; i < codeParts.length; i++) ...[
-                  if (i > 0)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: MitlistSpacing.xs,
-                      ),
-                      child: Text(
-                        '—',
-                        style: textTheme.titleMedium?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: MitlistSpacing.md,
-                      vertical: MitlistSpacing.sm,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerLow,
-                      border: Border.all(color: colorScheme.outline, width: 2),
-                    ),
-                    child: Text(
-                      codeParts[i],
-                      style: MitlistTypography.monoBody(
-                        color: colorScheme.onSurface,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-
-          const SizedBox(height: MitlistSpacing.xl),
-
-          if (_error != null) ...[
-            AppAlert(
-              type: AppAlertType.error,
-              message: l10n.authJoinErrorWithHint(_error!),
-            ),
-            const SizedBox(height: MitlistSpacing.md),
-          ],
-
-          AppButton(
-            variant: AppButtonVariant.solid,
-            color: AppButtonColor.primary,
-            size: AppButtonSize.lg,
-            text: isJoining ? l10n.authJoinJoining : l10n.authJoinJoinNow,
-            isLoading: isJoining,
-            onPressed: isJoining ? null : _join,
-          ),
-          const SizedBox(height: MitlistSpacing.sm),
-          AppButton(
-            variant: AppButtonVariant.outline,
-            color: AppButtonColor.neutral,
-            size: AppButtonSize.lg,
-            text: l10n.authJoinNotNow,
-            onPressed: () => context.goNamed('home'),
-          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildEntry(TextTheme textTheme, ColorScheme colorScheme) {
+    final isJoining = _phase == _Phase.joining;
+    final preview = _preview;
+    final status = preview?.status;
+    final alreadyMember = status == InviteStatus.alreadyMember;
+    final dead =
+        status == InviteStatus.expired || status == InviteStatus.used;
+
+    return KeyedSubtree(
+      key: const ValueKey('entry'),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              l10n.authJoinTitle,
+              style: textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: MitlistSpacing.lg),
+
+            if (preview != null) ...[
+              _HouseholdCard(preview: preview),
+              const SizedBox(height: MitlistSpacing.md),
+            ],
+
+            _CodeLine(code: _code),
+            const SizedBox(height: MitlistSpacing.xl),
+
+            if (alreadyMember)
+              AppAlert(
+                type: AppAlertType.info,
+                message: l10n.authJoinAlreadyMember(preview!.groupName),
+              )
+            else if (status == InviteStatus.expired)
+              AppAlert(
+                type: AppAlertType.warning,
+                message: l10n.authJoinExpired,
+              )
+            else if (status == InviteStatus.used)
+              AppAlert(
+                type: AppAlertType.warning,
+                message: l10n.authJoinAlreadyUsed,
+              )
+            else if (_previewError != null)
+              AppAlert(
+                type: AppAlertType.warning,
+                message: '${l10n.authJoinCouldNotLoad}\n$_previewError',
+              ),
+            if (alreadyMember || dead || _previewError != null)
+              const SizedBox(height: MitlistSpacing.md),
+
+            if (_joinError != null) ...[
+              AppAlert(
+                type: AppAlertType.error,
+                message: l10n.authJoinErrorWithHint(_joinError!),
+              ),
+              const SizedBox(height: MitlistSpacing.md),
+            ],
+
+            if (alreadyMember)
+              AppButton(
+                variant: AppButtonVariant.solid,
+                color: AppButtonColor.primary,
+                size: AppButtonSize.lg,
+                text: l10n.authJoinGoToHousehold,
+                onPressed: _openExistingHousehold,
+              )
+            else if (dead)
+              AppButton(
+                variant: AppButtonVariant.outline,
+                color: AppButtonColor.neutral,
+                size: AppButtonSize.lg,
+                text: l10n.commonDismiss,
+                onPressed: _decline,
+              )
+            else ...[
+              AppButton(
+                variant: AppButtonVariant.solid,
+                color: AppButtonColor.primary,
+                size: AppButtonSize.lg,
+                text: isJoining ? l10n.authJoinJoining : l10n.authJoinAccept,
+                isLoading: isJoining,
+                onPressed: isJoining ? null : _accept,
+              ),
+              const SizedBox(height: MitlistSpacing.sm),
+              AppButton(
+                variant: AppButtonVariant.outline,
+                color: AppButtonColor.neutral,
+                size: AppButtonSize.lg,
+                text: l10n.authJoinDecline,
+                onPressed: isJoining ? null : _decline,
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -231,6 +310,84 @@ class _JoinLandingScreenState extends ConsumerState<JoinLandingScreen> {
             onPressed: () => context.goNamed('home'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// The household the code opens: name front and centre, size underneath.
+class _HouseholdCard extends StatelessWidget {
+  const _HouseholdCard({required this.preview});
+
+  final InvitePreview preview;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: MitlistSpacing.lg,
+        vertical: MitlistSpacing.lg,
+      ),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        border: Border.all(color: colorScheme.outline, width: 2),
+      ),
+      child: Column(
+        children: [
+          Text(
+            l10n.authJoinInvitedTo,
+            style: textTheme.labelLarge?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+              letterSpacing: 0.4,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: MitlistSpacing.sm),
+          Text(
+            preview.groupName,
+            style: textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.3,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: MitlistSpacing.xs),
+          Text(
+            l10n.authJoinMemberCount(preview.memberCount),
+            style: textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The raw code, quietly, so it can still be read out or cross-checked.
+class _CodeLine extends StatelessWidget {
+  const _CodeLine({required this.code});
+
+  final String code;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Semantics(
+      label: l10n.authJoinInviteCodeSemantic(code),
+      child: Text(
+        code,
+        style: MitlistTypography.monoBody(color: colorScheme.onSurfaceVariant),
+        textAlign: TextAlign.center,
       ),
     );
   }

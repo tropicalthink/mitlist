@@ -172,9 +172,38 @@ func (s *UserService) VerifyEmail(ctx context.Context, token string) (*models.Us
 	return user, nil
 }
 
+// Every code-sending endpoint is public and answers the same way for every
+// address, which makes it a free way to flood someone's inbox and burn the
+// mail quota. Three sends per address per window is plenty for a person and
+// nothing for an abuser; a throttled request is dropped silently, because a
+// 429 would confirm the address exists.
+const (
+	emailCodeSendLimit  = 3
+	emailCodeSendWindow = 15 * time.Minute
+)
+
+// allowEmailCodeSend reserves one send for the address under the given
+// purpose. It reports true when the send may go ahead.
+func (s *UserService) allowEmailCodeSend(ctx context.Context, purpose, email string) (bool, error) {
+	if s.authRepo == nil {
+		return true, nil
+	}
+	allowed, err := s.authRepo.ReserveLoginAttempt(ctx, purpose+":"+email, emailCodeSendLimit, emailCodeSendWindow)
+	if err != nil {
+		return false, err
+	}
+	if !allowed {
+		log.Info().Str("purpose", purpose).Msg("email code send throttled")
+	}
+	return allowed, nil
+}
+
 // ResendEmailVerification intentionally returns no account-existence signal.
 func (s *UserService) ResendEmailVerification(ctx context.Context, email string) error {
 	email = validation.NormalizeEmail(email)
+	if allowed, err := s.allowEmailCodeSend(ctx, "verify-resend", email); err != nil || !allowed {
+		return err
+	}
 	user, err := s.userRepo.GetByEmail(ctx, email)
 	if err != nil || user.IsVerified || !user.IsActive {
 		return nil
@@ -225,7 +254,9 @@ func (s *UserService) Login(ctx context.Context, email, password string) (*model
 		return nil, "", "", &api.ValidationError{Message: "account is inactive"}
 	}
 	if !user.IsVerified {
-		return nil, "", "", &api.ValidationError{Message: "account is not verified"}
+		// Right password, unproven address. Distinct from a bad credential so
+		// the client can open the verification step instead of a dead end.
+		return nil, "", "", &api.EmailUnverifiedError{}
 	}
 
 	if s.authRepo != nil {
@@ -404,6 +435,9 @@ func (s *UserService) ChangePassword(ctx context.Context, userID uuid.UUID, oldP
 // To prevent email enumeration, it always returns nil when the email is not found.
 func (s *UserService) RequestPasswordReset(ctx context.Context, email string) error {
 	email = validation.NormalizeEmail(email)
+	if allowed, err := s.allowEmailCodeSend(ctx, "password-reset", email); err != nil || !allowed {
+		return err
+	}
 	user, err := s.userRepo.GetByEmail(ctx, email)
 	if err != nil {
 		return nil

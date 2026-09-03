@@ -44,6 +44,26 @@ type GroupInvite struct {
 	UsedAt    *time.Time `json:"used_at,omitempty"`
 }
 
+// Invite preview statuses. A preview never consumes the invite; it tells the
+// recipient what accepting would do before they commit.
+const (
+	InviteStatusValid         = "valid"
+	InviteStatusExpired       = "expired"
+	InviteStatusUsed          = "used"
+	InviteStatusAlreadyMember = "already_member"
+)
+
+// InvitePreview is what a recipient sees on the accept/decline page: which
+// household the code opens, how big it is, and whether it can still be used.
+type InvitePreview struct {
+	Code        string    `json:"code"`
+	GroupID     uuid.UUID `json:"group_id"`
+	GroupName   string    `json:"group_name"`
+	MemberCount int       `json:"member_count"`
+	ExpiresAt   time.Time `json:"expires_at"`
+	Status      string    `json:"status"`
+}
+
 // PendingClaim stores a claim code that can be used to join a group.
 type PendingClaim struct {
 	ID        uuid.UUID  `json:"id"`

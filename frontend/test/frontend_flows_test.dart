@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:drift/native.dart';
+import 'package:mitlist/services/api_error_mapper.dart';
 import 'package:mitlist/models/activity_models.dart';
 import 'package:mitlist/models/auth_models.dart';
 import 'package:mitlist/models/chore_models.dart';
@@ -717,7 +718,7 @@ void main() {
       overrides: [
         authServiceProviderAsync.overrideWith((ref) async => authService),
         oauthProvidersProvider.overrideWith(
-          (ref) async => (google: true, apple: true),
+          (ref) async => (google: true, apple: true, password: true),
         ),
       ],
     );
@@ -727,6 +728,12 @@ void main() {
     expect(find.text('CONTINUE WITH APPLE'),
         findsOneWidget); // outline variant renders uppercase
     expect(find.text('Remember me'), findsOneWidget);
+
+    // The form waits behind a button at the bottom while OAuth is on offer.
+    expect(find.byType(TextField), findsNothing);
+    await tester.tap(find.text('Sign in with email'));
+    await _pumpAfter(tester);
+    expect(find.byType(TextField), findsNWidgets(2));
 
     await tester.tap(find.text('Forgot password?'));
     await _pumpAfter(tester);
@@ -768,7 +775,7 @@ void main() {
       overrides: [
         authServiceProviderAsync.overrideWith((ref) async => authService),
         oauthProvidersProvider.overrideWith(
-          (ref) async => (google: false, apple: false),
+          (ref) async => (google: false, apple: false, password: true),
         ),
       ],
     );
@@ -788,6 +795,134 @@ void main() {
     expect(authService.lastLoginRequest!.email, 'user@example.com');
     expect(authService.lastLoginRequest!.password, 'secret123');
     expect(authService.lastLoginRememberMe, isFalse);
+  });
+
+  testWidgets('login screen finishes verification for an unproven address',
+      (tester) async {
+    await _setLargeSurface(tester);
+    final authService = FakeAuthService(currentUser: user)
+      ..throwOnLogin = const ApiException(
+        'account is not verified',
+        code: 'email_unverified',
+      );
+    late ProviderContainer container;
+
+    await _pumpScreen(
+      tester,
+      child: Builder(builder: (context) {
+        container = ProviderScope.containerOf(context);
+        return const LoginScreen();
+      }),
+      overrides: [
+        authServiceProviderAsync.overrideWith((ref) async => authService),
+        oauthProvidersProvider.overrideWith(
+          (ref) async => (google: false, apple: false, password: true),
+        ),
+      ],
+    );
+
+    // The harness starts signed in; this flow begins signed out.
+    container.read(authStateProvider.notifier).state = false;
+    await tester.enterText(find.byType(TextField).at(0), 'new@example.com');
+    await tester.enterText(find.byType(TextField).at(1), 'Password123!');
+    await tester.tap(find.text('SIGN IN'));
+    await _pumpAfter(tester);
+
+    // Not an error: the verification sheet opens and a fresh code goes out.
+    expect(find.text('Verify your email'), findsOneWidget);
+    expect(authService.lastResendEmail, 'new@example.com');
+    expect(container.read(authStateProvider), isFalse);
+
+    await tester.enterText(find.byType(TextField).last, 'ABCD2345');
+    await tester.tap(find.text('VERIFY')); // solid variant renders uppercase
+    await _pumpAfter(tester);
+    await tester.pump(const Duration(milliseconds: 700));
+
+    expect(authService.lastVerifyToken, 'ABCD2345');
+    expect(authService.lastVerifyRememberMe, isTrue);
+    expect(container.read(authStateProvider), isTrue);
+  });
+
+  testWidgets('login screen hides the password form when the server has none',
+      (tester) async {
+    await _setLargeSurface(tester);
+    final authService = FakeAuthService(currentUser: user);
+
+    await _pumpScreen(
+      tester,
+      child: const LoginScreen(),
+      overrides: [
+        authServiceProviderAsync.overrideWith((ref) async => authService),
+        oauthProvidersProvider.overrideWith(
+          (ref) async => (google: true, apple: false, password: false),
+        ),
+      ],
+    );
+
+    // OAuth is the whole panel: no fields, no sign-in button, no links that
+    // would dead-end at a 403.
+    expect(find.text('CONTINUE WITH GOOGLE'), findsOneWidget);
+    expect(find.byType(TextField), findsNothing);
+    expect(find.text('SIGN IN'), findsNothing);
+    expect(find.text('Forgot password?'), findsNothing);
+    expect(find.text('Create account'), findsNothing);
+    expect(find.text('Sign in with email'), findsNothing);
+    // Remember me still applies to the OAuth flow.
+    expect(find.text('Remember me'), findsOneWidget);
+  });
+
+  testWidgets('login screen puts the password form after the OAuth buttons',
+      (tester) async {
+    await _setLargeSurface(tester);
+    final authService = FakeAuthService(currentUser: user);
+
+    await _pumpScreen(
+      tester,
+      child: const LoginScreen(),
+      overrides: [
+        authServiceProviderAsync.overrideWith((ref) async => authService),
+        oauthProvidersProvider.overrideWith(
+          (ref) async => (google: true, apple: false, password: true),
+        ),
+      ],
+    );
+
+    // Folded: a button at the bottom, no fields yet.
+    final googleY = tester.getTopLeft(find.text('CONTINUE WITH GOOGLE')).dy;
+    final buttonY = tester.getTopLeft(find.text('Sign in with email')).dy;
+    expect(googleY, lessThan(buttonY));
+    expect(find.byType(TextField), findsNothing);
+
+    // Unfolded: the form takes the button's place, still under Google.
+    await tester.tap(find.text('Sign in with email'));
+    await _pumpAfter(tester);
+    expect(find.text('Sign in with email'), findsNothing);
+    final emailY = tester.getTopLeft(find.byType(TextField).first).dy;
+    expect(googleY, lessThan(emailY));
+    expect(find.text('Forgot password?'), findsOneWidget);
+  });
+
+  testWidgets('login screen explains a server with no sign-in method',
+      (tester) async {
+    await _setLargeSurface(tester);
+    final authService = FakeAuthService(currentUser: user);
+
+    await _pumpScreen(
+      tester,
+      child: const LoginScreen(),
+      overrides: [
+        authServiceProviderAsync.overrideWith((ref) async => authService),
+        oauthProvidersProvider.overrideWith(
+          (ref) async => (google: false, apple: false, password: false),
+        ),
+      ],
+    );
+
+    expect(find.byType(TextField), findsNothing);
+    expect(
+      find.textContaining('no sign-in method turned on'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('oauth callback screen completes session and queues onboarding',
@@ -835,6 +970,60 @@ void main() {
     );
     expect(container.read(authStateProvider), isTrue);
     expect(container.read(pendingAuthNavigationProvider), '/onboarding');
+  });
+
+  testWidgets('oauth callback for a guest upgrade returns to the account page',
+      (tester) async {
+    await _setLargeSurface(tester);
+    final authService = FakeAuthService(currentUser: user)
+      ..pendingOAuthRememberMe = true;
+    final router = GoRouter(
+      initialLocation: '/auth/callback',
+      routes: [
+        GoRoute(
+          path: '/auth/callback',
+          builder: (context, state) => OAuthCallbackScreen(
+            uri: Uri(
+              path: '/auth/callback',
+              queryParameters: const {
+                'provider': 'google',
+                'handoff': 'one-time-code',
+                'link': '1',
+              },
+            ),
+          ),
+        ),
+        GoRoute(
+          path: '/you',
+          builder: (context, state) => const Scaffold(
+            body: Text('account page'),
+          ),
+        ),
+      ],
+    );
+
+    late ProviderContainer container;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          routerProvider.overrideWith((ref) => router),
+          authServiceProviderAsync.overrideWith((ref) async => authService),
+          isGuestProvider.overrideWith((ref) => true),
+        ],
+        child: Builder(builder: (context) {
+          container = ProviderScope.containerOf(context);
+          return _testMaterialAppRouter(router);
+        }),
+      ),
+    );
+    await _pumpUi(tester);
+
+    // The handoff was cashed in, the guest flag dropped, and the person is
+    // back on their account rather than in onboarding.
+    expect(authService.lastHandoffCode, 'one-time-code');
+    expect(container.read(isGuestProvider), isFalse);
+    expect(container.read(pendingAuthNavigationProvider), isNull);
+    expect(find.text('account page'), findsOneWidget);
   });
 
   testWidgets('signup screen exposes actionable terms and privacy',
@@ -1386,6 +1575,10 @@ class FakeAuthService implements AuthService {
   String? lastPasswordResetEmail;
   LoginRequest? lastLoginRequest;
   bool? lastLoginRememberMe;
+  Exception? throwOnLogin;
+  String? lastVerifyToken;
+  bool? lastVerifyRememberMe;
+  String? lastResendEmail;
   String? lastConfirmPasswordResetToken;
   String? lastConfirmPasswordResetPassword;
   String? lastOAuthProvider;
@@ -1406,11 +1599,32 @@ class FakeAuthService implements AuthService {
   }) async {
     lastLoginRequest = request;
     lastLoginRememberMe = rememberMe;
+    if (throwOnLogin != null) {
+      final err = throwOnLogin!;
+      throwOnLogin = null;
+      throw err;
+    }
     return TokenPair(
       accessToken: 'access-token',
       refreshToken: 'refresh-token',
       user: currentUser,
     );
+  }
+
+  @override
+  Future<TokenPair> verifyEmail(String token, {bool rememberMe = true}) async {
+    lastVerifyToken = token;
+    lastVerifyRememberMe = rememberMe;
+    return TokenPair(
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+      user: currentUser,
+    );
+  }
+
+  @override
+  Future<void> resendEmailVerification(String email) async {
+    lastResendEmail = email;
   }
 
   @override
@@ -1421,6 +1635,23 @@ class FakeAuthService implements AuthService {
   @override
   Future<void> requestPasswordReset(String email) async {
     lastPasswordResetEmail = email;
+  }
+
+  String? lastHandoffCode;
+  bool? lastHandoffRememberMe;
+
+  @override
+  Future<TokenPair> exchangeOAuthHandoff(
+    String code, {
+    required bool rememberMe,
+  }) async {
+    lastHandoffCode = code;
+    lastHandoffRememberMe = rememberMe;
+    return TokenPair(
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+      user: currentUser,
+    );
   }
 
   @override

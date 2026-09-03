@@ -3970,6 +3970,68 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authLoginApple => 'Continue with Apple';
 
   @override
+  String get authLoginNoMethods =>
+      'This server has no sign-in method turned on. Whoever runs it needs to enable email sign-in or connect Google or Apple.';
+
+  @override
+  String get authLoginWithEmailButton => 'Sign in with email';
+
+  @override
+  String get authVerifyTitle => 'Verify your email';
+
+  @override
+  String authVerifyBody(String email) {
+    return 'Enter the code we emailed to $email.';
+  }
+
+  @override
+  String get authVerifyCodeLabel => 'Verification code';
+
+  @override
+  String get authVerifyCodeHint => '8-character code from the email';
+
+  @override
+  String get authVerifyButton => 'Verify';
+
+  @override
+  String get authVerifyResend => 'Send a new code';
+
+  @override
+  String get authVerifySent =>
+      'A new code is on its way. Check your inbox and spam folder.';
+
+  @override
+  String get authVerifyInvalid => 'That code is invalid or expired.';
+
+  @override
+  String get authVerifyCodeRequired => 'Enter the code from your email.';
+
+  @override
+  String get authLoginUnverified =>
+      'Your email isn’t verified yet. Verify it to sign in.';
+
+  @override
+  String get accountVerifyPendingTitle => 'Finish setting up your account';
+
+  @override
+  String accountVerifyPendingBody(String email) {
+    return 'We emailed a code to $email. Enter it to finish creating your account.';
+  }
+
+  @override
+  String get accountVerifyEnterCode => 'Enter code';
+
+  @override
+  String get accountVerifyLater =>
+      'You can enter the code any time from your account page.';
+
+  @override
+  String get accountUpgradeWithEmail => 'Use email and password';
+
+  @override
+  String get oauthBackToAccount => 'Back to account';
+
+  @override
   String authLoginOAuthUnsupported(String provider) {
     return '$provider sign-in is only available on web, Android, and iOS right now.';
   }
@@ -4171,6 +4233,40 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get authSignupPrivacyP3 =>
       'Only provide information you are comfortable keeping in a shared household workspace.';
+
+  @override
+  String get authJoinInvitedTo => 'You\'ve been invited to join';
+
+  @override
+  String authJoinMemberCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count members',
+      one: '1 member',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get authJoinAccept => 'Accept invite';
+
+  @override
+  String get authJoinDecline => 'Decline';
+
+  @override
+  String get authJoinCheckingInvite => 'Checking your invite…';
+
+  @override
+  String get authJoinExpired => 'This invite has expired. Ask for a fresh one.';
+
+  @override
+  String get authJoinAlreadyUsed => 'This invite has already been used.';
+
+  @override
+  String authJoinAlreadyMember(String name) {
+    return 'You\'re already a member of $name.';
+  }
 
   @override
   String get authJoinTitle => 'Join household';
@@ -5653,14 +5749,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get featureBoardBannerAction => 'Open feature board';
 
   @override
-  String get featureBoardAdd => 'Suggest a feature';
+  String get featureBoardAdd => 'Add a request';
 
   @override
   String get featureBoardIntroTitle => 'Built with your input';
 
   @override
   String get featureBoardIntroBody =>
-      'Vote for ideas you want most. Your votes help us decide what to improve next.';
+      'Vote for ideas you want most, report what\'s broken, and follow along as we work on it.';
 
   @override
   String get featureBoardLoadFailed => 'Couldn\'t load the feature board';
@@ -5676,7 +5772,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Be the first to suggest something that would make mitlist better.';
 
   @override
-  String get featureBoardNewTitle => 'Suggest a feature';
+  String get featureBoardNewTitle => 'New request';
 
   @override
   String get featureBoardNewIntro =>
@@ -5714,9 +5810,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get featureBoardInProgress => 'In progress';
 
   @override
-  String get featureBoardPlanned => 'Planned';
-
-  @override
   String get featureBoardShipped => 'Shipped';
 
   @override
@@ -5735,6 +5828,149 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get featureBoardUnderReview => 'Under review';
+
+  @override
+  String get featureBoardFilterAll => 'All';
+
+  @override
+  String get featureBoardFilterFeatures => 'Features';
+
+  @override
+  String get featureBoardFilterBugs => 'Bugs';
+
+  @override
+  String get featureBoardSortTop => 'Top';
+
+  @override
+  String get featureBoardSortNew => 'New';
+
+  @override
+  String get featureBoardKindLabel => 'What is it?';
+
+  @override
+  String get featureBoardKindFeature => 'Feature request';
+
+  @override
+  String get featureBoardKindBug => 'Bug report';
+
+  @override
+  String get featureBoardBugChip => 'Bug';
+
+  @override
+  String get featureBoardNewBugIntro =>
+      'Tell us what broke. Others who hit the same thing can upvote it.';
+
+  @override
+  String get featureBoardBugTitleLabel => 'What went wrong?';
+
+  @override
+  String get featureBoardBugTitleHint =>
+      'Totals don\'t add up after splitting an expense';
+
+  @override
+  String get featureBoardBugDescriptionLabel => 'Steps to reproduce (optional)';
+
+  @override
+  String get featureBoardBugDescriptionHint =>
+      'What did you do, and what happened instead?';
+
+  @override
+  String get featureBoardBugEmpty => 'Add a short summary of the bug.';
+
+  @override
+  String get featureBoardBugCreated => 'Thanks, your report is on the board.';
+
+  @override
+  String featureBoardComments(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count comments',
+      one: '1 comment',
+      zero: 'No comments',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get featureBoardCommentsHeading => 'Conversation';
+
+  @override
+  String get featureBoardTeamBadge => 'mitlist team';
+
+  @override
+  String get featureBoardYou => 'You';
+
+  @override
+  String get featureBoardAnonymous => 'A mitlist user';
+
+  @override
+  String get featureBoardCommentHint => 'Add a comment…';
+
+  @override
+  String get featureBoardCommentSend => 'Post comment';
+
+  @override
+  String get featureBoardCommentFailed =>
+      'Couldn\'t post your comment. Please try again.';
+
+  @override
+  String get featureBoardNoComments =>
+      'No comments yet. Have a question or a use case? Start the conversation.';
+
+  @override
+  String get featureBoardDetailLoadFailed => 'Couldn\'t load this request';
+
+  @override
+  String get featureBoardTimeJustNow => 'Just now';
+
+  @override
+  String featureBoardTimeMinutesAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count min ago',
+      one: '1 min ago',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String featureBoardTimeHoursAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count hours ago',
+      one: '1 hour ago',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String featureBoardTimeDaysAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count days ago',
+      one: 'Yesterday',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get featureBoardStatusInProgressHint =>
+      'We\'re building this right now.';
+
+  @override
+  String get featureBoardStatusUnderReviewHint =>
+      'We\'ve seen this and are weighing it up. Votes and comments help.';
+
+  @override
+  String get featureBoardStatusShippedHint =>
+      'This is live. Update the app if you don\'t see it yet.';
 
   @override
   String get weeklySummaryTitle => 'Week in review';
@@ -5872,11 +6108,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get sharedRecipeSavePersonal => 'Save to my recipes';
+  String get sharedRecipeSavePersonal => 'Add to my kitchen';
 
   @override
   String sharedRecipeSaveHousehold(String name) {
-    return 'Save to $name';
+    return 'Add to $name\'s kitchen';
   }
 
   @override

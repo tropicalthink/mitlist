@@ -149,6 +149,89 @@ func TestGroupService_InviteMember(t *testing.T) {
 	})
 }
 
+func TestGroupService_PreviewInvite(t *testing.T) {
+	ctx := context.Background()
+	userID := uuid.New()
+	groupID := uuid.New()
+	group := &models.Group{ID: groupID, Name: "Casa Verde"}
+
+	t.Run("valid invite resolves to the household", func(t *testing.T) {
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewGroupService(groupRepo, nil)
+
+		invite := &models.GroupInvite{ID: uuid.New(), GroupID: groupID, Code: "CODE123", ExpiresAt: time.Now().UTC().Add(time.Hour)}
+		groupRepo.On("GetInviteByCode", ctx, "CODE123").Return(invite, nil)
+		groupRepo.On("GetGroupByID", ctx, groupID).Return(group, nil)
+		groupRepo.On("ListMembershipsByGroup", ctx, groupID).Return([]models.GroupMembership{
+			{UserID: uuid.New()}, {UserID: uuid.New()},
+		}, nil)
+
+		p, err := svc.PreviewInvite(ctx, userID, "  code123 ")
+		require.NoError(t, err)
+		assert.Equal(t, "Casa Verde", p.GroupName)
+		assert.Equal(t, groupID, p.GroupID)
+		assert.Equal(t, 2, p.MemberCount)
+		assert.Equal(t, models.InviteStatusValid, p.Status)
+		// Nothing is consumed by looking.
+		groupRepo.AssertNotCalled(t, "ConsumeInvite", mock.Anything, mock.Anything, mock.Anything)
+	})
+
+	t.Run("expired invite still resolves with an expired status", func(t *testing.T) {
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewGroupService(groupRepo, nil)
+
+		invite := &models.GroupInvite{ID: uuid.New(), GroupID: groupID, Code: "CODE123", ExpiresAt: time.Now().UTC().Add(-time.Hour)}
+		groupRepo.On("GetInviteByCode", ctx, "CODE123").Return(invite, nil)
+		groupRepo.On("GetGroupByID", ctx, groupID).Return(group, nil)
+		groupRepo.On("ListMembershipsByGroup", ctx, groupID).Return([]models.GroupMembership{}, nil)
+
+		p, err := svc.PreviewInvite(ctx, userID, "CODE123")
+		require.NoError(t, err)
+		assert.Equal(t, models.InviteStatusExpired, p.Status)
+	})
+
+	t.Run("used invite reports used", func(t *testing.T) {
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewGroupService(groupRepo, nil)
+
+		usedAt := time.Now().UTC()
+		invite := &models.GroupInvite{ID: uuid.New(), GroupID: groupID, Code: "CODE123", ExpiresAt: time.Now().UTC().Add(time.Hour), UsedAt: &usedAt}
+		groupRepo.On("GetInviteByCode", ctx, "CODE123").Return(invite, nil)
+		groupRepo.On("GetGroupByID", ctx, groupID).Return(group, nil)
+		groupRepo.On("ListMembershipsByGroup", ctx, groupID).Return([]models.GroupMembership{}, nil)
+
+		p, err := svc.PreviewInvite(ctx, userID, "CODE123")
+		require.NoError(t, err)
+		assert.Equal(t, models.InviteStatusUsed, p.Status)
+	})
+
+	t.Run("existing member is told so", func(t *testing.T) {
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewGroupService(groupRepo, nil)
+
+		invite := &models.GroupInvite{ID: uuid.New(), GroupID: groupID, Code: "CODE123", ExpiresAt: time.Now().UTC().Add(time.Hour)}
+		groupRepo.On("GetInviteByCode", ctx, "CODE123").Return(invite, nil)
+		groupRepo.On("GetGroupByID", ctx, groupID).Return(group, nil)
+		groupRepo.On("ListMembershipsByGroup", ctx, groupID).Return([]models.GroupMembership{{UserID: userID}}, nil)
+
+		p, err := svc.PreviewInvite(ctx, userID, "CODE123")
+		require.NoError(t, err)
+		assert.Equal(t, models.InviteStatusAlreadyMember, p.Status)
+		assert.Equal(t, 1, p.MemberCount)
+	})
+
+	t.Run("unknown code is not found", func(t *testing.T) {
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewGroupService(groupRepo, nil)
+
+		groupRepo.On("GetInviteByCode", ctx, "NOPE").Return(nil, pgx.ErrNoRows)
+
+		_, err := svc.PreviewInvite(ctx, userID, "nope")
+		var nf *api.NotFoundError
+		require.ErrorAs(t, err, &nf)
+	})
+}
+
 func TestGroupService_JoinGroup(t *testing.T) {
 	ctx := context.Background()
 	userID := uuid.New()

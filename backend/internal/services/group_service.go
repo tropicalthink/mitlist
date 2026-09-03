@@ -239,6 +239,58 @@ func (s *GroupService) InviteMember(ctx context.Context, userID, groupID uuid.UU
 	return nil, &api.ValidationError{Message: "could not generate invite code, please try again"}
 }
 
+// PreviewInvite resolves an invite code to the household it opens without
+// consuming it, so the recipient can decide whether to accept. Unknown codes
+// are a 404; expired, used and already-a-member codes still resolve so the
+// page can explain why accepting will not work.
+func (s *GroupService) PreviewInvite(ctx context.Context, userID uuid.UUID, code string) (*models.InvitePreview, error) {
+	code = strings.ToUpper(strings.TrimSpace(code))
+
+	invite, err := s.groupRepo.GetInviteByCode(ctx, code)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) || isNotFound(err) {
+			return nil, &api.NotFoundError{Resource: "invite"}
+		}
+		return nil, err
+	}
+
+	group, err := s.groupRepo.GetGroupByID(ctx, invite.GroupID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) || isNotFound(err) {
+			return nil, &api.NotFoundError{Resource: "invite"}
+		}
+		return nil, err
+	}
+
+	members, err := s.groupRepo.ListMembershipsByGroup(ctx, invite.GroupID)
+	if err != nil {
+		return nil, err
+	}
+
+	status := models.InviteStatusValid
+	switch {
+	case invite.UsedAt != nil:
+		status = models.InviteStatusUsed
+	case time.Now().UTC().After(invite.ExpiresAt):
+		status = models.InviteStatusExpired
+	}
+	for _, m := range members {
+		if m.UserID == userID {
+			status = models.InviteStatusAlreadyMember
+			break
+		}
+	}
+
+	return &models.InvitePreview{
+		Code:        invite.Code,
+		GroupID:     group.ID,
+		GroupName:   group.Name,
+		MemberCount: len(members),
+		ExpiresAt:   invite.ExpiresAt,
+		Status:      status,
+	}, nil
+}
+
 // JoinGroup allows a user to join a group using an invite code.
 func (s *GroupService) JoinGroup(ctx context.Context, userID uuid.UUID, code string) (*models.Group, error) {
 	code = strings.ToUpper(strings.TrimSpace(code))

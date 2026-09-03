@@ -68,18 +68,44 @@ func (h *AuthHandler) SetTurnstileVerifier(verifier *turnstileservice.Verifier) 
 	h.turnstile = verifier
 }
 
+// errPasswordAuthDisabled is the answer for every password route on a server
+// that runs without PASSWORD_AUTH_ENABLED. A 403 with a stable message, not a
+// 404: the route exists, this deployment has chosen not to offer it, and a
+// client that skipped /oauth/providers should learn why rather than retry.
+var errPasswordAuthDisabled = &api.PermissionDeniedError{
+	Message: "email and password sign-in is disabled on this server",
+}
+
+// requirePasswordAuth guards every route that creates, checks or changes a
+// password. Registration is included: an account registered here can only
+// ever sign in with a password, so it is pointless where passwords are off.
+func (h *AuthHandler) requirePasswordAuth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if h.cfg == nil || !h.cfg.PasswordAuthEnabled {
+			api.RespondError(w, errPasswordAuthDisabled)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 // RegisterRoutes mounts all auth routes under the provided router.
 func (h *AuthHandler) RegisterRoutes(r chi.Router) {
 	r.Route("/auth", func(r chi.Router) {
-		r.Post("/register", h.Register)
-		r.Post("/verify-email", h.VerifyEmail)
-		r.Post("/verify-email/resend", h.ResendEmailVerification)
-		r.Post("/login", h.Login)
 		r.Post("/token/refresh", h.Refresh)
 		r.Post("/logout", h.Logout)
-		r.Post("/password-reset", h.PasswordReset)
-		r.Post("/password-reset/confirm", h.PasswordResetConfirm)
 		r.Post("/guest", h.CreateGuest)
+
+		// Email + password (public), only where the operator turned it on.
+		r.Group(func(r chi.Router) {
+			r.Use(h.requirePasswordAuth)
+			r.Post("/register", h.Register)
+			r.Post("/verify-email", h.VerifyEmail)
+			r.Post("/verify-email/resend", h.ResendEmailVerification)
+			r.Post("/login", h.Login)
+			r.Post("/password-reset", h.PasswordReset)
+			r.Post("/password-reset/confirm", h.PasswordResetConfirm)
+		})
 
 		// Protected routes
 		r.Group(func(r chi.Router) {
@@ -87,9 +113,10 @@ func (h *AuthHandler) RegisterRoutes(r chi.Router) {
 			r.Get("/me", h.GetMe)
 			r.Patch("/me", h.UpdateMe)
 			r.Delete("/me", h.DeleteMe)
-			r.Post("/change-password", h.ChangePassword)
-			r.Post("/guest/convert", h.ConvertGuest)
-			r.Post("/claim-account", h.ClaimAccount)
+			r.With(h.requirePasswordAuth).Post("/change-password", h.ChangePassword)
+			r.With(h.requirePasswordAuth).Post("/guest/convert", h.ConvertGuest)
+			r.With(h.requirePasswordAuth).Post("/claim-account", h.ClaimAccount)
+			r.Post("/oauth-link", h.CreateOAuthLink)
 
 			// Push subscriptions (web push)
 			r.Post("/push-subscriptions", h.CreatePushSubscription)
@@ -560,6 +587,32 @@ func (h *AuthHandler) ConvertGuest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	tokenResponse(w, r, http.StatusOK, user, access, refresh)
+}
+
+// CreateOAuthLink mints the one-time token a guest hands to GET /oauth/{provider}
+// (as `link`) so that finishing the provider round-trip upgrades this guest
+// rather than signing in someone new.
+func (h *AuthHandler) CreateOAuthLink(w http.ResponseWriter, r *http.Request) {
+	userID, err := currentUserID(r)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	user, err := h.userService.GetMe(r.Context(), userID)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	if !user.IsGuest {
+		api.RespondError(w, &api.ValidationError{Field: "user", Message: "only a guest account can be linked to a provider"})
+		return
+	}
+	token, err := h.oauthService.CreateLinkToken(r.Context(), userID)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	api.RespondJSON(w, http.StatusCreated, map[string]any{"link_token": token, "expires_in": 600})
 }
 
 func (h *AuthHandler) ClaimAccount(w http.ResponseWriter, r *http.Request) {

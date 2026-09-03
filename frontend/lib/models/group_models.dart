@@ -139,6 +139,50 @@ class JoinGroupRequest {
   }
 }
 
+/// What an invite code opens, fetched before the recipient accepts.
+class InvitePreview {
+  final String code;
+  final String groupId;
+  final String groupName;
+  final int memberCount;
+  final DateTime expiresAt;
+  final InviteStatus status;
+
+  const InvitePreview({
+    required this.code,
+    required this.groupId,
+    required this.groupName,
+    required this.memberCount,
+    required this.expiresAt,
+    required this.status,
+  });
+
+  factory InvitePreview.fromJson(Map<String, dynamic> json) => InvitePreview(
+        code: json['code'] as String,
+        groupId: json['group_id'] as String,
+        groupName: json['group_name'] as String,
+        memberCount: (json['member_count'] as num?)?.toInt() ?? 0,
+        expiresAt: DateTime.parse(json['expires_at'] as String),
+        status: InviteStatus.fromWire(json['status'] as String?),
+      );
+}
+
+/// Whether an invite can still be accepted. Mirrors the backend's
+/// `InviteStatus*` constants.
+enum InviteStatus {
+  valid,
+  expired,
+  used,
+  alreadyMember;
+
+  static InviteStatus fromWire(String? raw) => switch (raw) {
+        'expired' => InviteStatus.expired,
+        'used' => InviteStatus.used,
+        'already_member' => InviteStatus.alreadyMember,
+        _ => InviteStatus.valid,
+      };
+}
+
 /// Invite member request payload.
 class InviteMemberRequest {
   final String role;

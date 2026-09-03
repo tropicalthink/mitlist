@@ -422,6 +422,29 @@ class FakeGroupService implements GroupService {
     return listResult;
   }
 
+  /// Codes passed to [previewInvite].
+  final List<String> previewCalls = [];
+
+  /// When non-null, [previewInvite] throws this.
+  Exception? throwOnPreview;
+
+  /// The preview returned by [previewInvite] when not throwing.
+  InvitePreview previewResult = InvitePreview(
+    code: 'ABCD-1234',
+    groupId: 'group-fake-1',
+    groupName: 'Test Household',
+    memberCount: 3,
+    expiresAt: DateTime.utc(2030, 1, 1),
+    status: InviteStatus.valid,
+  );
+
+  @override
+  Future<InvitePreview> previewInvite(String code) async {
+    previewCalls.add(code);
+    if (throwOnPreview != null) throw throwOnPreview!;
+    return previewResult;
+  }
+
   @override
   Future<Group> joinGroup(JoinGroupRequest request) async {
     joinCalls.add(request);
