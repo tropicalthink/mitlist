@@ -34,22 +34,21 @@ type GroupMemberProfile struct {
 	Role        string    `json:"role"`
 }
 
-// GroupInvite stores an invite code for joining a group.
+// GroupInvite stores an invite code for joining a group. A code admits anyone
+// who presents it until it expires; accepting does not consume it, so one
+// link can bring in a whole household.
 type GroupInvite struct {
-	ID        uuid.UUID  `json:"id"`
-	GroupID   uuid.UUID  `json:"group_id"`
-	Code      string     `json:"code"`
-	ExpiresAt time.Time  `json:"expires_at"`
-	UsedBy    *uuid.UUID `json:"used_by,omitempty"`
-	UsedAt    *time.Time `json:"used_at,omitempty"`
+	ID        uuid.UUID `json:"id"`
+	GroupID   uuid.UUID `json:"group_id"`
+	Code      string    `json:"code"`
+	ExpiresAt time.Time `json:"expires_at"`
 }
 
-// Invite preview statuses. A preview never consumes the invite; it tells the
-// recipient what accepting would do before they commit.
+// Invite preview statuses. A preview tells the recipient what accepting
+// would do before they commit.
 const (
 	InviteStatusValid         = "valid"
 	InviteStatusExpired       = "expired"
-	InviteStatusUsed          = "used"
 	InviteStatusAlreadyMember = "already_member"
 )
 

@@ -718,7 +718,8 @@ void main() {
       overrides: [
         authServiceProviderAsync.overrideWith((ref) async => authService),
         oauthProvidersProvider.overrideWith(
-          (ref) async => (google: true, apple: true, password: true),
+          (ref) async =>
+              (google: true, apple: true, password: true, guest: false),
         ),
       ],
     );
@@ -775,7 +776,8 @@ void main() {
       overrides: [
         authServiceProviderAsync.overrideWith((ref) async => authService),
         oauthProvidersProvider.overrideWith(
-          (ref) async => (google: false, apple: false, password: true),
+          (ref) async =>
+              (google: false, apple: false, password: true, guest: false),
         ),
       ],
     );
@@ -816,7 +818,8 @@ void main() {
       overrides: [
         authServiceProviderAsync.overrideWith((ref) async => authService),
         oauthProvidersProvider.overrideWith(
-          (ref) async => (google: false, apple: false, password: true),
+          (ref) async =>
+              (google: false, apple: false, password: true, guest: false),
         ),
       ],
     );
@@ -854,7 +857,8 @@ void main() {
       overrides: [
         authServiceProviderAsync.overrideWith((ref) async => authService),
         oauthProvidersProvider.overrideWith(
-          (ref) async => (google: true, apple: false, password: false),
+          (ref) async =>
+              (google: true, apple: false, password: false, guest: false),
         ),
       ],
     );
@@ -882,7 +886,8 @@ void main() {
       overrides: [
         authServiceProviderAsync.overrideWith((ref) async => authService),
         oauthProvidersProvider.overrideWith(
-          (ref) async => (google: true, apple: false, password: true),
+          (ref) async =>
+              (google: true, apple: false, password: true, guest: false),
         ),
       ],
     );
@@ -913,7 +918,8 @@ void main() {
       overrides: [
         authServiceProviderAsync.overrideWith((ref) async => authService),
         oauthProvidersProvider.overrideWith(
-          (ref) async => (google: false, apple: false, password: false),
+          (ref) async =>
+              (google: false, apple: false, password: false, guest: false),
         ),
       ],
     );
@@ -970,6 +976,51 @@ void main() {
     );
     expect(container.read(authStateProvider), isTrue);
     expect(container.read(pendingAuthNavigationProvider), '/onboarding');
+  });
+
+  testWidgets('oauth callback restores the invite parked before the redirect',
+      (tester) async {
+    await _setLargeSurface(tester);
+    // On web the round-trip is a full page load: nothing is left in memory,
+    // only what launchOAuthProvider wrote to preferences.
+    final authService = FakeAuthService(currentUser: user)
+      ..pendingOAuthNavigation = '/join/ABCD-1234';
+    final router = GoRouter(
+      initialLocation: '/auth/callback',
+      routes: [
+        GoRoute(
+          path: '/auth/callback',
+          builder: (context, state) => OAuthCallbackScreen(
+            uri: Uri(
+              path: '/auth/callback',
+              queryParameters: const {
+                'provider': 'google',
+                'code': 'oauth-code',
+                'state': 'oauth-state',
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          routerProvider.overrideWith((ref) => router),
+          authServiceProviderAsync.overrideWith((ref) async => authService),
+        ],
+        child: _testMaterialAppRouter(router),
+      ),
+    );
+    await _pumpUi(tester);
+
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(OAuthCallbackScreen)),
+    );
+    expect(container.read(authStateProvider), isTrue);
+    expect(container.read(pendingAuthNavigationProvider), '/join/ABCD-1234');
+    expect(authService.pendingOAuthNavigation, isNull);
   });
 
   testWidgets('oauth callback for a guest upgrade returns to the account page',
@@ -1035,7 +1086,8 @@ void main() {
       child: const SignupScreen(),
       overrides: [
         oauthProvidersProvider.overrideWith(
-          (ref) async => (google: true, apple: true, password: true),
+          (ref) async =>
+              (google: true, apple: true, password: true, guest: false),
         ),
       ],
     );
@@ -1063,7 +1115,8 @@ void main() {
       child: const SignupScreen(),
       overrides: [
         oauthProvidersProvider.overrideWith(
-          (ref) async => (google: false, apple: false, password: true),
+          (ref) async =>
+              (google: false, apple: false, password: true, guest: false),
         ),
       ],
     );
@@ -1699,6 +1752,20 @@ class FakeAuthService implements AuthService {
 
   @override
   Future<bool> consumePendingOAuthRememberMe() async => pendingOAuthRememberMe;
+
+  String? pendingOAuthNavigation;
+
+  @override
+  Future<void> setPendingOAuthNavigation(String? path) async {
+    pendingOAuthNavigation = path;
+  }
+
+  @override
+  Future<String?> consumePendingOAuthNavigation() async {
+    final path = pendingOAuthNavigation;
+    pendingOAuthNavigation = null;
+    return path;
+  }
 
   @override
   Future<TokenPair> completeOAuthCallback({

@@ -4355,7 +4355,6 @@
   "authJoinDecline": "Weigeren",
   "authJoinCheckingInvite": "Uitnodiging controleren…",
   "authJoinExpired": "Deze uitnodiging is verlopen. Vraag om een nieuwe.",
-  "authJoinAlreadyUsed": "Deze uitnodiging is al gebruikt.",
   "authJoinAlreadyMember": "Je bent al lid van {name}.",
   "authJoinTitle": "Deelnemen aan huishouden",
   "@authJoinTitle": {
@@ -6198,6 +6197,5 @@
   "tourFinishEyebrow": "Jouw huishouden",
   "tourFinishHeadline": "Doe het nu met de mensen met wie je echt woont.",
   "tourFinishBody": "Maak een account om je huishouden op te zetten en ze uit te nodigen. Gratis voor huishoudens tot 4 personen.",
-  "tourFinishEmail": "Doorgaan met e-mail",
-  "tourFinishSignIn": "Liever inloggen"
+  "tourFinishEmail": "Doorgaan met e-mail"
 }

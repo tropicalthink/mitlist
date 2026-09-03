@@ -104,6 +104,11 @@ class ApiConfig {
   /// Temporary remember-me choice saved across browser OAuth redirects.
   static const String pendingOAuthRememberMeKey = 'pending_oauth_remember_me';
 
+  /// Where to land after a browser OAuth redirect (an invite accept page, a
+  /// shared recipe). On web the round-trip is a full page load, so the
+  /// in-memory pending navigation does not survive it.
+  static const String pendingOAuthNavigationKey = 'pending_oauth_navigation';
+
   /// Native-app callback used for browser-based OAuth handoff on mobile.
   static const String nativeOAuthCallbackUri = 'mitlist:///auth/callback';
 

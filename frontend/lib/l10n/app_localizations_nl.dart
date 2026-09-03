@@ -4301,9 +4301,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Deze uitnodiging is verlopen. Vraag om een nieuwe.';
 
   @override
-  String get authJoinAlreadyUsed => 'Deze uitnodiging is al gebruikt.';
-
-  @override
   String authJoinAlreadyMember(String name) {
     return 'Je bent al lid van $name.';
   }
@@ -6544,7 +6541,4 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tourFinishEmail => 'Doorgaan met e-mail';
-
-  @override
-  String get tourFinishSignIn => 'Liever inloggen';
 }
