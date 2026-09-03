@@ -7041,6 +7041,12 @@ abstract class AppLocalizations {
   /// **'Sign in with email'**
   String get authLoginWithEmailButton;
 
+  /// Button on the signup screen that unfolds the name/email/password form
+  ///
+  /// In en, this message translates to:
+  /// **'Sign up with email'**
+  String get authSignupWithEmailButton;
+
   /// Title of the email verification sheet
   ///
   /// In en, this message translates to:
