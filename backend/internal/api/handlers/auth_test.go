@@ -81,6 +81,61 @@ func TestAuth_Login_InvalidCredentials(t *testing.T) {
 	requireStatus(t, rec, http.StatusBadRequest)
 }
 
+func TestAuth_PasswordRoutesDisabled(t *testing.T) {
+	clearTables(t)
+	cfg := *testCfg
+	cfg.PasswordAuthEnabled = false
+	router, _, _ := newAuthRouterWithConfig(t, &cfg)
+	createTestUser(t, "gated@example.com", "Password123!")
+
+	// Every route that creates, checks or changes a password is off; the
+	// caller gets one stable, explained refusal rather than a 404.
+	public := []struct {
+		path string
+		body map[string]any
+	}{
+		{"/api/v1/auth/register", map[string]any{"email": "new@example.com", "password": "Password123!", "first_name": "New", "last_name": "User"}},
+		{"/api/v1/auth/login", map[string]any{"email": "gated@example.com", "password": "Password123!"}},
+		{"/api/v1/auth/verify-email", map[string]any{"token": "000000"}},
+		{"/api/v1/auth/verify-email/resend", map[string]any{"email": "gated@example.com"}},
+		{"/api/v1/auth/password-reset", map[string]any{"email": "gated@example.com"}},
+		{"/api/v1/auth/password-reset/confirm", map[string]any{"token": "x", "new_password": "Password123!"}},
+	}
+	for _, tc := range public {
+		rec := execRequest(t, router, "POST", tc.path, tc.body, "")
+		requireStatus(t, rec, http.StatusForbidden)
+		var resp map[string]any
+		parseJSONResponse(t, rec, &resp)
+		assert.Equal(t, "permission_denied", resp["code"], tc.path)
+	}
+
+	// Sessions that exist keep working: refresh, logout and guest creation
+	// are not password features.
+	rec := execRequest(t, router, "POST", "/api/v1/auth/guest", map[string]any{}, "")
+	requireStatus(t, rec, http.StatusCreated)
+
+	var guest map[string]any
+	parseJSONResponse(t, rec, &guest)
+	token, _ := guest["access_token"].(string)
+	require.NotEmpty(t, token)
+
+	rec = execRequest(t, router, "GET", "/api/v1/auth/me", nil, token)
+	requireStatus(t, rec, http.StatusOK)
+
+	authed := []struct {
+		path string
+		body map[string]any
+	}{
+		{"/api/v1/auth/change-password", map[string]any{"old_password": "Password123!", "new_password": "Password456!"}},
+		{"/api/v1/auth/guest/convert", map[string]any{"email": "g@example.com", "password": "Password123!", "first_name": "G", "last_name": "U"}},
+		{"/api/v1/auth/claim-account", map[string]any{"password": "Password123!", "first_name": "G", "last_name": "U"}},
+	}
+	for _, tc := range authed {
+		rec := execRequest(t, router, "POST", tc.path, tc.body, token)
+		requireStatus(t, rec, http.StatusForbidden)
+	}
+}
+
 func TestAuth_GetMe(t *testing.T) {
 	clearTables(t)
 	router, _ := newAuthRouter(t)

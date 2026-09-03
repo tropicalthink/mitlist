@@ -17,6 +17,7 @@ import '../../models/group_models.dart';
 import '../../providers/auth_provider.dart'
     show authServiceProviderAsync, authStateProvider;
 import '../../providers/group_provider.dart';
+import '../../providers/oauth_provider.dart';
 import '../../providers/onboarding_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/locale_provider.dart';
@@ -682,6 +683,11 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     );
   }
 
+  /// Whether the server offers email + password sign-in. Assumed on until
+  /// the server says otherwise, matching the login screen's fallback.
+  bool get _passwordAuthEnabled =>
+      ref.watch(oauthProvidersProvider).valueOrNull?.password ?? true;
+
   Widget _buildSecurityCard() {
     final l10n = AppLocalizations.of(context)!;
     return AppCard(
@@ -1209,6 +1215,9 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   Widget _buildGuestUpgradeCard() {
     final l10n = AppLocalizations.of(context)!;
     if (!_isGuest) return const SizedBox.shrink();
+    // Converting a guest means giving it an email and a password; a server
+    // without password sign-in has no upgrade to offer.
+    if (!_passwordAuthEnabled) return const SizedBox.shrink();
 
     return Padding(
       padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
@@ -1420,7 +1429,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             const SizedBox(height: MitlistSpacing.md),
             _buildPremiumCard(),
             _buildFeedbackCard(),
-            if (!_isGuest) ...[
+            if (!_isGuest && _passwordAuthEnabled) ...[
               _buildSecurityCard(),
               const SizedBox(height: MitlistSpacing.md),
             ],

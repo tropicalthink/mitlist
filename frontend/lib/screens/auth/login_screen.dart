@@ -48,6 +48,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   /// Provider whose in-app sign-in sheet is currently open, or null.
   String? _oauthProvider;
 
+  /// Whether the email + password form is unfolded. It starts folded behind
+  /// a button whenever OAuth is on offer, so the buttons stay the headline.
+  bool _showEmailForm = false;
+
   AppLocalizations get l10n => AppLocalizations.of(context)!;
 
   @override
@@ -516,8 +520,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final oauthProviders = ref.watch(oauthProvidersProvider).valueOrNull ??
-        (google: false, apple: false);
+    // Null until the server has said which doors it has. Rendering a form
+    // that then vanishes is worse than a beat of spinner.
+    final providers = ref.watch(oauthProvidersProvider).valueOrNull;
 
     return Scaffold(
       body: Stack(
@@ -542,140 +547,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                       const SizedBox(height: MitlistSpacing.space8),
                       TapedPanel(
                         padding: const EdgeInsets.all(MitlistSpacing.space6),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            AppInput(
-                              label: l10n.authLoginEmail,
-                              hint: l10n.authLoginYouExample,
-                              controller: _emailController,
-                              focusNode: _emailFocus,
-                              keyboardType: TextInputType.emailAddress,
-                              textInputAction: TextInputAction.next,
-                              autofillHints: const [AutofillHints.email],
-                              onSubmitted: (_) => _passwordFocus.requestFocus(),
-                              errorText: _emailError,
-                            ),
-                            const SizedBox(height: MitlistSpacing.space3),
-                            AppInput(
-                              label: l10n.authLoginPassword,
-                              hint: '••••••••',
-                              controller: _passwordController,
-                              focusNode: _passwordFocus,
-                              obscureText: true,
-                              textInputAction: TextInputAction.done,
-                              autofillHints: const [AutofillHints.password],
-                              onSubmitted: (_) => _submit(),
-                              errorText: _passwordError,
-                            ),
-                            const SizedBox(height: MitlistSpacing.space3),
-                            if (_errorMessage != null) ...[
-                              AppAlert(
-                                type: AppAlertType.error,
-                                message: _errorMessage!,
-                              ),
-                              const SizedBox(height: MitlistSpacing.space3),
-                            ],
-                            SizedBox(
-                              width: double.infinity,
-                              child: AppButton(
-                                text: l10n.welcomeSignIn,
-                                variant: AppButtonVariant.solid,
-                                color: AppButtonColor.primary,
-                                size: AppButtonSize.lg,
-                                isLoading: _isLoading,
-                                isSuccess: _isSuccess,
-                                onPressed:
-                                    (_isLoading || _isSuccess) ? null : _submit,
-                              ),
-                            ),
-                            const SizedBox(height: MitlistSpacing.space3),
-                            InkWell(
-                              onTap: (_isLoading || _isSuccess)
-                                  ? null
-                                  : () => setState(
-                                      () => _rememberMe = !_rememberMe),
-                              borderRadius: BorderRadius.zero,
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: MitlistSpacing.sm),
-                                child: Row(
-                                  children: [
-                                    AnimatedCheckToggle(
-                                      value: _rememberMe,
-                                      onChanged: (_isLoading || _isSuccess)
-                                          ? null
-                                          : (value) {
-                                              setState(
-                                                  () => _rememberMe = value);
-                                            },
-                                      semanticLabelOn:
-                                          l10n.authLoginRememberMeOn,
-                                      semanticLabelOff:
-                                          l10n.authLoginRememberMeOff,
-                                    ),
-                                    const SizedBox(width: MitlistSpacing.sm),
-                                    Text(l10n.authLoginRememberMe),
-                                  ],
+                        child: providers == null
+                            ? const Padding(
+                                padding: EdgeInsets.symmetric(
+                                  vertical: MitlistSpacing.xl,
                                 ),
-                              ),
-                            ),
-                            const SizedBox(height: MitlistSpacing.space4),
-                            if (oauthProviders.google) ...[
-                              AppButton(
-                                text: l10n.authLoginGoogle,
-                                icon: const AppIcon(name: 'login', size: 20),
-                                variant: AppButtonVariant.outline,
-                                color: AppButtonColor.neutral,
-                                isLoading: _oauthProvider == 'google',
-                                onPressed: (_isLoading ||
-                                        _isSuccess ||
-                                        _oauthProvider != null)
-                                    ? null
-                                    : () => _startOAuth('google'),
-                              ),
-                              const SizedBox(height: MitlistSpacing.space3),
-                            ],
-                            if (oauthProviders.apple) ...[
-                              AppButton(
-                                text: l10n.authLoginApple,
-                                icon: const AppIcon(name: 'apple', size: 20),
-                                variant: AppButtonVariant.outline,
-                                color: AppButtonColor.neutral,
-                                isLoading: _oauthProvider == 'apple',
-                                onPressed: (_isLoading ||
-                                        _isSuccess ||
-                                        _oauthProvider != null)
-                                    ? null
-                                    : () => _startOAuth('apple'),
-                              ),
-                              const SizedBox(height: MitlistSpacing.space3),
-                            ],
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                AppButton(
-                                  variant: AppButtonVariant.ghost,
-                                  color: AppButtonColor.primary,
-                                  text: l10n.authSignupCreateAccount,
-                                  onPressed: () => context.goNamed('signup'),
+                                child: Center(
+                                  child: CircularProgressIndicator(),
                                 ),
-                              ],
-                            ),
-                            const SizedBox(height: MitlistSpacing.space2),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                AppButton(
-                                  variant: AppButtonVariant.ghost,
-                                  color: AppButtonColor.neutral,
-                                  text: l10n.authLoginForgotPassword,
-                                  onPressed: _showPasswordResetSheet,
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
+                              )
+                            : _buildSignInMethods(l10n, providers),
                       ),
                       const SizedBox(height: MitlistSpacing.space4),
                       AppButton(
@@ -694,6 +575,172 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// OAuth first, email + password last. On the hosted service the buttons
+  /// are the headline and the form waits behind a button at the bottom; a
+  /// self-host with nothing but passwords sees the form straight away.
+  /// Nothing here is shown for a method the server did not claim to offer.
+  Widget _buildSignInMethods(
+    AppLocalizations l10n,
+    OAuthProviderAvailability providers,
+  ) {
+    final busy = _isLoading || _isSuccess;
+    final hasOAuth = providers.google || providers.apple;
+
+    if (!hasOAuth && !providers.password) {
+      return AppAlert(
+        type: AppAlertType.info,
+        message: l10n.authLoginNoMethods,
+      );
+    }
+
+    final showForm = providers.password && (!hasOAuth || _showEmailForm);
+    final scheme = Theme.of(context).colorScheme;
+
+    return AutofillGroup(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (_errorMessage != null) ...[
+            AppAlert(type: AppAlertType.error, message: _errorMessage!),
+            const SizedBox(height: MitlistSpacing.space3),
+          ],
+          if (providers.google) ...[
+            AppButton(
+              text: l10n.authLoginGoogle,
+              icon: const AppIcon(name: 'login', size: 20),
+              variant: AppButtonVariant.outline,
+              color: AppButtonColor.neutral,
+              isLoading: _oauthProvider == 'google',
+              onPressed: (busy || _oauthProvider != null)
+                  ? null
+                  : () => _startOAuth('google'),
+            ),
+            const SizedBox(height: MitlistSpacing.space3),
+          ],
+          if (providers.apple) ...[
+            AppButton(
+              text: l10n.authLoginApple,
+              icon: const AppIcon(name: 'apple', size: 20),
+              variant: AppButtonVariant.outline,
+              color: AppButtonColor.neutral,
+              isLoading: _oauthProvider == 'apple',
+              onPressed: (busy || _oauthProvider != null)
+                  ? null
+                  : () => _startOAuth('apple'),
+            ),
+            const SizedBox(height: MitlistSpacing.space3),
+          ],
+          // Remember me applies to whichever door is used; it sits under the
+          // buttons when there are any, under the form otherwise.
+          if (hasOAuth) _buildRememberMe(l10n, busy),
+          if (providers.password && hasOAuth) ...[
+            const SizedBox(height: MitlistSpacing.space3),
+            Divider(color: scheme.outlineVariant, thickness: 2, height: 2),
+            const SizedBox(height: MitlistSpacing.space3),
+          ],
+          if (providers.password && hasOAuth && !_showEmailForm)
+            AppButton(
+              text: l10n.authLoginWithEmailButton,
+              variant: AppButtonVariant.ghost,
+              color: AppButtonColor.neutral,
+              onPressed: busy ? null : _unfoldEmailForm,
+            ),
+          if (showForm) ...[
+            AppInput(
+              label: l10n.authLoginEmail,
+              hint: l10n.authLoginYouExample,
+              controller: _emailController,
+              focusNode: _emailFocus,
+              keyboardType: TextInputType.emailAddress,
+              textInputAction: TextInputAction.next,
+              autofillHints: const [AutofillHints.email],
+              onSubmitted: (_) => _passwordFocus.requestFocus(),
+              errorText: _emailError,
+            ),
+            const SizedBox(height: MitlistSpacing.space3),
+            AppInput(
+              label: l10n.authLoginPassword,
+              hint: '••••••••',
+              controller: _passwordController,
+              focusNode: _passwordFocus,
+              obscureText: true,
+              textInputAction: TextInputAction.done,
+              autofillHints: const [AutofillHints.password],
+              onSubmitted: (_) => _submit(),
+              errorText: _passwordError,
+            ),
+            const SizedBox(height: MitlistSpacing.space3),
+            AppButton(
+              text: l10n.welcomeSignIn,
+              variant: AppButtonVariant.solid,
+              color: AppButtonColor.primary,
+              size: AppButtonSize.lg,
+              isLoading: _isLoading,
+              isSuccess: _isSuccess,
+              onPressed: busy ? null : _submit,
+            ),
+            const SizedBox(height: MitlistSpacing.space3),
+            if (!hasOAuth) _buildRememberMe(l10n, busy),
+            const SizedBox(height: MitlistSpacing.space2),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                AppButton(
+                  variant: AppButtonVariant.ghost,
+                  color: AppButtonColor.primary,
+                  text: l10n.authSignupCreateAccount,
+                  onPressed: () => context.goNamed('signup'),
+                ),
+              ],
+            ),
+            const SizedBox(height: MitlistSpacing.space2),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                AppButton(
+                  variant: AppButtonVariant.ghost,
+                  color: AppButtonColor.neutral,
+                  text: l10n.authLoginForgotPassword,
+                  onPressed: _showPasswordResetSheet,
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _unfoldEmailForm() {
+    setState(() => _showEmailForm = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _emailFocus.requestFocus();
+    });
+  }
+
+  Widget _buildRememberMe(AppLocalizations l10n, bool busy) {
+    return InkWell(
+      onTap: busy ? null : () => setState(() => _rememberMe = !_rememberMe),
+      borderRadius: BorderRadius.zero,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
+        child: Row(
+          children: [
+            AnimatedCheckToggle(
+              value: _rememberMe,
+              onChanged:
+                  busy ? null : (value) => setState(() => _rememberMe = value),
+              semanticLabelOn: l10n.authLoginRememberMeOn,
+              semanticLabelOff: l10n.authLoginRememberMeOff,
+            ),
+            const SizedBox(width: MitlistSpacing.sm),
+            Text(l10n.authLoginRememberMe),
+          ],
+        ),
       ),
     );
   }

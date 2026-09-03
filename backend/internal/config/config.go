@@ -48,6 +48,13 @@ type Config struct {
 	// OAuth — Allowlist
 	OAuthRedirectAllowlist string `env:"OAUTH_REDIRECT_ALLOWLIST"`
 
+	// Email + password sign-in. The hosted service signs people in with
+	// Google or Apple only; a self-hosted instance usually has neither, so
+	// this is the door it needs. Off by default because turning it on
+	// exposes register, login, password reset and change-password on the
+	// public API. Clients read the flag from GET /oauth/providers.
+	PasswordAuthEnabled bool `env:"PASSWORD_AUTH_ENABLED" default:"false"`
+
 	// Web Push
 	VapidPrivateKey string `env:"VAPID_PRIVATE_KEY"`
 	VapidPublicKey  string `env:"VAPID_PUBLIC_KEY"`
@@ -241,6 +248,7 @@ func (c *Config) LogIntegrationStatus() {
 	appCheckOn := c.FirebaseAppCheckRequired
 	storageOn := c.S3BucketName != ""
 	oauthOn := c.GoogleClientID != "" || c.AppleClientID != ""
+	passwordOn := c.PasswordAuthEnabled
 	errorReportingOn := c.SentryDSN != ""
 	errorTracingOn := errorReportingOn && c.SentryTracesSampleRate > 0
 	fxOn := c.FxRateAPIURL != ""
@@ -253,6 +261,7 @@ func (c *Config) LogIntegrationStatus() {
 		Bool("firebase_app_check", appCheckOn).
 		Bool("file_storage", storageOn).
 		Bool("oauth", oauthOn).
+		Bool("password_auth", passwordOn).
 		Bool("error_reporting", errorReportingOn).
 		Bool("error_tracing", errorTracingOn).
 		Bool("fx_rates", fxOn).
@@ -269,6 +278,9 @@ func (c *Config) LogIntegrationStatus() {
 	if !storageOn {
 		disabled = append(disabled, "file_storage (set S3_BUCKET_NAME and AWS_* credentials)")
 	}
+	if !passwordOn {
+		disabled = append(disabled, "password_auth (set PASSWORD_AUTH_ENABLED=true for email + password sign-in)")
+	}
 	if !billingOn {
 		disabled = append(disabled, "billing (set POLAR_ACCESS_TOKEN and POLAR_WEBHOOK_SECRET; households grow without limit until then)")
 	}
@@ -281,6 +293,9 @@ func (c *Config) LogIntegrationStatus() {
 	if len(disabled) > 0 {
 		log.Warn().Strs("disabled_integrations", disabled).
 			Msg("some optional integrations are disabled; features depending on them will not work")
+	}
+	if !oauthOn && !passwordOn {
+		log.Warn().Msg("no sign-in method is configured: only guest accounts can be created, and nobody can sign back in on another device. Set PASSWORD_AUTH_ENABLED=true or configure Google/Apple OAuth")
 	}
 }
 

@@ -42,6 +42,7 @@ func TestLogIntegrationStatus(t *testing.T) {
 			FirebaseServiceAccount:       `{"type":"service_account"}`,
 			S3BucketName:                 "my-bucket",
 			GoogleClientID:               "google-client-id.apps.googleusercontent.com",
+			PasswordAuthEnabled:          true,
 			SentryDSN:                    "https://abc@o123.ingest.sentry.io/456",
 			FxRateAPIURL:                 "https://api.frankfurter.dev",
 			PolarAccessToken:             "polar_at_test",
