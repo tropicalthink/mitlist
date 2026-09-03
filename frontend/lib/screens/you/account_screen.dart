@@ -35,6 +35,7 @@ import '../../theme/spacing.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_button.dart';
+import '../../widgets/google_logo.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/app_icon.dart';
@@ -69,9 +70,11 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   String _email = '';
   String? _userId;
   bool _isGuest = false;
+
   /// False only for a guest who gave an email but has not entered the code
   /// yet: the account exists on the server, half-made.
   bool _isVerified = true;
+
   /// Provider whose upgrade round-trip is in flight, or null.
   String? _linkingProvider;
   bool _isEditingName = false;
@@ -1335,7 +1338,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     final l10n = AppLocalizations.of(context)!;
     if (!_isGuest || !_isVerified) return const SizedBox.shrink();
     final providers = ref.watch(oauthProvidersProvider).valueOrNull ??
-        (google: false, apple: false, password: true);
+        (google: false, apple: false, password: true, guest: false);
     final hasOAuth = providers.google || providers.apple;
     if (!hasOAuth && !providers.password) return const SizedBox.shrink();
     final busy = _linkingProvider != null;
@@ -1374,7 +1377,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             if (providers.google) ...[
               AppButton(
                 text: l10n.authLoginGoogle,
-                icon: const AppIcon(name: 'login', size: 20),
+                icon: const GoogleLogo(size: 20),
                 variant: AppButtonVariant.outline,
                 color: AppButtonColor.neutral,
                 isLoading: _linkingProvider == 'google',
@@ -1400,7 +1403,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                     : l10n.accountCreateFullAccount,
                 variant:
                     hasOAuth ? AppButtonVariant.ghost : AppButtonVariant.solid,
-                color: hasOAuth ? AppButtonColor.neutral : AppButtonColor.primary,
+                color:
+                    hasOAuth ? AppButtonColor.neutral : AppButtonColor.primary,
                 onPressed: busy ? null : _showConvertGuestSheet,
               ),
           ],
