@@ -12,8 +12,8 @@ void main() {
         authState: true,
         isOAuthLinkCallback: true,
       );
-      // Without the marker an authenticated callback is bounced to
-      // onboarding; with it the callback screen must be allowed to run.
+      // Without the marker an authenticated callback is bounced home; with
+      // it the callback screen must be allowed to run.
       expect(resolveAppRedirect(input).redirect, isNull);
       expect(
         resolveAppRedirect(const AppRedirectInput(
@@ -22,8 +22,42 @@ void main() {
           authBootstrapLoading: false,
           authState: true,
         )).redirect,
-        '/onboarding',
+        '/home',
       );
+    });
+
+    test('a replayed callback while signed in goes home, not to onboarding',
+        () {
+      // Android relaunches the app with the OAuth deep link as its launch
+      // intent on every cold start after a provider sign-in. Nothing is
+      // pending, so this is not a sign-in in progress; the hub decides whether
+      // the account still needs household setup.
+      final result = resolveAppRedirect(
+        const AppRedirectInput(
+          location: '/auth/callback',
+          queryParameters: {'provider': 'google', 'handoff': 'stale'},
+          authBootstrapLoading: false,
+          authState: true,
+        ),
+      );
+
+      expect(result.redirect, '/home');
+      expect(result.clearPendingAuth, isFalse);
+    });
+
+    test('a completed callback follows the parked destination', () {
+      final result = resolveAppRedirect(
+        const AppRedirectInput(
+          location: '/auth/callback',
+          queryParameters: {'provider': 'google', 'handoff': 'h'},
+          authBootstrapLoading: false,
+          authState: true,
+          pendingAuthNavigation: '/onboarding',
+        ),
+      );
+
+      expect(result.redirect, '/onboarding');
+      expect(result.clearPendingAuth, isTrue);
     });
 
     test('a signed-out visitor may open a shared recipe', () {
