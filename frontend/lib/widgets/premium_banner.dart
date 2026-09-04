@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../l10n/app_localizations.dart';
 import '../providers/billing_provider.dart';
-import '../sheets/premium_sheet.dart';
 import '../theme/spacing.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_card.dart';
 import '../widgets/app_icon.dart';
 
 /// Warns that a household has run out of free places, and opens the premium
-/// sheet.
+/// flow.
 ///
 /// Shown where a member is *about* to add someone — the person inviting can
 /// pay, whereas the person being blocked on join cannot. Renders nothing at all
@@ -72,8 +72,10 @@ class PremiumBanner extends ConsumerWidget {
                     : l10n.billingSubscribe,
                 variant: AppButtonVariant.solid,
                 color: AppButtonColor.primary,
-                onPressed: () =>
-                    showPremiumSheet(context, ref, groupId: groupId),
+                onPressed: () => context.pushNamed(
+                  'premium',
+                  pathParameters: {'groupId': groupId},
+                ),
               ),
             ),
           ],

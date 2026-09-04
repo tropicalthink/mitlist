@@ -5765,6 +5765,73 @@ class AppLocalizationsEs extends AppLocalizations {
   String get billingUnlimitedMembers => 'Miembros ilimitados';
 
   @override
+  String get premiumSeatsEyebrow => 'Tu casa';
+
+  @override
+  String get premiumSeatsHeadline => 'Sitio para una persona más';
+
+  @override
+  String premiumSeatsBody(int limit) {
+    return 'Las casas de hasta $limit personas son gratuitas. Premium abre el siguiente sitio y todos los que vengan después, y cubre a todos los de aquí, no solo a quien paga.';
+  }
+
+  @override
+  String get premiumSeatsOpenPlace => 'Sitio libre';
+
+  @override
+  String get premiumListsEyebrow => 'Listas';
+
+  @override
+  String get premiumListsHeadline => 'Nadie compra la leche dos veces';
+
+  @override
+  String get premiumListsBody =>
+      'Una lista, todas las manos. Marcas algo y queda hecho para toda la casa a la vez, incluida la persona que intentas añadir.';
+
+  @override
+  String get premiumMoneyEyebrow => 'Dinero';
+
+  @override
+  String get premiumMoneyHeadline => 'Una persona más, una parte más pequeña';
+
+  @override
+  String get premiumMoneyBody =>
+      'Quita un nombre del reparto y mira cómo sube la parte de los demás. Eso es lo que vale una persona más, cada semana.';
+
+  @override
+  String get premiumMoneyExpense => 'La compra grande';
+
+  @override
+  String premiumMoneySplitLine(int ways, String each) {
+    return '$ways partes · $each cada uno';
+  }
+
+  @override
+  String get premiumChoresEyebrow => 'Tareas';
+
+  @override
+  String get premiumChoresHeadline => 'Te toca menos a menudo';
+
+  @override
+  String premiumChoresBody(int count) {
+    return 'Un turno se reparte entre tantas personas como seáis. Marca una tarea para pasarla: entre $count, tu nombre queda a $count turnos.';
+  }
+
+  @override
+  String premiumChoresTurnEvery(int count) {
+    return 'Vuelve a ti en $count turnos';
+  }
+
+  @override
+  String get premiumPlanEyebrow => 'Premium';
+
+  @override
+  String get premiumPlanHeadline => 'Abre la casa';
+
+  @override
+  String get premiumSeeThePlan => 'Ver el plan';
+
+  @override
   String listDetailItemRestored(String name) {
     return '$name vuelve a la lista';
   }

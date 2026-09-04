@@ -7743,6 +7743,105 @@
   "@billingUnlimitedMembers": {
     "description": "Member allowance for a premium household"
   },
+  "premiumSeatsEyebrow": "Your household",
+  "@premiumSeatsEyebrow": {
+    "description": "Eyebrow label on the premium page about member places"
+  },
+  "premiumSeatsHeadline": "Room for one more",
+  "@premiumSeatsHeadline": {
+    "description": "Headline on the premium page about member places"
+  },
+  "premiumSeatsBody": "Households of up to {limit} people are free. Premium opens the next place and every one after it, and it covers everyone here — not only whoever pays.",
+  "@premiumSeatsBody": {
+    "description": "Body copy explaining the free member limit and what premium adds",
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "premiumSeatsOpenPlace": "Open place",
+  "@premiumSeatsOpenPlace": {
+    "description": "Accessible label for the empty member place in the seat strip"
+  },
+  "premiumListsEyebrow": "Lists",
+  "@premiumListsEyebrow": {
+    "description": "Eyebrow label on the premium page about shared lists"
+  },
+  "premiumListsHeadline": "Nobody buys the milk twice",
+  "@premiumListsHeadline": {
+    "description": "Headline on the premium page about shared lists"
+  },
+  "premiumListsBody": "One list, everyone's hands. Tick something off and it is off for the whole household at once — including the person you are trying to add.",
+  "@premiumListsBody": {
+    "description": "Body copy on the premium page about shared lists"
+  },
+  "premiumMoneyEyebrow": "Money",
+  "@premiumMoneyEyebrow": {
+    "description": "Eyebrow label on the premium page about splitting expenses"
+  },
+  "premiumMoneyHeadline": "One more person, one smaller bill",
+  "@premiumMoneyHeadline": {
+    "description": "Headline on the premium page about splitting expenses"
+  },
+  "premiumMoneyBody": "Take a name out of the split and watch everyone else's share go up. That is what one more person is worth, every week.",
+  "@premiumMoneyBody": {
+    "description": "Body copy on the premium page about splitting expenses"
+  },
+  "premiumMoneyExpense": "The big shop",
+  "@premiumMoneyExpense": {
+    "description": "Title of the sample expense on the premium money page"
+  },
+  "premiumMoneySplitLine": "{ways} ways · {each} each",
+  "@premiumMoneySplitLine": {
+    "description": "Live result of the sample split: how many ways, and the per-person share",
+    "placeholders": {
+      "ways": {
+        "type": "int"
+      },
+      "each": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumChoresEyebrow": "Chores",
+  "@premiumChoresEyebrow": {
+    "description": "Eyebrow label on the premium page about chore rotas"
+  },
+  "premiumChoresHeadline": "Your turn comes round slower",
+  "@premiumChoresHeadline": {
+    "description": "Headline on the premium page about chore rotas"
+  },
+  "premiumChoresBody": "A rota shares out over however many of you there are. Tick one off to hand it on: with {count} people, your own name is {count} turns away.",
+  "@premiumChoresBody": {
+    "description": "Body copy on the premium page about chore rotas",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "premiumChoresTurnEvery": "Back to you in {count} turns",
+  "@premiumChoresTurnEvery": {
+    "description": "Caption after a sample chore is ticked off, naming how long until it returns",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "premiumPlanEyebrow": "Premium",
+  "@premiumPlanEyebrow": {
+    "description": "Eyebrow label on the plan page of the premium flow"
+  },
+  "premiumPlanHeadline": "Open the household",
+  "@premiumPlanHeadline": {
+    "description": "Headline on the plan page of the premium flow"
+  },
+  "premiumSeeThePlan": "See the plan",
+  "@premiumSeeThePlan": {
+    "description": "Button on the last page before the plan, leading to it"
+  },
   "listDetailItemRestored": "Moved {name} back to the list",
   "@listDetailItemRestored": {
     "description": "Snackbar when re-adding a checked-off item unchecks it",
