@@ -5811,6 +5811,73 @@ class AppLocalizationsDe extends AppLocalizations {
   String get billingUnlimitedMembers => 'Unbegrenzte Mitglieder';
 
   @override
+  String get premiumSeatsEyebrow => 'Dein Haushalt';
+
+  @override
+  String get premiumSeatsHeadline => 'Platz für eine Person mehr';
+
+  @override
+  String premiumSeatsBody(int limit) {
+    return 'Haushalte mit bis zu $limit Personen sind kostenlos. Premium öffnet den nächsten Platz und jeden weiteren danach – und es gilt für alle hier, nicht nur für die Person, die zahlt.';
+  }
+
+  @override
+  String get premiumSeatsOpenPlace => 'Freier Platz';
+
+  @override
+  String get premiumListsEyebrow => 'Listen';
+
+  @override
+  String get premiumListsHeadline => 'Niemand kauft die Milch zweimal';
+
+  @override
+  String get premiumListsBody =>
+      'Eine Liste, alle Hände. Hakst du etwas ab, ist es für den ganzen Haushalt erledigt – auch für die Person, die du aufnehmen willst.';
+
+  @override
+  String get premiumMoneyEyebrow => 'Geld';
+
+  @override
+  String get premiumMoneyHeadline => 'Eine Person mehr, ein kleinerer Anteil';
+
+  @override
+  String get premiumMoneyBody =>
+      'Nimm einen Namen aus der Aufteilung und sieh zu, wie der Anteil aller anderen steigt. So viel ist eine Person mehr wert, jede Woche.';
+
+  @override
+  String get premiumMoneyExpense => 'Der Großeinkauf';
+
+  @override
+  String premiumMoneySplitLine(int ways, String each) {
+    return '$ways Anteile · je $each';
+  }
+
+  @override
+  String get premiumChoresEyebrow => 'Aufgaben';
+
+  @override
+  String get premiumChoresHeadline => 'Du bist seltener dran';
+
+  @override
+  String premiumChoresBody(int count) {
+    return 'Ein Turnus verteilt sich auf so viele Leute, wie ihr seid. Hake eine Aufgabe ab, um sie weiterzugeben: zu $count ist dein Name $count Runden entfernt.';
+  }
+
+  @override
+  String premiumChoresTurnEvery(int count) {
+    return 'Wieder bei dir in $count Runden';
+  }
+
+  @override
+  String get premiumPlanEyebrow => 'Premium';
+
+  @override
+  String get premiumPlanHeadline => 'Den Haushalt öffnen';
+
+  @override
+  String get premiumSeeThePlan => 'Zum Tarif';
+
+  @override
   String listDetailItemRestored(String name) {
     return '$name wieder auf die Liste gesetzt';
   }

@@ -27,6 +27,7 @@ import 'screens/you/feature_board_screen.dart';
 import 'screens/you/weekly_summary_screen.dart';
 import 'screens/you/home_assistant_connections_screen.dart';
 import 'screens/auth/welcome_screen.dart';
+import 'screens/premium/premium_screen.dart';
 import 'screens/tour/tour_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/signup_screen.dart';
@@ -248,6 +249,17 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => SharedRecipeScreen(
           token: state.pathParameters['token']!,
+        ),
+      ),
+      GoRoute(
+        // The paywall, one household at a time. Above the shell rather than
+        // inside a branch: it is a flow of its own, and the bottom bar would
+        // invite someone to wander off halfway through it.
+        path: '/premium/:groupId',
+        name: 'premium',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => PremiumScreen(
+          groupId: state.pathParameters['groupId']!,
         ),
       ),
       GoRoute(
