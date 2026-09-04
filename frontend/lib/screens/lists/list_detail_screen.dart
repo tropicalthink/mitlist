@@ -14,6 +14,7 @@ import '../../utils/friendly_error.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/app_icon.dart';
+import '../../widgets/app_toast.dart';
 import '../../sheets/cost_summary_sheet.dart';
 import '../../widgets/list/list_all_done_panel.dart';
 import '../../widgets/list/list_composer_bar.dart';
@@ -498,20 +499,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       _finishOperation(operation);
     }
     if (!deleted || !mounted) return;
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    final l10n = AppLocalizations.of(context)!;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          l10n.listDetailItemDeleted(item.name),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        action: SnackBarAction(
-          label: l10n.commonUndo,
-          onPressed: () => _restoreDeletedItem(item),
-        ),
-      ),
+    AppToast.undo(
+      context,
+      message: AppLocalizations.of(context)!.listDetailItemDeleted(item.name),
+      onUndo: () => _restoreDeletedItem(item),
     );
   }
 
