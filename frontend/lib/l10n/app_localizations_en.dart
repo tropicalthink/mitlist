@@ -5720,6 +5720,73 @@ class AppLocalizationsEn extends AppLocalizations {
   String get billingUnlimitedMembers => 'Unlimited members';
 
   @override
+  String get premiumSeatsEyebrow => 'Your household';
+
+  @override
+  String get premiumSeatsHeadline => 'Room for one more';
+
+  @override
+  String premiumSeatsBody(int limit) {
+    return 'Households of up to $limit people are free. Premium opens the next place and every one after it, and it covers everyone here — not only whoever pays.';
+  }
+
+  @override
+  String get premiumSeatsOpenPlace => 'Open place';
+
+  @override
+  String get premiumListsEyebrow => 'Lists';
+
+  @override
+  String get premiumListsHeadline => 'Nobody buys the milk twice';
+
+  @override
+  String get premiumListsBody =>
+      'One list, everyone\'s hands. Tick something off and it is off for the whole household at once — including the person you are trying to add.';
+
+  @override
+  String get premiumMoneyEyebrow => 'Money';
+
+  @override
+  String get premiumMoneyHeadline => 'One more person, one smaller bill';
+
+  @override
+  String get premiumMoneyBody =>
+      'Take a name out of the split and watch everyone else\'s share go up. That is what one more person is worth, every week.';
+
+  @override
+  String get premiumMoneyExpense => 'The big shop';
+
+  @override
+  String premiumMoneySplitLine(int ways, String each) {
+    return '$ways ways · $each each';
+  }
+
+  @override
+  String get premiumChoresEyebrow => 'Chores';
+
+  @override
+  String get premiumChoresHeadline => 'Your turn comes round slower';
+
+  @override
+  String premiumChoresBody(int count) {
+    return 'A rota shares out over however many of you there are. Tick one off to hand it on: with $count people, your own name is $count turns away.';
+  }
+
+  @override
+  String premiumChoresTurnEvery(int count) {
+    return 'Back to you in $count turns';
+  }
+
+  @override
+  String get premiumPlanEyebrow => 'Premium';
+
+  @override
+  String get premiumPlanHeadline => 'Open the household';
+
+  @override
+  String get premiumSeeThePlan => 'See the plan';
+
+  @override
   String listDetailItemRestored(String name) {
     return 'Moved $name back to the list';
   }

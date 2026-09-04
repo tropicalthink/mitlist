@@ -5778,6 +5778,73 @@ class AppLocalizationsNl extends AppLocalizations {
   String get billingUnlimitedMembers => 'Onbeperkt aantal leden';
 
   @override
+  String get premiumSeatsEyebrow => 'Jouw huishouden';
+
+  @override
+  String get premiumSeatsHeadline => 'Plek voor iemand erbij';
+
+  @override
+  String premiumSeatsBody(int limit) {
+    return 'Huishoudens tot $limit personen zijn gratis. Premium opent de volgende plek en elke plek daarna — en het geldt voor iedereen hier, niet alleen voor wie betaalt.';
+  }
+
+  @override
+  String get premiumSeatsOpenPlace => 'Vrije plek';
+
+  @override
+  String get premiumListsEyebrow => 'Lijsten';
+
+  @override
+  String get premiumListsHeadline => 'Niemand koopt de melk twee keer';
+
+  @override
+  String get premiumListsBody =>
+      'Eén lijst, alle handen. Vink je iets af, dan is het in één keer klaar voor het hele huishouden — ook voor de persoon die je wilt toevoegen.';
+
+  @override
+  String get premiumMoneyEyebrow => 'Geld';
+
+  @override
+  String get premiumMoneyHeadline => 'Iemand erbij, een kleiner deel';
+
+  @override
+  String get premiumMoneyBody =>
+      'Haal een naam uit de verdeling en zie het deel van alle anderen omhoog gaan. Zoveel is één persoon erbij waard, elke week.';
+
+  @override
+  String get premiumMoneyExpense => 'De grote boodschappen';
+
+  @override
+  String premiumMoneySplitLine(int ways, String each) {
+    return '$ways delen · $each per persoon';
+  }
+
+  @override
+  String get premiumChoresEyebrow => 'Taken';
+
+  @override
+  String get premiumChoresHeadline => 'Jouw beurt komt minder vaak';
+
+  @override
+  String premiumChoresBody(int count) {
+    return 'Een rooster verdeelt zich over zoveel mensen als jullie zijn. Vink een taak af om hem door te geven: met $count mensen is jouw naam $count beurten weg.';
+  }
+
+  @override
+  String premiumChoresTurnEvery(int count) {
+    return 'Terug bij jou over $count beurten';
+  }
+
+  @override
+  String get premiumPlanEyebrow => 'Premium';
+
+  @override
+  String get premiumPlanHeadline => 'Open het huishouden';
+
+  @override
+  String get premiumSeeThePlan => 'Bekijk het plan';
+
+  @override
   String listDetailItemRestored(String name) {
     return '$name staat weer op de lijst';
   }

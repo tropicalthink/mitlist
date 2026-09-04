@@ -9971,6 +9971,120 @@ abstract class AppLocalizations {
   /// **'Unlimited members'**
   String get billingUnlimitedMembers;
 
+  /// Eyebrow label on the premium page about member places
+  ///
+  /// In en, this message translates to:
+  /// **'Your household'**
+  String get premiumSeatsEyebrow;
+
+  /// Headline on the premium page about member places
+  ///
+  /// In en, this message translates to:
+  /// **'Room for one more'**
+  String get premiumSeatsHeadline;
+
+  /// Body copy explaining the free member limit and what premium adds
+  ///
+  /// In en, this message translates to:
+  /// **'Households of up to {limit} people are free. Premium opens the next place and every one after it, and it covers everyone here — not only whoever pays.'**
+  String premiumSeatsBody(int limit);
+
+  /// Accessible label for the empty member place in the seat strip
+  ///
+  /// In en, this message translates to:
+  /// **'Open place'**
+  String get premiumSeatsOpenPlace;
+
+  /// Eyebrow label on the premium page about shared lists
+  ///
+  /// In en, this message translates to:
+  /// **'Lists'**
+  String get premiumListsEyebrow;
+
+  /// Headline on the premium page about shared lists
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody buys the milk twice'**
+  String get premiumListsHeadline;
+
+  /// Body copy on the premium page about shared lists
+  ///
+  /// In en, this message translates to:
+  /// **'One list, everyone\'s hands. Tick something off and it is off for the whole household at once — including the person you are trying to add.'**
+  String get premiumListsBody;
+
+  /// Eyebrow label on the premium page about splitting expenses
+  ///
+  /// In en, this message translates to:
+  /// **'Money'**
+  String get premiumMoneyEyebrow;
+
+  /// Headline on the premium page about splitting expenses
+  ///
+  /// In en, this message translates to:
+  /// **'One more person, one smaller bill'**
+  String get premiumMoneyHeadline;
+
+  /// Body copy on the premium page about splitting expenses
+  ///
+  /// In en, this message translates to:
+  /// **'Take a name out of the split and watch everyone else\'s share go up. That is what one more person is worth, every week.'**
+  String get premiumMoneyBody;
+
+  /// Title of the sample expense on the premium money page
+  ///
+  /// In en, this message translates to:
+  /// **'The big shop'**
+  String get premiumMoneyExpense;
+
+  /// Live result of the sample split: how many ways, and the per-person share
+  ///
+  /// In en, this message translates to:
+  /// **'{ways} ways · {each} each'**
+  String premiumMoneySplitLine(int ways, String each);
+
+  /// Eyebrow label on the premium page about chore rotas
+  ///
+  /// In en, this message translates to:
+  /// **'Chores'**
+  String get premiumChoresEyebrow;
+
+  /// Headline on the premium page about chore rotas
+  ///
+  /// In en, this message translates to:
+  /// **'Your turn comes round slower'**
+  String get premiumChoresHeadline;
+
+  /// Body copy on the premium page about chore rotas
+  ///
+  /// In en, this message translates to:
+  /// **'A rota shares out over however many of you there are. Tick one off to hand it on: with {count} people, your own name is {count} turns away.'**
+  String premiumChoresBody(int count);
+
+  /// Caption after a sample chore is ticked off, naming how long until it returns
+  ///
+  /// In en, this message translates to:
+  /// **'Back to you in {count} turns'**
+  String premiumChoresTurnEvery(int count);
+
+  /// Eyebrow label on the plan page of the premium flow
+  ///
+  /// In en, this message translates to:
+  /// **'Premium'**
+  String get premiumPlanEyebrow;
+
+  /// Headline on the plan page of the premium flow
+  ///
+  /// In en, this message translates to:
+  /// **'Open the household'**
+  String get premiumPlanHeadline;
+
+  /// Button on the last page before the plan, leading to it
+  ///
+  /// In en, this message translates to:
+  /// **'See the plan'**
+  String get premiumSeeThePlan;
+
   /// Snackbar when re-adding a checked-off item unchecks it
   ///
   /// In en, this message translates to:
