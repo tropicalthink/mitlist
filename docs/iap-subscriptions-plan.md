@@ -49,23 +49,25 @@ keep its renewal state current.
 
 ---
 
-## 2. Pricing: annual +€2 on IAP, monthly unchanged
+## 2. Pricing: web slightly cheaper than the stores
 
 | Plan    | Web (Polar) | IAP (App Store / Play) |
 |---------|-------------|------------------------|
-| Monthly | €2.00       | **€2.00** (identical — store cut absorbed) |
-| Annual  | €18.00      | **€20.00** (+€2 — passes the ~€1.5 store cut, rounded up) |
+| Monthly | €3.49       | **€3.99** |
+| Annual  | €27.99      | **€29.99** |
 
-EU prices confirmed 2026-08-10. Rest-of-world uplift handled later; for now the
-stores auto-convert the EUR base, and the +€2 is baked into the EUR annual base.
+Prices set 2026-09-05 (previously €2 / €18 web, €2 / €20 store). Polar is
+already at these numbers; the store gap covers part of the store cut. Planned
+but not created yet: a €79.99 lifetime one-time product and a €19.99/yr
+student offer.
 
 Rules:
 - Set the EUR base price in each store; store systems auto-convert other
-  territories. Bake the +€2 into the **EUR annual base** so the uplift converts
-  naturally everywhere (don't try to add a flat €2 per territory).
+  territories. `tools/store_pricing.py` does this through the Play Developer
+  API and the App Store Connect API (dry run by default, `--apply` to write).
 - The app must **display the store's own localized price string** on mobile
   (`ProductDetails.price` from `in_app_purchase`), NOT the backend Polar plan
-  price. Otherwise a mobile user sees the web number, which is wrong by €2.
+  price, so a mobile user sees the store's own localized number.
 - `GET /billing/status` `plans[]` (from `BillingService.GetPlans`, read from
   Polar) remains the **web** price source only.
 
@@ -81,8 +83,8 @@ Rules:
 3. One **Auto-Renewable Subscription Group** ("mitlist Premium") — both durations
    in the same group so users can switch tiers.
 4. Two subscription products in the group:
-   - `me.mitlist.premium.monthly` — price = `€M`.
-   - `me.mitlist.premium.yearly` — price = `€Y + €2`.
+   - `me.mitlist.premium.monthly` — €3.99.
+   - `me.mitlist.premium.yearly` — €29.99.
    - Each: localized display name, description, review screenshot.
 5. No App Store `.p8` key is stored by the current implementation: signed
    StoreKit transactions and notifications verify locally. Add a key later only
@@ -97,8 +99,8 @@ Rules:
 
 1. Play Developer account ($25 one-time) + Payments profile (merchant).
 2. One **subscription** `premium` with two **base plans** (auto-renewing):
-   - `premium-monthly` — price = `€M`.
-   - `premium-yearly` — price = `€Y + €2`.
+   - `premium-monthly` — €3.99.
+   - `premium-yearly` — €29.99.
 3. **Service account** with Google Play Developer API access; download its JSON
    key. In Play Console grant only the app-level permission to view financial
    data, orders, and cancellation survey responses; this verifier only performs
@@ -290,7 +292,7 @@ fake `InAppPurchase` that emits a purchase and asserts the verify call + refresh
   endpoint (Apple sends a "test notification" you can trigger from ASC).
 - Google: license tester; use the Play Console "test" purchases and RTDN test
   message. Verify `subscriptionsv2.get` returns the expected state.
-- Confirm the +€2 annual shows the correct localized string on-device (the store
+- Confirm both plans show the correct localized string on-device (the store
   is the source of truth here, not the backend).
 - Confirm a self-host build (no Apple/Google creds, no Polar) still shows no
   paywall — `BillingStatus.disabled` path.
@@ -355,5 +357,5 @@ before shipping; the app intentionally does not support a StoreKit 1 receipt.
 2. Canonical product ids: the §3 table.
 3. No extra migration: the existing provider-scoped subscription key is enough.
 4. Both clients are implemented; store rollout order remains an operational choice.
-5. Store prices remain a console decision: monthly should match web and annual
-   should be web annual +€2, using the store's available EUR price points.
+5. Store prices are the §2 table; set them with `tools/store_pricing.py`
+   or in the consoles, using the store's available EUR price points.

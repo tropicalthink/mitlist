@@ -61,7 +61,7 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
   void initState() {
     super.initState();
     // Preload store products so the selector can show the store's own
-    // localized price (which already includes the +€2 annual uplift).
+    // localized price in the viewer's currency.
     if (IapService.isSupported) {
       _loadStoreProducts();
     }
@@ -249,8 +249,8 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
   }
 
   /// Formats the price for an interval. On mobile the store is the source of
-  /// truth — its localized string already includes the +€2 annual uplift — so
-  /// the [plan] is used only on web/desktop. Null renders a tile with no price
+  /// truth — its localized string is in the viewer's currency — so the [plan]
+  /// is used only on web/desktop. Null renders a tile with no price
   /// rather than a wrong one.
   String? _priceLabel(BillingInterval interval, BillingPlan? plan) {
     if (IapService.isSupported) {
