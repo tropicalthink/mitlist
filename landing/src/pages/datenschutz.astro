@@ -1,41 +1,126 @@
 ---
+// German privacy policy for the official mitlist service. /privacy carries the
+// English version with the same section structure — keep both in sync when
+// a provider, a feature, or a retention period changes.
 import LegalPage from "../components/LegalPage.astro";
 import { legal } from "../data/legal";
-const { operator, hosting } = legal;
-const lastUpdated = "14. Juli 2026";
+const { operator } = legal;
+const lastUpdated = "4. September 2026";
 ---
 
-<LegalPage title="Datenschutz" description="Datenschutzerklärung für die mitlist-Website und den offiziellen mitlist-Dienst.">
+<LegalPage title="Datenschutz" description="Datenschutzerklärung für die mitlist-Website, die mitlist-Apps und den offiziell gehosteten mitlist-Dienst.">
   <p class="legal-meta">Stand: {lastUpdated}</p>
+  <p class="legal-lang">English version: <a href="/privacy">Privacy Policy</a>. Die deutsche Fassung ist maßgeblich.</p>
+
   <h2>1. Verantwortlicher</h2>
   <p>{operator.name}<br />{operator.street}<br />{operator.postalCode} {operator.city}<br />{operator.country}<br />E-Mail: <a href={`mailto:${legal.email}`}>{legal.email}</a></p>
+  <p>Ein Datenschutzbeauftragter ist nicht bestellt, weil die gesetzlichen Voraussetzungen dafür nicht vorliegen. Wenden Sie sich mit allen Fragen zum Datenschutz an die oben genannte E-Mail-Adresse.</p>
 
-  <h2>2. Allgemeines und Rechtsgrundlagen</h2>
-  <p>Wir verarbeiten personenbezogene Daten nur, soweit dies für die Bereitstellung der Website und des von Ihnen gewählten mitlist-Dienstes erforderlich ist. Rechtsgrundlagen sind insbesondere Art. 6 Abs. 1 lit. b DSGVO (Vertrag und vorvertragliche Maßnahmen), Art. 6 Abs. 1 lit. f DSGVO (sicherer und erreichbarer Betrieb) und, soweit eingeholt, Art. 6 Abs. 1 lit. a DSGVO (Einwilligung).</p>
+  <h2>2. Geltungsbereich</h2>
+  <p>Diese Erklärung gilt für</p>
+  <ul>
+    <li>die Website <strong>mitlist.me</strong>,</li>
+    <li>die Web-App unter <strong>app.mitlist.me</strong> und die mitlist-Apps für iOS und Android, soweit sie mit dem offiziellen Dienst verbunden sind,</li>
+    <li>die Schnittstelle <strong>api.mitlist.me</strong>, über die Apps und Integrationen mit dem Dienst sprechen,</li>
+    <li>das Feedback-Board unter <strong>feedback.mitlist.me</strong>.</li>
+  </ul>
+  <p>mitlist ist freie Software (AGPL-3.0). Wer die Software auf einem eigenen Server betreibt, ist für diese Instanz selbst verantwortlich; wir erhalten daraus keine Daten. Einzelheiten dazu in Abschnitt 15.</p>
 
-  <h2>3. Website: keine Analyse und keine Werbeprofile</h2>
-  <p>Die öffentliche Website verwendet keine Analyse- oder Werbetracker und bildet keine Nutzungsprofile. Schriftarten und Bilder werden von der Website selbst ausgeliefert; dafür wird keine Verbindung zu Google Fonts oder einem Bild-CDN aufgebaut.</p>
+  <h2>3. Unsere Grundsätze</h2>
+  <ul>
+    <li>Wir zeigen keine Werbung und verkaufen keine Daten.</li>
+    <li>Die Apps und die Web-App enthalten keine Analyse- oder Werbe-Tracker und bilden keine Nutzungsprofile.</li>
+    <li>Ihre Haushaltsdaten liegen auf einem von uns betriebenen Server in der Europäischen Union.</li>
+    <li>Sie können Ihre Daten exportieren und Ihr Konto jederzeit in der App löschen.</li>
+    <li>Wir verarbeiten nur die Daten, die für den Betrieb des Dienstes, die Abrechnung von Premium und die Sicherheit erforderlich sind.</li>
+  </ul>
 
-  <h2>4. Hosting der Website</h2>
-  <p>Diese Website wird bei {hosting.provider} gehostet ({hosting.address}). Beim Abruf werden technisch erforderliche Daten wie IP-Adresse, Zeitpunkt, angeforderte URL und Browser-Typ in Server-Logs verarbeitet, um die Seite auszuliefern und abzusichern. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO. Weitere Informationen: <a href={hosting.url} target="_blank" rel="noopener noreferrer">Cloudflare Datenschutz</a>.</p>
+  <h2>4. Website mitlist.me</h2>
+  <p><strong>Hosting.</strong> Die Website ist eine statische Seite und wird über Cloudflare Pages (Cloudflare, Inc., 101 Townsend St, San Francisco, CA 94107, USA; für den EWR: Cloudflare Germany GmbH, Rosental 7, 80331 München) ausgeliefert. Beim Abruf verarbeitet Cloudflare technisch notwendige Verbindungsdaten wie IP-Adresse, Zeitpunkt, angeforderte URL, Referrer und Browser-Typ, um die Seite auszuliefern und vor Angriffen zu schützen. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (sicherer und erreichbarer Betrieb). Schriftarten und Bilder werden von der Website selbst ausgeliefert; es wird keine Verbindung zu Google Fonts oder einem anderen Schriften-Dienst aufgebaut.</p>
+  <p><strong>Reichweitenmessung ohne Cookies.</strong> Auf der Website (nicht in der App) setzen wir Cloudflare Web Analytics ein, um zu sehen, wie oft welche Seiten aufgerufen werden. Der Dienst setzt keine Cookies, speichert nichts auf Ihrem Gerät und erstellt keine Fingerabdrücke; die Auswertung ist aggregiert und nicht auf einzelne Personen bezogen. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (Verständnis, welche Inhalte der Website gelesen werden). Da nichts auf Ihrem Gerät gespeichert oder ausgelesen wird, ist keine Einwilligung nach § 25 TDDDG erforderlich.</p>
 
-  <h2>5. Offiziell gehosteter mitlist-Dienst</h2>
-  <p>Wenn Sie die offizielle mitlist-Instanz nutzen, verarbeiten wir die von Ihnen eingegebenen Konto- und Haushaltsdaten. Dazu können E-Mail-Adresse, Anzeigename, Listen, Aufgaben, Ausgaben, Rezepte, Termine, Notizen, Mitgliedschaften und hochgeladene Dateien gehören. Die Verarbeitung ist erforderlich, um den gewählten Dienst bereitzustellen (Art. 6 Abs. 1 lit. b DSGVO).</p>
-  <p>Kontodaten und Haushaltsinhalte werden grundsätzlich bis zur Löschung des Kontos oder Haushalts gespeichert, soweit keine gesetzlichen Pflichten oder berechtigten Sicherheitsinteressen eine vorübergehende weitere Aufbewahrung verlangen. Abgebrochene Upload-Reservierungen werden automatisch bereinigt.</p>
+  <h2>5. Konto und Anmeldung</h2>
+  <p><strong>Registrierung mit E-Mail.</strong> Beim Anlegen eines Kontos verarbeiten wir E-Mail-Adresse, den von Ihnen gewählten Namen und ein Passwort, das ausschließlich als Hash gespeichert wird. Zur Bestätigung der Adresse und zum Zurücksetzen des Passworts senden wir Ihnen E-Mails mit Codes. Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO.</p>
+  <p><strong>Anmeldung mit Google oder Apple.</strong> Wahlweise können Sie sich mit einem Google- oder Apple-Konto anmelden. Wir erhalten dann von Google (Google Ireland Ltd., Gordon House, Barrow Street, Dublin 4, Irland) bzw. Apple (Apple Distribution International Ltd., Hollyhill Industrial Estate, Cork, Irland) Ihre E-Mail-Adresse, Ihren Namen und eine Kennung des Kontos. Ihr Passwort bei diesem Anbieter sehen wir nicht. Der Anbieter erfährt, dass Sie sich bei mitlist anmelden; für diese Verarbeitung gelten seine Datenschutzbestimmungen. Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO.</p>
+  <p><strong>Gastkonten.</strong> Sie können mitlist ohne E-Mail-Adresse als Gast nutzen. Ein Gastkonto ist an das Gerät gebunden, auf dem es angelegt wurde. Bleibt ein Gastkonto 30 Tage lang ungenutzt, wird es gesperrt; nach weiteren 180 Tagen ohne Anmeldung wird es dauerhaft anonymisiert. Rechtsgrundlage: Art. 6 Abs. 1 lit. b und lit. f DSGVO (Bereinigung verwaister Konten).</p>
+  <p><strong>Sitzungen.</strong> Nach der Anmeldung speichert die App ein Zugriffstoken und ein Erneuerungstoken lokal auf Ihrem Gerät bzw. im Speicher Ihres Browsers. Diese Tokens sind technisch notwendig, damit Sie angemeldet bleiben. Beim Abmelden oder beim Ändern des Passworts werden sie ungültig.</p>
 
-  <h2>6. Auftragsverarbeiter und technische Empfänger</h2>
-  <p>Für die offizielle Instanz können insbesondere PlanetScale (PostgreSQL-Datenbank), Cloudflare (Website, Netzwerk und R2-Objektspeicher) sowie ein Infrastruktur-Anbieter für den Go-API-Dienst eingesetzt werden. E-Mail- und Push-Anbieter werden nur genutzt, wenn die jeweilige Funktion aktiviert ist. Die aktuelle technische Aufstellung wird auf der <a href="/transparency">Transparenzseite</a> veröffentlicht.</p>
-  <p>Bei Übermittlungen in Drittländer werden geeignete Garantien wie Angemessenheitsbeschlüsse oder EU-Standardvertragsklauseln zugrunde gelegt, soweit erforderlich.</p>
+  <h2>6. Haushaltsdaten</h2>
+  <p>Der Zweck von mitlist ist es, einen Haushalt gemeinsam zu organisieren. Dafür speichern wir die Inhalte, die Sie und die anderen Mitglieder Ihres Haushalts anlegen: Listen und Einträge, Aufgaben und ihre Erledigung, Ausgaben, Beteiligungen und Ausgleichszahlungen, Rezepte und Essenspläne, Notizen auf der Pinnwand, Kalendereinträge, Einladungen sowie hochgeladene Fotos und Belege. Dazu kommen Metadaten wie Zeitstempel und wer welchen Eintrag angelegt oder geändert hat. Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO.</p>
+  <p><strong>Sichtbarkeit.</strong> Inhalte eines Haushalts sind für alle Mitglieder dieses Haushalts sichtbar. Wenn Sie Daten über andere Personen eintragen, etwa den Namen eines Mitbewohners in einer Ausgabe, tun Sie das in eigener Verantwortung; tragen Sie nur Angaben ein, die diese Personen in einem gemeinsamen Haushalt erwarten würden.</p>
+  <p><strong>Finanzdaten.</strong> Ausgaben, Beträge und Ausgleiche sind Angaben, die Sie selbst machen. Wir verbinden mitlist nicht mit Bankkonten und erhalten keine Zahlungsdaten aus dem Ausgabenmodul.</p>
+  <p><strong>Anhänge.</strong> Hochgeladene Dateien werden in einem Objektspeicher von Cloudflare (R2) abgelegt und nur über den Dienst an berechtigte Haushaltsmitglieder ausgeliefert. Abgebrochene Uploads werden automatisch bereinigt. Pro Haushalt stehen 1 GB Speicher und pro Datei 10 MB zur Verfügung.</p>
 
-  <h2>7. Selbst gehostete Instanzen</h2>
-  <p>Bei einer selbst gehosteten Instanz ist deren Betreiber für die Datenverarbeitung verantwortlich. Das mitlist-Projekt erhält aus solchen Instanzen standardmäßig keine Haushaltsdaten, Analysewerte oder Telemetrie. Optionale Fehlerberichte werden nur an den vom Betreiber konfigurierten Endpunkt gesendet.</p>
+  <h2>7. Funktionen, die Daten an Dritte senden oder besonders verarbeiten</h2>
+  <p><strong>Scanner für Belege, Listen und Rezepte.</strong> Die Texterkennung läuft vollständig auf Ihrem Gerät. Fotos, die Sie scannen, verlassen das Gerät nur, wenn Sie sie anschließend selbst als Anhang speichern. Es wird kein externer KI-Dienst eingebunden.</p>
+  <p><strong>Rezept-Import per Link.</strong> Wenn Sie ein Rezept über eine Web-Adresse importieren, ruft unser Server diese Adresse ab und liest Titel, Zutaten und Schritte aus. Die Website des Rezepts sieht dabei die Adresse unseres Servers, nicht Ihre. Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO.</p>
+  <p><strong>Einladungslinks.</strong> Einladungen in einen Haushalt und geteilte Rezepte sind Links mit einem zufälligen Token. Wer den Link erhält, kann das Ziel öffnen; geben Sie Einladungslinks nur an Personen weiter, die Sie in Ihrem Haushalt haben möchten.</p>
+  <p><strong>Home-Assistant-Integration.</strong> Wenn Sie Ihre eigene Home-Assistant-Installation mit mitlist verbinden, greift diese mit einem von Ihnen erzeugten Zugangsschlüssel auf Ihre Haushaltsdaten zu. Sie können den Schlüssel jederzeit in der App widerrufen. Für die Home-Assistant-Installation sind Sie selbst verantwortlich.</p>
 
-  <h2>8. Externe Links</h2>
-  <p>Beim Anklicken externer Links, etwa zu GitHub, gelten die Datenschutzbestimmungen des jeweiligen Anbieters.</p>
+  <h2>8. Benachrichtigungen und E-Mails</h2>
+  <p><strong>Push-Benachrichtigungen.</strong> Push ist freiwillig und lässt sich in den Einstellungen abschalten. Für die iOS- und Android-Apps nutzen wir Firebase Cloud Messaging (Google Ireland Ltd.) und den Apple-Benachrichtigungsdienst; dafür speichern wir eine Gerätekennung (Push-Token), die beim Abmelden gelöscht wird. Für die Web-App nutzen wir den Web-Push-Dienst Ihres Browsers (Web Push mit VAPID). Über diese Dienste wird der Text der jeweiligen Benachrichtigung übertragen, etwa „Aufgabe fällig“ oder „neue Ausgabe“. Rechtsgrundlage: Art. 6 Abs. 1 lit. a DSGVO (Ihre Freigabe im Betriebssystem bzw. Browser) und lit. b DSGVO.</p>
+  <p><strong>E-Mails.</strong> Bestätigungs-, Passwort- und Einladungs-E-Mails sowie, falls aktiviert, eine wöchentliche Zusammenfassung Ihres Haushalts versenden wir über Resend (Resend, Inc., 2261 Market Street #5039, San Francisco, CA 94114, USA). Resend erhält dafür Ihre E-Mail-Adresse und den Inhalt der Nachricht. Wir senden keine Werbe-Mails. Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO.</p>
 
-  <h2>9. Ihre Rechte</h2>
-  <p>Sie haben insbesondere Rechte auf Auskunft (Art. 15 DSGVO), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung (Art. 18), Datenübertragbarkeit (Art. 20), Widerspruch (Art. 21) und Widerruf einer Einwilligung (Art. 7 Abs. 3). Eine Nachricht an <a href={`mailto:${legal.email}`}>{legal.email}</a> genügt. Außerdem können Sie sich bei einer Datenschutz-Aufsichtsbehörde beschweren (Art. 77).</p>
+  <h2>9. Premium und Zahlungen</h2>
+  <p>Haushalte mit mehr als vier Mitgliedern benötigen ein Premium-Abo. Beim Abschluss verarbeiten wir, welches Konto das Abo hält, welchem Haushalt es zugeordnet ist, Laufzeit, Status und den gezahlten Betrag. Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO; die Aufbewahrung der Abrechnungsdaten erfolgt nach Art. 6 Abs. 1 lit. c DSGVO für die Dauer der handels- und steuerrechtlichen Aufbewahrungsfristen (bis zu zehn Jahre).</p>
+  <p><strong>Kauf im Web.</strong> Zahlungen im Web wickelt Polar (Polar Software Inc., 2261 Market Street #4941, San Francisco, CA 94114, USA) als Händler (Merchant of Record) ab. Polar und dessen Zahlungsdienstleister verarbeiten Ihre Zahlungsdaten, Rechnungsanschrift und Steuerangaben; wir sehen keine vollständigen Zahlungsdaten. Damit wir das Abo Ihrem Konto zuordnen können, übermitteln wir Ihre Konto-Kennung und E-Mail-Adresse an Polar. Es gilt die <a href="https://polar.sh/legal/privacy" target="_blank" rel="noopener noreferrer">Datenschutzerklärung von Polar</a>.</p>
+  <p><strong>Kauf in der App.</strong> In den iOS- und Android-Apps läuft der Kauf über Apple bzw. Google Play. Apple und Google verarbeiten die Zahlung nach ihren eigenen Bestimmungen; wir erhalten einen Kaufbeleg mit Transaktionskennung, Produkt und Laufzeit, um Premium freizuschalten und Verlängerungen oder Kündigungen nachzuvollziehen.</p>
 
-  <h2>10. Änderungen</h2>
-  <p>Wir passen diese Erklärung an, wenn sich Dienst, Rechtslage oder eingesetzte Anbieter ändern. Die aktuelle Fassung steht auf dieser Seite.</p>
+  <h2>10. Sicherheit und Missbrauchsschutz</h2>
+  <p><strong>Cloudflare.</strong> Die Web-App und die Schnittstelle sind über Cloudflare erreichbar. Cloudflare leitet Anfragen an unseren Server weiter, wehrt Angriffe ab und verarbeitet dafür IP-Adresse und Verbindungsdaten. Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO.</p>
+  <p><strong>Turnstile.</strong> Wer im Browser ein Gastkonto anlegt, durchläuft eine unsichtbare Prüfung durch Cloudflare Turnstile, damit automatisierte Anmeldungen den Dienst nicht überlasten. Cloudflare erhält die dafür nötigen technischen Signale des Browsers; wir erhalten nur das Ergebnis der Prüfung. Das Token wird einmal geprüft und nicht mit Ihrem Konto gespeichert. Es gilt der <a href="https://www.cloudflare.com/application-services/products/turnstile-privacy-addendum/" target="_blank" rel="noopener noreferrer">Turnstile-Datenschutzzusatz</a> von Cloudflare. Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO.</p>
+  <p><strong>App Check.</strong> Die iOS- und Android-Apps weisen sich gegenüber unserem Server mit Firebase App Check (Google Ireland Ltd.) als echte App-Installation aus. Dabei werden Geräteattestierungen von Apple bzw. Google geprüft; Haushaltsdaten sind daran nicht beteiligt. Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO.</p>
+  <p><strong>Server-Protokolle.</strong> Unser Server protokolliert Fehler und sicherheitsrelevante Ereignisse, etwa fehlgeschlagene Anmeldungen, mit IP-Adresse und Zeitpunkt. Wiederholt auffällige Adressen werden vorübergehend gesperrt. Protokolle werden nach kurzer Zeit gelöscht, sofern sie nicht zur Aufklärung eines Vorfalls benötigt werden. Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO.</p>
+
+  <h2>11. Fehlerberichte</h2>
+  <p>Stürzt die App ab oder tritt ein unerwarteter Fehler auf, senden Web-App, Apps und Server einen Fehlerbericht an eine von uns betriebene GlitchTip-Instanz. Ein Bericht enthält den technischen Ablauf des Fehlers (Stack-Trace), App- und Betriebssystemversion, Gerätetyp und Umgebung. Haushaltsinhalte, Namen und E-Mail-Adressen sind bewusst nicht Teil der Berichte; Leistungs- und Nutzungsdaten werden nicht erhoben. Berichte werden nur so lange gespeichert, wie sie zur Behebung des Fehlers gebraucht werden. Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO (stabiler Betrieb).</p>
+
+  <h2>12. Feedback</h2>
+  <p><strong>In der App.</strong> Über den Feedback-Bereich in der App können Sie Wünsche und Fehler melden. Übermittelt werden Ihr Text, die Seite, auf der Sie sich befanden, App-Version, Plattform und Sprache. Diese Meldungen speichern wir in unserem Anfragen-System, das auf Cloudflare Workers und Cloudflare D1 läuft.</p>
+  <p><strong>Feedback-Board.</strong> Das öffentliche Board unter feedback.mitlist.me kann ohne Anmeldung gelesen werden. Zum Abstimmen, Posten und Kommentieren melden Sie sich mit Ihrem mitlist-Konto an; das Board setzt dann ein technisch notwendiges Sitzungs-Cookie. Bei Beiträgen und Kommentaren speichern wir Ihre Konto-Kennung und zeigen Ihren Vornamen an. Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO.</p>
+
+  <h2>13. Hosting, Empfänger und Drittlandübermittlung</h2>
+  <p>Der Dienst (Web-App, Schnittstelle und Datenbank) läuft auf einem von uns verwalteten Server in einem Rechenzentrum in Heerlen, Niederlande. Datenbank-Sicherungen werden verschlüsselt angelegt und nach einem begrenzten Zeitraum überschrieben. Folgende Dienstleister verarbeiten Daten in unserem Auftrag oder als eigenständige Verantwortliche:</p>
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr><th>Empfänger</th><th>Zweck</th><th>Sitz / Übermittlung</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Server-Anbieter (Rechenzentrum Heerlen)</td><td>Betrieb von Web-App, Schnittstelle und Datenbank</td><td>Niederlande (EU)</td></tr>
+        <tr><td>Cloudflare, Inc.</td><td>Website, Netzwerk und Schutz, Turnstile, Objektspeicher R2, Feedback-System (Workers, D1)</td><td>USA; EU-Standardvertragsklauseln, zertifiziert nach dem EU-US Data Privacy Framework</td></tr>
+        <tr><td>Google Ireland Ltd. (Firebase)</td><td>Push-Benachrichtigungen, App Check, Anmeldung mit Google</td><td>Irland; Übermittlungen an Google LLC (USA) auf Basis des EU-US Data Privacy Framework und Standardvertragsklauseln</td></tr>
+        <tr><td>Apple Distribution International Ltd.</td><td>Anmeldung mit Apple, Push auf iOS, In-App-Kauf</td><td>Irland; Übermittlungen an Apple Inc. (USA) auf Basis des EU-US Data Privacy Framework</td></tr>
+        <tr><td>Resend, Inc.</td><td>Versand von Transaktions-E-Mails</td><td>USA; EU-Standardvertragsklauseln</td></tr>
+        <tr><td>Polar Software Inc.</td><td>Zahlungsabwicklung für Premium im Web (Merchant of Record)</td><td>USA; eigenständiger Verantwortlicher für die Zahlungsabwicklung</td></tr>
+        <tr><td>Google Play / Apple App Store</td><td>Vertrieb der Apps, In-App-Kauf</td><td>siehe die Datenschutzbestimmungen des jeweiligen Stores</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Soweit Daten in Länder außerhalb des EWR übermittelt werden, stützen wir das auf Angemessenheitsbeschlüsse der EU-Kommission (Art. 45 DSGVO, insbesondere das EU-US Data Privacy Framework) oder auf die EU-Standardvertragsklauseln (Art. 46 Abs. 2 lit. c DSGVO). Die aktuelle technische Aufstellung veröffentlichen wir auf der <a href="/transparency">Transparenzseite</a>.</p>
+
+  <h2>14. Speicherdauer und Löschung</h2>
+  <ul>
+    <li><strong>Konto und Haushaltsinhalte</strong> bleiben gespeichert, solange Ihr Konto besteht.</li>
+    <li><strong>Kontolöschung.</strong> Wenn Sie Ihr Konto in der App löschen, werden E-Mail-Adresse, Name, Passwort und Profilbild sofort entfernt, alle Sitzungen beendet und das Konto dauerhaft anonymisiert. Inhalte, die Sie in einen gemeinsamen Haushalt eingetragen haben, bleiben diesem Haushalt für die übrigen Mitglieder erhalten, sind aber nicht mehr Ihrem Konto zugeordnet. Löschen Sie Inhalte oder den Haushalt vorher selbst, wenn Sie das nicht möchten.</li>
+    <li><strong>Haushalte</strong> und ihre Inhalte werden gelöscht, wenn der Haushalt gelöscht wird.</li>
+    <li><strong>Gastkonten</strong> werden nach 30 Tagen Inaktivität gesperrt und nach weiteren 180 Tagen anonymisiert.</li>
+    <li><strong>Abrechnungsdaten</strong> zu Premium bewahren wir für die gesetzlichen Fristen von bis zu zehn Jahren auf.</li>
+    <li><strong>Push-Token</strong> werden beim Abmelden gelöscht, <strong>Protokolle</strong> und <strong>Fehlerberichte</strong> nach kurzer Zeit.</li>
+    <li><strong>Sicherungen</strong> werden nach einem begrenzten Zeitraum überschrieben; gelöschte Daten verschwinden damit auch aus den Sicherungen.</li>
+  </ul>
+  <p><strong>Datenexport.</strong> Sie können Ihre Ausgaben jederzeit als CSV oder JSON aus der App exportieren. Weitere Daten stellen wir Ihnen auf Anfrage in einem gängigen Format bereit (Art. 20 DSGVO).</p>
+
+  <h2>15. Selbst gehostete Instanzen</h2>
+  <p>Wer mitlist auf einem eigenen Server betreibt, ist für die dortige Datenverarbeitung verantwortlich. Das mitlist-Projekt erhält aus solchen Instanzen keine Haushaltsdaten, keine Nutzungsdaten und keine Fehlerberichte; optionale Fehlerberichte gehen nur an den vom Betreiber konfigurierten Endpunkt. Welche Dienste eine Instanz nutzt, entscheidet ihr Betreiber; die Dokumentation im Quellcode beschreibt jede Option.</p>
+
+  <h2>16. Kinder und Jugendliche</h2>
+  <p>Der offizielle Dienst richtet sich an Personen ab 16 Jahren. Jüngere Personen dürfen ihn nur mit Zustimmung eines Erziehungsberechtigten nutzen. Erfahren wir, dass ein Konto ohne diese Zustimmung angelegt wurde, löschen wir es.</p>
+
+  <h2>17. Ihre Rechte</h2>
+  <p>Sie haben das Recht auf Auskunft (Art. 15 DSGVO), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung der Verarbeitung (Art. 18), Datenübertragbarkeit (Art. 20) und Widerspruch gegen Verarbeitungen auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO (Art. 21). Eine erteilte Einwilligung können Sie jederzeit mit Wirkung für die Zukunft widerrufen (Art. 7 Abs. 3). Eine formlose Nachricht an <a href={`mailto:${legal.email}`}>{legal.email}</a> genügt; Konto und Daten können Sie außerdem jederzeit selbst in der App löschen.</p>
+  <p>Sie haben zudem das Recht, sich bei einer Datenschutz-Aufsichtsbehörde zu beschweren (Art. 77 DSGVO). Für uns zuständig ist der Hessische Beauftragte für Datenschutz und Informationsfreiheit, Gustav-Stresemann-Ring 1, 65189 Wiesbaden, <a href="https://datenschutz.hessen.de" target="_blank" rel="noopener noreferrer">datenschutz.hessen.de</a>. Sie können sich auch an die Behörde Ihres Wohnorts wenden.</p>
+
+  <h2>18. Änderungen</h2>
+  <p>Wir passen diese Erklärung an, wenn sich der Dienst, die eingesetzten Dienstleister oder die Rechtslage ändern. Die jeweils aktuelle Fassung steht unter mitlist.me/datenschutz; das Datum am Anfang zeigt den Stand. Bei wesentlichen Änderungen informieren wir Sie in der App oder per E-Mail.</p>
 </LegalPage>

@@ -32,4 +32,12 @@ const { title, description } = Astro.props;
   .legal-doc :global(p) { margin-bottom: 1rem; }
   .legal-doc :global(ul) { padding-left: 1.25rem; }
   .legal-doc :global(.legal-meta) { color: var(--ink-3); font-weight: 600; }
+  .legal-doc :global(.legal-lang) { color: var(--ink-3); font-size: 0.95rem; }
+  .legal-doc :global(h3) { font-size: 1.1rem; margin: 1.5rem 0 0.5rem; }
+  .legal-doc :global(.table-scroll) { overflow-x: auto; margin-bottom: 1rem; }
+  .legal-doc :global(table) { border-collapse: collapse; width: 100%; font-size: 0.95rem; }
+  .legal-doc :global(th),
+  .legal-doc :global(td) { text-align: left; padding: 0.5rem 0.75rem; border: 1px solid var(--line); vertical-align: top; line-height: 1.5; }
+  .legal-doc :global(th) { background: var(--paper-2); }
+  .legal-doc :global(.legal-box) { border: 2px solid var(--line); padding: 1rem 1.25rem; margin: 1rem 0 1.5rem; background: var(--paper-2); }
 </style>

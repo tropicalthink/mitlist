@@ -3008,7 +3008,7 @@
   "@accountTermsTitle": {
     "description": "Bottom sheet title for terms"
   },
-  "accountTermsBody": "Gebruik mitlist verantwoord en respecteer de privacy van je huisgenoten. Misbruik gedeelde functies of gegevens niet. mitlist wordt aangeboden zonder garanties.",
+  "accountTermsBody": "mitlist wordt door tropicalthink aangeboden onder de Gebruiksvoorwaarden op mitlist.me/terms. Huishoudens met maximaal vier leden gebruiken de gehoste dienst gratis; grotere huishoudens hebben een Premium-abonnement nodig. Gebruik de dienst verantwoord en respecteer de privacy van de mensen met wie je een huishouden deelt.",
   "@accountTermsBody": {
     "description": "Terms of service body text"
   },
@@ -4689,10 +4689,11 @@
   "@authSignupTermsP2": {
     "description": "Terms paragraph 2"
   },
-  "authSignupTermsP3": "De app wordt geleverd zoals hij is terwijl het product nog evolueert. Bewaar zelf back-ups van alles wat belangrijk is.",
+  "authSignupTermsP3": "Huishoudens met maximaal vier leden gebruiken de gehoste dienst gratis. Grotere huishoudens hebben een Premium-abonnement nodig, dat je op elk moment kunt opzeggen. Bewaar zelf een export van alles wat belangrijk is.",
   "@authSignupTermsP3": {
     "description": "Terms paragraph 3"
   },
+  "legalReadFullText": "Volledige tekst lezen",
   "authSignupTermsPrefix": "Door een account aan te maken ga je akkoord met onze ",
   "@authSignupTermsPrefix": {
     "description": "Text before terms link"
