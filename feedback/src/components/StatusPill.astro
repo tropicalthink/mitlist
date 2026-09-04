@@ -1,0 +1,16 @@
+---
+import type { BoardStatus } from "../lib/board";
+import { STATUS } from "../lib/format";
+
+interface Props {
+  status: BoardStatus;
+  withHint?: boolean;
+}
+const { status, withHint = false } = Astro.props;
+const meta = STATUS[status];
+---
+
+<span class:list={["pill", meta.className]} title={withHint ? meta.hint : undefined}>
+  <span class="dot" aria-hidden="true"></span>
+  {meta.label}
+</span>

@@ -1,0 +1,55 @@
+---
+import "../styles/global.css";
+import SiteHeader, { type Tab } from "../components/SiteHeader.astro";
+import SiteFooter from "../components/SiteFooter.astro";
+
+interface Props {
+  title?: string;
+  description?: string;
+  tab?: Tab | null;
+  /** Detail pages set this so a shared link previews the post itself. */
+  ogTitle?: string;
+}
+
+const SITE_NAME = "mitlist feedback";
+const {
+  title,
+  description = "Vote on what mitlist builds next, report what is broken, and follow what shipped. The same board as in the app, drawn live from our tracker.",
+  tab = null,
+  ogTitle,
+} = Astro.props;
+
+const fullTitle = title ? `${title} · ${SITE_NAME}` : `${SITE_NAME} — what we are building next`;
+const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url).toString();
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#f97316" />
+    <link rel="canonical" href={canonical} />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={SITE_NAME} />
+    <meta property="og:title" content={ogTitle ?? fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta name="twitter:card" content="summary" />
+  </head>
+  <body>
+    <SiteHeader active={tab} />
+    <main>
+      <slot />
+    </main>
+    <SiteFooter />
+    <script>
+      import "../scripts/board";
+    </script>
+  </body>
+</html>

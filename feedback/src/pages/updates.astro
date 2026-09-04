@@ -1,0 +1,240 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { listUpdates, type BoardUpdate } from "../lib/board";
+import { KIND, countLabel, isoDate, longDate, monthLabel } from "../lib/format";
+import { friendlyError } from "../lib/http";
+
+let updates: BoardUpdate[] = [];
+let loadError: string | null = null;
+try {
+  updates = await listUpdates();
+} catch (error) {
+  loadError = friendlyError(error).message;
+}
+
+// Newest first, grouped under the release staff labelled it with, or the
+// month it shipped when there is no label. A release is one group even when
+// an unlabelled change shipped in the middle of it; groups are ordered by
+// their newest entry.
+interface Group {
+  title: string;
+  subtitle: string;
+  items: BoardUpdate[];
+}
+const groupsByKey = new Map<string, Group>();
+for (const update of updates) {
+  const key = update.release ? `release:${update.release}` : `month:${monthLabel(update.shippedAt)}`;
+  let group = groupsByKey.get(key);
+  if (!group) {
+    group = {
+      title: update.release ? `Version ${update.release.replace(/^v/i, "")}` : monthLabel(update.shippedAt),
+      subtitle: update.release ? monthLabel(update.shippedAt) : "",
+      items: [],
+    };
+    groupsByKey.set(key, group);
+  }
+  group.items.push(update);
+}
+const groups = [...groupsByKey.values()];
+---
+
+<Layout tab="updates" title="Updates" description="Everything mitlist has shipped from the feedback board, newest first.">
+  <section class="hero">
+    <div class="wrap">
+      <span class="stamp">Updates</span>
+      <h1 class="h1">What shipped.</h1>
+      <p class="lead">
+        Every request that went from the board into the app, most recent at the top. If you asked for
+        it, this is where it lands. Open the app to get the newest version.
+      </p>
+    </div>
+  </section>
+
+  <section class="wrap timeline">
+    {loadError && <p class="notice notice--error">{loadError}</p>}
+    {
+      !loadError && updates.length === 0 && (
+        <div class="panel">
+          <div class="panel__body empty">
+            <h2 class="h2">Nothing shipped from the board yet</h2>
+            <p class="lead">The first thing that does will show up here. See what is <a href="/roadmap">in progress</a>.</p>
+          </div>
+        </div>
+      )
+    }
+    {
+      groups.map((group) => (
+        <section class="group">
+          <header class="group__head">
+            <h2 class="group__title">{group.title}</h2>
+            {group.subtitle && <span class="meta">{group.subtitle}</span>}
+            <span class="meta mono group__count">{countLabel(group.items.length, "change")}</span>
+          </header>
+          <ol class="entries">
+            {group.items.map((update) => (
+              <li class="entry" id={update.id}>
+                <div class="entry__rail" aria-hidden="true">
+                  <span class="entry__dot" />
+                </div>
+                <article class="entry__card">
+                  <p class="entry__kicker meta">
+                    <span class:list={["pill", update.kind === "bug" ? "pill--bug" : "pill--feature"]}>
+                      {update.kind === "bug" ? "Fixed" : "New"}
+                    </span>
+                    <time datetime={isoDate(update.shippedAt)}>{longDate(update.shippedAt)}</time>
+                  </p>
+                  <h3 class="entry__title">
+                    <a href={`/p/${update.id}`}>{update.title}</a>
+                  </h3>
+                  {update.description && <p class="entry__desc">{update.description}</p>}
+                  {update.staffNote && (
+                    <blockquote class="entry__note">
+                      <span class="pill pill--team">mitlist team</span>
+                      <p>{update.staffNote}</p>
+                    </blockquote>
+                  )}
+                  <p class="entry__foot meta">
+                    {KIND[update.kind].label} · {countLabel(update.voteCount, "vote")} ·{" "}
+                    {countLabel(update.commentCount, "comment")}
+                  </p>
+                </article>
+              </li>
+            ))}
+          </ol>
+        </section>
+      ))
+    }
+  </section>
+</Layout>
+
+<style>
+  .hero {
+    padding-block: clamp(2rem, 1.5rem + 2vw, 3.2rem) 1.8rem;
+  }
+  .hero .stamp {
+    margin-bottom: 1rem;
+  }
+  .hero .h1 {
+    margin-bottom: 0.7rem;
+  }
+  .timeline {
+    max-width: 52rem;
+    display: grid;
+    gap: 2.2rem;
+  }
+  .empty {
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+  }
+  .empty .lead {
+    margin: 0.6rem auto 0;
+  }
+  .empty a {
+    color: var(--ink);
+  }
+  .group__head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+    position: sticky;
+    top: 64px;
+    background: var(--paper-2);
+    padding-block: 0.6rem;
+    border-bottom: var(--border);
+    z-index: 1;
+  }
+  .group__title {
+    font-size: 1.35rem;
+    letter-spacing: -0.03em;
+  }
+  .group__count {
+    margin-left: auto;
+  }
+  .entries {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .entry {
+    display: grid;
+    grid-template-columns: 2rem minmax(0, 1fr);
+    gap: 0.5rem;
+  }
+  .entry__rail {
+    position: relative;
+  }
+  .entry__rail::before {
+    content: "";
+    position: absolute;
+    left: calc(50% - 1px);
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--ink);
+  }
+  .entry:last-child .entry__rail::before {
+    bottom: auto;
+    height: 2.2rem;
+  }
+  .entry__dot {
+    position: absolute;
+    left: calc(50% - 7px);
+    top: 1.55rem;
+    width: 14px;
+    height: 14px;
+    background: var(--orange);
+    border: 2px solid var(--ink);
+  }
+  .entry__card {
+    margin: 1rem 0;
+    padding: 1rem 1.1rem;
+    background: var(--paper);
+    border: var(--border);
+    box-shadow: var(--shadow-sm);
+    display: grid;
+    gap: 0.5rem;
+  }
+  .entry__kicker {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+  }
+  .entry__title {
+    font-size: 1.2rem;
+    letter-spacing: -0.02em;
+  }
+  .entry__title a {
+    text-decoration: none;
+  }
+  .entry__title a:hover {
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+  }
+  .entry__desc {
+    color: var(--ink-3);
+    white-space: pre-line;
+    max-width: 70ch;
+  }
+  .entry__note {
+    margin: 0.3rem 0 0;
+    padding: 0.8rem 0.9rem;
+    background: var(--note-yellow);
+    border: var(--border);
+    display: grid;
+    gap: 0.4rem;
+    max-width: 70ch;
+  }
+  .entry__note p {
+    white-space: pre-line;
+  }
+  .entry__note .pill {
+    justify-self: start;
+  }
+  @media (max-width: 480px) {
+    .entry {
+      grid-template-columns: 1.25rem minmax(0, 1fr);
+    }
+  }
+</style>

@@ -1,0 +1,593 @@
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("../../../frontend/assets/fonts/SpaceGrotesk.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("../../../frontend/assets/fonts/JetBrainsMono.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+}
+
+/* ============================================================
+   mitlist feedback — the same desk as mitlist.me and the app
+   (lib/theme/colors.dart): warm paper, hard corners, 2px ink
+   borders, flat offset shadows, no gradients.
+   ============================================================ */
+
+:root {
+  --ink: #1a1714;
+  --ink-2: #26211d;
+  --ink-3: #453d36;
+  --ink-4: #6b6259;
+  --paper: #fffcf7;
+  --paper-2: #f7f4ec;
+  --paper-3: #ede8dc;
+  --line: #dcd6c7;
+  --line-2: #bab1a1;
+
+  --orange-50: #fff7ed;
+  --orange-100: #ffedd5;
+  --orange-300: #fdba74;
+  --orange: #f97316;
+  --orange-600: #ea580c;
+  --orange-700: #c2410c;
+
+  --success: #10b981;
+  --success-700: #047857;
+  --error: #ef4444;
+  --error-700: #b91c1c;
+  --warning: #f59e0b;
+  --warning-700: #b45309;
+
+  --note-yellow: #fff9c4;
+  --note-peach: #ffe0b2;
+  --note-mint: #c8e6c9;
+  --note-sky: #b3e5fc;
+  --note-blush: #f8bbd0;
+  --note-lavender: #e1bee7;
+
+  --font: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --shadow-sm: 2px 2px 0 var(--ink);
+  --shadow: 4px 4px 0 var(--ink);
+  --shadow-lg: 6px 6px 0 var(--ink);
+
+  --z-nav: 100;
+  --z-toast: 200;
+
+  --border: 2px solid var(--ink);
+  --border-soft: 2px solid var(--line);
+  --maxw: 1180px;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font);
+  background: var(--paper-2);
+  color: var(--ink);
+  font-size: 1rem;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+main {
+  flex: 1;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+
+p {
+  margin: 0;
+  text-wrap: pretty;
+}
+
+a {
+  color: inherit;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 3px solid var(--orange-600);
+  outline-offset: 2px;
+}
+
+.wrap {
+  width: 100%;
+  max-width: var(--maxw);
+  margin-inline: auto;
+  padding-inline: clamp(1rem, 4vw, 2.5rem);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Honeypot: off-screen for people, a regular text field for scrapers. */
+.hp {
+  position: absolute;
+  left: -10000px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* ---------- Type scale ---------- */
+.h1 {
+  font-size: clamp(1.9rem, 1.3rem + 2.4vw, 2.9rem);
+  letter-spacing: -0.035em;
+}
+
+.h2 {
+  font-size: clamp(1.35rem, 1.1rem + 1vw, 1.7rem);
+  letter-spacing: -0.025em;
+}
+
+.lead {
+  font-size: clamp(1.02rem, 0.96rem + 0.3vw, 1.15rem);
+  color: var(--ink-3);
+  max-width: 56ch;
+}
+
+.meta {
+  font-size: 0.86rem;
+  color: var(--ink-4);
+  font-weight: 500;
+}
+
+.mono {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The rubber-stamp label — a real app motif, used once per page at most */
+.stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5ch;
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--orange-700);
+  border: 2px solid var(--orange-600);
+  padding: 0.25rem 0.6rem;
+  background: var(--orange-50);
+  transform: rotate(-2deg);
+}
+
+/* ---------- Buttons ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6ch;
+  font-weight: 600;
+  font-size: 0.95rem;
+  line-height: 1.2;
+  padding: 0.65rem 1.1rem;
+  border: var(--border);
+  background: var(--paper);
+  color: var(--ink);
+  text-decoration: none;
+  box-shadow: var(--shadow-sm);
+  transition:
+    transform 0.12s var(--ease),
+    box-shadow 0.12s var(--ease),
+    background 0.12s var(--ease);
+}
+
+.btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: var(--shadow);
+}
+
+.btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+.btn:disabled {
+  cursor: default;
+  opacity: 0.6;
+  transform: none;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn--primary {
+  background: var(--orange);
+}
+
+.btn--primary:hover {
+  background: var(--orange-300);
+}
+
+.btn--ink {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.btn--ghost {
+  box-shadow: none;
+  border-color: transparent;
+  background: transparent;
+}
+
+.btn--ghost:hover {
+  border-color: var(--ink);
+  transform: none;
+  box-shadow: none;
+}
+
+.btn--sm {
+  padding: 0.45rem 0.8rem;
+  font-size: 0.88rem;
+}
+
+.btn svg {
+  width: 1.05em;
+  height: 1.05em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---------- Chips (filters) ---------- */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5ch;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-decoration: none;
+  border: var(--border);
+  background: var(--paper);
+  color: var(--ink);
+  white-space: nowrap;
+  transition: background 0.12s var(--ease);
+}
+
+.chip:hover {
+  background: var(--paper-3);
+}
+
+.chip[aria-current="true"],
+.chip.is-active {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.chip__count {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  font-weight: 500;
+  opacity: 0.75;
+}
+
+.dot {
+  width: 0.55em;
+  height: 0.55em;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+
+/* ---------- Status pills ---------- */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45ch;
+  padding: 0.12rem 0.55rem;
+  border: 2px solid var(--ink);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  background: var(--paper);
+}
+
+.pill--review {
+  background: var(--note-sky);
+}
+
+.pill--progress {
+  background: var(--orange);
+}
+
+.pill--shipped {
+  background: var(--note-mint);
+}
+
+.pill--bug {
+  background: var(--paper);
+  border-color: var(--error);
+  color: var(--error-700);
+}
+
+.pill--feature {
+  background: var(--paper);
+  border-color: var(--line-2);
+  color: var(--ink-3);
+}
+
+.pill--team {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.pill--you {
+  background: var(--note-yellow);
+}
+
+/* ---------- Vote button ---------- */
+.vote {
+  margin: 0;
+}
+
+.vote__btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.05rem;
+  min-width: 3.4rem;
+  padding: 0.4rem 0.5rem 0.35rem;
+  border: var(--border);
+  background: var(--paper);
+  box-shadow: var(--shadow-sm);
+  font-weight: 700;
+  line-height: 1;
+  transition:
+    transform 0.12s var(--ease),
+    box-shadow 0.12s var(--ease),
+    background 0.12s var(--ease);
+}
+
+.vote__btn svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.vote__count {
+  font-family: var(--mono);
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.vote__btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: var(--shadow);
+}
+
+.vote__btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+.vote.is-voted .vote__btn,
+.vote__btn:disabled {
+  background: var(--orange);
+  cursor: default;
+  transform: none;
+  box-shadow: var(--shadow-sm);
+}
+
+/* ---------- Panels ---------- */
+.panel {
+  background: var(--paper);
+  border: var(--border);
+  box-shadow: var(--shadow);
+}
+
+.panel--flat {
+  box-shadow: none;
+}
+
+.panel__head {
+  padding: 0.75rem 1rem;
+  border-bottom: var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.panel__title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.panel__body {
+  padding: 1rem;
+}
+
+.notice {
+  padding: 0.8rem 1rem;
+  border: var(--border);
+  background: var(--note-yellow);
+  font-weight: 500;
+  box-shadow: var(--shadow-sm);
+}
+
+.notice--error {
+  background: var(--note-blush);
+}
+
+.notice--ok {
+  background: var(--note-mint);
+}
+
+/* ---------- Forms ---------- */
+.field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.field__label {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.field__hint {
+  font-size: 0.85rem;
+  color: var(--ink-4);
+}
+
+.input,
+.textarea {
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  border: var(--border);
+  background: var(--paper);
+  box-shadow: inset 2px 2px 0 var(--paper-3);
+}
+
+.input::placeholder,
+.textarea::placeholder {
+  color: var(--ink-4);
+}
+
+.textarea {
+  min-height: 8rem;
+  resize: vertical;
+}
+
+.segmented {
+  display: inline-flex;
+  border: var(--border);
+  background: var(--paper);
+}
+
+.segmented label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6ch;
+  padding: 0.55rem 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-right: var(--border);
+  transition: background 0.12s var(--ease);
+}
+
+.segmented label:last-child {
+  border-right: none;
+}
+
+.segmented input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  cursor: pointer;
+}
+
+.segmented label:has(input:checked) {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.segmented label:has(input:focus-visible) {
+  outline: 3px solid var(--orange-600);
+  outline-offset: -3px;
+}
+
+/* ---------- Toast ---------- */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 1.25rem;
+  transform: translateX(-50%);
+  z-index: var(--z-toast);
+  padding: 0.7rem 1rem;
+  border: var(--border);
+  background: var(--ink);
+  color: var(--paper);
+  font-weight: 600;
+  box-shadow: 4px 4px 0 var(--orange);
+  max-width: min(92vw, 30rem);
+}
+
+/* ---------- Motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

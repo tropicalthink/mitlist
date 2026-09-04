@@ -1,0 +1,18 @@
+# build output
+dist/
+# generated types (astro, wrangler types)
+.astro/
+worker-configuration.d.ts
+# local wrangler state
+.wrangler/
+
+# dependencies
+node_modules/
+
+# logs
+npm-debug.log*
+
+# local secrets for `astro dev` / `wrangler dev`
+.dev.vars
+.env
+.env.*

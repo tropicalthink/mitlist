@@ -1,0 +1,17 @@
+---
+interface Props {
+  id: string;
+  count: number;
+  title: string;
+}
+const { id, count, title } = Astro.props;
+---
+
+<!-- A real form, so voting works before (or without) the page script; the
+     script takes over the submit and updates the count in place. -->
+<form class="vote" method="post" action={`/api/posts/${id}/vote`} data-vote={id}>
+  <button class="vote__btn" type="submit" aria-label={`Upvote ${title}`}>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"></path></svg>
+    <span class="vote__count" data-count>{count}</span>
+  </button>
+</form>
