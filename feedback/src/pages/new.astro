@@ -1,15 +1,18 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import { loginHref } from "../lib/http";
 
 const params = Astro.url.searchParams;
 const kind = params.get("kind") === "bug" ? "bug" : "feature";
 const error = params.get("error");
 
+const user = Astro.locals.user;
+if (!user) return Astro.redirect(loginHref(`/new${kind === "bug" ? "?kind=bug" : ""}`), 302);
+
 const ERRORS: Record<string, string> = {
   title: "Give it a short title first.",
   title_long: "Titles are at most 200 characters.",
   description_long: "Descriptions are at most 5000 characters.",
-  contact: "That email address does not look right.",
   upstream: "The board could not be reached, so nothing was posted. Try again in a moment.",
   rate_limited: "That is a lot of activity at once. Give it a minute and try again.",
 };
@@ -76,21 +79,19 @@ const message = error ? (ERRORS[error] ?? ERRORS.upstream) : null;
             }></textarea>
         </div>
 
-        <div class="field">
-          <label class="field__label" for="contact">
-            Email <span class="field__hint">(optional, never shown publicly)</span>
-          </label>
-          <input class="input" id="contact" name="contact" type="email" maxlength="255" placeholder="you@example.com" />
-          <p class="field__hint">Only the team sees it, and only to ask a follow-up question or let you know when it ships.</p>
-        </div>
-
         <div class="hp" aria-hidden="true">
           <label>Website <input type="text" name="website" tabindex="-1" autocomplete="off" /></label>
         </div>
       </div>
       <div class="form__foot">
-        <a class="btn btn--ghost" href="/">Cancel</a>
-        <button class="btn btn--primary" type="submit">Add to the board</button>
+        <p class="meta">
+          Posting as <strong>{user.firstName || user.email}</strong>. The team can reach you at your
+          account email; it is never shown publicly.
+        </p>
+        <div class="form__buttons">
+          <a class="btn btn--ghost" href="/">Cancel</a>
+          <button class="btn btn--primary" type="submit">Add to the board</button>
+        </div>
       </div>
     </form>
   </section>
@@ -125,10 +126,20 @@ const message = error ? (ERRORS[error] ?? ERRORS.upstream) : null;
   }
   .form__foot {
     display: flex;
-    justify-content: flex-end;
-    gap: 0.6rem;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.8rem 1rem;
     padding: 0.9rem 1.4rem;
     border-top: var(--border);
     background: var(--paper-2);
+  }
+  .form__foot strong {
+    color: var(--ink);
+  }
+  .form__buttons {
+    display: flex;
+    gap: 0.6rem;
+    margin-left: auto;
   }
 </style>

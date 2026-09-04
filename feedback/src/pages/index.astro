@@ -10,8 +10,9 @@ import {
   type BoardStatus,
 } from "../lib/board";
 import { KIND, STATUS, STATUS_ORDER } from "../lib/format";
-import { friendlyError } from "../lib/http";
+import { friendlyError, loginHref } from "../lib/http";
 
+const user = Astro.locals.user;
 const params = Astro.url.searchParams;
 const statusParam = params.get("status");
 const status: BoardStatus | null =
@@ -25,7 +26,7 @@ const flash = params.get("error");
 let posts: BoardPost[] = [];
 let loadError: string | null = null;
 try {
-  posts = await listPosts();
+  posts = await listPosts(user?.id);
 } catch (error) {
   loadError = friendlyError(error).message;
 }
@@ -60,6 +61,13 @@ function view(overrides: Partial<Record<"status" | "kind" | "sort" | "q", string
 }
 
 const heading = kind ? KIND[kind].plural : "All feedback";
+const newHref = `/new${kind ? `?kind=${kind}` : ""}`;
+const FLASH: Record<string, string> = {
+  rate_limited: "That is a lot of activity at once. Give it a minute and try again.",
+  not_found: "That is no longer on the board.",
+  upstream_error: "The board could not be reached. Try again in a moment.",
+  unavailable: "The board is not connected to the tracker yet. Try again later.",
+};
 ---
 
 <Layout tab="feedback" title={kind || status ? `${heading}${status ? ` · ${STATUS[status].label}` : ""}` : undefined}>
@@ -71,6 +79,7 @@ const heading = kind ? KIND[kind].plural : "All feedback";
         <p class="lead">
           Ideas and bug reports from the people who use mitlist, in the open. Upvote what matters to
           your household, add what is missing, and watch it move from under review to shipped.
+          {!user && <>Sign in with your mitlist account to join in.</>}
         </p>
       </div>
     </div>
@@ -113,7 +122,7 @@ const heading = kind ? KIND[kind].plural : "All feedback";
 
   <section class="wrap board">
     <div class="board__main">
-      {flash === "rate_limited" && <p class="notice notice--error">That is a lot of activity at once. Give it a minute and try again.</p>}
+      {flash && <p class="notice notice--error" role="alert">{FLASH[flash] ?? FLASH.upstream_error}</p>}
       {loadError && <p class="notice notice--error">{loadError}</p>}
 
       {
@@ -129,7 +138,7 @@ const heading = kind ? KIND[kind].plural : "All feedback";
                     : "Be the first to say what would make mitlist better for your household."}
               </p>
               <p style="margin-top:1rem">
-                <a class="btn btn--primary" href={`/new${kind ? `?kind=${kind}` : ""}`}>Give feedback</a>
+                <a class="btn btn--primary" href={user ? newHref : loginHref(newHref)}>Give feedback</a>
               </p>
             </div>
           </div>
@@ -147,7 +156,7 @@ const heading = kind ? KIND[kind].plural : "All feedback";
               <span class="meta mono">{visible.length}</span>
             </div>
             {visible.map((post) => (
-              <PostRow post={post} />
+              <PostRow post={post} signedIn={Boolean(user)} />
             ))}
           </div>
         )
@@ -155,7 +164,7 @@ const heading = kind ? KIND[kind].plural : "All feedback";
     </div>
 
     <aside class="board__side">
-      <a class="btn btn--primary side__cta" href={`/new${kind ? `?kind=${kind}` : ""}`}>
+      <a class="btn btn--primary side__cta" href={newHref}>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
         Give feedback
       </a>
@@ -181,7 +190,7 @@ const heading = kind ? KIND[kind].plural : "All feedback";
           <strong>How it works.</strong> New posts start under review. When we pick something up it
           moves to in progress, and when it ships it lands on the
           <a href="/updates">Updates</a> page. The same board lives in the app under You → Feature
-          board.
+          board, and your votes are shared between the two.
         </p>
         <p class="meta side__actions">
           <button class="btn btn--ghost btn--sm" type="button" data-copy-link={Astro.url.toString()}>

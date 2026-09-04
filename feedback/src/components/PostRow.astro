@@ -6,14 +6,15 @@ import VoteButton from "./VoteButton.astro";
 
 interface Props {
   post: BoardPost;
+  signedIn: boolean;
 }
-const { post } = Astro.props;
+const { post, signedIn } = Astro.props;
 const href = `/p/${post.id}`;
 const summary = excerpt(post.description, 220);
 ---
 
 <article class="row" data-post={post.id}>
-  <VoteButton id={post.id} count={post.voteCount} title={post.title} />
+  <VoteButton id={post.id} count={post.voteCount} title={post.title} voted={post.hasVoted} signedIn={signedIn} />
   <div class="row__body">
     <p class="row__kicker meta">
       <span class:list={["pill", post.kind === "bug" ? "pill--bug" : "pill--feature"]}>

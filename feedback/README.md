@@ -20,33 +20,54 @@ Visual system is the same neo-brutalist warm paper as `../landing` and the app.
 ```
 src/
 ├── lib/board.ts        # reqtrack client: reads (cached 30s), writes (evict), types
-├── lib/voter.ts        # random-id cookie so a vote counts once per browser
+├── lib/mitlist.ts      # mitlist auth API: login, OAuth handoff, refresh, me, logout
+├── lib/session.ts      # token-pair cookie, rotation, /auth/me check
+├── middleware.ts       # puts the signed-in user on Astro.locals for every request
 ├── lib/http.ts         # form-or-JSON helpers shared by the API routes
 ├── lib/format.ts       # status labels, relative dates, excerpts
 ├── pages/index.astro   # Feedback: list, status/kind filters, sort, search
 ├── pages/roadmap.astro # Under review / In progress / Shipped columns
 ├── pages/updates.astro # Changelog from GET /board/updates, grouped by release
-├── pages/new.astro     # Post form
-├── pages/p/[id].astro  # Post detail and conversation
-├── pages/api/          # POST posts, PUT/POST vote, POST comments
-└── scripts/board.ts    # progressive enhancement: votes without reload, "You" marks
+├── pages/login.astro   # Sign-in: password form + Google/Apple buttons
+├── pages/auth/callback.astro  # OAuth landing: hands the code to /api/auth/handoff
+├── pages/new.astro     # Post form (signed in only)
+├── pages/p/[id].astro  # Post detail, conversation, delete-own-comment
+├── pages/api/          # auth (login/handoff/logout), posts, vote add/remove, comments add/delete
+└── scripts/board.ts    # progressive enhancement: vote toggles and comment deletes without reload
 ```
 
-### Identity without accounts
+### Sign-in
 
-There are no logins. The first time a visitor votes, posts, or comments, the
-API sets a random `web_…` id in an HttpOnly cookie and sends that as the
-`voterRef`; reqtrack stores only a hash. The pages themselves are cached
-without any per-visitor state, so the browser remembers in `localStorage` which
-posts it upvoted and which comments it wrote, purely to highlight them. Losing
-that only loses the highlight: a repeat vote is a no-op upstream.
+Reading is open to everyone. Voting, posting, and commenting need a mitlist
+account: the same one as the app. `/login` offers email + password and the
+Google / Apple buttons the backend reports on `GET /oauth/providers`. A
+password login posts to `/api/auth/login`; an OAuth login goes to
+`api.mitlist.me/oauth/<provider>?redirect_uri=https://feedback.mitlist.me/auth/callback`,
+comes back with a one-time handoff code in the URL fragment, and
+`/auth/callback` posts it to `/api/auth/handoff`. Both end in an HttpOnly
+cookie on this origin holding the access + refresh token pair; the browser
+never sees them and never talks to mitlist.
+
+`src/middleware.ts` resolves that cookie on every request: it rotates the pair
+when the access token is about to expire, checks it against `/auth/me` (cached
+five minutes per token), and drops the cookie when mitlist rejects it. Pages
+read `Astro.locals.user`.
+
+The mitlist user id is the `voterRef` sent to reqtrack, exactly what the app
+sends, so votes and comments are shared between app and web, and a user can
+take back a vote or delete a comment from either. reqtrack stores only a hash
+of the id.
+
+For Google and Apple to work, `https://feedback.mitlist.me/auth/callback` must
+be in the backend's `OAUTH_REDIRECT_ALLOWLIST` (exact match).
 
 ### Rate limits and caching
 
 reqtrack allows 30 intake calls per minute per visitor address. The Worker
 calls reqtrack over a **service binding** (`REQTRACK` → `reqtrack-api`) and
-forwards the visitor's address, and it caches every read for 30 seconds in the
-Workers cache, evicting the entries a write changes. Locally the binding has
+forwards the visitor's address. Anonymous reads are cached for 30 seconds in
+the Workers cache (writes evict what they change); a signed-in user's reads
+carry their id and are not cached, so hasVoted and isMine are exact. Locally the binding has
 nothing to talk to, so `astro dev` falls back to plain `fetch` against
 `REQTRACK_URL`.
 

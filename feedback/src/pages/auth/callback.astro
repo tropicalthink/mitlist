@@ -1,0 +1,82 @@
+---
+import Layout from "../../layouts/Layout.astro";
+
+// Where Google and Apple sign-ins land. mitlist puts the one-time handoff
+// code in the URL fragment (a query string for errors), which only the
+// browser can see, so a tiny script hands it to /api/auth/handoff.
+const params = Astro.url.searchParams;
+const error = params.get("error");
+const provider = params.get("provider") ?? "";
+---
+
+<Layout title="Signing in">
+  <section class="wrap callback">
+    {
+      error ? (
+        <div class="panel">
+          <div class="panel__body callback__body">
+            <span class="stamp">Sign in</span>
+            <h1 class="h2">That sign-in did not complete</h1>
+            <p class="lead">
+              {provider ? `${provider[0]?.toUpperCase()}${provider.slice(1)} said: ` : ""}
+              {error}
+            </p>
+            <p>
+              <a class="btn btn--primary" href="/login">
+                Try again
+              </a>
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div class="panel">
+          <div class="panel__body callback__body">
+            <span class="stamp">Sign in</span>
+            <h1 class="h2">Finishing your sign-in…</h1>
+            <p class="lead" id="callback-status">One moment.</p>
+            <noscript>
+              <p class="notice notice--error">This step needs JavaScript. Enable it and <a href="/login">sign in again</a>.</p>
+            </noscript>
+            <form id="handoff" method="post" action="/api/auth/handoff" hidden>
+              <input type="hidden" name="code" id="handoff-code" />
+            </form>
+          </div>
+        </div>
+      )
+    }
+  </section>
+</Layout>
+
+<script is:inline>
+  (function () {
+    var form = document.getElementById("handoff");
+    if (!form) return;
+    var fragment = new URLSearchParams(location.hash.replace(/^#/, ""));
+    var query = new URLSearchParams(location.search);
+    var code = fragment.get("handoff") || query.get("handoff");
+    if (!code) {
+      var status = document.getElementById("callback-status");
+      if (status) status.textContent = "Nothing to finish here.";
+      location.replace("/login?error=oauth");
+      return;
+    }
+    document.getElementById("handoff-code").value = code;
+    // The code leaves the address bar before it is used, so a reload or a
+    // shared link cannot replay it.
+    history.replaceState(null, "", location.pathname);
+    form.submit();
+  })();
+</script>
+
+<style>
+  .callback {
+    max-width: 32rem;
+    padding-top: 3rem;
+  }
+  .callback__body {
+    padding: 2rem 1.5rem;
+    display: grid;
+    gap: 1rem;
+    justify-items: start;
+  }
+</style>

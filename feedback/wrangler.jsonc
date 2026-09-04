@@ -22,6 +22,7 @@
   "services": [{ "binding": "REQTRACK", "service": "reqtrack-api" }],
   "vars": {
     "REQTRACK_URL": "https://reqtrack.tropicalthink.com",
+    "MITLIST_API_URL": "https://api.mitlist.me/api/v1",
     "APP_URL": "https://app.mitlist.me"
   }
   // Secrets (wrangler secret put): REQTRACK_APP_KEY — mitlist's intake key

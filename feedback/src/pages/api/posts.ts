@@ -1,15 +1,16 @@
 import type { APIRoute } from "astro";
 import { createPost, type BoardKind } from "../../lib/board";
-import { clientIp, jsonError, readInput, wantsJson } from "../../lib/http";
-import { ensureVoter } from "../../lib/voter";
+import { clientIp, jsonError, readInput, requireUser, wantsJson } from "../../lib/http";
 
 const TITLE_MAX = 200;
 const DESCRIPTION_MAX = 5000;
-const CONTACT_MAX = 255;
 
 export const POST: APIRoute = async (context) => {
-  const { request, cookies, redirect, url } = context;
+  const { request, redirect, url } = context;
   const json = wantsJson(request);
+  const user = requireUser(context);
+  if (user instanceof Response) return user;
+
   const input = await readInput(request);
 
   // Honeypot. Bots fill every field; people never see this one. Pretend it
@@ -21,7 +22,6 @@ export const POST: APIRoute = async (context) => {
   const title = (input.title ?? "").trim();
   const description = (input.description ?? "").trim();
   const kind: BoardKind = input.kind === "bug" ? "bug" : "feature";
-  const contact = (input.contact ?? "").trim();
 
   const fail = (code: string, message: string) => {
     if (json) return Response.json({ error: code, message }, { status: 400 });
@@ -36,11 +36,6 @@ export const POST: APIRoute = async (context) => {
   if (description.length > DESCRIPTION_MAX) {
     return fail("description_long", `Descriptions are at most ${DESCRIPTION_MAX} characters.`);
   }
-  if (contact && (contact.length > CONTACT_MAX || !contact.includes("@"))) {
-    return fail("contact", "That email address does not look right.");
-  }
-
-  const voterRef = ensureVoter(cookies, url.protocol === "https:");
 
   try {
     const { requestId } = await createPost(
@@ -48,8 +43,8 @@ export const POST: APIRoute = async (context) => {
         title,
         description: description || undefined,
         kind,
-        voterRef,
-        submitterContact: contact || undefined,
+        voterRef: user.id,
+        submitterContact: user.email || undefined,
       },
       clientIp(context)
     );

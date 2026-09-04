@@ -436,12 +436,25 @@ button {
   box-shadow: none;
 }
 
-.vote.is-voted .vote__btn,
-.vote__btn:disabled {
+.vote.is-voted .vote__btn {
   background: var(--orange);
-  cursor: default;
+}
+
+.vote__btn:disabled {
+  cursor: progress;
   transform: none;
   box-shadow: var(--shadow-sm);
+}
+
+/* Signed-out visitors get the same box as a link to sign-in. */
+.vote--link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.vote--link .vote__btn {
+  cursor: pointer;
 }
 
 /* ---------- Panels ---------- */

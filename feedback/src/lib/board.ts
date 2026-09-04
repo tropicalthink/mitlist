@@ -1,8 +1,13 @@
 import { env } from "cloudflare:workers";
 
-// The public feedback board is a thin, cached window onto mitlist's board in
-// reqtrack (Staffroom). Everything here runs on the server; the browser never
-// sees the app key or talks to reqtrack directly.
+// The public feedback board is a thin window onto mitlist's board in reqtrack
+// (Staffroom). Everything here runs on the server; the browser never sees the
+// app key or talks to reqtrack directly.
+//
+// A visitor's identity on the board is their mitlist user id, the same
+// voterRef the app sends, so votes and comments are shared between the two.
+// Reads for a signed-in user carry that id and are not cached, so hasVoted
+// and isMine are exact; anonymous reads are cached and shared.
 
 export type BoardStatus = "new" | "in_progress" | "done";
 export type BoardKind = "feature" | "bug";
@@ -46,6 +51,12 @@ export interface BoardUpdate {
   staffNote: string | null;
 }
 
+export interface VoteResult {
+  requestId: string;
+  voteCount: number;
+  hasVoted: boolean;
+}
+
 export class BoardError extends Error {
   constructor(
     public readonly status: number,
@@ -59,8 +70,8 @@ export class BoardError extends Error {
 
 const BOARD_PATH = "/api/v1/intake/board";
 const DEFAULT_URL = "https://reqtrack.tropicalthink.com";
-// How long a read is reused before asking reqtrack again. Writes evict the
-// entries they change, so a voter sees their own vote land immediately.
+// How long an anonymous read is reused before asking reqtrack again. Writes
+// evict the entries they change.
 const CACHE_SECONDS = 30;
 
 function config() {
@@ -73,7 +84,7 @@ function config() {
 }
 
 interface CallOptions {
-  method?: "GET" | "POST" | "PUT";
+  method?: "GET" | "POST" | "PUT" | "DELETE";
   body?: unknown;
   voterRef?: string;
   clientIp?: string | null;
@@ -87,7 +98,7 @@ async function call<T>(path: string, opts: CallOptions = {}): Promise<T> {
   // reqtrack rate-limits per visitor address. Over the service binding the
   // header we set is the one it reads; over the public internet Cloudflare
   // replaces it with this Worker's own address and every visitor would share
-  // one bucket, which is why reads are cached below.
+  // one bucket, which is why anonymous reads are cached below.
   if (opts.clientIp) headers.set("CF-Connecting-IP", opts.clientIp);
 
   const request = new Request(`${base}${BOARD_PATH}${path}`, {
@@ -117,7 +128,7 @@ async function call<T>(path: string, opts: CallOptions = {}): Promise<T> {
   return (await response.json()) as T;
 }
 
-// --- Read cache ----------------------------------------------------------
+// --- Read cache (anonymous reads only) ------------------------------------
 
 function cacheKey(path: string): Request {
   // The host is a label, not a destination: cache keys only need to be URLs.
@@ -180,10 +191,9 @@ const detailPath = (id: string) => `/requests/${encodeURIComponent(id)}`;
 
 /** Every post on the board, newest first. Sort and filter locally so one
  * upstream read serves every view of the list. */
-export async function listPosts(): Promise<BoardPost[]> {
-  const { items } = await cached(LIST_PATH, () =>
-    call<{ items: BoardPost[] }>(LIST_PATH)
-  );
+export async function listPosts(voterRef?: string): Promise<BoardPost[]> {
+  const load = () => call<{ items: BoardPost[] }>(LIST_PATH, { voterRef });
+  const { items } = voterRef ? await load() : await cached(LIST_PATH, load);
   return items;
 }
 
@@ -197,8 +207,9 @@ export function sortPosts(posts: BoardPost[], sort: BoardSort): BoardPost[] {
   return sorted;
 }
 
-export async function getPost(id: string): Promise<BoardPostDetail> {
-  return cached(detailPath(id), () => call<BoardPostDetail>(detailPath(id)));
+export async function getPost(id: string, voterRef?: string): Promise<BoardPostDetail> {
+  const load = () => call<BoardPostDetail>(detailPath(id), { voterRef });
+  return voterRef ? load() : cached(detailPath(id), load);
 }
 
 /** What shipped, most recent first. Falls back to the plain list when the
@@ -264,15 +275,26 @@ export async function createPost(
   return result;
 }
 
-export async function upvote(
+export async function upvote(id: string, voterRef: string, clientIp: string | null): Promise<VoteResult> {
+  const result = await call<VoteResult>(`${detailPath(id)}/upvote`, {
+    method: "PUT",
+    clientIp,
+    body: { voterRef },
+  });
+  await forget([LIST_PATH, UPDATES_PATH, detailPath(id)]);
+  return result;
+}
+
+export async function removeVote(
   id: string,
   voterRef: string,
   clientIp: string | null
-): Promise<{ requestId: string; voteCount: number; hasVoted: true }> {
-  const result = await call<{ requestId: string; voteCount: number; hasVoted: true }>(
-    `${detailPath(id)}/upvote`,
-    { method: "PUT", clientIp, body: { voterRef } }
-  );
+): Promise<VoteResult> {
+  const result = await call<VoteResult>(`${detailPath(id)}/upvote`, {
+    method: "DELETE",
+    clientIp,
+    body: { voterRef },
+  });
   await forget([LIST_PATH, UPDATES_PATH, detailPath(id)]);
   return result;
 }
@@ -287,6 +309,20 @@ export async function addComment(
     clientIp,
     body: input,
   });
+  await forget([LIST_PATH, detailPath(id)]);
+  return result;
+}
+
+export async function deleteComment(
+  id: string,
+  commentId: string,
+  voterRef: string,
+  clientIp: string | null
+): Promise<{ deleted: true }> {
+  const result = await call<{ deleted: true }>(
+    `${detailPath(id)}/comments/${encodeURIComponent(commentId)}`,
+    { method: "DELETE", clientIp, body: { voterRef } }
+  );
   await forget([LIST_PATH, detailPath(id)]);
   return result;
 }

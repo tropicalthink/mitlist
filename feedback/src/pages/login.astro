@@ -1,0 +1,171 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { oauthStartUrl, providers as loadProviders, type Providers } from "../lib/mitlist";
+import { rememberNext, safeNext } from "../lib/session";
+
+const params = Astro.url.searchParams;
+const next = safeNext(params.get("next"));
+if (Astro.locals.user) return Astro.redirect(next, 302);
+
+const error = params.get("error");
+const email = (params.get("email") ?? "").slice(0, 255);
+
+const ERRORS: Record<string, string> = {
+  missing: "Enter your email and password.",
+  credentials: "That email and password do not match.",
+  rate_limited: "Too many attempts. Wait a minute and try again.",
+  unavailable: "mitlist could not be reached. Try again in a moment.",
+  oauth: "That sign-in did not complete. Try again.",
+  required: "Sign in with your mitlist account to do that.",
+};
+const message = error ? (ERRORS[error] ?? ERRORS.oauth) : null;
+
+let providers: Providers = { google: false, apple: false, password: true };
+let providersError = false;
+try {
+  providers = await loadProviders();
+} catch {
+  providersError = true;
+}
+
+// Google and Apple come back to /auth/callback with nothing but a code, so
+// where the visitor was going is parked in a short-lived cookie.
+const secure = Astro.url.protocol === "https:";
+rememberNext(Astro.cookies, next, secure);
+const callbackUrl = new URL("/auth/callback", Astro.url).toString();
+const anyOAuth = providers.google || providers.apple;
+---
+
+<Layout title="Sign in" description="Sign in with your mitlist account to vote, post, and comment on the feedback board.">
+  <section class="wrap login">
+    <header class="login__head">
+      <span class="stamp">Sign in</span>
+      <h1 class="h1">Same account as the app.</h1>
+      <p class="lead">
+        Reading the board is open to everyone. To upvote, post, or comment, sign in with the mitlist
+        account you use in the app, so your votes here and there are the same votes.
+      </p>
+    </header>
+
+    {message && <p class="notice notice--error" role="alert">{message}</p>}
+    {providersError && <p class="notice notice--error">Could not check which sign-in methods are available right now.</p>}
+
+    <div class="panel login__panel">
+      {
+        anyOAuth && (
+          <div class="panel__body login__oauth">
+            {providers.google && (
+              <a class="btn login__provider" href={oauthStartUrl("google", callbackUrl)} rel="nofollow">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.9h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.4Z" fill="#4285F4" stroke="none" />
+                  <path d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22Z" fill="#34A853" stroke="none" />
+                  <path d="M6.4 14a6 6 0 0 1 0-3.9V7.5H3.1a10 10 0 0 0 0 9l3.3-2.6Z" fill="#FBBC05" stroke="none" />
+                  <path d="M12 6c1.5 0 2.8.5 3.8 1.5l2.8-2.8A10 10 0 0 0 3.1 7.5l3.3 2.6C7.2 7.8 9.4 6 12 6Z" fill="#EA4335" stroke="none" />
+                </svg>
+                Continue with Google
+              </a>
+            )}
+            {providers.apple && (
+              <a class="btn login__provider" href={oauthStartUrl("apple", callbackUrl)} rel="nofollow">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M16.4 12.6c0-2.4 2-3.6 2.1-3.7a4.5 4.5 0 0 0-3.5-1.9c-1.5-.2-2.9.9-3.7.9-.8 0-1.9-.9-3.2-.8a4.7 4.7 0 0 0-4 2.4c-1.7 3-.4 7.3 1.2 9.7.8 1.2 1.8 2.5 3 2.4 1.2 0 1.7-.8 3.2-.8s1.9.8 3.2.8c1.3 0 2.2-1.2 3-2.4a10 10 0 0 0 1.3-2.8 4.3 4.3 0 0 1-2.6-3.8ZM14 5.4A4.3 4.3 0 0 0 15 2.2a4.4 4.4 0 0 0-2.9 1.5 4.1 4.1 0 0 0-1 3.1c1.1.1 2.2-.6 2.9-1.4Z" fill="currentColor" stroke="none" />
+                </svg>
+                Continue with Apple
+              </a>
+            )}
+          </div>
+        )
+      }
+
+      {
+        providers.password && (
+          <form class="login__form" method="post" action="/api/auth/login">
+            {anyOAuth && <p class="login__or meta">or with email and password</p>}
+            <div class="panel__body login__fields">
+              <input type="hidden" name="next" value={next} />
+              <div class="field">
+                <label class="field__label" for="email">Email</label>
+                <input class="input" id="email" name="email" type="email" required autocomplete="email" value={email} />
+              </div>
+              <div class="field">
+                <label class="field__label" for="password">Password</label>
+                <input class="input" id="password" name="password" type="password" required autocomplete="current-password" />
+              </div>
+            </div>
+            <div class="login__foot">
+              <p class="meta">
+                No account yet? <a href="https://app.mitlist.me">Create one in the app</a>.
+              </p>
+              <button class="btn btn--primary" type="submit">Sign in</button>
+            </div>
+          </form>
+        )
+      }
+
+      {
+        !providers.password && !anyOAuth && (
+          <div class="panel__body">
+            <p class="lead">No sign-in method is available right now.</p>
+          </div>
+        )
+      }
+    </div>
+
+    <p class="meta login__note">
+      Signing in sets one cookie on this site holding your mitlist session. It is not shared with the
+      tracker, which only ever sees a hash of your user id.
+    </p>
+  </section>
+</Layout>
+
+<style>
+  .login {
+    max-width: 30rem;
+    padding-top: clamp(2rem, 1.5rem + 2vw, 3.2rem);
+    display: grid;
+    gap: 1.5rem;
+  }
+  .login__head .stamp {
+    margin-bottom: 1rem;
+  }
+  .login__head .h1 {
+    margin-bottom: 0.7rem;
+  }
+  .login__oauth {
+    display: grid;
+    gap: 0.7rem;
+  }
+  .login__provider {
+    width: 100%;
+    padding-block: 0.8rem;
+  }
+  .login__provider svg {
+    width: 1.25rem;
+    height: 1.25rem;
+    stroke: none;
+  }
+  .login__or {
+    text-align: center;
+    padding: 0.4rem 1rem 0;
+    border-top: var(--border);
+    margin-top: -0.1rem;
+  }
+  .login__fields {
+    display: grid;
+    gap: 1rem;
+  }
+  .login__foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 0.9rem 1rem;
+    border-top: var(--border);
+    background: var(--paper-2);
+  }
+  .login__foot a,
+  .login__note a {
+    color: var(--ink);
+  }
+</style>

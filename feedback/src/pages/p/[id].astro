@@ -4,15 +4,16 @@ import StatusPill from "../../components/StatusPill.astro";
 import VoteButton from "../../components/VoteButton.astro";
 import { BoardError, getPost, isPostId, type BoardPostDetail } from "../../lib/board";
 import { KIND, STATUS, countLabel, excerpt, isoDate, longDate, relativeTime } from "../../lib/format";
-import { friendlyError } from "../../lib/http";
+import { friendlyError, loginHref } from "../../lib/http";
 
 const id = Astro.params.id;
 if (!isPostId(id)) return Astro.redirect("/", 302);
 
+const user = Astro.locals.user;
 let post: BoardPostDetail | null = null;
 let loadError: string | null = null;
 try {
-  post = await getPost(id);
+  post = await getPost(id, user?.id);
 } catch (error) {
   if (error instanceof BoardError && error.status === 404) {
     Astro.response.status = 404;
@@ -29,13 +30,14 @@ const FLASH: Record<string, string> = {
   empty: "Write something first.",
   long: "Comments are at most 2000 characters.",
   rate_limited: "That is a lot of activity at once. Give it a minute and try again.",
-  not_found: "That post is no longer on the board.",
+  not_found: "That is no longer on the board.",
   upstream_error: "The board could not be reached. Try again in a moment.",
   unavailable: "The board is not connected to the tracker yet. Try again later.",
 };
 const flashMessage = flash ? (FLASH[flash] ?? FLASH.upstream_error) : null;
 
 const description = post ? excerpt(post.description, 160) || `${KIND[post.kind].label} on the mitlist feedback board.` : undefined;
+const here = Astro.url.pathname;
 ---
 
 <Layout
@@ -71,7 +73,7 @@ const description = post ? excerpt(post.description, 160) || `${KIND[post.kind].
         <>
           <article class="post__main">
             <header class="post__head">
-              <VoteButton id={post.id} count={post.voteCount} title={post.title} />
+              <VoteButton id={post.id} count={post.voteCount} title={post.title} voted={post.hasVoted} signedIn={Boolean(user)} />
               <div class="post__heading">
                 <p class="post__kicker meta">
                   <span class:list={["pill", post.kind === "bug" ? "pill--bug" : "pill--feature"]}>
@@ -109,7 +111,7 @@ const description = post ? excerpt(post.description, 160) || `${KIND[post.kind].
 
           <section class="thread" id="comments" aria-labelledby="thread-title">
             <h2 class="h2" id="thread-title">
-              Conversation <span class="meta mono">{countLabel(post.comments.length, "comment")}</span>
+              Conversation <span class="meta mono" data-comment-count>{countLabel(post.comments.length, "comment")}</span>
             </h2>
 
             {post.comments.length === 0 && (
@@ -118,7 +120,10 @@ const description = post ? excerpt(post.description, 160) || `${KIND[post.kind].
 
             <ol class="comments">
               {post.comments.map((comment) => (
-                <li class:list={["comment", { "comment--staff": comment.authorKind === "staff" }]} data-comment={comment.id}>
+                <li
+                  class:list={["comment", { "comment--staff": comment.authorKind === "staff", "is-mine": comment.isMine }]}
+                  data-comment={comment.id}
+                >
                   <p class="comment__meta meta">
                     {comment.authorKind === "staff" ? (
                       <>
@@ -128,48 +133,63 @@ const description = post ? excerpt(post.description, 160) || `${KIND[post.kind].
                     ) : (
                       <strong>{comment.authorName || "A mitlist user"}</strong>
                     )}
-                    <span class="pill pill--you comment__you">You</span>
+                    {comment.isMine && <span class="pill pill--you">You</span>}
                     <time datetime={isoDate(comment.createdAt)} title={longDate(comment.createdAt)}>
                       {relativeTime(comment.createdAt)}
                     </time>
+                    {comment.isMine && (
+                      <form
+                        class="comment__delete"
+                        method="post"
+                        action={`/api/posts/${post.id}/comments/${comment.id}`}
+                        data-delete-comment={comment.id}
+                      >
+                        <button class="btn btn--ghost btn--sm" type="submit">
+                          Delete
+                        </button>
+                      </form>
+                    )}
                   </p>
                   <div class="comment__body">{comment.body}</div>
                 </li>
               ))}
             </ol>
 
-            <form class="panel panel--flat comment-form" method="post" action={`/api/posts/${post.id}/comments#comments`}>
-              <div class="panel__body comment-form__body">
-                <div class="field">
-                  <label class="field__label" for="body">Add a comment</label>
-                  <textarea class="textarea" id="body" name="body" required maxlength="2000" placeholder="What would make this work for you?" />
+            {user ? (
+              <form class="panel panel--flat comment-form" method="post" action={`/api/posts/${post.id}/comments#comments`}>
+                <div class="panel__body comment-form__body">
+                  <div class="field">
+                    <label class="field__label" for="body">
+                      Add a comment <span class="field__hint">as {user.firstName || user.email}</span>
+                    </label>
+                    <textarea class="textarea" id="body" name="body" required maxlength="2000" placeholder="What would make this work for you?" />
+                  </div>
+                  <div class="hp" aria-hidden="true">
+                    <label>
+                      Website <input type="text" name="website" tabindex="-1" autocomplete="off" />
+                    </label>
+                  </div>
                 </div>
-                <div class="field">
-                  <label class="field__label" for="name">
-                    Name <span class="field__hint">(optional)</span>
-                  </label>
-                  <input class="input" id="name" name="name" type="text" maxlength="80" autocomplete="nickname" placeholder="Shown next to your comment" />
+                <div class="comment-form__foot">
+                  <p class="meta">Comments are public and the team reads every one. You can delete yours any time.</p>
+                  <button class="btn btn--primary btn--sm" type="submit">Post comment</button>
                 </div>
-                <div class="hp" aria-hidden="true">
-                  <label>
-                    Website <input type="text" name="website" tabindex="-1" autocomplete="off" />
-                  </label>
+              </form>
+            ) : (
+              <div class="panel panel--flat comment-form">
+                <div class="comment-form__foot comment-form__foot--only">
+                  <p class="meta">Sign in with your mitlist account to join the conversation.</p>
+                  <a class="btn btn--primary btn--sm" href={loginHref(`${here}#comments`)}>
+                    Sign in
+                  </a>
                 </div>
               </div>
-              <div class="comment-form__foot">
-                <p class="meta">Comments are public and the team reads every one.</p>
-                <button class="btn btn--primary btn--sm" type="submit">Post comment</button>
-              </div>
-            </form>
+            )}
           </section>
         </>
       )
     }
   </section>
-  <script is:inline define:vars={{ postId: post?.id ?? "" }}>
-    // The board script reads this to remember a freshly created post's upvote.
-    if (postId) document.body.dataset.post = postId;
-  </script>
 </Layout>
 
 <style>
@@ -287,11 +307,16 @@ const description = post ? excerpt(post.description, 160) || `${KIND[post.kind].
   .comment__meta strong {
     color: var(--ink);
   }
-  .comment__you {
-    display: none;
+  .comment__delete {
+    margin: 0 0 0 auto;
   }
-  .comment.is-mine .comment__you {
-    display: inline-flex;
+  .comment__delete .btn {
+    color: var(--ink-3);
+    padding-block: 0.2rem;
+  }
+  .comment__delete .btn.is-armed {
+    color: var(--error-700);
+    border-color: var(--error);
   }
   .comment__body {
     white-space: pre-line;
@@ -310,5 +335,8 @@ const description = post ? excerpt(post.description, 160) || `${KIND[post.kind].
     padding: 0.8rem 1rem;
     border-top: var(--border);
     background: var(--paper-2);
+  }
+  .comment-form__foot--only {
+    border-top: none;
   }
 </style>
