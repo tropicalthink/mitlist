@@ -5,7 +5,7 @@ import '../models/billing_models.dart';
 /// These MUST match exactly what is configured in App Store Connect and the
 /// Play Console — a mismatch means the store returns no product and the paywall
 /// shows nothing to buy. See docs/iap-subscriptions-plan.md for the pricing
-/// (monthly matches web; annual is +€2 to pass the store cut).
+/// (store prices sit slightly above the web prices to cover the store cut).
 ///
 /// The backend maps the same ids to a billing interval via APPLE_IAP_PRODUCT_*
 /// and GOOGLE_PLAY_PRODUCT_* — keep the two in sync.
