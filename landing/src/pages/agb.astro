@@ -1,0 +1,106 @@
+---
+// Nutzungsbedingungen (AGB) for the official hosted mitlist service. /terms is
+// the English convenience translation with the same numbering — keep the two
+// in sync. Self-hosted instances are not covered: their operator sets the terms.
+import LegalPage from "../components/LegalPage.astro";
+import { legal } from "../data/legal";
+const { operator } = legal;
+const lastUpdated = "4. September 2026";
+---
+
+<LegalPage title="Nutzungsbedingungen" description="Nutzungsbedingungen (AGB) für den offiziell gehosteten mitlist-Dienst unter app.mitlist.me und in den mitlist-Apps.">
+  <p class="legal-meta">Stand: {lastUpdated}</p>
+  <p class="legal-lang">English version: <a href="/terms">Terms of Service</a>. Die deutsche Fassung ist maßgeblich.</p>
+
+  <h2>1. Anbieter und Geltungsbereich</h2>
+  <p>Diese Nutzungsbedingungen gelten für den offiziell gehosteten mitlist-Dienst, der über app.mitlist.me, die mitlist-Apps für iOS und Android sowie die Schnittstelle api.mitlist.me bereitgestellt wird (der „Dienst“). Anbieter ist {operator.name}, {operator.street}, {operator.postalCode} {operator.city}, {operator.country} („wir“). Kontakt: <a href={`mailto:${legal.email}`}>{legal.email}</a>.</p>
+  <p>Die mitlist-Software ist freie Software unter der GNU Affero General Public License 3.0. Für die Software gilt diese Lizenz. Wer die Software auf einem eigenen Server betreibt, schließt keinen Vertrag mit uns; diese Nutzungsbedingungen gelten nur für den von uns gehosteten Dienst.</p>
+  <p>Der Dienst richtet sich an Verbraucher und an Unternehmer. Abweichende Bedingungen des Nutzers werden nicht Vertragsbestandteil.</p>
+
+  <h2>2. Leistungsbeschreibung</h2>
+  <p>mitlist hilft Menschen, die zusammenwohnen, ihren gemeinsamen Haushalt zu organisieren: geteilte Listen, Aufgaben mit Rotation, gemeinsame Ausgaben und Ausgleiche, Rezepte und Essenspläne, eine Pinnwand und ein Kalender. Wir stellen den Dienst als Web-App und als Apps bereit und speichern die Inhalte, damit alle Mitglieder eines Haushalts darauf zugreifen können.</p>
+  <p>Der Dienst wird laufend weiterentwickelt. Wir dürfen Funktionen ergänzen, verändern oder einstellen, sofern der Kern des Dienstes, also das gemeinsame Organisieren eines Haushalts, erhalten bleibt. Über wesentliche Änderungen informieren wir in der App oder per E-Mail.</p>
+  <p>Der Dienst ersetzt keine Buchhaltung und keine rechtsverbindliche Abrechnung. Ausgleichsbeträge sind Rechenhilfen auf Basis der von den Nutzern eingetragenen Angaben.</p>
+
+  <h2>3. Konto</h2>
+  <p><strong>Registrierung.</strong> Zur Nutzung ist ein Konto erforderlich. Es kann mit E-Mail-Adresse und Passwort, mit einem Google- oder Apple-Konto oder als Gastkonto ohne E-Mail-Adresse angelegt werden. Mit der Registrierung kommt ein Nutzungsvertrag zu diesen Bedingungen zustande.</p>
+  <p><strong>Mindestalter.</strong> Der Dienst darf ab 16 Jahren genutzt werden. Jüngere Personen benötigen die Zustimmung eines Erziehungsberechtigten.</p>
+  <p><strong>Zugangsdaten.</strong> Halten Sie Ihre Zugangsdaten geheim und informieren Sie uns, wenn Sie einen Missbrauch Ihres Kontos vermuten. Für Handlungen, die über Ihr Konto vorgenommen werden, sind Sie verantwortlich, solange Sie den Missbrauch nicht zu vertreten haben.</p>
+  <p><strong>Gastkonten.</strong> Ein Gastkonto ist an das Gerät gebunden, auf dem es angelegt wurde, und kann jederzeit durch Hinzufügen einer E-Mail-Adresse in ein vollständiges Konto umgewandelt werden. Ein Gastkonto, das 30 Tage lang nicht genutzt wird, wird gesperrt; nach weiteren 180 Tagen ohne Anmeldung wird es dauerhaft anonymisiert. Sichern Sie Inhalte eines Gastkontos, die Sie behalten möchten, durch Umwandlung in ein vollständiges Konto oder durch Export.</p>
+
+  <h2>4. Haushalte und geteilte Inhalte</h2>
+  <p>Ein Haushalt ist ein gemeinsamer Bereich mehrerer Konten. Wer einen Haushalt anlegt oder eine Einladung annimmt, wird Mitglied. Alle Inhalte eines Haushalts sind für alle seine Mitglieder sichtbar und, je nach Rolle, bearbeitbar.</p>
+  <p>Einladungslinks berechtigen jede Person, die sie besitzt, zum Beitritt. Geben Sie sie nur an Personen weiter, die Sie in Ihrem Haushalt haben möchten. Mitglieder mit Verwaltungsrechten können andere Mitglieder entfernen und den Haushalt löschen; damit werden auch die Inhalte des Haushalts gelöscht.</p>
+  <p>Wenn Sie Angaben über andere Personen eintragen, etwa den Namen eines Mitbewohners bei einer Ausgabe, sind Sie dafür verantwortlich, dass Sie dazu berechtigt sind.</p>
+
+  <h2>5. Nutzungsregeln</h2>
+  <p>Sie verpflichten sich, den Dienst nicht zu nutzen, um</p>
+  <ul>
+    <li>rechtswidrige, beleidigende, gewaltverherrlichende, pornografische oder Rechte Dritter verletzende Inhalte zu speichern oder zu verbreiten,</li>
+    <li>sich als eine andere Person auszugeben oder ohne Berechtigung auf fremde Haushalte oder Konten zuzugreifen,</li>
+    <li>Schadsoftware zu verbreiten, Sicherheitsmechanismen zu umgehen oder den Dienst durch automatisierte Massenzugriffe, übermäßige Anfragen oder ähnliche Maßnahmen zu beeinträchtigen,</li>
+    <li>den Dienst als allgemeinen Dateispeicher oder für Zwecke zu nutzen, die mit dem Organisieren eines Haushalts nichts zu tun haben,</li>
+    <li>unaufgefordert Werbung zu versenden oder andere Nutzer zu belästigen.</li>
+  </ul>
+  <p>Die Schnittstelle darf mit eigenen Anwendungen und Integrationen, etwa Home Assistant, genutzt werden, sofern die Nutzung dem eigenen Haushalt dient und den Dienst nicht unangemessen belastet.</p>
+
+  <h2>6. Inhalte und Rechte</h2>
+  <p>Alle Inhalte, die Sie in den Dienst eintragen oder hochladen, bleiben Ihre. Sie räumen uns lediglich das einfache, nicht ausschließliche Recht ein, diese Inhalte zu speichern, zu vervielfältigen, zu übertragen und den Mitgliedern Ihres Haushalts anzuzeigen, soweit das zur Bereitstellung des Dienstes erforderlich ist. Dieses Recht endet, wenn Sie den Inhalt oder Ihr Konto löschen, mit Ausnahme von Inhalten, die in einem gemeinsamen Haushalt verbleiben (Abschnitt 11), und von Sicherungskopien, die nach einem begrenzten Zeitraum überschrieben werden.</p>
+  <p>Sie versichern, dass Sie die für Ihre Inhalte erforderlichen Rechte besitzen. Wir sind berechtigt, Inhalte zu entfernen, die gegen diese Bedingungen oder geltendes Recht verstoßen, und informieren Sie darüber, soweit das rechtlich zulässig und zumutbar ist.</p>
+
+  <h2>7. Kostenlose Nutzung und Fair-Use-Grenzen</h2>
+  <p>Der Dienst ist für Haushalte mit bis zu vier Mitgliedern kostenlos, ohne Werbung und ohne Funktionsbeschränkung. Damit der kostenlose Dienst dauerhaft tragbar bleibt, gelten Fair-Use-Grenzen, derzeit:</p>
+  <ul>
+    <li>1 GB Speicher für Anhänge je Haushalt und 10 MB je Datei,</li>
+    <li>100 aktive Listen je Haushalt und 1.000 Einträge je Liste.</li>
+  </ul>
+  <p>Wir dürfen diese Grenzen anpassen, wenn die tatsächliche Nutzung das erfordert. Absenkungen kündigen wir mindestens 30 Tage vorher auf der <a href="/transparency">Transparenzseite</a> und in der App an; bereits gespeicherte Inhalte werden dadurch nicht gelöscht.</p>
+
+  <h2>8. Premium</h2>
+  <p><strong>Umfang.</strong> Haushalte mit mehr als vier Mitgliedern benötigen ein Premium-Abo. Ein Abo deckt genau einen Haushalt ab, den Sie beim Abschluss auswählen und später in der App wechseln können. Solange ein Mitglied des Haushalts ein aktives Abo für diesen Haushalt hält, können ihm weitere Mitglieder beitreten.</p>
+  <p><strong>Preise und Laufzeit.</strong> Premium wird als Abo mit monatlicher oder jährlicher Laufzeit angeboten. Der jeweils geltende Preis inklusive Umsatzsteuer wird Ihnen vor dem Abschluss angezeigt. Das Abo verlängert sich automatisch um die gewählte Laufzeit, wenn es nicht vor Ablauf gekündigt wird.</p>
+  <p><strong>Kündigung.</strong> Sie können das Abo jederzeit zum Ende der laufenden Laufzeit kündigen: für Abos, die im Web abgeschlossen wurden, über die Abo-Verwaltung in der App; für Abos aus dem App Store oder aus Google Play über die Abo-Einstellungen von Apple bzw. Google. Nach dem Ende des Abos bleiben alle Inhalte erhalten; der Haushalt kann lediglich keine weiteren Mitglieder über die kostenlose Grenze hinaus aufnehmen.</p>
+  <p><strong>Zahlungsabwicklung.</strong> Abos im Web werden von Polar Software Inc. als Händler (Merchant of Record) verkauft und abgerechnet; Ihr Kaufvertrag über das Abo kommt mit Polar zustande, und es gelten ergänzend die <a href="https://polar.sh/legal/terms" target="_blank" rel="noopener noreferrer">Bedingungen von Polar</a>. Abos in den Apps werden über Apple bzw. Google Play abgeschlossen und abgerechnet; für Zahlung, Verlängerung und Erstattung gelten deren Bedingungen. In allen Fällen erbringen wir die Premium-Leistung.</p>
+  <p><strong>Preisänderungen.</strong> Preisänderungen gelten nur für neue Laufzeiten und werden mindestens 30 Tage vorher per E-Mail oder in der App angekündigt. Sind Sie mit einer Erhöhung nicht einverstanden, können Sie das Abo bis zum Beginn der neuen Laufzeit kündigen.</p>
+
+  <h2>9. Widerrufsrecht für Verbraucher</h2>
+  <p>Verbrauchern steht bei Verträgen, die im Fernabsatz geschlossen werden, das gesetzliche Widerrufsrecht zu. Für Premium-Abos, die im Web abgeschlossen werden, ist Polar Software Inc. Ihr Vertragspartner; die Widerrufsbelehrung wird Ihnen im Bestellvorgang von Polar erteilt, und der Widerruf ist gegenüber Polar zu erklären. Für Abos aus dem App Store oder aus Google Play gelten die Widerrufs- und Erstattungsregeln von Apple bzw. Google.</p>
+  <p>Für den kostenlosen Nutzungsvertrag mit uns gilt:</p>
+  <div class="legal-box">
+    <h3>Widerrufsbelehrung</h3>
+    <p><strong>Widerrufsrecht.</strong> Sie haben das Recht, binnen vierzehn Tagen ohne Angabe von Gründen diesen Vertrag zu widerrufen. Die Widerrufsfrist beträgt vierzehn Tage ab dem Tag des Vertragsschlusses. Um Ihr Widerrufsrecht auszuüben, müssen Sie uns ({operator.name}, {operator.street}, {operator.postalCode} {operator.city}, E-Mail: {legal.email}) mittels einer eindeutigen Erklärung (z. B. ein mit der Post versandter Brief oder eine E-Mail) über Ihren Entschluss, diesen Vertrag zu widerrufen, informieren. Sie können dafür das beigefügte Muster-Widerrufsformular verwenden, das jedoch nicht vorgeschrieben ist. Zur Wahrung der Widerrufsfrist reicht es aus, dass Sie die Mitteilung über die Ausübung des Widerrufsrechts vor Ablauf der Widerrufsfrist absenden.</p>
+    <p><strong>Folgen des Widerrufs.</strong> Wenn Sie diesen Vertrag widerrufen, haben wir Ihnen alle Zahlungen, die wir von Ihnen erhalten haben, unverzüglich und spätestens binnen vierzehn Tagen ab dem Tag zurückzuzahlen, an dem die Mitteilung über Ihren Widerruf dieses Vertrags bei uns eingegangen ist. Für den kostenlosen Dienst fallen keine Zahlungen an; der Widerruf wirkt wie eine Löschung des Kontos.</p>
+    <h3>Muster-Widerrufsformular</h3>
+    <p>(Wenn Sie den Vertrag widerrufen wollen, dann füllen Sie bitte dieses Formular aus und senden Sie es zurück.)</p>
+    <p>An {operator.name}, {operator.street}, {operator.postalCode} {operator.city}, E-Mail: {legal.email}:<br />Hiermit widerrufe(n) ich/wir (*) den von mir/uns (*) abgeschlossenen Vertrag über die Erbringung der folgenden Dienstleistung: mitlist-Nutzungsvertrag<br />Bestellt am (*)/erhalten am (*): ______<br />Name des/der Verbraucher(s): ______<br />Anschrift des/der Verbraucher(s): ______<br />Unterschrift des/der Verbraucher(s) (nur bei Mitteilung auf Papier): ______<br />Datum: ______<br />(*) Unzutreffendes streichen.</p>
+  </div>
+
+  <h2>10. Verfügbarkeit, Wartung und Einstellung</h2>
+  <p>Wir bemühen uns um eine hohe Verfügbarkeit, schulden für den kostenlosen Dienst aber keine bestimmte Verfügbarkeit. Wartungsarbeiten, Störungen bei Vorleistern oder Ereignisse außerhalb unserer Kontrolle können den Dienst vorübergehend unterbrechen. Wir kündigen geplante Wartung nach Möglichkeit vorher an. Die Apps funktionieren bei fehlender Verbindung mit dem lokalen Zwischenspeicher weiter und gleichen Änderungen später ab.</p>
+  <p>Sollten wir den Dienst insgesamt einstellen, informieren wir Sie mindestens drei Monate vorher per E-Mail oder in der App und ermöglichen Ihnen in dieser Zeit den Export Ihrer Daten. Da die Software frei verfügbar ist, können Sie mitlist danach auf einem eigenen Server weiterbetreiben.</p>
+
+  <h2>11. Laufzeit, Kündigung und Sperrung</h2>
+  <p><strong>Durch Sie.</strong> Der Nutzungsvertrag läuft auf unbestimmte Zeit. Sie können ihn jederzeit beenden, indem Sie Ihr Konto in der App löschen. Mit der Löschung werden Ihre Kontodaten anonymisiert und Ihre Sitzungen beendet. Inhalte, die Sie in einen gemeinsamen Haushalt eingetragen haben, bleiben diesem Haushalt für die übrigen Mitglieder erhalten, sind aber nicht mehr Ihrem Konto zugeordnet; löschen Sie sie vorher, wenn Sie das nicht möchten. Ein laufendes Premium-Abo müssen Sie gesondert kündigen.</p>
+  <p><strong>Durch uns.</strong> Wir können den Nutzungsvertrag mit einer Frist von vier Wochen kündigen. Das Recht zur fristlosen Kündigung aus wichtigem Grund bleibt unberührt, insbesondere bei schwerwiegenden oder wiederholten Verstößen gegen Abschnitt 5. Bei einem begründeten Verdacht auf Missbrauch können wir ein Konto vorübergehend sperren; wir informieren Sie darüber und heben die Sperre auf, sobald der Verdacht ausgeräumt ist.</p>
+
+  <h2>12. Gewährleistung</h2>
+  <p>Für den kostenlosen Dienst leisten wir Gewähr nur bei arglistig verschwiegenen Mängeln. Für Premium gelten die gesetzlichen Gewährleistungsrechte. Da der Dienst laufend weiterentwickelt wird, können einzelne Funktionen Fehler enthalten; wir beheben gemeldete Fehler nach Möglichkeit zügig. Bitte bewahren Sie für wichtige Inhalte einen eigenen Export auf.</p>
+
+  <h2>13. Haftung</h2>
+  <p>Wir haften unbeschränkt für Schäden aus der Verletzung des Lebens, des Körpers oder der Gesundheit, für Schäden, die auf Vorsatz oder grober Fahrlässigkeit beruhen, bei arglistigem Verschweigen eines Mangels, bei Übernahme einer Garantie sowie nach dem Produkthaftungsgesetz.</p>
+  <p>Bei leicht fahrlässiger Verletzung einer wesentlichen Vertragspflicht, also einer Pflicht, deren Erfüllung die ordnungsgemäße Durchführung des Vertrags überhaupt erst ermöglicht und auf deren Einhaltung Sie regelmäßig vertrauen dürfen, ist unsere Haftung auf den vorhersehbaren, vertragstypischen Schaden begrenzt. Im Übrigen ist die Haftung für leichte Fahrlässigkeit ausgeschlossen.</p>
+  <p>Für den kostenlosen Dienst haften wir, soweit gesetzlich zulässig, nur für Vorsatz und grobe Fahrlässigkeit; die unbeschränkte Haftung nach dem ersten Absatz bleibt unberührt.</p>
+  <p>Für den Verlust von Daten haften wir nur in dem Umfang, in dem der Schaden auch bei regelmäßiger, dem Wert der Daten angemessener Sicherung durch Sie entstanden wäre. Diese Beschränkungen gelten auch für die persönliche Haftung unserer Erfüllungsgehilfen.</p>
+
+  <h2>14. Datenschutz</h2>
+  <p>Welche Daten wir wie verarbeiten, beschreibt die <a href="/datenschutz">Datenschutzerklärung</a>. Sie ist nicht Bestandteil dieser Bedingungen, sondern informiert Sie über Ihre Rechte.</p>
+
+  <h2>15. Änderungen dieser Bedingungen</h2>
+  <p>Wir können diese Bedingungen ändern, wenn das aus rechtlichen, technischen oder wirtschaftlichen Gründen erforderlich ist, etwa bei neuen Funktionen, geänderter Rechtslage oder neuen Zahlungsanbietern, und die Änderung Ihnen zumutbar ist. Über Änderungen informieren wir Sie mindestens vier Wochen vor ihrem Wirksamwerden per E-Mail oder in der App und weisen dabei auf Ihr Widerspruchsrecht und die Folgen des Schweigens hin. Widersprechen Sie nicht bis zum Wirksamwerden, gelten die geänderten Bedingungen als angenommen. Widersprechen Sie, können beide Seiten den Vertrag zum Zeitpunkt des Wirksamwerdens kündigen. Änderungen, die den Kern des Dienstes oder das Verhältnis von Leistung und Gegenleistung wesentlich zu Ihren Lasten verändern, bedürfen Ihrer ausdrücklichen Zustimmung.</p>
+
+  <h2>16. Schlussbestimmungen</h2>
+  <p>Es gilt das Recht der Bundesrepublik Deutschland unter Ausschluss des UN-Kaufrechts. Sind Sie Verbraucher mit gewöhnlichem Aufenthalt in einem anderen Staat, bleiben die zwingenden Verbraucherschutzvorschriften dieses Staates unberührt.</p>
+  <p>Sind Sie Kaufmann, juristische Person des öffentlichen Rechts oder öffentlich-rechtliches Sondervermögen, ist ausschließlicher Gerichtsstand Marburg.</p>
+  <p>Wir sind nicht verpflichtet und nicht bereit, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen (§ 36 VSBG).</p>
+  <p>Diese Bedingungen werden in deutscher und englischer Sprache bereitgestellt. Bei Abweichungen ist die deutsche Fassung maßgeblich. Sollten einzelne Bestimmungen unwirksam sein, bleibt die Wirksamkeit der übrigen Bestimmungen unberührt.</p>
+</LegalPage>

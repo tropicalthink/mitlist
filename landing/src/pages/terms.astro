@@ -1,0 +1,106 @@
+---
+// Terms of Service for the official hosted mitlist service — the English
+// convenience translation of /agb, same numbering. Keep the two in sync.
+// Self-hosted instances are not covered: their operator sets the terms.
+import LegalPage from "../components/LegalPage.astro";
+import { legal } from "../data/legal";
+const { operator } = legal;
+const lastUpdated = "4 September 2026";
+---
+
+<LegalPage title="Terms of Service" description="Terms of Service for the official hosted mitlist service at app.mitlist.me and in the mitlist apps.">
+  <p class="legal-meta">Last updated: {lastUpdated}</p>
+  <p class="legal-lang">Deutsche Fassung: <a href="/agb">Nutzungsbedingungen</a>. This is a convenience translation; where the two differ, the German version prevails.</p>
+
+  <h2>1. Provider and scope</h2>
+  <p>These terms govern the official hosted mitlist service provided through app.mitlist.me, the mitlist apps for iOS and Android, and the API at api.mitlist.me (the "Service"). The provider is {operator.name}, {operator.street}, {operator.postalCode} {operator.city}, Germany ("we"). Contact: <a href={`mailto:${legal.email}`}>{legal.email}</a>.</p>
+  <p>The mitlist software is free software under the GNU Affero General Public License 3.0, and that licence governs the software. Anyone who runs the software on their own server has no contract with us; these terms apply only to the service we host.</p>
+  <p>The Service is offered to consumers and to businesses. Any terms of your own do not become part of the contract.</p>
+
+  <h2>2. What the Service is</h2>
+  <p>mitlist helps people who live together organise their shared household: shared lists, rotating chores, shared expenses and settlements, recipes and meal plans, a pinwall, and a calendar. We provide the Service as a web app and as apps and store the content so that every member of a household can reach it.</p>
+  <p>The Service is under continuous development. We may add, change, or retire features as long as the core of the Service, organising a household together, remains. We announce significant changes in the app or by email.</p>
+  <p>The Service is not accounting software and produces no legally binding statements. Settlement amounts are calculation aids based on what users enter.</p>
+
+  <h2>3. Accounts</h2>
+  <p><strong>Registration.</strong> Using the Service requires an account, created with an email address and password, with a Google or Apple account, or as a guest account without an email address. Registering concludes a usage contract under these terms.</p>
+  <p><strong>Minimum age.</strong> You must be at least 16 years old to use the Service. Younger people need the consent of a parent or guardian.</p>
+  <p><strong>Credentials.</strong> Keep your credentials secret and tell us if you suspect your account is being misused. You are responsible for what is done through your account unless the misuse is not your fault.</p>
+  <p><strong>Guest accounts.</strong> A guest account is tied to the device it was created on and can be upgraded to a full account at any time by adding an email address. A guest account that is unused for 30 days is locked; after another 180 days without a sign-in it is permanently anonymised. If you want to keep the content of a guest account, upgrade it or export the content.</p>
+
+  <h2>4. Households and shared content</h2>
+  <p>A household is a shared space for several accounts. Whoever creates a household or accepts an invitation becomes a member. Everything in a household is visible to all of its members and, depending on role, editable by them.</p>
+  <p>Invite links let anyone who holds them join. Share them only with people you want in your household. Members with admin rights can remove other members and delete the household, which also deletes the household's content.</p>
+  <p>If you enter information about other people, such as a flatmate's name on an expense, you are responsible for being entitled to do so.</p>
+
+  <h2>5. Acceptable use</h2>
+  <p>You agree not to use the Service to</p>
+  <ul>
+    <li>store or distribute content that is unlawful, abusive, glorifies violence, is pornographic, or infringes the rights of others,</li>
+    <li>impersonate another person or access households or accounts you are not authorised to access,</li>
+    <li>distribute malware, circumvent security measures, or degrade the Service through automated bulk access, excessive requests, or similar means,</li>
+    <li>use the Service as general file storage or for purposes unrelated to organising a household,</li>
+    <li>send unsolicited advertising or harass other users.</li>
+  </ul>
+  <p>You may use the API with your own applications and integrations, such as Home Assistant, as long as the use serves your own household and does not place an unreasonable load on the Service.</p>
+
+  <h2>6. Content and rights</h2>
+  <p>Everything you enter or upload remains yours. You grant us only the simple, non-exclusive right to store, copy, transmit, and display that content to the members of your household as far as necessary to provide the Service. This right ends when you delete the content or your account, except for content that remains in a shared household (section 11) and for backups, which are overwritten after a limited period.</p>
+  <p>You confirm that you hold the rights needed for your content. We may remove content that violates these terms or applicable law, and we will tell you when that is legally permitted and reasonable.</p>
+
+  <h2>7. Free use and fair-use limits</h2>
+  <p>The Service is free for households of up to four members, with no ads and no feature restrictions. To keep the free Service sustainable, fair-use limits apply, currently:</p>
+  <ul>
+    <li>1 GB of attachment storage per household and 10 MB per file,</li>
+    <li>100 active lists per household and 1,000 items per list.</li>
+  </ul>
+  <p>We may adjust these limits if real usage requires it. We announce reductions at least 30 days in advance on the <a href="/transparency">transparency page</a> and in the app; content already stored is not deleted as a result.</p>
+
+  <h2>8. Premium</h2>
+  <p><strong>Scope.</strong> Households with more than four members need a Premium subscription. One subscription covers exactly one household, which you choose when subscribing and can change later in the app. As long as a member of the household holds an active subscription for that household, further members can join it.</p>
+  <p><strong>Prices and term.</strong> Premium is offered as a subscription with a monthly or yearly term. The applicable price, including VAT, is shown to you before you subscribe. The subscription renews automatically for the chosen term unless it is cancelled before the term ends.</p>
+  <p><strong>Cancellation.</strong> You can cancel at any time with effect from the end of the current term: for subscriptions bought on the web, through the subscription management in the app; for subscriptions from the App Store or Google Play, through Apple's or Google's subscription settings. After the subscription ends all content remains; the household simply cannot take on further members beyond the free limit.</p>
+  <p><strong>Payment.</strong> Web subscriptions are sold and billed by Polar Software Inc. as the merchant of record; your purchase contract for the subscription is with Polar, and <a href="https://polar.sh/legal/terms" target="_blank" rel="noopener noreferrer">Polar's terms</a> apply in addition. In-app subscriptions are concluded and billed through Apple or Google Play, whose terms govern payment, renewal, and refunds. In every case we are the party that provides the Premium service.</p>
+  <p><strong>Price changes.</strong> Price changes apply only to new terms and are announced at least 30 days in advance by email or in the app. If you do not agree to an increase, you can cancel before the new term begins.</p>
+
+  <h2>9. Right of withdrawal for consumers</h2>
+  <p>Consumers have the statutory right of withdrawal for contracts concluded at a distance. For Premium subscriptions bought on the web, Polar Software Inc. is your contracting party; Polar provides the withdrawal instructions during checkout, and the withdrawal is declared to Polar. For subscriptions from the App Store or Google Play, Apple's or Google's withdrawal and refund rules apply.</p>
+  <p>For the free usage contract with us:</p>
+  <div class="legal-box">
+    <h3>Withdrawal instructions</h3>
+    <p><strong>Right of withdrawal.</strong> You have the right to withdraw from this contract within fourteen days without giving any reason. The withdrawal period is fourteen days from the day the contract is concluded. To exercise the right of withdrawal, you must inform us ({operator.name}, {operator.street}, {operator.postalCode} {operator.city}, Germany, email: {legal.email}) of your decision to withdraw from this contract by an unequivocal statement (for example a letter sent by post or an email). You may use the model withdrawal form below, but it is not obligatory. To meet the withdrawal deadline it is sufficient that you send your communication concerning your exercise of the right of withdrawal before the withdrawal period has expired.</p>
+    <p><strong>Effects of withdrawal.</strong> If you withdraw from this contract, we shall reimburse all payments received from you without undue delay and in any event not later than fourteen days from the day on which we are informed of your decision to withdraw. No payments are made for the free Service; a withdrawal has the effect of deleting the account.</p>
+    <h3>Model withdrawal form</h3>
+    <p>(Complete and return this form only if you wish to withdraw from the contract.)</p>
+    <p>To {operator.name}, {operator.street}, {operator.postalCode} {operator.city}, Germany, email: {legal.email}:<br />I/We (*) hereby give notice that I/We (*) withdraw from my/our (*) contract for the provision of the following service: mitlist usage contract<br />Ordered on (*)/received on (*): ______<br />Name of consumer(s): ______<br />Address of consumer(s): ______<br />Signature of consumer(s) (only if this form is notified on paper): ______<br />Date: ______<br />(*) Delete as appropriate.</p>
+  </div>
+
+  <h2>10. Availability, maintenance, and discontinuation</h2>
+  <p>We aim for high availability but do not owe any particular availability for the free Service. Maintenance, outages at our suppliers, or events outside our control can interrupt the Service temporarily. We announce planned maintenance in advance where possible. The apps keep working from their local cache without a connection and reconcile changes later.</p>
+  <p>Should we discontinue the Service as a whole, we will notify you at least three months in advance by email or in the app and let you export your data during that period. Because the software is freely available, you can continue running mitlist on your own server afterwards.</p>
+
+  <h2>11. Term, termination, and suspension</h2>
+  <p><strong>By you.</strong> The usage contract runs for an indefinite period. You can end it at any time by deleting your account in the app. Deletion anonymises your account data and ends your sessions. Content you added to a shared household remains in that household for the other members but is no longer linked to your account; delete it first if you do not want that. A running Premium subscription must be cancelled separately.</p>
+  <p><strong>By us.</strong> We can terminate the usage contract with four weeks' notice. The right to terminate without notice for good cause remains unaffected, in particular for serious or repeated violations of section 5. On reasonable suspicion of misuse we can suspend an account temporarily; we will inform you and lift the suspension as soon as the suspicion is resolved.</p>
+
+  <h2>12. Warranty</h2>
+  <p>For the free Service we are liable for defects only if we fraudulently concealed them. For Premium the statutory warranty rights apply. Because the Service is under continuous development, individual features may contain errors; we fix reported errors as quickly as we can. Please keep your own export of anything important.</p>
+
+  <h2>13. Liability</h2>
+  <p>We are liable without limit for damage arising from injury to life, body, or health, for damage caused intentionally or by gross negligence, for fraudulently concealed defects, where we have given a guarantee, and under the German Product Liability Act.</p>
+  <p>For slightly negligent breach of an essential contractual obligation, meaning an obligation whose fulfilment makes proper performance of the contract possible in the first place and on whose fulfilment you may regularly rely, our liability is limited to the foreseeable damage typical for this kind of contract. Otherwise liability for slight negligence is excluded.</p>
+  <p>For the free Service we are liable, to the extent permitted by law, only for intent and gross negligence; the unlimited liability under the first paragraph remains unaffected.</p>
+  <p>For loss of data we are liable only to the extent the damage would also have occurred had you made regular backups appropriate to the value of the data. These limitations also apply to the personal liability of our agents.</p>
+
+  <h2>14. Privacy</h2>
+  <p>How we process data is described in the <a href="/privacy">privacy policy</a>. It is not part of these terms; it informs you about your rights.</p>
+
+  <h2>15. Changes to these terms</h2>
+  <p>We may change these terms when legal, technical, or economic reasons require it, for example new features, a change in the law, or new payment providers, and the change is reasonable for you. We notify you of changes at least four weeks before they take effect by email or in the app, pointing out your right to object and the consequences of not responding. If you do not object before the changes take effect, they are deemed accepted. If you object, either side can terminate the contract as of the effective date. Changes that materially alter the core of the Service or the balance between what you pay and what you receive to your detriment require your express consent.</p>
+
+  <h2>16. Final provisions</h2>
+  <p>The law of the Federal Republic of Germany applies, excluding the UN Convention on Contracts for the International Sale of Goods. If you are a consumer habitually resident in another country, the mandatory consumer protection rules of that country remain unaffected.</p>
+  <p>If you are a merchant, a legal entity under public law, or a special fund under public law, the exclusive place of jurisdiction is Marburg, Germany.</p>
+  <p>We are neither obliged nor willing to take part in dispute resolution proceedings before a consumer arbitration board (section 36 of the German VSBG).</p>
+  <p>These terms are provided in German and English. In case of discrepancies the German version prevails. Should individual provisions be invalid, the validity of the remaining provisions is unaffected.</p>
+</LegalPage>

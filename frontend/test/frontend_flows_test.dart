@@ -702,7 +702,7 @@ void main() {
 
     expect(find.text('Terms of Service'), findsWidgets);
     expect(
-      find.textContaining('Use mitlist responsibly'),
+      find.textContaining('Use the service responsibly'),
       findsOneWidget,
     );
   });
