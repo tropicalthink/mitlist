@@ -1,0 +1,194 @@
+---
+import { env } from "cloudflare:workers";
+import { loginHref } from "../lib/http";
+
+export type Tab = "feedback" | "roadmap" | "updates";
+
+interface Props {
+  active: Tab | null;
+}
+const { active } = Astro.props;
+const APP_URL = env.APP_URL || "https://app.mitlist.me";
+const user = Astro.locals.user;
+const here = Astro.url.pathname + Astro.url.search;
+const signIn = loginHref(here.startsWith("/login") ? "/" : here);
+
+const tabs: Array<{ id: Tab; label: string; href: string }> = [
+  { id: "feedback", label: "Feedback", href: "/" },
+  { id: "roadmap", label: "Roadmap", href: "/roadmap" },
+  { id: "updates", label: "Updates", href: "/updates" },
+];
+---
+
+<header class="nav">
+  <div class="wrap nav__inner">
+    <a class="brand" href="https://mitlist.me" aria-label="mitlist home">
+      <span class="brand__mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24"
+          ><path d="M4 7.5l3 3 6-6.5"></path><path d="M4 14.5l3 3 6-6.5"></path><line
+            x1="15"
+            y1="6"
+            x2="21"
+            y2="6"></line><line x1="15" y1="16" x2="21" y2="16"></line></svg
+        >
+      </span>
+      mitlist
+    </a>
+    <a class="brand__site" href="/">feedback</a>
+
+    <nav class="tabs" aria-label="Sections">
+      {
+        tabs.map((tab) => (
+          <a href={tab.href} aria-current={active === tab.id ? "page" : undefined}>
+            {tab.label}
+          </a>
+        ))
+      }
+    </nav>
+
+    <div class="nav__actions">
+      {
+        user ? (
+          <>
+            <span class="nav__who meta" title={user.email}>
+              {user.firstName || user.email}
+            </span>
+            <form method="post" action="/api/auth/logout">
+              <button class="btn btn--ghost btn--sm" type="submit">
+                Sign out
+              </button>
+            </form>
+          </>
+        ) : (
+          <>
+            <a class="btn btn--ghost btn--sm nav__app" href={APP_URL}>
+              Open the app
+            </a>
+            <a class="btn btn--ghost btn--sm" href={signIn}>
+              Sign in
+            </a>
+          </>
+        )
+      }
+      <a class="btn btn--primary btn--sm" href="/new">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+        Give feedback
+      </a>
+    </div>
+  </div>
+</header>
+
+<style>
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-nav);
+    background: var(--paper-2);
+    border-bottom: var(--border);
+  }
+  .nav__inner {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-height: 64px;
+    flex-wrap: wrap;
+    padding-block: 0.5rem;
+  }
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-weight: 700;
+    font-size: 1.2rem;
+    letter-spacing: -0.03em;
+    text-decoration: none;
+    color: var(--ink);
+  }
+  .brand__mark {
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    background: var(--orange);
+    border: var(--border);
+    box-shadow: var(--shadow-sm);
+  }
+  .brand__mark svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: var(--ink);
+    stroke-width: 2.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .brand__site {
+    font-weight: 600;
+    font-size: 1.05rem;
+    letter-spacing: -0.02em;
+    text-decoration: none;
+    color: var(--ink-3);
+    margin-left: -0.4rem;
+  }
+  .brand__site::before {
+    content: "/";
+    color: var(--line-2);
+    margin-right: 0.5rem;
+  }
+  .tabs {
+    display: flex;
+    gap: 0.25rem;
+    margin-left: 1rem;
+  }
+  .tabs a {
+    text-decoration: none;
+    font-weight: 600;
+    color: var(--ink-3);
+    padding: 0.45rem 0.7rem;
+    border: 2px solid transparent;
+    transition:
+      color 0.12s,
+      border-color 0.12s,
+      background 0.12s;
+  }
+  .tabs a:hover {
+    color: var(--ink);
+    border-color: var(--ink);
+  }
+  .tabs a[aria-current="page"] {
+    color: var(--ink);
+    background: var(--paper);
+    border-color: var(--ink);
+    box-shadow: var(--shadow-sm);
+  }
+  .nav__actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .nav__actions form {
+    margin: 0;
+  }
+  .nav__who {
+    max-width: 10rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--ink);
+    font-weight: 600;
+  }
+  @media (max-width: 760px) {
+    .tabs {
+      order: 10;
+      width: 100%;
+      margin-left: 0;
+      overflow-x: auto;
+      padding-bottom: 0.15rem;
+    }
+    .nav__app,
+    .nav__who {
+      display: none;
+    }
+  }
+</style>

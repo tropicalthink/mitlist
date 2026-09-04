@@ -1,0 +1,416 @@
+---
+import Layout from "../layouts/Layout.astro";
+import PostRow from "../components/PostRow.astro";
+import {
+  listPosts,
+  sortPosts,
+  type BoardKind,
+  type BoardPost,
+  type BoardSort,
+  type BoardStatus,
+} from "../lib/board";
+import { KIND, STATUS, STATUS_ORDER } from "../lib/format";
+import { friendlyError, loginHref } from "../lib/http";
+
+const user = Astro.locals.user;
+const params = Astro.url.searchParams;
+const statusParam = params.get("status");
+const status: BoardStatus | null =
+  statusParam === "new" || statusParam === "in_progress" || statusParam === "done" ? statusParam : null;
+const kindParam = params.get("kind");
+const kind: BoardKind | null = kindParam === "feature" || kindParam === "bug" ? kindParam : null;
+const sort: BoardSort = params.get("sort") === "new" ? "new" : "top";
+const q = (params.get("q") ?? "").trim().slice(0, 100);
+const flash = params.get("error");
+
+let posts: BoardPost[] = [];
+let loadError: string | null = null;
+try {
+  posts = await listPosts(user?.id);
+} catch (error) {
+  loadError = friendlyError(error).message;
+}
+
+const byKind = { feature: 0, bug: 0 };
+const byStatus: Record<BoardStatus, number> = { new: 0, in_progress: 0, done: 0 };
+for (const post of posts) {
+  byKind[post.kind] += 1;
+  byStatus[post.status] += 1;
+}
+
+const needle = q.toLowerCase();
+let visible = posts.filter(
+  (post) =>
+    (!status || post.status === status) &&
+    (!kind || post.kind === kind) &&
+    (!needle ||
+      post.title.toLowerCase().includes(needle) ||
+      (post.description ?? "").toLowerCase().includes(needle))
+);
+visible = sortPosts(visible, sort);
+
+/** The current view with one parameter changed; null removes it. */
+function view(overrides: Partial<Record<"status" | "kind" | "sort" | "q", string | null>>): string {
+  const next = new URLSearchParams();
+  const merged = { status, kind, sort: sort === "top" ? null : sort, q: q || null, ...overrides };
+  for (const [key, value] of Object.entries(merged)) {
+    if (value) next.set(key, value);
+  }
+  const query = next.toString();
+  return query ? `/?${query}` : "/";
+}
+
+const heading = kind ? KIND[kind].plural : "All feedback";
+const newHref = `/new${kind ? `?kind=${kind}` : ""}`;
+const FLASH: Record<string, string> = {
+  rate_limited: "That is a lot of activity at once. Give it a minute and try again.",
+  not_found: "That is no longer on the board.",
+  upstream_error: "The board could not be reached. Try again in a moment.",
+  unavailable: "The board is not connected to the tracker yet. Try again later.",
+};
+---
+
+<Layout tab="feedback" title={kind || status ? `${heading}${status ? ` · ${STATUS[status].label}` : ""}` : undefined}>
+  <section class="hero">
+    <div class="wrap hero__inner">
+      <div>
+        <span class="stamp">Built with your input</span>
+        <h1 class="h1">What should mitlist do next?</h1>
+        <p class="lead">
+          Ideas and bug reports from the people who use mitlist, in the open. Upvote what matters to
+          your household, add what is missing, and watch it move from under review to shipped.
+          {!user && <>Sign in with your mitlist account to join in.</>}
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <div class="filters">
+    <div class="wrap filters__inner">
+      <nav class="chips" aria-label="Filter by status">
+        <a class="chip" href={view({ status: null })} aria-current={status === null ? "true" : undefined}>
+          All
+          <span class="chip__count">{posts.length}</span>
+        </a>
+        {
+          STATUS_ORDER.map((value) => (
+            <a class="chip" href={view({ status: value })} aria-current={status === value ? "true" : undefined}>
+              <span class:list={["dot", `dot--${value}`]} aria-hidden="true" />
+              {STATUS[value].label}
+              <span class="chip__count">{byStatus[value]}</span>
+            </a>
+          ))
+        }
+      </nav>
+      <div class="filters__right">
+        <form class="search" method="get" action="/" role="search">
+          {status && <input type="hidden" name="status" value={status} />}
+          {kind && <input type="hidden" name="kind" value={kind} />}
+          {sort === "new" && <input type="hidden" name="sort" value="new" />}
+          <svg viewBox="0 0 24 24" aria-hidden="true"
+            ><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg
+          >
+          <input class="search__input" type="search" name="q" value={q} placeholder="Search feedback" aria-label="Search feedback" />
+        </form>
+        <nav class="segmented segmented--links" aria-label="Sort">
+          <a href={view({ sort: null })} aria-current={sort === "top" ? "true" : undefined}>Top</a>
+          <a href={view({ sort: "new" })} aria-current={sort === "new" ? "true" : undefined}>New</a>
+        </nav>
+      </div>
+    </div>
+  </div>
+
+  <section class="wrap board">
+    <div class="board__main">
+      {flash && <p class="notice notice--error" role="alert">{FLASH[flash] ?? FLASH.upstream_error}</p>}
+      {loadError && <p class="notice notice--error">{loadError}</p>}
+
+      {
+        !loadError && visible.length === 0 && (
+          <div class="empty panel">
+            <div class="panel__body">
+              <h2 class="h2">{q ? "Nothing matches that" : "Nothing here yet"}</h2>
+              <p class="lead">
+                {q
+                  ? "Try a different word, or add it as a new idea."
+                  : status === "done"
+                    ? "Nothing shipped in this view yet. Check the Updates tab for the full history."
+                    : "Be the first to say what would make mitlist better for your household."}
+              </p>
+              <p style="margin-top:1rem">
+                <a class="btn btn--primary" href={user ? newHref : loginHref(newHref)}>Give feedback</a>
+              </p>
+            </div>
+          </div>
+        )
+      }
+
+      {
+        visible.length > 0 && (
+          <div class="list panel">
+            <div class="panel__head">
+              <span class="panel__title">
+                {heading}
+                {status ? ` · ${STATUS[status].label}` : ""}
+              </span>
+              <span class="meta mono">{visible.length}</span>
+            </div>
+            {visible.map((post) => (
+              <PostRow post={post} signedIn={Boolean(user)} />
+            ))}
+          </div>
+        )
+      }
+    </div>
+
+    <aside class="board__side">
+      <a class="btn btn--primary side__cta" href={newHref}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+        Give feedback
+      </a>
+
+      <nav class="panel panel--flat side__boards" aria-label="Boards">
+        <div class="panel__head"><span class="panel__title">Boards</span></div>
+        <a href={view({ kind: null })} aria-current={kind === null ? "true" : undefined}>
+          <span class="dot" aria-hidden="true"></span> All feedback
+          <span class="chip__count">{posts.length}</span>
+        </a>
+        <a href={view({ kind: "feature" })} aria-current={kind === "feature" ? "true" : undefined}>
+          <span class="dot dot--feature" aria-hidden="true"></span> Features
+          <span class="chip__count">{byKind.feature}</span>
+        </a>
+        <a href={view({ kind: "bug" })} aria-current={kind === "bug" ? "true" : undefined}>
+          <span class="dot dot--bug" aria-hidden="true"></span> Bugs
+          <span class="chip__count">{byKind.bug}</span>
+        </a>
+      </nav>
+
+      <div class="side__note">
+        <p class="meta">
+          <strong>How it works.</strong> New posts start under review. When we pick something up it
+          moves to in progress, and when it ships it lands on the
+          <a href="/updates">Updates</a> page. The same board lives in the app under You → Feature
+          board, and your votes are shared between the two.
+        </p>
+        <p class="meta side__actions">
+          <button class="btn btn--ghost btn--sm" type="button" data-copy-link={Astro.url.toString()}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"
+              ><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"></path><path
+                d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"></path></svg
+            >
+            Copy link
+          </button>
+        </p>
+      </div>
+    </aside>
+  </section>
+</Layout>
+
+<style>
+  .hero {
+    background: var(--paper-2);
+    padding-block: clamp(2rem, 1.5rem + 2vw, 3.2rem) 1.6rem;
+  }
+  .hero .stamp {
+    margin-bottom: 1rem;
+  }
+  .hero .h1 {
+    margin-bottom: 0.7rem;
+    max-width: 18ch;
+  }
+
+  .filters {
+    position: sticky;
+    top: 64px;
+    z-index: calc(var(--z-nav) - 1);
+    background: var(--paper-2);
+    border-top: var(--border);
+    border-bottom: var(--border);
+  }
+  .filters__inner {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding-block: 0.6rem;
+    flex-wrap: wrap;
+  }
+  .filters__right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  .chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    max-width: 100%;
+    padding-bottom: 2px;
+  }
+  .dot--new {
+    color: #0288d1;
+  }
+  .dot--in_progress {
+    color: var(--orange-600);
+  }
+  .dot--done {
+    color: var(--success-700);
+  }
+  .dot--feature {
+    color: var(--success-700);
+  }
+  .dot--bug {
+    color: var(--error);
+  }
+  .chip[aria-current="true"] .dot {
+    color: var(--paper);
+  }
+
+  .search {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    border: var(--border);
+    background: var(--paper);
+    padding: 0 0.6rem;
+    height: 2.35rem;
+  }
+  .search svg {
+    width: 1rem;
+    height: 1rem;
+    fill: none;
+    stroke: var(--ink-3);
+    stroke-width: 2.4;
+    stroke-linecap: round;
+  }
+  .search__input {
+    border: none;
+    background: transparent;
+    width: 11rem;
+    outline: none;
+    font-size: 0.93rem;
+  }
+  .search__input::-webkit-search-decoration {
+    display: none;
+  }
+  .search:focus-within {
+    outline: 3px solid var(--orange-600);
+    outline-offset: 2px;
+  }
+
+  .segmented--links a {
+    padding: 0.45rem 0.85rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-decoration: none;
+    border-right: var(--border);
+  }
+  .segmented--links a:last-child {
+    border-right: none;
+  }
+  .segmented--links a[aria-current="true"] {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .board {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: 2rem;
+    padding-top: 1.75rem;
+    align-items: start;
+  }
+  .board__side {
+    display: grid;
+    gap: 1rem;
+    position: sticky;
+    top: calc(64px + 3.6rem + 1rem);
+  }
+  .side__cta {
+    width: 100%;
+    padding-block: 0.85rem;
+    font-size: 1rem;
+    box-shadow: var(--shadow);
+  }
+  .side__boards a {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 1rem;
+    text-decoration: none;
+    font-weight: 600;
+    border-bottom: var(--border-soft);
+  }
+  .side__boards a:last-child {
+    border-bottom: none;
+  }
+  .side__boards a:hover {
+    background: var(--paper-3);
+  }
+  .side__boards a[aria-current="true"] {
+    background: var(--orange-100);
+  }
+  .side__boards .chip__count {
+    margin-left: auto;
+  }
+  .side__note {
+    display: grid;
+    gap: 0.75rem;
+  }
+  .side__note a {
+    color: var(--ink);
+  }
+  .empty .panel__body {
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+  }
+  .empty .lead {
+    margin: 0.6rem auto 0;
+  }
+
+  @media (max-width: 900px) {
+    .board {
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
+    }
+    .board__side {
+      position: static;
+      order: -1;
+    }
+    .side__cta {
+      display: none;
+    }
+    .side__boards {
+      display: flex;
+      flex-wrap: wrap;
+      box-shadow: none;
+    }
+    .side__boards .panel__head {
+      display: none;
+    }
+    .side__boards a {
+      border-bottom: none;
+      border-right: var(--border);
+      padding: 0.5rem 0.8rem;
+      font-size: 0.9rem;
+    }
+    .side__boards a:last-child {
+      border-right: none;
+    }
+    .side__note {
+      display: none;
+    }
+    .filters {
+      position: static;
+    }
+    .filters__right {
+      margin-left: 0;
+      width: 100%;
+    }
+    .search {
+      flex: 1;
+    }
+    .search__input {
+      width: 100%;
+    }
+  }
+</style>

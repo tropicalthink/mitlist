@@ -4596,7 +4596,7 @@ abstract class AppLocalizations {
   /// Terms of service body text
   ///
   /// In en, this message translates to:
-  /// **'Use mitlist responsibly and respect your household members\' privacy. Do not misuse shared features or data. mitlist is provided as-is without warranties.'**
+  /// **'mitlist is provided by tropicalthink under the Terms of Service published at mitlist.me/terms. Households of up to four members use the hosted service for free; larger households need a Premium subscription. Use the service responsibly and respect the privacy of the people you share a household with.'**
   String get accountTermsBody;
 
   /// Dialog title for account deletion
@@ -7488,8 +7488,14 @@ abstract class AppLocalizations {
   /// Terms paragraph 3
   ///
   /// In en, this message translates to:
-  /// **'The app is provided as-is while the product is still evolving. Keep your own backups for anything critical.'**
+  /// **'Households of up to four members use the hosted service for free. Larger households need a Premium subscription, which you can cancel at any time. Keep your own export of anything critical.'**
   String get authSignupTermsP3;
+
+  /// Link under an in-app legal summary that opens the full terms or privacy page in the browser
+  ///
+  /// In en, this message translates to:
+  /// **'Read the full text'**
+  String get legalReadFullText;
 
   /// Privacy paragraph 1
   ///

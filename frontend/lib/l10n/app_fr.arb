@@ -3008,7 +3008,7 @@
   "@accountTermsTitle": {
     "description": "Bottom sheet title for terms"
   },
-  "accountTermsBody": "Utilise mitlist de manière responsable et respecte la vie privée des membres de ton foyer. N'abuse pas des fonctionnalités ou des données partagées. mitlist est fourni tel quel sans garantie.",
+  "accountTermsBody": "mitlist est fourni par tropicalthink selon les Conditions d'utilisation publiées sur mitlist.me/terms. Les foyers de quatre membres au plus utilisent le service hébergé gratuitement ; les foyers plus grands ont besoin d'un abonnement Premium. Utilise le service de manière responsable et respecte la vie privée des personnes avec qui tu partages un foyer.",
   "@accountTermsBody": {
     "description": "Terms of service body text"
   },
@@ -4689,10 +4689,11 @@
   "@authSignupTermsP2": {
     "description": "Terms paragraph 2"
   },
-  "authSignupTermsP3": "L'app est fournie en l'état pendant que le produit évolue encore. Garde tes propres sauvegardes pour tout ce qui est important.",
+  "authSignupTermsP3": "Les foyers de quatre membres au plus utilisent le service hébergé gratuitement. Les foyers plus grands ont besoin d'un abonnement Premium, résiliable à tout moment. Garde ton propre export de tout ce qui est important.",
   "@authSignupTermsP3": {
     "description": "Terms paragraph 3"
   },
+  "legalReadFullText": "Lire le texte complet",
   "authSignupTermsPrefix": "En créant un compte, tu acceptes nos ",
   "@authSignupTermsPrefix": {
     "description": "Text before terms link"

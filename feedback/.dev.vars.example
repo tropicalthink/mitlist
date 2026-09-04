@@ -1,0 +1,15 @@
+# Local secrets for `astro dev` / `wrangler dev`. Copy to .dev.vars (gitignored).
+# mitlist's intake key from Staffroom → Apps. Same value as REQTRACK_APP_KEY in
+# frontend/.env.
+REQTRACK_APP_KEY=
+
+# Optional. Point at a local reqtrack (`pnpm dev:api` in the reqtrack repo,
+# then create an app with POST /api/apps and use its key above).
+# REQTRACK_URL=http://localhost:8787
+
+# Only for `wrangler dev` (production build run locally): there is no local
+# reqtrack-api to bind to, so call REQTRACK_URL directly instead.
+# REQTRACK_DIRECT=1
+
+# Optional. A local mitlist backend for sign-in (default: the hosted API).
+# MITLIST_API_URL=http://localhost:8080/api/v1

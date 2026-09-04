@@ -573,14 +573,38 @@ class _BottomNavScaffoldState extends ConsumerState<BottomNavScaffold> {
   /// to wherever they actually were, which is choreography nobody asked for.
   bool _navMotionArmed = false;
 
+  /// The branch the shell was mounted on. Non-zero means something navigated
+  /// here on purpose (a push notification, a deep link), and the last-tab
+  /// restore below must not drag the user somewhere else.
+  late final int _initialIndex = widget.navigationShell.currentIndex;
+
   @override
   void initState() {
     super.initState();
+    _markCurrentTabVisited();
+    _restoreLastTab();
+  }
+
+  @override
+  void didUpdateWidget(covariant BottomNavScaffold oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Tab screens only start loading once their index is in
+    // shellVisitedTabsProvider (see shell_tab_load.dart). _onTap marks it for
+    // bar taps, but a branch change from go()/goNamed() — a notification tap,
+    // a deep link, the hub's shortcuts — bypasses the bar entirely and used to
+    // leave the destination on its skeleton until the user tapped away and
+    // back. Mark every branch change, whoever caused it.
+    if (widget.navigationShell.currentIndex !=
+        oldWidget.navigationShell.currentIndex) {
+      _markCurrentTabVisited();
+    }
+  }
+
+  void _markCurrentTabVisited() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       markShellTabVisited(ref, widget.navigationShell.currentIndex);
     });
-    _restoreLastTab();
   }
 
   Future<void> _restoreLastTab() async {
@@ -588,7 +612,8 @@ class _BottomNavScaffoldState extends ConsumerState<BottomNavScaffold> {
     final saved = prefs.getInt(_lastShellTabKey) ?? 0;
     if (!mounted || _restored) return;
     _restored = true;
-    if (saved != 0 && saved < 5) {
+    final onHome = _initialIndex == 0 && widget.navigationShell.currentIndex == 0;
+    if (onHome && saved != 0 && saved < 5) {
       widget.navigationShell.goBranch(saved);
       markShellTabVisited(ref, saved);
     }

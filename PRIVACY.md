@@ -1,117 +1,118 @@
-# Privacy Statement
+# Privacy
 
-**mitlist** is open-source software that can be used on the official hosted service or on an independently operated server. This document describes what the software handles in both cases.
+This file mirrors the privacy policy of the **official hosted mitlist service**
+published at <https://mitlist.me/privacy> (English) and
+<https://mitlist.me/datenschutz> (German, the binding version). It is kept here
+so that people reading the source can see what the software does with data.
+When a provider, a feature, or a retention period changes, update all three.
 
----
+Last updated: 4 September 2026.
 
-## Where your data lives
+## Two situations
 
-Household data — shopping lists, expenses, chores, meal plans, recipes, photos, and account information — is stored by the operator of the server selected in the app. The official service uses managed PostgreSQL and S3-compatible object storage; a self-hoster chooses their own database and storage.
+mitlist is free software (AGPL-3.0) that runs either on the official hosted
+service or on a server somebody operates themselves.
 
-The mitlist project receives hosted household data only when someone chooses the official service. It receives no household content, analytics, or telemetry from an independently self-hosted instance.
+- **Official service** (`app.mitlist.me`, `api.mitlist.me`, the store apps):
+  the provider named in the [Impressum](https://mitlist.me/impressum) is the
+  data controller. Everything below describes this deployment.
+- **Self-hosted instance**: its operator is the controller. The mitlist
+  project receives no household data, usage data, or crash reports from such
+  an instance. Every outbound integration is off until the operator configures
+  it; see the table at the end.
 
----
+## Principles
 
-## No first-party telemetry by default
+- No ads, no selling of data.
+- The apps and the web app carry no analytics or advertising trackers and
+  build no usage profiles. The marketing site at `mitlist.me` uses cookieless
+  Cloudflare Web Analytics for aggregated page counts; the app does not.
+- Household data lives on a server we run in the European Union.
+- Export and account deletion are available in the app at any time.
+- Only what is needed to run the service, bill Premium, and keep it secure is
+  processed.
 
-mitlist does not collect usage analytics, behavioral data, or any form of "phone home" telemetry. This is true by default and requires no configuration to preserve.
+## What the official service processes
 
----
+| Area | Data | Notes |
+|------|------|-------|
+| Account | Email, chosen name, password hash; or the email, name, and account id from Google / Apple sign-in | Guest accounts have no email, are device-bound, are locked after 30 days of inactivity and anonymised after another 180 days |
+| Sessions | Access and refresh token stored on the device / in browser storage | Invalidated on sign-out or password change |
+| Household content | Lists, chores, expenses and settlements, recipes, meal plans, pinwall notes, calendar, invitations, uploaded photos and receipts, plus timestamps and authorship | Visible to every member of the household. 1 GB per household, 10 MB per file, stored in Cloudflare R2 |
+| Scanner | Nothing leaves the device | Text recognition runs on-device; no AI service is called |
+| Recipe import | The URL you paste is fetched by the server | The recipe site sees the server's address, not yours |
+| Push | Device token (FCM / APNs / Web Push) and the notification text | Optional; token deleted on sign-out |
+| Email | Address and message content, sent via Resend | Confirmation, password reset, invitations, optional weekly summary. No marketing email |
+| Premium | Subscription holder, assigned household, term, status, amount paid | Web payments through Polar (merchant of record), in-app through Apple / Google. Billing records kept up to ten years by law |
+| Security | IP address and connection data at Cloudflare; Turnstile result for guest sign-up on the web; Firebase App Check attestation for the mobile apps; server logs of failed sign-ins | Logs deleted after a short period |
+| Crash reports | Stack trace, app / OS version, device type, environment, sent to a self-run GlitchTip instance | No household content, names, or emails; no performance or usage data |
+| Feedback | Text, source screen, app version, platform, locale; on the public board also your account id and first name | Stored in the request tracker on Cloudflare Workers / D1 |
 
-## Optional, operator-controlled crash reporting
+## Retention and deletion
 
-An operator may enable error reporting to help diagnose crashes. This is **opt-in and off unless explicitly configured**:
+- Account and household content stay as long as the account exists.
+- **Deleting the account** in the app removes email, name, password, and
+  avatar immediately, ends every session, and anonymises the account. Content
+  added to a shared household stays there for the other members, no longer
+  linked to the deleted account. Delete it or the household first if you do not
+  want that.
+- Deleting a household deletes its content.
+- Guest accounts: locked after 30 days idle, anonymised after another 180 days.
+- Billing records: statutory periods, up to ten years.
+- Push tokens: deleted on sign-out. Logs and crash reports: after a short period.
+- Backups are encrypted and overwritten after a limited period.
+- Expenses can be exported as CSV or JSON from the app at any time; other data
+  on request.
 
-- **Backend**: set the `SENTRY_DSN` environment variable. If unset (the default), no error reports are sent.
-- **Web/Flutter client**: supply a `GLITCHTIP_DSN` build-time define (`--dart-define=GLITCHTIP_DSN=...`). If unset (the default), no error reports are sent.
+## Recipients and transfers
 
-When enabled, crash reports contain stack traces and basic context (OS version, app version, environment label). They do **not** contain household content (list items, expenses, names, or any user-generated data) by design — the Sentry SDK is configured with `tracesSampleRate = 0.0` and no PII capture.
+| Recipient | Purpose | Location / basis |
+|-----------|---------|------------------|
+| Server provider (Heerlen, NL) | Web app, API, PostgreSQL | EU |
+| Cloudflare, Inc. | Website, network and protection, Turnstile, R2, feedback tracker (Workers, D1) | USA; SCCs, EU-US Data Privacy Framework |
+| Google Ireland Ltd. (Firebase) | Push, App Check, Sign in with Google | Ireland; onward to Google LLC under the DPF and SCCs |
+| Apple Distribution International Ltd. | Sign in with Apple, push on iOS, in-app purchase | Ireland; onward to Apple Inc. under the DPF |
+| Resend, Inc. | Transactional email | USA; SCCs |
+| Polar Software Inc. | Premium payments on the web (merchant of record) | USA; independent controller |
+| Google Play / Apple App Store | App distribution, in-app purchase | Store privacy policies |
 
-Reports are sent to whatever endpoint the operator configures in the DSN. We recommend pointing this at a **self-hosted GlitchTip** instance so crash data stays on the operator's own infrastructure and is not sent to a third party.
+## Age
 
-## Official-service abuse prevention
+The official service is for people aged 16 and over; younger people need a
+parent's or guardian's consent.
 
-### Mobile: Firebase App Check
+## Your rights
 
-The official mobile builds use Firebase App Check to attest that requests come
-from an unmodified mitlist app: Play Integrity on Android and App Attest on
-iOS. The official API verifies the attestation and rejects missing or invalid
-tokens. This is an abuse-prevention signal, not analytics, advertising, or a
-household-content feed. Firebase/Google and Apple may receive device/app
-integrity signals needed to issue the attestation token; mitlist receives only
-the verification result and does not use it to build a user profile.
+Access, rectification, erasure, restriction, portability, objection, and
+withdrawal of consent (Art. 15-21 and 7(3) GDPR). Email
+<hi@tropicalthink.com>, or delete the account in the app. Complaints go to the
+Hessian Commissioner for Data Protection and Freedom of Information
+(<https://datenschutz.hessen.de>) or the authority where you live.
 
-App Check is an attestation signal, not a persistent unique-device
-fingerprint. Tokens rotate; the service combines verified app attestation with
-an app-generated installation identifier used only
-for short-lived abuse quotas; the service does not turn that value into a
-cross-service identity or advertising profile.
+## Operator-controlled integrations (self-hosting reference)
 
-App Check is disabled by default for independently self-hosted deployments.
-A self-hoster who opts in is responsible for configuring their own Firebase
-project, reviewing that provider's privacy terms, and disclosing it to their
-users. Debug App Check providers and debug tokens are never appropriate for a
-released official artifact.
-
-### Web: Cloudflare Turnstile
-
-The official web app uses Cloudflare Turnstile in **invisible** mode on guest
-sign-up, in place of App Check — App Check's only web provider is reCAPTCHA
-Enterprise, and we would rather not route sign-ups through an advertising
-company's risk engine. Cloudflare receives the signals it needs to decide
-whether the browser is automated; mitlist receives only the pass/fail result.
-No challenge is shown unless Cloudflare asks for one.
-
-Cloudflare processes this data as described in the
-[Cloudflare Turnstile Privacy Addendum](https://www.cloudflare.com/application-services/products/turnstile-privacy-addendum/),
-which applies to our use of invisible mode and is incorporated here by
-reference.
-
-Like App Check, Turnstile is an abuse signal rather than a profile: the token
-is single-use, it is verified once at sign-up, and it is not retained or
-joined to an account.
-
-Turnstile is disabled by default for independently self-hosted deployments,
-which set `TURNSTILE_SECRET_KEY` only if they want it.
-
----
-
-## Account controls
-
-- **Guest mode** — you can use mitlist without providing an email address.
-- **Data export** — download your expenses as CSV or JSON at any time from within the app.
-- **Account deletion** — deleting your account revokes every session, removes
-  credentials and personal profile data, and anonymizes authorship that must
-  remain in shared household history. Export first if you want a copy.
-
----
-
-## Third-party services the operator may configure
-
-Each of the following is optional and disabled unless the operator provides credentials. When enabled, data is sent to that provider only for the specific function described. The operator supplies their own credentials and is responsible for that provider's terms.
+Each of these is disabled in a default deployment until the operator provides
+credentials. When enabled, data goes to that provider only for the function
+described, and the operator is responsible for that provider's terms.
 
 | Service | Purpose | Configured via |
 |---------|---------|----------------|
-| Resend | Transactional email | `RESEND_API_KEY` |
-| PlanetScale | Managed PostgreSQL for the official service | `DATABASE_URL` |
-| SendGrid / Brevo SMTP | Transactional email (SMTP fallback) | `SENDGRID_SMTP_*` / `BREVO_SMTP_*` |
+| Resend / SMTP | Transactional email | `RESEND_API_KEY` or SMTP settings |
+| Google / Apple OAuth | Sign in with Google / Apple | `GOOGLE_CLIENT_ID` + secret, `APPLE_*` |
 | Firebase / FCM | Mobile push notifications | `FIREBASE_PROJECT_ID` + `FIREBASE_SERVICE_ACCOUNT_JSON` |
-| Firebase App Check | Mobile app/device attestation for official-service abuse prevention | `FIREBASE_APP_CHECK_REQUIRED=true` + `FIREBASE_PROJECT_NUMBER` + Firebase project credentials |
-| Cloudflare Turnstile | Web guest sign-up abuse prevention (invisible mode) | `TURNSTILE_SECRET_KEY` |
+| Firebase App Check | Mobile app attestation | `FIREBASE_APP_CHECK_REQUIRED` + `FIREBASE_PROJECT_NUMBER` |
+| Cloudflare Turnstile | Web guest sign-up abuse prevention | `TURNSTILE_SECRET_KEY` (+ `TURNSTILE_SITE_KEY` in the web build) |
 | Web Push (VAPID) | Browser push notifications | `VAPID_PRIVATE_KEY` + `VAPID_PUBLIC_KEY` |
-| AWS S3 / Cloudflare R2 | File and photo storage | `AWS_ACCESS_KEY_ID` + `S3_BUCKET_NAME` |
+| S3 / Cloudflare R2 | File and photo storage | `AWS_ACCESS_KEY_ID` + `S3_BUCKET_NAME` + `S3_ENDPOINT_URL` |
+| Polar | Premium subscriptions on the web | `POLAR_ACCESS_TOKEN` (+ product ids) |
+| Apple / Google IAP | Premium subscriptions in the store apps | `APPLE_IAP_*`, `GOOGLE_PLAY_*` |
+| Sentry / GlitchTip | Crash reports (backend) | `SENTRY_DSN` |
+| Sentry / GlitchTip | Crash reports (web / apps) | `GLITCHTIP_DSN` build-time define |
+| FlareSolverr | Recipe import from sites that block data-centre IPs | `SCRAPER_FLARESOLVER_URL` |
 | FX rate feed | Live exchange rates for expenses | `FX_RATE_API_URL` |
+| reqtrack | In-app feedback and feature board | `REQTRACK_APP_KEY` + `REQTRACK_URL` build-time defines |
 
-These integrations are disabled in a default self-hosted deployment unless its operator configures them. The official service publishes its active infrastructure on the transparency page.
-
----
-
-## Who is the data controller
-
-For the official service, the provider named in the landing site's Impressum is the data controller. For an independently self-hosted instance, its operator is the controller and is responsible for the people using it.
-
----
-
-## Contact
-
-For the official service, email `hi@tropicalthink.com`. For another deployment, contact its operator. Software issues can be filed in the public repository.
+Crash reporting is worth calling out: the SDK is configured with
+`tracesSampleRate = 0.0` and no PII capture, so reports carry stack traces and
+basic context but no household content by design. Point the DSN at a
+self-hosted GlitchTip to keep crash data on your own infrastructure.

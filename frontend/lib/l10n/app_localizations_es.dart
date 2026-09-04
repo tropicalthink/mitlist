@@ -2603,7 +2603,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get accountTermsBody =>
-      'Usa mitlist de forma responsable y respeta la privacidad de los miembros de tu hogar. No hagas un mal uso de las funciones o datos compartidos. mitlist se proporciona tal cual, sin garantías.';
+      'mitlist lo ofrece tropicalthink según las Condiciones del servicio publicadas en mitlist.me/terms. Los hogares de hasta cuatro miembros usan el servicio alojado gratis; los hogares más grandes necesitan una suscripción Premium. Usa el servicio de forma responsable y respeta la privacidad de las personas con las que compartes hogar.';
 
   @override
   String get accountDeleteAccount => 'Eliminar cuenta';
@@ -4247,7 +4247,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get authSignupTermsP3 =>
-      'La app se proporciona tal cual mientras el producto sigue evolucionando. Guarda tus propias copias de seguridad para lo importante.';
+      'Los hogares de hasta cuatro miembros usan el servicio alojado gratis. Los hogares más grandes necesitan una suscripción Premium, que puedes cancelar en cualquier momento. Guarda tu propia exportación de todo lo importante.';
+
+  @override
+  String get legalReadFullText => 'Leer el texto completo';
 
   @override
   String get authSignupPrivacyP1 =>

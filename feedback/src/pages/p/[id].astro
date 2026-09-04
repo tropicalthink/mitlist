@@ -1,0 +1,342 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import StatusPill from "../../components/StatusPill.astro";
+import VoteButton from "../../components/VoteButton.astro";
+import { BoardError, getPost, isPostId, type BoardPostDetail } from "../../lib/board";
+import { KIND, STATUS, countLabel, excerpt, isoDate, longDate, relativeTime } from "../../lib/format";
+import { friendlyError, loginHref } from "../../lib/http";
+
+const id = Astro.params.id;
+if (!isPostId(id)) return Astro.redirect("/", 302);
+
+const user = Astro.locals.user;
+let post: BoardPostDetail | null = null;
+let loadError: string | null = null;
+try {
+  post = await getPost(id, user?.id);
+} catch (error) {
+  if (error instanceof BoardError && error.status === 404) {
+    Astro.response.status = 404;
+  } else {
+    Astro.response.status = 502;
+    loadError = friendlyError(error).message;
+  }
+}
+
+const params = Astro.url.searchParams;
+const posted = params.get("posted") === "1";
+const flash = params.get("error");
+const FLASH: Record<string, string> = {
+  empty: "Write something first.",
+  long: "Comments are at most 2000 characters.",
+  rate_limited: "That is a lot of activity at once. Give it a minute and try again.",
+  not_found: "That is no longer on the board.",
+  upstream_error: "The board could not be reached. Try again in a moment.",
+  unavailable: "The board is not connected to the tracker yet. Try again later.",
+};
+const flashMessage = flash ? (FLASH[flash] ?? FLASH.upstream_error) : null;
+
+const description = post ? excerpt(post.description, 160) || `${KIND[post.kind].label} on the mitlist feedback board.` : undefined;
+const here = Astro.url.pathname;
+---
+
+<Layout
+  tab="feedback"
+  title={post ? post.title : "Not found"}
+  description={description}
+  ogTitle={post?.title}
+>
+  <section class="wrap post" data-page="post">
+    <p class="crumbs meta">
+      <a href="/">Feedback</a>
+      <span aria-hidden="true">/</span>
+      {post && <a href={`/?kind=${post.kind}`}>{KIND[post.kind].plural}</a>}
+    </p>
+
+    {posted && <p class="notice notice--ok" role="status">Your post is on the board. Your own upvote is already counted.</p>}
+    {flashMessage && <p class="notice notice--error" role="alert">{flashMessage}</p>}
+
+    {
+      !post && !loadError && (
+        <div class="panel">
+          <div class="panel__body empty">
+            <h1 class="h2">That post is not on the board</h1>
+            <p class="lead">It may have been merged into another request or taken down. <a href="/">Back to all feedback</a>.</p>
+          </div>
+        </div>
+      )
+    }
+    {loadError && <p class="notice notice--error">{loadError}</p>}
+
+    {
+      post && (
+        <>
+          <article class="post__main">
+            <header class="post__head">
+              <VoteButton id={post.id} count={post.voteCount} title={post.title} voted={post.hasVoted} signedIn={Boolean(user)} />
+              <div class="post__heading">
+                <p class="post__kicker meta">
+                  <span class:list={["pill", post.kind === "bug" ? "pill--bug" : "pill--feature"]}>
+                    {KIND[post.kind].label}
+                  </span>
+                  <StatusPill status={post.status} />
+                  <time datetime={isoDate(post.createdAt)} title={longDate(post.createdAt)}>
+                    {relativeTime(post.createdAt)}
+                  </time>
+                </p>
+                <h1 class="post__title">{post.title}</h1>
+              </div>
+            </header>
+
+            {post.description ? (
+              <div class="post__body">{post.description}</div>
+            ) : (
+              <p class="post__body meta">No description. The title says it all.</p>
+            )}
+
+            <aside class="post__status">
+              <strong>{STATUS[post.status].label}.</strong> {STATUS[post.status].hint}
+            </aside>
+
+            <div class="post__actions">
+              <button class="btn btn--ghost btn--sm" type="button" data-copy-link={Astro.url.origin + Astro.url.pathname}>
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1" />
+                  <path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1" />
+                </svg>
+                Copy link
+              </button>
+            </div>
+          </article>
+
+          <section class="thread" id="comments" aria-labelledby="thread-title">
+            <h2 class="h2" id="thread-title">
+              Conversation <span class="meta mono" data-comment-count>{countLabel(post.comments.length, "comment")}</span>
+            </h2>
+
+            {post.comments.length === 0 && (
+              <p class="meta thread__empty">No comments yet. Say how this would work for your household.</p>
+            )}
+
+            <ol class="comments">
+              {post.comments.map((comment) => (
+                <li
+                  class:list={["comment", { "comment--staff": comment.authorKind === "staff", "is-mine": comment.isMine }]}
+                  data-comment={comment.id}
+                >
+                  <p class="comment__meta meta">
+                    {comment.authorKind === "staff" ? (
+                      <>
+                        <span class="pill pill--team">mitlist team</span>
+                        {comment.authorName && <strong>{comment.authorName}</strong>}
+                      </>
+                    ) : (
+                      <strong>{comment.authorName || "A mitlist user"}</strong>
+                    )}
+                    {comment.isMine && <span class="pill pill--you">You</span>}
+                    <time datetime={isoDate(comment.createdAt)} title={longDate(comment.createdAt)}>
+                      {relativeTime(comment.createdAt)}
+                    </time>
+                    {comment.isMine && (
+                      <form
+                        class="comment__delete"
+                        method="post"
+                        action={`/api/posts/${post.id}/comments/${comment.id}`}
+                        data-delete-comment={comment.id}
+                      >
+                        <button class="btn btn--ghost btn--sm" type="submit">
+                          Delete
+                        </button>
+                      </form>
+                    )}
+                  </p>
+                  <div class="comment__body">{comment.body}</div>
+                </li>
+              ))}
+            </ol>
+
+            {user ? (
+              <form class="panel panel--flat comment-form" method="post" action={`/api/posts/${post.id}/comments#comments`}>
+                <div class="panel__body comment-form__body">
+                  <div class="field">
+                    <label class="field__label" for="body">
+                      Add a comment <span class="field__hint">as {user.firstName || user.email}</span>
+                    </label>
+                    <textarea class="textarea" id="body" name="body" required maxlength="2000" placeholder="What would make this work for you?" />
+                  </div>
+                  <div class="hp" aria-hidden="true">
+                    <label>
+                      Website <input type="text" name="website" tabindex="-1" autocomplete="off" />
+                    </label>
+                  </div>
+                </div>
+                <div class="comment-form__foot">
+                  <p class="meta">Comments are public and the team reads every one. You can delete yours any time.</p>
+                  <button class="btn btn--primary btn--sm" type="submit">Post comment</button>
+                </div>
+              </form>
+            ) : (
+              <div class="panel panel--flat comment-form">
+                <div class="comment-form__foot comment-form__foot--only">
+                  <p class="meta">Sign in with your mitlist account to join the conversation.</p>
+                  <a class="btn btn--primary btn--sm" href={loginHref(`${here}#comments`)}>
+                    Sign in
+                  </a>
+                </div>
+              </div>
+            )}
+          </section>
+        </>
+      )
+    }
+  </section>
+</Layout>
+
+<style>
+  .post {
+    max-width: 48rem;
+    padding-top: 1.5rem;
+    display: grid;
+    gap: 1.5rem;
+  }
+  .crumbs {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .crumbs a {
+    text-decoration: none;
+    color: var(--ink-3);
+  }
+  .crumbs a:hover {
+    color: var(--ink);
+  }
+  .empty {
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+  }
+  .empty .lead {
+    margin: 0.6rem auto 0;
+  }
+  .empty a {
+    color: var(--ink);
+  }
+  .post__main {
+    background: var(--paper);
+    border: var(--border);
+    box-shadow: var(--shadow);
+    padding: 1.4rem;
+    display: grid;
+    gap: 1rem;
+  }
+  .post__head {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+  .post__heading {
+    display: grid;
+    gap: 0.45rem;
+    min-width: 0;
+  }
+  .post__kicker {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  .post__title {
+    font-size: clamp(1.5rem, 1.2rem + 1.4vw, 2.1rem);
+    letter-spacing: -0.03em;
+    overflow-wrap: anywhere;
+  }
+  .post__body {
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+    max-width: 70ch;
+    color: var(--ink-2);
+    font-size: 1.02rem;
+  }
+  .post__status {
+    padding: 0.7rem 0.9rem;
+    background: var(--paper-2);
+    border: var(--border-soft);
+    font-size: 0.92rem;
+    color: var(--ink-3);
+  }
+  .post__actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .thread {
+    display: grid;
+    gap: 1rem;
+  }
+  .thread .h2 {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+  }
+  .thread__empty {
+    padding: 1rem;
+    border: 2px dashed var(--line-2);
+  }
+  .comments {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.75rem;
+  }
+  .comment {
+    background: var(--paper);
+    border: var(--border);
+    padding: 0.9rem 1rem;
+    display: grid;
+    gap: 0.4rem;
+  }
+  .comment--staff {
+    background: var(--note-yellow);
+    box-shadow: var(--shadow-sm);
+  }
+  .comment__meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .comment__meta strong {
+    color: var(--ink);
+  }
+  .comment__delete {
+    margin: 0 0 0 auto;
+  }
+  .comment__delete .btn {
+    color: var(--ink-3);
+    padding-block: 0.2rem;
+  }
+  .comment__delete .btn.is-armed {
+    color: var(--error-700);
+    border-color: var(--error);
+  }
+  .comment__body {
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+  }
+  .comment-form__body {
+    display: grid;
+    gap: 1rem;
+  }
+  .comment-form__foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 0.8rem 1rem;
+    border-top: var(--border);
+    background: var(--paper-2);
+  }
+  .comment-form__foot--only {
+    border-top: none;
+  }
+</style>
