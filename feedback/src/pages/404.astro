@@ -1,0 +1,35 @@
+---
+import Layout from "../layouts/Layout.astro";
+Astro.response.status = 404;
+---
+
+<Layout title="Not found">
+  <section class="wrap nf">
+    <div class="panel">
+      <div class="panel__body nf__body">
+        <span class="stamp">404</span>
+        <h1 class="h1">Nothing pinned here.</h1>
+        <p class="lead">
+          That page is not on the board. Try <a href="/">all feedback</a>, the
+          <a href="/roadmap">roadmap</a>, or <a href="/updates">what shipped</a>.
+        </p>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .nf {
+    max-width: 40rem;
+    padding-top: 3rem;
+  }
+  .nf__body {
+    padding: 2.5rem 1.5rem;
+    display: grid;
+    gap: 1rem;
+    justify-items: start;
+  }
+  .nf a {
+    color: var(--ink);
+  }
+</style>

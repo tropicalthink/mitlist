@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../config/iap_config.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/auth_models.dart';
 import '../../providers/auth_provider.dart';
@@ -13,6 +15,7 @@ import '../../widgets/app_button.dart';
 import '../../widgets/google_logo.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/app_input.dart';
+import '../../widgets/app_toast.dart';
 import '../../widgets/board/cork_board.dart';
 import '../../widgets/password_requirements.dart';
 import '../../widgets/password_strength_bar.dart';
@@ -248,7 +251,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
   void _showLegalSheet({
     required String title,
     required List<String> paragraphs,
+    required String fullTextUrl,
   }) {
+    final l10n = AppLocalizations.of(context)!;
     showAppBottomSheet(
       context: context,
       title: title,
@@ -261,9 +266,28 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
             if (i < paragraphs.length - 1)
               const SizedBox(height: MitlistSpacing.md),
           ],
+          const SizedBox(height: MitlistSpacing.md),
+          // The sheet is a summary; the binding text lives on the website.
+          AppButton(
+            variant: AppButtonVariant.ghost,
+            color: AppButtonColor.neutral,
+            text: l10n.legalReadFullText,
+            onPressed: () => _openLegalUrl(fullTextUrl),
+          ),
         ],
       ),
     );
+  }
+
+  Future<void> _openLegalUrl(String value) async {
+    final launched = await launchUrl(
+      Uri.parse(value),
+      mode: LaunchMode.externalApplication,
+    );
+    if (!launched && mounted) {
+      AppToast.error(
+          context, AppLocalizations.of(context)!.commonSomethingWentWrong);
+    }
   }
 
   @override
@@ -526,6 +550,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                   l10n.authSignupTermsP2,
                   l10n.authSignupTermsP3,
                 ],
+                fullTextUrl: IapConfig.termsUrl,
               ),
             ),
             Text(
@@ -545,6 +570,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                   l10n.authSignupPrivacyP2,
                   l10n.authSignupPrivacyP3,
                 ],
+                fullTextUrl: IapConfig.privacyUrl,
               ),
             ),
             Text(

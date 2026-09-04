@@ -327,10 +327,28 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               l10n.accountTermsBody,
               style: Theme.of(context).textTheme.bodyMedium,
             ),
+            const SizedBox(height: MitlistSpacing.md),
+            AppButton(
+              variant: AppButtonVariant.ghost,
+              color: AppButtonColor.neutral,
+              text: l10n.legalReadFullText,
+              onPressed: () => _openLegalUrl(IapConfig.termsUrl),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _openLegalUrl(String value) async {
+    final launched = await launchUrl(
+      Uri.parse(value),
+      mode: LaunchMode.externalApplication,
+    );
+    if (!launched && mounted) {
+      AppToast.error(
+          context, AppLocalizations.of(context)!.commonSomethingWentWrong);
+    }
   }
 
   Future<void> _onLogout() async {

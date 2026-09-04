@@ -1,0 +1,54 @@
+---
+import { loginHref } from "../lib/http";
+
+interface Props {
+  id: string;
+  count: number;
+  title: string;
+  voted: boolean;
+  /** Signed in: the button toggles the vote. Otherwise it leads to sign-in. */
+  signedIn: boolean;
+}
+const { id, count, title, voted, signedIn } = Astro.props;
+const here = Astro.url.pathname + Astro.url.search;
+// Signed in: a real form, so voting works before (or without) the page
+// script; the script takes over the submit and flips the state in place.
+// Signed out: the same box as a link to sign-in.
+---
+
+{
+  signedIn ? (
+    <form
+      class:list={["vote", { "is-voted": voted }]}
+      method="post"
+      action={`/api/posts/${id}/vote`}
+      data-vote={id}
+      data-voted={voted ? "1" : "0"}
+    >
+      <input type="hidden" name="intent" value={voted ? "remove" : "add"} />
+      <button
+        class="vote__btn"
+        type="submit"
+        aria-pressed={voted ? "true" : "false"}
+        aria-label={voted ? `Remove your upvote from ${title}` : `Upvote ${title}`}
+        title={voted ? "You upvoted this. Click to take it back." : "Upvote"}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 19V5M5 12l7-7 7 7" />
+        </svg>
+        <span class="vote__count" data-count>
+          {count}
+        </span>
+      </button>
+    </form>
+  ) : (
+    <a class="vote vote--link" href={loginHref(here)} title="Sign in to upvote" aria-label={`Sign in to upvote ${title}`}>
+      <span class="vote__btn">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 19V5M5 12l7-7 7 7" />
+        </svg>
+        <span class="vote__count">{count}</span>
+      </span>
+    </a>
+  )
+}

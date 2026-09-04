@@ -1,228 +1,127 @@
 ---
-// Rendered from /PRIVACY.md (repo root) — keep the two in sync when the
-// privacy statement changes.
-import Layout from "../layouts/Layout.astro";
-import SiteHeader from "../components/SiteHeader.astro";
-import SiteFooter from "../components/SiteFooter.astro";
+// English privacy policy for the official mitlist service. /datenschutz is the
+// binding German version with the same section structure, and /PRIVACY.md at
+// the repo root mirrors this page for people reading the source — keep all
+// three in sync when a provider, a feature, or a retention period changes.
+import LegalPage from "../components/LegalPage.astro";
+import { legal } from "../data/legal";
+const { operator } = legal;
+const lastUpdated = "4 September 2026";
 ---
 
-<Layout
-  title="Privacy — mitlist"
-  description="What data mitlist handles, where it goes, and what controls exist — for operators and the people who use it."
->
-  <SiteHeader />
-  <main class="privacy">
-    <div class="wrap">
-      <a class="back" href="/">&larr; mitlist</a>
-      <h1>Privacy Statement</h1>
-      <p>
-        <strong>mitlist</strong> is open-source software that can be used on
-        the official hosted service or on an independently operated server.
-        This document describes what the software handles in both cases.
-      </p>
+<LegalPage title="Privacy" description="What data mitlist handles, where it goes, how long it stays, and what you can do about it — for the website, the apps, and the official hosted service.">
+  <p class="legal-meta">Last updated: {lastUpdated}</p>
+  <p class="legal-lang">Deutsche Fassung: <a href="/datenschutz">Datenschutzerklärung</a>. Where the two differ, the German version prevails.</p>
 
-      <h2>Where your data lives</h2>
-      <p>
-        Household data — shopping lists, expenses, chores, meal plans,
-        recipes, photos, and account information — is stored by the operator
-        of the server selected in the app. The official service uses managed
-        PostgreSQL and S3-compatible object storage; a self-hoster chooses
-        their own database and storage.
-      </p>
-      <p>
-        The mitlist project receives hosted household data only when someone
-        chooses the official service. It receives no household content,
-        analytics, or telemetry from an independently self-hosted instance.
-      </p>
+  <h2>1. Who is responsible</h2>
+  <p>{operator.name}<br />{operator.street}<br />{operator.postalCode} {operator.city}<br />Germany<br />Email: <a href={`mailto:${legal.email}`}>{legal.email}</a></p>
+  <p>We have not appointed a data protection officer because the legal thresholds for one are not met. Send any privacy question to the address above.</p>
 
-      <h2>No first-party telemetry by default</h2>
-      <p>
-        mitlist does not collect usage analytics, behavioral data, or any form
-        of "phone home" telemetry. This is true by default and requires no
-        configuration to preserve.
-      </p>
+  <h2>2. What this policy covers</h2>
+  <p>This policy applies to</p>
+  <ul>
+    <li>the website <strong>mitlist.me</strong>,</li>
+    <li>the web app at <strong>app.mitlist.me</strong> and the mitlist apps for iOS and Android when they are connected to the official service,</li>
+    <li>the API at <strong>api.mitlist.me</strong> that the apps and integrations talk to,</li>
+    <li>the feedback board at <strong>feedback.mitlist.me</strong>.</li>
+  </ul>
+  <p>mitlist is free software (AGPL-3.0). Anyone who runs it on their own server is responsible for that instance; we receive no data from it. See section 15.</p>
 
-      <h2>Optional, operator-controlled crash reporting</h2>
-      <p>
-        An operator may enable error reporting to help diagnose crashes. This
-        is <strong>opt-in and off unless explicitly configured</strong>:
-      </p>
-      <ul>
-        <li>
-          <strong>Backend</strong>: set the <code>SENTRY_DSN</code> environment
-          variable. If unset (the default), no error reports are sent.
-        </li>
-        <li>
-          <strong>Web/Flutter client</strong>: supply a
-          <code>GLITCHTIP_DSN</code> build-time define
-          (<code>--dart-define=GLITCHTIP_DSN=...</code>). If unset (the
-          default), no error reports are sent.
-        </li>
-      </ul>
-      <p>
-        When enabled, crash reports contain stack traces and basic context (OS
-        version, app version, environment label). They do <strong>not</strong>
-        contain household content (list items, expenses, names, or any
-        user-generated data) by design — the Sentry SDK is configured with
-        <code>tracesSampleRate = 0.0</code> and no PII capture.
-      </p>
-      <p>
-        Reports are sent to whatever endpoint the operator configures in the
-        DSN. We recommend pointing this at a <strong>self-hosted GlitchTip</strong>
-        instance so crash data stays on the operator's own infrastructure and
-        is not sent to a third party.
-      </p>
+  <h2>3. Our principles</h2>
+  <ul>
+    <li>No ads, and no selling of data.</li>
+    <li>The apps and the web app contain no analytics or advertising trackers and build no usage profiles.</li>
+    <li>Your household data lives on a server we run in the European Union.</li>
+    <li>You can export your data and delete your account from inside the app at any time.</li>
+    <li>We only process what is needed to run the service, bill Premium, and keep the service secure.</li>
+  </ul>
 
-      <h2>Abuse prevention on sign-up</h2>
-      <p>
-        Creating a guest account in the browser runs an invisible
-        <strong>Cloudflare Turnstile</strong> check, so that automated sign-ups
-        do not drown out real households. Cloudflare receives the signals it
-        needs to judge whether the browser is automated; mitlist receives only
-        the pass or fail. The token is single-use, checked once, and never
-        stored against your account. Usually you will see nothing at all.
-      </p>
-      <p>
-        Cloudflare processes that data as described in the
-        <a href="https://www.cloudflare.com/application-services/products/turnstile-privacy-addendum/" rel="noopener">Cloudflare
-        Turnstile Privacy Addendum</a>, which applies to our use of invisible
-        mode and is incorporated into this statement by reference. The mobile
-        apps use Firebase App Check for the same purpose.
-      </p>
+  <h2>4. The website mitlist.me</h2>
+  <p><strong>Hosting.</strong> The website is a static site served through Cloudflare Pages (Cloudflare, Inc., 101 Townsend St, San Francisco, CA 94107, USA; for the EEA: Cloudflare Germany GmbH, Rosental 7, 80331 Munich). When you open it, Cloudflare processes the connection data needed to deliver the page and protect it from attacks: IP address, time, requested URL, referrer, and browser type. Legal basis: Art. 6(1)(f) GDPR (a secure, reachable site). Fonts and images are served by the site itself; no connection is made to Google Fonts or any other font service.</p>
+  <p><strong>Cookieless page counts.</strong> On the website (not in the app) we use Cloudflare Web Analytics to see how often each page is read. It sets no cookies, stores nothing on your device, and does not fingerprint you; the result is aggregated and not tied to individual people. Legal basis: Art. 6(1)(f) GDPR (understanding which content is read). Because nothing is stored on or read from your device, no consent is required for it.</p>
 
-      <h2>Account controls</h2>
-      <ul>
-        <li>
-          <strong>Guest mode</strong> — you can use mitlist without providing
-          an email address.
-        </li>
-        <li>
-          <strong>Data export</strong> — download your expenses as CSV or JSON
-          at any time from within the app.
-        </li>
-        <li>
-          <strong>Account deletion</strong> — deleting your account removes
-          your data from the operator's server. Export first if you want a
-          copy.
-        </li>
-      </ul>
+  <h2>5. Accounts and sign-in</h2>
+  <p><strong>Email registration.</strong> When you create an account we process your email address, the name you choose, and a password that is stored only as a hash. We email you codes to confirm the address and to reset the password. Legal basis: Art. 6(1)(b) GDPR.</p>
+  <p><strong>Sign in with Google or Apple.</strong> You can sign in with a Google or Apple account instead. Google (Google Ireland Ltd., Gordon House, Barrow Street, Dublin 4, Ireland) or Apple (Apple Distribution International Ltd., Hollyhill Industrial Estate, Cork, Ireland) then gives us your email address, your name, and an identifier for the account. We never see your password with that provider. The provider learns that you sign in to mitlist; its own privacy policy governs that. Legal basis: Art. 6(1)(b) GDPR.</p>
+  <p><strong>Guest accounts.</strong> You can use mitlist without an email address as a guest. A guest account is tied to the device it was created on. A guest account that is unused for 30 days is locked; after another 180 days without a sign-in it is permanently anonymised. Legal basis: Art. 6(1)(b) and (f) GDPR (cleaning up abandoned accounts).</p>
+  <p><strong>Sessions.</strong> After signing in, the app keeps an access token and a refresh token on your device or in your browser's storage. They are technically necessary to keep you signed in and are invalidated when you sign out or change your password.</p>
 
-      <h2>Third-party services the operator may configure</h2>
-      <p>
-        Each of the following is optional and disabled unless the operator
-        provides credentials. When enabled, data is sent to that provider only
-        for the specific function described. The operator supplies their own
-        credentials and is responsible for that provider's terms.
-      </p>
-      <div class="table-scroll">
-        <table>
-          <thead>
-            <tr><th>Service</th><th>Purpose</th><th>Configured via</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>Resend</td><td>Transactional email</td><td><code>RESEND_API_KEY</code></td></tr>
-            <tr><td>PlanetScale</td><td>Managed PostgreSQL for the official service</td><td><code>DATABASE_URL</code></td></tr>
-            <tr><td>SendGrid / Brevo SMTP</td><td>Transactional email (SMTP fallback)</td><td><code>SENDGRID_SMTP_*</code> / <code>BREVO_SMTP_*</code></td></tr>
-            <tr><td>Firebase / FCM</td><td>Mobile push notifications</td><td><code>FIREBASE_PROJECT_ID</code> + <code>FIREBASE_SERVICE_ACCOUNT_JSON</code></td></tr>
-            <tr><td>Cloudflare Turnstile</td><td>Web guest sign-up abuse prevention (invisible mode)</td><td><code>TURNSTILE_SECRET_KEY</code></td></tr>
-            <tr><td>Web Push (VAPID)</td><td>Browser push notifications</td><td><code>VAPID_PRIVATE_KEY</code> + <code>VAPID_PUBLIC_KEY</code></td></tr>
-            <tr><td>AWS S3 / Cloudflare R2</td><td>File and photo storage</td><td><code>AWS_ACCESS_KEY_ID</code> + <code>S3_BUCKET_NAME</code></td></tr>
-            <tr><td>FX rate feed</td><td>Live exchange rates for expenses</td><td><code>FX_RATE_API_URL</code></td></tr>
-          </tbody>
-        </table>
-      </div>
-      <p>These integrations are disabled in a default self-hosted deployment unless its operator configures them. The official service publishes its active infrastructure on the transparency page.</p>
+  <h2>6. Household data</h2>
+  <p>mitlist exists to organise a household together. To do that we store what you and the other members of your household create: lists and items, chores and their completions, expenses, shares, and settlements, recipes and meal plans, pinwall notes, calendar entries, invitations, and uploaded photos and receipts, along with metadata such as timestamps and who created or changed each entry. Legal basis: Art. 6(1)(b) GDPR.</p>
+  <p><strong>Visibility.</strong> Everything in a household is visible to every member of that household. If you enter data about other people, such as a flatmate's name on an expense, you do so on your own responsibility; enter only what those people would expect in a shared household.</p>
+  <p><strong>Money.</strong> Expenses, amounts, and settlements are figures you type in yourself. mitlist does not connect to bank accounts and receives no payment data through the expenses feature.</p>
+  <p><strong>Attachments.</strong> Uploaded files are stored in Cloudflare's R2 object storage and served only through the service to authorised household members. Abandoned uploads are cleaned up automatically. Each household has 1 GB of storage and each file may be up to 10 MB.</p>
 
-      <h2>Who is the data controller</h2>
-      <p>
-        For the official service, the provider named in the
-        <a href="/impressum">Impressum</a> is the data controller. For an
-        independently self-hosted instance, its operator is the controller and
-        is responsible for the people using it.
-      </p>
+  <h2>7. Features that send data somewhere or deserve a note</h2>
+  <p><strong>Receipt, list, and recipe scanner.</strong> Text recognition runs entirely on your device. A photo you scan leaves the device only if you then save it as an attachment yourself. No external AI service is involved.</p>
+  <p><strong>Recipe import from a link.</strong> When you import a recipe from a web address, our server fetches that address and extracts the title, ingredients, and steps. The recipe site sees our server's address, not yours. Legal basis: Art. 6(1)(b) GDPR.</p>
+  <p><strong>Invite links.</strong> Household invitations and shared recipes are links containing a random token. Anyone who has the link can open its target, so share invite links only with people you want in your household.</p>
+  <p><strong>Home Assistant integration.</strong> If you connect your own Home Assistant installation, it reads your household data with an access key you generate. You can revoke the key in the app at any time. You are responsible for the Home Assistant installation itself.</p>
 
-      <h2>Contact</h2>
-      <p>
-        For the official service, email <a href="mailto:hi@tropicalthink.com">hi@tropicalthink.com</a>.
-        For another deployment, contact its operator. Software issues can be
-        filed in the public repository.
-      </p>
-    </div>
-  </main>
-  <SiteFooter />
-</Layout>
+  <h2>8. Notifications and email</h2>
+  <p><strong>Push notifications.</strong> Push is optional and can be turned off in the settings. On iOS and Android we use Firebase Cloud Messaging (Google Ireland Ltd.) and Apple's notification service, which requires us to store a device token that is deleted when you sign out. In the web app we use your browser's Web Push service (with VAPID). The text of each notification, such as "chore due" or "new expense", passes through these services. Legal basis: Art. 6(1)(a) GDPR (your permission in the operating system or browser) and Art. 6(1)(b).</p>
+  <p><strong>Email.</strong> Confirmation, password, and invitation emails, and the weekly household summary if you enable it, are sent through Resend (Resend, Inc., 2261 Market Street #5039, San Francisco, CA 94114, USA). Resend receives your email address and the content of the message. We send no marketing email. Legal basis: Art. 6(1)(b) GDPR.</p>
 
-<style>
-  .privacy {
-    background: var(--paper);
-    color: var(--ink-2);
-    padding: 4rem 0 6rem;
-    min-height: 100vh;
-  }
-  .wrap {
-    max-width: 44rem;
-    margin: 0 auto;
-    padding: 0 1.25rem;
-  }
-  .back {
-    display: inline-block;
-    color: var(--orange-600);
-    text-decoration: none;
-    font-weight: 600;
-    margin-bottom: 2rem;
-  }
-  .back:hover {
-    text-decoration: underline;
-  }
-  h1 {
-    font-size: 2.25rem;
-    line-height: 1.15;
-    color: var(--ink);
-    margin: 0 0 1rem;
-  }
-  h2 {
-    font-size: 1.35rem;
-    color: var(--ink);
-    margin: 2.5rem 0 0.75rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--line);
-  }
-  p,
-  li {
-    line-height: 1.65;
-    margin: 0 0 1rem;
-  }
-  ul {
-    padding-left: 1.25rem;
-  }
-  li {
-    margin-bottom: 0.5rem;
-  }
-  code {
-    background: var(--paper-3);
-    border: 1px solid var(--line);
-    border-radius: 4px;
-    padding: 0.1em 0.35em;
-    font-size: 0.875em;
-  }
-  .table-scroll {
-    overflow-x: auto;
-    margin: 0 0 1rem;
-  }
-  table {
-    border-collapse: collapse;
-    width: 100%;
-    font-size: 0.9375rem;
-  }
-  th,
-  td {
-    text-align: left;
-    padding: 0.5rem 0.75rem;
-    border: 1px solid var(--line);
-    vertical-align: top;
-  }
-  th {
-    background: var(--paper-2);
-    color: var(--ink);
-  }
-</style>
+  <h2>9. Premium and payments</h2>
+  <p>Households with more than four members need a Premium subscription. When you subscribe we record which account holds the subscription, which household it is assigned to, its term, its status, and the amount paid. Legal basis: Art. 6(1)(b) GDPR; billing records are kept under Art. 6(1)(c) GDPR for the statutory commercial and tax retention periods (up to ten years).</p>
+  <p><strong>Buying on the web.</strong> Web payments are handled by Polar (Polar Software Inc., 2261 Market Street #4941, San Francisco, CA 94114, USA) as the merchant of record. Polar and its payment processors handle your payment details, billing address, and tax information; we never see full payment details. So that we can link the subscription to your account, we pass your account identifier and email address to Polar. <a href="https://polar.sh/legal/privacy" target="_blank" rel="noopener noreferrer">Polar's privacy policy</a> applies.</p>
+  <p><strong>Buying in the app.</strong> In the iOS and Android apps the purchase runs through Apple or Google Play under their own terms. We receive a purchase receipt with a transaction identifier, the product, and the term, which we use to unlock Premium and to track renewals and cancellations.</p>
+
+  <h2>10. Security and abuse prevention</h2>
+  <p><strong>Cloudflare.</strong> The web app and the API are reached through Cloudflare, which forwards requests to our server, blocks attacks, and processes IP addresses and connection data to do so. Legal basis: Art. 6(1)(f) GDPR.</p>
+  <p><strong>Turnstile.</strong> Creating a guest account in the browser runs an invisible Cloudflare Turnstile check so that automated sign-ups do not overwhelm the service. Cloudflare receives the technical browser signals it needs; we receive only the pass or fail. The token is checked once and never stored against your account. Cloudflare's <a href="https://www.cloudflare.com/application-services/products/turnstile-privacy-addendum/" target="_blank" rel="noopener noreferrer">Turnstile Privacy Addendum</a> applies. Legal basis: Art. 6(1)(f) GDPR.</p>
+  <p><strong>App Check.</strong> The iOS and Android apps prove to our server that they are genuine installations using Firebase App Check (Google Ireland Ltd.), which verifies device attestations from Apple or Google. Household data is not involved. Legal basis: Art. 6(1)(f) GDPR.</p>
+  <p><strong>Server logs.</strong> Our server logs errors and security-relevant events such as failed sign-ins, with IP address and time. Addresses that repeatedly misbehave are blocked temporarily. Logs are deleted after a short period unless they are needed to investigate an incident. Legal basis: Art. 6(1)(f) GDPR.</p>
+
+  <h2>11. Crash reports</h2>
+  <p>When the app crashes or hits an unexpected error, the web app, the apps, and the server send an error report to a GlitchTip instance we operate. A report contains the technical trace of the error (stack trace), app and operating system version, device type, and environment. Household content, names, and email addresses are deliberately excluded, and no performance or usage data is collected. Reports are kept only as long as they are needed to fix the error. Legal basis: Art. 6(1)(f) GDPR (a stable service).</p>
+
+  <h2>12. Feedback</h2>
+  <p><strong>In the app.</strong> The feedback area in the app lets you report wishes and bugs. We receive your text, the screen you were on, the app version, platform, and language, and store them in our request tracker, which runs on Cloudflare Workers and Cloudflare D1.</p>
+  <p><strong>Feedback board.</strong> The public board at feedback.mitlist.me can be read without signing in. To vote, post, or comment you sign in with your mitlist account, and the board then sets a strictly necessary session cookie. Posts and comments store your account identifier and show your first name. Legal basis: Art. 6(1)(b) GDPR.</p>
+
+  <h2>13. Hosting, recipients, and international transfers</h2>
+  <p>The service (web app, API, and database) runs on a server we manage in a data centre in Heerlen, the Netherlands. Database backups are encrypted and overwritten after a limited period. The following providers process data on our behalf or as independent controllers:</p>
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr><th>Recipient</th><th>Purpose</th><th>Location / transfer basis</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Server provider (Heerlen data centre)</td><td>Runs the web app, API, and database</td><td>Netherlands (EU)</td></tr>
+        <tr><td>Cloudflare, Inc.</td><td>Website, network and protection, Turnstile, R2 object storage, feedback tracker (Workers, D1)</td><td>USA; EU standard contractual clauses, certified under the EU-US Data Privacy Framework</td></tr>
+        <tr><td>Google Ireland Ltd. (Firebase)</td><td>Push notifications, App Check, Sign in with Google</td><td>Ireland; transfers to Google LLC (USA) under the EU-US Data Privacy Framework and standard contractual clauses</td></tr>
+        <tr><td>Apple Distribution International Ltd.</td><td>Sign in with Apple, push on iOS, in-app purchase</td><td>Ireland; transfers to Apple Inc. (USA) under the EU-US Data Privacy Framework</td></tr>
+        <tr><td>Resend, Inc.</td><td>Transactional email</td><td>USA; EU standard contractual clauses</td></tr>
+        <tr><td>Polar Software Inc.</td><td>Payment processing for Premium on the web (merchant of record)</td><td>USA; independent controller for payment processing</td></tr>
+        <tr><td>Google Play / Apple App Store</td><td>App distribution, in-app purchase</td><td>See the privacy policy of the respective store</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Where data leaves the EEA we rely on adequacy decisions of the European Commission (Art. 45 GDPR, in particular the EU-US Data Privacy Framework) or on the EU standard contractual clauses (Art. 46(2)(c) GDPR). The current technical setup is published on the <a href="/transparency">transparency page</a>.</p>
+
+  <h2>14. Retention and deletion</h2>
+  <ul>
+    <li><strong>Account and household content</strong> stay as long as your account exists.</li>
+    <li><strong>Account deletion.</strong> When you delete your account in the app, your email address, name, password, and avatar are removed immediately, every session is ended, and the account is permanently anonymised. Content you added to a shared household stays in that household for the remaining members but is no longer linked to your account. Delete the content or the household first if you do not want that.</li>
+    <li><strong>Households</strong> and their content are deleted when the household is deleted.</li>
+    <li><strong>Guest accounts</strong> are locked after 30 days of inactivity and anonymised after another 180 days.</li>
+    <li><strong>Billing records</strong> for Premium are kept for the statutory periods of up to ten years.</li>
+    <li><strong>Push tokens</strong> are deleted when you sign out; <strong>logs</strong> and <strong>crash reports</strong> after a short period.</li>
+    <li><strong>Backups</strong> are overwritten after a limited period, so deleted data disappears from them as well.</li>
+  </ul>
+  <p><strong>Export.</strong> You can export your expenses as CSV or JSON from the app at any time. We provide other data on request in a common format (Art. 20 GDPR).</p>
+
+  <h2>15. Self-hosted instances</h2>
+  <p>Whoever runs mitlist on their own server is responsible for the processing there. The mitlist project receives no household data, no usage data, and no crash reports from such instances; optional crash reports go only to the endpoint the operator configures. Which services an instance uses is the operator's decision, and the documentation in the source code describes every option.</p>
+
+  <h2>16. Children</h2>
+  <p>The official service is intended for people aged 16 and over. Younger people may use it only with the consent of a parent or guardian. If we learn that an account was created without that consent, we delete it.</p>
+
+  <h2>17. Your rights</h2>
+  <p>You have the right of access (Art. 15 GDPR), rectification (Art. 16), erasure (Art. 17), restriction of processing (Art. 18), data portability (Art. 20), and objection to processing based on Art. 6(1)(f) GDPR (Art. 21). You can withdraw any consent at any time with effect for the future (Art. 7(3)). An informal email to <a href={`mailto:${legal.email}`}>{legal.email}</a> is enough, and you can delete your account and data yourself in the app at any time.</p>
+  <p>You also have the right to lodge a complaint with a data protection authority (Art. 77 GDPR). The authority responsible for us is the Hessian Commissioner for Data Protection and Freedom of Information, Gustav-Stresemann-Ring 1, 65189 Wiesbaden, Germany, <a href="https://datenschutz.hessen.de" target="_blank" rel="noopener noreferrer">datenschutz.hessen.de</a>. You may also contact the authority where you live.</p>
+
+  <h2>18. Changes</h2>
+  <p>We update this policy when the service, the providers we use, or the law changes. The current version is always at mitlist.me/privacy, dated at the top. We announce significant changes in the app or by email.</p>
+</LegalPage>

@@ -1,0 +1,181 @@
+---
+import Layout from "../layouts/Layout.astro";
+import VoteButton from "../components/VoteButton.astro";
+import { listPosts, sortPosts, type BoardPost, type BoardStatus } from "../lib/board";
+import { KIND, STATUS, STATUS_ORDER, countLabel } from "../lib/format";
+import { friendlyError } from "../lib/http";
+
+const user = Astro.locals.user;
+let posts: BoardPost[] = [];
+let loadError: string | null = null;
+try {
+  posts = await listPosts(user?.id);
+} catch (error) {
+  loadError = friendlyError(error).message;
+}
+
+const SHIPPED_LIMIT = 8;
+const columns = STATUS_ORDER.map((status: BoardStatus) => {
+  const all = sortPosts(
+    posts.filter((post) => post.status === status),
+    "top"
+  );
+  return {
+    status,
+    meta: STATUS[status],
+    total: all.length,
+    items: status === "done" ? all.slice(0, SHIPPED_LIMIT) : all,
+  };
+});
+---
+
+<Layout tab="roadmap" title="Roadmap" description="What mitlist is reviewing, building, and has shipped, ranked by your votes.">
+  <section class="hero">
+    <div class="wrap">
+      <span class="stamp">Roadmap</span>
+      <h1 class="h1">Where things stand.</h1>
+      <p class="lead">
+        Every public request, sorted by votes, in the column that matches its status. Upvote to move
+        what matters to you up the list. This is drawn live from our tracker, so it is never behind.
+      </p>
+    </div>
+  </section>
+
+  <section class="wrap">
+    {loadError && <p class="notice notice--error">{loadError}</p>}
+    <div class="columns">
+      {
+        columns.map((column) => (
+          <section class:list={["column", `column--${column.status}`]} aria-labelledby={`col-${column.status}`}>
+            <header class="column__head">
+              <h2 class="column__title" id={`col-${column.status}`}>
+                <span class="dot" aria-hidden="true" />
+                {column.meta.label}
+              </h2>
+              <span class="meta mono">{column.total}</span>
+            </header>
+            <p class="column__hint meta">{column.meta.hint}</p>
+            {column.items.length === 0 && !loadError && (
+              <p class="column__empty meta">Nothing here right now.</p>
+            )}
+            <ol class="cards">
+              {column.items.map((post) => (
+                <li class="card">
+                  <VoteButton id={post.id} count={post.voteCount} title={post.title} voted={post.hasVoted} signedIn={Boolean(user)} />
+                  <div class="card__body">
+                    <a class="card__title" href={`/p/${post.id}`}>
+                      {post.title}
+                    </a>
+                    <p class="meta">
+                      {KIND[post.kind].label} · {countLabel(post.commentCount, "comment")}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+            {column.status === "done" && column.total > column.items.length && (
+              <a class="column__more btn btn--sm" href="/updates">
+                All {column.total} shipped
+              </a>
+            )}
+          </section>
+        ))
+      }
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .hero {
+    padding-block: clamp(2rem, 1.5rem + 2vw, 3.2rem) 1.8rem;
+  }
+  .hero .stamp {
+    margin-bottom: 1rem;
+  }
+  .hero .h1 {
+    margin-bottom: 0.7rem;
+  }
+  .columns {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.25rem;
+    align-items: start;
+  }
+  .column {
+    background: var(--paper-3);
+    border: var(--border);
+    padding: 0.9rem;
+    display: grid;
+    gap: 0.75rem;
+  }
+  .column__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .column__title {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.05rem;
+    letter-spacing: -0.02em;
+  }
+  .column--new .dot {
+    color: #0288d1;
+  }
+  .column--in_progress .dot {
+    color: var(--orange-600);
+  }
+  .column--done .dot {
+    color: var(--success-700);
+  }
+  .column__hint {
+    margin-top: -0.35rem;
+  }
+  .column__empty {
+    padding: 1.5rem 0.5rem;
+    text-align: center;
+    border: 2px dashed var(--line-2);
+  }
+  .cards {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.6rem;
+  }
+  .card {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+    background: var(--paper);
+    border: var(--border);
+    box-shadow: var(--shadow-sm);
+    padding: 0.7rem;
+  }
+  .card__body {
+    min-width: 0;
+    display: grid;
+    gap: 0.2rem;
+  }
+  .card__title {
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    text-decoration: none;
+  }
+  .card__title:hover {
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+  }
+  .column__more {
+    justify-self: start;
+  }
+  @media (max-width: 900px) {
+    .columns {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
