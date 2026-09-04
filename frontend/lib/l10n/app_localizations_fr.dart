@@ -5797,6 +5797,74 @@ class AppLocalizationsFr extends AppLocalizations {
   String get billingUnlimitedMembers => 'Membres illimités';
 
   @override
+  String get premiumSeatsEyebrow => 'Votre foyer';
+
+  @override
+  String get premiumSeatsHeadline => 'De la place pour une personne de plus';
+
+  @override
+  String premiumSeatsBody(int limit) {
+    return 'Les foyers jusqu’à $limit personnes sont gratuits. Premium ouvre la place suivante et toutes celles d’après, et couvre tout le monde ici — pas seulement la personne qui paie.';
+  }
+
+  @override
+  String get premiumSeatsOpenPlace => 'Place libre';
+
+  @override
+  String get premiumListsEyebrow => 'Listes';
+
+  @override
+  String get premiumListsHeadline => 'Personne n’achète le lait deux fois';
+
+  @override
+  String get premiumListsBody =>
+      'Une seule liste, toutes les mains. Cochez un article et il est réglé pour tout le foyer d’un coup — y compris pour la personne que vous essayez d’ajouter.';
+
+  @override
+  String get premiumMoneyEyebrow => 'Argent';
+
+  @override
+  String get premiumMoneyHeadline =>
+      'Une personne de plus, une part plus petite';
+
+  @override
+  String get premiumMoneyBody =>
+      'Retirez un nom du partage et regardez la part de chacun augmenter. Voilà ce que vaut une personne de plus, chaque semaine.';
+
+  @override
+  String get premiumMoneyExpense => 'Les grosses courses';
+
+  @override
+  String premiumMoneySplitLine(int ways, String each) {
+    return '$ways parts · $each chacun';
+  }
+
+  @override
+  String get premiumChoresEyebrow => 'Tâches';
+
+  @override
+  String get premiumChoresHeadline => 'Votre tour revient moins souvent';
+
+  @override
+  String premiumChoresBody(int count) {
+    return 'Un roulement se répartit entre autant de personnes qu’il y en a. Cochez une tâche pour la passer : à $count, votre nom est à $count tours.';
+  }
+
+  @override
+  String premiumChoresTurnEvery(int count) {
+    return 'De retour chez vous dans $count tours';
+  }
+
+  @override
+  String get premiumPlanEyebrow => 'Premium';
+
+  @override
+  String get premiumPlanHeadline => 'Ouvrir le foyer';
+
+  @override
+  String get premiumSeeThePlan => 'Voir l’offre';
+
+  @override
   String listDetailItemRestored(String name) {
     return '$name est de retour dans la liste';
   }

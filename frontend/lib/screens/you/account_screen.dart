@@ -30,7 +30,6 @@ import '../../providers/billing_provider.dart';
 import '../../config/iap_config.dart';
 import '../../sheets/email_verification_sheet.dart';
 import '../../sheets/feedback_sheet.dart';
-import '../../sheets/premium_sheet.dart';
 import '../../theme/spacing.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_bottom_sheet.dart';
@@ -823,7 +822,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                 text: sub == null ? l10n.billingSubscribe : l10n.billingManage,
                 variant: AppButtonVariant.solid,
                 color: AppButtonColor.primary,
-                onPressed: sub == null ? _openPremiumSheet : _openBillingPortal,
+                onPressed: sub == null ? _openPremiumFlow : _openBillingPortal,
               ),
             ),
           ],
@@ -835,12 +834,12 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   String _formatDate(DateTime date) =>
       MaterialLocalizations.of(context).formatMediumDate(date.toLocal());
 
-  /// Opens the premium sheet for the active household. Without one there is
-  /// nothing to make premium, so the sheet is skipped.
-  void _openPremiumSheet() {
+  /// Opens the premium flow for the active household. Without one there is
+  /// nothing to make premium, so the flow is skipped.
+  void _openPremiumFlow() {
     final groupId = _activeHouseholdId;
     if (groupId == null) return;
-    showPremiumSheet(context, ref, groupId: groupId);
+    context.pushNamed('premium', pathParameters: {'groupId': groupId});
   }
 
   Future<void> _openBillingPortal() async {
