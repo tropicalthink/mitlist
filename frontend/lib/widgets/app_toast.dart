@@ -65,9 +65,9 @@ class AppToast {
       _show(context, message, AppToastTone.info,
           actionLabel: actionLabel, onAction: onAction);
 
-  /// A success the user can take back. Stays roughly three times as long as a
-  /// plain confirmation, because an undo nobody has time to reach is a
-  /// decoration.
+  /// A success the user can take back. Stays ten seconds, over three times as
+  /// long as a plain confirmation, because an undo nobody has time to reach is
+  /// a decoration.
   static void undo(
     BuildContext context, {
     required String message,
@@ -127,7 +127,7 @@ class AppToast {
 
   /// Errors linger: the user has to read them, and often act on them.
   static const Duration errorDuration = Duration(seconds: 5);
-  static const Duration undoDuration = Duration(seconds: 9);
+  static const Duration undoDuration = Duration(seconds: 10);
 
   static Duration _durationFor(AppToastTone tone) => switch (tone) {
         AppToastTone.success => successDuration,
