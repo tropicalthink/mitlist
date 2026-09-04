@@ -1,5 +1,6 @@
 ---
 import { env } from "cloudflare:workers";
+import { loginHref } from "../lib/http";
 
 export type Tab = "feedback" | "roadmap" | "updates";
 
@@ -8,6 +9,9 @@ interface Props {
 }
 const { active } = Astro.props;
 const APP_URL = env.APP_URL || "https://app.mitlist.me";
+const user = Astro.locals.user;
+const here = Astro.url.pathname + Astro.url.search;
+const signIn = loginHref(here.startsWith("/login") ? "/" : here);
 
 const tabs: Array<{ id: Tab; label: string; href: string }> = [
   { id: "feedback", label: "Feedback", href: "/" },
@@ -43,7 +47,29 @@ const tabs: Array<{ id: Tab; label: string; href: string }> = [
     </nav>
 
     <div class="nav__actions">
-      <a class="btn btn--ghost btn--sm nav__app" href={APP_URL}>Open the app</a>
+      {
+        user ? (
+          <>
+            <span class="nav__who meta" title={user.email}>
+              {user.firstName || user.email}
+            </span>
+            <form method="post" action="/api/auth/logout">
+              <button class="btn btn--ghost btn--sm" type="submit">
+                Sign out
+              </button>
+            </form>
+          </>
+        ) : (
+          <>
+            <a class="btn btn--ghost btn--sm nav__app" href={APP_URL}>
+              Open the app
+            </a>
+            <a class="btn btn--ghost btn--sm" href={signIn}>
+              Sign in
+            </a>
+          </>
+        )
+      }
       <a class="btn btn--primary btn--sm" href="/new">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
         Give feedback
@@ -141,6 +167,17 @@ const tabs: Array<{ id: Tab; label: string; href: string }> = [
     align-items: center;
     gap: 0.5rem;
   }
+  .nav__actions form {
+    margin: 0;
+  }
+  .nav__who {
+    max-width: 10rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--ink);
+    font-weight: 600;
+  }
   @media (max-width: 760px) {
     .tabs {
       order: 10;
@@ -149,7 +186,8 @@ const tabs: Array<{ id: Tab; label: string; href: string }> = [
       overflow-x: auto;
       padding-bottom: 0.15rem;
     }
-    .nav__app {
+    .nav__app,
+    .nav__who {
       display: none;
     }
   }

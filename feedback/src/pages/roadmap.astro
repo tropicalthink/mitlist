@@ -5,10 +5,11 @@ import { listPosts, sortPosts, type BoardPost, type BoardStatus } from "../lib/b
 import { KIND, STATUS, STATUS_ORDER, countLabel } from "../lib/format";
 import { friendlyError } from "../lib/http";
 
+const user = Astro.locals.user;
 let posts: BoardPost[] = [];
 let loadError: string | null = null;
 try {
-  posts = await listPosts();
+  posts = await listPosts(user?.id);
 } catch (error) {
   loadError = friendlyError(error).message;
 }
@@ -60,7 +61,7 @@ const columns = STATUS_ORDER.map((status: BoardStatus) => {
             <ol class="cards">
               {column.items.map((post) => (
                 <li class="card">
-                  <VoteButton id={post.id} count={post.voteCount} title={post.title} />
+                  <VoteButton id={post.id} count={post.voteCount} title={post.title} voted={post.hasVoted} signedIn={Boolean(user)} />
                   <div class="card__body">
                     <a class="card__title" href={`/p/${post.id}`}>
                       {post.title}

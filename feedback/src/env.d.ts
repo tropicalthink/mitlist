@@ -10,3 +10,11 @@ declare namespace Cloudflare {
     REQTRACK_DIRECT?: string;
   }
 }
+
+declare namespace App {
+  interface Locals {
+    /** The signed-in mitlist user, resolved by the middleware. */
+    user: import("./lib/mitlist").MitlistUser | null;
+    session: import("./lib/session").Session | null;
+  }
+}
