@@ -1,0 +1,29 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "mitlist-feedback",
+  "main": "@astrojs/cloudflare/entrypoints/server",
+  "compatibility_date": "2026-09-03",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "binding": "ASSETS",
+    "directory": "./dist"
+  },
+  "observability": {
+    "enabled": true
+  },
+  "upload_source_maps": true,
+  "workers_dev": false,
+  "routes": [{ "pattern": "feedback.mitlist.me", "custom_domain": true }],
+  // reqtrack-api lives in this same Cloudflare account, so the board is read
+  // over a service binding instead of the public internet. That also lets the
+  // visitor's address reach reqtrack's per-visitor rate limit intact. In
+  // `astro dev` the binding has nothing local to talk to and the client falls
+  // back to plain fetch against REQTRACK_URL.
+  "services": [{ "binding": "REQTRACK", "service": "reqtrack-api" }],
+  "vars": {
+    "REQTRACK_URL": "https://reqtrack.tropicalthink.com",
+    "APP_URL": "https://app.mitlist.me"
+  }
+  // Secrets (wrangler secret put): REQTRACK_APP_KEY — mitlist's intake key
+  // from the Staffroom apps page. Same key the mobile app is built with.
+}

@@ -1,0 +1,134 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+const params = Astro.url.searchParams;
+const kind = params.get("kind") === "bug" ? "bug" : "feature";
+const error = params.get("error");
+
+const ERRORS: Record<string, string> = {
+  title: "Give it a short title first.",
+  title_long: "Titles are at most 200 characters.",
+  description_long: "Descriptions are at most 5000 characters.",
+  contact: "That email address does not look right.",
+  upstream: "The board could not be reached, so nothing was posted. Try again in a moment.",
+  rate_limited: "That is a lot of activity at once. Give it a minute and try again.",
+};
+const message = error ? (ERRORS[error] ?? ERRORS.upstream) : null;
+---
+
+<Layout tab="feedback" title="Give feedback" description="Post an idea or a bug report to the public mitlist board.">
+  <section class="wrap form-page">
+    <header class="form-page__head">
+      <span class="stamp">New post</span>
+      <h1 class="h1">Tell us what would help.</h1>
+      <p class="lead">
+        Your post goes straight onto the public board with your upvote already counted. Keep it to
+        one idea or one bug per post so others can vote on exactly that.
+      </p>
+    </header>
+
+    {message && <p class="notice notice--error" role="alert">{message}</p>}
+
+    <form class="panel form" method="post" action="/api/posts">
+      <div class="panel__body form__body">
+        <fieldset class="field">
+          <legend class="field__label">What is it?</legend>
+          <div class="segmented">
+            <label>
+              <input type="radio" name="kind" value="feature" checked={kind === "feature"} />
+              Feature idea
+            </label>
+            <label>
+              <input type="radio" name="kind" value="bug" checked={kind === "bug"} />
+              Bug report
+            </label>
+          </div>
+        </fieldset>
+
+        <div class="field">
+          <label class="field__label" for="title">Title</label>
+          <input
+            class="input"
+            id="title"
+            name="title"
+            type="text"
+            required
+            maxlength="200"
+            autocomplete="off"
+            placeholder={kind === "bug" ? "Chores skip a person after a rotation change" : "Shared grocery list templates"}
+          />
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="description">
+            {kind === "bug" ? "What happened, and how can we reproduce it?" : "Why would this help?"}
+            <span class="field__hint"> (optional)</span>
+          </label>
+          <textarea
+            class="textarea"
+            id="description"
+            name="description"
+            maxlength="5000"
+            placeholder={
+              kind === "bug"
+                ? "What you did, what you expected, what happened instead…"
+                : "Tell us how your household would use it…"
+            }></textarea>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="contact">
+            Email <span class="field__hint">(optional, never shown publicly)</span>
+          </label>
+          <input class="input" id="contact" name="contact" type="email" maxlength="255" placeholder="you@example.com" />
+          <p class="field__hint">Only the team sees it, and only to ask a follow-up question or let you know when it ships.</p>
+        </div>
+
+        <div class="hp" aria-hidden="true">
+          <label>Website <input type="text" name="website" tabindex="-1" autocomplete="off" /></label>
+        </div>
+      </div>
+      <div class="form__foot">
+        <a class="btn btn--ghost" href="/">Cancel</a>
+        <button class="btn btn--primary" type="submit">Add to the board</button>
+      </div>
+    </form>
+  </section>
+</Layout>
+
+<style>
+  .form-page {
+    max-width: 44rem;
+    padding-top: clamp(2rem, 1.5rem + 2vw, 3.2rem);
+    display: grid;
+    gap: 1.5rem;
+  }
+  .form-page__head .stamp {
+    margin-bottom: 1rem;
+  }
+  .form-page__head .h1 {
+    margin-bottom: 0.7rem;
+  }
+  .form__body {
+    display: grid;
+    gap: 1.25rem;
+    padding: 1.4rem;
+  }
+  fieldset {
+    border: none;
+    padding: 0;
+    margin: 0;
+  }
+  legend {
+    padding: 0;
+    margin-bottom: 0.35rem;
+  }
+  .form__foot {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    padding: 0.9rem 1.4rem;
+    border-top: var(--border);
+    background: var(--paper-2);
+  }
+</style>

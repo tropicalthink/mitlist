@@ -1,0 +1,111 @@
+---
+import type { BoardPost } from "../lib/board";
+import { KIND, excerpt, relativeTime } from "../lib/format";
+import StatusPill from "./StatusPill.astro";
+import VoteButton from "./VoteButton.astro";
+
+interface Props {
+  post: BoardPost;
+}
+const { post } = Astro.props;
+const href = `/p/${post.id}`;
+const summary = excerpt(post.description, 220);
+---
+
+<article class="row" data-post={post.id}>
+  <VoteButton id={post.id} count={post.voteCount} title={post.title} />
+  <div class="row__body">
+    <p class="row__kicker meta">
+      <span class:list={["pill", post.kind === "bug" ? "pill--bug" : "pill--feature"]}>
+        {KIND[post.kind].label}
+      </span>
+      <time datetime={new Date(post.createdAt).toISOString()}>{relativeTime(post.createdAt)}</time>
+    </p>
+    <h2 class="row__title"><a href={href}>{post.title}</a></h2>
+    {summary && <p class="row__summary">{summary}</p>}
+    <p class="row__foot">
+      <StatusPill status={post.status} withHint />
+      <a class="row__comments" href={`${href}#comments`}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"
+          ><path d="M21 12a8 8 0 0 1-8 8H7l-4 3V12a8 8 0 0 1 8-8h2a8 8 0 0 1 8 8Z"></path></svg
+        >
+        <span class="mono">{post.commentCount}</span>
+        <span class="visually-hidden">comments</span>
+      </a>
+    </p>
+  </div>
+</article>
+
+<style>
+  .row {
+    display: flex;
+    gap: 1rem;
+    padding: 1.1rem 1rem;
+    border-bottom: var(--border);
+    background: var(--paper);
+  }
+  .row:last-child {
+    border-bottom: none;
+  }
+  .row__body {
+    min-width: 0;
+    flex: 1;
+    display: grid;
+    gap: 0.35rem;
+  }
+  .row__kicker {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  .row__title {
+    font-size: 1.15rem;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+  .row__title a {
+    text-decoration: none;
+  }
+  .row__title a:hover {
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+  }
+  .row__summary {
+    color: var(--ink-3);
+    font-size: 0.95rem;
+    max-width: 70ch;
+  }
+  .row__foot {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 0.25rem;
+  }
+  .row__comments {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    text-decoration: none;
+    color: var(--ink-3);
+    font-weight: 600;
+    font-size: 0.88rem;
+  }
+  .row__comments:hover {
+    color: var(--ink);
+  }
+  .row__comments svg {
+    width: 1rem;
+    height: 1rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.2;
+    stroke-linejoin: round;
+  }
+  @media (max-width: 480px) {
+    .row {
+      padding-inline: 0.75rem;
+      gap: 0.75rem;
+    }
+  }
+</style>
