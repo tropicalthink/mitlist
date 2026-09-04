@@ -165,9 +165,9 @@ class IapService {
     return _products;
   }
 
-  /// The store's localized price string for an interval (e.g. "€20.00"), or null
+  /// The store's localized price string for an interval (e.g. "€29.99"), or null
   /// when the product has not loaded. This is the source of truth for the mobile
-  /// price — it already reflects the +€2 annual uplift and the viewer's locale.
+  /// price — it reflects the store's own conversion and the viewer's locale.
   String? priceLabel(BillingInterval interval) => _productFor(interval)?.price;
 
   /// Starts a purchase for [interval], covering [groupId]. The result is
