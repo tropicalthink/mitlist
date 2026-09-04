@@ -3,13 +3,13 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'app.dart';
 import 'config/api_config.dart';
 import 'services/app_check_service.dart';
 import 'services/fcm_service.dart';
+import 'utils/url_strategy.dart';
 
 /// Must be a top-level function so the OS can invoke it in a separate isolate.
 @pragma('vm:entry-point')
@@ -30,8 +30,11 @@ Future<void> main() async {
   // browser loads index.html for that path but Flutter only reads the
   // fragment, so the route was silently dropped and every deep link landed
   // on /home or /welcome. nginx/default.conf serves index.html for unknown
-  // paths so a direct request still reaches the router. No-op off the web.
-  usePathUrlStrategy();
+  // paths so a direct request still reaches the router. The fragment has to
+  // survive too: the OAuth callback arrives as /auth/callback#handoff=…, and
+  // the stock path strategy discards it before the router runs. No-op off
+  // the web.
+  usePathUrlStrategyKeepingFragment();
 
   // Apply a self-hoster's server choice before anything touches the network.
   final prefs = await SharedPreferences.getInstance();
