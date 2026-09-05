@@ -4166,7 +4166,44 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get authLoginResetSuccess =>
-      'Passwort erfolgreich zurückgesetzt. Du kannst dich jetzt anmelden.';
+      'Passwort aktualisiert. Du bist angemeldet.';
+
+  @override
+  String get authLinkOpenInApp => 'In der mitlist-App öffnen';
+
+  @override
+  String get authLinkContinueInBrowser => 'Im Browser fortfahren';
+
+  @override
+  String get authLinkBackToLogin => 'Zurück zur Anmeldung';
+
+  @override
+  String get authVerifyLinkBody =>
+      'Nur noch ein Tipp. Bestätige in der installierten App oder direkt hier im Browser.';
+
+  @override
+  String get authVerifyLinkMissing =>
+      'Diesem Link fehlt der Code. Gib stattdessen den Code aus deiner E-Mail ein.';
+
+  @override
+  String get authVerifyLinkVerifying => 'E-Mail wird bestätigt…';
+
+  @override
+  String get authVerifyLinkSuccess => 'E-Mail bestätigt. Du bist drin!';
+
+  @override
+  String get authResetTitle => 'Neues Passwort wählen';
+
+  @override
+  String get authResetBody =>
+      'Wähle ein neues Passwort für dein Konto. Sobald es gespeichert ist, bist du angemeldet.';
+
+  @override
+  String get authResetSubmit => 'Passwort speichern und anmelden';
+
+  @override
+  String get authResetInvalidCode =>
+      'Dieser Code ist ungültig oder abgelaufen. Fordere auf dem Anmeldebildschirm einen neuen an.';
 
   @override
   String get authSignupTitle => 'Konto erstellen';

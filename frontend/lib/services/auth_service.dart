@@ -264,15 +264,27 @@ class AuthService {
   }
 
   /// Confirms a password reset with the given token and new password.
-  Future<void> confirmPasswordReset(String token, String newPassword) async {
+  ///
+  /// The emailed code proved the address, so the server answers with a
+  /// session and this saves it exactly like a login does, honouring
+  /// [rememberMe]. Callers flip auth state afterwards rather than sending the
+  /// person to type the password they just chose.
+  Future<TokenPair> confirmPasswordReset(
+    String token,
+    String newPassword, {
+    bool rememberMe = true,
+  }) async {
     try {
-      await _dio.post(
+      final response = await _dio.post(
         '/auth/password-reset/confirm',
         data: {
           'token': token,
           'new_password': newPassword,
         },
       );
+      final tokenPair = TokenPair.fromJson(response.data);
+      await _saveTokens(tokenPair, persistSession: rememberMe);
+      return tokenPair;
     } on DioException catch (e) {
       _logFailure('Password reset confirmation', e);
       throw apiException(e);

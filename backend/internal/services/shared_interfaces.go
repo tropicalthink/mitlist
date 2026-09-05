@@ -39,6 +39,8 @@ type PasswordService interface {
 // MailService defines the interface for sending emails.
 type MailService interface {
 	Send(to, subject, body string, isHTML bool) error
+	// SendHTML delivers a styled message with a plain-text alternative.
+	SendHTML(to, subject, html, text string) error
 	SendTemplate(to, subject, tmplStr string, data any) error
 }
 

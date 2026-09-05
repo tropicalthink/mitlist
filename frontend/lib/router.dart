@@ -30,7 +30,9 @@ import 'screens/auth/welcome_screen.dart';
 import 'screens/premium/premium_screen.dart';
 import 'screens/tour/tour_screen.dart';
 import 'screens/auth/login_screen.dart';
+import 'screens/auth/reset_password_screen.dart';
 import 'screens/auth/signup_screen.dart';
+import 'screens/auth/verify_email_screen.dart';
 import 'screens/auth/onboarding_screen.dart';
 import 'screens/auth/oauth_callback_screen.dart';
 import 'screens/auth/session_bootstrap_screen.dart';
@@ -222,6 +224,27 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: 'signup',
         pageBuilder: (context, state) =>
             _boardPage(state, const SignupScreen()),
+      ),
+      GoRoute(
+        // Landing for the link in the sign-up email. Reachable signed out
+        // (a new account) and signed in (a guest proving their address), so
+        // router_redirect lists it as an auth route and never bounces it.
+        path: '/verify',
+        name: 'verifyEmail',
+        pageBuilder: (context, state) => _boardPage(
+          state,
+          VerifyEmailScreen(token: state.uri.queryParameters['token']),
+        ),
+      ),
+      GoRoute(
+        // Landing for the link in the password reset email. Saving the new
+        // password signs the person in.
+        path: '/reset-password',
+        name: 'resetPassword',
+        pageBuilder: (context, state) => _boardPage(
+          state,
+          ResetPasswordScreen(token: state.uri.queryParameters['token']),
+        ),
       ),
       GoRoute(
         path: '/onboarding',
@@ -612,7 +635,8 @@ class _BottomNavScaffoldState extends ConsumerState<BottomNavScaffold> {
     final saved = prefs.getInt(_lastShellTabKey) ?? 0;
     if (!mounted || _restored) return;
     _restored = true;
-    final onHome = _initialIndex == 0 && widget.navigationShell.currentIndex == 0;
+    final onHome =
+        _initialIndex == 0 && widget.navigationShell.currentIndex == 0;
     if (onHome && saved != 0 && saved < 5) {
       widget.navigationShell.goBranch(saved);
       markShellTabVisited(ref, saved);
