@@ -31,7 +31,7 @@ func TestUserService_Register(t *testing.T) {
 		userRepo.On("GetByEmail", ctx, "new@example.com").Return(nil, errors.New("user not found"))
 		passSvc.On("Hash", "Password123!").Return("hashed", nil)
 		authRepo.On("CreateUnverifiedUser", ctx, mock.AnythingOfType("*models.User"), mock.AnythingOfType("string"), mock.AnythingOfType("time.Time")).Return(nil)
-		mailSvc.On("Send", "new@example.com", "Verify your mitlist account", mock.AnythingOfType("string"), false).Return(nil)
+		mailSvc.On("SendHTML", "new@example.com", "Verify your mitlist account", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(nil)
 
 		user, err := svc.Register(ctx, RegisterInput{Email: "new@example.com", Password: "Password123!", FirstName: "New", LastName: "User"})
 		require.NoError(t, err)
@@ -347,7 +347,7 @@ func TestUserService_RequestPasswordReset(t *testing.T) {
 		userRepo.On("GetByEmail", ctx, "test@example.com").Return(user, nil)
 		authRepo.On("ReserveLoginAttempt", ctx, "password-reset:test@example.com", emailCodeSendLimit, emailCodeSendWindow).Return(true, nil)
 		authRepo.On("CreatePasswordResetToken", ctx, mock.AnythingOfType("*models.PasswordResetToken")).Return(nil)
-		mailSvc.On("Send", user.Email, "Password Reset", mock.AnythingOfType("string"), false).Return(nil)
+		mailSvc.On("SendHTML", user.Email, "Reset your mitlist password", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(nil)
 
 		err := svc.RequestPasswordReset(ctx, "test@example.com")
 		require.NoError(t, err)
@@ -374,7 +374,7 @@ func TestUserService_RequestPasswordReset(t *testing.T) {
 		err := svc.RequestPasswordReset(ctx, "test@example.com")
 		require.NoError(t, err)
 		userRepo.AssertNotCalled(t, "GetByEmail", mock.Anything, mock.Anything)
-		mailSvc.AssertNotCalled(t, "Send", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+		mailSvc.AssertNotCalled(t, "SendHTML", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 	})
 }
 
@@ -390,9 +390,13 @@ func TestUserService_ConfirmPasswordReset(t *testing.T) {
 
 		passSvc.On("Hash", "Newpassword12!").Return("newhash", nil)
 		authRepo.On("ConsumePasswordReset", ctx, resetTokenHash("abc"), "newhash").Return(userID, nil)
+		userRepo.On("GetByID", ctx, userID).Return(&models.User{ID: userID, Email: "test@example.com", IsVerified: true}, nil)
 
-		err := svc.ConfirmPasswordReset(ctx, "abc", "Newpassword12!")
+		// The account comes back so the handler can sign the person in.
+		user, err := svc.ConfirmPasswordReset(ctx, "abc", "Newpassword12!")
 		require.NoError(t, err)
+		require.NotNil(t, user)
+		assert.Equal(t, userID, user.ID)
 	})
 
 	t.Run("token already used", func(t *testing.T) {
@@ -403,7 +407,7 @@ func TestUserService_ConfirmPasswordReset(t *testing.T) {
 		passSvc.On("Hash", "Newpassword12!").Return("newhash", nil)
 		authRepo.On("ConsumePasswordReset", ctx, resetTokenHash("used"), "newhash").Return(uuid.Nil, pgx.ErrNoRows)
 
-		err := svc.ConfirmPasswordReset(ctx, "used", "Newpassword12!")
+		_, err := svc.ConfirmPasswordReset(ctx, "used", "Newpassword12!")
 		require.Error(t, err)
 		assert.IsType(t, &api.ValidationError{}, err)
 	})
@@ -416,7 +420,7 @@ func TestUserService_ConfirmPasswordReset(t *testing.T) {
 		passSvc.On("Hash", "Newpassword12!").Return("newhash", nil)
 		authRepo.On("ConsumePasswordReset", ctx, resetTokenHash("expired"), "newhash").Return(uuid.Nil, pgx.ErrNoRows)
 
-		err := svc.ConfirmPasswordReset(ctx, "expired", "Newpassword12!")
+		_, err := svc.ConfirmPasswordReset(ctx, "expired", "Newpassword12!")
 		require.Error(t, err)
 		assert.IsType(t, &api.ValidationError{}, err)
 	})

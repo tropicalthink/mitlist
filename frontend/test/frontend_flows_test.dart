@@ -38,7 +38,9 @@ import 'package:mitlist/repositories/finance_repository.dart';
 import 'package:mitlist/repositories/pinwall_repository.dart';
 import 'package:mitlist/screens/auth/login_screen.dart';
 import 'package:mitlist/screens/auth/oauth_callback_screen.dart';
+import 'package:mitlist/screens/auth/reset_password_screen.dart';
 import 'package:mitlist/screens/auth/signup_screen.dart';
+import 'package:mitlist/screens/auth/verify_email_screen.dart';
 import 'package:mitlist/screens/chores/chores_screen.dart';
 import 'package:mitlist/screens/home/groups_list_screen.dart';
 import 'package:mitlist/screens/home/household_hub_screen.dart';
@@ -711,10 +713,14 @@ void main() {
       (tester) async {
     await _setLargeSurface(tester);
     final authService = FakeAuthService(currentUser: user);
+    late ProviderContainer container;
 
     await _pumpScreen(
       tester,
-      child: const LoginScreen(),
+      child: Builder(builder: (context) {
+        container = ProviderScope.containerOf(context);
+        return const LoginScreen();
+      }),
       overrides: [
         authServiceProviderAsync.overrideWith((ref) async => authService),
         oauthProvidersProvider.overrideWith(
@@ -754,15 +760,124 @@ void main() {
     await tester.enterText(find.byType(TextField).at(5), 'Freshpassword1!');
     await tester.ensureVisible(find.widgetWithText(
         AppButton, 'RESET PASSWORD')); // solid variant renders uppercase
+    // The harness starts signed in; this flow begins signed out.
+    container.read(authStateProvider.notifier).state = false;
     await tester.tap(find.widgetWithText(AppButton, 'RESET PASSWORD'));
     await _pumpAfter(tester);
 
     expect(authService.lastConfirmPasswordResetToken, 'reset-code-123');
     expect(authService.lastConfirmPasswordResetPassword, 'Freshpassword1!');
-    expect(
-      find.text('Password reset successful. You can sign in now.'),
-      findsOneWidget,
+    // The emailed code proved the address: the sheet closes and the person is
+    // signed in, instead of being told to go and log in.
+    expect(find.text('Reset Password'), findsNothing);
+    expect(find.text("Password updated. You're signed in."), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 700));
+    expect(container.read(authStateProvider), isTrue);
+  });
+
+  testWidgets('verify link screen consumes the code and moves on',
+      (tester) async {
+    // The button in the sign-up email lands here with the code in the query.
+    // Off the web there is nothing to hand over to, so it verifies at once
+    // and parks onboarding as the next stop.
+    await _setLargeSurface(tester);
+    final authService = FakeAuthService(currentUser: user);
+    late ProviderContainer container;
+
+    await _pumpScreen(
+      tester,
+      child: Builder(builder: (context) {
+        container = ProviderScope.containerOf(context);
+        return const VerifyEmailScreen(token: 'ABCD1234');
+      }),
+      overrides: [
+        authServiceProviderAsync.overrideWith((ref) async => authService),
+      ],
     );
+    await _pumpAfter(tester);
+    await tester.pump(const Duration(milliseconds: 700));
+
+    expect(authService.lastVerifyToken, 'ABCD1234');
+    expect(container.read(pendingAuthNavigationProvider), '/onboarding');
+    expect(container.read(isGuestProvider), isFalse);
+  });
+
+  testWidgets('verify link screen without a code asks for one', (tester) async {
+    await _setLargeSurface(tester);
+    final authService = FakeAuthService(currentUser: user);
+
+    await _pumpScreen(
+      tester,
+      child: const VerifyEmailScreen(),
+      overrides: [
+        authServiceProviderAsync.overrideWith((ref) async => authService),
+      ],
+    );
+    await _pumpAfter(tester);
+
+    expect(authService.lastVerifyToken, isNull);
+    expect(find.byType(TextField), findsOneWidget);
+    await tester.enterText(find.byType(TextField), 'WXYZ5678');
+    await tester.tap(find.text('VERIFY')); // solid variant renders uppercase
+    await _pumpAfter(tester);
+    expect(authService.lastVerifyToken, 'WXYZ5678');
+  });
+
+  testWidgets('reset link screen saves the new password and signs in',
+      (tester) async {
+    // The button in the reset email lands here with the code in the query,
+    // so only the two password fields show; saving signs the person in.
+    await _setLargeSurface(tester);
+    final authService = FakeAuthService(currentUser: user);
+    late ProviderContainer container;
+
+    await _pumpScreen(
+      tester,
+      child: Builder(builder: (context) {
+        container = ProviderScope.containerOf(context);
+        return const ResetPasswordScreen(token: 'reset-code-123');
+      }),
+      overrides: [
+        authServiceProviderAsync.overrideWith((ref) async => authService),
+      ],
+    );
+    await _pumpAfter(tester);
+    expect(find.byType(TextField), findsNWidgets(2));
+
+    await tester.enterText(find.byType(TextField).at(0), 'Freshpassword1!');
+    await tester.enterText(find.byType(TextField).at(1), 'Freshpassword1!');
+    await tester.tap(find.widgetWithText(
+        AppButton, 'SAVE PASSWORD AND SIGN IN')); // solid renders uppercase
+    await _pumpAfter(tester);
+    await tester.pump(const Duration(milliseconds: 700));
+
+    expect(authService.lastConfirmPasswordResetToken, 'reset-code-123');
+    expect(authService.lastConfirmPasswordResetPassword, 'Freshpassword1!');
+    expect(container.read(pendingAuthNavigationProvider), '/home');
+  });
+
+  testWidgets('reset link screen rejects a mismatched confirmation',
+      (tester) async {
+    await _setLargeSurface(tester);
+    final authService = FakeAuthService(currentUser: user);
+
+    await _pumpScreen(
+      tester,
+      child: const ResetPasswordScreen(token: 'reset-code-123'),
+      overrides: [
+        authServiceProviderAsync.overrideWith((ref) async => authService),
+      ],
+    );
+    await _pumpAfter(tester);
+
+    await tester.enterText(find.byType(TextField).at(0), 'Freshpassword1!');
+    await tester.enterText(find.byType(TextField).at(1), 'Different1!');
+    await tester
+        .tap(find.widgetWithText(AppButton, 'SAVE PASSWORD AND SIGN IN'));
+    await _pumpAfter(tester);
+
+    expect(authService.lastConfirmPasswordResetToken, isNull);
+    expect(find.text('New passwords do not match.'), findsOneWidget);
   });
 
   testWidgets('login screen forwards remember-me choice to auth login',
@@ -1740,9 +1855,18 @@ class FakeAuthService implements AuthService {
   }
 
   @override
-  Future<void> confirmPasswordReset(String token, String newPassword) async {
+  Future<TokenPair> confirmPasswordReset(
+    String token,
+    String newPassword, {
+    bool rememberMe = true,
+  }) async {
     lastConfirmPasswordResetToken = token;
     lastConfirmPasswordResetPassword = newPassword;
+    return TokenPair(
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+      user: currentUser,
+    );
   }
 
   @override
@@ -2200,6 +2324,12 @@ class FakeListRepository implements ListRepository {
 
   @override
   void attachSse(dynamic sseService, String groupId) {}
+
+  @override
+  void listenSseForTest(Stream<dynamic> events, String groupId) {}
+
+  @override
+  Future<void> flushPendingSseRefreshes() async {}
 
   @override
   void detachSse() {}

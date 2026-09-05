@@ -4134,7 +4134,44 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get authLoginResetSuccess =>
-      'Wachtwoord hersteld. Je kunt nu inloggen.';
+      'Wachtwoord bijgewerkt. Je bent aangemeld.';
+
+  @override
+  String get authLinkOpenInApp => 'Openen in de mitlist-app';
+
+  @override
+  String get authLinkContinueInBrowser => 'Doorgaan in de browser';
+
+  @override
+  String get authLinkBackToLogin => 'Terug naar aanmelden';
+
+  @override
+  String get authVerifyLinkBody =>
+      'Nog één tik. Bevestig in de app die je hebt geïnstalleerd, of hier in de browser.';
+
+  @override
+  String get authVerifyLinkMissing =>
+      'Deze link mist zijn code. Voer in plaats daarvan de code uit je e-mail in.';
+
+  @override
+  String get authVerifyLinkVerifying => 'E-mail wordt bevestigd…';
+
+  @override
+  String get authVerifyLinkSuccess => 'E-mail bevestigd. Je bent binnen!';
+
+  @override
+  String get authResetTitle => 'Kies een nieuw wachtwoord';
+
+  @override
+  String get authResetBody =>
+      'Kies een nieuw wachtwoord voor je account. Zodra het is opgeslagen ben je aangemeld.';
+
+  @override
+  String get authResetSubmit => 'Wachtwoord opslaan en aanmelden';
+
+  @override
+  String get authResetInvalidCode =>
+      'Die code is ongeldig of verlopen. Vraag een nieuwe aan op het aanmeldscherm.';
 
   @override
   String get authSignupTitle => 'Account aanmaken';

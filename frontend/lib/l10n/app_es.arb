@@ -4484,10 +4484,21 @@
   "@authLoginResetPasswordTitle": {
     "description": "Bottom sheet title for password reset"
   },
-  "authLoginResetSuccess": "Contraseña restablecida. Ya puedes iniciar sesión.",
+  "authLoginResetSuccess": "Contraseña actualizada. Has iniciado sesión.",
   "@authLoginResetSuccess": {
     "description": "Success message after password reset"
   },
+  "authLinkOpenInApp": "Abrir en la app de mitlist",
+  "authLinkContinueInBrowser": "Continuar en el navegador",
+  "authLinkBackToLogin": "Volver a iniciar sesión",
+  "authVerifyLinkBody": "Estás a un toque. Verifica en la app que instalaste o aquí mismo en el navegador.",
+  "authVerifyLinkMissing": "A este enlace le falta el código. Introduce el código de tu correo.",
+  "authVerifyLinkVerifying": "Verificando tu correo…",
+  "authVerifyLinkSuccess": "Correo verificado. ¡Ya estás dentro!",
+  "authResetTitle": "Elige una nueva contraseña",
+  "authResetBody": "Elige una nueva contraseña para tu cuenta. Iniciarás sesión en cuanto se guarde.",
+  "authResetSubmit": "Guardar contraseña e iniciar sesión",
+  "authResetInvalidCode": "Ese código es inválido o ha caducado. Solicita uno nuevo desde la pantalla de inicio de sesión.",
   "authLoginSendResetCode": "Enviar código",
   "@authLoginSendResetCode": {
     "description": "Button to send password reset code"

@@ -42,6 +42,12 @@ const authRoutePrefixes = [
   '/login',
   '/signup',
   '/auth/callback',
+  // Email links. A signed-in visitor stays on them too: a guest verifying
+  // the address they just added is signed in, and someone resetting a
+  // password on a device that still holds another session must be able to
+  // finish, so neither is bounced home the way /login is.
+  '/verify',
+  '/reset-password',
 ];
 
 /// Routes a signed-out visitor is allowed to see.
