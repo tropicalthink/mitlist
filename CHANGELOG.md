@@ -8,6 +8,20 @@ follow [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Branded verification and password reset emails: HTML in the app's paper /
+  ink / orange style with a plain-text alternative, the code on a sticky note,
+  and a button that opens the app (`/verify?token=`, `/reset-password?token=`).
+  Both paths are new app routes and App Link / Universal Link paths; in a
+  phone browser the landing page offers to hand over to the installed app.
+
+### Changed
+
+- Confirming a password reset signs the person in. `POST
+  /auth/password-reset/confirm` now answers with a session (user, access and
+  refresh token) instead of a message, and the app saves it and goes home
+  rather than asking for the password that was just chosen. Older sessions
+  are still revoked.
+
 - Native In-App Purchase for premium on iOS and Android (App Store + Play
   Store), alongside the existing Polar web checkout. Purchases are verified
   server-side (Apple StoreKit 2 JWS chain to Apple Root CA - G3; Google Play

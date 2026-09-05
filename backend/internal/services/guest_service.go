@@ -207,7 +207,7 @@ func (s *GuestService) ConvertGuest(ctx context.Context, guestID uuid.UUID, emai
 	if err := s.authRepo.CreateEmailVerification(ctx, user.ID, tokenHash, expiresAt); err != nil {
 		return nil, "", "", fmt.Errorf("create guest verification: %w", err)
 	}
-	if err := s.mailService.Send(user.Email, "Verify your mitlist account", verificationMessage(rawToken, s.frontendURL), false); err != nil {
+	if err := sendVerificationEmail(s.mailService, user.Email, rawToken, s.frontendURL); err != nil {
 		return nil, "", "", fmt.Errorf("send guest verification email: %w", err)
 	}
 	if err := s.jwtService.RevokeUserSessions(user.ID); err != nil {

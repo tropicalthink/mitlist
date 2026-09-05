@@ -458,11 +458,20 @@ func (h *AuthHandler) PasswordResetConfirm(w http.ResponseWriter, r *http.Reques
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
 		return
 	}
-	if err := h.userService.ConfirmPasswordReset(r.Context(), req.Token, req.NewPassword); err != nil {
+	user, err := h.userService.ConfirmPasswordReset(r.Context(), req.Token, req.NewPassword)
+	if err != nil {
 		api.RespondError(w, err)
 		return
 	}
-	api.RespondJSON(w, http.StatusOK, map[string]string{"message": "password reset successful"})
+	// The emailed code proved the address; sign the person in rather than
+	// sending them to type the password they just chose. The consume revoked
+	// every older session, so this is the account's only live one.
+	access, refresh, err := h.jwtService.GenerateTokenPair(user.ID.String(), nil)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	tokenResponse(w, r, http.StatusOK, user, access, refresh)
 }
 
 func (h *AuthHandler) GetMe(w http.ResponseWriter, r *http.Request) {

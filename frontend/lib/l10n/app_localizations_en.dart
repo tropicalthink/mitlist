@@ -4097,8 +4097,44 @@ class AppLocalizationsEn extends AppLocalizations {
       'Fill out the reset code and both password fields.';
 
   @override
-  String get authLoginResetSuccess =>
-      'Password reset successful. You can sign in now.';
+  String get authLoginResetSuccess => 'Password updated. You\'re signed in.';
+
+  @override
+  String get authLinkOpenInApp => 'Open in the mitlist app';
+
+  @override
+  String get authLinkContinueInBrowser => 'Continue in the browser';
+
+  @override
+  String get authLinkBackToLogin => 'Back to sign in';
+
+  @override
+  String get authVerifyLinkBody =>
+      'You\'re one tap away. Verify in the app you installed, or right here in the browser.';
+
+  @override
+  String get authVerifyLinkMissing =>
+      'This link is missing its code. Enter the code from your email instead.';
+
+  @override
+  String get authVerifyLinkVerifying => 'Verifying your email…';
+
+  @override
+  String get authVerifyLinkSuccess => 'Email verified. You\'re in!';
+
+  @override
+  String get authResetTitle => 'Choose a new password';
+
+  @override
+  String get authResetBody =>
+      'Pick a new password for your account. You\'ll be signed in the moment it\'s saved.';
+
+  @override
+  String get authResetSubmit => 'Save password and sign in';
+
+  @override
+  String get authResetInvalidCode =>
+      'That reset code is invalid or expired. Request a new one from the sign-in screen.';
 
   @override
   String get authSignupTitle => 'Create account';

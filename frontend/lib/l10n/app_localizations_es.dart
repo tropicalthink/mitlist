@@ -4123,7 +4123,44 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get authLoginResetSuccess =>
-      'Contraseña restablecida. Ya puedes iniciar sesión.';
+      'Contraseña actualizada. Has iniciado sesión.';
+
+  @override
+  String get authLinkOpenInApp => 'Abrir en la app de mitlist';
+
+  @override
+  String get authLinkContinueInBrowser => 'Continuar en el navegador';
+
+  @override
+  String get authLinkBackToLogin => 'Volver a iniciar sesión';
+
+  @override
+  String get authVerifyLinkBody =>
+      'Estás a un toque. Verifica en la app que instalaste o aquí mismo en el navegador.';
+
+  @override
+  String get authVerifyLinkMissing =>
+      'A este enlace le falta el código. Introduce el código de tu correo.';
+
+  @override
+  String get authVerifyLinkVerifying => 'Verificando tu correo…';
+
+  @override
+  String get authVerifyLinkSuccess => 'Correo verificado. ¡Ya estás dentro!';
+
+  @override
+  String get authResetTitle => 'Elige una nueva contraseña';
+
+  @override
+  String get authResetBody =>
+      'Elige una nueva contraseña para tu cuenta. Iniciarás sesión en cuanto se guarde.';
+
+  @override
+  String get authResetSubmit => 'Guardar contraseña e iniciar sesión';
+
+  @override
+  String get authResetInvalidCode =>
+      'Ese código es inválido o ha caducado. Solicita uno nuevo desde la pantalla de inicio de sesión.';
 
   @override
   String get authSignupTitle => 'Crear cuenta';

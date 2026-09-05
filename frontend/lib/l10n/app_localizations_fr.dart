@@ -4148,7 +4148,44 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get authLoginResetSuccess =>
-      'Mot de passe réinitialisé. Tu peux te connecter maintenant.';
+      'Mot de passe mis à jour. Vous êtes connecté.';
+
+  @override
+  String get authLinkOpenInApp => 'Ouvrir dans l\'app mitlist';
+
+  @override
+  String get authLinkContinueInBrowser => 'Continuer dans le navigateur';
+
+  @override
+  String get authLinkBackToLogin => 'Retour à la connexion';
+
+  @override
+  String get authVerifyLinkBody =>
+      'Plus qu\'un geste. Vérifiez dans l\'app installée ou directement ici dans le navigateur.';
+
+  @override
+  String get authVerifyLinkMissing =>
+      'Ce lien ne contient pas de code. Saisissez plutôt le code reçu par e-mail.';
+
+  @override
+  String get authVerifyLinkVerifying => 'Vérification de votre e-mail…';
+
+  @override
+  String get authVerifyLinkSuccess => 'E-mail vérifié. Vous êtes connecté !';
+
+  @override
+  String get authResetTitle => 'Choisissez un nouveau mot de passe';
+
+  @override
+  String get authResetBody =>
+      'Choisissez un nouveau mot de passe pour votre compte. Vous serez connecté dès son enregistrement.';
+
+  @override
+  String get authResetSubmit => 'Enregistrer et se connecter';
+
+  @override
+  String get authResetInvalidCode =>
+      'Ce code est invalide ou expiré. Demandez-en un nouveau depuis l\'écran de connexion.';
 
   @override
   String get authSignupTitle => 'Créer un compte';

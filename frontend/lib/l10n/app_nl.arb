@@ -4484,10 +4484,21 @@
   "@authLoginResetPasswordTitle": {
     "description": "Bottom sheet title for password reset"
   },
-  "authLoginResetSuccess": "Wachtwoord hersteld. Je kunt nu inloggen.",
+  "authLoginResetSuccess": "Wachtwoord bijgewerkt. Je bent aangemeld.",
   "@authLoginResetSuccess": {
     "description": "Success message after password reset"
   },
+  "authLinkOpenInApp": "Openen in de mitlist-app",
+  "authLinkContinueInBrowser": "Doorgaan in de browser",
+  "authLinkBackToLogin": "Terug naar aanmelden",
+  "authVerifyLinkBody": "Nog één tik. Bevestig in de app die je hebt geïnstalleerd, of hier in de browser.",
+  "authVerifyLinkMissing": "Deze link mist zijn code. Voer in plaats daarvan de code uit je e-mail in.",
+  "authVerifyLinkVerifying": "E-mail wordt bevestigd…",
+  "authVerifyLinkSuccess": "E-mail bevestigd. Je bent binnen!",
+  "authResetTitle": "Kies een nieuw wachtwoord",
+  "authResetBody": "Kies een nieuw wachtwoord voor je account. Zodra het is opgeslagen ben je aangemeld.",
+  "authResetSubmit": "Wachtwoord opslaan en aanmelden",
+  "authResetInvalidCode": "Die code is ongeldig of verlopen. Vraag een nieuwe aan op het aanmeldscherm.",
   "authLoginSendResetCode": "Code versturen",
   "@authLoginSendResetCode": {
     "description": "Button to send password reset code"

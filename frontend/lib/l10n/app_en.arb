@@ -5513,9 +5513,53 @@
   "@authLoginResetFillAllFields": {
     "description": "Validation: all reset fields required"
   },
-  "authLoginResetSuccess": "Password reset successful. You can sign in now.",
+  "authLoginResetSuccess": "Password updated. You're signed in.",
   "@authLoginResetSuccess": {
     "description": "Success message after password reset"
+  },
+  "authLinkOpenInApp": "Open in the mitlist app",
+  "@authLinkOpenInApp": {
+    "description": "Button on the web landing page of an email link that hands over to the installed mobile app"
+  },
+  "authLinkContinueInBrowser": "Continue in the browser",
+  "@authLinkContinueInBrowser": {
+    "description": "Secondary button on the web landing page of an email link: finish the step in the browser instead of the app"
+  },
+  "authLinkBackToLogin": "Back to sign in",
+  "@authLinkBackToLogin": {
+    "description": "Ghost button under the verify / reset link screens leading back to the sign-in screen"
+  },
+  "authVerifyLinkBody": "You're one tap away. Verify in the app you installed, or right here in the browser.",
+  "@authVerifyLinkBody": {
+    "description": "Verify-email landing page in a phone browser, above the choice between the app and the browser"
+  },
+  "authVerifyLinkMissing": "This link is missing its code. Enter the code from your email instead.",
+  "@authVerifyLinkMissing": {
+    "description": "Verify-email landing page reached without a code in the link"
+  },
+  "authVerifyLinkVerifying": "Verifying your email…",
+  "@authVerifyLinkVerifying": {
+    "description": "Verify-email landing page while the code is being checked"
+  },
+  "authVerifyLinkSuccess": "Email verified. You're in!",
+  "@authVerifyLinkSuccess": {
+    "description": "Verify-email landing page after the code was accepted, just before the app moves on"
+  },
+  "authResetTitle": "Choose a new password",
+  "@authResetTitle": {
+    "description": "Heading of the reset-password screen opened from the email link"
+  },
+  "authResetBody": "Pick a new password for your account. You'll be signed in the moment it's saved.",
+  "@authResetBody": {
+    "description": "Intro of the reset-password screen: saving the password also signs the person in"
+  },
+  "authResetSubmit": "Save password and sign in",
+  "@authResetSubmit": {
+    "description": "Primary button of the reset-password screen"
+  },
+  "authResetInvalidCode": "That reset code is invalid or expired. Request a new one from the sign-in screen.",
+  "@authResetInvalidCode": {
+    "description": "Reset-password screen when the server rejects the code as invalid or expired"
   },
   "authSignupTitle": "Create account",
   "@authSignupTitle": {
@@ -8378,171 +8422,461 @@
     "description": "Card body prompting a web visitor to install the app"
   },
   "recipeQuickCookbooks": "Cookbooks",
-  "@recipeQuickCookbooks": {"description": "Kitchen quick-action tile title"},
+  "@recipeQuickCookbooks": {
+    "description": "Kitchen quick-action tile title"
+  },
   "recipeQuickCookbooksDesc": "{count, plural, =0{Group your recipes} =1{1 cookbook} other{{count} cookbooks}}",
-  "@recipeQuickCookbooksDesc": {"description": "Kitchen quick-action tile subtitle", "placeholders": {"count": {"type": "num"}}},
+  "@recipeQuickCookbooksDesc": {
+    "description": "Kitchen quick-action tile subtitle",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
   "recipeQuickMealPlan": "Meal plan",
-  "@recipeQuickMealPlan": {"description": "Kitchen quick-action tile title"},
+  "@recipeQuickMealPlan": {
+    "description": "Kitchen quick-action tile title"
+  },
   "recipeQuickMealPlanDesc": "{count, plural, =0{Plan the week} =1{1 meal this week} other{{count} meals this week}}",
-  "@recipeQuickMealPlanDesc": {"description": "Kitchen quick-action tile subtitle", "placeholders": {"count": {"type": "num"}}},
+  "@recipeQuickMealPlanDesc": {
+    "description": "Kitchen quick-action tile subtitle",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
   "recipeSortChip": "Sort: {label}",
-  "@recipeSortChip": {"description": "Chip that opens the sort picker, showing the active sort", "placeholders": {"label": {"type": "String"}}},
+  "@recipeSortChip": {
+    "description": "Chip that opens the sort picker, showing the active sort",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
   "recipeFiltersClear": "Clear filters",
-  "@recipeFiltersClear": {"description": "Clears search, scope and tag filters"},
+  "@recipeFiltersClear": {
+    "description": "Clears search, scope and tag filters"
+  },
   "recipeTagsMore": "+{count} more",
-  "@recipeTagsMore": {"description": "Reveals the rest of the tag filter row", "placeholders": {"count": {"type": "num"}}},
+  "@recipeTagsMore": {
+    "description": "Reveals the rest of the tag filter row",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
   "recipeTagsLess": "Show fewer",
-  "@recipeTagsLess": {"description": "Collapses the tag filter row"},
+  "@recipeTagsLess": {
+    "description": "Collapses the tag filter row"
+  },
   "cookbooksShareWithHousehold": "Share with household",
-  "@cookbooksShareWithHousehold": {"description": "Toggle on the cookbook form"},
+  "@cookbooksShareWithHousehold": {
+    "description": "Toggle on the cookbook form"
+  },
   "cookbooksShareWithHouseholdDesc": "Everyone in {name} can see and add to this cookbook.",
-  "@cookbooksShareWithHouseholdDesc": {"description": "Toggle subtitle when sharing is on", "placeholders": {"name": {"type": "String"}}},
+  "@cookbooksShareWithHouseholdDesc": {
+    "description": "Toggle subtitle when sharing is on",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "cookbooksPersonalDesc": "Only you can see this cookbook.",
-  "@cookbooksPersonalDesc": {"description": "Toggle subtitle when the cookbook is personal"},
+  "@cookbooksPersonalDesc": {
+    "description": "Toggle subtitle when the cookbook is personal"
+  },
   "cookbooksEditSheetTitle": "Edit cookbook",
-  "@cookbooksEditSheetTitle": {"description": "Sheet title for renaming / resharing a cookbook"},
+  "@cookbooksEditSheetTitle": {
+    "description": "Sheet title for renaming / resharing a cookbook"
+  },
   "cookbooksEdit": "Edit",
-  "@cookbooksEdit": {"description": "Menu item"},
+  "@cookbooksEdit": {
+    "description": "Menu item"
+  },
   "cookbooksOpen": "Open cookbook {name}",
-  "@cookbooksOpen": {"description": "Semantic label on a cookbook card", "placeholders": {"name": {"type": "String"}}},
+  "@cookbooksOpen": {
+    "description": "Semantic label on a cookbook card",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "cookbookAddRecipesSearchHint": "Search recipes",
-  "@cookbookAddRecipesSearchHint": {"description": "Search field hint in the add-recipes picker"},
+  "@cookbookAddRecipesSearchHint": {
+    "description": "Search field hint in the add-recipes picker"
+  },
   "cookbookAddRecipesSubmit": "{count, plural, =0{Select recipes} =1{Add 1 recipe} other{Add {count} recipes}}",
-  "@cookbookAddRecipesSubmit": {"description": "Submit button in the add-recipes picker", "placeholders": {"count": {"type": "num"}}},
+  "@cookbookAddRecipesSubmit": {
+    "description": "Submit button in the add-recipes picker",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
   "cookbookAddRecipesNoMatch": "No recipes match",
-  "@cookbookAddRecipesNoMatch": {"description": "Picker empty state after a search"},
+  "@cookbookAddRecipesNoMatch": {
+    "description": "Picker empty state after a search"
+  },
   "cookbookAddRecipesAlreadyIn": "Already in this cookbook",
-  "@cookbookAddRecipesAlreadyIn": {"description": "Row subtitle in the picker"},
+  "@cookbookAddRecipesAlreadyIn": {
+    "description": "Row subtitle in the picker"
+  },
   "cookbookDetailSharedWith": "Shared with {name}",
-  "@cookbookDetailSharedWith": {"description": "Cookbook detail header subtitle", "placeholders": {"name": {"type": "String"}}},
+  "@cookbookDetailSharedWith": {
+    "description": "Cookbook detail header subtitle",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "cookbookDetailPersonal": "Personal cookbook",
-  "@cookbookDetailPersonal": {"description": "Cookbook detail header subtitle"},
+  "@cookbookDetailPersonal": {
+    "description": "Cookbook detail header subtitle"
+  },
   "recipeDetailAddToCookbook": "Add to cookbook",
-  "@recipeDetailAddToCookbook": {"description": "Recipe detail action"},
+  "@recipeDetailAddToCookbook": {
+    "description": "Recipe detail action"
+  },
   "recipeAddToCookbookEmptyTitle": "No cookbooks yet",
-  "@recipeAddToCookbookEmptyTitle": {"description": "Empty state in the add-to-cookbook sheet"},
+  "@recipeAddToCookbookEmptyTitle": {
+    "description": "Empty state in the add-to-cookbook sheet"
+  },
   "recipeAddToCookbookEmptyDesc": "Create a cookbook to start grouping recipes.",
-  "@recipeAddToCookbookEmptyDesc": {"description": "Empty state body in the add-to-cookbook sheet"},
+  "@recipeAddToCookbookEmptyDesc": {
+    "description": "Empty state body in the add-to-cookbook sheet"
+  },
   "recipeAddToCookbookNewName": "New cookbook name",
-  "@recipeAddToCookbookNewName": {"description": "Inline create field label"},
+  "@recipeAddToCookbookNewName": {
+    "description": "Inline create field label"
+  },
   "recipeAddedToCookbook": "Added to {name}",
-  "@recipeAddedToCookbook": {"description": "Toast after filing a recipe", "placeholders": {"name": {"type": "String"}}},
+  "@recipeAddedToCookbook": {
+    "description": "Toast after filing a recipe",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "recipeAddToCookbookFailed": "Couldn’t add to cookbook",
-  "@recipeAddToCookbookFailed": {"description": "Error toast"},
+  "@recipeAddToCookbookFailed": {
+    "description": "Error toast"
+  },
   "sharedRecipeOpenInApp": "Open in Mitlist",
-  "@sharedRecipeOpenInApp": {"description": "Button on the web share page that deep-links into the installed app"},
+  "@sharedRecipeOpenInApp": {
+    "description": "Button on the web share page that deep-links into the installed app"
+  },
   "openInAppButton": "Open in Mitlist",
-  "@openInAppButton": {"description": "Button shown in a phone browser that hands the current invite or share link to the installed app"},
+  "@openInAppButton": {
+    "description": "Button shown in a phone browser that hands the current invite or share link to the installed app"
+  },
   "recipeShareSubject": "{title} on Mitlist",
-  "@recipeShareSubject": {"description": "Share sheet subject line", "placeholders": {"title": {"type": "String"}}},
+  "@recipeShareSubject": {
+    "description": "Share sheet subject line",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "welcomeGetStarted": "Get started",
-  "@welcomeGetStarted": {"description": "Primary button on the welcome screen; opens the feature tour"},
+  "@welcomeGetStarted": {
+    "description": "Primary button on the welcome screen; opens the feature tour"
+  },
   "welcomeHaveAccount": "I have an account",
-  "@welcomeHaveAccount": {"description": "Secondary button on the welcome screen; goes to sign in"},
+  "@welcomeHaveAccount": {
+    "description": "Secondary button on the welcome screen; goes to sign in"
+  },
   "tourSkip": "Skip",
-  "@tourSkip": {"description": "Top-right button on tour pages that jumps to the last page"},
+  "@tourSkip": {
+    "description": "Top-right button on tour pages that jumps to the last page"
+  },
   "tourNext": "Next",
-  "@tourNext": {"description": "Bottom button on tour pages that advances one page"},
+  "@tourNext": {
+    "description": "Bottom button on tour pages that advances one page"
+  },
   "tourShowMe": "Show me",
-  "@tourShowMe": {"description": "Bottom button on the first tour page"},
+  "@tourShowMe": {
+    "description": "Bottom button on the first tour page"
+  },
   "tourBack": "Back",
-  "@tourBack": {"description": "Semantic label of the back chevron on tour pages"},
+  "@tourBack": {
+    "description": "Semantic label of the back chevron on tour pages"
+  },
   "tourStepOf": "Step {step} of {total}",
-  "@tourStepOf": {"description": "Semantic label of the tour progress bar", "placeholders": {"step": {"type": "int"}, "total": {"type": "int"}}},
+  "@tourStepOf": {
+    "description": "Semantic label of the tour progress bar",
+    "placeholders": {
+      "step": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "tourSampleTag": "Sample",
-  "@tourSampleTag": {"description": "Small tag on tour cards saying the content is a sample household"},
+  "@tourSampleTag": {
+    "description": "Small tag on tour cards saying the content is a sample household"
+  },
   "tourWhyEyebrow": "Your household",
-  "@tourWhyEyebrow": {"description": "Eyebrow label above the first tour headline"},
+  "@tourWhyEyebrow": {
+    "description": "Eyebrow label above the first tour headline"
+  },
   "tourWhyHeadline": "Who bought milk, who owes what, whose turn is it?",
-  "@tourWhyHeadline": {"description": "Headline of the first tour page"},
+  "@tourWhyHeadline": {
+    "description": "Headline of the first tour page"
+  },
   "tourWhyBody": "mitlist is the shared notebook for the people you live with. Here is a sample flat to poke at.",
-  "@tourWhyBody": {"description": "Body text of the first tour page"},
+  "@tourWhyBody": {
+    "description": "Body text of the first tour page"
+  },
   "tourWhyNote": "Landlord coming Thursday 10am",
-  "@tourWhyNote": {"description": "Sample sticky note pinned on the first tour page"},
+  "@tourWhyNote": {
+    "description": "Sample sticky note pinned on the first tour page"
+  },
   "tourWhyToBuy": "{count, plural, =1{1 to buy} other{{count} to buy}}",
-  "@tourWhyToBuy": {"description": "Unchecked item count on the sample list", "placeholders": {"count": {"type": "int"}}},
+  "@tourWhyToBuy": {
+    "description": "Unchecked item count on the sample list",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "tourWhyOverdue": "{title} is overdue",
-  "@tourWhyOverdue": {"description": "The overdue chore on the first tour page", "placeholders": {"title": {"type": "String"}}},
+  "@tourWhyOverdue": {
+    "description": "The overdue chore on the first tour page",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "tourListsEyebrow": "Lists",
-  "@tourListsEyebrow": {"description": "Eyebrow label on the lists tour page"},
+  "@tourListsEyebrow": {
+    "description": "Eyebrow label on the lists tour page"
+  },
   "tourListsHeadline": "One list. Everyone adds. Whoever is at the shop buys.",
-  "@tourListsHeadline": {"description": "Headline of the lists tour page"},
+  "@tourListsHeadline": {
+    "description": "Headline of the lists tour page"
+  },
   "tourListsBody": "Tick things off, add what is missing. Everyone in the flat sees it change.",
-  "@tourListsBody": {"description": "Body text of the lists tour page"},
+  "@tourListsBody": {
+    "description": "Body text of the lists tour page"
+  },
   "tourListsAddHint": "Add something…",
-  "@tourListsAddHint": {"description": "Placeholder of the add-item field on the lists tour page"},
+  "@tourListsAddHint": {
+    "description": "Placeholder of the add-item field on the lists tour page"
+  },
   "tourListsAddedBy": "{name} added this",
-  "@tourListsAddedBy": {"description": "Under a sample list item, who put it there", "placeholders": {"name": {"type": "String"}}},
+  "@tourListsAddedBy": {
+    "description": "Under a sample list item, who put it there",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "tourMoneyEyebrow": "Money",
-  "@tourMoneyEyebrow": {"description": "Eyebrow label on the money tour page"},
+  "@tourMoneyEyebrow": {
+    "description": "Eyebrow label on the money tour page"
+  },
   "tourMoneyHeadline": "Split the pizza. Stop doing mental maths.",
-  "@tourMoneyHeadline": {"description": "Headline of the money tour page"},
+  "@tourMoneyHeadline": {
+    "description": "Headline of the money tour page"
+  },
   "tourMoneyBody": "Tap a name to leave them out of the split. The balance updates on its own.",
-  "@tourMoneyBody": {"description": "Body text of the money tour page"},
+  "@tourMoneyBody": {
+    "description": "Body text of the money tour page"
+  },
   "tourMoneyPizza": "Pizza night",
-  "@tourMoneyPizza": {"description": "Title of the sample expense the person paid"},
+  "@tourMoneyPizza": {
+    "description": "Title of the sample expense the person paid"
+  },
   "tourMoneyRepair": "Washing machine repair",
-  "@tourMoneyRepair": {"description": "Title of the sample expense someone else paid"},
+  "@tourMoneyRepair": {
+    "description": "Title of the sample expense someone else paid"
+  },
   "tourMoneyPaidByYou": "paid by you",
-  "@tourMoneyPaidByYou": {"description": "Who paid, when it was the person"},
+  "@tourMoneyPaidByYou": {
+    "description": "Who paid, when it was the person"
+  },
   "tourMoneyPaidBy": "paid by {name}",
-  "@tourMoneyPaidBy": {"description": "Who paid, when it was someone else", "placeholders": {"name": {"type": "String"}}},
+  "@tourMoneyPaidBy": {
+    "description": "Who paid, when it was someone else",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "tourMoneySplitBetween": "Split between",
-  "@tourMoneySplitBetween": {"description": "Label above the member chips of the pizza expense"},
+  "@tourMoneySplitBetween": {
+    "description": "Label above the member chips of the pizza expense"
+  },
   "tourMoneyOwesYou": "{name} owes you {amount}",
-  "@tourMoneyOwesYou": {"description": "One member's share of the pizza", "placeholders": {"name": {"type": "String"}, "amount": {"type": "String"}}},
+  "@tourMoneyOwesYou": {
+    "description": "One member's share of the pizza",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "tourMoneyJustYou": "Just you. Nothing to split.",
-  "@tourMoneyJustYou": {"description": "Shown when everyone else is removed from the pizza split"},
+  "@tourMoneyJustYou": {
+    "description": "Shown when everyone else is removed from the pizza split"
+  },
   "tourMoneyOverallOwed": "Overall, you are owed {amount}",
-  "@tourMoneyOverallOwed": {"description": "Net balance when others owe the person", "placeholders": {"amount": {"type": "String"}}},
+  "@tourMoneyOverallOwed": {
+    "description": "Net balance when others owe the person",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "tourMoneyOverallOwe": "Overall, you owe {amount}",
-  "@tourMoneyOverallOwe": {"description": "Net balance when the person owes", "placeholders": {"amount": {"type": "String"}}},
+  "@tourMoneyOverallOwe": {
+    "description": "Net balance when the person owes",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "tourMoneyOverallSquare": "Overall, all square",
-  "@tourMoneyOverallSquare": {"description": "Net balance when nothing is owed"},
+  "@tourMoneyOverallSquare": {
+    "description": "Net balance when nothing is owed"
+  },
   "tourChoresEyebrow": "Chores",
-  "@tourChoresEyebrow": {"description": "Eyebrow label on the chores tour page"},
+  "@tourChoresEyebrow": {
+    "description": "Eyebrow label on the chores tour page"
+  },
   "tourChoresHeadline": "Bins go out Thursday. It is Ines's turn, and she knows.",
-  "@tourChoresHeadline": {"description": "Headline of the chores tour page; Ines is a sample flatmate"},
+  "@tourChoresHeadline": {
+    "description": "Headline of the chores tour page; Ines is a sample flatmate"
+  },
   "tourChoresBody": "Chores rotate. Tick yours off and it moves to the next person.",
-  "@tourChoresBody": {"description": "Body text of the chores tour page"},
+  "@tourChoresBody": {
+    "description": "Body text of the chores tour page"
+  },
   "tourChoresOverdue": "Overdue",
-  "@tourChoresOverdue": {"description": "Due label on an overdue sample chore"},
+  "@tourChoresOverdue": {
+    "description": "Due label on an overdue sample chore"
+  },
   "tourChoresDueToday": "Due today",
-  "@tourChoresDueToday": {"description": "Due label on a sample chore due today"},
+  "@tourChoresDueToday": {
+    "description": "Due label on a sample chore due today"
+  },
   "tourChoresDueIn": "{days, plural, =1{Due tomorrow} other{Due in {days} days}}",
-  "@tourChoresDueIn": {"description": "Due label on a sample chore", "placeholders": {"days": {"type": "int"}}},
+  "@tourChoresDueIn": {
+    "description": "Due label on a sample chore",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
   "tourChoresWeekly": "Weekly",
-  "@tourChoresWeekly": {"description": "Recurrence chip on a sample chore"},
+  "@tourChoresWeekly": {
+    "description": "Recurrence chip on a sample chore"
+  },
   "tourChoresYourTurn": "Your turn",
-  "@tourChoresYourTurn": {"description": "Turn chip when the sample chore is the person's"},
+  "@tourChoresYourTurn": {
+    "description": "Turn chip when the sample chore is the person's"
+  },
   "tourChoresTurnOf": "{name}'s turn",
-  "@tourChoresTurnOf": {"description": "Turn chip when the sample chore is someone else's", "placeholders": {"name": {"type": "String"}}},
+  "@tourChoresTurnOf": {
+    "description": "Turn chip when the sample chore is someone else's",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "tourChoresNext": "Next: {name}, in {days} days",
-  "@tourChoresNext": {"description": "Shown after ticking a sample chore off: who gets it next", "placeholders": {"name": {"type": "String"}, "days": {"type": "int"}}},
+  "@tourChoresNext": {
+    "description": "Shown after ticking a sample chore off: who gets it next",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
   "tourRecipesEyebrow": "Recipes",
-  "@tourRecipesEyebrow": {"description": "Eyebrow label on the recipes tour page"},
+  "@tourRecipesEyebrow": {
+    "description": "Eyebrow label on the recipes tour page"
+  },
   "tourRecipesHeadline": "Thursday is shakshuka. The eggs are already on the list.",
-  "@tourRecipesHeadline": {"description": "Headline of the recipes tour page"},
+  "@tourRecipesHeadline": {
+    "description": "Headline of the recipes tour page"
+  },
   "tourRecipesBody": "Plan a meal and send its ingredients straight to the shopping list.",
-  "@tourRecipesBody": {"description": "Body text of the recipes tour page"},
+  "@tourRecipesBody": {
+    "description": "Body text of the recipes tour page"
+  },
   "tourRecipesTitle": "Shakshuka",
-  "@tourRecipesTitle": {"description": "Title of the sample recipe"},
+  "@tourRecipesTitle": {
+    "description": "Title of the sample recipe"
+  },
   "tourRecipesServings": "4 servings · 30 min",
-  "@tourRecipesServings": {"description": "Meta line of the sample recipe"},
+  "@tourRecipesServings": {
+    "description": "Meta line of the sample recipe"
+  },
   "tourRecipesPlanned": "Planned for Thursday",
-  "@tourRecipesPlanned": {"description": "Meal plan line on the sample recipe"},
+  "@tourRecipesPlanned": {
+    "description": "Meal plan line on the sample recipe"
+  },
   "tourRecipesAddIngredients": "Add to the list",
-  "@tourRecipesAddIngredients": {"description": "Button on the sample recipe that pushes ingredients to the sample list"},
+  "@tourRecipesAddIngredients": {
+    "description": "Button on the sample recipe that pushes ingredients to the sample list"
+  },
   "tourRecipesAddedButton": "On the list",
-  "@tourRecipesAddedButton": {"description": "Button label once ingredients were added"},
+  "@tourRecipesAddedButton": {
+    "description": "Button label once ingredients were added"
+  },
   "tourRecipesAddedToast": "{count} items added to {list}",
-  "@tourRecipesAddedToast": {"description": "Toast after ingredients were added", "placeholders": {"count": {"type": "int"}, "list": {"type": "String"}}},
+  "@tourRecipesAddedToast": {
+    "description": "Toast after ingredients were added",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "list": {
+        "type": "String"
+      }
+    }
+  },
   "tourFinishEyebrow": "Your household",
-  "@tourFinishEyebrow": {"description": "Eyebrow label on the last tour page"},
+  "@tourFinishEyebrow": {
+    "description": "Eyebrow label on the last tour page"
+  },
   "tourFinishHeadline": "Now do it with the people you actually live with.",
-  "@tourFinishHeadline": {"description": "Headline of the last tour page"},
+  "@tourFinishHeadline": {
+    "description": "Headline of the last tour page"
+  },
   "tourFinishBody": "Create an account to set up your household and invite them. Free for households up to 4.",
-  "@tourFinishBody": {"description": "Body text of the last tour page"},
+  "@tourFinishBody": {
+    "description": "Body text of the last tour page"
+  },
   "tourFinishEmail": "Continue with email",
-  "@tourFinishEmail": {"description": "Email sign-up button on the last tour page"}
+  "@tourFinishEmail": {
+    "description": "Email sign-up button on the last tour page"
+  }
 }

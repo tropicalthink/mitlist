@@ -12,6 +12,7 @@ import '../../providers/oauth_provider.dart';
 import '../../services/api_client.dart';
 import '../../services/api_error_mapper.dart';
 import '../../sheets/email_verification_sheet.dart';
+import '../../theme/animations.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../utils/oauth_flow.dart';
@@ -22,6 +23,7 @@ import '../../widgets/app_button.dart';
 import '../../widgets/google_logo.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/app_input.dart';
+import '../../widgets/app_toast.dart';
 import '../../widgets/board/cork_board.dart';
 import '../../utils/password_policy.dart';
 
@@ -248,15 +250,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               successMessage = null;
             });
 
+            // Captured before the await: the sheet's own context is what
+            // closes it, and it must not be looked up across the async gap.
+            final sheetNavigator = Navigator.of(context);
             try {
               final authService =
                   await ref.read(authServiceProviderAsync.future);
-              await authService.confirmPasswordReset(token, newPassword);
+              await authService.confirmPasswordReset(
+                token,
+                newPassword,
+                rememberMe: _rememberMe,
+              );
               if (!mounted) return;
-              setSheetState(() {
-                isResetting = false;
-                successMessage = l10n.authLoginResetSuccess;
-              });
+              // The code proved the address and the server issued a session:
+              // close the sheet and finish exactly like a login would.
+              sheetNavigator.pop();
+              AppToast.success(this.context, l10n.authLoginResetSuccess);
+              await _completeSignIn();
             } catch (e) {
               setSheetState(() {
                 isResetting = false;
@@ -327,10 +337,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         },
       ),
     ).whenComplete(() {
-      emailController.dispose();
-      tokenController.dispose();
-      newPasswordController.dispose();
-      confirmPasswordController.dispose();
+      // The future completes as the sheet starts to close, while its fields
+      // still paint through the exit animation; disposing right away would
+      // have them read a dead controller. Let the animation finish first.
+      Future.delayed(MitlistAnimations.slow, () {
+        emailController.dispose();
+        tokenController.dispose();
+        newPasswordController.dispose();
+        confirmPasswordController.dispose();
+      });
     });
   }
 
