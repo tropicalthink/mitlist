@@ -326,6 +326,11 @@ type captureMailService struct {
 
 type capturedMail struct{ to, subject, body string }
 
+// SendHTML keeps the text part: that is where verificationCodeFor looks.
+func (m *captureMailService) SendHTML(to, subject, html, text string) error {
+	return m.Send(to, subject, text, false)
+}
+
 func (m *captureMailService) Send(to, subject, body string, isHTML bool) error {
 	m.messages = append(m.messages, capturedMail{to: to, subject: subject, body: body})
 	return nil

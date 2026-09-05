@@ -4,7 +4,7 @@
     "details": [
       {
         "appID": "__APPLE_TEAM_ID__.me.mitlist",
-        "paths": ["/join/*", "/r/*"]
+        "paths": ["/join/*", "/r/*", "/verify", "/reset-password"]
       }
     ]
   }

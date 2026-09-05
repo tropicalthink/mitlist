@@ -6,8 +6,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"mime/multipart"
 	"net/http"
 	"net/smtp"
+	"net/textproto"
 	"strings"
 	"time"
 
@@ -71,12 +73,81 @@ func buildMessage(from, to, subject, body string, isHTML bool) []byte {
 	return buf.Bytes()
 }
 
+// buildMultipartMessage assembles a multipart/alternative message carrying a
+// plain-text part and an HTML part. Clients that render HTML use the second
+// part; everything else (and every spam filter that distrusts HTML-only mail)
+// still gets the text. Like buildMessage it is pure and unit-testable.
+func buildMultipartMessage(from, to, subject, text, html string) []byte {
+	from = sanitizeHeader(from)
+	to = sanitizeHeader(to)
+	subject = sanitizeHeader(subject)
+
+	var body bytes.Buffer
+	mw := multipart.NewWriter(&body)
+	for _, part := range []struct{ contentType, content string }{
+		{"text/plain; charset=\"utf-8\"", text},
+		{"text/html; charset=\"utf-8\"", html},
+	} {
+		w, err := mw.CreatePart(textproto.MIMEHeader{
+			"Content-Type":              {part.contentType},
+			"Content-Transfer-Encoding": {"8bit"},
+		})
+		if err != nil {
+			// The writer is backed by a bytes.Buffer; the only failure mode is
+			// a closed writer, which cannot happen here.
+			continue
+		}
+		_, _ = w.Write([]byte(part.content))
+	}
+	_ = mw.Close()
+
+	var buf bytes.Buffer
+	buf.WriteString("From: ")
+	buf.WriteString(from)
+	buf.WriteString("\r\n")
+	buf.WriteString("To: ")
+	buf.WriteString(to)
+	buf.WriteString("\r\n")
+	buf.WriteString("Subject: ")
+	buf.WriteString(subject)
+	buf.WriteString("\r\n")
+	buf.WriteString("Date: ")
+	buf.WriteString(time.Now().Format(time.RFC1123Z))
+	buf.WriteString("\r\n")
+	buf.WriteString("MIME-Version: 1.0\r\n")
+	buf.WriteString("Content-Type: multipart/alternative; boundary=\"")
+	buf.WriteString(mw.Boundary())
+	buf.WriteString("\"\r\n\r\n")
+	buf.Write(body.Bytes())
+	return buf.Bytes()
+}
+
 // Send delivers an email before returning. Authentication flows must not report
 // that a verification or recovery message was sent when the provider rejected
 // it. A Resend API key opts into the HTTPS provider; SMTP remains available as
 // a fallback for self-hosted deployments.
 func (s *Service) Send(to, subject, body string, isHTML bool) error {
 	return s.send(to, subject, body, isHTML)
+}
+
+// SendHTML delivers a styled email with a plain-text alternative. Use it for
+// anything a person reads (verification, recovery); the text part is what a
+// text-only client shows and what keeps HTML mail out of the spam folder.
+func (s *Service) SendHTML(to, subject, html, text string) error {
+	from := s.cfg.MailFromEmail
+	if from == "" {
+		from = "noreply@mitlist.me"
+	}
+	if s.cfg.ResendAPIKey != "" {
+		payload := map[string]any{"from": from, "to": []string{to}, "subject": subject, "html": html, "text": text}
+		if err := s.postResend(payload); err == nil {
+			s.log.Info().Str("provider", "resend").Str("to", to).Msg("email sent")
+			return nil
+		} else {
+			s.log.WithError(err).Warn().Str("provider", "resend").Msg("resend send failed, trying smtp")
+		}
+	}
+	return s.sendSMTPWithFallback(from, to, buildMultipartMessage(from, to, subject, text, html))
 }
 
 // SendTemplate renders an html/template and sends the result as an HTML email.
@@ -107,7 +178,12 @@ func (s *Service) send(to, subject, body string, isHTML bool) error {
 			s.log.WithError(err).Warn().Str("provider", "resend").Msg("resend send failed, trying smtp")
 		}
 	}
+	return s.sendSMTPWithFallback(from, to, msg)
+}
 
+// sendSMTPWithFallback tries the primary SMTP provider and falls back to the
+// secondary one, so a single provider outage does not lose a sign-up code.
+func (s *Service) sendSMTPWithFallback(from, to string, msg []byte) error {
 	sendGridErr := s.sendViaSMTP(
 		s.cfg.SendGridSMTPHost,
 		s.cfg.SendGridSMTPPort,
@@ -148,6 +224,10 @@ func (s *Service) sendViaResend(to, from, subject, body string, isHTML bool) err
 	} else {
 		payload["text"] = body
 	}
+	return s.postResend(payload)
+}
+
+func (s *Service) postResend(payload map[string]any) error {
 	encoded, err := json.Marshal(payload)
 	if err != nil {
 		return fmt.Errorf("encode resend request: %w", err)

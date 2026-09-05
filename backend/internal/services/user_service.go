@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"net/url"
 	"strings"
 	"time"
 
@@ -36,14 +35,6 @@ type UserService struct {
 // retaining the short code for clients that cannot open app links.
 func (s *UserService) SetFrontendURL(frontendURL string) {
 	s.frontendURL = strings.TrimRight(frontendURL, "/")
-}
-
-func verificationMessage(raw, frontendURL string) string {
-	message := "Your email verification code is: " + raw
-	if frontendURL != "" {
-		message += "\n\nOpen " + frontendURL + "/signup?verification_token=" + url.QueryEscape(raw)
-	}
-	return message
 }
 
 // A fixed bcrypt hash ensures unknown-email logins perform the same expensive
@@ -127,7 +118,7 @@ func (s *UserService) Register(ctx context.Context, input RegisterInput) (*model
 	if err := s.authRepo.CreateUnverifiedUser(ctx, user, tokenHash, expiresAt); err != nil {
 		return nil, err
 	}
-	if err := s.mail.Send(user.Email, "Verify your mitlist account", verificationMessage(rawToken, s.frontendURL), false); err != nil {
+	if err := sendVerificationEmail(s.mail, user.Email, rawToken, s.frontendURL); err != nil {
 		// Deliberately not fatal. The account is already persisted above, so
 		// failing here told the caller registration failed while leaving a real
 		// pending account behind — and the retry then looked like a duplicate.
@@ -215,7 +206,7 @@ func (s *UserService) ResendEmailVerification(ctx context.Context, email string)
 	if err = s.authRepo.CreateEmailVerification(ctx, user.ID, hash, expiresAt); err != nil {
 		return err
 	}
-	if err = s.mail.Send(user.Email, "Verify your mitlist account", verificationMessage(raw, s.frontendURL), false); err != nil {
+	if err = sendVerificationEmail(s.mail, user.Email, raw, s.frontendURL); err != nil {
 		// Same reasoning as Register, plus an enumeration one: this call only
 		// reaches a send for an address that exists and is unverified, so
 		// surfacing the failure would answer 500 for real addresses and nil for
@@ -461,30 +452,36 @@ func (s *UserService) RequestPasswordReset(ctx context.Context, email string) er
 		return err
 	}
 
-	resetMessage := "Your password reset code is: " + tokenStr
-	if s.frontendURL != "" {
-		resetMessage += "\n\nOpen " + s.frontendURL + "/reset-password?token=" + url.QueryEscape(tokenStr)
-	}
-	if err := s.mail.Send(user.Email, "Password Reset", resetMessage, false); err != nil {
+	if err := sendPasswordResetEmail(s.mail, user.Email, tokenStr, s.frontendURL); err != nil {
 		return fmt.Errorf("send password reset email: %w", err)
 	}
 	return nil
 }
 
-// ConfirmPasswordReset validates a reset token and updates the user's password.
-func (s *UserService) ConfirmPasswordReset(ctx context.Context, token, newPassword string) error {
+// ConfirmPasswordReset validates a reset token, updates the user's password,
+// and returns the account so the caller can sign it in. Holding the emailed
+// code is as strong a proof as knowing the new password, and asking the
+// person to type that password again on the login screen right after
+// choosing it is a step nobody wants. Every older session is revoked by the
+// consume; the one issued from this result is the only one left.
+func (s *UserService) ConfirmPasswordReset(ctx context.Context, token, newPassword string) (*models.User, error) {
 	if err := validation.Password(newPassword); err != nil {
-		return &api.ValidationError{Field: "new_password", Message: err.Error()}
+		return nil, &api.ValidationError{Field: "new_password", Message: err.Error()}
 	}
 
 	hash, err := s.password.Hash(newPassword)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if _, err := s.authRepo.ConsumePasswordReset(ctx, resetTokenHash(token), hash); err != nil {
-		return &api.ValidationError{Message: "invalid or expired token"}
+	userID, err := s.authRepo.ConsumePasswordReset(ctx, resetTokenHash(token), hash)
+	if err != nil {
+		return nil, &api.ValidationError{Message: "invalid or expired token"}
 	}
-	return nil
+	user, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
 }
 
 func resetTokenHash(token string) string {

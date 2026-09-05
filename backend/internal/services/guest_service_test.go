@@ -92,7 +92,7 @@ func TestGuestService_ConvertGuest(t *testing.T) {
 		passSvc.On("Hash", "Password123!").Return("hash", nil)
 		userRepo.On("Update", ctx, mock.AnythingOfType("*models.User")).Return(nil)
 		authRepo.On("CreateEmailVerification", ctx, guestID, mock.AnythingOfType("string"), mock.AnythingOfType("time.Time")).Return(nil)
-		mailSvc.On("Send", "new@example.com", "Verify your mitlist account", mock.AnythingOfType("string"), false).Return(nil)
+		mailSvc.On("SendHTML", "new@example.com", "Verify your mitlist account", mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(nil)
 		jwtSvc.On("RevokeUserSessions", guestID).Return(nil)
 		jwtSvc.On("GenerateTokenPair", guestID.String(), mock.Anything).Return("access", "refresh", nil)
 

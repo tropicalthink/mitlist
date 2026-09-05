@@ -7254,8 +7254,74 @@ abstract class AppLocalizations {
   /// Success message after password reset
   ///
   /// In en, this message translates to:
-  /// **'Password reset successful. You can sign in now.'**
+  /// **'Password updated. You\'re signed in.'**
   String get authLoginResetSuccess;
+
+  /// Button on the web landing page of an email link that hands over to the installed mobile app
+  ///
+  /// In en, this message translates to:
+  /// **'Open in the mitlist app'**
+  String get authLinkOpenInApp;
+
+  /// Secondary button on the web landing page of an email link: finish the step in the browser instead of the app
+  ///
+  /// In en, this message translates to:
+  /// **'Continue in the browser'**
+  String get authLinkContinueInBrowser;
+
+  /// Ghost button under the verify / reset link screens leading back to the sign-in screen
+  ///
+  /// In en, this message translates to:
+  /// **'Back to sign in'**
+  String get authLinkBackToLogin;
+
+  /// Verify-email landing page in a phone browser, above the choice between the app and the browser
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re one tap away. Verify in the app you installed, or right here in the browser.'**
+  String get authVerifyLinkBody;
+
+  /// Verify-email landing page reached without a code in the link
+  ///
+  /// In en, this message translates to:
+  /// **'This link is missing its code. Enter the code from your email instead.'**
+  String get authVerifyLinkMissing;
+
+  /// Verify-email landing page while the code is being checked
+  ///
+  /// In en, this message translates to:
+  /// **'Verifying your email…'**
+  String get authVerifyLinkVerifying;
+
+  /// Verify-email landing page after the code was accepted, just before the app moves on
+  ///
+  /// In en, this message translates to:
+  /// **'Email verified. You\'re in!'**
+  String get authVerifyLinkSuccess;
+
+  /// Heading of the reset-password screen opened from the email link
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a new password'**
+  String get authResetTitle;
+
+  /// Intro of the reset-password screen: saving the password also signs the person in
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a new password for your account. You\'ll be signed in the moment it\'s saved.'**
+  String get authResetBody;
+
+  /// Primary button of the reset-password screen
+  ///
+  /// In en, this message translates to:
+  /// **'Save password and sign in'**
+  String get authResetSubmit;
+
+  /// Reset-password screen when the server rejects the code as invalid or expired
+  ///
+  /// In en, this message translates to:
+  /// **'That reset code is invalid or expired. Request a new one from the sign-in screen.'**
+  String get authResetInvalidCode;
 
   /// Signup screen title
   ///
