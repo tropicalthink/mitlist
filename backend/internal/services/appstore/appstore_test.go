@@ -297,3 +297,49 @@ func TestRevokedTransaction(t *testing.T) {
 		t.Fatalf("modified time = %s, want signed event time %s", got, revoked.Add(time.Minute))
 	}
 }
+
+func TestVerifyTransaction_SupporterNonConsumable(t *testing.T) {
+	tc := newTestChain(t)
+	c := tc.client("dev.mohamad.mitlist", "Sandbox")
+	c.cfg.ProductIDSupporter = "dev.mohamad.mitlist.supporter"
+
+	token := tc.sign(t, &TransactionInfo{
+		OriginalTransactionID: "orig-sup",
+		TransactionID:         "orig-sup",
+		BundleID:              "dev.mohamad.mitlist",
+		ProductID:             "dev.mohamad.mitlist.supporter",
+		Type:                  "Non-Consumable",
+		Environment:           "Sandbox",
+		PurchaseDate:          time.Now().UnixMilli(),
+	})
+	info, err := c.VerifyTransaction(token)
+	if err != nil {
+		t.Fatalf("a non-consumable supporter transaction should verify: %v", err)
+	}
+	if info.Expiry() != (time.Time{}) {
+		t.Error("a non-consumable carries no expiry")
+	}
+
+	// The supporter product id must not be accepted with a subscription type,
+	// nor a subscription product with a non-consumable type.
+	bad := tc.sign(t, &TransactionInfo{
+		BundleID: "dev.mohamad.mitlist", ProductID: "dev.mohamad.mitlist.supporter",
+		Type: "Auto-Renewable Subscription", Environment: "Sandbox",
+	})
+	if _, err := c.VerifyTransaction(bad); err == nil {
+		t.Fatal("supporter product with a subscription type should be rejected")
+	}
+	bad = tc.sign(t, &TransactionInfo{
+		BundleID: "dev.mohamad.mitlist", ProductID: "dev.mohamad.mitlist.premium.yearly",
+		Type: "Non-Consumable", Environment: "Sandbox",
+	})
+	if _, err := c.VerifyTransaction(bad); err == nil {
+		t.Fatal("subscription product with a non-consumable type should be rejected")
+	}
+
+	// Without a configured supporter product the id is unknown, as before.
+	c.cfg.ProductIDSupporter = ""
+	if _, err := c.VerifyTransaction(token); err == nil {
+		t.Fatal("an unconfigured supporter product must be rejected")
+	}
+}

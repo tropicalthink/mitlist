@@ -118,6 +118,8 @@ class AppIcons {
   static const IconData removeDoneOutline = Icons.remove_done_outlined;
   static const IconData dragHandle = Icons.drag_handle;
   static const IconData heart = Icons.favorite_border;
+  static const IconData heartSolid = Icons.favorite;
+  static const IconData lockClosed = Icons.lock_outline;
   static const IconData server = Icons.dns_outlined;
   static const IconData chatBubbleLeftRight = Icons.forum_outlined;
   static const IconData bugReport = Icons.bug_report_outlined;
@@ -237,6 +239,8 @@ class AppIcons {
       'hourglassEmpty' => hourglassEmpty,
       'link' => link,
       'heart' => heart,
+      'heartSolid' => heartSolid,
+      'lockClosed' => lockClosed,
       'server' => server,
       'openInNew' => openInNew,
       'star' => star,

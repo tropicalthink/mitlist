@@ -6682,4 +6682,75 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tourFinishEmail => 'Mit E-Mail fortfahren';
+
+  @override
+  String get supporterTitle => 'Unterstützer-Paket';
+
+  @override
+  String get supporterCardTitle => 'mitlist unterstützen';
+
+  @override
+  String get supporterCardBody =>
+      'mitlist ist kostenlos und bleibt es. Ein einmaliger Beitrag hilft, die Server zu bezahlen, und du bekommst ein paar kleine Dankeschöns.';
+
+  @override
+  String get supporterCardActiveBody =>
+      'Du unterstützt mitlist. Danke, dass du es am Laufen hältst.';
+
+  @override
+  String get supporterBuy => 'Unterstützen';
+
+  @override
+  String supporterBuyWithPrice(String price) {
+    return 'Unterstützen · $price';
+  }
+
+  @override
+  String get supporterOnce => 'Einmaliger Kauf. Kein Abo, nichts zu kündigen.';
+
+  @override
+  String get supporterPerkBadge =>
+      'Ein Unterstützer-Abzeichen neben deinem Namen, sichtbar für deinen Haushalt';
+
+  @override
+  String get supporterPerkAccent =>
+      'Akzentfarben, um die App zu deiner zu machen';
+
+  @override
+  String get supporterPerkHosting =>
+      'Bezahlt die Server, auf denen der gehostete Dienst läuft';
+
+  @override
+  String get supporterBadgeLabel => 'Unterstützer';
+
+  @override
+  String get supporterPurchased => 'Du unterstützt mitlist jetzt. Danke!';
+
+  @override
+  String get supporterSheetHeadline => 'mitlist am Laufen halten';
+
+  @override
+  String get accountAccent => 'Akzentfarbe';
+
+  @override
+  String get accentClementine => 'Clementine';
+
+  @override
+  String get accentMoss => 'Moos';
+
+  @override
+  String get accentSky => 'Himmel';
+
+  @override
+  String get accentBerry => 'Beere';
+
+  @override
+  String get accentViolet => 'Violett';
+
+  @override
+  String get accentLockedHint =>
+      'Andere Farben als Clementine gehören zum Unterstützer-Paket.';
+
+  @override
+  String get accentUnlock => 'Mit dem Unterstützer-Paket freischalten';
 }

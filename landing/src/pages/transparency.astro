@@ -28,7 +28,7 @@ const GITHUB = "https://github.com/whtvrboo/mitlist";
     <div>
       <p>The hosted stack is one server in a data centre in the Netherlands running the Go API, the web app, and PostgreSQL, with Cloudflare in front of it and Cloudflare R2 for attachments. The expensive path is bounded at the household level: 1 GB of file storage, atomic quota reservations, and cleanup of abandoned uploads.</p>
       <p>Receipt, list, and recipe text recognition runs on the device. No AI service is called, so a scan never creates a model bill.</p>
-      <p>Other services in the loop: Resend for transactional email, Firebase for push notifications and app attestation, Cloudflare Turnstile for guest sign-up on the web, and a self-run GlitchTip for crash reports. The <a href="/privacy">privacy policy</a> lists each one with what it receives.</p>
+      <p>Other services in the loop: Amazon SES in Frankfurt for transactional email, Firebase for push notifications and app attestation, Cloudflare Turnstile for guest sign-up on the web, and a self-run GlitchTip for crash reports. The <a href="/privacy">privacy policy</a> lists each one with what it receives.</p>
     </div>
   </section>
 

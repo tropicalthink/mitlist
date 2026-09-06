@@ -86,9 +86,18 @@ type Config struct {
 	// so the two run side by side rather than one replacing the other.
 	TurnstileSecretKey string `env:"TURNSTILE_SECRET_KEY"`
 
-	// Email
-	ResendAPIKey    string `env:"RESEND_API_KEY"`
-	ResendFromEmail string `env:"RESEND_FROM_EMAIL"`
+	// Email. Setting AWS_SES_REGION opts into Amazon SES as the primary
+	// provider; leave it empty to fall back to the SMTP providers below.
+	//
+	// SES gets its own credential pair rather than sharing the AWS_* keys
+	// under "File Storage": those point at whatever S3-compatible provider is
+	// configured, which on the hosted service is Cloudflare R2, and R2 keys
+	// mean nothing to SES. Leave the pair empty to use the ambient AWS
+	// credential chain (an instance or task role).
+	SESRegion           string `env:"AWS_SES_REGION"`
+	SESConfigurationSet string `env:"AWS_SES_CONFIGURATION_SET"`
+	SESAccessKeyID      string `env:"AWS_SES_ACCESS_KEY_ID"`
+	SESSecretAccessKey  string `env:"AWS_SES_SECRET_ACCESS_KEY"`
 
 	// Email SMTP
 	SendGridSMTPHost string `env:"SENDGRID_SMTP_HOST" default:"smtp.sendgrid.net"`
@@ -144,6 +153,9 @@ type Config struct {
 	PolarWebhookSecret    string `env:"POLAR_WEBHOOK_SECRET"`
 	PolarProductIDMonthly string `env:"POLAR_PRODUCT_ID_MONTHLY"`
 	PolarProductIDYearly  string `env:"POLAR_PRODUCT_ID_YEARLY"`
+	// PolarProductIDSupporter is the one-time supporter pack. Leave empty to
+	// not sell it; the app then unlocks its customisation for everyone.
+	PolarProductIDSupporter string `env:"POLAR_PRODUCT_ID_SUPPORTER"`
 	// PolarBaseURL points at the sandbox (https://sandbox-api.polar.sh) when
 	// testing. Defaults to production.
 	PolarBaseURL string `env:"POLAR_BASE_URL" default:"https://api.polar.sh"`
@@ -171,6 +183,8 @@ type Config struct {
 	// the plan cadence in a form we key on.
 	AppleIAPProductMonthly string `env:"APPLE_IAP_PRODUCT_MONTHLY"`
 	AppleIAPProductYearly  string `env:"APPLE_IAP_PRODUCT_YEARLY"`
+	// AppleIAPProductSupporter is the non-consumable supporter pack. Optional.
+	AppleIAPProductSupporter string `env:"APPLE_IAP_PRODUCT_SUPPORTER"`
 
 	// Google Play In-App Purchase (opt-in, mobile only). Leave
 	// GOOGLE_PLAY_SERVICE_ACCOUNT_JSON empty to keep Google IAP disabled. The
@@ -187,6 +201,9 @@ type Config struct {
 	// mapped to a billing interval, mirroring the Apple pair above.
 	GooglePlayProductMonthly string `env:"GOOGLE_PLAY_PRODUCT_MONTHLY"`
 	GooglePlayProductYearly  string `env:"GOOGLE_PLAY_PRODUCT_YEARLY"`
+	// GooglePlayProductSupporter is the Play one-time product id of the
+	// supporter pack. Optional.
+	GooglePlayProductSupporter string `env:"GOOGLE_PLAY_PRODUCT_SUPPORTER"`
 }
 
 // Load reads the .env file (if it exists) and populates a Config from the environment.
@@ -250,7 +267,7 @@ func (c *Config) LogIntegrationStatus() {
 	// Gate on credential fields (which have no struct default) rather than the
 	// SMTP host fields, which default to non-empty values and would otherwise
 	// mask a fresh self-host that has not configured any email credentials.
-	emailOn := c.ResendAPIKey != "" || c.SendGridSMTPUser != "" || c.BrevoSMTPUser != ""
+	emailOn := c.SESRegion != "" || c.SendGridSMTPUser != "" || c.BrevoSMTPUser != ""
 	webPushOn := c.VapidPublicKey != "" && c.VapidPrivateKey != ""
 	mobilePushOn := c.FirebaseProjectID != "" && c.FirebaseServiceAccount != ""
 	appCheckOn := c.FirebaseAppCheckRequired
@@ -280,7 +297,7 @@ func (c *Config) LogIntegrationStatus() {
 
 	var disabled []string
 	if !emailOn {
-		disabled = append(disabled, "email (set RESEND_API_KEY, or SENDGRID_SMTP_USER/PASS, or BREVO_SMTP_USER/PASS)")
+		disabled = append(disabled, "email (set AWS_SES_REGION, or SENDGRID_SMTP_USER/PASS, or BREVO_SMTP_USER/PASS)")
 	}
 	if !webPushOn {
 		disabled = append(disabled, "web_push (set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY)")
@@ -323,11 +340,11 @@ func (c Config) MaskSecrets() Config {
 	masked.ApplePrivateKey = mask(masked.ApplePrivateKey)
 	masked.VapidPrivateKey = mask(masked.VapidPrivateKey)
 	masked.FirebaseServiceAccount = mask(masked.FirebaseServiceAccount)
-	masked.ResendAPIKey = mask(masked.ResendAPIKey)
 	masked.SendGridSMTPPass = mask(masked.SendGridSMTPPass)
 	masked.BrevoSMTPPass = mask(masked.BrevoSMTPPass)
 	masked.SentryDSN = mask(masked.SentryDSN)
 	masked.AWSSecretAccessKey = mask(masked.AWSSecretAccessKey)
+	masked.SESSecretAccessKey = mask(masked.SESSecretAccessKey)
 	masked.PolarAccessToken = mask(masked.PolarAccessToken)
 	masked.PolarWebhookSecret = mask(masked.PolarWebhookSecret)
 	masked.GooglePlayServiceAccountJSON = mask(masked.GooglePlayServiceAccountJSON)

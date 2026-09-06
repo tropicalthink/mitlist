@@ -70,6 +70,8 @@ type Config struct {
 	AppAppleID       int64
 	ProductIDMonthly string
 	ProductIDYearly  string
+	// ProductIDSupporter is the non-consumable supporter pack. Optional.
+	ProductIDSupporter string
 }
 
 // Client verifies Apple IAP payloads. It holds no network state — everything it
@@ -178,10 +180,14 @@ func (c *Client) VerifyTransaction(signedTransaction string) (*TransactionInfo, 
 		return nil, fmt.Errorf("appstore: transaction signed for %q, server expects %q", info.Environment, c.cfg.Environment)
 	}
 	if !c.productAllowed(info.ProductID) {
-		return nil, fmt.Errorf("appstore: product id %q is not a configured premium subscription", info.ProductID)
+		return nil, fmt.Errorf("appstore: product id %q is not a configured product", info.ProductID)
 	}
-	if info.Type != "" && info.Type != "Auto-Renewable Subscription" {
-		return nil, fmt.Errorf("appstore: transaction type %q is not a subscription", info.Type)
+	wantType := "Auto-Renewable Subscription"
+	if c.isSupporterProduct(info.ProductID) {
+		wantType = "Non-Consumable"
+	}
+	if info.Type != "" && info.Type != wantType {
+		return nil, fmt.Errorf("appstore: transaction type %q for %q, expected %q", info.Type, info.ProductID, wantType)
 	}
 	return &info, nil
 }
@@ -325,7 +331,13 @@ func sameEnvironment(outer, inner string) bool {
 }
 
 func (c *Client) productAllowed(productID string) bool {
-	return productID != "" && (productID == c.cfg.ProductIDMonthly || productID == c.cfg.ProductIDYearly)
+	return productID != "" && (productID == c.cfg.ProductIDMonthly || productID == c.cfg.ProductIDYearly || c.isSupporterProduct(productID))
+}
+
+// isSupporterProduct reports whether productID is the configured one-time
+// supporter pack, which is a non-consumable rather than a subscription.
+func (c *Client) isSupporterProduct(productID string) bool {
+	return c.cfg.ProductIDSupporter != "" && productID == c.cfg.ProductIDSupporter
 }
 
 // verifyJWS verifies an Apple JWS: it walks the x5c chain to the trust root,

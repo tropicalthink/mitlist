@@ -59,7 +59,7 @@ const lastUpdated = "4. September 2026";
 
   <h2>8. Benachrichtigungen und E-Mails</h2>
   <p><strong>Push-Benachrichtigungen.</strong> Push ist freiwillig und lässt sich in den Einstellungen abschalten. Für die iOS- und Android-Apps nutzen wir Firebase Cloud Messaging (Google Ireland Ltd.) und den Apple-Benachrichtigungsdienst; dafür speichern wir eine Gerätekennung (Push-Token), die beim Abmelden gelöscht wird. Für die Web-App nutzen wir den Web-Push-Dienst Ihres Browsers (Web Push mit VAPID). Über diese Dienste wird der Text der jeweiligen Benachrichtigung übertragen, etwa „Aufgabe fällig“ oder „neue Ausgabe“. Rechtsgrundlage: Art. 6 Abs. 1 lit. a DSGVO (Ihre Freigabe im Betriebssystem bzw. Browser) und lit. b DSGVO.</p>
-  <p><strong>E-Mails.</strong> Bestätigungs-, Passwort- und Einladungs-E-Mails sowie, falls aktiviert, eine wöchentliche Zusammenfassung Ihres Haushalts versenden wir über Resend (Resend, Inc., 2261 Market Street #5039, San Francisco, CA 94114, USA). Resend erhält dafür Ihre E-Mail-Adresse und den Inhalt der Nachricht. Wir senden keine Werbe-Mails. Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO.</p>
+  <p><strong>E-Mails.</strong> Bestätigungs-, Passwort- und Einladungs-E-Mails sowie, falls aktiviert, eine wöchentliche Zusammenfassung Ihres Haushalts versenden wir über Amazon SES (Amazon Web Services EMEA SARL, 38 Avenue John F. Kennedy, L-1855 Luxemburg) mit Versand aus der Region Frankfurt. Amazon erhält dafür Ihre E-Mail-Adresse und den Inhalt der Nachricht und verarbeitet beides innerhalb der EU. Wir senden keine Werbe-Mails. Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO.</p>
 
   <h2>9. Premium und Zahlungen</h2>
   <p>Haushalte mit mehr als vier Mitgliedern benötigen ein Premium-Abo. Beim Abschluss verarbeiten wir, welches Konto das Abo hält, welchem Haushalt es zugeordnet ist, Laufzeit, Status und den gezahlten Betrag. Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO; die Aufbewahrung der Abrechnungsdaten erfolgt nach Art. 6 Abs. 1 lit. c DSGVO für die Dauer der handels- und steuerrechtlichen Aufbewahrungsfristen (bis zu zehn Jahre).</p>
@@ -91,7 +91,7 @@ const lastUpdated = "4. September 2026";
         <tr><td>Cloudflare, Inc.</td><td>Website, Netzwerk und Schutz, Turnstile, Objektspeicher R2, Feedback-System (Workers, D1)</td><td>USA; EU-Standardvertragsklauseln, zertifiziert nach dem EU-US Data Privacy Framework</td></tr>
         <tr><td>Google Ireland Ltd. (Firebase)</td><td>Push-Benachrichtigungen, App Check, Anmeldung mit Google</td><td>Irland; Übermittlungen an Google LLC (USA) auf Basis des EU-US Data Privacy Framework und Standardvertragsklauseln</td></tr>
         <tr><td>Apple Distribution International Ltd.</td><td>Anmeldung mit Apple, Push auf iOS, In-App-Kauf</td><td>Irland; Übermittlungen an Apple Inc. (USA) auf Basis des EU-US Data Privacy Framework</td></tr>
-        <tr><td>Resend, Inc.</td><td>Versand von Transaktions-E-Mails</td><td>USA; EU-Standardvertragsklauseln</td></tr>
+        <tr><td>Amazon Web Services EMEA SARL</td><td>Versand von Transaktions-E-Mails (Amazon SES)</td><td>EU (Frankfurt); Vertragspartner in Luxemburg</td></tr>
         <tr><td>Polar Software Inc.</td><td>Zahlungsabwicklung für Premium im Web (Merchant of Record)</td><td>USA; eigenständiger Verantwortlicher für die Zahlungsabwicklung</td></tr>
         <tr><td>Google Play / Apple App Store</td><td>Vertrieb der Apps, In-App-Kauf</td><td>siehe die Datenschutzbestimmungen des jeweiligen Stores</td></tr>
       </tbody>

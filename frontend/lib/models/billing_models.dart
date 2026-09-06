@@ -116,6 +116,17 @@ class BillingStatus {
   /// The caller's live subscription, or null when they hold none.
   final BillingSubscription? subscription;
 
+  /// True when this server sells the one-time supporter pack. When false the
+  /// pack's customisation is unlocked for everyone: a self-hosted instance has
+  /// nobody to pay.
+  final bool supporterEnabled;
+
+  /// True when the caller has bought the supporter pack.
+  final bool supporter;
+
+  /// What the pack costs on the web, when sold there.
+  final SupporterOffer? supporterOffer;
+
   const BillingStatus({
     required this.enabled,
     this.webEnabled = false,
@@ -124,6 +135,9 @@ class BillingStatus {
     required this.freeLimit,
     this.plans = const [],
     this.subscription,
+    this.supporterEnabled = false,
+    this.supporter = false,
+    this.supporterOffer,
   });
 
   /// A status that hides every billing entry point, used when the endpoint is
@@ -133,6 +147,7 @@ class BillingStatus {
   factory BillingStatus.fromJson(Map<String, dynamic> json) {
     final sub = json['subscription'];
     final rawPlans = json['plans'];
+    final rawOffer = json['supporter_plan'];
     return BillingStatus(
       enabled: json['enabled'] as bool? ?? false,
       webEnabled: json['web_enabled'] as bool? ?? false,
@@ -149,10 +164,19 @@ class BillingStatus {
       subscription: sub is Map<String, dynamic>
           ? BillingSubscription.fromJson(sub)
           : null,
+      supporterEnabled: json['supporter_enabled'] as bool? ?? false,
+      supporter: json['supporter'] as bool? ?? false,
+      supporterOffer: rawOffer is Map<String, dynamic>
+          ? SupporterOffer.fromJson(rawOffer)
+          : null,
     );
   }
 
   bool get isSubscribed => subscription != null;
+
+  /// Whether the supporter pack's customisation is available to the caller:
+  /// either they bought it, or this server does not sell it at all.
+  bool get supporterPerksUnlocked => !supporterEnabled || supporter;
 
   /// The plan for [interval], or null when the provider reported none.
   BillingPlan? planFor(BillingInterval interval) =>
@@ -220,6 +244,22 @@ class HouseholdEntitlement {
     final left = freeLimit - memberCount;
     return left < 0 ? 0 : left;
   }
+}
+
+/// What the one-time supporter pack costs on the web. Mobile shows the
+/// store's own localized price instead, exactly as for premium.
+class SupporterOffer {
+  final int amountCents;
+
+  /// Upper-case ISO 4217 code, e.g. 'EUR'.
+  final String currency;
+
+  const SupporterOffer({required this.amountCents, required this.currency});
+
+  factory SupporterOffer.fromJson(Map<String, dynamic> json) => SupporterOffer(
+        amountCents: json['amount_cents'] as int? ?? 0,
+        currency: (json['currency'] as String? ?? 'EUR').toUpperCase(),
+      );
 }
 
 /// Which recurring plan a checkout is for.

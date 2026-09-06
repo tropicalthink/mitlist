@@ -83,3 +83,36 @@ type HouseholdEntitlement struct {
 	// pinned, when they hold one.
 	ViewerPrimaryGroupID *uuid.UUID `json:"viewer_primary_group_id,omitempty"`
 }
+
+// Supporter purchase statuses. Only Paid grants the supporter perks.
+const (
+	SupporterStatusPaid     = "paid"
+	SupporterStatusPending  = "pending"
+	SupporterStatusRefunded = "refunded"
+)
+
+// SupporterPurchase is the one-time supporter pack bought by one user. Unlike
+// a BillingSubscription it covers no household: the badge and the look
+// customisation it unlocks belong to the person who paid and follow them into
+// every household they are in.
+type SupporterPurchase struct {
+	ID                 uuid.UUID  `json:"id"`
+	UserID             uuid.UUID  `json:"user_id"`
+	Provider           string     `json:"provider"`
+	ProviderOrderID    string     `json:"provider_order_id"`
+	ProviderCustomerID string     `json:"provider_customer_id"`
+	ProductID          string     `json:"product_id"`
+	Status             string     `json:"status"`
+	AmountCents        int        `json:"amount_cents"`
+	Currency           string     `json:"currency"`
+	PurchasedAt        *time.Time `json:"purchased_at,omitempty"`
+	RefundedAt         *time.Time `json:"refunded_at,omitempty"`
+	ProviderModifiedAt *time.Time `json:"-"`
+	CreatedAt          time.Time  `json:"created_at"`
+	UpdatedAt          time.Time  `json:"updated_at"`
+}
+
+// IsPaid reports whether this purchase currently grants the supporter perks.
+func (p *SupporterPurchase) IsPaid() bool {
+	return p != nil && p.Status == SupporterStatusPaid
+}
