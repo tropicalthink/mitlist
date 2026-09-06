@@ -95,6 +95,7 @@ class BoardStepBar extends StatelessWidget {
     required this.total,
     required this.onBack,
     required this.onSkip,
+    this.onClose,
   });
 
   final int page;
@@ -104,6 +105,9 @@ class BoardStepBar extends StatelessWidget {
   /// Null hides the Skip affordance — on the last page there is nowhere to
   /// skip to.
   final VoidCallback? onSkip;
+
+  /// Exits the entire flow without stepping back through its pages.
+  final VoidCallback? onClose;
 
   @override
   Widget build(BuildContext context) {
@@ -178,6 +182,12 @@ class BoardStepBar extends StatelessWidget {
                     ),
                   ),
           ),
+          if (onClose != null)
+            IconButton(
+              tooltip: l10n.commonClose,
+              onPressed: onClose,
+              icon: const AppIcon(name: 'xMark'),
+            ),
         ],
       ),
     );

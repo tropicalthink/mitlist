@@ -960,7 +960,15 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
           final service = await ref.read(billingServiceProvider.future);
           url = await service.openPortal();
       }
-      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+      if (!mounted) return;
+      final launched = await launchUrl(
+        Uri.parse(url),
+        mode: LaunchMode.externalApplication,
+        webOnlyWindowName: '_self',
+      );
+      if (!launched && mounted) {
+        AppToast.error(context, l10n.billingPortalFailed);
+      }
     } catch (_) {
       if (!mounted) return;
       AppToast.error(context, l10n.billingPortalFailed);

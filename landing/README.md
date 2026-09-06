@@ -27,8 +27,9 @@ still draggable, no inertia).
 
 ## What to wire up before launch
 
-- **Store links:** replace the `href="#"` placeholders in `StoreBadges` (passed
-  as `appStore` / `playStore` props) with real listing URLs.
+- **Mobile testing:** `/testing` collects email, Android/iOS selection and
+  consent. Store badges select the matching platform on that page. Invitations
+  are sent manually after adding people to the appropriate store testing group.
 - **GitHub URL:** the `GITHUB` constant at the top of `index.astro`.
 
 ## Commands
@@ -39,3 +40,19 @@ still draggable, no inertia).
 | `npm run dev`     | Dev server at `localhost:4321`          |
 | `npm run build`   | Build to `./dist/`                      |
 | `npm run preview` | Preview the production build            |
+
+## Testing signup and feature board
+
+The homepage and `/testing` have a compact callout linking directly to
+`https://feedback.mitlist.me`. The feature board is also linked in the header
+and footer. The landing site does not fetch board data or need an intake key.
+
+Signups post to `https://api.mitlist.me/api/v1/testing/signups` (override with
+`PUBLIC_MITLIST_API_URL` at build time for a local or self-hosted backend).
+Deploy backend migration `000064` and the signup endpoint **before** publishing
+the landing update. The backend's `TESTING_SIGNUP_ORIGIN` defaults to
+`https://mitlist.me`; change it for a different landing origin. This CORS
+permission covers only the public signup endpoint.
+
+For the private export and invitation workflow, see
+[the testing operator guide](../backend/docs/testing-signups.md).
