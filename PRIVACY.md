@@ -42,7 +42,7 @@ service or on a server somebody operates themselves.
 | Scanner | Nothing leaves the device | Text recognition runs on-device; no AI service is called |
 | Recipe import | The URL you paste is fetched by the server | The recipe site sees the server's address, not yours |
 | Push | Device token (FCM / APNs / Web Push) and the notification text | Optional; token deleted on sign-out |
-| Email | Address and message content, sent via Resend | Confirmation, password reset, invitations, optional weekly summary. No marketing email |
+| Email | Address and message content, sent via Amazon SES (EU, Frankfurt) | Confirmation, password reset, invitations, optional weekly summary. No marketing email |
 | Premium | Subscription holder, assigned household, term, status, amount paid | Web payments through Polar (merchant of record), in-app through Apple / Google. Billing records kept up to ten years by law |
 | Security | IP address and connection data at Cloudflare; Turnstile result for guest sign-up on the web; Firebase App Check attestation for the mobile apps; server logs of failed sign-ins | Logs deleted after a short period |
 | Crash reports | Stack trace, app / OS version, device type, environment, sent to a self-run GlitchTip instance | No household content, names, or emails; no performance or usage data |
@@ -72,7 +72,7 @@ service or on a server somebody operates themselves.
 | Cloudflare, Inc. | Website, network and protection, Turnstile, R2, feedback tracker (Workers, D1) | USA; SCCs, EU-US Data Privacy Framework |
 | Google Ireland Ltd. (Firebase) | Push, App Check, Sign in with Google | Ireland; onward to Google LLC under the DPF and SCCs |
 | Apple Distribution International Ltd. | Sign in with Apple, push on iOS, in-app purchase | Ireland; onward to Apple Inc. under the DPF |
-| Resend, Inc. | Transactional email | USA; SCCs |
+| Amazon Web Services EMEA SARL | Transactional email (Amazon SES) | EU (Frankfurt); Luxembourg contracting entity |
 | Polar Software Inc. | Premium payments on the web (merchant of record) | USA; independent controller |
 | Google Play / Apple App Store | App distribution, in-app purchase | Store privacy policies |
 
@@ -97,7 +97,7 @@ described, and the operator is responsible for that provider's terms.
 
 | Service | Purpose | Configured via |
 |---------|---------|----------------|
-| Resend / SMTP | Transactional email | `RESEND_API_KEY` or SMTP settings |
+| Amazon SES / SMTP | Transactional email | `AWS_SES_REGION` (+ `AWS_SES_ACCESS_KEY_ID`/`AWS_SES_SECRET_ACCESS_KEY`) or SMTP settings |
 | Google / Apple OAuth | Sign in with Google / Apple | `GOOGLE_CLIENT_ID` + secret, `APPLE_*` |
 | Firebase / FCM | Mobile push notifications | `FIREBASE_PROJECT_ID` + `FIREBASE_SERVICE_ACCOUNT_JSON` |
 | Firebase App Check | Mobile app attestation | `FIREBASE_APP_CHECK_REQUIRED` + `FIREBASE_PROJECT_NUMBER` |

@@ -2,12 +2,9 @@ package mail
 
 import (
 	"bytes"
-	"context"
-	"encoding/json"
 	"fmt"
 	"html/template"
 	"mime/multipart"
-	"net/http"
 	"net/smtp"
 	"net/textproto"
 	"strings"
@@ -17,10 +14,13 @@ import (
 	"github.com/mitlist-app/mitlist/pkg/logger"
 )
 
-// Service sends emails via SMTP with a primary/fallback provider strategy.
+// Service sends emails through Amazon SES when it is configured, falling back
+// to SMTP providers otherwise.
 type Service struct {
 	cfg *config.Config
 	log *logger.Logger
+
+	sesState sesState
 }
 
 // New creates a new mail service.
@@ -124,8 +124,8 @@ func buildMultipartMessage(from, to, subject, text, html string) []byte {
 
 // Send delivers an email before returning. Authentication flows must not report
 // that a verification or recovery message was sent when the provider rejected
-// it. A Resend API key opts into the HTTPS provider; SMTP remains available as
-// a fallback for self-hosted deployments.
+// it. AWS_SES_REGION opts into Amazon SES; SMTP remains available as a fallback
+// for self-hosted deployments.
 func (s *Service) Send(to, subject, body string, isHTML bool) error {
 	return s.send(to, subject, body, isHTML)
 }
@@ -138,13 +138,12 @@ func (s *Service) SendHTML(to, subject, html, text string) error {
 	if from == "" {
 		from = "noreply@mitlist.me"
 	}
-	if s.cfg.ResendAPIKey != "" {
-		payload := map[string]any{"from": from, "to": []string{to}, "subject": subject, "html": html, "text": text}
-		if err := s.postResend(payload); err == nil {
-			s.log.Info().Str("provider", "resend").Str("to", to).Msg("email sent")
+	if s.sesEnabled() {
+		if err := s.sendViaSES(from, to, subject, html, text); err == nil {
+			s.log.Info().Str("provider", "ses").Str("to", to).Msg("email sent")
 			return nil
 		} else {
-			s.log.WithError(err).Warn().Str("provider", "resend").Msg("resend send failed, trying smtp")
+			s.log.WithError(err).Warn().Str("provider", "ses").Msg("ses send failed, trying smtp")
 		}
 	}
 	return s.sendSMTPWithFallback(from, to, buildMultipartMessage(from, to, subject, text, html))
@@ -170,12 +169,16 @@ func (s *Service) send(to, subject, body string, isHTML bool) error {
 	}
 
 	msg := buildMessage(from, to, subject, body, isHTML)
-	if s.cfg.ResendAPIKey != "" {
-		if err := s.sendViaResend(to, from, subject, body, isHTML); err == nil {
-			s.log.Info().Str("provider", "resend").Str("to", to).Msg("email sent")
+	if s.sesEnabled() {
+		html, text := body, ""
+		if !isHTML {
+			html, text = "", body
+		}
+		if err := s.sendViaSES(from, to, subject, html, text); err == nil {
+			s.log.Info().Str("provider", "ses").Str("to", to).Msg("email sent")
 			return nil
 		} else {
-			s.log.WithError(err).Warn().Str("provider", "resend").Msg("resend send failed, trying smtp")
+			s.log.WithError(err).Warn().Str("provider", "ses").Msg("ses send failed, trying smtp")
 		}
 	}
 	return s.sendSMTPWithFallback(from, to, msg)
@@ -213,40 +216,6 @@ func (s *Service) sendSMTPWithFallback(from, to string, msg []byte) error {
 		}
 	} else {
 		s.log.Info().Str("provider", "sendgrid").Str("to", to).Msg("email sent")
-	}
-	return nil
-}
-
-func (s *Service) sendViaResend(to, from, subject, body string, isHTML bool) error {
-	payload := map[string]any{"from": from, "to": []string{to}, "subject": subject}
-	if isHTML {
-		payload["html"] = body
-	} else {
-		payload["text"] = body
-	}
-	return s.postResend(payload)
-}
-
-func (s *Service) postResend(payload map[string]any) error {
-	encoded, err := json.Marshal(payload)
-	if err != nil {
-		return fmt.Errorf("encode resend request: %w", err)
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://api.resend.com/emails", bytes.NewReader(encoded))
-	if err != nil {
-		return fmt.Errorf("create resend request: %w", err)
-	}
-	req.Header.Set("Authorization", "Bearer "+s.cfg.ResendAPIKey)
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("resend request: %w", err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("resend returned status %d", resp.StatusCode)
 	}
 	return nil
 }

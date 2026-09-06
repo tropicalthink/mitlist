@@ -22,6 +22,16 @@ class IapConfig {
   static const String googleMonthlyBasePlan = 'premium-monthly';
   static const String googleYearlyBasePlan = 'premium-yearly';
 
+  // The supporter pack: a one-time, non-consumable product on both stores.
+  // The backend maps these via APPLE_IAP_PRODUCT_SUPPORTER and
+  // GOOGLE_PLAY_PRODUCT_SUPPORTER.
+  static const String appleSupporter = 'me.mitlist.supporter';
+  static const String googleSupporter = 'supporter';
+
+  /// Whether a store product id is the supporter pack rather than premium.
+  static bool isSupporterProduct(String productId) =>
+      productId == appleSupporter || productId == googleSupporter;
+
   static const String appleManageSubscriptionsUrl =
       'https://apps.apple.com/account/subscriptions';
   static const String googleManageSubscriptionsUrl =

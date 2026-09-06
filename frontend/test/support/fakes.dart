@@ -205,6 +205,13 @@ class FakeListService implements ListService {
   /// response (e.g. to exercise the restore-pending path after a refresh).
   List<ListItem> itemsToReturn = const [];
 
+  /// Number of [listItems] calls, so tests can assert on refetch coalescing.
+  int listItemsCalls = 0;
+
+  /// When set, [updateItem] parks until the completer resolves. Lets a test
+  /// hold a sync in flight while it queues more work behind it.
+  Completer<void>? updateItemGate;
+
   @override
   Future<ListItem> createItem(String listId, CreateListItemRequest req,
       {String? idempotencyKey}) async {
@@ -236,6 +243,8 @@ class FakeListService implements ListService {
       String listId, String itemId, UpdateListItemRequest req,
       {String? idempotencyKey}) async {
     updateItemCalls.add(UpdateItemCall(listId, itemId, req));
+    final gate = updateItemGate;
+    if (gate != null) await gate.future;
     final now = DateTime.utc(2026, 1, 1);
     return ListItem(
       id: itemId,
@@ -303,6 +312,7 @@ class FakeListService implements ListService {
   @override
   Future<List<ListItem>> listItems(String listId,
       {int limit = 50, int offset = 0}) async {
+    listItemsCalls++;
     return itemsToReturn;
   }
 

@@ -11308,6 +11308,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Continue with email'**
   String get tourFinishEmail;
+
+  /// Sheet title for the one-time supporter purchase
+  ///
+  /// In en, this message translates to:
+  /// **'Supporter pack'**
+  String get supporterTitle;
+
+  /// Account card title for the supporter pack
+  ///
+  /// In en, this message translates to:
+  /// **'Support mitlist'**
+  String get supporterCardTitle;
+
+  /// Pitch for the supporter pack
+  ///
+  /// In en, this message translates to:
+  /// **'mitlist is free and stays free. A one-time contribution helps pay for the servers, and you get a couple of small thank-yous.'**
+  String get supporterCardBody;
+
+  /// Account card body once the pack is bought
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re a supporter. Thank you for keeping mitlist running.'**
+  String get supporterCardActiveBody;
+
+  /// Button that buys the supporter pack
+  ///
+  /// In en, this message translates to:
+  /// **'Become a supporter'**
+  String get supporterBuy;
+
+  /// Buy button with the localized one-time price
+  ///
+  /// In en, this message translates to:
+  /// **'Become a supporter · {price}'**
+  String supporterBuyWithPrice(String price);
+
+  /// Caption under the supporter buy button
+  ///
+  /// In en, this message translates to:
+  /// **'One-time purchase. No subscription, nothing to cancel.'**
+  String get supporterOnce;
+
+  /// Supporter perk
+  ///
+  /// In en, this message translates to:
+  /// **'A supporter badge next to your name, visible to your household'**
+  String get supporterPerkBadge;
+
+  /// Supporter perk
+  ///
+  /// In en, this message translates to:
+  /// **'Accent colours to make the app yours'**
+  String get supporterPerkAccent;
+
+  /// Supporter perk
+  ///
+  /// In en, this message translates to:
+  /// **'Pays for the servers the hosted service runs on'**
+  String get supporterPerkHosting;
+
+  /// Tooltip and accessibility label of the supporter badge
+  ///
+  /// In en, this message translates to:
+  /// **'Supporter'**
+  String get supporterBadgeLabel;
+
+  /// Toast after a successful supporter purchase
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re a supporter now. Thank you!'**
+  String get supporterPurchased;
+
+  /// Headline of the supporter sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Keep mitlist running'**
+  String get supporterSheetHeadline;
+
+  /// Preferences row and picker title for the accent colour
+  ///
+  /// In en, this message translates to:
+  /// **'Accent colour'**
+  String get accountAccent;
+
+  /// Accent colour name (the default orange)
+  ///
+  /// In en, this message translates to:
+  /// **'Clementine'**
+  String get accentClementine;
+
+  /// Accent colour name (teal-green)
+  ///
+  /// In en, this message translates to:
+  /// **'Moss'**
+  String get accentMoss;
+
+  /// Accent colour name (blue)
+  ///
+  /// In en, this message translates to:
+  /// **'Sky'**
+  String get accentSky;
+
+  /// Accent colour name (pink)
+  ///
+  /// In en, this message translates to:
+  /// **'Berry'**
+  String get accentBerry;
+
+  /// Accent colour name (purple)
+  ///
+  /// In en, this message translates to:
+  /// **'Violet'**
+  String get accentViolet;
+
+  /// Shown in the accent picker when the pack is not bought
+  ///
+  /// In en, this message translates to:
+  /// **'Colours other than Clementine are part of the supporter pack.'**
+  String get accentLockedHint;
+
+  /// Button in the accent picker leading to the supporter sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock with the supporter pack'**
+  String get accentUnlock;
 }
 
 class _AppLocalizationsDelegate

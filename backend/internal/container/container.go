@@ -447,8 +447,9 @@ func (c *Container) AppleIAPClient() *appstoresvc.Client {
 			BundleID:         c.cfg.AppleIAPBundleID,
 			Environment:      c.cfg.AppleIAPEnvironment,
 			AppAppleID:       int64(c.cfg.AppleIAPAppID),
-			ProductIDMonthly: c.cfg.AppleIAPProductMonthly,
-			ProductIDYearly:  c.cfg.AppleIAPProductYearly,
+			ProductIDMonthly:   c.cfg.AppleIAPProductMonthly,
+			ProductIDYearly:    c.cfg.AppleIAPProductYearly,
+			ProductIDSupporter: c.cfg.AppleIAPProductSupporter,
 		})
 	})
 	return c.appleIAPClient
@@ -489,6 +490,10 @@ func (c *Container) BillingService() *services.BillingService {
 				AppleProductYearly:   c.cfg.AppleIAPProductYearly,
 				GoogleProductMonthly: c.cfg.GooglePlayProductMonthly,
 				GoogleProductYearly:  c.cfg.GooglePlayProductYearly,
+
+				ProductIDSupporter:     c.cfg.PolarProductIDSupporter,
+				AppleProductSupporter:  c.cfg.AppleIAPProductSupporter,
+				GoogleProductSupporter: c.cfg.GooglePlayProductSupporter,
 			},
 		)
 	})

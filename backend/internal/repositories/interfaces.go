@@ -70,6 +70,10 @@ type BillingRepo interface {
 	CountGroupMembers(ctx context.Context, groupID uuid.UUID) (int, error)
 	MarkWebhookEventProcessed(ctx context.Context, id, provider, eventType string) (bool, error)
 	DeleteWebhookEventsBefore(ctx context.Context, cutoff time.Time) (int64, error)
+	UpsertSupporterPurchase(ctx context.Context, p *models.SupporterPurchase) (*models.SupporterPurchase, error)
+	GetSupporterPurchaseByProviderID(ctx context.Context, provider, providerOrderID string) (*models.SupporterPurchase, error)
+	GetPaidSupporterPurchaseForUser(ctx context.Context, userID uuid.UUID) (*models.SupporterPurchase, error)
+	ListSupporterUserIDs(ctx context.Context, userIDs []uuid.UUID) (map[uuid.UUID]bool, error)
 }
 
 // GroupRepo is the interface for group repository operations.

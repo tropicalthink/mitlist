@@ -32,6 +32,9 @@ type GroupMemberProfile struct {
 	UserID      uuid.UUID `json:"user_id"`
 	DisplayName string    `json:"display_name"`
 	Role        string    `json:"role"`
+	// Supporter is true when this member bought the supporter pack; the
+	// client renders a badge housemates can see.
+	Supporter bool `json:"supporter"`
 }
 
 // GroupInvite stores an invite code for joining a group. A code admits anyone

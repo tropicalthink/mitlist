@@ -48,6 +48,9 @@ func (s *BillingService) VerifyAppleTransaction(ctx context.Context, userID, gro
 	if err != nil {
 		return nil, &api.ValidationError{Message: "this App Store receipt could not be verified"}
 	}
+	if s.cfg.AppleProductSupporter != "" && tx.ProductID == s.cfg.AppleProductSupporter {
+		return nil, &api.ValidationError{Message: "this App Store product is the supporter pack, not a subscription"}
+	}
 
 	// A receipt carrying someone else's app account token must not be attachable
 	// to the caller's account — that would let a leaked receipt be replayed.
@@ -118,6 +121,9 @@ func (s *BillingService) ApplyAppleNotification(ctx context.Context, signedPaylo
 		// mitlist tracks.
 		return ErrEventIgnored
 	}
+	if s.cfg.AppleProductSupporter != "" && notif.Transaction.ProductID == s.cfg.AppleProductSupporter {
+		return s.applyAppleSupporterNotification(ctx, notif)
+	}
 
 	userID, err := s.resolveAppleUser(ctx, notif.Transaction)
 	if err != nil {
@@ -145,11 +151,17 @@ func (s *BillingService) ApplyGoogleNotification(ctx context.Context, body []byt
 	if err != nil {
 		return &api.ValidationError{Message: "malformed Play notification"}
 	}
+	if notif.PackageName != s.google.PackageName() {
+		return &api.ValidationError{Message: "Play notification is for another app"}
+	}
+	if notif.OneTimeProductNotification != nil {
+		return s.applyGoogleOneTimeNotification(ctx, notif, messageID)
+	}
 	if notif.SubscriptionNotification == nil {
-		// A test notification or a one-time-product event: nothing to apply.
+		// A test notification: nothing to apply.
 		return ErrEventIgnored
 	}
-	if notif.PackageName != s.google.PackageName() || notif.SubscriptionNotification.SubscriptionID != s.google.SubscriptionID() {
+	if notif.SubscriptionNotification.SubscriptionID != s.google.SubscriptionID() {
 		return &api.ValidationError{Message: "Play notification is for another app or subscription"}
 	}
 

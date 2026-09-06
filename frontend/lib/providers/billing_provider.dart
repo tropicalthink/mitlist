@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/billing_models.dart';
 import '../services/billing_service.dart';
@@ -83,6 +84,54 @@ final householdEntitlementProvider =
     return null;
   }
 });
+
+/// Whether the supporter pack's customisation (accent colours) applies for
+/// the signed-in user.
+///
+/// Remembered across launches so the accent does not flash back to the
+/// default while billing status loads. Only a real answer from the server
+/// updates it; the [BillingStatus.disabled] placeholder a network failure
+/// yields is ignored, so going offline neither grants nor revokes the perks.
+final supporterPerksProvider =
+    StateNotifierProvider<SupporterPerksNotifier, bool>((ref) {
+  final notifier = SupporterPerksNotifier();
+  ref.listen<AsyncValue<BillingStatus>>(billingStatusProvider, (_, next) {
+    final status = next.valueOrNull;
+    if (status == null || identical(status, BillingStatus.disabled)) return;
+    notifier.setFromStatus(status);
+  });
+  return notifier;
+});
+
+class SupporterPerksNotifier extends StateNotifier<bool> {
+  SupporterPerksNotifier({bool initial = false}) : super(initial) {
+    _load();
+  }
+
+  static const _key = 'supporter_perks_unlocked';
+
+  Future<void> _load() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final stored = prefs.getBool(_key);
+      if (stored != null && mounted) state = stored;
+    } catch (_) {
+      // Preferences unavailable (tests, a broken platform channel): the
+      // server answer will still arrive through setFromStatus.
+    }
+  }
+
+  /// Applies what the server said. Persisted so the next launch starts from
+  /// the same answer.
+  Future<void> setFromStatus(BillingStatus status) async {
+    final unlocked = status.supporterPerksUnlocked;
+    if (state != unlocked) state = unlocked;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_key, unlocked);
+    } catch (_) {}
+  }
+}
 
 /// Refreshes everything billing-related. Call after a checkout returns or the
 /// premium household moves.
