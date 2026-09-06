@@ -1,8 +1,9 @@
-import 'dart:async' show StreamSubscription, unawaited;
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:collection/collection.dart';
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:uuid/uuid.dart';
 
 import '../models/list_models.dart';
@@ -33,9 +34,23 @@ class ListRepository {
 
   bool _isDraining = false;
 
+  /// Set when an op is enqueued while a drain pass is already running. That
+  /// pass fetched its batch before the new op existed, so without this flag
+  /// the op would sit in the outbox until the next user edit or app resume.
+  bool _drainRequested = false;
+
   SseService? _sseService;
   StreamSubscription<SseEvent>? _sseSub;
   String? _sseGroupId;
+
+  /// SSE item events carry only ids (the body is untrusted and the durable
+  /// event log stays small), so each one triggers a refetch of the list's
+  /// items. A burst of events for one list is coalesced into a single fetch,
+  /// and events arriving while a fetch is in flight queue exactly one more.
+  static const _sseRefreshCoalesce = Duration(milliseconds: 250);
+  final Map<String, Timer> _sseRefreshTimers = {};
+  final Set<String> _sseRefreshInFlight = {};
+  final Set<String> _sseRefreshDirty = {};
 
   ListRepository({
     required AppDatabase db,
@@ -160,11 +175,17 @@ class ListRepository {
             ? item
             : _withCanonicalItemId(item, localCanonicalById[item.id]))
         .toList(growable: false);
-    await _db.upsertListItemsRows(enrichedServerItems.map(_toListItemsRow));
+    final pendingIds = await _db.getPendingListItemIds();
+    // A row with an unsynced local edit (or delete) keeps its optimistic state:
+    // the server still holds the pre-edit value, and the op's own sync writes
+    // the server's answer back. Overwriting it here would flash the old value
+    // (or resurrect a deleted row) every time an SSE event lands mid-sync.
+    await _db.upsertListItemsRows(enrichedServerItems
+        .where((item) => !pendingIds.contains(item.id))
+        .map(_toListItemsRow));
 
     final serverIds = serverItems.map((i) => i.id).toSet();
     final localRows = await _db.getItemsByListOnce(listId);
-    final pendingIds = await _db.getPendingListItemIds();
 
     final staleIds = localRows
         .where((r) => !serverIds.contains(r.id) && !pendingIds.contains(r.id))
@@ -653,48 +674,58 @@ class ListRepository {
   }
 
   Future<void> drainOutboxOnce() async {
-    if (_isDraining) return;
+    if (_isDraining) {
+      _drainRequested = true;
+      return;
+    }
     _isDraining = true;
     try {
-      // List CRUD drains in its own pass, BEFORE the advisory purchase
-      // telemetry. The drainer stops a pass on the first transient failure
-      // (to preserve per-entity ordering), so a recordPurchase op stuck on a
-      // failing grocery endpoint used to sit at the head of the shared queue
-      // and block every item add/update behind it for its whole retry cycle.
-      await OutboxDrainer(_db).drain(
-        types: const [
-          'createItem',
-          'updateItem',
-          'deleteItem',
-          'reorderItems',
-          'addItemAmount',
-          'clearItems',
-        ],
-        handlers: {
-          'createItem': (op, payload) =>
-              _syncCreateItem(op.id, payload, op.idempotencyKey),
-          'updateItem': (op, payload) =>
-              _syncUpdateItem(op.id, payload, op.idempotencyKey),
-          'deleteItem': (op, payload) =>
-              _syncDeleteItem(op.id, payload, op.idempotencyKey),
-          'reorderItems': (op, payload) =>
-              _syncReorderItems(op.id, payload, op.idempotencyKey),
-          'addItemAmount': (op, payload) =>
-              _syncAddItemAmount(op.id, payload, op.idempotencyKey),
-          'clearItems': (op, payload) =>
-              _syncClearItems(op.id, payload, op.idempotencyKey),
-        },
-      );
-      await OutboxDrainer(_db).drain(
-        types: const ['recordPurchase'],
-        handlers: {
-          'recordPurchase': (op, payload) =>
-              _syncRecordPurchase(op.id, payload, op.idempotencyKey),
-        },
-      );
+      do {
+        _drainRequested = false;
+        await _drainPass();
+      } while (_drainRequested);
     } finally {
       _isDraining = false;
     }
+  }
+
+  Future<void> _drainPass() async {
+    // List CRUD drains in its own pass, BEFORE the advisory purchase
+    // telemetry. The drainer stops a pass on the first transient failure
+    // (to preserve per-entity ordering), so a recordPurchase op stuck on a
+    // failing grocery endpoint used to sit at the head of the shared queue
+    // and block every item add/update behind it for its whole retry cycle.
+    await OutboxDrainer(_db).drain(
+      types: const [
+        'createItem',
+        'updateItem',
+        'deleteItem',
+        'reorderItems',
+        'addItemAmount',
+        'clearItems',
+      ],
+      handlers: {
+        'createItem': (op, payload) =>
+            _syncCreateItem(op.id, payload, op.idempotencyKey),
+        'updateItem': (op, payload) =>
+            _syncUpdateItem(op.id, payload, op.idempotencyKey),
+        'deleteItem': (op, payload) =>
+            _syncDeleteItem(op.id, payload, op.idempotencyKey),
+        'reorderItems': (op, payload) =>
+            _syncReorderItems(op.id, payload, op.idempotencyKey),
+        'addItemAmount': (op, payload) =>
+            _syncAddItemAmount(op.id, payload, op.idempotencyKey),
+        'clearItems': (op, payload) =>
+            _syncClearItems(op.id, payload, op.idempotencyKey),
+      },
+    );
+    await OutboxDrainer(_db).drain(
+      types: const ['recordPurchase'],
+      handlers: {
+        'recordPurchase': (op, payload) =>
+            _syncRecordPurchase(op.id, payload, op.idempotencyKey),
+      },
+    );
   }
 
   Future<void> _syncCreateItem(
@@ -917,11 +948,22 @@ class ListRepository {
   /// which causes the existing [watchItemsByList] Drift streams to fire.
   void attachSse(SseService sseService, String groupId) {
     if (_sseService == sseService && _sseGroupId == groupId) return;
-    _sseSub?.cancel();
     _sseService = sseService;
-    _sseGroupId = groupId;
     sseService.connect(groupId);
-    _sseSub = sseService.events.listen(_handleSseEvent);
+    _listenSse(sseService.events, groupId);
+  }
+
+  /// Subscribes to [events] for [groupId] without touching a network-backed
+  /// [SseService], so tests can drive the handler from a plain stream.
+  @visibleForTesting
+  void listenSseForTest(Stream<SseEvent> events, String groupId) =>
+      _listenSse(events, groupId);
+
+  void _listenSse(Stream<SseEvent> events, String groupId) {
+    _sseSub?.cancel();
+    _cancelSseRefreshTimers();
+    _sseGroupId = groupId;
+    _sseSub = events.listen(_handleSseEvent);
   }
 
   /// Stop the active SSE subscription without closing the service itself.
@@ -930,42 +972,90 @@ class ListRepository {
     _sseSub = null;
     _sseService = null;
     _sseGroupId = null;
+    _cancelSseRefreshTimers();
   }
 
+  /// Events name the list and item by id only (the server publishes thin
+  /// domain events; see `publishDomainEvent` in the backend), so the handler
+  /// never trusts the body for content and refetches the list instead.
   Future<void> _handleSseEvent(SseEvent event) async {
     if (_sseGroupId == null || event.groupId != _sseGroupId) return;
+    if (!event.type.startsWith('list:')) return;
+    final itemId =
+        event.payload['item_id'] as String? ?? event.payload['id'] as String?;
+    final listId = event.payload['list_id'] as String? ??
+        (itemId != null ? await _listIdForItem(itemId) : null);
+    if (listId == null) return;
     switch (event.type) {
       case 'list:item_created':
       case 'list:item_updated':
-        final item = _itemFromPayload(event.payload);
-        if (item != null) {
-          await _db.upsertListItemsRows([_toListItemsRow(item)]);
-          await _patchListPreviewFromLocalItems(item.listId);
-        }
+      case 'list:item_claimed':
+      case 'list:item_unclaimed':
+      case 'list:items_cleared':
+      case 'list:items_reordered':
+        _scheduleItemsRefresh(listId);
       case 'list:item_deleted':
-        final id = event.payload['id'] as String?;
-        final listId = event.payload['list_id'] as String? ??
-            (id != null ? await _listIdForItem(id) : null);
-        if (id != null) {
-          await (_db.delete(_db.listItemsTable)..where((t) => t.id.equals(id)))
+        // The delete itself is unambiguous, so apply it right away; the
+        // refresh reconciles positions and anything else that moved.
+        if (itemId != null) {
+          await (_db.delete(_db.listItemsTable)
+                ..where((t) => t.id.equals(itemId)))
               .go();
-        }
-        if (listId != null) {
           await _patchListPreviewFromLocalItems(listId);
         }
-      case 'list:items_cleared':
-        final listId = event.payload['list_id'] as String?;
-        if (listId != null) {
-          await refreshItems(listId);
-        }
+        _scheduleItemsRefresh(listId);
     }
   }
 
-  ListItem? _itemFromPayload(Map<String, dynamic> payload) {
+  void _scheduleItemsRefresh(String listId) {
+    _sseRefreshTimers[listId]?.cancel();
+    _sseRefreshTimers[listId] =
+        Timer(_sseRefreshCoalesce, () => _runItemsRefresh(listId));
+  }
+
+  Future<void> _runItemsRefresh(String listId) async {
+    _sseRefreshTimers.remove(listId);
+    if (_sseRefreshInFlight.contains(listId)) {
+      _sseRefreshDirty.add(listId);
+      return;
+    }
+    _sseRefreshInFlight.add(listId);
     try {
-      return ListItem.fromJson(payload);
+      await refreshItems(listId);
     } catch (_) {
-      return null;
+      // Best effort: the next event or screen open reconciles.
+    } finally {
+      _sseRefreshInFlight.remove(listId);
+    }
+    if (_sseRefreshDirty.remove(listId)) {
+      _scheduleItemsRefresh(listId);
+    }
+  }
+
+  void _cancelSseRefreshTimers() {
+    for (final timer in _sseRefreshTimers.values) {
+      timer.cancel();
+    }
+    _sseRefreshTimers.clear();
+    _sseRefreshDirty.clear();
+  }
+
+  /// Runs every coalesced SSE refresh now (including any queued behind an
+  /// in-flight one) and returns once they have all completed.
+  @visibleForTesting
+  Future<void> flushPendingSseRefreshes() async {
+    while (_sseRefreshTimers.isNotEmpty ||
+        _sseRefreshInFlight.isNotEmpty ||
+        _sseRefreshDirty.isNotEmpty) {
+      final due = _sseRefreshTimers.keys.toList();
+      for (final listId in due) {
+        _sseRefreshTimers.remove(listId)?.cancel();
+        _sseRefreshDirty.remove(listId);
+        await _runItemsRefresh(listId);
+      }
+      if (due.isEmpty) {
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+      }
     }
   }
 
