@@ -18,6 +18,7 @@ import (
 	"github.com/mitlist-app/mitlist/internal/jobs"
 	"github.com/mitlist-app/mitlist/internal/middleware"
 	"github.com/mitlist-app/mitlist/internal/observability"
+	"github.com/mitlist-app/mitlist/internal/repositories"
 	"github.com/mitlist-app/mitlist/internal/server"
 	"github.com/mitlist-app/mitlist/internal/services"
 	appcheckservice "github.com/mitlist-app/mitlist/internal/services/appcheck"
@@ -177,6 +178,7 @@ func main() {
 	authHandler.SetTurnstileVerifier(turnstileservice.New(cfg))
 	srv.Router().Route(cfg.APIPrefix+"/v1", func(r chi.Router) {
 		authHandler.RegisterRoutes(r)
+		handlers.NewTestingSignupHandler(repositories.NewTestingSignupRepository(pool)).RegisterRoutes(r)
 
 		// Public configuration endpoints
 		r.Get("/vapid", handlers.NewVAPIDHandler(cfg).ServeHTTP)

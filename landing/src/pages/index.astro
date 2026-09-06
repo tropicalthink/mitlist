@@ -4,6 +4,7 @@ import Pinwall from "../components/Pinwall.astro";
 import StoreBadges from "../components/StoreBadges.astro";
 import SiteHeader from "../components/SiteHeader.astro";
 import SiteFooter from "../components/SiteFooter.astro";
+import FeatureBoardLink from "../components/FeatureBoardLink.astro";
 
 const GITHUB = "https://github.com/whtvrboo/mitlist";
 const WEBAPP = "https://app.mitlist.me";
@@ -62,7 +63,7 @@ const day = [
         <div class="hero__cta">
           <StoreBadges webApp={WEBAPP} />
         </div>
-        <p class="hero__note">Free on the web, iOS, and Android. Open source. Yours to self-host.</p>
+        <p class="hero__note">Free on the web. Mobile testing now open. Open source. Yours to self-host.</p>
       </div>
 
       <div class="hero__board">
@@ -70,6 +71,8 @@ const day = [
       </div>
     </div>
   </section>
+
+  <FeatureBoardLink />
 
   <!-- ============ PILLARS ============ -->
   <section class="section-pad" id="features">

@@ -1,7 +1,6 @@
 ---
 interface Props { home?: boolean; }
 const { home = false } = Astro.props;
-const WEBAPP = "https://app.mitlist.me";
 const section = home ? "" : "/";
 ---
 
@@ -17,12 +16,12 @@ const section = home ? "" : "/";
       <a href={`${section}#how`}>How it works</a>
       <a href="/hosting">Hosting</a>
       <a href="/transparency">Transparency</a>
-      <a href="https://feedback.mitlist.me">Feedback</a>
+      <a href="https://feedback.mitlist.me">Feature board</a>
       <a href={`${section}#open`}>Open source</a>
       <a href={`${section}#support`}>Support</a>
       <a href="https://github.com/whtvrboo/mitlist" rel="noopener">GitHub</a>
     </nav>
-    <a class="btn btn--primary nav__cta" href={WEBAPP}>Open the app</a>
+    <a class="btn btn--primary nav__cta" href="/testing">Join testing</a>
   </div>
 </header>
 
@@ -38,5 +37,5 @@ const section = home ? "" : "/";
   .nav__cta { padding: 0.5rem 1rem; font-size: 0.95rem; box-shadow: var(--shadow-sm); }
   @media (max-width: 980px) { .nav__links { gap: 1rem; font-size: 0.9rem; } }
   @media (max-width: 860px) { .nav__links { display: none; } }
-  @media (max-width: 460px) { .nav__cta { display: none; } }
+  @media (max-width: 860px) { .nav__cta { margin-left: auto; } }
 </style>

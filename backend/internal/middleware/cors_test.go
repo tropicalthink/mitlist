@@ -8,6 +8,29 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestTestingSignupCorsIsLimitedToPublicSubmission(t *testing.T) {
+	handler := CorsMiddleware("https://app.mitlist.me", "production", PublicRouteOrigin{
+		Path: "/api/v1/testing/signups", Origin: "https://mitlist.me",
+	})(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) }))
+	for _, tc := range []struct {
+		path, method, origin string
+		allowed              bool
+	}{
+		{"/api/v1/testing/signups", "POST", "https://mitlist.me", true},
+		{"/api/v1/testing/signups", "OPTIONS", "https://mitlist.me", true},
+		{"/api/v1/testing/signups", "POST", "https://evil.example", false},
+		{"/api/v1/testing/signups/export", "GET", "https://mitlist.me", false},
+		{"/api/v1/auth/me", "GET", "https://mitlist.me", false},
+	} {
+		req := httptest.NewRequest(tc.method, tc.path, nil)
+		req.Header.Set("Origin", tc.origin)
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+		require.Equal(t, tc.allowed, rec.Header().Get("Access-Control-Allow-Origin") != "", tc.path)
+		require.Empty(t, rec.Header().Get("Access-Control-Allow-Credentials"))
+	}
+}
+
 func TestCorsMiddlewareAllowsConfiguredOrigin(t *testing.T) {
 	handler := CorsMiddleware("http://localhost:5173", "production")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
