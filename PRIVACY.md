@@ -6,7 +6,7 @@ published at <https://mitlist.me/privacy> (English) and
 so that people reading the source can see what the software does with data.
 When a provider, a feature, or a retention period changes, update all three.
 
-Last updated: 4 September 2026.
+Last updated: 6 September 2026.
 
 ## Two situations
 
@@ -49,6 +49,14 @@ service or on a server somebody operates themselves.
 | Feedback | Text, source screen, app version, platform, locale; on the public board also your account id and first name | Stored in the request tracker on Cloudflare Workers / D1 |
 
 ## Retention and deletion
+
+Mobile testing signups store the email, Android/iOS selection, signup time,
+and consent version privately, solely to arrange access and send testing
+emails. They do not create an app account or public board post. The team may
+add the email to Google Play testing or Apple TestFlight to issue invitations.
+Signups are removed when testing ends or consent is withdrawn; contact the
+operator listed in the Impressum from the registered address to withdraw or
+request deletion.
 
 - Account and household content stay as long as the account exists.
 - **Deleting the account** in the app removes email, name, password, and

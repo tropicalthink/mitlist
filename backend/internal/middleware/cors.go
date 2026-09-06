@@ -6,14 +6,25 @@ import (
 	"strings"
 )
 
+// PublicRouteOrigin permits a separate site to call one public endpoint.
+type PublicRouteOrigin struct{ Path, Origin string }
+
 // CorsMiddleware returns a simple CORS middleware.
-func CorsMiddleware(allowedOrigin, environment string) func(next http.Handler) http.Handler {
+func CorsMiddleware(allowedOrigin, environment string, publicRoutes ...PublicRouteOrigin) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if origin := resolveAllowedOrigin(r.Header.Get("Origin"), allowedOrigin, environment); origin != "" {
 				w.Header().Set("Access-Control-Allow-Origin", origin)
 				w.Header().Set("Access-Control-Allow-Credentials", "true")
 				w.Header().Add("Vary", "Origin")
+			}
+			for _, route := range publicRoutes {
+				if route.Origin != "" && r.URL.Path == route.Path && r.Header.Get("Origin") == route.Origin &&
+					(r.Method == http.MethodPost || r.Method == http.MethodOptions) {
+					w.Header().Set("Access-Control-Allow-Origin", route.Origin)
+					w.Header().Del("Access-Control-Allow-Credentials")
+					w.Header().Add("Vary", "Origin")
+				}
 			}
 
 			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE, OPTIONS")

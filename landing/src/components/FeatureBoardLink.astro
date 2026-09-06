@@ -1,0 +1,19 @@
+<section class="board" id="feature-board" aria-labelledby="board-title">
+  <div class="wrap board__inner">
+    <div>
+      <h2 class="h3" id="board-title">Help shape mitlist</h2>
+      <p>Share an idea, vote for features, or see what’s coming next.</p>
+    </div>
+    <a class="btn btn--primary" href="https://feedback.mitlist.me">Visit the feature board ↗</a>
+  </div>
+</section>
+<style>
+  .board { padding-block: 2rem; border-top: var(--border); background: var(--paper-3); color: var(--ink); }
+  .board__inner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.5rem; }
+  p { margin-top: .75rem; color: var(--ink-3); }
+  .btn { flex-shrink: 0; }
+  @media (prefers-color-scheme: dark) {
+    .board { --ink: var(--dark-ink); --ink-3: var(--dark-ink-3); --paper-3: var(--dark-paper-3); --border: 2px solid var(--ink); }
+    .btn { color: var(--dark-paper-2); }
+  }
+</style>

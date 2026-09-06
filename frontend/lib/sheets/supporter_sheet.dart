@@ -84,13 +84,15 @@ class _SupporterSheetBodyState extends ConsumerState<SupporterSheetBody> {
     try {
       final service = await ref.read(billingServiceProvider.future);
       final url = await service.createSupporterCheckout();
+      if (!mounted) return;
       final launched = await launchUrl(
         Uri.parse(url),
         mode: LaunchMode.externalApplication,
+        webOnlyWindowName: '_self',
       );
       if (!launched) throw Exception('launch failed');
-      invalidateBilling(ref);
       if (!mounted) return;
+      invalidateBilling(ref);
       Navigator.of(context).pop();
     } catch (_) {
       if (!mounted) return;
