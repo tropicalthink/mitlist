@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -106,10 +108,20 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
 
   void _back(int total) {
     if (_page == 0) {
-      Navigator.of(context).maybePop();
+      _close();
       return;
     }
     _goTo(_page - 1, total);
+  }
+
+  void _close() {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+    } else {
+      // A direct link or browser refresh has no previous route to pop.
+      context.go('/home');
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -134,20 +146,29 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
     });
     try {
       final service = await ref.read(billingServiceProvider.future);
+      if (!mounted) return;
       final url = await service.createCheckout(
         interval: _interval,
         groupId: widget.groupId,
       );
+      if (!mounted) return;
       final launched = await launchUrl(
         Uri.parse(url),
         mode: LaunchMode.externalApplication,
+        // The API wait can consume browser user activation and block a popup.
+        webOnlyWindowName: '_self',
       );
       if (!launched) throw Exception('launch failed');
+      if (!mounted) return;
+      if (kIsWeb) {
+        setState(() => _busy = false);
+        return;
+      }
       // The subscription only exists once the provider's webhook lands, so
       // refresh rather than assuming success.
       invalidateBilling(ref);
       if (!mounted) return;
-      Navigator.of(context).pop();
+      _close();
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -196,9 +217,8 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
         });
       case IapStatus.success:
         invalidateBilling(ref);
-        final navigator = Navigator.of(context);
         final message = l10n.billingPurchased;
-        navigator.pop();
+        _close();
         if (mounted) AppToast.success(context, message);
     }
   }
@@ -232,11 +252,10 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
     try {
       final service = await ref.read(billingServiceProvider.future);
       await service.setPremiumHousehold(widget.groupId);
-      invalidateBilling(ref);
       if (!mounted) return;
-      final navigator = Navigator.of(context);
+      invalidateBilling(ref);
       final message = l10n.billingMoved;
-      navigator.pop();
+      _close();
       if (!mounted) return;
       AppToast.success(context, message);
     } catch (_) {
@@ -292,9 +311,12 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
           const CorkBoardBackground(),
           SafeArea(
             child: entitlementAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () => _SinglePanel(
+                onClose: _close,
+                child: const Center(child: CircularProgressIndicator()),
+              ),
               error: (_, __) => _SinglePanel(
-                onClose: () => Navigator.of(context).maybePop(),
+                onClose: _close,
                 child: AppAlert(
                   type: AppAlertType.error,
                   message: l10n.commonSomethingWentWrong,
@@ -305,7 +327,7 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
                   // Billing is not configured on this server. Nothing to sell,
                   // and nothing worth keeping the person here for.
                   return _SinglePanel(
-                    onClose: () => Navigator.of(context).maybePop(),
+                    onClose: _close,
                     child: const SizedBox.shrink(),
                   );
                 }
@@ -324,13 +346,13 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
     // sale, so neither gets the four-page argument for one.
     if (entitlement.premium) {
       return _SinglePanel(
-        onClose: () => Navigator.of(context).maybePop(),
+        onClose: _close,
         child: _PremiumActivePanel(entitlement: entitlement),
       );
     }
     if (entitlement.canMovePremiumHere) {
       return _SinglePanel(
-        onClose: () => Navigator.of(context).maybePop(),
+        onClose: _close,
         child: _MovePanel(
           error: _error,
           busy: _busy,
@@ -353,6 +375,7 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
           total: total,
           onBack: () => _back(total),
           onSkip: isLast ? null : () => _goTo(total - 1, total),
+          onClose: _close,
         ),
         Expanded(
           child: PageView(
@@ -499,18 +522,11 @@ class _SinglePanel extends StatelessWidget {
     return Column(
       children: [
         Align(
-          alignment: Alignment.centerLeft,
-          child: Semantics(
-            button: true,
-            label: l10n.commonClose,
-            child: InkWell(
-              onTap: onClose,
-              child: const SizedBox(
-                width: 44,
-                height: 44,
-                child: Center(child: AppIcon(name: 'arrowLeft', size: 22)),
-              ),
-            ),
+          alignment: Alignment.centerRight,
+          child: IconButton(
+            tooltip: l10n.commonClose,
+            onPressed: onClose,
+            icon: const AppIcon(name: 'xMark'),
           ),
         ),
         Expanded(child: child),

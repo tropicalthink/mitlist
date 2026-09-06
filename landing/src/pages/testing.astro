@@ -1,0 +1,113 @@
+---
+import Layout from "../layouts/Layout.astro";
+import SiteHeader from "../components/SiteHeader.astro";
+import SiteFooter from "../components/SiteFooter.astro";
+import FeatureBoardLink from "../components/FeatureBoardLink.astro";
+const api = import.meta.env.PUBLIC_MITLIST_API_URL || "https://api.mitlist.me/api/v1";
+---
+<Layout title="Test mitlist on Android or iOS" description="Join mitlist's mobile testing list. Leave your email and we'll send you an invitation for Google Play or TestFlight.">
+  <SiteHeader />
+  <main>
+    <section class="wrap testing">
+      <div class="testing__intro">
+        <span class="stamp">Early access</span>
+        <h1 class="display">A little help.<br />A better mitlist.</h1>
+        <p class="lead">Try mitlist with your household before the mobile launch. Leave your email and we’ll send you a testing invitation when your place is ready.</p>
+        <ol>
+          <li>Choose your phone and leave your email.</li>
+          <li>We’ll email your Google Play or iOS TestFlight invitation.</li>
+          <li>Try it together. Tell us what works and what needs fixing.</li>
+        </ol>
+        <a href="https://feedback.mitlist.me">Visit the feature board ↗</a>
+      </div>
+      <form id="tester-signup" class="signup" method="post" action={`${api.replace(/\/$/, "")}/testing/signups`} data-endpoint={`${api.replace(/\/$/, "")}/testing/signups`}>
+        <h2 class="h3">Join the testing list</h2>
+        <p>No mitlist account needed. This signs you up for testing invitations only.</p>
+        <label for="tester-email">Your email</label>
+        <input id="tester-email" name="email" type="email" autocomplete="email" maxlength="254" placeholder="you@example.com" required aria-describedby="email-hint" />
+        <p id="email-hint" class="hint">For Android, use the email on your Google Play account so we can add you as a tester.</p>
+        <fieldset>
+          <legend>Your phone</legend>
+          <div class="platforms">
+            <label><input type="radio" name="platform" value="android" required /> Android <small>Google Play</small></label>
+            <label><input type="radio" name="platform" value="ios" required /> iOS <small>TestFlight</small></label>
+          </div>
+        </fieldset>
+        <div class="trap" aria-hidden="true"><label>Website <input name="website" tabindex="-1" autocomplete="off" /></label></div>
+        <label class="consent"><input type="checkbox" name="consent" required /><span>I agree to receive emails about mitlist testing. See the <a href="/privacy#testing">privacy notice</a>.</span></label>
+        <p class="hint">You can withdraw at any time using the contact in the privacy notice.</p>
+        <button type="submit" class="btn btn--primary" disabled>Sign me up</button>
+        <p id="signup-status" role="status" aria-live="polite" tabindex="-1"></p>
+        <noscript>Please enable JavaScript to submit the signup form.</noscript>
+      </form>
+    </section>
+    <FeatureBoardLink />
+  </main>
+  <SiteFooter />
+</Layout>
+<script>
+  const form = document.querySelector<HTMLFormElement>("#tester-signup")!;
+  const status = document.querySelector<HTMLParagraphElement>("#signup-status")!;
+  const button = form.querySelector<HTMLButtonElement>('button[type="submit"]')!;
+  button.disabled = false;
+  const platform = new URLSearchParams(location.search).get("platform");
+  if (platform === "android" || platform === "ios") form.querySelector<HTMLInputElement>(`input[value="${platform}"]`)!.checked = true;
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (button.disabled || !form.reportValidity()) return;
+    button.disabled = true;
+    form.setAttribute("aria-busy", "true");
+    status.textContent = "Saving your signup…";
+    const data = new FormData(form);
+    try {
+      const response = await fetch(form.dataset.endpoint!, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: data.get("email"), platform: data.get("platform"), consent: data.get("consent") === "on", website: data.get("website") }),
+        signal: AbortSignal.timeout(15000),
+      });
+      if (!response.ok) {
+        status.textContent = response.status === 429 ? "Please wait a few minutes before trying again." : "We couldn’t save your signup. Please try again in a moment.";
+        return;
+      }
+      form.reset();
+      status.textContent = "You’re on the list! We’ll email your testing invitation when your place is ready.";
+      status.focus();
+    } catch {
+      status.textContent = "We couldn’t reach mitlist. Check your connection and try again.";
+    } finally {
+      button.disabled = false;
+      form.removeAttribute("aria-busy");
+    }
+  });
+</script>
+<style>
+  main { color: var(--ink); background: var(--paper-2); }
+  .testing { display: grid; grid-template-columns: 1.1fr 1fr; gap: clamp(2rem, 5vw, 4rem); padding-block: 4rem; align-items: start; }
+  .testing__intro { display: grid; gap: 1.5rem; }
+  .testing__intro .stamp { justify-self: start; }
+  .testing__intro .display { font-size: clamp(2.6rem, 5vw, 4rem); }
+  ol { padding-left: 1.3rem; margin: 0; }
+  li + li { margin-top: .75rem; }
+  .signup { position: relative; display: grid; gap: 1rem; padding: clamp(1.25rem, 3vw, 2rem); border: var(--border); background: var(--paper); box-shadow: var(--shadow-lg); }
+  .signup > label, legend { font-weight: 700; }
+  input[type="email"] { width: 100%; min-height: 48px; padding: .75rem; border: var(--border); border-radius: 0; background: var(--paper-2); color: var(--ink); font: inherit; }
+  .hint, .consent, small { font-size: .9rem; color: var(--ink-3); }
+  fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+  legend { margin-bottom: .75rem; }
+  .platforms { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+  .platforms label { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: .25rem .5rem; border: var(--border); padding: .75rem; cursor: pointer; }
+  .platforms label:has(:checked) { background: var(--orange-100); box-shadow: var(--shadow-sm); }
+  small { grid-column: 2; }
+  input[type="radio"], input[type="checkbox"] { accent-color: var(--orange-700); width: 20px; height: 20px; flex-shrink: 0; }
+  .consent { display: flex; align-items: start; gap: .5rem; min-height: 44px; font-weight: 400 !important; }
+  .trap { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+  button { min-height: 48px; }
+  button:disabled { opacity: .65; cursor: wait; }
+  #signup-status:empty { display: none; }
+  @media (max-width: 760px) { .testing { grid-template-columns: 1fr; padding-block: 2.5rem; } }
+  @media (prefers-color-scheme: dark) {
+    main { --ink: var(--dark-ink); --ink-3: var(--dark-ink-3); --paper: var(--dark-paper); --paper-2: var(--dark-paper-2); --paper-3: var(--dark-paper-3); --orange-100: var(--dark-selection); --orange-50: var(--dark-paper-3); --shadow-lg: 6px 6px 0 var(--dark-shadow); --shadow-sm: 2px 2px 0 var(--dark-shadow); --border: 2px solid var(--ink); }
+    .signup .btn { color: var(--paper-2); }
+    .stamp { color: var(--paper-2); }
+  }
+</style>

@@ -5,7 +5,7 @@
 import LegalPage from "../components/LegalPage.astro";
 import { legal } from "../data/legal";
 const { operator } = legal;
-const lastUpdated = "4. September 2026";
+const lastUpdated = "6. September 2026";
 ---
 
 <LegalPage title="Datenschutz" description="Datenschutzerklärung für die mitlist-Website, die mitlist-Apps und den offiziell gehosteten mitlist-Dienst.">
@@ -38,6 +38,9 @@ const lastUpdated = "4. September 2026";
   <h2>4. Website mitlist.me</h2>
   <p><strong>Hosting.</strong> Die Website ist eine statische Seite und wird über Cloudflare Pages (Cloudflare, Inc., 101 Townsend St, San Francisco, CA 94107, USA; für den EWR: Cloudflare Germany GmbH, Rosental 7, 80331 München) ausgeliefert. Beim Abruf verarbeitet Cloudflare technisch notwendige Verbindungsdaten wie IP-Adresse, Zeitpunkt, angeforderte URL, Referrer und Browser-Typ, um die Seite auszuliefern und vor Angriffen zu schützen. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (sicherer und erreichbarer Betrieb). Schriftarten und Bilder werden von der Website selbst ausgeliefert; es wird keine Verbindung zu Google Fonts oder einem anderen Schriften-Dienst aufgebaut.</p>
   <p><strong>Reichweitenmessung ohne Cookies.</strong> Auf der Website (nicht in der App) setzen wir Cloudflare Web Analytics ein, um zu sehen, wie oft welche Seiten aufgerufen werden. Der Dienst setzt keine Cookies, speichert nichts auf Ihrem Gerät und erstellt keine Fingerabdrücke; die Auswertung ist aggregiert und nicht auf einzelne Personen bezogen. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (Verständnis, welche Inhalte der Website gelesen werden). Da nichts auf Ihrem Gerät gespeichert oder ausgelesen wird, ist keine Einwilligung nach § 25 TDDDG erforderlich.</p>
+
+  <h3 id="testing">Anmeldung zum mobilen Test</h3>
+  <p>Wenn Sie sich zum Test anmelden, speichern wir Ihre E-Mail-Adresse, die gewählte Plattform (Android oder iOS), den Anmeldezeitpunkt und die Version Ihrer Einwilligung. Wir nutzen diese Angaben, um den Testzugang einzurichten und Ihnen E-Mails zum Test zu senden, nicht für einen Newsletter. Die Liste ist nicht öffentlich; es entsteht weder ein mitlist-Konto noch ein Beitrag im Feature-Board. Für die Einladung können wir Ihre E-Mail-Adresse bei Google Play Testing oder Apple TestFlight hinterlegen. Nach Ende des Tests oder Ihrem Widerruf löschen wir die Anmeldung. Zum Widerruf oder zur Löschung schreiben Sie von Ihrer angemeldeten Adresse an <a href={`mailto:${legal.email}`}>{legal.email}</a>.</p>
 
   <h2>5. Konto und Anmeldung</h2>
   <p><strong>Registrierung mit E-Mail.</strong> Beim Anlegen eines Kontos verarbeiten wir E-Mail-Adresse, den von Ihnen gewählten Namen und ein Passwort, das ausschließlich als Hash gespeichert wird. Zur Bestätigung der Adresse und zum Zurücksetzen des Passworts senden wir Ihnen E-Mails mit Codes. Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO.</p>

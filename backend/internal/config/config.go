@@ -25,6 +25,7 @@ type Config struct {
 	// Application
 	Environment              string `env:"ENVIRONMENT" default:"development"`
 	FrontendURL              string `env:"FRONTEND_URL" default:"http://localhost:5173"`
+	TestingSignupOrigin      string `env:"TESTING_SIGNUP_ORIGIN" default:"https://mitlist.me"`
 	Port                     string `env:"PORT" default:"8000"`
 	APIPrefix                string `env:"API_PREFIX" default:"/api"`
 	AccessTokenExpireMinutes int    `env:"ACCESS_TOKEN_EXPIRE_MINUTES" default:"15"`
@@ -163,7 +164,7 @@ type Config struct {
 	// a launch promo, for instance. Customers can still enter their own code.
 	PolarDefaultDiscountID string `env:"POLAR_DEFAULT_DISCOUNT_ID"`
 	// CheckoutSuccessURL is where Polar returns the customer after paying.
-	CheckoutSuccessURL string `env:"CHECKOUT_SUCCESS_URL" default:"https://mitlist.me/billing/success"`
+	CheckoutSuccessURL string `env:"CHECKOUT_SUCCESS_URL" default:"https://app.mitlist.me/you"`
 
 	// FreeMemberLimit is the largest household size that stays free. Only
 	// enforced when billing is configured.

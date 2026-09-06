@@ -1,13 +1,85 @@
+import 'dart:async';
+
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mitlist/l10n/app_localizations.dart';
 import 'package:mitlist/models/billing_models.dart';
 import 'package:mitlist/providers/billing_provider.dart';
 import 'package:mitlist/screens/premium/premium_pages.dart';
 import 'package:mitlist/screens/premium/premium_screen.dart';
+import 'package:mitlist/services/billing_service.dart';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 const _groupId = 'group-1';
+
+class _Launcher extends UrlLauncherPlatform {
+  @override
+  Null get linkDelegate => null;
+
+  String? url;
+  LaunchOptions? options;
+  bool succeeds = true;
+
+  @override
+  Future<bool> launchUrl(String url, LaunchOptions options) async {
+    this.url = url;
+    this.options = options;
+    return succeeds;
+  }
+}
+
+Future<GoRouter> _pumpRoutedScreen(
+  WidgetTester tester, {
+  bool pushed = false,
+  Future<HouseholdEntitlement?> Function()? entitlement,
+  BillingService? billing,
+}) async {
+  final router = GoRouter(
+    initialLocation: pushed ? '/you' : '/premium/$_groupId',
+    routes: [
+      GoRoute(
+        path: '/home',
+        builder: (_, __) => const Scaffold(body: Text('Household home')),
+      ),
+      GoRoute(
+        path: '/you',
+        builder: (_, __) => const Scaffold(body: Text('Account screen')),
+      ),
+      GoRoute(
+        path: '/premium/:groupId',
+        builder: (_, __) => const PremiumScreen(groupId: _groupId),
+      ),
+    ],
+  );
+  addTearDown(router.dispose);
+  await tester.pumpWidget(ProviderScope(
+    overrides: [
+      billingStatusProvider.overrideWith(
+        (ref) async => const BillingStatus(enabled: true, freeLimit: 4),
+      ),
+      householdEntitlementProvider(_groupId).overrideWith(
+        (ref) => entitlement?.call() ?? Future.value(_entitlement()),
+      ),
+      if (billing != null)
+        billingServiceProvider.overrideWith((ref) async => billing),
+    ],
+    child: MaterialApp.router(
+      routerConfig: router,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+    ),
+  ));
+  if (pushed) {
+    unawaited(router.push('/premium/$_groupId'));
+  }
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 300));
+  return router;
+}
 
 HouseholdEntitlement _entitlement({
   int memberCount = 4,
@@ -60,6 +132,118 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('PremiumScreen', () {
+    for (final skipToPlan in [false, true]) {
+      for (final pushed in [false, true]) {
+        testWidgets(
+            'close exits ${skipToPlan ? 'plan' : 'intro'} '
+            'after ${pushed ? 'push' : 'direct entry'}', (tester) async {
+          await _pumpRoutedScreen(tester, pushed: pushed);
+          await tester.pumpAndSettle();
+          if (skipToPlan) {
+            await tester.tap(find.text('Skip'));
+            await tester.pumpAndSettle();
+          }
+          expect(find.byIcon(Icons.close), findsOneWidget);
+          await tester.tap(find.byTooltip('Close'));
+          await tester.pumpAndSettle();
+          expect(find.text(pushed ? 'Account screen' : 'Household home'),
+              findsOneWidget);
+        });
+      }
+    }
+
+    testWidgets('intro back returns home after direct entry', (tester) async {
+      await _pumpRoutedScreen(tester);
+      await tester.pumpAndSettle();
+      await tester.tap(find.bySemanticsLabel('Back'));
+      await tester.pumpAndSettle();
+      expect(find.text('Household home'), findsOneWidget);
+    });
+
+    for (final state in ['loading', 'error', 'disabled', 'active', 'move']) {
+      testWidgets('can close the $state panel', (tester) async {
+        await _pumpRoutedScreen(tester, entitlement: () {
+          switch (state) {
+            case 'loading':
+              return Completer<HouseholdEntitlement?>().future;
+            case 'error':
+              return Future.error(StateError('Unavailable'));
+            case 'disabled':
+              return Future.value(null);
+            case 'active':
+              return Future.value(_entitlement(premium: true));
+            default:
+              return Future.value(_entitlement(
+                viewerSubscribed: true,
+                viewerPrimaryGroupId: 'other-group',
+              ));
+          }
+        });
+        await tester.tap(find.byTooltip('Close'));
+        await tester.pumpAndSettle();
+        expect(find.text('Household home'), findsOneWidget);
+      });
+    }
+
+    for (final scenario in [
+      'success',
+      'launch failure',
+      'closed while waiting'
+    ]) {
+      testWidgets('hosted checkout: $scenario', (tester) async {
+        final original = UrlLauncherPlatform.instance;
+        final launcher = _Launcher()..succeeds = scenario != 'launch failure';
+        UrlLauncherPlatform.instance = launcher;
+        addTearDown(() {
+          UrlLauncherPlatform.instance = original;
+        });
+        final response = Completer<String>();
+        RequestOptions? request;
+        final dio = Dio()
+          ..interceptors.add(InterceptorsWrapper(
+            onRequest: (options, handler) async {
+              request = options;
+              handler.resolve(Response(
+                requestOptions: options,
+                data: {'checkout_url': await response.future},
+              ));
+            },
+          ));
+        addTearDown(dio.close);
+        await _pumpRoutedScreen(tester, billing: BillingService.forTest(dio));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Skip'));
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(find.text('GET PREMIUM'));
+        await tester.tap(find.text('GET PREMIUM'));
+        for (var i = 0; i < 3; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        expect(request?.path, '/billing/checkout');
+        expect(request?.data, {'interval': 'yearly', 'group_id': _groupId});
+        if (scenario == 'closed while waiting') {
+          await tester.tap(find.byTooltip('Close'));
+          await tester.pumpAndSettle();
+        }
+        response.complete('https://checkout.polar.sh/test');
+        await tester.pumpAndSettle();
+        if (scenario == 'closed while waiting') {
+          expect(launcher.url, isNull);
+          expect(find.text('Household home'), findsOneWidget);
+        } else {
+          expect(launcher.url, 'https://checkout.polar.sh/test');
+          expect(launcher.options?.webOnlyWindowName, '_self');
+          if (scenario == 'launch failure') {
+            expect(find.text('GET PREMIUM'), findsOneWidget);
+            expect(find.byTooltip('Close'), findsOneWidget);
+          } else if (!kIsWeb) {
+            expect(find.text('Household home'), findsOneWidget);
+          }
+        }
+        expect(tester.takeException(), isNull);
+      }, variant: TargetPlatformVariant({TargetPlatform.linux}));
+    }
+
     testWidgets('opens on the household it is selling a place in',
         (tester) async {
       await _pumpScreen(tester, _entitlement());
@@ -120,7 +304,8 @@ void main() {
       expect(find.text('Skip'), findsNothing);
     });
 
-    testWidgets('a subscriber who pays elsewhere is offered the move, not a '
+    testWidgets(
+        'a subscriber who pays elsewhere is offered the move, not a '
         'second subscription', (tester) async {
       await _pumpScreen(
         tester,
