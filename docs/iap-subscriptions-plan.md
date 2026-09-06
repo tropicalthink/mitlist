@@ -86,6 +86,8 @@ Rules:
    - `me.mitlist.premium.monthly` — €3.99.
    - `me.mitlist.premium.yearly` — €29.99.
    - Each: localized display name, description, review screenshot.
+   - Plus one **Non-Consumable** in-app purchase, the supporter pack:
+     `me.mitlist.supporter` — €4.99. Not in the subscription group.
 5. No App Store `.p8` key is stored by the current implementation: signed
    StoreKit transactions and notifications verify locally. Add a key later only
    if App Store Server API reconciliation/status calls are implemented.
@@ -101,6 +103,9 @@ Rules:
 2. One **subscription** `premium` with two **base plans** (auto-renewing):
    - `premium-monthly` — €3.99.
    - `premium-yearly` — €29.99.
+   Plus one **in-app product** (one-time, non-consumable) `supporter` — €4.99,
+   the supporter pack. RTDN one-time-product notifications for it are handled
+   by the same `POST /webhooks/google` endpoint.
 3. **Service account** with Google Play Developer API access; download its JSON
    key. In Play Console grant only the app-level permission to view financial
    data, orders, and cancellation survey responses; this verifier only performs
@@ -118,6 +123,15 @@ Rules:
 |----------|-----------------------------------------------|-------------------------------|
 | monthly  | `me.mitlist.premium.monthly`                  | `premium` / `premium-monthly` |
 | yearly   | `me.mitlist.premium.yearly`                   | `premium` / `premium-yearly`  |
+| once (supporter pack) | `me.mitlist.supporter`           | `supporter` (in-app product)  |
+
+The supporter pack is a separate one-time product on every provider (Polar
+`POLAR_PRODUCT_ID_SUPPORTER`, `APPLE_IAP_PRODUCT_SUPPORTER`,
+`GOOGLE_PLAY_PRODUCT_SUPPORTER`). It is tied to the buyer, not a household:
+`billing_supporter_purchases` (migration 63) records it, `GET /billing/status`
+reports `supporter_enabled` / `supporter` / `supporter_plan`, and household
+member listings carry a `supporter` flag for the badge. When no provider sells
+it the app unlocks the accent colours for everyone (self-host).
 
 ---
 

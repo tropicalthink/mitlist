@@ -8878,5 +8878,94 @@
   "tourFinishEmail": "Continue with email",
   "@tourFinishEmail": {
     "description": "Email sign-up button on the last tour page"
+  },
+  "supporterTitle": "Supporter pack",
+  "@supporterTitle": {
+    "description": "Sheet title for the one-time supporter purchase"
+  },
+  "supporterCardTitle": "Support mitlist",
+  "@supporterCardTitle": {
+    "description": "Account card title for the supporter pack"
+  },
+  "supporterCardBody": "mitlist is free and stays free. A one-time contribution helps pay for the servers, and you get a couple of small thank-yous.",
+  "@supporterCardBody": {
+    "description": "Pitch for the supporter pack"
+  },
+  "supporterCardActiveBody": "You're a supporter. Thank you for keeping mitlist running.",
+  "@supporterCardActiveBody": {
+    "description": "Account card body once the pack is bought"
+  },
+  "supporterBuy": "Become a supporter",
+  "@supporterBuy": {
+    "description": "Button that buys the supporter pack"
+  },
+  "supporterBuyWithPrice": "Become a supporter · {price}",
+  "@supporterBuyWithPrice": {
+    "description": "Buy button with the localized one-time price",
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "supporterOnce": "One-time purchase. No subscription, nothing to cancel.",
+  "@supporterOnce": {
+    "description": "Caption under the supporter buy button"
+  },
+  "supporterPerkBadge": "A supporter badge next to your name, visible to your household",
+  "@supporterPerkBadge": {
+    "description": "Supporter perk"
+  },
+  "supporterPerkAccent": "Accent colours to make the app yours",
+  "@supporterPerkAccent": {
+    "description": "Supporter perk"
+  },
+  "supporterPerkHosting": "Pays for the servers the hosted service runs on",
+  "@supporterPerkHosting": {
+    "description": "Supporter perk"
+  },
+  "supporterBadgeLabel": "Supporter",
+  "@supporterBadgeLabel": {
+    "description": "Tooltip and accessibility label of the supporter badge"
+  },
+  "supporterPurchased": "You're a supporter now. Thank you!",
+  "@supporterPurchased": {
+    "description": "Toast after a successful supporter purchase"
+  },
+  "supporterSheetHeadline": "Keep mitlist running",
+  "@supporterSheetHeadline": {
+    "description": "Headline of the supporter sheet"
+  },
+  "accountAccent": "Accent colour",
+  "@accountAccent": {
+    "description": "Preferences row and picker title for the accent colour"
+  },
+  "accentClementine": "Clementine",
+  "@accentClementine": {
+    "description": "Accent colour name (the default orange)"
+  },
+  "accentMoss": "Moss",
+  "@accentMoss": {
+    "description": "Accent colour name (teal-green)"
+  },
+  "accentSky": "Sky",
+  "@accentSky": {
+    "description": "Accent colour name (blue)"
+  },
+  "accentBerry": "Berry",
+  "@accentBerry": {
+    "description": "Accent colour name (pink)"
+  },
+  "accentViolet": "Violet",
+  "@accentViolet": {
+    "description": "Accent colour name (purple)"
+  },
+  "accentLockedHint": "Colours other than Clementine are part of the supporter pack.",
+  "@accentLockedHint": {
+    "description": "Shown in the accent picker when the pack is not bought"
+  },
+  "accentUnlock": "Unlock with the supporter pack",
+  "@accentUnlock": {
+    "description": "Button in the accent picker leading to the supporter sheet"
   }
 }

@@ -268,3 +268,125 @@ func (r *BillingRepository) DeleteWebhookEventsBefore(ctx context.Context, cutof
 	}
 	return tag.RowsAffected(), nil
 }
+
+const supporterPurchaseColumns = `
+	id, user_id, provider, provider_order_id, provider_customer_id, product_id,
+	status, amount_cents, currency, purchased_at, refunded_at,
+	provider_modified_at, created_at, updated_at
+`
+
+func scanSupporterPurchase(row interface {
+	Scan(dest ...any) error
+}) (*models.SupporterPurchase, error) {
+	var p models.SupporterPurchase
+	err := row.Scan(
+		&p.ID, &p.UserID, &p.Provider, &p.ProviderOrderID, &p.ProviderCustomerID, &p.ProductID,
+		&p.Status, &p.AmountCents, &p.Currency, &p.PurchasedAt, &p.RefundedAt,
+		&p.ProviderModifiedAt, &p.CreatedAt, &p.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &p, nil
+}
+
+// UpsertSupporterPurchase inserts or updates a supporter purchase keyed by its
+// provider order id. As with subscriptions, a delivery older than the stored
+// state is discarded and the stored row returned.
+func (r *BillingRepository) UpsertSupporterPurchase(ctx context.Context, p *models.SupporterPurchase) (*models.SupporterPurchase, error) {
+	if p.ID == uuid.Nil {
+		p.ID = uuid.New()
+	}
+	if p.Provider == "" {
+		p.Provider = "polar"
+	}
+
+	query := `
+		INSERT INTO billing_supporter_purchases (
+			id, user_id, provider, provider_order_id, provider_customer_id, product_id,
+			status, amount_cents, currency, purchased_at, refunded_at,
+			provider_modified_at, created_at, updated_at
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())
+		ON CONFLICT (provider, provider_order_id) DO UPDATE SET
+			user_id = EXCLUDED.user_id,
+			provider_customer_id = EXCLUDED.provider_customer_id,
+			product_id = EXCLUDED.product_id,
+			status = EXCLUDED.status,
+			amount_cents = EXCLUDED.amount_cents,
+			currency = EXCLUDED.currency,
+			purchased_at = COALESCE(EXCLUDED.purchased_at, billing_supporter_purchases.purchased_at),
+			refunded_at = COALESCE(EXCLUDED.refunded_at, billing_supporter_purchases.refunded_at),
+			provider_modified_at = EXCLUDED.provider_modified_at,
+			updated_at = NOW()
+		WHERE billing_supporter_purchases.provider_modified_at IS NULL
+		   OR EXCLUDED.provider_modified_at IS NULL
+		   OR EXCLUDED.provider_modified_at >= billing_supporter_purchases.provider_modified_at
+		RETURNING ` + supporterPurchaseColumns
+
+	row := r.pool.QueryRow(ctx, query,
+		p.ID, p.UserID, p.Provider, p.ProviderOrderID, p.ProviderCustomerID, p.ProductID,
+		p.Status, p.AmountCents, p.Currency, p.PurchasedAt, p.RefundedAt,
+		p.ProviderModifiedAt,
+	)
+	updated, err := scanSupporterPurchase(row)
+	if err == nil {
+		return updated, nil
+	}
+	if isNoRows(err) {
+		return r.GetSupporterPurchaseByProviderID(ctx, p.Provider, p.ProviderOrderID)
+	}
+	return nil, err
+}
+
+// GetSupporterPurchaseByProviderID looks a purchase up by its provider key.
+func (r *BillingRepository) GetSupporterPurchaseByProviderID(ctx context.Context, provider, providerOrderID string) (*models.SupporterPurchase, error) {
+	query := `SELECT ` + supporterPurchaseColumns + `
+		FROM billing_supporter_purchases
+		WHERE provider = $1 AND provider_order_id = $2`
+	p, err := scanSupporterPurchase(r.pool.QueryRow(ctx, query, provider, providerOrderID))
+	if isNoRows(err) {
+		return nil, nil
+	}
+	return p, err
+}
+
+// GetPaidSupporterPurchaseForUser returns the purchase that makes this user a
+// supporter, or nil when they hold none.
+func (r *BillingRepository) GetPaidSupporterPurchaseForUser(ctx context.Context, userID uuid.UUID) (*models.SupporterPurchase, error) {
+	query := `SELECT ` + supporterPurchaseColumns + `
+		FROM billing_supporter_purchases
+		WHERE user_id = $1 AND status = 'paid'
+		ORDER BY purchased_at ASC NULLS LAST, created_at ASC
+		LIMIT 1`
+	p, err := scanSupporterPurchase(r.pool.QueryRow(ctx, query, userID))
+	if isNoRows(err) {
+		return nil, nil
+	}
+	return p, err
+}
+
+// ListSupporterUserIDs reports which of the given users are supporters. It
+// backs the household member listing, where a badge is rendered per member.
+func (r *BillingRepository) ListSupporterUserIDs(ctx context.Context, userIDs []uuid.UUID) (map[uuid.UUID]bool, error) {
+	out := make(map[uuid.UUID]bool, len(userIDs))
+	if len(userIDs) == 0 {
+		return out, nil
+	}
+	rows, err := r.pool.Query(ctx, `
+		SELECT DISTINCT user_id
+		FROM billing_supporter_purchases
+		WHERE status = 'paid' AND user_id = ANY($1)`, userIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		out[id] = true
+	}
+	return out, rows.Err()
+}

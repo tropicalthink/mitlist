@@ -236,10 +236,15 @@ class GroupMemberProfile {
   final String displayName;
   final String role;
 
+  /// True when this member bought the supporter pack. Rendered as a badge the
+  /// rest of the household can see.
+  final bool supporter;
+
   const GroupMemberProfile({
     required this.userId,
     required this.displayName,
     required this.role,
+    this.supporter = false,
   });
 
   factory GroupMemberProfile.fromJson(Map<String, dynamic> json) =>
@@ -248,6 +253,7 @@ class GroupMemberProfile {
         displayName:
             json['display_name'] as String? ?? json['user_id'] as String,
         role: json['role'] as String? ?? 'member',
+        supporter: json['supporter'] as bool? ?? false,
       );
 }
 

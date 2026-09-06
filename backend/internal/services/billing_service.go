@@ -54,6 +54,14 @@ type BillingConfig struct {
 	AppleProductYearly   string
 	GoogleProductMonthly string
 	GoogleProductYearly  string
+
+	// The supporter pack: a one-time product on each provider. Empty on every
+	// provider means the pack is not sold here. ProductIDSupporter is the
+	// Polar product; the store ids are the App Store product id and the Play
+	// one-time product id.
+	ProductIDSupporter     string
+	AppleProductSupporter  string
+	GoogleProductSupporter string
 }
 
 // Plan is what one of the two premium products costs, read from the payment
@@ -93,6 +101,8 @@ type BillingService struct {
 	planMu      sync.RWMutex
 	planCache   []Plan
 	planFetched time.Time
+
+	supporterCache supporterPlanCache
 }
 
 // NewBillingService creates a BillingService. A nil or disabled client leaves
@@ -432,6 +442,10 @@ func (s *BillingService) ApplyWebhookEvent(ctx context.Context, deliveryID strin
 		return &api.ValidationError{Message: "malformed webhook payload"}
 	}
 
+	if strings.HasPrefix(evt.Type, "order.") {
+		// One-time purchases (the supporter pack) arrive as orders.
+		return s.applyPolarOrderEvent(ctx, deliveryID, payload)
+	}
 	if !strings.HasPrefix(evt.Type, "subscription.") {
 		return ErrEventIgnored
 	}

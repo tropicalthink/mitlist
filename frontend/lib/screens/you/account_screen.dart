@@ -28,8 +28,10 @@ import '../../router.dart' show currentGroupIdProvider;
 import '../../services/scan/ocr_training_data_service.dart';
 import '../../providers/billing_provider.dart';
 import '../../config/iap_config.dart';
+import '../../sheets/accent_picker_sheet.dart';
 import '../../sheets/email_verification_sheet.dart';
 import '../../sheets/feedback_sheet.dart';
+import '../../sheets/supporter_sheet.dart';
 import '../../theme/spacing.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_bottom_sheet.dart';
@@ -42,6 +44,7 @@ import '../../widgets/app_input.dart';
 import '../../utils/haptics.dart';
 import '../../widgets/mitlist_app_bar.dart';
 import '../../widgets/skeleton.dart';
+import '../../widgets/supporter_badge.dart';
 import '../../l10n/app_localizations.dart';
 import '../../utils/friendly_error.dart';
 import '../../utils/oauth_flow.dart';
@@ -520,11 +523,22 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                     label: l10n.accountEditYourName,
                     child: GestureDetector(
                       onTap: _startEditingName,
-                      child: Text(
-                        _name,
-                        style: textTheme.headlineSmall,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      child: Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              _name,
+                              style: textTheme.headlineSmall,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (ref.watch(billingStatusProvider).valueOrNull?.supporter ??
+                              false) ...[
+                            const SizedBox(width: MitlistSpacing.xs),
+                            const SupporterBadge(size: 18),
+                          ],
+                        ],
                       ),
                     ),
                   ),
@@ -662,6 +676,13 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                 }
               },
             ),
+          ),
+          Divider(color: Theme.of(context).colorScheme.outlineVariant),
+          _MenuRow(
+            icon: const AppIcon(name: 'palette'),
+            label: l10n.accountAccent,
+            value: accentDisplayName(l10n, ref.watch(accentProvider)),
+            onTap: () => showAccentPickerSheet(context),
           ),
           Divider(color: Theme.of(context).colorScheme.outlineVariant),
           _MenuRow(
@@ -843,6 +864,71 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                 onPressed: sub == null ? _openPremiumFlow : _openBillingPortal,
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// The one-time supporter pack: a way to pay that gates nothing.
+  ///
+  /// Hidden when this server does not sell it, or when this client has no
+  /// store to buy it through (an Android build against a web-only server).
+  Widget _buildSupporterCard() {
+    final l10n = AppLocalizations.of(context)!;
+    final status = ref.watch(billingStatusProvider).valueOrNull;
+    if (status == null || !status.supporterEnabled) {
+      return const SizedBox.shrink();
+    }
+    if (!status.supporter && !billingCheckoutEnabled(status)) {
+      return const SizedBox.shrink();
+    }
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
+      child: AppCard(
+        variant: AppCardVariant.filled,
+        padding: AppCardPadding.md,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                AppIcon(
+                  name: status.supporter ? 'heartSolid' : 'heart',
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: MitlistSpacing.sm),
+                Expanded(
+                  child: Text(
+                    l10n.supporterCardTitle,
+                    style: theme.textTheme.titleMedium,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: MitlistSpacing.sm),
+            Text(
+              status.supporter
+                  ? l10n.supporterCardActiveBody
+                  : l10n.supporterCardBody,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            if (!status.supporter) ...[
+              const SizedBox(height: MitlistSpacing.md),
+              SizedBox(
+                width: double.infinity,
+                child: AppButton(
+                  text: l10n.supporterBuy,
+                  variant: AppButtonVariant.outline,
+                  color: AppButtonColor.primary,
+                  onPressed: () => showSupporterSheet(context),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -1599,6 +1685,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             _buildPreferencesCard(),
             const SizedBox(height: MitlistSpacing.md),
             _buildPremiumCard(),
+            _buildSupporterCard(),
             _buildFeedbackCard(),
             if (!_isGuest && _passwordAuthEnabled) ...[
               _buildSecurityCard(),

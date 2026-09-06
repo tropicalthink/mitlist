@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'accent.dart';
 import 'colors.dart';
 import 'typography.dart';
 
@@ -14,13 +15,22 @@ class MitlistTheme {
   static const Cubic easeToast = Cubic(0.25, 0.46, 0.45, 0.94);
   static const Cubic easeSettle = Cubic(0.25, 1.0, 0.5, 1.0);
 
-  static ThemeData get light {
-    const colorScheme = ColorScheme(
+  /// The light theme in the default accent.
+  static ThemeData get light => lightWith(MitlistAccent.defaultAccent);
+
+  /// The dark theme in the default accent.
+  static ThemeData get dark => darkWith(MitlistAccent.defaultAccent);
+
+  /// The light theme with [accent] as its primary ramp. Everything but the
+  /// primary colours is identical across accents.
+  static ThemeData lightWith(MitlistAccent accent) {
+    final p = accent.palette;
+    final colorScheme = ColorScheme(
       brightness: Brightness.light,
-      primary: MitlistColors.primary500,
+      primary: p.s500,
       onPrimary: MitlistColors.textOnPrimary,
-      primaryContainer: MitlistColors.primary100,
-      onPrimaryContainer: MitlistColors.primary950,
+      primaryContainer: p.s100,
+      onPrimaryContainer: p.s950,
       secondary: MitlistColors.neutral700,
       onSecondary: MitlistColors.textOnPrimary,
       secondaryContainer: MitlistColors.surfaceSecondary,
@@ -47,8 +57,8 @@ class MitlistTheme {
       scrim: MitlistColors.scrimLight,
       inverseSurface: MitlistColors.neutral950,
       onInverseSurface: MitlistColors.surfaceSoft,
-      inversePrimary: MitlistColors.primary100,
-      surfaceTint: MitlistColors.primary500,
+      inversePrimary: p.s100,
+      surfaceTint: p.s500,
     );
 
     final textTheme = MitlistTypography.lightTextTheme;
@@ -71,7 +81,7 @@ class MitlistTheme {
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: MitlistColors.surfacePrimary,
-        selectedItemColor: MitlistColors.primary700,
+        selectedItemColor: p.s700,
         unselectedItemColor: MitlistColors.textTertiary,
         type: BottomNavigationBarType.fixed,
         elevation: 0,
@@ -89,7 +99,7 @@ class MitlistTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: MitlistColors.primary500,
+          backgroundColor: p.s500,
           foregroundColor: MitlistColors.neutral950,
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -100,7 +110,7 @@ class MitlistTheme {
         ).copyWith(
           overlayColor: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.pressed)) {
-              return MitlistColors.primary600;
+              return p.s600;
             }
             return null;
           }),
@@ -108,7 +118,7 @@ class MitlistTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: MitlistColors.primary700,
+          foregroundColor: p.s700,
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           minimumSize: const Size(0, 44),
@@ -120,7 +130,7 @@ class MitlistTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: MitlistColors.primary700,
+          foregroundColor: p.s700,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           minimumSize: const Size(0, 44),
           shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
@@ -140,9 +150,9 @@ class MitlistTheme {
           borderRadius: BorderRadius.zero,
           borderSide: BorderSide(color: MitlistColors.borderPrimary, width: 2),
         ),
-        focusedBorder: const OutlineInputBorder(
+        focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.zero,
-          borderSide: BorderSide(color: MitlistColors.primary500, width: 2),
+          borderSide: BorderSide(color: p.s500, width: 2),
         ),
         errorBorder: const OutlineInputBorder(
           borderRadius: BorderRadius.zero,
@@ -209,7 +219,7 @@ class MitlistTheme {
       checkboxTheme: CheckboxThemeData(
         fillColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return MitlistColors.primary500;
+            return p.s500;
           }
           return MitlistColors.surfacePrimary;
         }),
@@ -217,7 +227,7 @@ class MitlistTheme {
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: MitlistColors.primary500,
+        backgroundColor: p.s500,
         foregroundColor: MitlistColors.neutral950,
         elevation: 0,
         shape: const RoundedRectangleBorder(
@@ -230,13 +240,15 @@ class MitlistTheme {
     );
   }
 
-  static ThemeData get dark {
-    const colorScheme = ColorScheme(
+  /// The dark theme with [accent] as its primary ramp.
+  static ThemeData darkWith(MitlistAccent accent) {
+    final p = accent.palette;
+    final colorScheme = ColorScheme(
       brightness: Brightness.dark,
-      primary: MitlistColors.primary400,
+      primary: p.s400,
       onPrimary: MitlistColors.neutral950,
-      primaryContainer: MitlistColors.primary900,
-      onPrimaryContainer: MitlistColors.primary100,
+      primaryContainer: p.s900,
+      onPrimaryContainer: p.s100,
       secondary: MitlistColors.neutral300,
       onSecondary: MitlistColors.neutral950,
       secondaryContainer: MitlistColors.neutral800,
@@ -262,8 +274,8 @@ class MitlistTheme {
       scrim: MitlistColors.scrimDark,
       inverseSurface: MitlistColors.surfaceSoft,
       onInverseSurface: MitlistColors.neutral950,
-      inversePrimary: MitlistColors.primary700,
-      surfaceTint: MitlistColors.primary400,
+      inversePrimary: p.s700,
+      surfaceTint: p.s400,
     );
 
     final textTheme = MitlistTypography.darkTextTheme;
@@ -286,7 +298,7 @@ class MitlistTheme {
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: MitlistColors.neutral900,
-        selectedItemColor: MitlistColors.primary400,
+        selectedItemColor: p.s400,
         unselectedItemColor: MitlistColors.neutral400,
         type: BottomNavigationBarType.fixed,
         elevation: 0,
@@ -304,7 +316,7 @@ class MitlistTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: MitlistColors.primary400,
+          backgroundColor: p.s400,
           foregroundColor: MitlistColors.neutral950,
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -316,7 +328,7 @@ class MitlistTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: MitlistColors.primary300,
+          foregroundColor: p.s300,
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           minimumSize: const Size(0, 44),
@@ -328,7 +340,7 @@ class MitlistTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: MitlistColors.primary300,
+          foregroundColor: p.s300,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           minimumSize: const Size(0, 44),
           shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
@@ -348,9 +360,9 @@ class MitlistTheme {
           borderRadius: BorderRadius.zero,
           borderSide: BorderSide(color: MitlistColors.surfaceSoft, width: 2),
         ),
-        focusedBorder: const OutlineInputBorder(
+        focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.zero,
-          borderSide: BorderSide(color: MitlistColors.primary400, width: 2),
+          borderSide: BorderSide(color: p.s400, width: 2),
         ),
         errorBorder: const OutlineInputBorder(
           borderRadius: BorderRadius.zero,
@@ -417,7 +429,7 @@ class MitlistTheme {
       checkboxTheme: CheckboxThemeData(
         fillColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return MitlistColors.primary400;
+            return p.s400;
           }
           return MitlistColors.neutral900;
         }),
@@ -425,7 +437,7 @@ class MitlistTheme {
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: MitlistColors.primary400,
+        backgroundColor: p.s400,
         foregroundColor: MitlistColors.neutral950,
         elevation: 0,
         shape: const RoundedRectangleBorder(
