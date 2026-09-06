@@ -236,6 +236,7 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
 
     final router = ref.watch(routerProvider);
     final themeMode = ref.watch(themeModeProvider);
+    final accent = ref.watch(effectiveAccentProvider);
     final locale = ref.watch(localeProvider);
     // Keep the grocery label language in sync with the app locale so canonical
     // items render in the user's language (de/en/fr/es shipped in the seed).
@@ -245,8 +246,8 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
       title: 'mitlist',
       debugShowCheckedModeBanner: false,
       scaffoldMessengerKey: _scaffoldMessengerKey,
-      theme: MitlistTheme.light,
-      darkTheme: MitlistTheme.dark,
+      theme: MitlistTheme.lightWith(accent),
+      darkTheme: MitlistTheme.darkWith(accent),
       themeMode: themeMode,
       routerConfig: router,
       locale: locale,

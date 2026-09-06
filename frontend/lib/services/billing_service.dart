@@ -92,6 +92,25 @@ class BillingService {
     }
   }
 
+  /// Starts a hosted checkout for the one-time supporter pack and returns the
+  /// URL to send the user to. The purchase is recorded when the provider's
+  /// webhook lands, so callers refresh billing status afterwards.
+  Future<String> createSupporterCheckout() async {
+    try {
+      final response = await _dio.post('/billing/checkout', data: {
+        'product': 'supporter',
+      });
+      final url = response.data?['checkout_url'] as String?;
+      if (url == null || url.isEmpty) {
+        throw const ApiException('Checkout is unavailable right now.');
+      }
+      return url;
+    } on DioException catch (e) {
+      _logger.e('Create supporter checkout failed: ${e.response?.data}');
+      throw apiException(e);
+    }
+  }
+
   /// Verifies a native In-App Purchase with the backend, which validates it
   /// against the store and records the resulting subscription.
   ///
@@ -112,6 +131,25 @@ class BillingService {
       return BillingSubscription.fromJson(response.data);
     } on DioException catch (e) {
       _logger.e('IAP verify failed: ${e.response?.data}');
+      throw apiException(e);
+    }
+  }
+
+  /// Verifies a native purchase of the one-time supporter pack. The backend
+  /// checks the receipt names the supporter product and records it against
+  /// the signed-in account.
+  Future<void> verifySupporterIap({
+    required String platform,
+    required String token,
+  }) async {
+    try {
+      await _dio.post('/billing/iap/verify', data: {
+        'platform': platform,
+        'token': token,
+        'product': 'supporter',
+      });
+    } on DioException catch (e) {
+      _logger.e('Supporter IAP verify failed: ${e.response?.data}');
       throw apiException(e);
     }
   }

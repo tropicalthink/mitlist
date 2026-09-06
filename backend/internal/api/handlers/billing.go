@@ -45,6 +45,15 @@ type billingStatusResponse struct {
 	// not be reached — the paywall still works, it just shows no price.
 	Plans        []services.Plan             `json:"plans"`
 	Subscription *models.BillingSubscription `json:"subscription,omitempty"`
+
+	// SupporterEnabled is true when this server sells the one-time supporter
+	// pack. When false the client unlocks the pack's customisation for
+	// everyone — a self-hosted instance has nobody to pay.
+	SupporterEnabled bool `json:"supporter_enabled"`
+	// Supporter is true when the caller has bought the pack.
+	Supporter bool `json:"supporter"`
+	// SupporterPlan is what the pack costs on the web, when sold there.
+	SupporterPlan *services.Plan `json:"supporter_plan,omitempty"`
 }
 
 // GetStatus GET /billing/status
@@ -59,15 +68,26 @@ func (h *BillingHandler) GetStatus(w http.ResponseWriter, r *http.Request) {
 		api.RespondError(w, err)
 		return
 	}
+	supporter := false
+	if h.svc.SupporterEnabled() {
+		supporter, err = h.svc.IsSupporter(r.Context(), userID)
+		if err != nil {
+			api.RespondError(w, err)
+			return
+		}
+	}
 
 	api.RespondJSON(w, http.StatusOK, billingStatusResponse{
-		Enabled:       h.svc.Enabled(),
-		WebEnabled:    h.svc.WebBillingEnabled(),
-		AppleEnabled:  h.svc.AppleIAPEnabled(),
-		GoogleEnabled: h.svc.GoogleIAPEnabled(),
-		FreeLimit:     h.svc.FreeMemberLimit(),
-		Plans:         h.svc.GetPlans(r.Context()),
-		Subscription:  sub,
+		Enabled:          h.svc.Enabled(),
+		WebEnabled:       h.svc.WebBillingEnabled(),
+		AppleEnabled:     h.svc.AppleIAPEnabled(),
+		GoogleEnabled:    h.svc.GoogleIAPEnabled(),
+		FreeLimit:        h.svc.FreeMemberLimit(),
+		Plans:            h.svc.GetPlans(r.Context()),
+		Subscription:     sub,
+		SupporterEnabled: h.svc.SupporterEnabled(),
+		Supporter:        supporter,
+		SupporterPlan:    h.svc.GetSupporterPlan(r.Context()),
 	})
 }
 
@@ -115,6 +135,9 @@ func (h *BillingHandler) SetPremiumHousehold(w http.ResponseWriter, r *http.Requ
 }
 
 type createCheckoutRequest struct {
+	// Product is "premium" (the default) or "supporter", the one-time pack.
+	// A supporter checkout ignores the remaining fields.
+	Product string `json:"product,omitempty"`
 	// Interval is "monthly" or "yearly".
 	Interval string `json:"interval"`
 	// GroupID is the household the subscription will cover. Optional: when
@@ -139,6 +162,21 @@ func (h *BillingHandler) CreateCheckout(w http.ResponseWriter, r *http.Request) 
 	var req createCheckoutRequest
 	if err := decodeJSON(r, &req); err != nil {
 		api.RespondError(w, err)
+		return
+	}
+
+	switch req.Product {
+	case "", "premium":
+	case "supporter":
+		url, err := h.svc.StartSupporterCheckout(r.Context(), userID)
+		if err != nil {
+			api.RespondError(w, err)
+			return
+		}
+		api.RespondJSON(w, http.StatusOK, createCheckoutResponse{CheckoutURL: url})
+		return
+	default:
+		api.RespondError(w, &api.ValidationError{Field: "product", Message: "product must be premium or supporter"})
 		return
 	}
 
@@ -181,6 +219,9 @@ func (h *BillingHandler) CreateCheckout(w http.ResponseWriter, r *http.Request) 
 type verifyIAPRequest struct {
 	Platform string `json:"platform"`
 	Token    string `json:"token"`
+	// Product is "premium" (the default) or "supporter". The app knows which
+	// product it bought; the server still checks the receipt names that one.
+	Product string `json:"product,omitempty"`
 	// GroupID is the household the subscription will cover. Optional: when
 	// omitted the buyer picks their premium household afterwards.
 	GroupID string `json:"group_id,omitempty"`
@@ -204,6 +245,15 @@ func (h *BillingHandler) VerifyIAP(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.Token == "" {
 		api.RespondError(w, &api.ValidationError{Field: "token", Message: "a purchase token is required"})
+		return
+	}
+
+	if req.Product == "supporter" {
+		h.verifySupporterIAP(w, r, userID, req)
+		return
+	}
+	if req.Product != "" && req.Product != "premium" {
+		api.RespondError(w, &api.ValidationError{Field: "product", Message: "product must be premium or supporter"})
 		return
 	}
 
@@ -235,6 +285,28 @@ func (h *BillingHandler) VerifyIAP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	api.RespondJSON(w, http.StatusOK, sub)
+}
+
+// verifySupporterIAP records a native purchase of the one-time supporter pack.
+func (h *BillingHandler) verifySupporterIAP(w http.ResponseWriter, r *http.Request, userID uuid.UUID, req verifyIAPRequest) {
+	var (
+		purchase *models.SupporterPurchase
+		err      error
+	)
+	switch req.Platform {
+	case "apple", "ios":
+		purchase, err = h.svc.VerifyAppleSupporter(r.Context(), userID, req.Token)
+	case "google", "android":
+		purchase, err = h.svc.VerifyGoogleSupporter(r.Context(), userID, req.Token)
+	default:
+		api.RespondError(w, &api.ValidationError{Field: "platform", Message: "platform must be apple or google"})
+		return
+	}
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	api.RespondJSON(w, http.StatusOK, purchase)
 }
 
 type portalResponse struct {

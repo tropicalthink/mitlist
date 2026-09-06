@@ -306,7 +306,11 @@ func (r *GroupRepository) ListMembershipsByGroup(ctx context.Context, groupID uu
 // ListMemberProfilesByGroup returns member display information for a group.
 func (r *GroupRepository) ListMemberProfilesByGroup(ctx context.Context, groupID uuid.UUID) ([]models.GroupMemberProfile, error) {
 	query := `
-		SELECT u.id, trim(u.first_name || ' ' || u.last_name) AS display_name, gm.role
+		SELECT u.id, trim(u.first_name || ' ' || u.last_name) AS display_name, gm.role,
+		       EXISTS (
+		           SELECT 1 FROM billing_supporter_purchases sp
+		           WHERE sp.user_id = u.id AND sp.status = 'paid'
+		       ) AS supporter
 		FROM group_memberships gm
 		JOIN users u ON u.id = gm.user_id
 		WHERE gm.group_id = $1
@@ -321,7 +325,7 @@ func (r *GroupRepository) ListMemberProfilesByGroup(ctx context.Context, groupID
 	var profiles []models.GroupMemberProfile
 	for rows.Next() {
 		var p models.GroupMemberProfile
-		if err := rows.Scan(&p.UserID, &p.DisplayName, &p.Role); err != nil {
+		if err := rows.Scan(&p.UserID, &p.DisplayName, &p.Role, &p.Supporter); err != nil {
 			return nil, err
 		}
 		profiles = append(profiles, p)

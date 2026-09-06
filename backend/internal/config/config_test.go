@@ -35,7 +35,7 @@ func TestLogIntegrationStatus(t *testing.T) {
 		cfg := &Config{
 			SendGridSMTPHost:             "smtp.sendgrid.net",
 			SendGridSMTPUser:             "apikey",
-			ResendAPIKey:                 "re_test_key",
+			SESRegion:                    "eu-central-1",
 			VapidPublicKey:               "BExamplePublicKey",
 			VapidPrivateKey:              "ExamplePrivateKey",
 			FirebaseProjectID:            "my-project",

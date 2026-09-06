@@ -51,9 +51,12 @@ Rect _slabRect(WidgetTester tester) {
   final finder = find.byWidgetPredicate((w) {
     if (w is! DecoratedBox) return false;
     final d = w.decoration;
-    return d is BoxDecoration &&
-        (d.color == MitlistColors.primary500 ||
-            d.color == MitlistColors.primary400);
+    // Compared by value: the slab reads the accent from the theme, and a
+    // freshly pumped MaterialApp animates between two equal-looking themes,
+    // so mid-animation the colour is a lerped copy rather than the constant.
+    final argb = d is BoxDecoration ? d.color?.toARGB32() : null;
+    return argb == MitlistColors.primary500.toARGB32() ||
+        argb == MitlistColors.primary400.toARGB32();
   });
   expect(finder, findsOneWidget);
   return tester.getRect(finder);

@@ -18,6 +18,7 @@ import '../widgets/app_dialog.dart';
 import '../widgets/app_icon.dart';
 import '../widgets/app_input.dart';
 import '../widgets/app_switch.dart';
+import '../widgets/supporter_badge.dart';
 import '../widgets/chip.dart';
 import '../utils/friendly_error.dart';
 import '../l10n/app_localizations.dart';
@@ -625,8 +626,18 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
               ),
         ),
       ),
-      title: Text(member.displayName,
-          maxLines: 1, overflow: TextOverflow.ellipsis),
+      title: Row(
+        children: [
+          Flexible(
+            child: Text(member.displayName,
+                maxLines: 1, overflow: TextOverflow.ellipsis),
+          ),
+          if (member.supporter) ...[
+            const SizedBox(width: MitlistSpacing.xs),
+            const SupporterBadge(),
+          ],
+        ],
+      ),
       subtitle: Text(member.role, maxLines: 1, overflow: TextOverflow.ellipsis),
       trailing: IconButton(
         tooltip: l10n.sheetGroupSettingsRemoveMemberTooltip(member.displayName),

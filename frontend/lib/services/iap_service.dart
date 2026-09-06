@@ -149,14 +149,18 @@ class IapService {
     return _iap.isAvailable();
   }
 
-  /// Queries the store for the premium products and caches them. Returns an
-  /// empty list when unsupported or when the store returned nothing (typically a
-  /// product-id mismatch with the store console).
+  /// Queries the store for the premium and supporter products and caches
+  /// them. Returns an empty list when unsupported or when the store returned
+  /// nothing (typically a product-id mismatch with the store console).
   Future<List<ProductDetails>> loadProducts() async {
     if (!isSupported) return const [];
     final ids = Platform.isIOS
-        ? <String>{IapConfig.appleMonthly, IapConfig.appleYearly}
-        : <String>{IapConfig.googleSubscriptionId};
+        ? <String>{
+            IapConfig.appleMonthly,
+            IapConfig.appleYearly,
+            IapConfig.appleSupporter,
+          }
+        : <String>{IapConfig.googleSubscriptionId, IapConfig.googleSupporter};
     final response = await _iap.queryProductDetails(ids);
     if (response.notFoundIDs.isNotEmpty) {
       _log.w('IAP products not found in store: ${response.notFoundIDs}');
@@ -169,6 +173,62 @@ class IapService {
   /// when the product has not loaded. This is the source of truth for the mobile
   /// price — it reflects the store's own conversion and the viewer's locale.
   String? priceLabel(BillingInterval interval) => _productFor(interval)?.price;
+
+  /// The store's localized price for the supporter pack, or null when it has
+  /// not loaded.
+  String? get supporterPriceLabel => _supporterProduct?.price;
+
+  /// Starts a purchase of the one-time supporter pack. The result is delivered
+  /// asynchronously on [results], like [buy].
+  Future<void> buySupporter() async {
+    if (!isSupported) {
+      throw StateError('native IAP is not supported on this platform');
+    }
+    start();
+    if (_supporterProduct == null) await loadProducts();
+    final product = _supporterProduct;
+    if (product == null) {
+      throw StateError('the store has no supporter product');
+    }
+
+    final userId = (await _auth.getMe()).id;
+    final pendingUserId = await _storage.read(key: _pendingUserKey);
+    if (pendingUserId != null && pendingUserId != userId) {
+      throw StateError(
+        'an unfinished purchase belongs to another signed-in account',
+      );
+    }
+    // The pack covers no household, so any remembered group intent is stale.
+    _pendingGroupId = null;
+    await _storage.delete(key: _pendingGroupKey);
+    await _storage.write(key: _pendingUserKey, value: userId);
+
+    final PurchaseParam param;
+    if (product is GooglePlayProductDetails) {
+      param = GooglePlayPurchaseParam(
+        productDetails: product,
+        applicationUserName: userId,
+      );
+    } else {
+      param = PurchaseParam(
+        productDetails: product,
+        applicationUserName: userId,
+      );
+    }
+    final accepted = await _iap.buyNonConsumable(purchaseParam: param);
+    if (!accepted) {
+      await clearPendingIntent();
+      throw StateError(
+          'The store did not start the purchase. Please try again.');
+    }
+  }
+
+  ProductDetails? get _supporterProduct {
+    for (final product in _products) {
+      if (IapConfig.isSupporterProduct(product.id)) return product;
+    }
+    return null;
+  }
 
   /// Starts a purchase for [interval], covering [groupId]. The result is
   /// delivered asynchronously on [results]; this future completes once the
@@ -308,11 +368,19 @@ class IapService {
       if (pendingUserId != null && pendingUserId != currentUserId) {
         throw StateError('purchase belongs to another signed-in account');
       }
-      await _billing.verifyIap(
-        platform: platform,
-        token: purchase.verificationData.serverVerificationData,
-        groupId: _pendingGroupId,
-      );
+      if (IapConfig.isSupporterProduct(purchase.productID)) {
+        // The pack is personal: no household to cover, so no group id.
+        await _billing.verifySupporterIap(
+          platform: platform,
+          token: purchase.verificationData.serverVerificationData,
+        );
+      } else {
+        await _billing.verifyIap(
+          platform: platform,
+          token: purchase.verificationData.serverVerificationData,
+          groupId: _pendingGroupId,
+        );
+      }
       await clearPendingIntent();
       _emit(const IapResult(IapStatus.success));
       return true;

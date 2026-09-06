@@ -22,6 +22,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 
 	"golang.org/x/oauth2/google"
@@ -303,9 +304,81 @@ type DeveloperNotification struct {
 		PurchaseToken    string `json:"purchaseToken"`
 		SubscriptionID   string `json:"subscriptionId"`
 	} `json:"subscriptionNotification"`
+	OneTimeProductNotification *struct {
+		Version          string `json:"version"`
+		NotificationType int    `json:"notificationType"`
+		PurchaseToken    string `json:"purchaseToken"`
+		SKU              string `json:"sku"`
+	} `json:"oneTimeProductNotification"`
 	TestNotification *struct {
 		Version string `json:"version"`
 	} `json:"testNotification"`
+}
+
+// One-time product purchase states as reported by purchases.products.
+// https://developers.google.com/android-publisher/api-ref/rest/v3/purchases.products
+const (
+	ProductPurchased = 0
+	ProductCanceled  = 1
+	ProductPending   = 2
+)
+
+// ProductPurchase is the subset of a Play one-time product purchase mitlist
+// reads. A refunded or voided purchase comes back as ProductCanceled.
+type ProductPurchase struct {
+	ProductID    string
+	State        int
+	AccountToken string
+	OrderID      string
+	PurchaseTime time.Time
+	Acknowledged bool
+}
+
+type productPurchaseV1 struct {
+	PurchaseState               int    `json:"purchaseState"`
+	ConsumptionState            int    `json:"consumptionState"`
+	OrderID                     string `json:"orderId"`
+	PurchaseTimeMillis          string `json:"purchaseTimeMillis"`
+	ObfuscatedExternalAccountID string `json:"obfuscatedExternalAccountId"`
+	AcknowledgementState        int    `json:"acknowledgementState"`
+	ProductID                   string `json:"productId"`
+}
+
+// GetProduct fetches the authoritative state of a one-time product purchase
+// token. This is the trust boundary for one-time Play purchases, exactly as
+// GetSubscription is for subscriptions.
+func (c *Client) GetProduct(ctx context.Context, productID, purchaseToken string) (*ProductPurchase, error) {
+	if !c.Enabled() {
+		return nil, ErrDisabled
+	}
+	if productID == "" || purchaseToken == "" {
+		return nil, errors.New("playstore: product id and purchase token are required")
+	}
+
+	path := fmt.Sprintf(
+		"%s/androidpublisher/v3/applications/%s/purchases/products/%s/tokens/%s",
+		apiBaseURL, url.PathEscape(c.packageName), url.PathEscape(productID), url.PathEscape(purchaseToken),
+	)
+	var raw productPurchaseV1
+	if err := c.get(ctx, path, &raw); err != nil {
+		return nil, err
+	}
+	p := &ProductPurchase{
+		ProductID:    raw.ProductID,
+		State:        raw.PurchaseState,
+		AccountToken: raw.ObfuscatedExternalAccountID,
+		OrderID:      raw.OrderID,
+		Acknowledged: raw.AcknowledgementState == 1,
+	}
+	if p.ProductID == "" {
+		p.ProductID = productID
+	}
+	if raw.PurchaseTimeMillis != "" {
+		if ms, err := strconv.ParseInt(raw.PurchaseTimeMillis, 10, 64); err == nil {
+			p.PurchaseTime = time.UnixMilli(ms).UTC()
+		}
+	}
+	return p, nil
 }
 
 // pubSubPush is the envelope Google Pub/Sub posts to a push endpoint. The real
