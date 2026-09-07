@@ -3,6 +3,7 @@ package middleware
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -88,4 +89,25 @@ func TestCorsMiddlewareRejectsNonHTTPDevelopmentOrigin(t *testing.T) {
 	handler.ServeHTTP(rec, req)
 
 	require.Empty(t, rec.Header().Get("Access-Control-Allow-Origin"))
+}
+
+func TestCorsMiddlewareAllowsOutboxHeadersOnPreflight(t *testing.T) {
+	handler := CorsMiddleware("https://app.mitlist.me", "production")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	req := httptest.NewRequest(http.MethodOptions, "/api/v1/chores", nil)
+	req.Header.Set("Origin", "https://app.mitlist.me")
+	req.Header.Set("Access-Control-Request-Method", "POST")
+	req.Header.Set("Access-Control-Request-Headers", "authorization,content-type,idempotency-key")
+	rec := httptest.NewRecorder()
+
+	handler.ServeHTTP(rec, req)
+
+	require.Equal(t, http.StatusNoContent, rec.Code)
+	allowed := strings.ToLower(rec.Header().Get("Access-Control-Allow-Headers"))
+	for _, h := range []string{"idempotency-key", "x-mitlist-turnstile", "x-firebase-appcheck", "x-mitlist-install-id"} {
+		require.Contains(t, allowed, h)
+	}
+	require.Contains(t, rec.Header().Get("Access-Control-Expose-Headers"), "Idempotency-Replayed")
 }
