@@ -1,12 +1,14 @@
 import 'dart:convert';
 
 import 'package:drift/native.dart';
+import 'package:dio/dio.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:mitlist/models/chore_models.dart';
 import 'package:mitlist/repositories/chore_repository.dart';
 import 'package:mitlist/storage/app_database.dart';
+import 'package:mitlist/services/api_error_mapper.dart';
 
 import '../support/fakes.dart';
 
@@ -52,6 +54,44 @@ String _firstDueStatus(String choresJson) {
 }
 
 void main() {
+  test('wrapped connection failure stays queued and succeeds on retry',
+      () async {
+    final db = _memoryDb();
+    final remote = _FailingCreateService(apiException(DioException(
+      requestOptions: RequestOptions(path: '/chores'),
+      type: DioExceptionType.connectionError,
+    )));
+    final repo = ChoreRepository(db: db, remote: remote);
+    final result = await repo.createOfflineFirst(
+      const CreateChoreRequest(groupId: 'g1', name: 'Dishes'),
+      syncWindow: const Duration(seconds: 1),
+    );
+    expect(result.synced, isFalse);
+    final op = (await db.getOutboxOpsByType('createChore')).single;
+    expect(op.attemptCount, 0);
+    remote.failure = null;
+    remote.createdChoreId = 'server-1';
+    await db.resetFailedOutboxOps(id: op.id);
+    await repo.drainOutboxOnce();
+    expect(await db.getOutboxOpsByType('createChore'), isEmpty);
+    await db.close();
+  });
+
+  test('rejected creation reports failure and removes the optimistic duplicate',
+      () async {
+    final db = _memoryDb();
+    final error = apiException(fakeDioException(statusCode: 403));
+    final repo = ChoreRepository(db: db, remote: _FailingCreateService(error));
+    await expectLater(
+        repo.createOfflineFirst(
+          const CreateChoreRequest(groupId: 'g1', name: 'Dishes'),
+          syncWindow: const Duration(seconds: 1),
+        ),
+        throwsA(same(error)));
+    expect(await db.getOutboxOpsByType('createChore'), isEmpty);
+    expect(await repo.getCurrentChoresOnce('g1'), isEmpty);
+    await db.close();
+  });
   group('ChoreRepository offline optimistic patches —', () {
     late AppDatabase db;
     late ChoreRepository repo;
@@ -221,4 +261,15 @@ void main() {
           reason: 'blob-backed creates must be spliced out, not left behind');
     });
   });
+}
+
+class _FailingCreateService extends FakeChoreService {
+  Object? failure;
+  _FailingCreateService(this.failure);
+
+  @override
+  Future<Chore> createChore(CreateChoreRequest req, {String? idempotencyKey}) {
+    if (failure != null) return Future.error(failure!);
+    return super.createChore(req, idempotencyKey: idempotencyKey);
+  }
 }

@@ -120,7 +120,10 @@ func (s *ChoreService) CreateChore(ctx context.Context, user *models.User, chore
 	if err := s.requireActiveVerifiedUser(user); err != nil {
 		return err
 	}
-	if err := s.requireAdmin(ctx, user.ID, chore.GroupID); err != nil {
+	// Any member can file a chore, as with lists and expenses: the app offers
+	// the add button to the whole household, and the rotation the chore joins
+	// belongs to the household, not to whoever administers it.
+	if err := s.requireMembership(ctx, user.ID, chore.GroupID); err != nil {
 		return err
 	}
 	if chore.Name == "" {

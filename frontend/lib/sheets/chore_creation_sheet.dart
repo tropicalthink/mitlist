@@ -238,15 +238,18 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
   Future<void> _addZone() async {
     final l10n = AppLocalizations.of(context)!;
     final existing = _readGroupZones();
-    final controller = TextEditingController();
+    // The field owns its controller. Disposing one of our own the moment the
+    // dialog pops raced the closing keyboard: the IME flushes a final editing
+    // value into a controller that no longer exists and the sheet falls over.
+    var draft = '';
     final entered = await showAppDialog<String>(
       context: context,
       title: l10n.sheetGroupSettingsAddZone,
       body: AppInput(
         hint: l10n.sheetGroupSettingsZoneHint,
-        controller: controller,
         maxLength: 40,
         textInputAction: TextInputAction.done,
+        onChanged: (v) => draft = v,
         onSubmitted: (v) => Navigator.of(context).pop(v),
       ),
       actions: [
@@ -257,11 +260,10 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
         ),
         AppButton(
           text: l10n.commonAdd,
-          onPressed: () => Navigator.of(context).pop(controller.text),
+          onPressed: () => Navigator.of(context).pop(draft),
         ),
       ],
     );
-    controller.dispose();
     if (!mounted) return;
 
     final name = entered?.trim() ?? '';
@@ -325,8 +327,6 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
     }
 
     try {
-      final groupService = await ref.read(groupServiceProviderAsync.future);
-      final choreService = await ref.read(choreServiceProviderAsync.future);
       final groups = await ref.read(cachedGroupsProvider.future);
       if (!mounted) return;
       if (groups.isEmpty) {
@@ -344,9 +344,8 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
         return;
       }
 
-      // Offline-first: the chore is queued and visible immediately. We wait a
-      // moment for it to reach the server, purely so an online create can still
-      // name the assignee below; expiring just means the outbox finishes it.
+      // Queue locally and give an online rejection a short window to reach
+      // the editor. Offline requests remain durable and finish in the outbox.
       final choreRepo = await ref.read(choreRepositoryProvider.future);
       final result = await choreRepo.createOfflineFirst(
         CreateChoreRequest(
@@ -371,28 +370,28 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
         syncWindow: const Duration(milliseconds: 1500),
       );
 
-      // Best-effort: surface who the chore landed on so a new chore reads as
-      // part of the household rotation, not an isolated entry. Never blocks the
-      // success path if the lookup fails. Skipped entirely when the create is
-      // still queued — the server assigns the rotation, so until it has the
-      // chore there is no assignee to name, and asking would just stall on a
-      // connection we already know is not answering.
+      // Best-effort: name who the chore landed on, so a new chore reads as part
+      // of the household rotation rather than an isolated entry. Never blocks
+      // the success path. Skipped while the create is still queued -- the
+      // server assigns the rotation, so until it has the chore there is no
+      // assignee to name, and asking would stall on a connection we already
+      // know is not answering.
       String? assignee;
       if (result.synced) {
         try {
+          final choreService = await ref.read(choreServiceProviderAsync.future);
           final details = await choreService.getChoreDetails(result.chore.id);
           if (details.assignedToMe) {
-            assignee = 'you';
+            assignee = _l10n.expenseCreationSummaryYou;
           } else {
             final assigneeId = details.pendingAssignment?.userId;
             if (assigneeId != null) {
+              final groupService =
+                  await ref.read(groupServiceProviderAsync.future);
               final members = await groupService.listMembers(groupId);
-              for (final m in members) {
-                if (m.userId == assigneeId) {
-                  assignee = m.displayName;
-                  break;
-                }
-              }
+              assignee = members
+                  .firstWhereOrNull((m) => m.userId == assigneeId)
+                  ?.displayName;
             }
           }
         } catch (_) {
@@ -402,18 +401,19 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
 
       if (!mounted) return;
       widget.dirtyNotifier?.value = false;
-      Navigator.of(context).pop(true);
+      // Toast before the pop: the messenger sits above this route, so the
+      // confirmation outlives the sheet and lands on the list behind it.
       AppToast.success(
-          context,
-          assignee == null
-              ? _l10n.choreCreationChoreAdded
-              : _l10n.choreCreationChoreAddedNextUp(assignee));
-      unawaited(Haptics.success());
+        context,
+        assignee == null
+            ? _l10n.choreCreationChoreAdded
+            : _l10n.choreCreationChoreAddedNextUp(assignee),
+      );
+      Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSaving = false);
-      AppToast.error(
-          context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
+      AppToast.error(context, friendlyErrorMessage(e, _l10n));
     }
   }
 

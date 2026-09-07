@@ -63,11 +63,29 @@ func TestChoreService_CreateChore(t *testing.T) {
 		choreRepo.AssertNotCalled(t, "CreateAssignment", mock.Anything, mock.Anything)
 	})
 
-	t.Run("not admin", func(t *testing.T) {
+	t.Run("member can create", func(t *testing.T) {
+		choreRepo := new(mocks.MockChoreRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewChoreService(choreRepo, groupRepo, nil)
+
+		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
+		choreRepo.On("CreateChore", ctx, mock.AnythingOfType("*models.Chore")).Return(nil)
+		groupRepo.On("ListMembershipsByGroup", ctx, groupID).Return([]models.GroupMembership{
+			{UserID: user.ID},
+		}, nil)
+		choreRepo.On("CreateRotationState", ctx, mock.AnythingOfType("*models.ChoreRotationState")).Return(nil)
+		choreRepo.On("CreateAssignment", ctx, mock.AnythingOfType("*models.ChoreAssignment")).Return(nil)
+		choreRepo.On("UpdateRotationState", ctx, mock.AnythingOfType("*models.ChoreRotationState")).Return(nil)
+
+		err := svc.CreateChore(ctx, user, &models.Chore{GroupID: groupID, Name: "Clean"})
+		require.NoError(t, err)
+	})
+
+	t.Run("not a member", func(t *testing.T) {
 		groupRepo := new(mocks.MockGroupRepo)
 		svc := NewChoreService(nil, groupRepo, nil)
 
-		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(nil, pgx.ErrNoRows)
 
 		err := svc.CreateChore(ctx, user, &models.Chore{GroupID: groupID, Name: "Clean"})
 		require.Error(t, err)
