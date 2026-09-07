@@ -32,6 +32,17 @@ follow [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Any household member can edit, delete and re-zone a chore, not only an
+  admin. `PATCH /chores/{id}`, `DELETE /chores/{id}` and a `PATCH
+  /groups/{id}` that carries only `chore_zones` now need membership, in
+  line with create; renaming a group, its description and currency stay
+  admin-only. The detail sheet offered delete to everyone, so members saw
+  "permission denied".
+- Confirmation dialogs opened from a tab screen (delete chore, delete list,
+  delete recipe, clear OCR data, and the rest) return their answer again.
+  The dialog sits on the root navigator while its buttons popped the tab's
+  own navigator, which threw away the tab's only page instead: a go_router
+  assertion in debug and a null check in release, so nothing happened.
 - Any household member can add a chore. `POST /chores` required the admin
   role while the app offered the button to everyone, so a member's create
   came back as "permission denied" (or, on older builds, sat as a phantom row

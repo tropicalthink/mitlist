@@ -144,9 +144,20 @@ type UpdateGroupInput struct {
 	ChoreZones  *[]string `json:"chore_zones"`
 }
 
-// UpdateGroup updates a group's details; only admins may do so.
+// onlyChoreZones reports whether the update touches nothing but chore zones.
+func (in UpdateGroupInput) onlyChoreZones() bool {
+	return in.ChoreZones != nil && in.Name == nil && in.Description == nil && in.Currency == nil
+}
+
+// UpdateGroup updates a group's details. Name, description and currency are
+// admin-only; chore zones are household upkeep that any member may edit, since
+// the chore editor offers "add zone" to everyone.
 func (s *GroupService) UpdateGroup(ctx context.Context, userID, groupID uuid.UUID, input UpdateGroupInput) (*models.Group, error) {
-	if err := s.requireAdmin(ctx, userID, groupID); err != nil {
+	if input.onlyChoreZones() {
+		if _, err := s.requireMembership(ctx, userID, groupID); err != nil {
+			return nil, err
+		}
+	} else if err := s.requireAdmin(ctx, userID, groupID); err != nil {
 		return nil, err
 	}
 
