@@ -50,8 +50,12 @@ Future<void> main() async {
   // reCAPTCHA Enterprise, and web uses Cloudflare Turnstile instead (see
   // TurnstileConfig). Official workflows enable it; self-hosted builds remain
   // Firebase-free unless their operator opts in. Activate it after Firebase
-  // Core and before guest creation requests a token.
-  await FirebaseAppCheckService.initialize();
+  // Core and before guest creation requests a token. The wait is bounded so
+  // an attestation provider stalling on a cold offline start cannot hold the
+  // first frame: activation keeps running, and a later token request awaits
+  // the same in-flight attempt.
+  await FirebaseAppCheckService.initialize()
+      .timeout(const Duration(seconds: 3), onTimeout: () => false);
 
   const dsn = String.fromEnvironment('GLITCHTIP_DSN', defaultValue: '');
   const env =

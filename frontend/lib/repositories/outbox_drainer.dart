@@ -41,8 +41,12 @@ class OutboxDrainer {
       try {
         await handler(fresh, payload);
       } catch (e) {
-        final message =
-            e is DioException ? ApiErrorMapper.fromDio(e) : 'Sync failed.';
+        final cause = e is ApiException ? e.cause ?? e : e;
+        final message = e is ApiException
+            ? e.message
+            : e is DioException
+                ? ApiErrorMapper.fromDio(e)
+                : 'Sync failed.';
         switch (classifyOutboxError(e)) {
           case OutboxErrorDisposition.transient:
             await _db.markOutboxAttempt(op.id, error: message);
@@ -66,7 +70,7 @@ class OutboxDrainer {
             // The server rejected the write because the row changed under us
             // (409-with-current-state). Record a conflict for the user to
             // resolve, drop the op so it stops retrying, and keep draining.
-            await _recordConflict(fresh, e);
+            await _recordConflict(fresh, cause);
             await _db.deleteOutboxOp(op.id);
             continue;
         }

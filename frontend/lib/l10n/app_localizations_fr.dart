@@ -27,6 +27,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get commonClose => 'Fermer';
 
   @override
+  String get commonNotNow => 'Pas maintenant';
+
+  @override
   String get commonDone => 'Terminé';
 
   @override

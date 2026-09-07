@@ -401,17 +401,28 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 440),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: AppButton(
-                    text: _page == total - 2
-                        ? l10n.premiumSeeThePlan
-                        : l10n.tourNext,
-                    variant: AppButtonVariant.solid,
-                    color: AppButtonColor.primary,
-                    size: AppButtonSize.lg,
-                    onPressed: () => _goTo(_page + 1, total),
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    AppButton(
+                      text: _page == total - 2
+                          ? l10n.premiumSeeThePlan
+                          : l10n.tourNext,
+                      variant: AppButtonVariant.solid,
+                      color: AppButtonColor.primary,
+                      size: AppButtonSize.lg,
+                      onPressed: () => _goTo(_page + 1, total),
+                    ),
+                    const SizedBox(height: MitlistSpacing.xs),
+                    // Skip in the bar jumps to the plan; this is the way out.
+                    AppButton(
+                      text: l10n.commonNotNow,
+                      variant: AppButtonVariant.ghost,
+                      color: AppButtonColor.neutral,
+                      size: AppButtonSize.md,
+                      onPressed: _close,
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -461,7 +472,15 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
             isLoading: _busy,
             onPressed: _busy ? null : _startCheckout,
           ),
-          const SizedBox(height: MitlistSpacing.sm),
+          const SizedBox(height: MitlistSpacing.xs),
+          AppButton(
+            text: l10n.commonNotNow,
+            variant: AppButtonVariant.ghost,
+            color: AppButtonColor.neutral,
+            size: AppButtonSize.md,
+            onPressed: _busy ? null : _close,
+          ),
+          const SizedBox(height: MitlistSpacing.xs),
           if (IapService.isSupported)
             // Apple requires a restore affordance; it is also how a user
             // recovers premium on a reinstalled or new device.

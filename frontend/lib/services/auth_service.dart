@@ -423,10 +423,29 @@ class AuthService {
   Future<User> getMe() async {
     try {
       final response = await _dio.get('/auth/me');
-      return User.fromJson(response.data);
+      final user = User.fromJson(response.data);
+      // Keep the offline copy current so [cachedMe] never lags a rename or
+      // verification the server already knows about.
+      await _prefs.setString(ApiConfig.userDataKey, jsonEncode(user.toJson()));
+      return user;
     } on DioException catch (e) {
       _logFailure('Get user', e);
       throw apiException(e);
+    }
+  }
+
+  /// The signed-in user as last seen from the server, or null before any
+  /// session was saved. Screens that only need the user's id (to label "you"
+  /// in a balance or highlight a share) read this first and refresh via
+  /// [getMe] in the background, so an offline launch paints cached data
+  /// instead of waiting out a connect timeout or failing outright.
+  User? get cachedMe {
+    final raw = _prefs.getString(ApiConfig.userDataKey);
+    if (raw == null) return null;
+    try {
+      return User.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    } catch (_) {
+      return null;
     }
   }
 

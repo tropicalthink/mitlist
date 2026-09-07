@@ -1,12 +1,15 @@
 import 'dart:async';
 
+import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../models/auth_models.dart';
 import '../../models/finance_models.dart';
+import '../../models/group_models.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/finance_provider.dart';
 import '../../providers/group_provider.dart';
@@ -280,29 +283,23 @@ class ExpensesController extends ChangeNotifier {
     try {
       await ref.read(currentGroupIdProvider.notifier).ensureLoaded();
       final authService = await ref.read(authServiceProviderAsync.future);
-      final groupService = await ref.read(groupServiceProviderAsync.future);
       final groups = await ref.read(cachedGroupsProvider.future);
       final groupId =
           resolveActiveGroupId(groups, ref.read(currentGroupIdProvider));
       final validGroupId = isValidGroupId(groupId) ? groupId : null;
-      final me = validGroupId == null ? null : await authService.getMe();
 
-      if (_disposed) return;
-
+      // Offline-first: everything the first paint needs comes from local
+      // state. The signed-in user is the copy saved at sign-in, the currency
+      // comes from the cached household, and member names arrive from the
+      // server afterwards (the cached summary already carries display names
+      // for everyone with a balance). Awaiting `/auth/me` here used to turn
+      // an offline launch into the error state; awaiting the member lookup
+      // held the cached list behind a full connect timeout.
+      final me = validGroupId == null ? null : authService.cachedMe;
       if (validGroupId != null) {
-        final youLabel = l10n.activityYou;
-        // Load member names and group currency in parallel.
-        await Future.wait([
-          groupService.listMembers(validGroupId).then((members) {
-            _memberNames = {
-              for (final m in members)
-                m.userId: m.userId == me?.id ? youLabel : m.displayName,
-            };
-          }).catchError((_) {}),
-          groupService.getGroup(validGroupId).then((group) {
-            _groupCurrency = group.currency;
-          }).catchError((_) {}),
-        ]);
+        final cachedGroup =
+            groups.where((g) => g.id == validGroupId).firstOrNull;
+        if (cachedGroup != null) _groupCurrency = cachedGroup.currency;
       }
 
       if (_disposed) return;
@@ -343,6 +340,7 @@ class ExpensesController extends ChangeNotifier {
 
       // Background refresh; keep cached UI if this fails.
       if (validGroupId != null) {
+        unawaited(_loadHouseholdContext(repo, validGroupId, l10n));
         unawaited(_refreshExpensesPage(repo, validGroupId));
         if (!_listenersSetUp) {
           _listenersSetUp = true;
@@ -378,6 +376,58 @@ class ExpensesController extends ChangeNotifier {
       _isLoading = false;
       _notify();
     }
+  }
+
+  /// Names and currency for the household, fetched after the cached timeline
+  /// is already on screen. Every lookup is best-effort: offline, the cached
+  /// user and summary display names carry the labels until the next load.
+  Future<void> _loadHouseholdContext(
+    FinanceRepository repo,
+    String groupId,
+    AppLocalizations l10n,
+  ) async {
+    final authService = await ref.read(authServiceProviderAsync.future);
+    final groupService = await ref.read(groupServiceProviderAsync.future);
+    User? me;
+    List<GroupMemberProfile>? members;
+    await Future.wait<void>([
+      authService.getMe().then<void>((u) {
+        me = u;
+      }).catchError((_) {}),
+      groupService.listMembers(groupId).then<void>((m) {
+        members = m;
+      }).catchError((_) {}),
+      groupService.getGroup(groupId).then<void>((g) {
+        _groupCurrency = g.currency;
+      }).catchError((_) {}),
+    ]);
+    if (_disposed || _groupId != groupId) return;
+
+    final resolvedMe = me ?? authService.cachedMe;
+    if (resolvedMe != null) _currentUserId = resolvedMe.id;
+    final fetched = members;
+    if (fetched != null) {
+      _memberNames = {
+        for (final m in fetched)
+          m.userId: m.userId == _currentUserId ? l10n.activityYou : m.displayName,
+      };
+    }
+    if (resolvedMe == null && fetched == null) return;
+
+    // Re-label what is already painted from the local cache.
+    final expenses = await repo.getExpensesByGroupOnce(groupId);
+    final summary = await repo.watchSummaryByGroup(groupId).first;
+    if (_disposed || _groupId != groupId) return;
+    _applyFinanceSummary(summary, _currentUserId, l10n);
+    // refreshGroup clears local rows before upserting; skip the transient
+    // empty snapshot so the timeline does not flash to nothing.
+    if (expenses.isNotEmpty || !_isRefreshing) {
+      _timelineExpenses
+        ..clear()
+        ..addAll(expenses.map(_mapExpense));
+      _rebuildTimelineGroups(l10n);
+    }
+    _notify();
   }
 
   Future<void> _refreshExpensesPage(
