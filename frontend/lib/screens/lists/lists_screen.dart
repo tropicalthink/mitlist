@@ -1079,11 +1079,12 @@ class _ListCard extends ConsumerWidget {
         AppButton(
           text: l10n.commonCancel,
           variant: AppButtonVariant.outline,
-          onPressed: () => Navigator.of(context).pop(null),
+          onPressed: () => Navigator.of(context, rootNavigator: true).pop(null),
         ),
         AppButton(
           text: l10n.commonSave,
-          onPressed: () => Navigator.of(context).pop(controller.text.trim()),
+          onPressed: () => Navigator.of(context, rootNavigator: true)
+              .pop(controller.text.trim()),
         ),
       ],
     );
@@ -1111,12 +1112,13 @@ class _ListCard extends ConsumerWidget {
         AppButton(
           text: l10n.commonCancel,
           variant: AppButtonVariant.outline,
-          onPressed: () => Navigator.of(context).pop(false),
+          onPressed: () =>
+              Navigator.of(context, rootNavigator: true).pop(false),
         ),
         AppButton(
           text: l10n.commonDelete,
           color: AppButtonColor.error,
-          onPressed: () => Navigator.of(context).pop(true),
+          onPressed: () => Navigator.of(context, rootNavigator: true).pop(true),
         ),
       ],
     );

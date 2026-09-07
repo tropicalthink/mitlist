@@ -22,7 +22,6 @@ import '../../utils/haptics.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_icon.dart';
-import '../../widgets/app_dialog.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/mitlist_app_bar.dart';
@@ -955,7 +954,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             statusLabel: event.chore!.status,
             assignee: '',
             dueDate: event.date,
-            onDelete: () => _confirmDeleteChore(event.chore!.choreId),
+            onDelete: () => _deleteChore(event.chore!.choreId),
           );
         }
       case CalendarEventType.mealPlan:
@@ -970,32 +969,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     }
   }
 
-  Future<void> _confirmDeleteChore(String choreId) async {
+  /// Runs once the detail sheet has already confirmed the delete with the
+  /// user, so it closes the sheet and deletes without asking again.
+  Future<void> _deleteChore(String choreId) async {
     if (_isSaving) return;
     _isSaving = true;
-    final l10n = AppLocalizations.of(context)!;
-    final confirmed = await showAppDialog<bool>(
-      context: context,
-      title: l10n.choreDeleteTitle,
-      body: Text(l10n.choreDeleteBody),
-      actions: [
-        AppButton(
-          text: l10n.commonCancel,
-          variant: AppButtonVariant.outline,
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
-        const SizedBox(width: MitlistSpacing.sm),
-        AppButton(
-          text: l10n.commonDelete,
-          color: AppButtonColor.error,
-          onPressed: () => Navigator.of(context).pop(true),
-        ),
-      ],
-    );
-    if (confirmed != true || !mounted) {
-      _isSaving = false;
-      return;
-    }
     Navigator.of(context).pop();
     try {
       final service = await ref.read(choreServiceProviderAsync.future);
