@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import '../services/api_error_mapper.dart';
 
 const int kOutboxMaxAttempts = 10;
 
@@ -17,6 +18,9 @@ const int kOutboxMaxAttempts = 10;
 enum OutboxErrorDisposition { transient, unreachable, permanent, conflict }
 
 OutboxErrorDisposition classifyOutboxError(Object error) {
+  if (error is ApiException && error.cause != null) {
+    return classifyOutboxError(error.cause!);
+  }
   if (error is! DioException) return OutboxErrorDisposition.permanent;
   switch (error.type) {
     // Never got a connection, or gave up before the server could answer —

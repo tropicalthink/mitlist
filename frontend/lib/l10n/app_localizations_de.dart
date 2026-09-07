@@ -27,6 +27,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get commonClose => 'Schließen';
 
   @override
+  String get commonNotNow => 'Nicht jetzt';
+
+  @override
   String get commonDone => 'Fertig';
 
   @override

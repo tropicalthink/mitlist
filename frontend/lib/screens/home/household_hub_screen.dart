@@ -216,9 +216,15 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
       final actF = ref.read(activityServiceProviderAsync.future);
       final authF = ref.read(authServiceProviderAsync.future);
 
+      // Paint from the saved profile and refresh it in the background. Awaiting
+      // `/auth/me` here held the cached hub behind a full connect timeout on
+      // every offline launch.
       try {
         final auth = await authF;
-        me = await auth.getMe();
+        me = auth.cachedMe;
+        unawaited(auth.getMe().then((fresh) {
+          if (mounted) setState(() => _me = fresh);
+        }).catchError((_) {}));
       } catch (_) {
         me = null;
       }
@@ -277,7 +283,8 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
         _data = _data;
         _snapshot = _snapshot ??
             _HubSnapshot(activities: activities, activityError: activityError);
-        _me = me;
+        // `_me` may already hold the fresh profile from the background fetch.
+        _me ??= me;
         _isLoading = false;
       });
     } catch (e) {

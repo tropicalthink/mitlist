@@ -30,6 +30,16 @@ follow [Semantic Versioning](https://semver.org/).
   on mobile to cover the store cut; monthly unchanged. See
   `docs/iap-subscriptions-plan.md`.
 
+### Fixed
+
+- Any household member can add a chore. `POST /chores` required the admin
+  role while the app offered the button to everyone, so a member's create
+  came back as "permission denied" (or, on older builds, sat as a phantom row
+  that never got an assignee).
+- Adding a zone from the chore sheet no longer throws when the dialog closes:
+  the zone field's text controller was disposed while the keyboard was still
+  flushing its final value into it.
+
 ## [1.0.0] - 2026-XX-XX
 
 ### Added

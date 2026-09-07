@@ -4,6 +4,7 @@
 // expense list and the create action. Must pass before and after the
 // controller extraction to prove behavior parity.
 
+import 'package:dio/dio.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -21,6 +22,7 @@ import 'package:mitlist/providers/group_provider.dart';
 import 'package:mitlist/providers/list_provider.dart' show appDatabaseProvider;
 import 'package:mitlist/repositories/finance_repository.dart';
 import 'package:mitlist/screens/money/expenses_screen.dart';
+import 'package:mitlist/services/api_error_mapper.dart';
 import 'package:mitlist/services/auth_service.dart';
 import 'package:mitlist/services/finance_service.dart';
 import 'package:mitlist/services/group_service.dart';
@@ -125,6 +127,53 @@ void main() {
     // (the FAB's default) uppercases its label — see AppButton._displayText.
     expect(find.text('ADD EXPENSE'), findsOneWidget);
   });
+
+  testWidgets('offline: the cached timeline renders when /auth/me fails',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 1800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final db = AppDatabase(
+      drift.DatabaseConnection(
+        NativeDatabase.memory(),
+        closeStreamsSynchronously: true,
+      ),
+    );
+    addTearDown(() => db.close());
+
+    final groupService = FakeGroupService(groups: [group], groupDetail: group);
+    // The profile fetch dies the way it does with no network; the saved copy
+    // still identifies the user, so balances and payer labels resolve.
+    final authService = FakeAuthService(currentUser: user, getMeFails: true);
+    final financeService = FakeFinanceService(expenses: [expense]);
+    final financeRepo = FakeFinanceRepository(financeService);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authStateProvider.overrideWith((ref) => true),
+          groupServiceProviderAsync.overrideWith((ref) async => groupService),
+          authServiceProviderAsync.overrideWith((ref) async => authService),
+          financeServiceProviderAsync
+              .overrideWith((ref) async => financeService),
+          financeRepositoryProvider.overrideWith((ref) async => financeRepo),
+          appDatabaseProvider.overrideWithValue(db),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const ExpensesScreen(),
+        ),
+      ),
+    );
+
+    for (var i = 0; i < 6; i++) {
+      await tester.pump(const Duration(milliseconds: 200));
+    }
+
+    expect(find.text('Groceries'), findsOneWidget);
+    expect(find.text('ADD EXPENSE'), findsOneWidget);
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -152,12 +201,24 @@ class FakeGroupService implements GroupService {
 }
 
 class FakeAuthService implements AuthService {
-  FakeAuthService({required this.currentUser});
+  FakeAuthService({required this.currentUser, this.getMeFails = false});
 
   final User currentUser;
+  final bool getMeFails;
 
   @override
-  Future<User> getMe() async => currentUser;
+  Future<User> getMe() async {
+    if (getMeFails) {
+      throw apiException(DioException(
+        requestOptions: RequestOptions(path: '/auth/me'),
+        type: DioExceptionType.connectionError,
+      ));
+    }
+    return currentUser;
+  }
+
+  @override
+  User? get cachedMe => currentUser;
 
   @override
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();

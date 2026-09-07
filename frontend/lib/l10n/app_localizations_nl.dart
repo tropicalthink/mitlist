@@ -27,6 +27,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get commonClose => 'Sluiten';
 
   @override
+  String get commonNotNow => 'Niet nu';
+
+  @override
   String get commonDone => 'Klaar';
 
   @override

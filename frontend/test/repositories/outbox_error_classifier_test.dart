@@ -2,11 +2,24 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:mitlist/repositories/outbox_error_classifier.dart';
+import 'package:mitlist/services/api_error_mapper.dart';
 
 import '../support/fakes.dart';
 
 void main() {
   group('classifyOutboxError —', () {
+    test('service-wrapped errors preserve their retry classification', () {
+      for (final error in [
+        fakeDioException(statusCode: 503),
+        fakeDioException(statusCode: 403),
+        DioException(
+            requestOptions: RequestOptions(path: '/chores'),
+            type: DioExceptionType.connectionError),
+      ]) {
+        expect(classifyOutboxError(apiException(error)),
+            classifyOutboxError(error));
+      }
+    });
     test('4xx (non-409/429) are permanent', () {
       for (final code in [400, 401, 403, 404, 422]) {
         expect(classifyOutboxError(fakeDioException(statusCode: code)),

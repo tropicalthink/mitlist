@@ -27,6 +27,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get commonClose => 'Cerrar';
 
   @override
+  String get commonNotNow => 'Ahora no';
+
+  @override
   String get commonDone => 'Hecho';
 
   @override

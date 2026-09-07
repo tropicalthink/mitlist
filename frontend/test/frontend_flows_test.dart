@@ -104,17 +104,8 @@ void main() {
       (tester) async {
     await _setLargeSurface(tester);
     final groupService = FakeGroupService(groups: [group], groupDetail: group);
-    final choreService = FakeChoreService();
-    final choreRepo = FakeChoreRepository(choreService);
-
-    await choreService.createChore(
-      CreateChoreRequest(
-        groupId: groupId,
-        name: 'Vacuum living room',
-        description: null,
-        frequency: 'none',
-      ),
-    );
+    final choreService = FakeChoreService(assignedToMe: false);
+    final choreRepo = FakeChoreRepository(choreService, assignedToMe: false);
 
     await _pumpScreen(
       tester,
@@ -127,6 +118,21 @@ void main() {
     );
 
     await _pumpUi(tester);
+
+    await tester.tap(find.byTooltip('Add chore'));
+    await _pumpAfter(tester);
+    await tester.enterText(find.byType(TextField).first, 'Vacuum living room');
+    await tester.pump();
+    expect(find.byType(BottomSheet), findsOneWidget);
+    final submitChore = find.descendant(
+      of: find.byType(BottomSheet),
+      matching: find.text('ADD CHORE'),
+    );
+    await tester.ensureVisible(submitChore);
+    await tester.pump();
+    await tester.tap(submitChore);
+    await _pumpAfter(tester);
+    await _pumpAfter(tester);
 
     expect(choreService.lastCreateRequest, isNotNull);
     expect(choreService.lastCreateRequest!.groupId, groupId);
@@ -1644,11 +1650,13 @@ class FakeGroupService implements GroupService {
 }
 
 class FakeChoreService implements ChoreService {
-  FakeChoreService({List<Chore>? chores, this.shouldThrow = false})
+  FakeChoreService(
+      {List<Chore>? chores, this.shouldThrow = false, this.assignedToMe = true})
       : _chores = chores ?? [];
 
   final List<Chore> _chores;
   final bool shouldThrow;
+  final bool assignedToMe;
   CreateChoreRequest? lastCreateRequest;
   final List<String> completedIds = [];
 
@@ -1691,7 +1699,7 @@ class FakeChoreService implements ChoreService {
         .map((c) => CurrentChore(
               chore: c,
               dueStatus: 'unscheduled',
-              assignedToMe: true,
+              assignedToMe: assignedToMe,
             ))
         .toList();
   }
@@ -1791,6 +1799,11 @@ class FakeAuthService implements AuthService {
 
   @override
   Future<User> getMe() async => currentUser;
+
+  // The money controller and hub read the cached profile before any network,
+  // and this fake throws from noSuchMethod for anything unimplemented.
+  @override
+  User? get cachedMe => currentUser;
 
   @override
   Future<TokenPair> login(
@@ -2148,16 +2161,17 @@ class FakePinwallService implements PinwallService {
 
 class FakeChoreRepository implements ChoreRepository {
   final ChoreService _service;
+  final bool assignedToMe;
   final StreamController<List<CurrentChore>> _controller;
 
-  FakeChoreRepository(this._service)
+  FakeChoreRepository(this._service, {this.assignedToMe = true})
       : _controller = StreamController<List<CurrentChore>>.broadcast();
 
   List<CurrentChore> _toCurrent(List<Chore> chores) => chores
       .map((c) => CurrentChore(
             chore: c,
             dueStatus: 'unscheduled',
-            assignedToMe: true,
+            assignedToMe: assignedToMe,
           ))
       .toList();
 
