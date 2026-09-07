@@ -592,3 +592,56 @@ func TestChoreService_RebuildMemberOrdersForGroup(t *testing.T) {
 func ptrTime(t time.Time) *time.Time {
 	return &t
 }
+
+func TestChoreService_DeleteChore(t *testing.T) {
+	ctx := context.Background()
+	user := validUser()
+	choreID := uuid.New()
+	groupID := uuid.New()
+
+	t.Run("member deletes", func(t *testing.T) {
+		choreRepo := new(mocks.MockChoreRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewChoreService(choreRepo, groupRepo, nil)
+
+		choreRepo.On("GetChoreByID", ctx, choreID).Return(&models.Chore{ID: choreID, GroupID: groupID}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
+		choreRepo.On("DeleteChore", ctx, choreID).Return(nil)
+
+		require.NoError(t, svc.DeleteChore(ctx, user, choreID))
+		choreRepo.AssertCalled(t, "DeleteChore", ctx, choreID)
+	})
+
+	t.Run("not a member", func(t *testing.T) {
+		choreRepo := new(mocks.MockChoreRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewChoreService(choreRepo, groupRepo, nil)
+
+		choreRepo.On("GetChoreByID", ctx, choreID).Return(&models.Chore{ID: choreID, GroupID: groupID}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(nil, pgx.ErrNoRows)
+
+		err := svc.DeleteChore(ctx, user, choreID)
+		require.Error(t, err)
+		assert.ErrorIs(t, err, api.ErrPermissionDenied)
+		choreRepo.AssertNotCalled(t, "DeleteChore", ctx, choreID)
+	})
+}
+
+func TestChoreService_UpdateChore_MemberMayEdit(t *testing.T) {
+	ctx := context.Background()
+	user := validUser()
+	choreID := uuid.New()
+	groupID := uuid.New()
+
+	choreRepo := new(mocks.MockChoreRepo)
+	groupRepo := new(mocks.MockGroupRepo)
+	svc := NewChoreService(choreRepo, groupRepo, nil)
+
+	choreRepo.On("GetChoreByID", ctx, choreID).Return(&models.Chore{ID: choreID, GroupID: groupID, Name: "Old"}, nil)
+	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
+	choreRepo.On("UpdateChore", ctx, mock.AnythingOfType("*models.Chore")).Return(nil)
+
+	updated, err := svc.UpdateChore(ctx, user, &models.Chore{ID: choreID, Name: "New"})
+	require.NoError(t, err)
+	assert.Equal(t, "New", updated.Name)
+}

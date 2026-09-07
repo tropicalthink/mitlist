@@ -95,7 +95,35 @@ func TestGroupService_UpdateGroup(t *testing.T) {
 
 		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
 
-		_, err := svc.UpdateGroup(ctx, userID, groupID, UpdateGroupInput{})
+		name := "New"
+		_, err := svc.UpdateGroup(ctx, userID, groupID, UpdateGroupInput{Name: &name})
+		require.Error(t, err)
+		assert.IsType(t, &api.PermissionDeniedError{}, err)
+	})
+
+	t.Run("member edits chore zones", func(t *testing.T) {
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewGroupService(groupRepo, nil)
+
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+		groupRepo.On("GetGroupByID", ctx, groupID).Return(&models.Group{ID: groupID, Name: "Home"}, nil)
+		groupRepo.On("UpdateGroup", ctx, mock.AnythingOfType("*models.Group")).Return(nil)
+
+		zones := []string{"Kitchen", "Bathroom"}
+		g, err := svc.UpdateGroup(ctx, userID, groupID, UpdateGroupInput{ChoreZones: &zones})
+		require.NoError(t, err)
+		assert.Equal(t, zones, g.ChoreZones)
+	})
+
+	t.Run("member cannot rename alongside chore zones", func(t *testing.T) {
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewGroupService(groupRepo, nil)
+
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+
+		name := "New"
+		zones := []string{"Kitchen"}
+		_, err := svc.UpdateGroup(ctx, userID, groupID, UpdateGroupInput{Name: &name, ChoreZones: &zones})
 		require.Error(t, err)
 		assert.IsType(t, &api.PermissionDeniedError{}, err)
 	})
