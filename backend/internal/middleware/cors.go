@@ -28,7 +28,8 @@ func CorsMiddleware(allowedOrigin, environment string, publicRoutes ...PublicRou
 			}
 
 			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE, OPTIONS")
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Request-ID, X-Mitlist-Client, X-Mitlist-Install-ID, X-Firebase-AppCheck")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Request-ID, X-Mitlist-Client, X-Mitlist-Install-ID, X-Firebase-AppCheck, X-Mitlist-Turnstile, Idempotency-Key")
+			w.Header().Set("Access-Control-Expose-Headers", "Idempotency-Replayed")
 			if r.Method == http.MethodOptions {
 				w.WriteHeader(http.StatusNoContent)
 				return
