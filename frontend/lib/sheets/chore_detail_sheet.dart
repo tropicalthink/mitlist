@@ -169,7 +169,8 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
           AppInput(
             label: l10n.choreDetailSkipReason,
             hint: l10n.choreDetailSkipReasonHint,
-            onSubmitted: (value) => Navigator.of(context).pop(value),
+            onSubmitted: (value) =>
+                Navigator.of(context, rootNavigator: true).pop(value),
           ),
           const SizedBox(height: MitlistSpacing.md),
           Row(
@@ -179,7 +180,8 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
                 variant: AppButtonVariant.outline,
                 color: AppButtonColor.neutral,
                 text: l10n.commonCancel,
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: () =>
+                    Navigator.of(context, rootNavigator: true).pop(),
               ),
               const SizedBox(width: MitlistSpacing.sm),
               AppButton(
@@ -486,12 +488,16 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
                             AppButton(
                               text: l10n.commonCancel,
                               variant: AppButtonVariant.outline,
-                              onPressed: () => Navigator.of(context).pop(false),
+                              onPressed: () =>
+                                  Navigator.of(context, rootNavigator: true)
+                                      .pop(false),
                             ),
                             AppButton(
                               text: l10n.commonDelete,
                               color: AppButtonColor.error,
-                              onPressed: () => Navigator.of(context).pop(true),
+                              onPressed: () =>
+                                  Navigator.of(context, rootNavigator: true)
+                                      .pop(true),
                             ),
                           ],
                         );

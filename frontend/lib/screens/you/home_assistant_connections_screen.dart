@@ -36,12 +36,13 @@ class HomeAssistantConnectionsScreen extends ConsumerWidget {
         AppButton(
           text: l10n.commonCancel,
           variant: AppButtonVariant.outline,
-          onPressed: () => Navigator.of(context).pop(false),
+          onPressed: () =>
+              Navigator.of(context, rootNavigator: true).pop(false),
         ),
         AppButton(
           text: l10n.homeAssistantRevoke,
           color: AppButtonColor.error,
-          onPressed: () => Navigator.of(context).pop(true),
+          onPressed: () => Navigator.of(context, rootNavigator: true).pop(true),
         ),
       ],
     );

@@ -133,13 +133,14 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
         AppButton(
           text: l10n.recipeCreationKeepEditing,
           variant: AppButtonVariant.outline,
-          onPressed: () => Navigator.of(context).pop(false),
+          onPressed: () =>
+              Navigator.of(context, rootNavigator: true).pop(false),
         ),
         const SizedBox(width: MitlistSpacing.sm),
         AppButton(
           text: l10n.recipeCreationDiscard,
           color: AppButtonColor.error,
-          onPressed: () => Navigator.of(context).pop(true),
+          onPressed: () => Navigator.of(context, rootNavigator: true).pop(true),
         ),
       ],
     );

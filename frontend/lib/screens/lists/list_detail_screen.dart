@@ -450,13 +450,15 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
           AppButton(
             text: l10n.commonCancel,
             variant: AppButtonVariant.outline,
-            onPressed: () => Navigator.of(context).pop(false),
+            onPressed: () =>
+                Navigator.of(context, rootNavigator: true).pop(false),
           ),
           const SizedBox(width: MitlistSpacing.sm),
           AppButton(
             text: l10n.listDetailClearConfirm,
             color: AppButtonColor.error,
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () =>
+                Navigator.of(context, rootNavigator: true).pop(true),
           ),
         ],
       );
@@ -544,7 +546,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         AppButton(
           text: l10n.commonCancel,
           variant: AppButtonVariant.outline,
-          onPressed: () => Navigator.of(context).pop(null),
+          onPressed: () => Navigator.of(context, rootNavigator: true).pop(null),
         ),
         const SizedBox(width: MitlistSpacing.sm),
         AppButton(
@@ -623,12 +625,13 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         AppButton(
           text: l10n.commonCancel,
           variant: AppButtonVariant.outline,
-          onPressed: () => Navigator.of(context).pop(false),
+          onPressed: () =>
+              Navigator.of(context, rootNavigator: true).pop(false),
         ),
         const SizedBox(width: MitlistSpacing.sm),
         AppButton(
           text: l10n.commonArchive,
-          onPressed: () => Navigator.of(context).pop(true),
+          onPressed: () => Navigator.of(context, rootNavigator: true).pop(true),
         ),
       ],
     );
@@ -663,13 +666,14 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         AppButton(
           text: l10n.commonCancel,
           variant: AppButtonVariant.outline,
-          onPressed: () => Navigator.of(context).pop(false),
+          onPressed: () =>
+              Navigator.of(context, rootNavigator: true).pop(false),
         ),
         const SizedBox(width: MitlistSpacing.sm),
         AppButton(
           text: l10n.commonDelete,
           color: AppButtonColor.error,
-          onPressed: () => Navigator.of(context).pop(true),
+          onPressed: () => Navigator.of(context, rootNavigator: true).pop(true),
         ),
       ],
     );
@@ -835,19 +839,20 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         maxLength: 200,
         textInputAction: TextInputAction.done,
         decoration: InputDecoration(labelText: l10n.listItemName),
-        onSubmitted: (value) => Navigator.of(context).pop(value.trim()),
+        onSubmitted: (value) =>
+            Navigator.of(context, rootNavigator: true).pop(value.trim()),
       ),
       actions: [
         AppButton(
           text: l10n.commonCancel,
           variant: AppButtonVariant.outline,
-          onPressed: () => Navigator.of(context).pop(null),
+          onPressed: () => Navigator.of(context, rootNavigator: true).pop(null),
         ),
         const SizedBox(width: MitlistSpacing.sm),
         AppButton(
           text: l10n.commonSave,
-          onPressed: () =>
-              Navigator.of(context).pop(nameController.text.trim()),
+          onPressed: () => Navigator.of(context, rootNavigator: true)
+              .pop(nameController.text.trim()),
         ),
       ],
     );
@@ -897,7 +902,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
             maxLength: 20,
             textInputAction: TextInputAction.done,
             decoration: InputDecoration(labelText: l10n.listItemQuantityUnit),
-            onSubmitted: (_) => Navigator.of(context).pop(true),
+            onSubmitted: (_) =>
+                Navigator.of(context, rootNavigator: true).pop(true),
           ),
         ],
       ),
@@ -956,12 +962,13 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         AppButton(
           text: l10n.commonCancel,
           variant: AppButtonVariant.outline,
-          onPressed: () => Navigator.of(context).pop(false),
+          onPressed: () =>
+              Navigator.of(context, rootNavigator: true).pop(false),
         ),
         const SizedBox(width: MitlistSpacing.sm),
         AppButton(
           text: l10n.commonSave,
-          onPressed: () => Navigator.of(context).pop(true),
+          onPressed: () => Navigator.of(context, rootNavigator: true).pop(true),
         ),
       ],
     );
