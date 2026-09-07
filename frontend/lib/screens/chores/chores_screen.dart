@@ -299,9 +299,33 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   Future<void> _addChore() async {
     unawaited(Haptics.light());
     final created = await ChoreCreationSheet.show(context);
-    if (created == true) {
-      await _loadChores();
-    }
+    if (created != true || !mounted) return;
+
+    // A queued or household-assigned chore may not be "Mine" yet, so a filtered
+    // list would swallow the row the user just watched themselves create. This
+    // is the system widening the view for one moment, not the user changing
+    // their mind, so it must not overwrite their saved filter preference.
+    if (_filterMe) _setFilterMe(false, persist: false);
+
+    // Keep the live subscription and paint the local create immediately.
+    // Restarting the entire load waits for member lookup and resubscription
+    // before the user can see the chore they just saved.
+    final groupId = _groupId;
+    if (groupId == null) return;
+    final repo = await ref.read(choreRepositoryProvider.future);
+    final current = await repo.getCurrentChoresOnce(groupId);
+    if (!mounted || _groupId != groupId) return;
+    _applyCurrentChores(current);
+
+    // The local row carries no assignment yet: the server picks the turn. Until
+    // it lands the row renders bare (no avatar, no assignee, no next-turn line)
+    // beside fully dressed neighbours. Refreshing feeds the watch stream, which
+    // repaints the row complete. Best-effort: offline it simply stays queued.
+    unawaited(repo.refreshCurrentChores(groupId).then((_) {
+      if (mounted && _refreshFailed) setState(() => _refreshFailed = false);
+    }).catchError((Object e) {
+      _logger.w('Post-create chores refresh failed', error: e);
+    }));
   }
 
   Future<void> _openLoadSheet() async {
@@ -766,8 +790,11 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     return _chores.toList();
   }
 
-  void _setFilterMe(bool value) {
+  void _setFilterMe(bool value, {bool persist = true}) {
     setState(() => _filterMe = value);
+    // An automatic widening (see _addChore) is a transient view change, not a
+    // preference the user expressed.
+    if (!persist) return;
     SharedPreferences.getInstance()
         .then((p) => p.setBool('chores_filter_me', value));
   }

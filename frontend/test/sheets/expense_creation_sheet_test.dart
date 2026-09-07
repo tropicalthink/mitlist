@@ -283,6 +283,9 @@ class FakeAuthService implements AuthService {
   Future<User> getMe() async => currentUser;
 
   @override
+  User? get cachedMe => currentUser;
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 

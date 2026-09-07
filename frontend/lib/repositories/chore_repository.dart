@@ -8,6 +8,7 @@ import '../services/chore_service.dart';
 import '../services/sse_service.dart';
 import '../storage/app_database.dart';
 import 'outbox_drainer.dart';
+import 'outbox_error_classifier.dart';
 
 /// Outcome of an offline-first chore create.
 ///
@@ -112,9 +113,10 @@ class ChoreRepository {
     Duration syncWindow = Duration.zero,
   }) async {
     final localId = 'local-${_uuid.v4()}';
+    final opId = _uuid.v4();
     await _db.transaction(() async {
       await _db.enqueueOutbox(
-        id: _uuid.v4(),
+        id: opId,
         type: 'createChore',
         payload: {
           'localId': localId,
@@ -145,6 +147,16 @@ class ChoreRepository {
     } catch (_) {}
 
     _awaitingSync.remove(localId);
+    final failure = _failedCreates.remove(localId);
+    if (failure != null) {
+      // The editor still owns the draft: remove the rejected optimistic copy
+      // so retrying from that editor cannot leave a duplicate in the outbox.
+      await _db.transaction(() async {
+        await _db.deleteOutboxOp(opId);
+        await _db.deleteLocalEntity('chore', localId);
+      });
+      Error.throwWithStackTrace(failure, StackTrace.current);
+    }
     final serverId = _syncedCreates.remove(localId);
     return ChoreCreateResult(
       chore: serverId == null ? local : _withId(local, serverId),
@@ -161,6 +173,7 @@ class ChoreRepository {
   /// Local id → server id, recorded only for ids in [_awaitingSync] and
   /// removed as soon as the waiter reads it.
   final Map<String, String> _syncedCreates = {};
+  final Map<String, Object> _failedCreates = {};
 
   Chore _withId(Chore c, String id) => Chore(
         id: id,
@@ -475,10 +488,19 @@ class ChoreRepository {
             await _db.deleteOutboxOp(op.id);
             return;
           }
-          final created = await _remote.createChore(
-            CreateChoreRequest.fromJson(rawReq.cast<String, dynamic>()),
-            idempotencyKey: op.idempotencyKey,
-          );
+          final Chore created;
+          try {
+            created = await _remote.createChore(
+              CreateChoreRequest.fromJson(rawReq.cast<String, dynamic>()),
+              idempotencyKey: op.idempotencyKey,
+            );
+          } catch (e) {
+            if (_awaitingSync.contains(localId) &&
+                classifyOutboxError(e) == OutboxErrorDisposition.permanent) {
+              _failedCreates[localId] = e;
+            }
+            rethrow;
+          }
           await _db.rewriteOutboxPayloadIds(oldId: localId, newId: created.id);
           await _db.deleteOutboxOp(op.id);
           if (_awaitingSync.contains(localId)) {
