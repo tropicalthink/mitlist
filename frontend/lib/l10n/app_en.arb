@@ -24,6 +24,10 @@
   "@commonClose": {
     "description": "Generic close button tooltip"
   },
+  "commonNotNow": "Not now",
+  "@commonNotNow": {
+    "description": "Generic dismiss label for optional prompts such as paywalls"
+  },
   "commonDone": "Done",
   "@commonDone": {
     "description": "Generic done/ready label"

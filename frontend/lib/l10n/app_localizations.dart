@@ -140,6 +140,12 @@ abstract class AppLocalizations {
   /// **'Close'**
   String get commonClose;
 
+  /// Generic dismiss label for optional prompts such as paywalls
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get commonNotNow;
+
   /// Generic done/ready label
   ///
   /// In en, this message translates to:

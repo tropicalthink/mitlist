@@ -27,6 +27,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonClose => 'Close';
 
   @override
+  String get commonNotNow => 'Not now';
+
+  @override
   String get commonDone => 'Done';
 
   @override
