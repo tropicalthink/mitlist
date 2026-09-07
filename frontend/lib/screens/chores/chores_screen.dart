@@ -490,7 +490,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
               Navigator.of(context).pop();
               await _editChore(id, chore: choreForEdit);
             },
-      onDelete: () => _confirmDeleteChore(id),
+      onDelete: () => _deleteChore(id),
     );
   }
 
@@ -690,7 +690,8 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                onTap: () => Navigator.of(context).pop(list.id),
+                onTap: () =>
+                    Navigator.of(context, rootNavigator: true).pop(list.id),
               );
             },
           ),
@@ -739,31 +740,11 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     }
   }
 
-  Future<void> _confirmDeleteChore(String id) async {
+  /// Runs once the detail sheet has already confirmed the delete with the
+  /// user, so it closes the sheet and deletes without asking again.
+  Future<void> _deleteChore(String id) async {
     if (_isMutating) return;
     _isMutating = true;
-    final confirmed = await showAppDialog<bool>(
-      context: context,
-      title: _l10n.choreDeleteTitle,
-      body: Text(_l10n.choreDeleteBody),
-      actions: [
-        AppButton(
-          text: _l10n.commonCancel,
-          variant: AppButtonVariant.outline,
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
-        const SizedBox(width: MitlistSpacing.sm),
-        AppButton(
-          text: _l10n.commonDelete,
-          color: AppButtonColor.error,
-          onPressed: () => Navigator.of(context).pop(true),
-        ),
-      ],
-    );
-    if (confirmed != true || !mounted) {
-      _isMutating = false;
-      return;
-    }
     Navigator.of(context).pop();
     try {
       final service = await ref.read(choreServiceProviderAsync.future);

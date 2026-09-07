@@ -250,17 +250,18 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
         maxLength: 40,
         textInputAction: TextInputAction.done,
         onChanged: (v) => draft = v,
-        onSubmitted: (v) => Navigator.of(context).pop(v),
+        onSubmitted: (v) => Navigator.of(context, rootNavigator: true).pop(v),
       ),
       actions: [
         AppButton(
           text: l10n.commonCancel,
           variant: AppButtonVariant.outline,
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
         ),
         AppButton(
           text: l10n.commonAdd,
-          onPressed: () => Navigator.of(context).pop(draft),
+          onPressed: () =>
+              Navigator.of(context, rootNavigator: true).pop(draft),
         ),
       ],
     );
@@ -296,12 +297,13 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
         AppButton(
           text: l10n.commonCancel,
           variant: AppButtonVariant.outline,
-          onPressed: () => Navigator.of(context).pop(false),
+          onPressed: () =>
+              Navigator.of(context, rootNavigator: true).pop(false),
         ),
         AppButton(
           text: l10n.commonRemove,
           color: AppButtonColor.error,
-          onPressed: () => Navigator.of(context).pop(true),
+          onPressed: () => Navigator.of(context, rootNavigator: true).pop(true),
         ),
       ],
     );

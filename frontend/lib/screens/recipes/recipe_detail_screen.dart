@@ -170,13 +170,14 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
         AppButton(
           text: l10n.commonCancel,
           variant: AppButtonVariant.outline,
-          onPressed: () => Navigator.of(context).pop(false),
+          onPressed: () =>
+              Navigator.of(context, rootNavigator: true).pop(false),
         ),
         const SizedBox(width: MitlistSpacing.sm),
         AppButton(
           text: l10n.commonDelete,
           color: AppButtonColor.error,
-          onPressed: () => Navigator.of(context).pop(true),
+          onPressed: () => Navigator.of(context, rootNavigator: true).pop(true),
         ),
       ],
     );
