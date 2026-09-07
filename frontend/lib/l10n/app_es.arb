@@ -24,6 +24,7 @@
   "@commonClose": {
     "description": "Generic close button tooltip"
   },
+  "commonNotNow": "Ahora no",
   "commonDone": "Hecho",
   "@commonDone": {
     "description": "Generic done/ready label"

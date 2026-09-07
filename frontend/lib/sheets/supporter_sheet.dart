@@ -247,7 +247,15 @@ class _SupporterSheetBodyState extends ConsumerState<SupporterSheetBody> {
             isLoading: _busy,
             onPressed: _busy ? null : _buy,
           ),
-          const SizedBox(height: MitlistSpacing.sm),
+          const SizedBox(height: MitlistSpacing.xs),
+          AppButton(
+            text: l10n.commonNotNow,
+            variant: AppButtonVariant.ghost,
+            color: AppButtonColor.neutral,
+            size: AppButtonSize.md,
+            onPressed: _busy ? null : () => Navigator.of(context).pop(),
+          ),
+          const SizedBox(height: MitlistSpacing.xs),
           Text(
             l10n.supporterOnce,
             textAlign: TextAlign.center,
