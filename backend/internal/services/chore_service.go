@@ -367,7 +367,9 @@ func (s *ChoreService) UpdateChore(ctx context.Context, user *models.User, chore
 		}
 		return nil, fmt.Errorf("failed to get chore: %w", err)
 	}
-	if err := s.requireAdmin(ctx, user.ID, existing.GroupID); err != nil {
+	// Any member can reshape a chore, as any member can file one: the chore
+	// belongs to the household, and the app offers edit to everyone.
+	if err := s.requireMembership(ctx, user.ID, existing.GroupID); err != nil {
 		return nil, err
 	}
 	if chore.Name == "" {
@@ -426,7 +428,9 @@ func (s *ChoreService) DeleteChore(ctx context.Context, user *models.User, chore
 		}
 		return fmt.Errorf("failed to get chore: %w", err)
 	}
-	if err := s.requireAdmin(ctx, user.ID, chore.GroupID); err != nil {
+	// Members delete as freely as they create; the detail sheet offers delete
+	// to everyone, so an admin-only rule surfaced as "permission denied".
+	if err := s.requireMembership(ctx, user.ID, chore.GroupID); err != nil {
 		return err
 	}
 	if err := s.choreRepo.DeleteChore(ctx, choreID); err != nil {
