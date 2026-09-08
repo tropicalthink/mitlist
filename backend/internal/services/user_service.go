@@ -109,6 +109,8 @@ func (s *UserService) Register(ctx context.Context, input RegisterInput) (*model
 		IsActive:     true,
 		IsVerified:   false,
 		IsGuest:      false,
+		// The tips series is opt-out; every email carries the way out.
+		TipsEmailsEnabled: true,
 	}
 
 	rawToken, tokenHash, expiresAt, err := newEmailVerificationToken()
@@ -316,9 +318,10 @@ func (s *UserService) ReactivateGuestForRefresh(ctx context.Context, userID uuid
 
 // UpdateMeInput holds optional fields for updating the current user.
 type UpdateMeInput struct {
-	FirstName *string
-	LastName  *string
-	AvatarURL *string
+	FirstName         *string
+	LastName          *string
+	AvatarURL         *string
+	TipsEmailsEnabled *bool
 }
 
 // UpdateMe updates the authenticated user's profile fields.
@@ -354,6 +357,9 @@ func (s *UserService) UpdateMe(ctx context.Context, userID uuid.UUID, input Upda
 			return nil, &api.ValidationError{Field: "avatar_url", Message: err.Error()}
 		}
 		user.AvatarURL = input.AvatarURL
+	}
+	if input.TipsEmailsEnabled != nil {
+		user.TipsEmailsEnabled = *input.TipsEmailsEnabled
 	}
 
 	if err := s.userRepo.Update(ctx, user); err != nil {

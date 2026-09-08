@@ -5663,6 +5663,13 @@ class AppLocalizationsNl extends AppLocalizations {
       'Je verzoek kon nu niet worden verstuurd. Probeer het later opnieuw.';
 
   @override
+  String get accountTipsEmailsTitle => 'Tips per e-mail';
+
+  @override
+  String get accountTipsEmailsDescription =>
+      'Een paar e-mails in je eerste weken over hoe je meer uit mitlist haalt. Account-e-mails komen sowieso aan.';
+
+  @override
   String get accountOcrTrainingTitle => 'Offline handschrift-OCR verbeteren';
 
   @override

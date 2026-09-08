@@ -9803,6 +9803,18 @@ abstract class AppLocalizations {
   /// **'Couldn\'t send your request right now. Please try again later.'**
   String get feedbackFailed;
 
+  /// Account screen switch for the post-sign-up tips email series
+  ///
+  /// In en, this message translates to:
+  /// **'Tips by email'**
+  String get accountTipsEmailsTitle;
+
+  /// Explains what the tips email switch controls
+  ///
+  /// In en, this message translates to:
+  /// **'A few emails in your first weeks on getting the most out of mitlist. Account emails still arrive either way.'**
+  String get accountTipsEmailsDescription;
+
   /// Opt-in local OCR training-data collection title
   ///
   /// In en, this message translates to:

@@ -139,7 +139,7 @@ func (s *BillingService) StartSupporterCheckout(ctx context.Context, userID uuid
 		},
 	})
 	if err != nil {
-		return "", err
+		return "", checkoutError(err, s.cfg.ProductIDSupporter)
 	}
 	return session.URL, nil
 }
@@ -422,4 +422,3 @@ func firstTime(candidates ...*time.Time) *time.Time {
 	}
 	return nil
 }
-

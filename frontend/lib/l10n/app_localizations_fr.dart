@@ -5680,6 +5680,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Impossible d\'envoyer votre demande pour le moment. Veuillez réessayer plus tard.';
 
   @override
+  String get accountTipsEmailsTitle => 'Conseils par e-mail';
+
+  @override
+  String get accountTipsEmailsDescription =>
+      'Quelques e-mails durant vos premières semaines pour tirer le meilleur de mitlist. Les e-mails liés au compte arrivent dans tous les cas.';
+
+  @override
   String get accountOcrTrainingTitle => 'Améliorer l’OCR manuscrit hors ligne';
 
   @override

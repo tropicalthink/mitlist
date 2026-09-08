@@ -186,13 +186,13 @@ func (r *AuthRepository) CreateUnverifiedUser(ctx context.Context, user *models.
 	now := time.Now().UTC()
 	user.CreatedAt, user.UpdatedAt = now, now
 	if err = tx.QueryRow(ctx, `
-		INSERT INTO users (id, email, password_hash, first_name, last_name, avatar_url, is_active, is_verified, is_guest, created_at, updated_at)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,FALSE,$8,$9,$10)
-		RETURNING id, email, password_hash, first_name, last_name, avatar_url, is_active, is_verified, is_guest, created_at, updated_at
+		INSERT INTO users (id, email, password_hash, first_name, last_name, avatar_url, is_active, is_verified, is_guest, tips_emails_enabled, created_at, updated_at)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,FALSE,$8,$9,$10,$11)
+		RETURNING id, email, password_hash, first_name, last_name, avatar_url, is_active, is_verified, is_guest, tips_emails_enabled, created_at, updated_at
 	`, user.ID, user.Email, user.PasswordHash, user.FirstName, user.LastName, user.AvatarURL,
-		user.IsActive, user.IsGuest, user.CreatedAt, user.UpdatedAt).Scan(
+		user.IsActive, user.IsGuest, user.TipsEmailsEnabled, user.CreatedAt, user.UpdatedAt).Scan(
 		&user.ID, &user.Email, &user.PasswordHash, &user.FirstName, &user.LastName,
-		&user.AvatarURL, &user.IsActive, &user.IsVerified, &user.IsGuest, &user.CreatedAt, &user.UpdatedAt,
+		&user.AvatarURL, &user.IsActive, &user.IsVerified, &user.IsGuest, &user.TipsEmailsEnabled, &user.CreatedAt, &user.UpdatedAt,
 	); err != nil {
 		return err
 	}

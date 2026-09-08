@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 
 	"github.com/mitlist-app/mitlist/internal/api"
 	"github.com/mitlist-app/mitlist/internal/models"
@@ -344,6 +345,7 @@ func (s *BillingService) StartCheckout(ctx context.Context, userID uuid.UUID, in
 	if discountID == "" {
 		discountID = s.cfg.DefaultDiscountID
 	}
+	discountID = usableDiscountID(discountID)
 
 	metadata := map[string]string{
 		"app":     "mitlist",
@@ -353,7 +355,7 @@ func (s *BillingService) StartCheckout(ctx context.Context, userID uuid.UUID, in
 		metadata["group_id"] = in.GroupID.String()
 	}
 
-	session, err := s.client.CreateCheckout(ctx, polar.CheckoutRequest{
+	req := polar.CheckoutRequest{
 		ProductID:          productID,
 		ExternalCustomerID: userID.String(),
 		CustomerEmail:      user.Email,
@@ -361,11 +363,77 @@ func (s *BillingService) StartCheckout(ctx context.Context, userID uuid.UUID, in
 		DiscountID:         discountID,
 		AllowDiscountCodes: true,
 		Metadata:           metadata,
-	})
+	}
+
+	session, err := s.client.CreateCheckout(ctx, req)
+	if err != nil && discountID != "" && discountRejected(err) {
+		// A discount that Polar will not honour (expired, deleted, or scoped to
+		// another product) must not take the whole sale down with it. Retry at
+		// full price — the customer can still type a working code on the
+		// checkout page — and shout about it so the promo gets fixed.
+		log.Error().Err(err).
+			Str("discount_id", discountID).
+			Msg("polar refused the configured checkout discount; retrying at full price")
+		req.DiscountID = ""
+		session, err = s.client.CreateCheckout(ctx, req)
+	}
 	if err != nil {
-		return "", err
+		return "", checkoutError(err, productID)
 	}
 	return session.URL, nil
+}
+
+// usableDiscountID drops a discount id that Polar cannot possibly accept.
+// Polar addresses discounts by UUID, so a promo *code* ("LAUNCH50") configured
+// here would be refused on every single checkout — better to sell at full price
+// and log it than to sell nothing.
+func usableDiscountID(id string) string {
+	if id == "" {
+		return ""
+	}
+	if _, err := uuid.Parse(id); err != nil {
+		log.Error().
+			Str("discount_id", id).
+			Msg("configured Polar discount id is not a UUID (it is the discount's id, not its promo code); ignoring it")
+		return ""
+	}
+	return id
+}
+
+// discountRejected reports whether Polar refused a checkout specifically over
+// the discount attached to it.
+func discountRejected(err error) bool {
+	var apiErr *polar.APIError
+	return errors.As(err, &apiErr) && apiErr.Rejected() && apiErr.Mentions("discount")
+}
+
+// checkoutError turns a Polar failure into something a caller can act on.
+// Everything here used to collapse into a bare "internal server error", which
+// hid the two failures that actually happen in production — an access token
+// without the checkouts:write scope, and a product id that is not sellable —
+// behind the same blank 500 the client shows as "could not start checkout".
+func checkoutError(err error, productID string) error {
+	var apiErr *polar.APIError
+	if !errors.As(err, &apiErr) {
+		return err
+	}
+	switch {
+	case apiErr.Unauthorized():
+		log.Error().Err(err).Str("product_id", productID).
+			Msg("polar rejected the access token for checkout; check that POLAR_ACCESS_TOKEN carries the checkouts:write scope")
+	case apiErr.Rejected() && apiErr.Mentions("draft"):
+		// Polar reads and prices a draft product like any other, so the
+		// paywall renders — and then every checkout is refused with "Product
+		// is a draft." This is how production sold nothing for weeks.
+		log.Error().Err(err).Str("product_id", productID).
+			Msg("polar refused the checkout because the product is still a draft; set its visibility to private or public in the Polar dashboard")
+	case apiErr.Rejected():
+		log.Error().Err(err).Str("product_id", productID).
+			Msg("polar refused the checkout request; check the configured product ids and CHECKOUT_SUCCESS_URL")
+	default:
+		log.Error().Err(err).Str("product_id", productID).Msg("polar checkout failed")
+	}
+	return fmt.Errorf("start polar checkout for product %s: %w", productID, err)
 }
 
 // OpenCustomerPortal returns a URL where the user manages their subscription

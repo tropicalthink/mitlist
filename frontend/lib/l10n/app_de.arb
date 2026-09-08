@@ -2006,6 +2006,8 @@
   "feedbackSent": "Danke — deine Anfrage wurde gesendet!",
   "feedbackEmpty": "Bitte schreibe zuerst eine kurze Nachricht.",
   "feedbackFailed": "Deine Anfrage konnte gerade nicht gesendet werden. Bitte versuche es später erneut.",
+  "accountTipsEmailsTitle": "Tipps per E-Mail",
+  "accountTipsEmailsDescription": "Ein paar E-Mails in den ersten Wochen, wie du mehr aus mitlist herausholst. Konto-E-Mails kommen so oder so an.",
   "accountOcrTrainingTitle": "Offline-Handschrifterkennung verbessern",
   "accountOcrTrainingDescription": "Manuell geprüfte Zeilenausschnitte bleiben auf diesem Gerät, bis du sie exportierst oder löschst. Es wird nichts hochgeladen.",
   "accountOcrTrainingExport": "OCR-Trainingsdaten exportieren",
