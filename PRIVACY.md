@@ -42,7 +42,7 @@ service or on a server somebody operates themselves.
 | Scanner | Nothing leaves the device | Text recognition runs on-device; no AI service is called |
 | Recipe import | The URL you paste is fetched by the server | The recipe site sees the server's address, not yours |
 | Push | Device token (FCM / APNs / Web Push) and the notification text | Optional; token deleted on sign-out |
-| Email | Address and message content, sent via Amazon SES (EU, Frankfurt) | Confirmation, password reset, invitations, optional weekly summary. No marketing email |
+| Email | Address and message content, sent via Amazon SES (EU, Frankfurt) | Confirmation, password reset, invitations, optional weekly summary, and up to five getting-started tips in the first month after sign-up. The tips can be turned off in the app (You → Tips by email) or with the unsubscribe link in each one. No third-party marketing, no mailing list |
 | Premium | Subscription holder, assigned household, term, status, amount paid | Web payments through Polar (merchant of record), in-app through Apple / Google. Billing records kept up to ten years by law |
 | Security | IP address and connection data at Cloudflare; Turnstile result for guest sign-up on the web; Firebase App Check attestation for the mobile apps; server logs of failed sign-ins | Logs deleted after a short period |
 | Crash reports | Stack trace, app / OS version, device type, environment, sent to a self-run GlitchTip instance | No household content, names, or emails; no performance or usage data |

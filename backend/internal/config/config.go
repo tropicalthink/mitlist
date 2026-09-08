@@ -11,7 +11,8 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog/log"
-	standardwebhooks "github.com/standard-webhooks/standard-webhooks/libraries/go"
+
+	"github.com/mitlist-app/mitlist/internal/services/polar"
 )
 
 // Config holds all application configuration loaded from environment variables.
@@ -110,6 +111,15 @@ type Config struct {
 	BrevoSMTPUser    string `env:"BREVO_SMTP_USER"`
 	BrevoSMTPPass    string `env:"BREVO_SMTP_PASS"`
 	MailFromEmail    string `env:"MAIL_FROM_EMAIL" default:"noreply@mitlist.me"`
+	// MailFromName is the display name in front of MailFromEmail, so the
+	// inbox shows "mitlist" rather than a bare noreply address.
+	MailFromName string `env:"MAIL_FROM_NAME" default:"mitlist"`
+
+	// Onboarding tips: a short email series after sign-up. Off unless the
+	// API knows its own public origin, because every message must carry a
+	// working unsubscribe link and that link points at this API.
+	OnboardingEmailsEnabled bool   `env:"ONBOARDING_EMAILS_ENABLED" default:"true"`
+	PublicAPIURL            string `env:"PUBLIC_API_URL"`
 
 	// Sentry / GlitchTip error tracking
 	SentryDSN              string  `env:"SENTRY_DSN"`
@@ -409,14 +419,12 @@ func (c *Config) Validate() error {
 	// malformed secret killed a booted process instead of failing config
 	// validation, and the container crash-looped in production on 2026-08-21.
 	//
-	// standard-webhooks strips an optional "whsec_" prefix and base64-decodes
-	// the rest. Polar hands out a raw secret, so it has to be encoded before
-	// it gets here.
+	// The verifier takes the secret exactly as the Polar dashboard shows it,
+	// whichever signing scheme Polar picked for it, so the only way to fail
+	// here is a value that is not a secret at all.
 	if c.PolarWebhookSecret != "" {
-		if _, err := standardwebhooks.NewWebhook(c.PolarWebhookSecret); err != nil {
-			return fmt.Errorf(
-				"POLAR_WEBHOOK_SECRET is not a valid standard-webhooks secret (%w) — "+
-					"it must be base64, optionally prefixed with whsec_", err)
+		if _, err := polar.NewWebhookVerifier(c.PolarWebhookSecret); err != nil {
+			return fmt.Errorf("POLAR_WEBHOOK_SECRET is not usable (%w) — paste the whsec_ value from the Polar dashboard verbatim", err)
 		}
 	}
 	if (c.GooglePubSubAudience == "") != (c.GooglePubSubServiceAccount == "") {

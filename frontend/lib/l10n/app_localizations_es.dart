@@ -5649,6 +5649,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'No se pudo enviar tu solicitud ahora mismo. Inténtalo de nuevo más tarde.';
 
   @override
+  String get accountTipsEmailsTitle => 'Consejos por correo';
+
+  @override
+  String get accountTipsEmailsDescription =>
+      'Unos pocos correos en tus primeras semanas para sacarle más partido a mitlist. Los correos de la cuenta llegan de todos modos.';
+
+  @override
   String get accountOcrTrainingTitle =>
       'Mejorar el OCR manuscrito sin conexión';
 

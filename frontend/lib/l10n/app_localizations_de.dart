@@ -5696,6 +5696,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Deine Anfrage konnte gerade nicht gesendet werden. Bitte versuche es später erneut.';
 
   @override
+  String get accountTipsEmailsTitle => 'Tipps per E-Mail';
+
+  @override
+  String get accountTipsEmailsDescription =>
+      'Ein paar E-Mails in den ersten Wochen, wie du mehr aus mitlist herausholst. Konto-E-Mails kommen so oder so an.';
+
+  @override
   String get accountOcrTrainingTitle =>
       'Offline-Handschrifterkennung verbessern';
 

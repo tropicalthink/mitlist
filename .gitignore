@@ -17,3 +17,13 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 .ruff_cache/
+
+# macOS Finder metadata.
+.DS_Store
+**/.DS_Store
+
+# Store listing working files: screenshots, marketing graphics and the
+# generated bundles are large binaries regenerated per release, and the
+# metadata under store/fastlane is uploaded from a local checkout. The
+# already-tracked text listings stay tracked; nothing new is added.
+store/

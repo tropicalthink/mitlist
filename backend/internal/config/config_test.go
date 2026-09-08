@@ -149,23 +149,25 @@ func TestValidateRejectsSharedTokenSigningKey(t *testing.T) {
 	}
 }
 
-// A raw Polar secret used to pass validation and then kill the process later,
-// where standard-webhooks decodes it — after the database was up and the job
-// runner had started. Production crash-looped on it on 2026-08-21.
-func TestValidateRejectsUndecodablePolarWebhookSecret(t *testing.T) {
+// The secret exactly as the Polar dashboard shows it must pass validation —
+// in both shapes Polar has issued. The raw, non-base64 shape used to pass
+// validation and then kill the process later, where standard-webhooks decoded
+// it; production crash-looped on that on 2026-08-21 and the secret was parked,
+// which left every webhook answered with 503.
+func TestValidateAcceptsPolarWebhookSecretAsIssued(t *testing.T) {
 	cfg := &Config{
 		Environment:        "development",
 		SecretKey:          "access-key-value",
 		SessionSecretKey:   "refresh-key-value",
-		PolarWebhookSecret: "whsec_53VRnotbase64!!!_definitely_not_base64_data",
+		PolarWebhookSecret: "whsec_Ab3dEfGh1jKlMnOpQrStUvWxYz0123456789abcdefg",
 	}
-	if err := cfg.Validate(); err == nil {
-		t.Fatal("expected a non-base64 Polar webhook secret to be rejected")
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("expected a pre-2026-09-08 Polar secret to be accepted verbatim, got %v", err)
 	}
 
-	cfg.PolarWebhookSecret = "whsec_" + base64.StdEncoding.EncodeToString([]byte("a-raw-polar-secret"))
+	cfg.PolarWebhookSecret = "whsec_" + base64.StdEncoding.EncodeToString([]byte("a-32-byte-standard-webhooks-key!"))
 	if err := cfg.Validate(); err != nil {
-		t.Fatalf("expected an encoded secret to be accepted, got %v", err)
+		t.Fatalf("expected a Standard Webhooks secret to be accepted, got %v", err)
 	}
 
 	// Unset stays valid: billing is opt-in, and a self-hosted instance without

@@ -98,6 +98,14 @@ func main() {
 			log.Info().Int("cleaned", cleaned).Msg("expired attachments cleaned")
 		}
 	})
+	// Onboarding tips need a working unsubscribe link, and that link points at
+	// this API's public origin. Without PUBLIC_API_URL the series stays off
+	// rather than sending mail nobody can opt out of.
+	if cfg.OnboardingEmailsEnabled && cfg.PublicAPIURL != "" {
+		runner.RegisterOnboardingTips(jobs.NewOnboardingTips(pool, cnt.Mail(), cfg.SecretKey, cfg.FrontendURL, cfg.PublicAPIURL, cfg.APIPrefix, log))
+	} else {
+		log.Info().Bool("enabled", cfg.OnboardingEmailsEnabled).Bool("public_api_url_set", cfg.PublicAPIURL != "").Msg("onboarding tips disabled")
+	}
 	runner.Start()
 
 	srv := server.New(cfg, cnt, runner)
@@ -179,6 +187,9 @@ func main() {
 	srv.Router().Route(cfg.APIPrefix+"/v1", func(r chi.Router) {
 		authHandler.RegisterRoutes(r)
 		handlers.NewTestingSignupHandler(repositories.NewTestingSignupRepository(pool)).RegisterRoutes(r)
+		// Unsubscribe from the tips series: the token in the link is the
+		// credential, so this works from any mail client without a session.
+		handlers.NewEmailUnsubscribeHandler(cfg, cnt.UserRepo()).RegisterRoutes(r)
 
 		// Public configuration endpoints
 		r.Get("/vapid", handlers.NewVAPIDHandler(cfg).ServeHTTP)

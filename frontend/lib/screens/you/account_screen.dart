@@ -83,6 +83,10 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   bool _isExporting = false;
   bool _ocrTrainingEnabled = false;
   bool _isOcrTrainingBusy = false;
+
+  /// Account-level opt-out for the post-sign-up tips emails.
+  bool _tipsEmailsEnabled = true;
+  bool _isTipsEmailsBusy = false;
   int _ocrTrainingSamples = 0;
   List<Group> _households = [];
 
@@ -164,6 +168,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       _userId = user.id;
       _isGuest = user.isGuest;
       _isVerified = user.isVerified;
+      _tipsEmailsEnabled = user.tipsEmailsEnabled;
       _households = households;
       _isLoading = false;
       _error = null;
@@ -649,6 +654,22 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             onTap: () => context.pushNamed('notificationPreferences'),
           ),
           Divider(color: Theme.of(context).colorScheme.outlineVariant),
+          // Guests have no email address, so there is nothing to switch.
+          if (!_isGuest) ...[
+            _MenuRow(
+              icon: const AppIcon(name: 'inbox'),
+              label: l10n.accountTipsEmailsTitle,
+              value: l10n.accountTipsEmailsDescription,
+              onTap: _isTipsEmailsBusy
+                  ? null
+                  : () => _setTipsEmailsEnabled(!_tipsEmailsEnabled),
+              trailing: Switch.adaptive(
+                value: _tipsEmailsEnabled,
+                onChanged: _isTipsEmailsBusy ? null : _setTipsEmailsEnabled,
+              ),
+            ),
+            Divider(color: Theme.of(context).colorScheme.outlineVariant),
+          ],
           _MenuRow(
             icon: const AppIcon(name: 'homeOutline'),
             label: l10n.integrationsTitle,
@@ -1065,6 +1086,29 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _setTipsEmailsEnabled(bool enabled) async {
+    if (_isTipsEmailsBusy) return;
+    final previous = _tipsEmailsEnabled;
+    // Flip first so the switch answers the tap; roll back if the save fails.
+    setState(() {
+      _isTipsEmailsBusy = true;
+      _tipsEmailsEnabled = enabled;
+    });
+    try {
+      final authService = await ref.read(authServiceProviderAsync.future);
+      final user = await authService
+          .updateMe(UpdateUserRequest(tipsEmailsEnabled: enabled));
+      if (mounted) setState(() => _tipsEmailsEnabled = user.tipsEmailsEnabled);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _tipsEmailsEnabled = previous);
+      AppToast.error(
+          context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
+    } finally {
+      if (mounted) setState(() => _isTipsEmailsBusy = false);
+    }
   }
 
   Future<void> _setOcrTrainingEnabled(bool enabled) async {
