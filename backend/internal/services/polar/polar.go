@@ -212,7 +212,9 @@ func (c *Client) GetProduct(ctx context.Context, productID string) (*Product, er
 	return &out, nil
 }
 
-// APIError is a non-2xx response from Polar.
+// APIError is a non-2xx response from Polar. Body is kept verbatim because it
+// is the only place Polar says *why* a call was refused, and that reason is
+// what turns an opaque 500 in mitlist into an actionable fix.
 type APIError struct {
 	StatusCode int
 	Body       string
@@ -220,6 +222,30 @@ type APIError struct {
 
 func (e *APIError) Error() string {
 	return fmt.Sprintf("polar: api returned %d: %s", e.StatusCode, e.Body)
+}
+
+// Unauthorized reports whether Polar rejected the access token itself, or the
+// token's scopes. A token with products:read but not checkouts:write reads the
+// catalog happily and then fails here — so prices render while checkout does
+// not, which is otherwise a baffling pair of symptoms.
+func (e *APIError) Unauthorized() bool {
+	return e != nil && (e.StatusCode == http.StatusUnauthorized || e.StatusCode == http.StatusForbidden)
+}
+
+// Rejected reports whether Polar refused the request body rather than the
+// caller: a field it would not accept, or an object that does not exist.
+func (e *APIError) Rejected() bool {
+	return e != nil && (e.StatusCode == http.StatusUnprocessableEntity ||
+		e.StatusCode == http.StatusBadRequest ||
+		e.StatusCode == http.StatusNotFound)
+}
+
+// Mentions reports whether Polar's error body names the given request field.
+// Polar answers a rejected body with FastAPI's validation shape, whose "loc"
+// entries carry the offending field name, so a plain substring match over the
+// body is enough to tell "this discount is no good" from every other refusal.
+func (e *APIError) Mentions(field string) bool {
+	return e != nil && strings.Contains(e.Body, field)
 }
 
 func (c *Client) do(ctx context.Context, method, path string, body any, out any) error {

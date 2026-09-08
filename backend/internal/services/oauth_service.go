@@ -308,6 +308,8 @@ func (s *OAuthService) processOAuthUser(
 			LastName:   lastName,
 			IsActive:   true,
 			IsVerified: true,
+			// The tips series is opt-out; every email carries the way out.
+			TipsEmailsEnabled: true,
 		}
 		if avatarURL != "" {
 			user.AvatarURL = &avatarURL

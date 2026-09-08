@@ -8,6 +8,22 @@ follow [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Onboarding tips: five emails over the first month after sign-up (day 1, 3,
+  7, 14, 30) on households, lists, money, chores and the rest of the app, in
+  the same paper / ink / orange style as the account emails. Sent by an
+  hourly job to verified, non-guest accounts that have not opted out; each
+  step goes out at most once and only inside a 72-hour window after it comes
+  due, so accounts older than the series never get a backlog. Every email
+  carries `List-Unsubscribe` / `List-Unsubscribe-Post` headers and a footer
+  link to the new public `GET|POST /email/unsubscribe?token=` endpoint (an
+  HMAC over the user id, no session needed); the account screen has a "Tips
+  by email" switch, exposed as `tips_emails_enabled` on `/auth/me`. Requires
+  `PUBLIC_API_URL`; off otherwise, or with `ONBOARDING_EMAILS_ENABLED=false`.
+  Migration 65.
+
+- Outgoing mail shows a display name, "mitlist <noreply@mitlist.me>", set by
+  `MAIL_FROM_NAME`.
+
 - Branded verification and password reset emails: HTML in the app's paper /
   ink / orange style with a plain-text alternative, the code on a sticky note,
   and a button that opens the app (`/verify?token=`, `/reset-password?token=`).
@@ -32,6 +48,18 @@ follow [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Polar checkout and webhooks work in production again. Every checkout had
+  been refused since launch because all three Polar products were still
+  *Draft* (Polar prices a draft normally, so the paywall rendered, then
+  answers `POST /v1/checkouts/` with "Product is a draft."); they are now
+  Private. The webhook secret can be pasted from the Polar dashboard
+  verbatim: Polar signs with the UTF-8 bytes of the whole `whsec_…` string
+  for secrets issued before 2026-09-08 and with a real Standard Webhooks key
+  after, and the API now verifies under both, so the secret that crash-looped
+  the API on 2026-08-21 (and was then unset, leaving every delivery answered
+  503) no longer needs an encoding guessed for it. A draft-product refusal is
+  logged with the fix, next to the existing messages for a token without
+  `checkouts:write` and a rejected discount.
 - Any household member can edit, delete and re-zone a chore, not only an
   admin. `PATCH /chores/{id}`, `DELETE /chores/{id}` and a `PATCH
   /groups/{id}` that carries only `chore_zones` now need membership, in

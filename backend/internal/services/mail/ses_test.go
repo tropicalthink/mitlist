@@ -135,7 +135,7 @@ func TestSendViaSES_SanitizesHeaders(t *testing.T) {
 	fake := &fakeSES{}
 	s := newTestService(t, &config.Config{SESRegion: "eu-central-1", MailFromEmail: "noreply@mitlist.me"}, fake)
 
-	err := s.sendViaSES("noreply@mitlist.me", "user@example.com\r\nBcc: attacker@evil.com", "Hi\r\nBcc: attacker@evil.com", "<p>h</p>", "t")
+	err := s.sendViaSES("noreply@mitlist.me", "user@example.com\r\nBcc: attacker@evil.com", "Hi\r\nBcc: attacker@evil.com", "<p>h</p>", "t", nil)
 	if err != nil {
 		t.Fatalf("sendViaSES: %v", err)
 	}
@@ -151,7 +151,7 @@ func TestSendViaSES_RejectsEmptyBody(t *testing.T) {
 	fake := &fakeSES{}
 	s := newTestService(t, &config.Config{SESRegion: "eu-central-1"}, fake)
 
-	if err := s.sendViaSES("noreply@mitlist.me", "user@example.com", "Subject", "", ""); err == nil {
+	if err := s.sendViaSES("noreply@mitlist.me", "user@example.com", "Subject", "", "", nil); err == nil {
 		t.Error("expected an error for a message with neither body")
 	}
 	if fake.calls != 0 {

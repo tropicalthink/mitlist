@@ -73,11 +73,19 @@ func buildMessage(from, to, subject, body string, isHTML bool) []byte {
 	return buf.Bytes()
 }
 
+// Header is one extra message header, e.g. List-Unsubscribe. Names and values
+// are sanitized like every other header before they reach the wire.
+type Header struct {
+	Name  string
+	Value string
+}
+
 // buildMultipartMessage assembles a multipart/alternative message carrying a
 // plain-text part and an HTML part. Clients that render HTML use the second
 // part; everything else (and every spam filter that distrusts HTML-only mail)
-// still gets the text. Like buildMessage it is pure and unit-testable.
-func buildMultipartMessage(from, to, subject, text, html string) []byte {
+// still gets the text. Like buildMessage it is pure and unit-testable. Extra
+// headers, when given, go after the standard ones.
+func buildMultipartMessage(from, to, subject, text, html string, extra ...Header) []byte {
 	from = sanitizeHeader(from)
 	to = sanitizeHeader(to)
 	subject = sanitizeHeader(subject)
@@ -114,6 +122,16 @@ func buildMultipartMessage(from, to, subject, text, html string) []byte {
 	buf.WriteString("Date: ")
 	buf.WriteString(time.Now().Format(time.RFC1123Z))
 	buf.WriteString("\r\n")
+	for _, h := range extra {
+		name := sanitizeHeader(strings.ReplaceAll(h.Name, ":", ""))
+		if name == "" {
+			continue
+		}
+		buf.WriteString(name)
+		buf.WriteString(": ")
+		buf.WriteString(sanitizeHeader(h.Value))
+		buf.WriteString("\r\n")
+	}
 	buf.WriteString("MIME-Version: 1.0\r\n")
 	buf.WriteString("Content-Type: multipart/alternative; boundary=\"")
 	buf.WriteString(mw.Boundary())
@@ -134,19 +152,44 @@ func (s *Service) Send(to, subject, body string, isHTML bool) error {
 // anything a person reads (verification, recovery); the text part is what a
 // text-only client shows and what keeps HTML mail out of the spam folder.
 func (s *Service) SendHTML(to, subject, html, text string) error {
-	from := s.cfg.MailFromEmail
-	if from == "" {
-		from = "noreply@mitlist.me"
-	}
+	return s.SendHTMLWithHeaders(to, subject, html, text, nil)
+}
+
+// SendHTMLWithHeaders is SendHTML plus extra headers. The onboarding series
+// uses it for List-Unsubscribe, which mail clients turn into a native
+// unsubscribe button and which Gmail and Yahoo require of anything that is
+// not strictly transactional.
+func (s *Service) SendHTMLWithHeaders(to, subject, html, text string, headers []Header) error {
 	if s.sesEnabled() {
-		if err := s.sendViaSES(from, to, subject, html, text); err == nil {
+		if err := s.sendViaSES(s.fromHeader(), to, subject, html, text, headers); err == nil {
 			s.log.Info().Str("provider", "ses").Str("to", to).Msg("email sent")
 			return nil
 		} else {
 			s.log.WithError(err).Warn().Str("provider", "ses").Msg("ses send failed, trying smtp")
 		}
 	}
-	return s.sendSMTPWithFallback(from, to, buildMultipartMessage(from, to, subject, text, html))
+	return s.sendSMTPWithFallback(s.fromAddress(), to, buildMultipartMessage(s.fromHeader(), to, subject, text, html, headers...))
+}
+
+// fromAddress is the bare sender address: the SMTP envelope sender, and what
+// must be a verified identity at the provider.
+func (s *Service) fromAddress() string {
+	if s.cfg.MailFromEmail != "" {
+		return s.cfg.MailFromEmail
+	}
+	return "noreply@mitlist.me"
+}
+
+// fromHeader is what the recipient sees in the From line: the display name in
+// front of the address, "mitlist <noreply@mitlist.me>", so the inbox shows
+// the product and not a bare noreply.
+func (s *Service) fromHeader() string {
+	addr := s.fromAddress()
+	name := sanitizeHeader(strings.ReplaceAll(s.cfg.MailFromName, `"`, ""))
+	if name == "" {
+		return addr
+	}
+	return name + " <" + addr + ">"
 }
 
 // SendTemplate renders an html/template and sends the result as an HTML email.
@@ -163,25 +206,20 @@ func (s *Service) SendTemplate(to, subject, tmplStr string, data any) error {
 }
 
 func (s *Service) send(to, subject, body string, isHTML bool) error {
-	from := s.cfg.MailFromEmail
-	if from == "" {
-		from = "noreply@mitlist.me"
-	}
-
-	msg := buildMessage(from, to, subject, body, isHTML)
+	msg := buildMessage(s.fromHeader(), to, subject, body, isHTML)
 	if s.sesEnabled() {
 		html, text := body, ""
 		if !isHTML {
 			html, text = "", body
 		}
-		if err := s.sendViaSES(from, to, subject, html, text); err == nil {
+		if err := s.sendViaSES(s.fromHeader(), to, subject, html, text, nil); err == nil {
 			s.log.Info().Str("provider", "ses").Str("to", to).Msg("email sent")
 			return nil
 		} else {
 			s.log.WithError(err).Warn().Str("provider", "ses").Msg("ses send failed, trying smtp")
 		}
 	}
-	return s.sendSMTPWithFallback(from, to, msg)
+	return s.sendSMTPWithFallback(s.fromAddress(), to, msg)
 }
 
 // sendSMTPWithFallback tries the primary SMTP provider and falls back to the
