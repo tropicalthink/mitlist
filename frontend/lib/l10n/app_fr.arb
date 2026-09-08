@@ -5909,6 +5909,8 @@
   "feedbackSent": "Merci — votre demande a été envoyée !",
   "feedbackEmpty": "Veuillez d'abord écrire un court message.",
   "feedbackFailed": "Impossible d'envoyer votre demande pour le moment. Veuillez réessayer plus tard.",
+  "accountTipsEmailsTitle": "Conseils par e-mail",
+  "accountTipsEmailsDescription": "Quelques e-mails durant vos premières semaines pour tirer le meilleur de mitlist. Les e-mails liés au compte arrivent dans tous les cas.",
   "accountOcrTrainingTitle": "Améliorer l’OCR manuscrit hors ligne",
   "accountOcrTrainingDescription": "Les lignes vérifiées manuellement restent sur cet appareil jusqu’à leur exportation ou suppression. Rien n’est envoyé.",
   "accountOcrTrainingExport": "Exporter les données d’entraînement OCR",

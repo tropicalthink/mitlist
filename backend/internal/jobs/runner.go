@@ -113,6 +113,16 @@ func (r *Runner) RegisterAll() {
 	r.register("guest-cleanup", "15 3 * * *", gc.Run, true)
 }
 
+// RegisterOnboardingTips adds the post-sign-up email series, hourly at :20.
+// Separate from RegisterAll because it needs the mail service and the public
+// URLs, which the runner does not otherwise know about.
+func (r *Runner) RegisterOnboardingTips(job *OnboardingTips) {
+	if job == nil {
+		return
+	}
+	r.register("onboarding-tips", "20 * * * *", job.Run, true)
+}
+
 // RegisterAttachmentCleanup adds the storage reservation sweeper. It is kept
 // separate from RegisterAll because it depends on the configured object store.
 func (r *Runner) RegisterAttachmentCleanup(fn func()) {

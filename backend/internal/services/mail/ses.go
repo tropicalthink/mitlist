@@ -3,6 +3,7 @@ package mail
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -71,8 +72,9 @@ func (s *Service) ses() (sesAPI, error) {
 // sendViaSES delivers one message through the SES v2 API. Passing subject and
 // bodies separately (rather than a raw MIME blob) lets SES do the encoding and
 // keeps the multipart/alternative assembly a concern of the SMTP path only.
-// Either html or text may be empty, but not both.
-func (s *Service) sendViaSES(from, to, subject, html, text string) error {
+// Either html or text may be empty, but not both. Extra headers ride along as
+// SES message headers.
+func (s *Service) sendViaSES(from, to, subject, html, text string, headers []Header) error {
 	client, err := s.ses()
 	if err != nil {
 		return err
@@ -98,6 +100,16 @@ func (s *Service) sendViaSES(from, to, subject, html, text string) error {
 				Body:    body,
 			},
 		},
+	}
+	for _, h := range headers {
+		name := sanitizeHeader(strings.ReplaceAll(h.Name, ":", ""))
+		if name == "" {
+			continue
+		}
+		in.Content.Simple.Headers = append(in.Content.Simple.Headers, types.MessageHeader{
+			Name:  aws.String(name),
+			Value: aws.String(sanitizeHeader(h.Value)),
+		})
 	}
 	if s.cfg.SESConfigurationSet != "" {
 		in.ConfigurationSetName = aws.String(s.cfg.SESConfigurationSet)

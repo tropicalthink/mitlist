@@ -7,6 +7,10 @@ class User {
   final bool isActive;
   final bool isVerified;
   final bool isGuest;
+
+  /// Opt-out for the post-sign-up tips emails. Account-level, unlike the
+  /// per-household notification preferences.
+  final bool tipsEmailsEnabled;
   final String? avatarUrl;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -19,6 +23,7 @@ class User {
     required this.isActive,
     required this.isVerified,
     required this.isGuest,
+    this.tipsEmailsEnabled = true,
     this.avatarUrl,
     required this.createdAt,
     required this.updatedAt,
@@ -33,6 +38,8 @@ class User {
       isActive: json['is_active'] as bool,
       isVerified: json['is_verified'] as bool,
       isGuest: json['is_guest'] as bool,
+      // Older servers do not send the flag; treat that as the default (on).
+      tipsEmailsEnabled: json['tips_emails_enabled'] as bool? ?? true,
       avatarUrl: json['avatar_url'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
@@ -48,6 +55,7 @@ class User {
       'is_active': isActive,
       'is_verified': isVerified,
       'is_guest': isGuest,
+      'tips_emails_enabled': tipsEmailsEnabled,
       if (avatarUrl != null) 'avatar_url': avatarUrl,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
@@ -230,11 +238,13 @@ class UpdateUserRequest {
   final String? firstName;
   final String? lastName;
   final String? avatarUrl;
+  final bool? tipsEmailsEnabled;
 
   const UpdateUserRequest({
     this.firstName,
     this.lastName,
     this.avatarUrl,
+    this.tipsEmailsEnabled,
   });
 
   factory UpdateUserRequest.fromJson(Map<String, dynamic> json) {
@@ -242,6 +252,7 @@ class UpdateUserRequest {
       firstName: json['first_name'] as String?,
       lastName: json['last_name'] as String?,
       avatarUrl: json['avatar_url'] as String?,
+      tipsEmailsEnabled: json['tips_emails_enabled'] as bool?,
     );
   }
 
@@ -250,6 +261,7 @@ class UpdateUserRequest {
       if (firstName != null) 'first_name': firstName,
       if (lastName != null) 'last_name': lastName,
       if (avatarUrl != null) 'avatar_url': avatarUrl,
+      if (tipsEmailsEnabled != null) 'tips_emails_enabled': tipsEmailsEnabled,
     };
   }
 }

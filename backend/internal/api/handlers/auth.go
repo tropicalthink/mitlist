@@ -194,9 +194,10 @@ type passwordResetConfirmReq struct {
 }
 
 type updateMeReq struct {
-	FirstName *string `json:"first_name,omitempty"`
-	LastName  *string `json:"last_name,omitempty"`
-	AvatarURL *string `json:"avatar_url,omitempty"`
+	FirstName         *string `json:"first_name,omitempty"`
+	LastName          *string `json:"last_name,omitempty"`
+	AvatarURL         *string `json:"avatar_url,omitempty"`
+	TipsEmailsEnabled *bool   `json:"tips_emails_enabled,omitempty"`
 }
 
 type changePasswordReq struct {
@@ -500,9 +501,10 @@ func (h *AuthHandler) UpdateMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	user, err := h.userService.UpdateMe(r.Context(), userID, services.UpdateMeInput{
-		FirstName: req.FirstName,
-		LastName:  req.LastName,
-		AvatarURL: req.AvatarURL,
+		FirstName:         req.FirstName,
+		LastName:          req.LastName,
+		AvatarURL:         req.AvatarURL,
+		TipsEmailsEnabled: req.TipsEmailsEnabled,
 	})
 	if err != nil {
 		api.RespondError(w, err)

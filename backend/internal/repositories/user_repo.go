@@ -31,9 +31,9 @@ func (r *UserRepository) Create(ctx context.Context, user *models.User) error {
 	user.UpdatedAt = now
 
 	query := `
-		INSERT INTO users (id, email, password_hash, first_name, last_name, avatar_url, is_active, is_verified, is_guest, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-		RETURNING id, email, password_hash, first_name, last_name, avatar_url, is_active, is_verified, is_guest, created_at, updated_at
+		INSERT INTO users (id, email, password_hash, first_name, last_name, avatar_url, is_active, is_verified, is_guest, tips_emails_enabled, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+		RETURNING id, email, password_hash, first_name, last_name, avatar_url, is_active, is_verified, is_guest, tips_emails_enabled, created_at, updated_at
 	`
 	return r.db.QueryRow(ctx, query,
 		user.ID,
@@ -45,6 +45,7 @@ func (r *UserRepository) Create(ctx context.Context, user *models.User) error {
 		user.IsActive,
 		user.IsVerified,
 		user.IsGuest,
+		user.TipsEmailsEnabled,
 		user.CreatedAt,
 		user.UpdatedAt,
 	).Scan(
@@ -57,6 +58,7 @@ func (r *UserRepository) Create(ctx context.Context, user *models.User) error {
 		&user.IsActive,
 		&user.IsVerified,
 		&user.IsGuest,
+		&user.TipsEmailsEnabled,
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	)
@@ -65,7 +67,7 @@ func (r *UserRepository) Create(ctx context.Context, user *models.User) error {
 // GetByID retrieves a user by ID, excluding soft-deleted records.
 func (r *UserRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.User, error) {
 	query := `
-		SELECT id, email, password_hash, first_name, last_name, avatar_url, is_active, is_verified, is_guest, created_at, updated_at
+		SELECT id, email, password_hash, first_name, last_name, avatar_url, is_active, is_verified, is_guest, tips_emails_enabled, created_at, updated_at
 		FROM users
 		WHERE id = $1 AND deleted_at IS NULL
 	`
@@ -80,6 +82,7 @@ func (r *UserRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.Use
 		&user.IsActive,
 		&user.IsVerified,
 		&user.IsGuest,
+		&user.TipsEmailsEnabled,
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	)
@@ -95,7 +98,7 @@ func (r *UserRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.Use
 // GetByEmail retrieves a user by email, excluding soft-deleted records.
 func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*models.User, error) {
 	query := `
-		SELECT id, email, password_hash, first_name, last_name, avatar_url, is_active, is_verified, is_guest, created_at, updated_at
+		SELECT id, email, password_hash, first_name, last_name, avatar_url, is_active, is_verified, is_guest, tips_emails_enabled, created_at, updated_at
 		FROM users
 		WHERE email = $1 AND deleted_at IS NULL
 	`
@@ -110,6 +113,7 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*models.
 		&user.IsActive,
 		&user.IsVerified,
 		&user.IsGuest,
+		&user.TipsEmailsEnabled,
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	)
@@ -125,7 +129,7 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*models.
 // GetByOAuth retrieves a user linked to the given OAuth provider and provider user ID.
 func (r *UserRepository) GetByOAuth(ctx context.Context, provider, providerUserID string) (*models.User, error) {
 	query := `
-		SELECT u.id, u.email, u.password_hash, u.first_name, u.last_name, u.avatar_url, u.is_active, u.is_verified, u.is_guest, u.created_at, u.updated_at
+		SELECT u.id, u.email, u.password_hash, u.first_name, u.last_name, u.avatar_url, u.is_active, u.is_verified, u.is_guest, u.tips_emails_enabled, u.created_at, u.updated_at
 		FROM users u
 		JOIN oauth_accounts oa ON oa.user_id = u.id
 		WHERE oa.provider = $1 AND oa.provider_user_id = $2 AND u.deleted_at IS NULL
@@ -141,6 +145,7 @@ func (r *UserRepository) GetByOAuth(ctx context.Context, provider, providerUserI
 		&user.IsActive,
 		&user.IsVerified,
 		&user.IsGuest,
+		&user.TipsEmailsEnabled,
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	)
@@ -174,8 +179,8 @@ func (r *UserRepository) Update(ctx context.Context, user *models.User) error {
 	updateQuery := `
 		UPDATE users
 		SET email = $1, password_hash = $2, first_name = $3, last_name = $4, avatar_url = $5,
-		    is_active = $6, is_verified = $7, is_guest = $8, updated_at = $9
-		WHERE id = $10 AND deleted_at IS NULL
+		    is_active = $6, is_verified = $7, is_guest = $8, tips_emails_enabled = $9, updated_at = $10
+		WHERE id = $11 AND deleted_at IS NULL
 	`
 	cmd, err := tx.Exec(ctx, updateQuery,
 		user.Email,
@@ -186,6 +191,7 @@ func (r *UserRepository) Update(ctx context.Context, user *models.User) error {
 		user.IsActive,
 		user.IsVerified,
 		user.IsGuest,
+		user.TipsEmailsEnabled,
 		user.UpdatedAt,
 		user.ID,
 	)
@@ -197,6 +203,17 @@ func (r *UserRepository) Update(ctx context.Context, user *models.User) error {
 	}
 
 	return tx.Commit(ctx)
+}
+
+// SetTipsEmailsEnabled flips the onboarding-series opt-out. Unsubscribing an
+// account that no longer exists is a no-op, not an error: the person clicked
+// a link to make mail stop, and it has.
+func (r *UserRepository) SetTipsEmailsEnabled(ctx context.Context, id uuid.UUID, enabled bool) error {
+	_, err := r.db.Exec(ctx, `
+		UPDATE users SET tips_emails_enabled = $2, updated_at = now()
+		WHERE id = $1 AND deleted_at IS NULL
+	`, id, enabled)
+	return err
 }
 
 // SoftDelete removes account credentials and personal profile data while
@@ -291,7 +308,7 @@ func (r *UserRepository) List(ctx context.Context, limit, offset int) ([]models.
 	}
 
 	query := `
-		SELECT id, email, password_hash, first_name, last_name, avatar_url, is_active, is_verified, is_guest, created_at, updated_at
+		SELECT id, email, password_hash, first_name, last_name, avatar_url, is_active, is_verified, is_guest, tips_emails_enabled, created_at, updated_at
 		FROM users
 		WHERE deleted_at IS NULL
 		ORDER BY created_at DESC, id DESC
@@ -316,6 +333,7 @@ func (r *UserRepository) List(ctx context.Context, limit, offset int) ([]models.
 			&user.IsActive,
 			&user.IsVerified,
 			&user.IsGuest,
+			&user.TipsEmailsEnabled,
 			&user.CreatedAt,
 			&user.UpdatedAt,
 		); err != nil {

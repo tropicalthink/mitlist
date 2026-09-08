@@ -28,16 +28,16 @@ func TestUserRepository_Create(t *testing.T) {
 
 	rows := pgxmock.NewRows([]string{
 		"id", "email", "password_hash", "first_name", "last_name", "avatar_url",
-		"is_active", "is_verified", "is_guest", "created_at", "updated_at",
+		"is_active", "is_verified", "is_guest", "tips_emails_enabled", "created_at", "updated_at",
 	}).AddRow(
 		fixedUUID(), user.Email, user.PasswordHash, user.FirstName, user.LastName, nil,
-		true, true, false, fixedTime(), fixedTime(),
+		true, true, false, true, fixedTime(), fixedTime(),
 	)
 
 	mock.ExpectQuery("INSERT INTO users").
 		WithArgs(
 			pgxmock.AnyArg(), user.Email, user.PasswordHash, user.FirstName, user.LastName,
-			pgxmock.AnyArg(), user.IsActive, user.IsVerified, user.IsGuest,
+			pgxmock.AnyArg(), user.IsActive, user.IsVerified, user.IsGuest, user.TipsEmailsEnabled,
 			pgxmock.AnyArg(), pgxmock.AnyArg(),
 		).
 		WillReturnRows(rows)
@@ -61,16 +61,16 @@ func TestUserRepository_Create_GeneratesUUID(t *testing.T) {
 
 	rows := pgxmock.NewRows([]string{
 		"id", "email", "password_hash", "first_name", "last_name", "avatar_url",
-		"is_active", "is_verified", "is_guest", "created_at", "updated_at",
+		"is_active", "is_verified", "is_guest", "tips_emails_enabled", "created_at", "updated_at",
 	}).AddRow(
 		fixedUUID(), user.Email, "", user.FirstName, user.LastName, nil,
-		false, false, false, fixedTime(), fixedTime(),
+		false, false, false, false, fixedTime(), fixedTime(),
 	)
 
 	mock.ExpectQuery("INSERT INTO users").
 		WithArgs(
 			pgxmock.AnyArg(), user.Email, "", user.FirstName, user.LastName,
-			pgxmock.AnyArg(), false, false, false,
+			pgxmock.AnyArg(), false, false, false, false,
 			pgxmock.AnyArg(), pgxmock.AnyArg(),
 		).
 		WillReturnRows(rows)
@@ -88,10 +88,10 @@ func TestUserRepository_GetByID(t *testing.T) {
 
 	rows := pgxmock.NewRows([]string{
 		"id", "email", "password_hash", "first_name", "last_name", "avatar_url",
-		"is_active", "is_verified", "is_guest", "created_at", "updated_at",
+		"is_active", "is_verified", "is_guest", "tips_emails_enabled", "created_at", "updated_at",
 	}).AddRow(
 		id, "test@example.com", "hash", "Test", "User", nil,
-		true, true, false, fixedTime(), fixedTime(),
+		true, true, false, true, fixedTime(), fixedTime(),
 	)
 
 	mock.ExpectQuery("SELECT .* FROM users WHERE id = .* AND deleted_at IS NULL").
@@ -167,10 +167,10 @@ func TestUserRepository_GetByEmail(t *testing.T) {
 
 	rows := pgxmock.NewRows([]string{
 		"id", "email", "password_hash", "first_name", "last_name", "avatar_url",
-		"is_active", "is_verified", "is_guest", "created_at", "updated_at",
+		"is_active", "is_verified", "is_guest", "tips_emails_enabled", "created_at", "updated_at",
 	}).AddRow(
 		fixedUUID(), "test@example.com", "hash", "Test", "User", nil,
-		true, true, false, fixedTime(), fixedTime(),
+		true, true, false, true, fixedTime(), fixedTime(),
 	)
 
 	mock.ExpectQuery("SELECT .* FROM users WHERE email = .* AND deleted_at IS NULL").
@@ -204,10 +204,10 @@ func TestUserRepository_GetByOAuth(t *testing.T) {
 
 	rows := pgxmock.NewRows([]string{
 		"id", "email", "password_hash", "first_name", "last_name", "avatar_url",
-		"is_active", "is_verified", "is_guest", "created_at", "updated_at",
+		"is_active", "is_verified", "is_guest", "tips_emails_enabled", "created_at", "updated_at",
 	}).AddRow(
 		fixedUUID(), "test@example.com", "hash", "Test", "User", nil,
-		true, true, false, fixedTime(), fixedTime(),
+		true, true, false, true, fixedTime(), fixedTime(),
 	)
 
 	mock.ExpectQuery("SELECT .* FROM users u JOIN oauth_accounts oa").
@@ -247,7 +247,7 @@ func TestUserRepository_Update(t *testing.T) {
 	mock.ExpectExec("UPDATE users SET").
 		WithArgs(
 			"new@example.com", "newhash", "New", "Name", pgxmock.AnyArg(),
-			true, true, false, pgxmock.AnyArg(), id,
+			true, true, false, false, pgxmock.AnyArg(), id,
 		).
 		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
 	mock.ExpectCommit()
@@ -297,7 +297,7 @@ func TestUserRepository_Update_RowsAffectedZero(t *testing.T) {
 	mock.ExpectExec("UPDATE users SET").
 		WithArgs(
 			"new@example.com", "newhash", "New", "Name", pgxmock.AnyArg(),
-			true, true, false, pgxmock.AnyArg(), id,
+			true, true, false, false, pgxmock.AnyArg(), id,
 		).
 		WillReturnResult(pgxmock.NewResult("UPDATE", 0))
 	mock.ExpectRollback()
@@ -367,13 +367,13 @@ func TestUserRepository_List(t *testing.T) {
 
 	rows := pgxmock.NewRows([]string{
 		"id", "email", "password_hash", "first_name", "last_name", "avatar_url",
-		"is_active", "is_verified", "is_guest", "created_at", "updated_at",
+		"is_active", "is_verified", "is_guest", "tips_emails_enabled", "created_at", "updated_at",
 	}).AddRow(
 		fixedUUID(), "a@example.com", "hash", "A", "B", nil,
-		true, true, false, fixedTime(), fixedTime(),
+		true, true, false, true, fixedTime(), fixedTime(),
 	).AddRow(
 		fixedUUID(), "b@example.com", "hash", "C", "D", nil,
-		true, true, false, fixedTime(), fixedTime(),
+		true, true, false, true, fixedTime(), fixedTime(),
 	)
 
 	mock.ExpectQuery("SELECT .* FROM users WHERE deleted_at IS NULL").
@@ -392,10 +392,10 @@ func TestUserRepository_List_MaxLimit(t *testing.T) {
 
 	rows := pgxmock.NewRows([]string{
 		"id", "email", "password_hash", "first_name", "last_name", "avatar_url",
-		"is_active", "is_verified", "is_guest", "created_at", "updated_at",
+		"is_active", "is_verified", "is_guest", "tips_emails_enabled", "created_at", "updated_at",
 	}).AddRow(
 		fixedUUID(), "a@example.com", "hash", "A", "B", nil,
-		true, true, false, fixedTime(), fixedTime(),
+		true, true, false, true, fixedTime(), fixedTime(),
 	)
 
 	mock.ExpectQuery("SELECT .* FROM users WHERE deleted_at IS NULL").

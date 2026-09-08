@@ -7585,6 +7585,14 @@
   "@feedbackFailed": {
     "description": "Error when the feedback submission failed"
   },
+  "accountTipsEmailsTitle": "Tips by email",
+  "@accountTipsEmailsTitle": {
+    "description": "Account screen switch for the post-sign-up tips email series"
+  },
+  "accountTipsEmailsDescription": "A few emails in your first weeks on getting the most out of mitlist. Account emails still arrive either way.",
+  "@accountTipsEmailsDescription": {
+    "description": "Explains what the tips email switch controls"
+  },
   "accountOcrTrainingTitle": "Improve offline handwriting OCR",
   "@accountOcrTrainingTitle": {
     "description": "Opt-in local OCR training-data collection title"

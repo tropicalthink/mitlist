@@ -6,10 +6,10 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	standardwebhooks "github.com/standard-webhooks/standard-webhooks/libraries/go"
 
 	"github.com/mitlist-app/mitlist/internal/config"
 	"github.com/mitlist-app/mitlist/internal/services"
+	"github.com/mitlist-app/mitlist/internal/services/polar"
 	"github.com/mitlist-app/mitlist/pkg/logger"
 )
 
@@ -22,7 +22,7 @@ import (
 type PolarWebhookHandler struct {
 	log     *logger.Logger
 	billing *services.BillingService
-	wh      *standardwebhooks.Webhook
+	wh      *polar.WebhookVerifier
 }
 
 // NewPolarWebhookHandler creates a handler backed by cfg.PolarWebhookSecret.
@@ -33,7 +33,7 @@ func NewPolarWebhookHandler(cfg *config.Config, billing *services.BillingService
 	if cfg.PolarWebhookSecret == "" {
 		return h, nil
 	}
-	wh, err := standardwebhooks.NewWebhook(cfg.PolarWebhookSecret)
+	wh, err := polar.NewWebhookVerifier(cfg.PolarWebhookSecret)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +64,7 @@ func (h *PolarWebhookHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	deliveryID := r.Header.Get(standardwebhooks.HeaderWebhookID)
+	deliveryID := r.Header.Get(polar.HeaderWebhookID)
 
 	// A failure here is answered with 5xx so Polar retries. Anything the
 	// service deliberately skips — a redelivery, another app's event — is a

@@ -5606,6 +5606,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Couldn\'t send your request right now. Please try again later.';
 
   @override
+  String get accountTipsEmailsTitle => 'Tips by email';
+
+  @override
+  String get accountTipsEmailsDescription =>
+      'A few emails in your first weeks on getting the most out of mitlist. Account emails still arrive either way.';
+
+  @override
   String get accountOcrTrainingTitle => 'Improve offline handwriting OCR';
 
   @override
