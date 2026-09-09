@@ -189,3 +189,40 @@ func TestStartCheckoutDoesNotRetryOnTokenRefusal(t *testing.T) {
 		t.Fatalf("a token refusal must not be retried, got %d call(s)", len(stub.bodies))
 	}
 }
+
+// Polar validates the prefilled customer email down to whether its domain can
+// receive mail — stricter than mitlist's own sign-up check — and answers 422
+// for an address like ll@ll.com. That must not sink the sale: the hosted page
+// asks for an email anyway, and the external customer id still links the
+// purchase to the account.
+func TestStartCheckoutRetriesWithoutRejectedEmail(t *testing.T) {
+	stub, client := newPolarStub(t, func(attempt int, w http.ResponseWriter) {
+		if attempt == 1 {
+			w.WriteHeader(http.StatusUnprocessableEntity)
+			_, _ = w.Write([]byte(`{"detail":[{"type":"value_error","loc":["body","function-after[is_complete_configuration(), CheckoutProductsCreate]","customer_email"],"msg":"ll@ll.com is not a valid email address: The domain name ll.com does not accept email.","input":"ll@ll.com"},{"type":"missing","loc":["body","function-after[is_complete_configuration(), CheckoutPriceCreate]","product_price_id"],"msg":"Field required"}]}`))
+			return
+		}
+		checkoutOK(w)
+	})
+	svc := newCheckoutService(client, BillingConfig{ProductIDMonthly: uuid.NewString()})
+
+	url, err := svc.StartCheckout(context.Background(), uuid.New(), CheckoutInput{Interval: PlanMonthly})
+	if err != nil {
+		t.Fatalf("a rejected customer email must not fail the checkout: %v", err)
+	}
+	if url != "https://buy.polar.sh/co_1" {
+		t.Fatalf("unexpected checkout url %q", url)
+	}
+	if len(stub.bodies) != 2 {
+		t.Fatalf("expected a retry without the email, got %d call(s)", len(stub.bodies))
+	}
+	if stub.bodies[0]["customer_email"] != "buyer@example.com" {
+		t.Fatalf("first attempt should prefill the email, got %v", stub.bodies[0]["customer_email"])
+	}
+	if _, ok := stub.bodies[1]["customer_email"]; ok {
+		t.Fatal("the retry must drop the email prefill")
+	}
+	if stub.bodies[1]["external_customer_id"] == nil {
+		t.Fatal("the retry must keep the external customer id so the purchase still maps to the account")
+	}
+}
