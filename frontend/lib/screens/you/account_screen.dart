@@ -109,6 +109,24 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     _nameFocusNode = FocusNode();
     _nameFocusNode.addListener(_onNameFocusChange);
     _loadData();
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _settleCheckoutReturn());
+  }
+
+  /// Polar sends the buyer back to `/you?customer_session_token=…` after a
+  /// purchase. The token is for Polar's own customer portal and means nothing
+  /// here, so drop it from the address bar and refetch billing, which is what
+  /// turns "Become a supporter" into the thank-you as soon as the webhook has
+  /// landed.
+  void _settleCheckoutReturn() {
+    if (!mounted) return;
+    // Widget tests mount this screen without a router.
+    final router = GoRouter.maybeOf(context);
+    if (router == null) return;
+    final uri = router.routerDelegate.currentConfiguration.uri;
+    if (!uri.queryParameters.containsKey('customer_session_token')) return;
+    invalidateBilling(ref);
+    router.replace(uri.path);
   }
 
   @override
@@ -1710,6 +1728,16 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       appBar: MitlistAppBar.titleText(
         l10n.accountAppBarTitle,
         showStandardActions: false,
+        // This screen lives outside the tab shell, so a fresh page load —
+        // Polar's success URL, the OAuth callback, a bookmark — has nothing
+        // to pop and no tabs either. Give it a way home.
+        leading: (GoRouter.maybeOf(context)?.canPop() ?? true)
+            ? null
+            : IconButton(
+                icon: const Icon(Icons.home_outlined),
+                tooltip: l10n.navHome,
+                onPressed: () => context.go('/home'),
+              ),
       ),
       body: RefreshIndicator(
         color: Theme.of(context).colorScheme.primary,
