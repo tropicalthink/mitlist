@@ -68,6 +68,19 @@ follow [Semantic Versioning](https://semver.org/).
   page asks for an address; the external customer id still ties the purchase
   to the account) and logs the address it dropped. Same for the supporter
   pack.
+- Coming back from a Polar checkout no longer strands you. Polar returns to
+  `/you?customer_session_token=…`, a fresh page load of a screen that lives
+  outside the tab shell, so there was neither a back button nor tabs. The
+  account screen now shows a home button whenever there is nothing to go
+  back to (the OAuth callback and bookmarks land the same way), drops the
+  token from the address bar, and refetches billing so the supporter
+  thank-you appears as soon as the webhook has landed.
+- A new supporter on the default accent found every other colour still
+  locked. The perks flag is only created when something first reads it, and
+  with Clementine chosen the theme never does, so the accent picker created
+  it long after `/billing/status` had answered — and its listener waited for
+  the *next* answer. It now takes the current one too, and a stored value
+  can no longer overwrite a fresh server answer that landed first.
 - Any household member can edit, delete and re-zone a chore, not only an
   admin. `PATCH /chores/{id}`, `DELETE /chores/{id}` and a `PATCH
   /groups/{id}` that carries only `chore_zones` now need membership, in
