@@ -60,6 +60,14 @@ follow [Semantic Versioning](https://semver.org/).
   503) no longer needs an encoding guessed for it. A draft-product refusal is
   logged with the fix, next to the existing messages for a token without
   `checkouts:write` and a rejected discount.
+- Polar checkout no longer dies on an email Polar will not prefill. Polar
+  validates `customer_email` down to whether the domain can receive mail,
+  which is stricter than sign-up ever was, and answered 422 for such an
+  account — the paywall then showed "Could not start checkout" with a bare
+  500 behind it. The API now retries once without the prefill (the hosted
+  page asks for an address; the external customer id still ties the purchase
+  to the account) and logs the address it dropped. Same for the supporter
+  pack.
 - Any household member can edit, delete and re-zone a chore, not only an
   admin. `PATCH /chores/{id}`, `DELETE /chores/{id}` and a `PATCH
   /groups/{id}` that carries only `chore_zones` now need membership, in

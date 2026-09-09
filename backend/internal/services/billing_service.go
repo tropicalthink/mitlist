@@ -365,22 +365,43 @@ func (s *BillingService) StartCheckout(ctx context.Context, userID uuid.UUID, in
 		Metadata:           metadata,
 	}
 
+	session, err := s.createCheckout(ctx, req)
+	if err != nil {
+		return "", checkoutError(err, productID)
+	}
+	return session.URL, nil
+}
+
+// createCheckout opens the session, dropping the optional parts of the request
+// that Polar refuses rather than losing the sale over them. Everything that is
+// retried here is something the customer can supply on the hosted page anyway.
+func (s *BillingService) createCheckout(ctx context.Context, req polar.CheckoutRequest) (*polar.CheckoutSession, error) {
 	session, err := s.client.CreateCheckout(ctx, req)
-	if err != nil && discountID != "" && discountRejected(err) {
+	if err != nil && req.DiscountID != "" && discountRejected(err) {
 		// A discount that Polar will not honour (expired, deleted, or scoped to
 		// another product) must not take the whole sale down with it. Retry at
 		// full price — the customer can still type a working code on the
 		// checkout page — and shout about it so the promo gets fixed.
 		log.Error().Err(err).
-			Str("discount_id", discountID).
+			Str("discount_id", req.DiscountID).
 			Msg("polar refused the configured checkout discount; retrying at full price")
 		req.DiscountID = ""
 		session, err = s.client.CreateCheckout(ctx, req)
 	}
-	if err != nil {
-		return "", checkoutError(err, productID)
+	if err != nil && req.CustomerEmail != "" && emailRejected(err) {
+		// Polar checks that the prefilled address can actually receive mail
+		// (its domain must accept email), which mitlist never verified that
+		// strictly. Every checkout for such an account died here with a blank
+		// 500. Send the customer over without the prefill instead; the hosted
+		// page asks for an address, and the external customer id still ties
+		// the purchase back to the account.
+		log.Warn().Err(err).
+			Str("email", req.CustomerEmail).
+			Msg("polar refused the customer email for checkout; retrying without the prefill")
+		req.CustomerEmail = ""
+		session, err = s.client.CreateCheckout(ctx, req)
 	}
-	return session.URL, nil
+	return session, err
 }
 
 // usableDiscountID drops a discount id that Polar cannot possibly accept.
@@ -405,6 +426,14 @@ func usableDiscountID(id string) string {
 func discountRejected(err error) bool {
 	var apiErr *polar.APIError
 	return errors.As(err, &apiErr) && apiErr.Rejected() && apiErr.Mentions("discount")
+}
+
+// emailRejected reports whether Polar refused a checkout over the prefilled
+// customer email — "is not a valid email address", typically because the
+// domain publishes no way to receive mail.
+func emailRejected(err error) bool {
+	var apiErr *polar.APIError
+	return errors.As(err, &apiErr) && apiErr.Rejected() && apiErr.Mentions("customer_email")
 }
 
 // checkoutError turns a Polar failure into something a caller can act on.
