@@ -126,7 +126,7 @@ func (s *BillingService) StartSupporterCheckout(ctx context.Context, userID uuid
 		return "", err
 	}
 
-	session, err := s.client.CreateCheckout(ctx, polar.CheckoutRequest{
+	session, err := s.createCheckout(ctx, polar.CheckoutRequest{
 		ProductID:          s.cfg.ProductIDSupporter,
 		ExternalCustomerID: userID.String(),
 		CustomerEmail:      user.Email,
