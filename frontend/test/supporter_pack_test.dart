@@ -39,7 +39,8 @@ void main() {
     });
 
     test('a server that does not sell the pack unlocks the perks', () {
-      final status = BillingStatus.fromJson({'enabled': false, 'free_limit': 0});
+      final status =
+          BillingStatus.fromJson({'enabled': false, 'free_limit': 0});
       expect(status.supporterEnabled, isFalse);
       expect(status.supporterPerksUnlocked, isTrue);
     });
@@ -109,8 +110,8 @@ void main() {
     test('renders the chosen accent only while the perks are unlocked',
         () async {
       final container = ProviderContainer(overrides: [
-        supporterPerksProvider.overrideWith(
-            (ref) => SupporterPerksNotifier(initial: false)),
+        supporterPerksProvider
+            .overrideWith((ref) => SupporterPerksNotifier(initial: false)),
       ]);
       addTearDown(container.dispose);
 
@@ -145,12 +146,36 @@ void main() {
 
     test('the free accent never depends on the perks', () async {
       final container = ProviderContainer(overrides: [
-        supporterPerksProvider.overrideWith(
-            (ref) => SupporterPerksNotifier(initial: false)),
+        supporterPerksProvider
+            .overrideWith((ref) => SupporterPerksNotifier(initial: false)),
       ]);
       addTearDown(container.dispose);
       expect(
           container.read(effectiveAccentProvider), MitlistAccent.defaultAccent);
+    });
+
+    test('a billing answer that arrived before the first read still unlocks',
+        () async {
+      // The theme never reads the perks while the default accent is chosen,
+      // so the accent picker is usually the first reader — well after
+      // /billing/status answered. That answer must not be missed.
+      SharedPreferences.setMockInitialValues({});
+      final container = ProviderContainer(overrides: [
+        billingStatusProvider
+            .overrideWith((ref) async => BillingStatus.fromJson({
+                  'enabled': true,
+                  'free_limit': 4,
+                  'supporter_enabled': true,
+                  'supporter': true,
+                })),
+      ]);
+      addTearDown(container.dispose);
+      await container.read(billingStatusProvider.future);
+
+      container.read(supporterPerksProvider);
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+      expect(container.read(supporterPerksProvider), isTrue);
     });
 
     test('the unlock survives a restart through preferences', () async {
