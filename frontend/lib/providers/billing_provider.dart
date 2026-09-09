@@ -95,11 +95,20 @@ final householdEntitlementProvider =
 final supporterPerksProvider =
     StateNotifierProvider<SupporterPerksNotifier, bool>((ref) {
   final notifier = SupporterPerksNotifier();
-  ref.listen<AsyncValue<BillingStatus>>(billingStatusProvider, (_, next) {
-    final status = next.valueOrNull;
-    if (status == null || identical(status, BillingStatus.disabled)) return;
-    notifier.setFromStatus(status);
-  });
+  // This provider is created lazily: the theme only reads it once a paid
+  // accent is chosen, so for someone still on the default colour the first
+  // reader is the accent picker, long after billing status has answered. A
+  // plain listener would wait for the *next* answer and leave a fresh
+  // supporter locked out; take the current one as well.
+  ref.listen<AsyncValue<BillingStatus>>(
+    billingStatusProvider,
+    (_, next) {
+      final status = next.valueOrNull;
+      if (status == null || identical(status, BillingStatus.disabled)) return;
+      notifier.setFromStatus(status);
+    },
+    fireImmediately: true,
+  );
   return notifier;
 });
 
@@ -110,11 +119,15 @@ class SupporterPerksNotifier extends StateNotifier<bool> {
 
   static const _key = 'supporter_perks_unlocked';
 
+  /// Set once the server has spoken. The stored value is only a stand-in
+  /// until then; it must not overwrite a fresh answer that landed first.
+  bool _answered = false;
+
   Future<void> _load() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final stored = prefs.getBool(_key);
-      if (stored != null && mounted) state = stored;
+      if (stored != null && mounted && !_answered) state = stored;
     } catch (_) {
       // Preferences unavailable (tests, a broken platform channel): the
       // server answer will still arrive through setFromStatus.
@@ -124,6 +137,7 @@ class SupporterPerksNotifier extends StateNotifier<bool> {
   /// Applies what the server said. Persisted so the next launch starts from
   /// the same answer.
   Future<void> setFromStatus(BillingStatus status) async {
+    _answered = true;
     final unlocked = status.supporterPerksUnlocked;
     if (state != unlocked) state = unlocked;
     try {
