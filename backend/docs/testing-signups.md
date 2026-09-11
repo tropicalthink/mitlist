@@ -8,7 +8,29 @@ the same 202 response without changing the original signup or consent timestamp.
 The endpoint limits requests per IP, caps input at 4 KB, validates the email
 and platform, and ignores honeypot submissions. It sends no email automatically.
 
+## Staffroom tester list
+
+With `STAFFROOM_INTAKE_URL` (for example
+`https://reqtrack.tropicalthink.com/api/v1/intake`) and `STAFFROOM_INTAKE_KEY`
+(mitlist's intake app key, the one the feedback site uses) set, every accepted
+signup is also posted to Staffroom's `POST /intake/testers`, detached from the
+response so the landing page never waits on it. Staffroom shows the list under
+Apps → mitlist → Testers, with copy-to-clipboard and an "invited" tick per
+person. Postgres stays the record; a failed forward is logged and repaired by
+
+```sh
+curl -u "$ADMIN_USER:$ADMIN_PASS" -X POST https://api.mitlist.me/api/v1/testing/signups/sync
+```
+
+which re-sends everything stored. The intake is idempotent per email and
+platform and never resets an "invited" mark, so running it repeatedly is
+safe. Run it once right after setting the two variables to backfill.
+
 ## Invite testers
+
+The quick path is Staffroom: filter the tester list to the platform, **Copy
+emails**, paste into Play Console or App Store Connect, tick the rows as
+invited. The CSV export below still works and needs no Staffroom.
 
 1. Open `https://api.mitlist.me/api/v1/testing/signups/export?platform=android`
    or `?platform=ios` using the existing operator HTTP Basic credentials
@@ -33,7 +55,8 @@ Apple: https://developer.apple.com/help/app-store-connect/test-a-beta-version/in
 ## Withdrawal and retention
 
 Process withdrawal requests sent to the operator email in `/privacy#testing`.
-Delete the matching email from `testing_signups`, remove it from any exported
+Delete the matching email from `testing_signups`, remove the row in
+Staffroom (the trash icon on the tester list), remove it from any exported
 copies and store tester lists, and stop sending testing invitations. Use a
 parameterized query (`DELETE FROM testing_signups WHERE email = $1`) with the
 normalized email; do not interpolate user input into SQL. Remove remaining
@@ -52,6 +75,7 @@ database-dependent TestMain:
 
 ```sh
 go test ./internal/api/handlers/testing_signup.go ./internal/api/handlers/testing_signup_test.go ./internal/api/handlers/admin_guard.go
+go test ./internal/services/staffroom
 go test ./internal/middleware -run Cors
 ```
 

@@ -134,6 +134,14 @@ TURNSTILE_SECRET_KEY=0x...
 Leave it unset and web guests are unattested — the correct default for a
 self-hosted instance, and not acceptable for the official service.
 
+Beta-tester signups from the landing page can be mirrored to Staffroom's
+tester list (see `backend/docs/testing-signups.md`):
+
+```dotenv
+STAFFROOM_INTAKE_URL=https://reqtrack.tropicalthink.com/api/v1/intake
+STAFFROOM_INTAKE_KEY=<mitlist intake app key>
+```
+
 #### App Check enforcement (mobile)
 
 The official hosted service runs with Firebase App Check required. Configure
