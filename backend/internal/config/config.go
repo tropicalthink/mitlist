@@ -88,6 +88,13 @@ type Config struct {
 	// so the two run side by side rather than one replacing the other.
 	TurnstileSecretKey string `env:"TURNSTILE_SECRET_KEY"`
 
+	// Staffroom (reqtrack) intake, so beta-tester signups from the landing
+	// page land on the team's tester list as they happen. The key is the
+	// app's intake key, the same one the feedback site uses. Leave both empty
+	// and signups are only kept in Postgres, which is what self-hosters want.
+	StaffroomIntakeURL string `env:"STAFFROOM_INTAKE_URL"`
+	StaffroomIntakeKey string `env:"STAFFROOM_INTAKE_KEY"`
+
 	// Email. Setting AWS_SES_REGION opts into Amazon SES as the primary
 	// provider; leave it empty to fall back to the SMTP providers below.
 	//
