@@ -197,7 +197,38 @@ func TestGroupService_InviteMember(t *testing.T) {
 		require.Error(t, err)
 		assert.IsType(t, &api.ValidationError{}, err)
 	})
+
+	t.Run("full household cannot mint an invite", func(t *testing.T) {
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewGroupService(groupRepo, nil)
+		svc.SetMemberGate(stubMemberGate{err: &api.PaymentRequiredError{Message: "full"}})
+
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "admin"}, nil)
+
+		_, err := svc.InviteMember(ctx, userID, groupID, "member")
+		require.Error(t, err)
+		assert.IsType(t, &api.PaymentRequiredError{}, err)
+		groupRepo.AssertNotCalled(t, "CreateInvite", mock.Anything, mock.Anything)
+	})
+
+	t.Run("household with room mints an invite through the gate", func(t *testing.T) {
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewGroupService(groupRepo, nil)
+		svc.SetMemberGate(stubMemberGate{})
+
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+		groupRepo.On("CreateInvite", ctx, mock.AnythingOfType("*models.GroupInvite")).Return(nil)
+
+		invite, err := svc.InviteMember(ctx, userID, groupID, "")
+		require.NoError(t, err)
+		assert.NotEmpty(t, invite.Code)
+	})
 }
+
+// stubMemberGate stands in for the billing service's premium gate.
+type stubMemberGate struct{ err error }
+
+func (g stubMemberGate) EnsureCanAddMember(context.Context, uuid.UUID) error { return g.err }
 
 func TestGroupService_PreviewInvite(t *testing.T) {
 	ctx := context.Background()

@@ -5729,14 +5729,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get billingPremiumTitle => 'mitlist premium';
 
   @override
-  String get billingLimitReachedTitle => 'Ce foyer est complet';
-
-  @override
-  String billingLimitReachedBody(num limit, num next) {
-    return 'Les foyers jusqu’à $limit personnes sont gratuits. Pour ajouter un ${next}e membre, une personne doit prendre premium — et cela couvre tout le monde ici.';
-  }
-
-  @override
   String get billingCoversOneHousehold =>
       'Premium s’applique à un seul foyer à la fois. Vous choisissez lequel et pouvez en changer quand vous voulez.';
 

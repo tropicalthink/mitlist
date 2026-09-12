@@ -5697,14 +5697,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get billingPremiumTitle => 'mitlist premium';
 
   @override
-  String get billingLimitReachedTitle => 'Esta casa está completa';
-
-  @override
-  String billingLimitReachedBody(num limit, num next) {
-    return 'Las casas de hasta $limit personas son gratuitas. Para añadir a la $next.ª persona, alguien necesita premium, y cubre a todos los de aquí.';
-  }
-
-  @override
   String get billingCoversOneHousehold =>
       'Premium se aplica a una casa a la vez. Tú eliges cuál y puedes cambiarla cuando quieras.';
 

@@ -1,3 +1,5 @@
+import 'dart:async' show unawaited;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -7,6 +9,7 @@ import '../models/notification_models.dart';
 import '../providers/attachment_provider.dart';
 import '../providers/group_provider.dart';
 import '../providers/notification_provider.dart';
+import '../providers/presence_provider.dart';
 import '../theme/spacing.dart';
 import '../widgets/alert.dart';
 import '../widgets/app_bottom_sheet.dart';
@@ -196,6 +199,12 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
       setState(() {
         _members = _members.where((m) => m.userId != member.userId).toList();
       });
+      // The rest of the app reads members from caches this sheet does not
+      // own: the hub's household card shows the cached member count and the
+      // pinwall resolves presence through the roster provider. Left alone,
+      // both keep showing the removed person until the next cold start.
+      ref.invalidate(boardMembersProvider(widget.groupId));
+      unawaited(refreshCachedGroups(ref));
       AppToast.success(
           context, l10n.sheetGroupSettingsMemberRemoved(member.displayName));
     } catch (e) {

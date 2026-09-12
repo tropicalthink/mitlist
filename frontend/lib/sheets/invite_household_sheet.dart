@@ -3,12 +3,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import 'package:share_plus/share_plus.dart';
 
 import '../models/group_models.dart';
+import '../providers/billing_provider.dart';
 import '../providers/group_provider.dart';
+import '../services/api_error_mapper.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
 import '../utils/friendly_error.dart';
@@ -18,7 +21,6 @@ import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
 import '../l10n/app_localizations.dart';
 import '../widgets/app_icon.dart';
-import '../widgets/premium_banner.dart';
 
 class InviteHouseholdSheet extends ConsumerStatefulWidget {
   const InviteHouseholdSheet({super.key, required this.groupId});
@@ -27,7 +29,23 @@ class InviteHouseholdSheet extends ConsumerStatefulWidget {
 
   static const double _qrSize = MitlistSpacing.space24 * 2;
 
+  /// Opens the invite sheet, or the premium flow when the household has no
+  /// free place left.
+  ///
+  /// The gate sits on the inviter's side on purpose: a member of the household
+  /// can pay, whereas the person scanning a QR code is a stranger who cannot
+  /// resolve a paywall. When the cached entitlement already says the household
+  /// is full there is nothing to mint, so this goes straight to the premium
+  /// screen. Otherwise the sheet opens and the server has the final word (see
+  /// [_createInvite]), which also covers a stale or missing cache.
   static Future<void> show(BuildContext context, {required String groupId}) {
+    final entitlement = ProviderScope.containerOf(context)
+        .read(householdEntitlementProvider(groupId))
+        .valueOrNull;
+    if (entitlement != null && !entitlement.canAddMember) {
+      return context.pushNamed('premium', pathParameters: {'groupId': groupId});
+    }
+
     final l10n = AppLocalizations.of(context)!;
     return showAppBottomSheet<void>(
       context: context,
@@ -108,11 +126,29 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet>
       }
     } catch (e) {
       if (!mounted) return;
+      if (e is ApiException && e.isPaymentRequired) {
+        _handOverToPremium();
+        return;
+      }
       setState(() {
         _error = friendlyErrorMessage(e, AppLocalizations.of(context)!);
         _isLoading = false;
       });
     }
+  }
+
+  /// The server refused to mint a code because the household is full. Swap
+  /// this sheet for the premium flow rather than showing a dead-end error:
+  /// the person standing here is the one who can pay. The entitlement cache
+  /// was evidently stale, so drop it before leaving.
+  void _handOverToPremium() {
+    ref.invalidate(householdEntitlementProvider(widget.groupId));
+    final router = GoRouter.of(context);
+    Navigator.of(context).pop();
+    unawaited(router.pushNamed(
+      'premium',
+      pathParameters: {'groupId': widget.groupId},
+    ));
   }
 
   Future<void> _copyCode() async {
@@ -159,11 +195,6 @@ class _InviteHouseholdSheetState extends ConsumerState<InviteHouseholdSheet>
             AppAlert(type: AppAlertType.error, message: _error!),
             const SizedBox(height: MitlistSpacing.md),
           ],
-
-          // The household may already be full. Say so here, where a member who
-          // can actually pay is standing — the join itself fails for the
-          // invitee, who has no way to resolve it.
-          PremiumBanner(groupId: widget.groupId),
 
           // Animated code segments
           if (_codeParts.isNotEmpty) ...[

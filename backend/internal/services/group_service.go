@@ -215,6 +215,12 @@ func (s *GroupService) DeleteGroup(ctx context.Context, userID, groupID uuid.UUI
 // InviteMember creates an invite code for the group. Any member of the
 // household may invite; the code admits anyone who presents it for a week,
 // and accepting does not use it up.
+//
+// The premium gate is applied here, on the inviter's side, and not only at
+// join time: the person inviting is a household member who can pay, whereas
+// the person presenting a code is a stranger who cannot resolve a paywall.
+// A full household therefore gets a PaymentRequiredError before any code is
+// minted, and the app turns that into the premium flow.
 func (s *GroupService) InviteMember(ctx context.Context, userID, groupID uuid.UUID, role string) (*models.GroupInvite, error) {
 	if _, err := s.requireMembership(ctx, userID, groupID); err != nil {
 		return nil, err
@@ -224,6 +230,9 @@ func (s *GroupService) InviteMember(ctx context.Context, userID, groupID uuid.UU
 	}
 	if role != "member" {
 		return nil, &api.ValidationError{Message: "invites can only grant the member role"}
+	}
+	if err := s.ensureCanAddMember(ctx, groupID); err != nil {
+		return nil, err
 	}
 
 	// Generate short, human-friendly codes. Retry on rare uniqueness collisions.

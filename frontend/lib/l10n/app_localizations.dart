@@ -9869,18 +9869,6 @@ abstract class AppLocalizations {
   /// **'mitlist premium'**
   String get billingPremiumTitle;
 
-  /// Paywall title when a household hit the free member limit
-  ///
-  /// In en, this message translates to:
-  /// **'This household is full'**
-  String get billingLimitReachedTitle;
-
-  /// Paywall explanation of the free member limit
-  ///
-  /// In en, this message translates to:
-  /// **'Households of up to {limit} people are free. To add a {next}th member, one person needs premium — and it covers everyone here.'**
-  String billingLimitReachedBody(num limit, num next);
-
   /// Explains the single-household (primary) model
   ///
   /// In en, this message translates to:
