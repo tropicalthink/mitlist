@@ -5743,14 +5743,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get billingPremiumTitle => 'mitlist Premium';
 
   @override
-  String get billingLimitReachedTitle => 'Dieser Haushalt ist voll';
-
-  @override
-  String billingLimitReachedBody(num limit, num next) {
-    return 'Haushalte mit bis zu $limit Personen sind kostenlos. Für ein $next. Mitglied braucht eine Person Premium – und das gilt dann für alle hier.';
-  }
-
-  @override
   String get billingCoversOneHousehold =>
       'Premium gilt für einen Haushalt zur Zeit. Du wählst welchen und kannst jederzeit wechseln.';
 

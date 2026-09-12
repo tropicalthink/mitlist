@@ -5920,8 +5920,6 @@
   "accountOcrTrainingClearTitle": "Supprimer les données d’entraînement OCR ?",
   "accountOcrTrainingClearBody": "Cette action supprime définitivement toutes les lignes enregistrées sur cet appareil.",
   "billingPremiumTitle": "mitlist premium",
-  "billingLimitReachedTitle": "Ce foyer est complet",
-  "billingLimitReachedBody": "Les foyers jusqu’à {limit} personnes sont gratuits. Pour ajouter un {next}e membre, une personne doit prendre premium — et cela couvre tout le monde ici.",
   "billingCoversOneHousehold": "Premium s’applique à un seul foyer à la fois. Vous choisissez lequel et pouvez en changer quand vous voulez.",
   "billingCoveredBy": "Premium sur ce foyer, payé par {name}.",
   "billingPremiumActive": "Premium est actif ici",

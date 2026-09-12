@@ -7634,22 +7634,6 @@
   "@billingPremiumTitle": {
     "description": "Title of the premium paywall sheet"
   },
-  "billingLimitReachedTitle": "This household is full",
-  "@billingLimitReachedTitle": {
-    "description": "Paywall title when a household hit the free member limit"
-  },
-  "billingLimitReachedBody": "Households of up to {limit} people are free. To add a {next}th member, one person needs premium — and it covers everyone here.",
-  "@billingLimitReachedBody": {
-    "description": "Paywall explanation of the free member limit",
-    "placeholders": {
-      "limit": {
-        "type": "num"
-      },
-      "next": {
-        "type": "num"
-      }
-    }
-  },
   "billingCoversOneHousehold": "Premium applies to one household at a time. You choose which, and you can move it whenever you like.",
   "@billingCoversOneHousehold": {
     "description": "Explains the single-household (primary) model"

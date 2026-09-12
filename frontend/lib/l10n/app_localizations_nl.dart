@@ -5710,14 +5710,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get billingPremiumTitle => 'mitlist premium';
 
   @override
-  String get billingLimitReachedTitle => 'Dit huishouden is vol';
-
-  @override
-  String billingLimitReachedBody(num limit, num next) {
-    return 'Huishoudens tot $limit personen zijn gratis. Om een ${next}e lid toe te voegen heeft één persoon premium nodig — en dat geldt voor iedereen hier.';
-  }
-
-  @override
   String get billingCoversOneHousehold =>
       'Premium geldt voor één huishouden tegelijk. Jij kiest welke en kunt altijd wisselen.';
 

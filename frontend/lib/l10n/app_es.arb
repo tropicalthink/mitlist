@@ -5920,8 +5920,6 @@
   "accountOcrTrainingClearTitle": "¿Eliminar los datos de entrenamiento OCR?",
   "accountOcrTrainingClearBody": "Esto elimina permanentemente todos los recortes de líneas guardados en este dispositivo.",
   "billingPremiumTitle": "mitlist premium",
-  "billingLimitReachedTitle": "Esta casa está completa",
-  "billingLimitReachedBody": "Las casas de hasta {limit} personas son gratuitas. Para añadir a la {next}.ª persona, alguien necesita premium, y cubre a todos los de aquí.",
   "billingCoversOneHousehold": "Premium se aplica a una casa a la vez. Tú eliges cuál y puedes cambiarla cuando quieras.",
   "billingCoveredBy": "Premium en esta casa, pagado por {name}.",
   "billingPremiumActive": "Premium está activo aquí",
