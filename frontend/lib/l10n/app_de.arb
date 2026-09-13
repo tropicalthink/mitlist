@@ -2092,7 +2092,7 @@
   "featureBoardInProgress": "In Arbeit",
   "featureBoardShipped": "Veröffentlicht",
   "featureBoardUpvote": "Für Funktion stimmen",
-  "featureBoardUpvoted": "Für Funktion gestimmt",
+  "featureBoardRemoveUpvote": "Stimme zurücknehmen",
   "featureBoardVotes": "{count, plural, =1{1 Stimme} other{{count} Stimmen}}",
   "featureBoardUnderReview": "In Prüfung",
   "featureBoardFilterAll": "Alle",

@@ -5988,7 +5988,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get featureBoardUpvote => 'Stem op functie';
 
   @override
-  String get featureBoardUpvoted => 'Op functie gestemd';
+  String get featureBoardRemoveUpvote => 'Stem intrekken';
 
   @override
   String featureBoardVotes(num count) {

@@ -151,8 +151,7 @@ class _MetaChip extends StatelessWidget {
 }
 
 /// Vertical vote pill: chevron on top, count underneath. Filled once the
-/// reader has voted; a vote cannot be taken back, so it then stops being a
-/// button.
+/// reader has voted; tapping it again takes the vote back.
 class FeatureBoardVoteButton extends StatelessWidget {
   const FeatureBoardVoteButton({
     super.key,
@@ -171,13 +170,14 @@ class FeatureBoardVoteButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
-    final enabled = !hasVoted && !isVoting;
+    final enabled = !isVoting;
     final background = hasVoted ? colorScheme.primary : colorScheme.surface;
     final foreground = hasVoted ? colorScheme.onPrimary : colorScheme.onSurface;
 
     return Semantics(
       button: enabled,
-      label: hasVoted ? l10n.featureBoardUpvoted : l10n.featureBoardUpvote,
+      label:
+          hasVoted ? l10n.featureBoardRemoveUpvote : l10n.featureBoardUpvote,
       value: l10n.featureBoardVotes(voteCount),
       child: Material(
         color: background,

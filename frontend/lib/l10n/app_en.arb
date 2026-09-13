@@ -8012,9 +8012,9 @@
   "@featureBoardUpvote": {
     "description": "Upvote button semantics"
   },
-  "featureBoardUpvoted": "Feature upvoted",
-  "@featureBoardUpvoted": {
-    "description": "Upvoted button semantics"
+  "featureBoardRemoveUpvote": "Remove upvote",
+  "@featureBoardRemoveUpvote": {
+    "description": "Vote button semantics once the user has upvoted; tapping takes the vote back"
   },
   "featureBoardVotes": "{count, plural, =1{1 vote} other{{count} votes}}",
   "@featureBoardVotes": {

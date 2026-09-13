@@ -5995,7 +5995,7 @@
   "featureBoardInProgress": "En cours",
   "featureBoardShipped": "Publié",
   "featureBoardUpvote": "Voter pour la fonctionnalité",
-  "featureBoardUpvoted": "Vote enregistré",
+  "featureBoardRemoveUpvote": "Retirer le vote",
   "featureBoardVotes": "{count, plural, =1{1 vote} other{{count} votes}}",
   "featureBoardUnderReview": "En cours d'examen",
   "featureBoardFilterAll": "Tout",
