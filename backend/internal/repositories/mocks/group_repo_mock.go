@@ -76,7 +76,7 @@ func (m *MockGroupRepo) UpdateMembership(ctx context.Context, membership *models
 	return args.Error(0)
 }
 
-func (m *MockGroupRepo) DeleteMembership(ctx context.Context, id uuid.UUID) error {
+func (m *MockGroupRepo) EndMembership(ctx context.Context, id uuid.UUID) error {
 	args := m.Called(ctx, id)
 	return args.Error(0)
 }

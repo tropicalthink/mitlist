@@ -5697,6 +5697,8 @@
     }
   },
   "sheetGroupSettingsMembersLabel": "Leden",
+  "sheetGroupSettingsFormerMembersLabel": "Voormalige leden",
+  "sheetGroupSettingsFormerMember": "Niet meer in het huishouden",
   "@sheetGroupSettingsMembersLabel": {
     "description": "Section label for household members"
   },

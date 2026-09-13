@@ -4986,6 +4986,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get sheetGroupSettingsMembersLabel => 'Membres';
 
   @override
+  String get sheetGroupSettingsFormerMembersLabel => 'Anciens membres';
+
+  @override
+  String get sheetGroupSettingsFormerMember => 'Ne fait plus partie du foyer';
+
+  @override
   String get sheetGroupSettingsInvite => 'Inviter';
 
   @override

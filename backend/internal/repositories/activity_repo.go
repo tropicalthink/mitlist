@@ -54,7 +54,7 @@ func (r *ActivityRepository) ListRecentActivity(ctx context.Context, groupID uui
 			SELECT rcp.id::text, 'recipe_added', rcp.title, rcp.created_at, rcp.user_id, gm.group_id, 'recipe', rcp.id::text, NULL::text
 			FROM recipes rcp
 			JOIN group_memberships gm ON gm.user_id = rcp.user_id
-			WHERE gm.group_id = $1
+			WHERE gm.group_id = $1 AND (gm.left_at IS NULL OR rcp.created_at < gm.left_at)
 		) events
 		LEFT JOIN users u ON u.id = events.user_id
 		ORDER BY events.created_at DESC
@@ -94,7 +94,7 @@ func (r *ActivityRepository) CountWeeklyActivity(ctx context.Context, groupID uu
 			(SELECT COUNT(*) FROM expenses WHERE group_id = $1 AND created_at >= $2) AS expenses,
 			(SELECT COUNT(*) FROM chore_completions cc JOIN chore_assignments ca ON ca.id = cc.assignment_id JOIN chores ch ON ch.id = ca.chore_id WHERE ch.group_id = $1 AND cc.completed_at >= $2) AS chores,
 			(SELECT COUNT(*) FROM meal_plans WHERE group_id = $1 AND created_at >= $2) AS meal_plans,
-			(SELECT COUNT(*) FROM recipes rcp JOIN group_memberships gm ON gm.user_id = rcp.user_id WHERE gm.group_id = $1 AND rcp.created_at >= $2) AS recipes
+			(SELECT COUNT(*) FROM recipes rcp JOIN group_memberships gm ON gm.user_id = rcp.user_id WHERE gm.group_id = $1 AND (gm.left_at IS NULL OR rcp.created_at < gm.left_at) AND rcp.created_at >= $2) AS recipes
 	`
 	var lists, expenses, chores, mealPlans, recipes int
 	if err := r.pool.QueryRow(ctx, query, groupID, cutoff).Scan(&lists, &expenses, &chores, &mealPlans, &recipes); err != nil {

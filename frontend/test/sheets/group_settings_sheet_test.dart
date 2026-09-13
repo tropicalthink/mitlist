@@ -34,7 +34,7 @@ class _FakeGroupService implements GroupService {
   Group _group(String groupId) => Group(
         id: groupId,
         name: 'Test Household',
-        memberCount: members.length,
+        memberCount: members.where((m) => m.isActive).length,
         createdAt: DateTime.utc(2026, 1, 1),
         updatedAt: DateTime.utc(2026, 1, 1),
       );
@@ -55,7 +55,13 @@ class _FakeGroupService implements GroupService {
   @override
   Future<void> removeMember(String groupId, String userId) async {
     removeCalls.add((groupId, userId));
-    members.removeWhere((m) => m.userId == userId);
+    // Mirrors the server: removal retires the membership instead of
+    // deleting it, so the roster keeps listing the person as former.
+    for (var i = 0; i < members.length; i++) {
+      if (members[i].userId == userId) {
+        members[i] = members[i].copyWith(leftAt: DateTime.utc(2026, 9, 13));
+      }
+    }
   }
 
   @override
@@ -143,6 +149,7 @@ void main() {
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
     expect(find.text('Bob Member'), findsOneWidget);
+    expect(find.text('Former members'), findsNothing);
 
     await tester.ensureVisible(find.byTooltip('Remove Bob Member'));
     await tester.pumpAndSettle();
@@ -155,7 +162,12 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(groups.removeCalls, [(_groupId, _memberId)]);
-    expect(find.text('Bob Member'), findsNothing);
+    // Removal is soft: Bob moves to the former members section, keeps his
+    // name for the history that mentions him, and cannot be removed twice.
+    expect(find.text('Former members'), findsOneWidget);
+    expect(find.text('Bob Member'), findsOneWidget);
+    expect(find.text('No longer in the household'), findsOneWidget);
+    expect(find.byTooltip('Remove Bob Member'), findsNothing);
     expect(find.text('Ada Admin'), findsOneWidget);
     // The hub's household card reads the cached member count, so a removal
     // must refetch the household list rather than leave the stale count.

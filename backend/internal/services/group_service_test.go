@@ -392,7 +392,7 @@ func TestGroupService_LeaveGroup(t *testing.T) {
 		groupRepo.On("WithTx", ctx, mock.Anything).Return(nil)
 		groupRepo.On("LockGroup", ctx, groupID).Return(nil)
 		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{ID: uuid.New(), Role: "member"}, nil)
-		groupRepo.On("DeleteMembership", ctx, mock.AnythingOfType("uuid.UUID")).Return(nil)
+		groupRepo.On("EndMembership", ctx, mock.AnythingOfType("uuid.UUID")).Return(nil)
 
 		err := svc.LeaveGroup(ctx, userID, groupID)
 		require.NoError(t, err)
@@ -463,7 +463,7 @@ func TestGroupService_RemoveMember(t *testing.T) {
 		groupRepo.On("LockGroup", ctx, groupID).Return(nil)
 		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "admin"}, nil)
 		groupRepo.On("GetMembership", ctx, groupID, targetID).Return(&models.GroupMembership{ID: uuid.New(), Role: "member"}, nil)
-		groupRepo.On("DeleteMembership", ctx, mock.AnythingOfType("uuid.UUID")).Return(nil)
+		groupRepo.On("EndMembership", ctx, mock.AnythingOfType("uuid.UUID")).Return(nil)
 
 		err := svc.RemoveMember(ctx, userID, groupID, targetID)
 		require.NoError(t, err)
@@ -477,11 +477,11 @@ func TestGroupService_RemoveMember(t *testing.T) {
 		groupRepo.On("LockGroup", ctx, groupID).Return(nil)
 		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
 		groupRepo.On("GetMembership", ctx, groupID, targetID).Return(&models.GroupMembership{ID: uuid.New(), Role: "member"}, nil)
-		groupRepo.On("DeleteMembership", ctx, mock.AnythingOfType("uuid.UUID")).Return(nil)
+		groupRepo.On("EndMembership", ctx, mock.AnythingOfType("uuid.UUID")).Return(nil)
 
 		err := svc.RemoveMember(ctx, userID, groupID, targetID)
 		require.NoError(t, err)
-		groupRepo.AssertCalled(t, "DeleteMembership", ctx, mock.AnythingOfType("uuid.UUID"))
+		groupRepo.AssertCalled(t, "EndMembership", ctx, mock.AnythingOfType("uuid.UUID"))
 	})
 
 	t.Run("non-member is denied", func(t *testing.T) {
@@ -495,7 +495,7 @@ func TestGroupService_RemoveMember(t *testing.T) {
 		err := svc.RemoveMember(ctx, userID, groupID, targetID)
 		require.Error(t, err)
 		assert.IsType(t, &api.PermissionDeniedError{}, err)
-		groupRepo.AssertNotCalled(t, "DeleteMembership", mock.Anything, mock.Anything)
+		groupRepo.AssertNotCalled(t, "EndMembership", mock.Anything, mock.Anything)
 	})
 
 	t.Run("last admin cannot be removed", func(t *testing.T) {
@@ -514,7 +514,7 @@ func TestGroupService_RemoveMember(t *testing.T) {
 		err := svc.RemoveMember(ctx, userID, groupID, targetID)
 		require.Error(t, err)
 		assert.IsType(t, &api.ValidationError{}, err)
-		groupRepo.AssertNotCalled(t, "DeleteMembership", mock.Anything, mock.Anything)
+		groupRepo.AssertNotCalled(t, "EndMembership", mock.Anything, mock.Anything)
 	})
 }
 

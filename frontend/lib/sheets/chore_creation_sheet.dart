@@ -178,7 +178,8 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
       if (!mounted) return;
       setState(() {
         _members = [
-          for (final m in members) (id: m.userId, name: m.displayName),
+          for (final m in members)
+            if (m.isActive) (id: m.userId, name: m.displayName),
         ];
       });
     } catch (_) {

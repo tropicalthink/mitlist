@@ -4971,6 +4971,12 @@ class AppLocalizationsNl extends AppLocalizations {
   String get sheetGroupSettingsMembersLabel => 'Leden';
 
   @override
+  String get sheetGroupSettingsFormerMembersLabel => 'Voormalige leden';
+
+  @override
+  String get sheetGroupSettingsFormerMember => 'Niet meer in het huishouden';
+
+  @override
   String get sheetGroupSettingsInvite => 'Uitnodigen';
 
   @override

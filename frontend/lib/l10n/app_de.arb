@@ -1450,6 +1450,8 @@
   "sheetGroupSettingsZoneHint": "Küche, Bad…",
   "sheetGroupSettingsSaveZones": "Bereiche speichern",
   "sheetGroupSettingsMembersLabel": "Mitglieder",
+  "sheetGroupSettingsFormerMembersLabel": "Ehemalige Mitglieder",
+  "sheetGroupSettingsFormerMember": "Nicht mehr im Haushalt",
   "sheetGroupSettingsInvite": "Einladen",
   "sheetGroupSettingsRemoveMemberTooltip": "{name} entfernen",
   "aisleOther": "Sonstiges",

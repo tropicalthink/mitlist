@@ -124,13 +124,59 @@ func TestGroupRepository_CreateMembership(t *testing.T) {
 		Role:    "admin",
 	}
 
-	mock.ExpectExec("INSERT INTO group_memberships").
+	mock.ExpectQuery("INSERT INTO group_memberships").
 		WithArgs(pgxmock.AnyArg(), m.GroupID, m.UserID, m.Role, pgxmock.AnyArg()).
-		WillReturnResult(pgxmock.NewResult("INSERT", 1))
+		WillReturnRows(pgxmock.NewRows([]string{"id"}).AddRow(fixedUUID()))
 
 	err := repo.CreateMembership(context.Background(), m)
 	require.NoError(t, err)
 	assert.NotEqual(t, uuid.Nil, m.ID)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestGroupRepository_CreateMembership_RejoinKeepsOldRow(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewGroupRepository(mock)
+	oldID := fixedUUID()
+
+	m := &models.GroupMembership{
+		ID:      uuid.New(),
+		GroupID: fixedUUID(),
+		UserID:  fixedUUID(),
+		Role:    "member",
+	}
+
+	// A former member rejoining hits ON CONFLICT ... DO UPDATE and the query
+	// returns the id of the retired row, which the caller must carry on using.
+	mock.ExpectQuery("INSERT INTO group_memberships .* ON CONFLICT").
+		WithArgs(m.ID, m.GroupID, m.UserID, m.Role, pgxmock.AnyArg()).
+		WillReturnRows(pgxmock.NewRows([]string{"id"}).AddRow(oldID))
+
+	err := repo.CreateMembership(context.Background(), m)
+	require.NoError(t, err)
+	assert.Equal(t, oldID, m.ID)
+	assert.Nil(t, m.LeftAt)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestGroupRepository_CreateMembership_ActiveMemberIsRejected(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewGroupRepository(mock)
+
+	m := &models.GroupMembership{
+		GroupID: fixedUUID(),
+		UserID:  fixedUUID(),
+		Role:    "member",
+	}
+
+	// The conflict update is guarded by left_at IS NOT NULL, so an active
+	// member produces no row at all.
+	mock.ExpectQuery("INSERT INTO group_memberships").
+		WithArgs(pgxmock.AnyArg(), m.GroupID, m.UserID, m.Role, pgxmock.AnyArg()).
+		WillReturnRows(pgxmock.NewRows([]string{"id"}))
+
+	err := repo.CreateMembership(context.Background(), m)
+	require.ErrorIs(t, err, ErrMembershipExists)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
@@ -184,16 +230,18 @@ func TestGroupRepository_UpdateMembership(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
-func TestGroupRepository_DeleteMembership(t *testing.T) {
+func TestGroupRepository_EndMembership(t *testing.T) {
 	mock := newMockDB(t)
 	repo := NewGroupRepository(mock)
 	id := fixedUUID()
 
-	mock.ExpectExec("DELETE FROM group_memberships WHERE id = .*").
+	// Soft removal: the row is stamped, never deleted, so the person's
+	// history in the group keeps its name.
+	mock.ExpectExec("UPDATE group_memberships SET left_at = now\\(\\) WHERE id = .* AND left_at IS NULL").
 		WithArgs(id).
-		WillReturnResult(pgxmock.NewResult("DELETE", 1))
+		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
 
-	err := repo.DeleteMembership(context.Background(), id)
+	err := repo.EndMembership(context.Background(), id)
 	require.NoError(t, err)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }

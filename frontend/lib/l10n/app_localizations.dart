@@ -8733,6 +8733,18 @@ abstract class AppLocalizations {
   /// **'Members'**
   String get sheetGroupSettingsMembersLabel;
 
+  /// Section label for people who left or were removed; their history stays
+  ///
+  /// In en, this message translates to:
+  /// **'Former members'**
+  String get sheetGroupSettingsFormerMembersLabel;
+
+  /// Subtitle on a former member's tile in place of their role
+  ///
+  /// In en, this message translates to:
+  /// **'No longer in the household'**
+  String get sheetGroupSettingsFormerMember;
+
   /// Button to invite a member
   ///
   /// In en, this message translates to:

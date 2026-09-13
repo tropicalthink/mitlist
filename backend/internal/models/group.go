@@ -25,6 +25,10 @@ type GroupMembership struct {
 	UserID   uuid.UUID `json:"user_id"`
 	Role     string    `json:"role"`
 	JoinedAt time.Time `json:"joined_at"`
+	// LeftAt is set when the member was removed or left. The row is kept so
+	// their expenses, chores and posts still resolve to a name; a rejoin
+	// clears it again.
+	LeftAt *time.Time `json:"left_at,omitempty"`
 }
 
 // GroupMemberProfile is a membership enriched with display information.
@@ -35,6 +39,9 @@ type GroupMemberProfile struct {
 	// Supporter is true when this member bought the supporter pack; the
 	// client renders a badge housemates can see.
 	Supporter bool `json:"supporter"`
+	// LeftAt is set for former members. They are listed so history keeps its
+	// names; clients must not offer them for new assignments or splits.
+	LeftAt *time.Time `json:"left_at,omitempty"`
 }
 
 // GroupInvite stores an invite code for joining a group. A code admits anyone
