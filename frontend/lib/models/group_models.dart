@@ -240,12 +240,28 @@ class GroupMemberProfile {
   /// rest of the household can see.
   final bool supporter;
 
+  /// Set once the person was removed or left. The server keeps former members
+  /// in the roster so their expenses, chores and posts still carry a name;
+  /// pickers for new work must skip them (see [isActive]).
+  final DateTime? leftAt;
+
   const GroupMemberProfile({
     required this.userId,
     required this.displayName,
     required this.role,
     this.supporter = false,
+    this.leftAt,
   });
+
+  bool get isActive => leftAt == null;
+
+  GroupMemberProfile copyWith({DateTime? leftAt}) => GroupMemberProfile(
+        userId: userId,
+        displayName: displayName,
+        role: role,
+        supporter: supporter,
+        leftAt: leftAt ?? this.leftAt,
+      );
 
   factory GroupMemberProfile.fromJson(Map<String, dynamic> json) =>
       GroupMemberProfile(
@@ -254,6 +270,9 @@ class GroupMemberProfile {
             json['display_name'] as String? ?? json['user_id'] as String,
         role: json['role'] as String? ?? 'member',
         supporter: json['supporter'] as bool? ?? false,
+        leftAt: json['left_at'] == null
+            ? null
+            : DateTime.tryParse(json['left_at'] as String),
       );
 }
 

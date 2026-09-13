@@ -185,7 +185,7 @@ func (r *BillingRepository) GetGroupCoverage(ctx context.Context, groupID uuid.U
 	query := `
 		SELECT trim(u.first_name || ' ' || u.last_name) AS display_name
 		FROM billing_subscriptions s
-		JOIN group_memberships gm ON gm.user_id = s.user_id AND gm.group_id = s.primary_group_id
+		JOIN group_memberships gm ON gm.user_id = s.user_id AND gm.group_id = s.primary_group_id AND gm.left_at IS NULL
 		JOIN users u ON u.id = s.user_id
 		WHERE s.primary_group_id = $1
 		  AND s.status IN ('active', 'trialing')
@@ -241,7 +241,7 @@ func (r *BillingRepository) SetPrimaryGroupForUser(ctx context.Context, userID, 
 // CountGroupMembers returns the number of members in a group.
 func (r *BillingRepository) CountGroupMembers(ctx context.Context, groupID uuid.UUID) (int, error) {
 	var count int
-	err := r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM group_memberships WHERE group_id = $1`, groupID).Scan(&count)
+	err := r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM group_memberships WHERE group_id = $1 AND left_at IS NULL`, groupID).Scan(&count)
 	return count, err
 }
 

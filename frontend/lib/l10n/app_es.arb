@@ -5697,6 +5697,8 @@
     }
   },
   "sheetGroupSettingsMembersLabel": "Miembros",
+  "sheetGroupSettingsFormerMembersLabel": "Antiguos miembros",
+  "sheetGroupSettingsFormerMember": "Ya no forma parte del hogar",
   "@sheetGroupSettingsMembersLabel": {
     "description": "Section label for household members"
   },

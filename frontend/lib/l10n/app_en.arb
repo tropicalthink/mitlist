@@ -6564,6 +6564,14 @@
   "@sheetGroupSettingsMembersLabel": {
     "description": "Section label for household members"
   },
+  "sheetGroupSettingsFormerMembersLabel": "Former members",
+  "@sheetGroupSettingsFormerMembersLabel": {
+    "description": "Section label for people who left or were removed; their history stays"
+  },
+  "sheetGroupSettingsFormerMember": "No longer in the household",
+  "@sheetGroupSettingsFormerMember": {
+    "description": "Subtitle on a former member's tile in place of their role"
+  },
   "sheetGroupSettingsInvite": "Invite",
   "@sheetGroupSettingsInvite": {
     "description": "Button to invite a member"

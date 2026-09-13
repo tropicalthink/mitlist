@@ -4923,6 +4923,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sheetGroupSettingsMembersLabel => 'Members';
 
   @override
+  String get sheetGroupSettingsFormerMembersLabel => 'Former members';
+
+  @override
+  String get sheetGroupSettingsFormerMember => 'No longer in the household';
+
+  @override
   String get sheetGroupSettingsInvite => 'Invite';
 
   @override

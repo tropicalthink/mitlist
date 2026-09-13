@@ -173,9 +173,9 @@ func (r *ListRepository) HardDeleteList(ctx context.Context, id uuid.UUID) error
 func (r *ListRepository) SetListArchived(ctx context.Context, id, actorID uuid.UUID, archived bool) error {
 	var query string
 	if archived {
-		query = `UPDATE lists l SET archived_at = NOW(), updated_at = NOW() WHERE l.id = $1 AND EXISTS (SELECT 1 FROM group_memberships gm WHERE gm.group_id = l.group_id AND gm.user_id = $2)`
+		query = `UPDATE lists l SET archived_at = NOW(), updated_at = NOW() WHERE l.id = $1 AND EXISTS (SELECT 1 FROM group_memberships gm WHERE gm.group_id = l.group_id AND gm.user_id = $2 AND gm.left_at IS NULL)`
 	} else {
-		query = `UPDATE lists l SET archived_at = NULL, updated_at = NOW() WHERE l.id = $1 AND EXISTS (SELECT 1 FROM group_memberships gm WHERE gm.group_id = l.group_id AND gm.user_id = $2)`
+		query = `UPDATE lists l SET archived_at = NULL, updated_at = NOW() WHERE l.id = $1 AND EXISTS (SELECT 1 FROM group_memberships gm WHERE gm.group_id = l.group_id AND gm.user_id = $2 AND gm.left_at IS NULL)`
 	}
 	res, err := r.pool.Exec(ctx, query, id, actorID)
 	if err == nil && res.RowsAffected() == 0 {
@@ -269,7 +269,7 @@ func (r *ListRepository) BulkMarkItemsChecked(ctx context.Context, userID uuid.U
 		UPDATE list_items li
 		SET checked = true, updated_at = NOW()
 		FROM lists l
-		JOIN group_memberships gm ON gm.group_id = l.group_id AND gm.user_id = $1
+		JOIN group_memberships gm ON gm.group_id = l.group_id AND gm.user_id = $1 AND gm.left_at IS NULL
 		WHERE li.id = ANY($2) AND li.list_id = l.id AND li.deleted_at IS NULL
 	`, userID, itemIDs)
 	if err != nil {
@@ -434,7 +434,7 @@ func (r *ListRepository) ClaimItem(ctx context.Context, listID, id, userID uuid.
 		WHERE li.id = $2 AND li.list_id = $3 AND li.deleted_at IS NULL AND li.checked = false
 		AND EXISTS (
 			SELECT 1 FROM lists l JOIN group_memberships gm ON gm.group_id = l.group_id
-			WHERE l.id = li.list_id AND gm.user_id = $1
+			WHERE l.id = li.list_id AND gm.user_id = $1 AND gm.left_at IS NULL
 		)
 	`, userID, id, listID)
 	if err != nil {
@@ -453,7 +453,7 @@ func (r *ListRepository) UnclaimItem(ctx context.Context, listID, id, actorID uu
 		WHERE li.id = $1 AND li.list_id = $2 AND li.deleted_at IS NULL
 		AND EXISTS (
 			SELECT 1 FROM lists l JOIN group_memberships gm ON gm.group_id = l.group_id
-			WHERE l.id = li.list_id AND gm.user_id = $3
+			WHERE l.id = li.list_id AND gm.user_id = $3 AND gm.left_at IS NULL
 		)
 	`, id, listID, actorID)
 	if err == nil && res.RowsAffected() == 0 {
