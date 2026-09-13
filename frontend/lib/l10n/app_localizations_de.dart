@@ -6021,7 +6021,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get featureBoardUpvote => 'Für Funktion stimmen';
 
   @override
-  String get featureBoardUpvoted => 'Für Funktion gestimmt';
+  String get featureBoardRemoveUpvote => 'Stimme zurücknehmen';
 
   @override
   String featureBoardVotes(num count) {

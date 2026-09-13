@@ -10337,11 +10337,11 @@ abstract class AppLocalizations {
   /// **'Upvote feature'**
   String get featureBoardUpvote;
 
-  /// Upvoted button semantics
+  /// Vote button semantics once the user has upvoted; tapping takes the vote back
   ///
   /// In en, this message translates to:
-  /// **'Feature upvoted'**
-  String get featureBoardUpvoted;
+  /// **'Remove upvote'**
+  String get featureBoardRemoveUpvote;
 
   /// Feature vote count
   ///

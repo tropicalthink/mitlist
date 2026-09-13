@@ -5972,7 +5972,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get featureBoardUpvote => 'Votar función';
 
   @override
-  String get featureBoardUpvoted => 'Función votada';
+  String get featureBoardRemoveUpvote => 'Quitar voto';
 
   @override
   String featureBoardVotes(num count) {

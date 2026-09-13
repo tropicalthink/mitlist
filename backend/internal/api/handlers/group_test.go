@@ -264,6 +264,50 @@ func TestGroup_RemoveMember(t *testing.T) {
 	requireStatus(t, rec, http.StatusNoContent)
 }
 
+func TestGroup_RemoveMember_ByPlainMember(t *testing.T) {
+	clearTables(t)
+	router, _ := newGroupRouter(t)
+	owner := createTestUser(t, "owner2b@example.com", "Password123!")
+	member := createTestUser(t, "member2b@example.com", "Password123!")
+	other := createTestUser(t, "other2b@example.com", "Password123!")
+	outsider := createTestUser(t, "outsider2b@example.com", "Password123!")
+	memberToken := generateTestToken(member.ID)
+	outsiderToken := generateTestToken(outsider.ID)
+
+	groupRepo := newTestGroupRepo()
+	group := &models.Group{
+		ID:        uuid.New(),
+		Name:      "Remove Group B",
+		Currency:  "USD",
+		CreatedBy: owner.ID,
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
+	}
+	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, owner.ID, "admin")
+	for _, u := range []uuid.UUID{member.ID, other.ID} {
+		require.NoError(t, groupRepo.CreateMembership(context.Background(), &models.GroupMembership{
+			ID:       uuid.New(),
+			GroupID:  group.ID,
+			UserID:   u,
+			Role:     "member",
+			JoinedAt: time.Now().UTC(),
+		}))
+	}
+
+	// Someone outside the household cannot remove anyone.
+	rec := execRequest(t, router, "DELETE", "/api/v1/groups/"+group.ID.String()+"/members/"+other.ID.String(), nil, outsiderToken)
+	requireStatus(t, rec, http.StatusForbidden)
+
+	// A plain member can remove another member without being an admin.
+	rec = execRequest(t, router, "DELETE", "/api/v1/groups/"+group.ID.String()+"/members/"+other.ID.String(), nil, memberToken)
+	requireStatus(t, rec, http.StatusNoContent)
+
+	// The last admin is still protected.
+	rec = execRequest(t, router, "DELETE", "/api/v1/groups/"+group.ID.String()+"/members/"+owner.ID.String(), nil, memberToken)
+	requireStatus(t, rec, http.StatusBadRequest)
+}
+
 func TestGroup_UpdateMemberRole(t *testing.T) {
 	clearTables(t)
 	router, _ := newGroupRouter(t)

@@ -125,6 +125,17 @@ class FeedbackService {
     return FeatureBoardVote.fromJson(response.data!);
   }
 
+  /// Takes the user's upvote back. Removing a vote that was never cast is a
+  /// no-op on the tracker, so the returned count is always the true one.
+  Future<FeatureBoardVote> removeBoardVote(String requestId) async {
+    final user = await _requireCachedUser();
+    final response = await _dio.delete<Map<String, dynamic>>(
+      '${FeedbackConfig.boardPath}/$requestId/upvote',
+      data: {'voterRef': user.id},
+    );
+    return FeatureBoardVote.fromJson(response.data!);
+  }
+
   /// Posts a public comment. Only the user's first name travels with it; the
   /// tracker stores a hash of the user id, never the id itself.
   Future<FeatureBoardComment> addBoardComment({

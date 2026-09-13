@@ -5995,7 +5995,7 @@
   "featureBoardInProgress": "In uitvoering",
   "featureBoardShipped": "Uitgebracht",
   "featureBoardUpvote": "Stem op functie",
-  "featureBoardUpvoted": "Op functie gestemd",
+  "featureBoardRemoveUpvote": "Stem intrekken",
   "featureBoardVotes": "{count, plural, =1{1 stem} other{{count} stemmen}}",
   "featureBoardUnderReview": "In beoordeling",
   "featureBoardFilterAll": "Alles",

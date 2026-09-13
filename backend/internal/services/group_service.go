@@ -417,13 +417,15 @@ func (s *GroupService) UpdateMemberRole(ctx context.Context, userID, groupID, ta
 	return err
 }
 
-// RemoveMember removes a member from the group. Only admins may do so.
+// RemoveMember removes a member from the group. Any member of the household
+// may remove another member; the last admin is still protected so the group
+// never ends up without one.
 func (s *GroupService) RemoveMember(ctx context.Context, userID, groupID, targetUserID uuid.UUID) error {
 	err := s.groupRepo.WithTx(ctx, func(repo repositories.GroupRepo) error {
 		if err := repo.LockGroup(ctx, groupID); err != nil {
 			return err
 		}
-		if err := requireAdmin(ctx, repo, userID, groupID); err != nil {
+		if _, err := requireMembership(ctx, repo, userID, groupID); err != nil {
 			return err
 		}
 		membership, err := repo.GetMembership(ctx, groupID, targetUserID)
@@ -523,7 +525,11 @@ func (s *GroupService) RejectClaim(ctx context.Context, userID, groupID, claimID
 
 // requireMembership returns the membership or permission denied.
 func (s *GroupService) requireMembership(ctx context.Context, userID, groupID uuid.UUID) (*models.GroupMembership, error) {
-	m, err := s.groupRepo.GetMembership(ctx, groupID, userID)
+	return requireMembership(ctx, s.groupRepo, userID, groupID)
+}
+
+func requireMembership(ctx context.Context, repo repositories.GroupRepo, userID, groupID uuid.UUID) (*models.GroupMembership, error) {
+	m, err := repo.GetMembership(ctx, groupID, userID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) || isNotFound(err) {
 			return nil, &api.PermissionDeniedError{Message: "not a member of this group"}
