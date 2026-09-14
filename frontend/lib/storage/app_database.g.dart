@@ -4475,6 +4475,283 @@ class MealPlanCachesCompanion extends UpdateCompanion<MealPlanCache> {
   }
 }
 
+class $ResponseCachesTable extends ResponseCaches
+    with TableInfo<$ResponseCachesTable, ResponseCache> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ResponseCachesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _cacheKeyMeta =
+      const VerificationMeta('cacheKey');
+  @override
+  late final GeneratedColumn<String> cacheKey = GeneratedColumn<String>(
+      'cache_key', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _statusCodeMeta =
+      const VerificationMeta('statusCode');
+  @override
+  late final GeneratedColumn<int> statusCode = GeneratedColumn<int>(
+      'status_code', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _bodyJsonMeta =
+      const VerificationMeta('bodyJson');
+  @override
+  late final GeneratedColumn<String> bodyJson = GeneratedColumn<String>(
+      'body_json', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [cacheKey, statusCode, bodyJson, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'response_caches';
+  @override
+  VerificationContext validateIntegrity(Insertable<ResponseCache> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('cache_key')) {
+      context.handle(_cacheKeyMeta,
+          cacheKey.isAcceptableOrUnknown(data['cache_key']!, _cacheKeyMeta));
+    } else if (isInserting) {
+      context.missing(_cacheKeyMeta);
+    }
+    if (data.containsKey('status_code')) {
+      context.handle(
+          _statusCodeMeta,
+          statusCode.isAcceptableOrUnknown(
+              data['status_code']!, _statusCodeMeta));
+    } else if (isInserting) {
+      context.missing(_statusCodeMeta);
+    }
+    if (data.containsKey('body_json')) {
+      context.handle(_bodyJsonMeta,
+          bodyJson.isAcceptableOrUnknown(data['body_json']!, _bodyJsonMeta));
+    } else if (isInserting) {
+      context.missing(_bodyJsonMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {cacheKey};
+  @override
+  ResponseCache map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ResponseCache(
+      cacheKey: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}cache_key'])!,
+      statusCode: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}status_code'])!,
+      bodyJson: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}body_json'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+    );
+  }
+
+  @override
+  $ResponseCachesTable createAlias(String alias) {
+    return $ResponseCachesTable(attachedDatabase, alias);
+  }
+}
+
+class ResponseCache extends DataClass implements Insertable<ResponseCache> {
+  final String cacheKey;
+  final int statusCode;
+  final String bodyJson;
+  final DateTime updatedAt;
+  const ResponseCache(
+      {required this.cacheKey,
+      required this.statusCode,
+      required this.bodyJson,
+      required this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['cache_key'] = Variable<String>(cacheKey);
+    map['status_code'] = Variable<int>(statusCode);
+    map['body_json'] = Variable<String>(bodyJson);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  ResponseCachesCompanion toCompanion(bool nullToAbsent) {
+    return ResponseCachesCompanion(
+      cacheKey: Value(cacheKey),
+      statusCode: Value(statusCode),
+      bodyJson: Value(bodyJson),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory ResponseCache.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ResponseCache(
+      cacheKey: serializer.fromJson<String>(json['cacheKey']),
+      statusCode: serializer.fromJson<int>(json['statusCode']),
+      bodyJson: serializer.fromJson<String>(json['bodyJson']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'cacheKey': serializer.toJson<String>(cacheKey),
+      'statusCode': serializer.toJson<int>(statusCode),
+      'bodyJson': serializer.toJson<String>(bodyJson),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  ResponseCache copyWith(
+          {String? cacheKey,
+          int? statusCode,
+          String? bodyJson,
+          DateTime? updatedAt}) =>
+      ResponseCache(
+        cacheKey: cacheKey ?? this.cacheKey,
+        statusCode: statusCode ?? this.statusCode,
+        bodyJson: bodyJson ?? this.bodyJson,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+  ResponseCache copyWithCompanion(ResponseCachesCompanion data) {
+    return ResponseCache(
+      cacheKey: data.cacheKey.present ? data.cacheKey.value : this.cacheKey,
+      statusCode:
+          data.statusCode.present ? data.statusCode.value : this.statusCode,
+      bodyJson: data.bodyJson.present ? data.bodyJson.value : this.bodyJson,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ResponseCache(')
+          ..write('cacheKey: $cacheKey, ')
+          ..write('statusCode: $statusCode, ')
+          ..write('bodyJson: $bodyJson, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(cacheKey, statusCode, bodyJson, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ResponseCache &&
+          other.cacheKey == this.cacheKey &&
+          other.statusCode == this.statusCode &&
+          other.bodyJson == this.bodyJson &&
+          other.updatedAt == this.updatedAt);
+}
+
+class ResponseCachesCompanion extends UpdateCompanion<ResponseCache> {
+  final Value<String> cacheKey;
+  final Value<int> statusCode;
+  final Value<String> bodyJson;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const ResponseCachesCompanion({
+    this.cacheKey = const Value.absent(),
+    this.statusCode = const Value.absent(),
+    this.bodyJson = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ResponseCachesCompanion.insert({
+    required String cacheKey,
+    required int statusCode,
+    required String bodyJson,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  })  : cacheKey = Value(cacheKey),
+        statusCode = Value(statusCode),
+        bodyJson = Value(bodyJson),
+        updatedAt = Value(updatedAt);
+  static Insertable<ResponseCache> custom({
+    Expression<String>? cacheKey,
+    Expression<int>? statusCode,
+    Expression<String>? bodyJson,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (cacheKey != null) 'cache_key': cacheKey,
+      if (statusCode != null) 'status_code': statusCode,
+      if (bodyJson != null) 'body_json': bodyJson,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ResponseCachesCompanion copyWith(
+      {Value<String>? cacheKey,
+      Value<int>? statusCode,
+      Value<String>? bodyJson,
+      Value<DateTime>? updatedAt,
+      Value<int>? rowid}) {
+    return ResponseCachesCompanion(
+      cacheKey: cacheKey ?? this.cacheKey,
+      statusCode: statusCode ?? this.statusCode,
+      bodyJson: bodyJson ?? this.bodyJson,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (cacheKey.present) {
+      map['cache_key'] = Variable<String>(cacheKey.value);
+    }
+    if (statusCode.present) {
+      map['status_code'] = Variable<int>(statusCode.value);
+    }
+    if (bodyJson.present) {
+      map['body_json'] = Variable<String>(bodyJson.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ResponseCachesCompanion(')
+          ..write('cacheKey: $cacheKey, ')
+          ..write('statusCode: $statusCode, ')
+          ..write('bodyJson: $bodyJson, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $OutboxOpsTable extends OutboxOps
     with TableInfo<$OutboxOpsTable, OutboxOp> {
   @override
@@ -9780,6 +10057,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $SettlementsCachesTable(this);
   late final $CalendarCachesTable calendarCaches = $CalendarCachesTable(this);
   late final $MealPlanCachesTable mealPlanCaches = $MealPlanCachesTable(this);
+  late final $ResponseCachesTable responseCaches = $ResponseCachesTable(this);
   late final $OutboxOpsTable outboxOps = $OutboxOpsTable(this);
   late final $ConflictsTable conflicts = $ConflictsTable(this);
   late final $CanonicalItemsTableTable canonicalItemsTable =
@@ -9818,6 +10096,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         settlementsCaches,
         calendarCaches,
         mealPlanCaches,
+        responseCaches,
         outboxOps,
         conflicts,
         canonicalItemsTable,
@@ -12237,6 +12516,165 @@ typedef $$MealPlanCachesTableProcessedTableManager = ProcessedTableManager<
       BaseReferences<_$AppDatabase, $MealPlanCachesTable, MealPlanCache>
     ),
     MealPlanCache,
+    PrefetchHooks Function()>;
+typedef $$ResponseCachesTableCreateCompanionBuilder = ResponseCachesCompanion
+    Function({
+  required String cacheKey,
+  required int statusCode,
+  required String bodyJson,
+  required DateTime updatedAt,
+  Value<int> rowid,
+});
+typedef $$ResponseCachesTableUpdateCompanionBuilder = ResponseCachesCompanion
+    Function({
+  Value<String> cacheKey,
+  Value<int> statusCode,
+  Value<String> bodyJson,
+  Value<DateTime> updatedAt,
+  Value<int> rowid,
+});
+
+class $$ResponseCachesTableFilterComposer
+    extends Composer<_$AppDatabase, $ResponseCachesTable> {
+  $$ResponseCachesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get cacheKey => $composableBuilder(
+      column: $table.cacheKey, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get statusCode => $composableBuilder(
+      column: $table.statusCode, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get bodyJson => $composableBuilder(
+      column: $table.bodyJson, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$ResponseCachesTableOrderingComposer
+    extends Composer<_$AppDatabase, $ResponseCachesTable> {
+  $$ResponseCachesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get cacheKey => $composableBuilder(
+      column: $table.cacheKey, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get statusCode => $composableBuilder(
+      column: $table.statusCode, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get bodyJson => $composableBuilder(
+      column: $table.bodyJson, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$ResponseCachesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ResponseCachesTable> {
+  $$ResponseCachesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get cacheKey =>
+      $composableBuilder(column: $table.cacheKey, builder: (column) => column);
+
+  GeneratedColumn<int> get statusCode => $composableBuilder(
+      column: $table.statusCode, builder: (column) => column);
+
+  GeneratedColumn<String> get bodyJson =>
+      $composableBuilder(column: $table.bodyJson, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$ResponseCachesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $ResponseCachesTable,
+    ResponseCache,
+    $$ResponseCachesTableFilterComposer,
+    $$ResponseCachesTableOrderingComposer,
+    $$ResponseCachesTableAnnotationComposer,
+    $$ResponseCachesTableCreateCompanionBuilder,
+    $$ResponseCachesTableUpdateCompanionBuilder,
+    (
+      ResponseCache,
+      BaseReferences<_$AppDatabase, $ResponseCachesTable, ResponseCache>
+    ),
+    ResponseCache,
+    PrefetchHooks Function()> {
+  $$ResponseCachesTableTableManager(
+      _$AppDatabase db, $ResponseCachesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ResponseCachesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ResponseCachesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ResponseCachesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> cacheKey = const Value.absent(),
+            Value<int> statusCode = const Value.absent(),
+            Value<String> bodyJson = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              ResponseCachesCompanion(
+            cacheKey: cacheKey,
+            statusCode: statusCode,
+            bodyJson: bodyJson,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String cacheKey,
+            required int statusCode,
+            required String bodyJson,
+            required DateTime updatedAt,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              ResponseCachesCompanion.insert(
+            cacheKey: cacheKey,
+            statusCode: statusCode,
+            bodyJson: bodyJson,
+            updatedAt: updatedAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$ResponseCachesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $ResponseCachesTable,
+    ResponseCache,
+    $$ResponseCachesTableFilterComposer,
+    $$ResponseCachesTableOrderingComposer,
+    $$ResponseCachesTableAnnotationComposer,
+    $$ResponseCachesTableCreateCompanionBuilder,
+    $$ResponseCachesTableUpdateCompanionBuilder,
+    (
+      ResponseCache,
+      BaseReferences<_$AppDatabase, $ResponseCachesTable, ResponseCache>
+    ),
+    ResponseCache,
     PrefetchHooks Function()>;
 typedef $$OutboxOpsTableCreateCompanionBuilder = OutboxOpsCompanion Function({
   required String id,
@@ -14884,6 +15322,8 @@ class $AppDatabaseManager {
       $$CalendarCachesTableTableManager(_db, _db.calendarCaches);
   $$MealPlanCachesTableTableManager get mealPlanCaches =>
       $$MealPlanCachesTableTableManager(_db, _db.mealPlanCaches);
+  $$ResponseCachesTableTableManager get responseCaches =>
+      $$ResponseCachesTableTableManager(_db, _db.responseCaches);
   $$OutboxOpsTableTableManager get outboxOps =>
       $$OutboxOpsTableTableManager(_db, _db.outboxOps);
   $$ConflictsTableTableManager get conflicts =>

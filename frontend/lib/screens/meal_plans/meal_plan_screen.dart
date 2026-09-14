@@ -121,10 +121,13 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
       _error = null;
     });
     try {
-      final svc = await ref.read(mealPlanServiceProviderAsync.future);
+      // The repository falls back to the cached week when the network is
+      // gone; reading the service directly here is what turned an offline
+      // launch into a full-page error.
+      final repo = await ref.read(mealPlanRepositoryProvider.future);
       final from = _formatDate(weekStart);
       final to = _formatDate(weekStart.add(const Duration(days: 6)));
-      final plans = await svc.listMealPlans(groupId, from: from, to: to);
+      final plans = await repo.load(groupId, from: from, to: to);
       if (!mounted || !_loadGuard.isCurrent(request)) return;
       setState(() {
         _plans.clear();
@@ -760,14 +763,32 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
   }
 
   Future<void> _load() async {
-    try {
-      final svc = await ref.read(recipeServiceProviderAsync.future);
-      final recipes = await svc.listRecipes(limit: 100);
+    // Cache first: the picker only needs something to choose from, and the
+    // recipe cache already holds everything the kitchen has shown (including
+    // recipes created offline that the server has not seen yet).
+    final repo = await ref.read(recipeRepositoryProvider.future);
+    final cached = await repo.getRecipesOnce();
+    if (!mounted) return;
+    if (cached.isNotEmpty) {
       setState(() {
-        _recipes.addAll(recipes);
+        _recipes
+          ..clear()
+          ..addAll(cached);
+        _isLoading = false;
+      });
+    }
+    try {
+      await repo.refreshRecipes(limit: 100);
+      final fresh = await repo.getRecipesOnce();
+      if (!mounted) return;
+      setState(() {
+        _recipes
+          ..clear()
+          ..addAll(fresh);
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted || cached.isNotEmpty) return;
       setState(() {
         _error = friendlyErrorMessage(e, AppLocalizations.of(context)!);
         _isLoading = false;

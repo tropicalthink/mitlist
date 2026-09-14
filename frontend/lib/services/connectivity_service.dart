@@ -91,11 +91,21 @@ class ConnectivityService {
       r == ConnectivityResult.mobile ||
       r == ConnectivityResult.ethernet);
 
+  /// The last verdict, read synchronously: true once the OS has dropped the
+  /// interface or the probe streak has flipped to offline, false otherwise
+  /// (including before any verdict exists, so an untested network is assumed
+  /// usable). The API client consults this before sending a `GET` so a device
+  /// that is already known to be offline is answered from cache at once
+  /// instead of after the connect timeout.
+  bool get isKnownOffline => !_reported;
+
   void _onInterfaceChange(List<ConnectivityResult> results) {
     _invalidateCache();
     _debounceTimer?.cancel();
     if (!_interfaceUp(results)) {
       // Losing the interface is unambiguous — report offline immediately.
+      _consecutiveFailures = 0;
+      _reported = false;
       _controller.add(false);
       return;
     }
