@@ -5,7 +5,7 @@
 import LegalPage from "../components/LegalPage.astro";
 import { legal } from "../data/legal";
 const { operator } = legal;
-const lastUpdated = "6. September 2026";
+const lastUpdated = "14. September 2026";
 ---
 
 <LegalPage title="Datenschutz" description="Datenschutzerklärung für die mitlist-Website, die mitlist-Apps und den offiziell gehosteten mitlist-Dienst.">
@@ -13,7 +13,7 @@ const lastUpdated = "6. September 2026";
   <p class="legal-lang">English version: <a href="/privacy">Privacy Policy</a>. Die deutsche Fassung ist maßgeblich.</p>
 
   <h2>1. Verantwortlicher</h2>
-  <p>{operator.name}<br />{operator.street}<br />{operator.postalCode} {operator.city}<br />{operator.country}<br />E-Mail: <a href={`mailto:${legal.email}`}>{legal.email}</a></p>
+  <p>{operator.name}<br />{operator.street}<br />{operator.postalCode} {operator.city}<br />{operator.country}<br />E-Mail: <a href={`mailto:${legal.privacyEmail}`}>{legal.privacyEmail}</a></p>
   <p>Ein Datenschutzbeauftragter ist nicht bestellt, weil die gesetzlichen Voraussetzungen dafür nicht vorliegen. Wenden Sie sich mit allen Fragen zum Datenschutz an die oben genannte E-Mail-Adresse.</p>
 
   <h2>2. Geltungsbereich</h2>
@@ -40,7 +40,7 @@ const lastUpdated = "6. September 2026";
   <p><strong>Reichweitenmessung ohne Cookies.</strong> Auf der Website (nicht in der App) setzen wir Cloudflare Web Analytics ein, um zu sehen, wie oft welche Seiten aufgerufen werden. Der Dienst setzt keine Cookies, speichert nichts auf Ihrem Gerät und erstellt keine Fingerabdrücke; die Auswertung ist aggregiert und nicht auf einzelne Personen bezogen. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (Verständnis, welche Inhalte der Website gelesen werden). Da nichts auf Ihrem Gerät gespeichert oder ausgelesen wird, ist keine Einwilligung nach § 25 TDDDG erforderlich.</p>
 
   <h3 id="testing">Anmeldung zum mobilen Test</h3>
-  <p>Wenn Sie sich zum Test anmelden, speichern wir Ihre E-Mail-Adresse, die gewählte Plattform (Android oder iOS), den Anmeldezeitpunkt und die Version Ihrer Einwilligung. Wir nutzen diese Angaben, um den Testzugang einzurichten und Ihnen E-Mails zum Test zu senden, nicht für einen Newsletter. Die Liste ist nicht öffentlich; es entsteht weder ein mitlist-Konto noch ein Beitrag im Feature-Board. Für die Einladung können wir Ihre E-Mail-Adresse bei Google Play Testing oder Apple TestFlight hinterlegen. Nach Ende des Tests oder Ihrem Widerruf löschen wir die Anmeldung. Zum Widerruf oder zur Löschung schreiben Sie von Ihrer angemeldeten Adresse an <a href={`mailto:${legal.email}`}>{legal.email}</a>.</p>
+  <p>Wenn Sie sich zum Test anmelden, speichern wir Ihre E-Mail-Adresse, die gewählte Plattform (Android oder iOS), den Anmeldezeitpunkt und die Version Ihrer Einwilligung. Wir nutzen diese Angaben, um den Testzugang einzurichten und Ihnen E-Mails zum Test zu senden. Eine getrennte, freiwillige Einwilligung gilt für Nachrichten zum offiziellen Start und gelegentliche mitlist-Neuigkeiten; sie ist keine Voraussetzung für die Testteilnahme. Die Liste ist nicht öffentlich; es entsteht weder ein mitlist-Konto noch ein Beitrag im Feature-Board. Für die Einladung können wir Ihre E-Mail-Adresse bei Google Play Testing oder Apple TestFlight hinterlegen. Nach Ende des Tests oder Ihrem Widerruf löschen wir die Anmeldung. Zum Widerruf oder zur Löschung schreiben Sie von Ihrer angemeldeten Adresse an <a href={`mailto:${legal.privacyEmail}`}>{legal.privacyEmail}</a>.</p>
 
   <h2>5. Konto und Anmeldung</h2>
   <p><strong>Registrierung mit E-Mail.</strong> Beim Anlegen eines Kontos verarbeiten wir E-Mail-Adresse, den von Ihnen gewählten Namen und ein Passwort, das ausschließlich als Hash gespeichert wird. Zur Bestätigung der Adresse und zum Zurücksetzen des Passworts senden wir Ihnen E-Mails mit Codes. Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO.</p>
@@ -73,24 +73,24 @@ const lastUpdated = "6. September 2026";
   <p><strong>Cloudflare.</strong> Die Web-App und die Schnittstelle sind über Cloudflare erreichbar. Cloudflare leitet Anfragen an unseren Server weiter, wehrt Angriffe ab und verarbeitet dafür IP-Adresse und Verbindungsdaten. Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO.</p>
   <p><strong>Turnstile.</strong> Wer im Browser ein Gastkonto anlegt, durchläuft eine unsichtbare Prüfung durch Cloudflare Turnstile, damit automatisierte Anmeldungen den Dienst nicht überlasten. Cloudflare erhält die dafür nötigen technischen Signale des Browsers; wir erhalten nur das Ergebnis der Prüfung. Das Token wird einmal geprüft und nicht mit Ihrem Konto gespeichert. Es gilt der <a href="https://www.cloudflare.com/application-services/products/turnstile-privacy-addendum/" target="_blank" rel="noopener noreferrer">Turnstile-Datenschutzzusatz</a> von Cloudflare. Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO.</p>
   <p><strong>App Check.</strong> Die iOS- und Android-Apps weisen sich gegenüber unserem Server mit Firebase App Check (Google Ireland Ltd.) als echte App-Installation aus. Dabei werden Geräteattestierungen von Apple bzw. Google geprüft; Haushaltsdaten sind daran nicht beteiligt. Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO.</p>
-  <p><strong>Server-Protokolle.</strong> Unser Server protokolliert Fehler und sicherheitsrelevante Ereignisse, etwa fehlgeschlagene Anmeldungen, mit IP-Adresse und Zeitpunkt. Wiederholt auffällige Adressen werden vorübergehend gesperrt. Protokolle werden nach kurzer Zeit gelöscht, sofern sie nicht zur Aufklärung eines Vorfalls benötigt werden. Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO.</p>
+  <p><strong>Server-Protokolle.</strong> Unsere Server protokollieren Fehler und sicherheitsrelevante Ereignisse, etwa fehlgeschlagene Anmeldungen, mit IP-Adresse und Zeitpunkt. Wiederholt auffällige Adressen werden vorübergehend gesperrt. Protokolle werden spätestens nach 30 Tagen gelöscht, sofern sie nicht zur Aufklärung eines Vorfalls benötigt werden. Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO.</p>
 
   <h2>11. Fehlerberichte</h2>
-  <p>Stürzt die App ab oder tritt ein unerwarteter Fehler auf, senden Web-App, Apps und Server einen Fehlerbericht an eine von uns betriebene GlitchTip-Instanz. Ein Bericht enthält den technischen Ablauf des Fehlers (Stack-Trace), App- und Betriebssystemversion, Gerätetyp und Umgebung. Haushaltsinhalte, Namen und E-Mail-Adressen sind bewusst nicht Teil der Berichte; Leistungs- und Nutzungsdaten werden nicht erhoben. Berichte werden nur so lange gespeichert, wie sie zur Behebung des Fehlers gebraucht werden. Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO (stabiler Betrieb).</p>
+  <p>Ist die Fehlerberichterstattung in einem offiziellen Build oder Dienst aktiviert, kann bei einem unerwarteten Fehler ein Bericht an eine von uns betriebene GlitchTip-Instanz gesendet werden. Er enthält Stack-Trace, App- und Betriebssystemversion, Gerätetyp und Umgebung. Haushaltsinhalte, Namen, E-Mail-Adressen, Anmelde-Header und Cookies werden bewusst ausgeschlossen. Leistungstracing ist deaktiviert; Nutzungsprofile werden nicht erstellt. Berichte werden bis zu 30 Tage gespeichert. Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO.</p>
 
   <h2>12. Feedback</h2>
   <p><strong>In der App.</strong> Über den Feedback-Bereich in der App können Sie Wünsche und Fehler melden. Übermittelt werden Ihr Text, die Seite, auf der Sie sich befanden, App-Version, Plattform und Sprache. Diese Meldungen speichern wir in unserem Anfragen-System, das auf Cloudflare Workers und Cloudflare D1 läuft.</p>
   <p><strong>Feedback-Board.</strong> Das öffentliche Board unter feedback.mitlist.me kann ohne Anmeldung gelesen werden. Zum Abstimmen, Posten und Kommentieren melden Sie sich mit Ihrem mitlist-Konto an; das Board setzt dann ein technisch notwendiges Sitzungs-Cookie. Bei Beiträgen und Kommentaren speichern wir Ihre Konto-Kennung und zeigen Ihren Vornamen an. Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO.</p>
 
   <h2>13. Hosting, Empfänger und Drittlandübermittlung</h2>
-  <p>Der Dienst (Web-App, Schnittstelle und Datenbank) läuft auf einem von uns verwalteten Server in einem Rechenzentrum in Heerlen, Niederlande. Datenbank-Sicherungen werden verschlüsselt angelegt und nach einem begrenzten Zeitraum überschrieben. Folgende Dienstleister verarbeiten Daten in unserem Auftrag oder als eigenständige Verantwortliche:</p>
+  <p>Der Dienst läuft auf von uns verwalteter Infrastruktur in Eygelshoven, Niederlande, und Nürnberg, Deutschland. PostgreSQL betreiben wir selbst; verschlüsselte Datenbank-Sicherungen werden zweimal täglich erstellt. Während der öffentlichen Beta führen wir eine rollierende Höchstspeicherdauer von 30 Tagen ein; bis zum Abschluss kann eine Wiederherstellungskopie länger bestehen. Anhänge liegen in Cloudflare R2 mit unserer EU-Datenstandortkonfiguration.</p>
   <div class="table-scroll">
     <table>
       <thead>
         <tr><th>Empfänger</th><th>Zweck</th><th>Sitz / Übermittlung</th></tr>
       </thead>
       <tbody>
-        <tr><td>Server-Anbieter (Rechenzentrum Heerlen)</td><td>Betrieb von Web-App, Schnittstelle und Datenbank</td><td>Niederlande (EU)</td></tr>
+        <tr><td>Infrastruktur-Anbieter (Eygelshoven und Nürnberg)</td><td>Betrieb von Web-App, Schnittstelle und unserer PostgreSQL-Datenbank</td><td>Niederlande und Deutschland (EU)</td></tr>
         <tr><td>Cloudflare, Inc.</td><td>Website, Netzwerk und Schutz, Turnstile, Objektspeicher R2, Feedback-System (Workers, D1)</td><td>USA; EU-Standardvertragsklauseln, zertifiziert nach dem EU-US Data Privacy Framework</td></tr>
         <tr><td>Google Ireland Ltd. (Firebase)</td><td>Push-Benachrichtigungen, App Check, Anmeldung mit Google</td><td>Irland; Übermittlungen an Google LLC (USA) auf Basis des EU-US Data Privacy Framework und Standardvertragsklauseln</td></tr>
         <tr><td>Apple Distribution International Ltd.</td><td>Anmeldung mit Apple, Push auf iOS, In-App-Kauf</td><td>Irland; Übermittlungen an Apple Inc. (USA) auf Basis des EU-US Data Privacy Framework</td></tr>
@@ -109,8 +109,8 @@ const lastUpdated = "6. September 2026";
     <li><strong>Haushalte</strong> und ihre Inhalte werden gelöscht, wenn der Haushalt gelöscht wird.</li>
     <li><strong>Gastkonten</strong> werden nach 30 Tagen Inaktivität gesperrt und nach weiteren 180 Tagen anonymisiert.</li>
     <li><strong>Abrechnungsdaten</strong> zu Premium bewahren wir für die gesetzlichen Fristen von bis zu zehn Jahren auf.</li>
-    <li><strong>Push-Token</strong> werden beim Abmelden gelöscht, <strong>Protokolle</strong> und <strong>Fehlerberichte</strong> nach kurzer Zeit.</li>
-    <li><strong>Sicherungen</strong> werden nach einem begrenzten Zeitraum überschrieben; gelöschte Daten verschwinden damit auch aus den Sicherungen.</li>
+    <li><strong>Push-Token</strong> werden beim Abmelden gelöscht, <strong>Protokolle</strong> und <strong>Fehlerberichte</strong> normalerweise innerhalb von 30 Tagen.</li>
+    <li><strong>Sicherungen.</strong> Während der Beta führen wir eine rollierende Höchstspeicherdauer von 30 Tagen ein. Gelöschte Daten können bis zum Ablauf in einer verschlüsselten Wiederherstellungskopie bleiben; bei einer Wiederherstellung werden protokollierte Löschungen vor Wiederfreigabe erneut angewendet.</li>
   </ul>
   <p><strong>Datenexport.</strong> Sie können Ihre Ausgaben jederzeit als CSV oder JSON aus der App exportieren. Weitere Daten stellen wir Ihnen auf Anfrage in einem gängigen Format bereit (Art. 20 DSGVO).</p>
 
@@ -121,7 +121,7 @@ const lastUpdated = "6. September 2026";
   <p>Der offizielle Dienst richtet sich an Personen ab 16 Jahren. Jüngere Personen dürfen ihn nur mit Zustimmung eines Erziehungsberechtigten nutzen. Erfahren wir, dass ein Konto ohne diese Zustimmung angelegt wurde, löschen wir es.</p>
 
   <h2>17. Ihre Rechte</h2>
-  <p>Sie haben das Recht auf Auskunft (Art. 15 DSGVO), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung der Verarbeitung (Art. 18), Datenübertragbarkeit (Art. 20) und Widerspruch gegen Verarbeitungen auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO (Art. 21). Eine erteilte Einwilligung können Sie jederzeit mit Wirkung für die Zukunft widerrufen (Art. 7 Abs. 3). Eine formlose Nachricht an <a href={`mailto:${legal.email}`}>{legal.email}</a> genügt; Konto und Daten können Sie außerdem jederzeit selbst in der App löschen.</p>
+  <p>Sie haben das Recht auf Auskunft (Art. 15 DSGVO), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung der Verarbeitung (Art. 18), Datenübertragbarkeit (Art. 20) und Widerspruch gegen Verarbeitungen auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO (Art. 21). Eine erteilte Einwilligung können Sie jederzeit mit Wirkung für die Zukunft widerrufen (Art. 7 Abs. 3). Eine formlose Nachricht an <a href={`mailto:${legal.privacyEmail}`}>{legal.privacyEmail}</a> genügt; Konto und Daten können Sie außerdem jederzeit selbst in der App löschen.</p>
   <p>Sie haben zudem das Recht, sich bei einer Datenschutz-Aufsichtsbehörde zu beschweren (Art. 77 DSGVO). Für uns zuständig ist der Hessische Beauftragte für Datenschutz und Informationsfreiheit, Gustav-Stresemann-Ring 1, 65189 Wiesbaden, <a href="https://datenschutz.hessen.de" target="_blank" rel="noopener noreferrer">datenschutz.hessen.de</a>. Sie können sich auch an die Behörde Ihres Wohnorts wenden.</p>
 
   <h2>18. Änderungen</h2>

@@ -21,7 +21,7 @@ type memoryTestingSignups struct {
 	err     error
 }
 
-func (s *memoryTestingSignups) Create(_ context.Context, email, platform, consent string) error {
+func (s *memoryTestingSignups) Create(_ context.Context, email, platform, consent string, launchUpdates bool, launchConsent string) error {
 	if s.err != nil {
 		return s.err
 	}
@@ -30,7 +30,14 @@ func (s *memoryTestingSignups) Create(_ context.Context, email, platform, consen
 			return nil
 		}
 	}
-	s.signups = append(s.signups, repositories.TestingSignup{Email: email, Platform: platform, ConsentVersion: consent, CreatedAt: time.Now()})
+	var version *string
+	var consentedAt *time.Time
+	if launchUpdates {
+		version = &launchConsent
+		now := time.Now()
+		consentedAt = &now
+	}
+	s.signups = append(s.signups, repositories.TestingSignup{Email: email, Platform: platform, ConsentVersion: consent, LaunchUpdates: launchUpdates, LaunchConsentVersion: version, LaunchConsentedAt: consentedAt, CreatedAt: time.Now()})
 	return nil
 }
 
@@ -75,6 +82,7 @@ func TestTestingSignupValidation(t *testing.T) {
 		code, count int
 	}{
 		{"valid", `{"email":" Tester@Example.com ","platform":"android","consent":true}`, 202, 1},
+		{"valid with separate launch consent", `{"email":"tester@example.com","platform":"android","consent":true,"launch_updates":true}`, 202, 1},
 		{"ios", `{"email":"tester@example.com","platform":"ios","consent":true}`, 202, 1},
 		{"no consent", `{"email":"tester@example.com","platform":"ios"}`, 400, 0},
 		{"invalid email", `{"email":"bad","platform":"ios","consent":true}`, 400, 0},
@@ -96,6 +104,10 @@ func TestTestingSignupValidation(t *testing.T) {
 			}
 			if tc.count > 0 && (store.signups[0].Email != "tester@example.com" || store.signups[0].ConsentVersion != testingConsentVersion) {
 				t.Fatal("email or consent not normalized")
+			}
+			if tc.name == "valid with separate launch consent" &&
+				(!store.signups[0].LaunchUpdates || store.signups[0].LaunchConsentVersion == nil || store.signups[0].LaunchConsentedAt == nil) {
+				t.Fatal("separate launch consent was not recorded")
 			}
 		})
 	}

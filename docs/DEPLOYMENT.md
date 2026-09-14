@@ -1,16 +1,16 @@
 # Production deployment checklist
 
-This runbook covers the Redis-free Go API using managed PlanetScale Postgres
-and S3-compatible attachment storage such as Cloudflare R2. Run commands from
+This runbook covers the Redis-free Go API using replicated PostgreSQL and
+S3-compatible attachment storage such as Cloudflare R2. Run commands from
 the repository root unless a step says otherwise.
 
 ## 1. Before the maintenance window
 
 - [ ] Record the currently deployed backend image tag and Git commit.
-- [ ] Confirm a recent PlanetScale backup or restore point exists.
+- [ ] Confirm both PostgreSQL replicas are healthy and a recent twice-daily backup can be read.
 - [ ] Confirm the R2 bucket, lifecycle policy, and credentials are healthy.
-- [ ] Confirm `DATABASE_URL` is the PlanetScale Postgres URL with its supplied
-      TLS parameters intact.
+- [ ] Confirm `DATABASE_URL` targets the intended PostgreSQL writer and keeps
+      its required TLS parameters intact.
 - [ ] Confirm `SECRET_KEY` and `SESSION_SECRET_KEY` are unchanged. Rotating
       either during this release would invalidate more sessions than intended.
 - [ ] Confirm `MAX_STORAGE_PER_GROUP_GB=1` and
@@ -38,11 +38,8 @@ DATABASE_URL="$DATABASE_URL" go run ./cmd/migrate version
 ```
 
 The release artifact and database must agree on their migration head. This
-checkout's head is `54`. Migrations 39–47 harden authentication and push-device
-ownership; 48–51 add reminder delivery state, notification group scoping and
-list notification batching; 52 adds authenticated request replay protection;
-53 deduplicates scheduled notification retries; 54 adds recoverable guest
-account locking and retirement timestamps.
+checkout's head is `67`. Verify the filenames in `backend/migrations` before
+every release rather than relying on an older image's recorded head.
 
 If the database reports `dirty: true`, stop. Take a backup and inspect the
 failed migration before using `force`; never force a production version merely
@@ -55,7 +52,7 @@ DATABASE_URL="$DATABASE_URL" go run ./cmd/migrate up
 DATABASE_URL="$DATABASE_URL" go run ./cmd/migrate version
 ```
 
-- [ ] The resulting version is `54`, `dirty: false`.
+- [ ] The resulting version is `67`, `dirty: false`.
 - [ ] `groups.storage_used_bytes` and `groups.storage_reserved_bytes` exist.
 - [ ] `auth_sessions` exists.
 - [ ] `billing_subscriptions` and `billing_webhook_events` exist.
@@ -63,15 +60,16 @@ DATABASE_URL="$DATABASE_URL" go run ./cmd/migrate version
 - [ ] `request_idempotency` exists.
 - [ ] `idx_notifications_scheduled_dedupe` exists.
 - [ ] `users.guest_last_seen_at` and `users.guest_locked_at` exist.
+- [ ] `testing_signups.launch_updates` and its consent metadata columns exist.
 
 ## 3. Cut over the API
 
-- [ ] Deploy the new backend image with the PlanetScale `DATABASE_URL`.
+- [ ] Deploy the new backend image with the production PostgreSQL `DATABASE_URL`.
 - [ ] Remove `REDIS_URL`, `REDIS_PASSWORD`, and `WARM_CACHE_ON_STARTUP` from
       runtime configuration. They are no longer read.
 - [ ] Start one API replica first.
 - [ ] Confirm startup logs show a successful database connection and migration
-      version 54, with no panic or repeated connection retries.
+      version 67, with no panic or repeated connection retries.
 - [ ] Keep coarse IP abuse protection enabled at the edge. Fine-grained API
       rate-limit buckets are process-local, so replicas do not share them.
 
@@ -212,7 +210,7 @@ go run ./cmd/smoke \
 - [ ] Quota reservation, upload finalization, deletion, and byte release pass.
 - [ ] The command ends with `resources cleaned up`.
 - [ ] Error monitoring shows no new backend failures.
-- [ ] PlanetScale connection use remains below the plan limit.
+- [ ] PostgreSQL connection use and replication lag remain within the operating thresholds.
 
 Only after these checks pass should additional API replicas receive traffic.
 
@@ -228,7 +226,7 @@ The application, tests, CI, and Compose stack no longer require Redis.
 ## Rollback
 
 Prefer an application rollback without rolling the database down. Before
-rollback, verify that the previous image tolerates schema version 54; migrations
+rollback, verify that the previous image tolerates schema version 67; migrations
 40, 45, and 47 include destructive security cleanup and cannot be reversed into
 the deleted credentials or duplicate device ownership records.
 

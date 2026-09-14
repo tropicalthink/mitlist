@@ -1,42 +1,80 @@
 ---
 import "../styles/global.css";
 import ConsoleEgg from "../components/ConsoleEgg.astro";
+import { site, supportedLanguages, type SiteLanguage } from "../data/site";
 
 interface Props {
   title?: string;
   description?: string;
+  language?: SiteLanguage;
+  path?: string;
+  image?: string;
+  localized?: boolean;
+  detectLanguage?: boolean;
 }
 
 const {
-  title = "mitlist — the shared household, in one place",
-  description = "Shopping lists, shared expenses, chores, and a pinwall of notes for everyone you live with. Free at mitlist.me — open source, self-hostable, and on iOS and Android.",
+  title = "mitlist — one shared place for your household",
+  description = "Share lists, expenses, chores, meals, calendars and notes with your household. Now in public beta on the web.",
+  language = "en",
+  path = "/",
+  image = "/social-card.svg",
+  localized = false,
+  detectLanguage = false,
 } = Astro.props;
+
+const resolvedPath = path === "/" && !localized ? Astro.url.pathname : path;
+const localizedUrl = resolvedPath === "/" ? `/${language}/` : `/${language}${resolvedPath}`;
+const canonical = new URL(localized ? localizedUrl : resolvedPath, site.origin);
+const socialImage = new URL(image, site.origin);
+const skipLabel = {
+  en: "Skip to content",
+  de: "Zum Inhalt springen",
+  es: "Saltar al contenido",
+  fr: "Aller au contenu",
+  nl: "Naar de inhoud",
+}[language];
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang={language}>
   <head>
     <meta charset="utf-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
     <meta name="description" content={description} />
     <meta name="theme-color" content="#f97316" />
-
+    <link rel="canonical" href={canonical} />
+    {localized && supportedLanguages.map((code) => (
+      <link rel="alternate" hreflang={code} href={new URL(resolvedPath === "/" ? `/${code}/` : `/${code}${resolvedPath}`, site.origin)} />
+    ))}
+    {localized && <link rel="alternate" hreflang="x-default" href={new URL(resolvedPath === "/" ? "/en/" : `/en${resolvedPath}`, site.origin)} />}
     <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
-
-    <!-- Cloudflare Web Analytics: cookieless, landing page only. The app at
-         app.mitlist.me deliberately carries no analytics (see PRIVACY.md). -->
-    <script
-      is:inline
-      type="module"
-      src="https://static.cloudflareinsights.com/beacon.min.js"
-      data-cf-beacon='{"token": "cd937df3e2e24407a59ff8f4fe7d5fcf"}'></script>
+    <meta property="og:image" content={socialImage} />
+    <meta property="og:locale" content={language} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={socialImage} />
+    {detectLanguage && <script is:inline>
+      (() => {
+        if (location.pathname !== "/") return;
+        const saved = document.cookie.match(/(?:^|; )mitlist-language=([^;]+)/)?.[1];
+        const supported = ["en", "de", "es", "fr", "nl"];
+        const preferred = saved || navigator.languages?.map((value) => value.split("-")[0]).find((value) => supported.includes(value));
+        if (preferred && preferred !== "en") location.replace(`/${preferred}/`);
+      })();
+    </script>}
+    <!-- Cookieless aggregate page analytics for the public marketing site. -->
+    <script is:inline type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon={`{"token":"${site.analytics.cloudflareToken}"}`}></script>
   </head>
   <body>
+    <a class="skip-link" href="#main-content">{skipLabel}</a>
     <slot />
     <ConsoleEgg />
   </body>

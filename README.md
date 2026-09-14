@@ -72,7 +72,7 @@ sitting behind a subscription. mitlist has one tier, and it's the whole thing.
 ⁴ mitlist has a barcode *field* you can type into on a product record. Nothing scans it and nothing resolves it to a product.
 ⁵ mitlist's canonical repo is self-hosted git, so there is no star count to compare — read that as "unproven", not "modest".
 
-**mitlist's honest pitch: among the tools that are free, open source, and self-hosted, it's the one that covers money, chores, shopping, and meals in a single offline-first app, with a fully on-device scanner and an offline grocery catalog. Homechart covers a similar spread with better-polished, actually-installable apps — it just isn't open source and charges for household use. And every app in both tables has one thing mitlist doesn't: you can install it right now (see [Where mitlist is still rough](#where-mitlist-is-still-rough)).**
+**mitlist's honest pitch: among the tools that are free, open source, and self-hosted, it covers money, chores, shopping, and meals in one connected app, with a fully on-device mobile scanner and a locally cached grocery catalog. The public web beta is available now; iOS and Android are rolling out through TestFlight and Google Play testing.**
 
 ### What each does better than us
 
@@ -152,17 +152,16 @@ The Flutter app's own build-time settings (`--dart-define`) are listed in
 optional features silently disappear when a define is missing.
 
 For production releases, follow the [deployment checklist](docs/DEPLOYMENT.md).
-It includes PlanetScale migration checks, the Redis-free cutover, rollback
+It includes replicated PostgreSQL migration checks, the Redis-free cutover, rollback
 guidance, and the automated post-deploy smoke command.
 
-### Hosted database: PlanetScale Postgres
+### Hosted database: replicated PostgreSQL
 
-The planned official service uses PlanetScale Postgres instead of operating a
-Postgres container. The application needs no adapter: set `DATABASE_URL` in the
-deployment environment (or the root `.env` when using the prod Compose
-profile) to the PlanetScale connection string, preserve its TLS parameters,
-and run the normal migrations. Cloudflare R2 holds attachments while Postgres
-stores their metadata, household quota counters, and refresh sessions.
+The official service operates PostgreSQL with replication across the hosted
+setup and takes database backups twice daily. Set `DATABASE_URL` to the
+deployment's PostgreSQL endpoint, keep TLS enabled across public networks, and
+run the normal migrations. Cloudflare R2 in EU jurisdiction holds attachments;
+PostgreSQL stores their metadata, household quota counters, and refresh sessions.
 
 ---
 
@@ -219,13 +218,13 @@ Tagged `home-assistant-v*` releases can be installed through HACS using this
 repository as an Integration custom repository. See the
 [Home Assistant guide](home_assistant/README.md) for setup and security details.
 
-Store builds aren't published yet — the way to run mitlist today is to self-host the backend and build the Flutter app yourself (or open the web PWA against your instance).
+mitlist is now in public beta. The hosted web app is open to everyone at [app.mitlist.me](https://app.mitlist.me); iOS and Android are distributed through TestFlight and Google Play testing while the mobile apps remain in beta.
 
 | Platform | Status |
 |----------|--------|
-| iOS | Not on the App Store yet — build from source |
-| Android | Not on Google Play yet — build from source |
-| Web | Flutter Web PWA — build and serve, or point at your instance |
+| iOS | Public beta through TestFlight |
+| Android | Public beta through Google Play testing |
+| Web | Public beta at `app.mitlist.me`, or point a build at your own instance |
 | Self-host | `docker compose --profile prod up -d` |
 
 > The mobile app bundles ~117 MB of assets — the OCR models and the grocery
@@ -238,7 +237,7 @@ Store builds aren't published yet — the way to run mitlist today is to self-ho
 
 Being honest about what the comparison tables don't show:
 
-- **No published apps.** There are no store listings or hosted instance yet. You self-host and build the client. Fine for tinkerers, not yet for your non-technical flatmate.
+- **Mobile is still a beta.** The web app is public, while iOS and Android currently use TestFlight and Google Play testing rather than production store listings.
 - **Live FX is opt-in.** A self-hosted instance can enable a live rate feed (`FX_RATE_API_URL`) that prefills each expense's exchange rate; without it, you enter the rate by hand. The prefilled rate is advisory, not a bank-grade per-expense rate lock.
 - **No bank import.** Expenses are entered by hand (or scanned via OCR), with optional receipt photos attached per expense. No Plaid/GoCardless bank or card sync.
 - **No pantry/inventory tracking.** Unlike Grocy, mitlist doesn't track what's in your fridge or expiry dates.

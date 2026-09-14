@@ -112,9 +112,8 @@ Brand: warm, punchy, organized. Orange primary (`mitlistColors.primary500` = `#F
 
 ## AI / OCR
 
-The scanner uses **CrofAI** (`https://crof.ai/v1`) via OpenAI-compatible API. Set `CROFAI_API_KEY` in backend `.env`. The vision model `kimi-k2.5` processes images and returns structured JSON with type classification and extracted items/steps/amounts.
+The mobile scanner uses bundled **PP-OCRv6 ONNX models** and an on-device grocery resolution pipeline. Images and recognised text are processed locally; no hosted AI service is called. Scanning is available on iOS and Android and is currently unavailable on web.
 
-- Endpoint: `POST /assistant/scan` (multipart file upload)
 - Service: `frontend/lib/services/scan/scan_pipeline_service.dart`
 - Screen: `frontend/lib/screens/scanner/scanner_screen.dart`
 

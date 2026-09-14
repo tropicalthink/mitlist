@@ -1,8 +1,9 @@
 ---
 import InfoPage from "../components/InfoPage.astro";
+import { site } from "../data/site";
 
-const GITHUB = "https://github.com/whtvrboo/mitlist";
-const WEBAPP = "https://app.mitlist.me";
+const GITHUB = site.repositoryUrl;
+const WEBAPP = site.appUrl;
 ---
 
 <InfoPage
@@ -15,13 +16,13 @@ const WEBAPP = "https://app.mitlist.me";
   <section class="info-card">
     <h2>Official hosting</h2>
     <div>
-      <h3>Free for a normal household</h3>
+      <h3>Every feature, free for up to four people</h3>
       <p>Households of up to four members use official hosting for free. Each household gets 1 GB for photos, receipts, and other attachments. Lists, chores, recipes, money, and the rest of the product are not feature-gated.</p>
       <ul>
         <li>10 MB maximum per uploaded file</li>
         <li>No ads and no sale of household data</li>
-        <li>On-device text recognition, so scans do not spend a hosted AI allowance</li>
-        <li>Households with five or more members need Premium: one flat subscription per household, monthly or yearly, cancellable any time</li>
+        <li>On-device text recognition in the iOS and Android apps, so scans do not spend a hosted AI allowance</li>
+        <li>Households with 5 or more members need one Premium subscription: €3.99 monthly or €29.99 yearly, cancellable any time</li>
         <li>Limits may be adjusted if real usage makes the free service unsustainable; changes will be explained on the transparency page first</li>
       </ul>
       <p class="legal-links"><a href="/terms">Terms of Service</a> · <a href="/privacy">Privacy</a></p>

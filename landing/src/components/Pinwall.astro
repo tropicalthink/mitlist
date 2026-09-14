@@ -2,83 +2,93 @@
 // The Pinwall: a cork board of real household objects you can pick up,
 // drag, fling, and let settle. Each object is a coded preview of a
 // mitlist feature. Physics are hand-rolled (no library).
+import type { SiteLanguage } from "../data/site";
+interface Props { language?: SiteLanguage; }
+const { language = "en" } = Astro.props;
+const text = {
+  en: { aria: "Sample household board with shared lists, chores, expenses, and notes.", drag: "drag anything", shop: "Saturday shop", milk: "Milk", eggs: "Eggs", coffee: "Coffee beans", oil: "Olive oil", shopping: "2 of 4 · Maya is shopping", bins: "Bins out tonight", overdue: "Overdue", chore: "Clean the kitchen", repeat: "Sam · every Friday", groceries: "Groceries", split: "split 3 ways", owes: "Each owes", movie: "movie night friday??", plumber: "plumber comes 9am" },
+  de: { aria: "Interaktive Haushaltspinnwand. Zieht Notizen und Karten an eine neue Stelle.", drag: "alles verschiebbar", shop: "Samstagseinkauf", milk: "Milch", eggs: "Eier", coffee: "Kaffeebohnen", oil: "Olivenöl", shopping: "2 von 4 · Maya kauft ein", bins: "Heute Abend Müll raus", overdue: "Überfällig", chore: "Küche putzen", repeat: "Sam · jeden Freitag", groceries: "Lebensmittel", split: "durch 3 geteilt", owes: "Pro Person", movie: "Filmabend Freitag??", plumber: "Klempner kommt 9 Uhr" },
+  es: { aria: "Tablón interactivo del hogar. Arrastra las notas y tarjetas.", drag: "arrastra todo", shop: "Compra del sábado", milk: "Leche", eggs: "Huevos", coffee: "Café", oil: "Aceite de oliva", shopping: "2 de 4 · Maya está comprando", bins: "Sacar la basura esta noche", overdue: "Atrasada", chore: "Limpiar la cocina", repeat: "Sam · cada viernes", groceries: "Compra", split: "entre 3", owes: "Cada uno", movie: "¿cine el viernes?", plumber: "fontanero a las 9", },
+  fr: { aria: "Tableau interactif du foyer. Déplacez les notes et les cartes.", drag: "tout déplacer", shop: "Courses du samedi", milk: "Lait", eggs: "Œufs", coffee: "Café", oil: "Huile d’olive", shopping: "2 sur 4 · Maya fait les courses", bins: "Sortir les poubelles ce soir", overdue: "En retard", chore: "Nettoyer la cuisine", repeat: "Sam · chaque vendredi", groceries: "Courses", split: "partagé en 3", owes: "Chacun doit", movie: "film vendredi ?", plumber: "plombier à 9 h" },
+  nl: { aria: "Interactief huishoudprikbord. Versleep notities en kaarten.", drag: "alles verslepen", shop: "Zaterdagboodschappen", milk: "Melk", eggs: "Eieren", coffee: "Koffiebonen", oil: "Olijfolie", shopping: "2 van 4 · Maya winkelt", bins: "Vanavond afval buiten", overdue: "Te laat", chore: "Keuken schoonmaken", repeat: "Sam · elke vrijdag", groceries: "Boodschappen", split: "verdeeld door 3", owes: "Per persoon", movie: "filmavond vrijdag?", plumber: "loodgieter om 9 uur" },
+}[language];
 ---
 
 <div class="pinwall-shell">
-  <div class="pinwall" id="pinwall" role="application" aria-label="Interactive household board. Drag the notes, cards, and tags to rearrange them.">
+  <div class="pinwall" id="pinwall" role="region" aria-label={text.aria}>
     <p class="pin-hint" aria-hidden="true">
-      <span class="pin-hint__grab">✥</span> drag anything
+      <span class="pin-hint__grab"></span> {text.drag}
     </p>
 
     {/* Shopping list — index card */}
     <article class="pin-obj card-shop" data-x="0.04" data-y="0.06" style="--rot:-3deg">
       <span class="pin pin--red"></span>
-      <div class="card-shop__head">Saturday shop</div>
+      <div class="card-shop__head">{text.shop}</div>
       <ul class="checklist">
         <li class="checklist__item is-done">
-          <button type="button" class="checklist__row" aria-label="Toggle Milk" aria-checked="true">
+          <button type="button" class="checklist__row" aria-label={text.milk} aria-pressed="true">
             <span class="box"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10.5l4 4 8-9"/></svg></span>
-            <span class="checklist__label">Milk</span>
+            <span class="checklist__label">{text.milk}</span>
           </button>
         </li>
         <li class="checklist__item is-done">
-          <button type="button" class="checklist__row" aria-label="Toggle Eggs" aria-checked="true">
+          <button type="button" class="checklist__row" aria-label={text.eggs} aria-pressed="true">
             <span class="box"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10.5l4 4 8-9"/></svg></span>
-            <span class="checklist__label">Eggs</span>
+            <span class="checklist__label">{text.eggs}</span>
           </button>
         </li>
         <li class="checklist__item">
-          <button type="button" class="checklist__row" aria-label="Toggle Coffee beans" aria-checked="false">
+          <button type="button" class="checklist__row" aria-label={text.coffee} aria-pressed="false">
             <span class="box"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10.5l4 4 8-9"/></svg></span>
-            <span class="checklist__label">Coffee beans</span>
+            <span class="checklist__label">{text.coffee}</span>
           </button>
         </li>
         <li class="checklist__item">
-          <button type="button" class="checklist__row" aria-label="Toggle Olive oil" aria-checked="false">
+          <button type="button" class="checklist__row" aria-label={text.oil} aria-pressed="false">
             <span class="box"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10.5l4 4 8-9"/></svg></span>
-            <span class="checklist__label">Olive oil</span>
+            <span class="checklist__label">{text.oil}</span>
           </button>
         </li>
       </ul>
-      <div class="card-shop__foot" data-shop-foot>2 of 4 · Maya is shopping</div>
+      <div class="card-shop__foot" data-shop-foot>{text.shopping}</div>
     </article>
 
     {/* Sticky note */}
     <article class="pin-obj note note--yellow" data-x="0.46" data-y="0.02" style="--rot:2.5deg">
       <span class="pin pin--ink"></span>
-      <p>Bins out<br />tonight 🗑️</p>
+      <p>{text.bins} 🗑️</p>
     </article>
 
     {/* Chore tag — overdue */}
     <article class="pin-obj chore" data-x="0.62" data-y="0.34" style="--rot:-2deg">
       <span class="pin pin--ink"></span>
-      <span class="chore__flag">Overdue</span>
-      <div class="chore__title">Clean the kitchen</div>
+      <span class="chore__flag">{text.overdue}</span>
+      <div class="chore__title">{text.chore}</div>
       <div class="chore__who">
-        <span class="avatar">S</span> Sam · every Friday
+        <span class="avatar">S</span> {text.repeat}
       </div>
     </article>
 
     {/* Expense receipt */}
     <article class="pin-obj receipt" data-x="0.05" data-y="0.56" style="--rot:1.5deg">
       <span class="pin pin--red"></span>
-      <div class="receipt__top">Groceries</div>
+      <div class="receipt__top">{text.groceries}</div>
       <div class="receipt__amt">€42.60</div>
-      <div class="receipt__split">split 3 ways</div>
+      <div class="receipt__split">{text.split}</div>
       <div class="receipt__line"></div>
-      <div class="receipt__each"><span>Each owes</span><strong>€14.20</strong></div>
+      <div class="receipt__each"><span>{text.owes}</span><strong>€14.20</strong></div>
     </article>
 
     {/* Sticky note 2 */}
     <article class="pin-obj note note--mint" data-x="0.66" data-y="0.7" style="--rot:-4deg">
       <span class="pin pin--ink"></span>
-      <p>movie night<br />friday?? 🍿</p>
+      <p>{text.movie} 🍿</p>
     </article>
 
     {/* Pinwall mini note */}
     <article class="pin-obj note note--sky note--sm" data-x="0.4" data-y="0.62" style="--rot:5deg">
       <span class="pin pin--ink"></span>
-      <p>plumber<br />comes 9am</p>
+      <p>{text.plumber}</p>
     </article>
   </div>
 </div>
@@ -109,7 +119,9 @@
       54px 54px,
       46px 46px;
     overflow: hidden;
-    touch-action: none;
+    /* Let a vertical swipe scroll the page. A deliberate sideways movement on
+       an object becomes a drag in the pointer handler below. */
+    touch-action: pan-y;
     cursor: grab;
   }
 
@@ -139,7 +151,20 @@
     transition: opacity 0.4s var(--ease);
   }
   .pin-hint__grab {
-    color: var(--cork-border);
+    position: relative;
+    width: .85rem;
+    height: .85rem;
+  }
+  .pin-hint__grab::before,
+  .pin-hint__grab::after {
+    content: "";
+    position: absolute;
+    inset: 50% 0 auto;
+    height: 2px;
+    background: var(--cork-border);
+  }
+  .pin-hint__grab::after {
+    transform: rotate(90deg);
   }
   .pinwall.is-touched .pin-hint {
     opacity: 0;
@@ -154,10 +179,9 @@
     border: var(--border);
     box-shadow: var(--shadow);
     transform-origin: 50% 0;
-    will-change: transform;
     user-select: none;
     -webkit-user-select: none;
-    touch-action: none;
+    touch-action: pan-y;
     cursor: grab;
     /* settle transition applied only when not actively dragging */
     transition: box-shadow 0.16s var(--ease);
@@ -167,6 +191,7 @@
     cursor: grabbing;
     z-index: var(--z-lifted);
     box-shadow: var(--shadow-xl);
+    will-change: transform;
   }
 
   .pin {
@@ -233,14 +258,14 @@
     outline-offset: 2px;
   }
   .checklist__item.is-done .checklist__row {
-    color: var(--line-2);
+    color: var(--ink-3);
   }
   .checklist__item.is-done .checklist__label {
     text-decoration: line-through;
     text-decoration-thickness: 2px;
   }
   .checklist__item.is-done {
-    color: var(--line-2);
+    color: var(--ink-3);
   }
   .box {
     flex: none;
@@ -342,7 +367,7 @@
     display: grid;
     place-items: center;
     background: var(--teal);
-    color: #fff;
+    color: var(--on-orange);
     border: 2px solid var(--ink);
     font-size: 0.72rem;
     font-weight: 700;
@@ -393,7 +418,7 @@
 
   @media (max-width: 540px) {
     .pinwall {
-      height: 500px;
+      height: 380px;
     }
   }
 </style>
@@ -461,24 +486,47 @@
     let lastX = 0;
     let lastY = 0;
     let lastT = 0;
+    let startX = 0;
+    let startY = 0;
+    let dragStarted = false;
 
     function onDown(o: Obj, e: PointerEvent) {
       active = o;
       pid = e.pointerId;
-      o.dragging = true;
+      dragStarted = e.pointerType !== "touch";
+      o.dragging = dragStarted;
       o.vx = 0;
       o.vy = 0;
-      o.el.classList.add("is-drag");
-      o.el.setPointerCapture?.(e.pointerId);
+      if (dragStarted) {
+        o.el.classList.add("is-drag");
+        o.el.setPointerCapture?.(e.pointerId);
+      }
       lastX = e.clientX;
       lastY = e.clientY;
+      startX = e.clientX;
+      startY = e.clientY;
       lastT = performance.now();
       boardEl.classList.add("is-touched");
-      e.preventDefault();
+      if (dragStarted) e.preventDefault();
     }
 
     function onMove(e: PointerEvent) {
       if (!active || e.pointerId !== pid) return;
+      if (!dragStarted) {
+        const totalX = e.clientX - startX;
+        const totalY = e.clientY - startY;
+        if (Math.abs(totalY) > 8 && Math.abs(totalY) > Math.abs(totalX)) {
+          active = null;
+          pid = -1;
+          return;
+        }
+        if (Math.abs(totalX) < 8) return;
+        dragStarted = true;
+        active.dragging = true;
+        active.el.classList.add("is-drag");
+        active.el.setPointerCapture?.(e.pointerId);
+      }
+      e.preventDefault();
       const now = performance.now();
       const dt = Math.max(1, now - lastT);
       const dx = e.clientX - lastX;
@@ -504,6 +552,12 @@
       draw(active);
     }
 
+    let frame = 0;
+
+    function startTick() {
+      if (!frame && !reduce) frame = requestAnimationFrame(tick);
+    }
+
     function onUp(e: PointerEvent) {
       if (!active || e.pointerId !== pid) return;
       active.dragging = false;
@@ -511,6 +565,8 @@
       active.el.releasePointerCapture?.(e.pointerId);
       active = null;
       pid = -1;
+      dragStarted = false;
+      startTick();
     }
 
     nodes.forEach((el, i) => {
@@ -530,9 +586,8 @@
       if (!shopFoot) return;
       const done = Array.from(shopItems).filter((li) => li.classList.contains("is-done")).length;
       const total = shopItems.length;
-      const tail =
-        done === total ? "list clear" : done === 0 ? "still at the shop" : "Maya is shopping";
-      shopFoot.textContent = `${done} of ${total} · ${tail}`;
+      const template = shopFoot.dataset.countTemplate ||= shopFoot.textContent || "";
+      shopFoot.textContent = template.replace(/^\d+(\D+)\d+/, (_match, separator) => `${done}${separator}${total}`);
     }
 
     boardEl.querySelectorAll<HTMLButtonElement>(".checklist__row").forEach((btn) => {
@@ -542,7 +597,7 @@
         const li = btn.closest(".checklist__item");
         if (!li) return;
         const checked = li.classList.toggle("is-done");
-        btn.setAttribute("aria-checked", String(checked));
+        btn.setAttribute("aria-pressed", String(checked));
         updateShopFoot();
       });
     });
@@ -552,13 +607,16 @@
     const RESTITUTION = 0.55;
 
     function tick() {
+      frame = 0;
       const bw = boardEl.clientWidth;
       const bh = boardEl.clientHeight;
+      let activeMotion = false;
       for (const o of objs) {
         if (o.dragging) continue;
         const moving = Math.abs(o.vx) > 0.05 || Math.abs(o.vy) > 0.05;
         const tilted = Math.abs(o.rot - o.baseRot) > 0.05;
         if (!moving && !tilted) continue;
+        activeMotion = true;
 
         if (reduce) {
           o.vx = 0;
@@ -597,7 +655,7 @@
         if (Math.abs(o.vy) < 0.05) o.vy = 0;
         draw(o);
       }
-      requestAnimationFrame(tick);
+      if (activeMotion) frame = requestAnimationFrame(tick);
     }
 
     layout();
@@ -606,7 +664,6 @@
       clearTimeout(rt);
       rt = window.setTimeout(layout, 120);
     });
-    requestAnimationFrame(tick);
   }
 
   if (document.readyState !== "loading") initPinwall();
