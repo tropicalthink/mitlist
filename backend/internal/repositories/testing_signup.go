@@ -13,8 +13,8 @@ type TestingSignup struct {
 	ConsentVersion       string
 	LaunchUpdates        bool
 	LaunchConsentVersion *string
-	LaunchConsentedAt     *time.Time
-	CreatedAt             time.Time
+	LaunchConsentedAt    *time.Time
+	CreatedAt            time.Time
 }
 
 type TestingSignupRepository struct{ pool *pgxpool.Pool }
