@@ -100,8 +100,8 @@ void main() {
         {'id': 'p1', 'name': 'Milk'}
       ]);
       expect(cached.extra[ResponseCacheInterceptor.fromCacheExtra], isTrue);
-      expect(cached.headers.value(ResponseCacheInterceptor.cacheHeader),
-          'stale');
+      expect(
+          cached.headers.value(ResponseCacheInterceptor.cacheHeader), 'stale');
       expect(adapter.calls, 2, reason: 'the request was still attempted');
     });
 

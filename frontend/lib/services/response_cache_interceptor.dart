@@ -177,7 +177,8 @@ class ResponseCacheInterceptor extends Interceptor {
     }
   }
 
-  Response<dynamic> _toResponse(RequestOptions options, CachedResponseBody hit) {
+  Response<dynamic> _toResponse(
+      RequestOptions options, CachedResponseBody hit) {
     return Response<dynamic>(
       requestOptions: options,
       data: jsonDecode(hit.bodyJson),

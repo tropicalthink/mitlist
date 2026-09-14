@@ -91,8 +91,7 @@ class _MitlistBottomNavState extends State<MitlistBottomNav> {
 
     // The slab carries the accent as a fill, so it needs the shade that keeps
     // ink legible on it in each mode (light 6.3:1, dark 8.4:1).
-    final slabColor =
-        Theme.of(context).colorScheme.primary;
+    final slabColor = Theme.of(context).colorScheme.primary;
     const onSlabColor = MitlistColors.neutral950;
 
     final barColor =

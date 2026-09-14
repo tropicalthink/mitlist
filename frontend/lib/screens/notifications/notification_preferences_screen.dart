@@ -399,8 +399,7 @@ class _NotificationPreferencesScreenState
                   else if (_preferences.isNotEmpty) ...[
                     if (!_deviceCanNotify) _buildDeviceOffCard(),
                     ..._preferences.map(_buildPreferenceCard),
-                  ]
-                  else
+                  ] else
                     AppEmptyState(
                       lottieAsset:
                           'assets/animations/lottie/Notifications.lottie',

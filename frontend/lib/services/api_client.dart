@@ -231,7 +231,8 @@ Dio createApiClient([Ref? ref, TokenStore? tokenStore]) {
   if (ref != null) {
     dio.interceptors.add(ResponseCacheInterceptor(
       store: () => DriftResponseCacheStore(ref.read(appDatabaseProvider)),
-      isKnownOffline: () => ref.read(connectivityServiceProvider).isKnownOffline,
+      isKnownOffline: () =>
+          ref.read(connectivityServiceProvider).isKnownOffline,
     ));
   }
   dio.interceptors.add(TokenRefreshInterceptor(dio, ref, store));

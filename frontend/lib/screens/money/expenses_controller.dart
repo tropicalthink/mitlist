@@ -409,7 +409,8 @@ class ExpensesController extends ChangeNotifier {
     if (fetched != null) {
       _memberNames = {
         for (final m in fetched)
-          m.userId: m.userId == _currentUserId ? l10n.activityYou : m.displayName,
+          m.userId:
+              m.userId == _currentUserId ? l10n.activityYou : m.displayName,
       };
     }
     if (resolvedMe == null && fetched == null) return;

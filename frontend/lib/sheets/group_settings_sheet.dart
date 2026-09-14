@@ -201,9 +201,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
         // members list so their history keeps its name.
         _members = [
           for (final m in _members)
-            m.userId == member.userId
-                ? m.copyWith(leftAt: DateTime.now())
-                : m,
+            m.userId == member.userId ? m.copyWith(leftAt: DateTime.now()) : m,
         ];
       });
       // The rest of the app reads members from caches this sheet does not

@@ -54,8 +54,7 @@ void main() {
       final rows = [for (var d = 1; d <= 12; d++) post('p$d', d)];
       final shown = latestPinwallPosts(rows, kPinwallHubMaxNotes);
       expect(shown, hasLength(6));
-      expect(shown.map((p) => p.id),
-          ['p12', 'p11', 'p10', 'p9', 'p8', 'p7']);
+      expect(shown.map((p) => p.id), ['p12', 'p11', 'p10', 'p9', 'p8', 'p7']);
     });
 
     test('does not rely on the cache already being sorted', () {
