@@ -1,3 +1,5 @@
+import 'dart:async' show unawaited;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -7,6 +9,7 @@ import '../models/notification_models.dart';
 import '../providers/attachment_provider.dart';
 import '../providers/group_provider.dart';
 import '../providers/notification_provider.dart';
+import '../providers/presence_provider.dart';
 import '../theme/spacing.dart';
 import '../widgets/alert.dart';
 import '../widgets/app_bottom_sheet.dart';
@@ -194,8 +197,19 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
       await svc.removeMember(widget.groupId, member.userId);
       if (!mounted) return;
       setState(() {
-        _members = _members.where((m) => m.userId != member.userId).toList();
+        // Removal is soft on the server: the person moves to the former
+        // members list so their history keeps its name.
+        _members = [
+          for (final m in _members)
+            m.userId == member.userId ? m.copyWith(leftAt: DateTime.now()) : m,
+        ];
       });
+      // The rest of the app reads members from caches this sheet does not
+      // own: the hub's household card shows the cached member count and the
+      // pinwall resolves presence through the roster provider. Left alone,
+      // both keep showing the removed person until the next cold start.
+      ref.invalidate(boardMembersProvider(widget.groupId));
+      unawaited(refreshCachedGroups(ref));
       AppToast.success(
           context, l10n.sheetGroupSettingsMemberRemoved(member.displayName));
     } catch (e) {
@@ -594,10 +608,18 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
               ),
             ],
           ),
-          if (_members.isNotEmpty) ...[
+          if (_members.any((m) => m.isActive)) ...[
             const SizedBox(height: MitlistSpacing.sm),
             const AppDivider(),
-            ..._members.map((m) => _buildMemberTile(m)),
+            ..._members.where((m) => m.isActive).map(_buildMemberTile),
+          ],
+          if (_members.any((m) => !m.isActive)) ...[
+            const SizedBox(height: MitlistSpacing.md),
+            Text(l10n.sheetGroupSettingsFormerMembersLabel,
+                style: textTheme.titleSmall),
+            const SizedBox(height: MitlistSpacing.sm),
+            const AppDivider(),
+            ..._members.where((m) => !m.isActive).map(_buildMemberTile),
           ],
         ],
       ),
@@ -640,12 +662,19 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
           ],
         ],
       ),
-      subtitle: Text(member.role, maxLines: 1, overflow: TextOverflow.ellipsis),
-      trailing: IconButton(
-        tooltip: l10n.sheetGroupSettingsRemoveMemberTooltip(member.displayName),
-        icon: AppIcon(name: 'minusCircleOutline', size: 20),
-        onPressed: () => _confirmRemoveMember(member),
+      subtitle: Text(
+        member.isActive ? member.role : l10n.sheetGroupSettingsFormerMember,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
+      trailing: member.isActive
+          ? IconButton(
+              tooltip: l10n
+                  .sheetGroupSettingsRemoveMemberTooltip(member.displayName),
+              icon: AppIcon(name: 'minusCircleOutline', size: 20),
+              onPressed: () => _confirmRemoveMember(member),
+            )
+          : null,
     );
   }
 

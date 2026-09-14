@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -10,6 +11,9 @@ import (
 
 	"github.com/mitlist-app/mitlist/internal/models"
 )
+
+// ErrMembershipExists is returned when an active member is added again.
+var ErrMembershipExists = errors.New("membership already exists")
 
 // GroupRepository provides data access for groups and related entities.
 type GroupRepository struct {
@@ -91,7 +95,7 @@ func (r *GroupRepository) ListGroupsByUser(ctx context.Context, userID uuid.UUID
 		SELECT g.id, g.name, g.description, g.currency, g.chore_zones, g.created_by, g.created_at, g.updated_at
 		FROM groups g
 		JOIN group_memberships gm ON g.id = gm.group_id
-		WHERE gm.user_id = $1
+		WHERE gm.user_id = $1 AND gm.left_at IS NULL
 		ORDER BY g.created_at DESC, g.id DESC
 		LIMIT $2 OFFSET $3
 	`
@@ -159,11 +163,21 @@ func (r *GroupRepository) CreateMembership(ctx context.Context, m *models.GroupM
 		m.JoinedAt = time.Now().UTC()
 	}
 
+	// A former member rejoining reactivates their old row (so history stays
+	// attached to one membership); an active member cannot be inserted twice.
 	query := `
 		INSERT INTO group_memberships (id, group_id, user_id, role, joined_at)
 		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT (group_id, user_id) DO UPDATE
+			SET role = EXCLUDED.role, joined_at = EXCLUDED.joined_at, left_at = NULL
+			WHERE group_memberships.left_at IS NOT NULL
+		RETURNING id
 	`
-	_, err := r.pool.Exec(ctx, query, m.ID, m.GroupID, m.UserID, m.Role, m.JoinedAt)
+	err := r.pool.QueryRow(ctx, query, m.ID, m.GroupID, m.UserID, m.Role, m.JoinedAt).Scan(&m.ID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return ErrMembershipExists
+	}
+	m.LeftAt = nil
 	return err
 }
 
@@ -172,7 +186,7 @@ func (r *GroupRepository) GetMembership(ctx context.Context, groupID, userID uui
 	query := `
 		SELECT id, group_id, user_id, role, joined_at
 		FROM group_memberships
-		WHERE group_id = $1 AND user_id = $2
+		WHERE group_id = $1 AND user_id = $2 AND left_at IS NULL
 	`
 	row := r.pool.QueryRow(ctx, query, groupID, userID)
 
@@ -195,9 +209,11 @@ func (r *GroupRepository) UpdateMembership(ctx context.Context, m *models.GroupM
 	return err
 }
 
-// DeleteMembership hard-deletes a membership by ID.
-func (r *GroupRepository) DeleteMembership(ctx context.Context, id uuid.UUID) error {
-	query := `DELETE FROM group_memberships WHERE id = $1`
+// EndMembership retires a membership by ID. The row stays so the person's
+// history in the group keeps resolving to their name; every active-member
+// query filters on left_at IS NULL.
+func (r *GroupRepository) EndMembership(ctx context.Context, id uuid.UUID) error {
+	query := `UPDATE group_memberships SET left_at = now() WHERE id = $1 AND left_at IS NULL`
 	_, err := r.pool.Exec(ctx, query, id)
 	return err
 }
@@ -275,12 +291,12 @@ func (r *GroupRepository) DeletePendingClaim(ctx context.Context, id uuid.UUID) 
 	return err
 }
 
-// ListMembershipsByGroup returns all memberships for a group, ordered by user_id for determinism.
+// ListMembershipsByGroup returns the active memberships for a group, ordered by user_id for determinism.
 func (r *GroupRepository) ListMembershipsByGroup(ctx context.Context, groupID uuid.UUID) ([]models.GroupMembership, error) {
 	query := `
 		SELECT id, group_id, user_id, role, joined_at
 		FROM group_memberships
-		WHERE group_id = $1
+		WHERE group_id = $1 AND left_at IS NULL
 		ORDER BY user_id ASC
 	`
 	rows, err := r.pool.Query(ctx, query, groupID)
@@ -304,17 +320,20 @@ func (r *GroupRepository) ListMembershipsByGroup(ctx context.Context, groupID uu
 }
 
 // ListMemberProfilesByGroup returns member display information for a group.
+// Former members are included, after the active ones, with LeftAt set: the
+// finance summary and chore history still need their names.
 func (r *GroupRepository) ListMemberProfilesByGroup(ctx context.Context, groupID uuid.UUID) ([]models.GroupMemberProfile, error) {
 	query := `
 		SELECT u.id, trim(u.first_name || ' ' || u.last_name) AS display_name, gm.role,
 		       EXISTS (
 		           SELECT 1 FROM billing_supporter_purchases sp
 		           WHERE sp.user_id = u.id AND sp.status = 'paid'
-		       ) AS supporter
+		       ) AS supporter,
+		       gm.left_at
 		FROM group_memberships gm
 		JOIN users u ON u.id = gm.user_id
 		WHERE gm.group_id = $1
-		ORDER BY display_name ASC, u.id ASC
+		ORDER BY (gm.left_at IS NOT NULL) ASC, display_name ASC, u.id ASC
 	`
 	rows, err := r.pool.Query(ctx, query, groupID)
 	if err != nil {
@@ -325,7 +344,7 @@ func (r *GroupRepository) ListMemberProfilesByGroup(ctx context.Context, groupID
 	var profiles []models.GroupMemberProfile
 	for rows.Next() {
 		var p models.GroupMemberProfile
-		if err := rows.Scan(&p.UserID, &p.DisplayName, &p.Role, &p.Supporter); err != nil {
+		if err := rows.Scan(&p.UserID, &p.DisplayName, &p.Role, &p.Supporter, &p.LeftAt); err != nil {
 			return nil, err
 		}
 		profiles = append(profiles, p)
@@ -391,6 +410,7 @@ func (r *GroupRepository) ListMemberEmailsByGroup(ctx context.Context, groupID u
 		FROM group_memberships gm
 		JOIN users u ON u.id = gm.user_id
 		WHERE gm.group_id = $1
+		  AND gm.left_at IS NULL
 		  AND u.deleted_at IS NULL
 	`
 	rows, err := r.pool.Query(ctx, query, groupID)

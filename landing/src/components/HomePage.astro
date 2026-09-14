@@ -1,0 +1,266 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Pinwall from "./Pinwall.astro";
+import SiteHeader from "./SiteHeader.astro";
+import SiteFooter from "./SiteFooter.astro";
+import { homeCopy } from "../data/home";
+import { localizedPath, site, type SiteLanguage } from "../data/site";
+
+interface Props { language: SiteLanguage; detectLanguage?: boolean; }
+const { language, detectLanguage = false } = Astro.props;
+const copy = homeCopy[language];
+const elevation = {
+  en: { proof: ["Web app open now", "Every feature free up to 4", "Scanning stays on your phone", "Open source & self-hostable"], productProof: "See the whole household at a glance.", productProofBody: "Lists, chores, meals, expenses, reminders, and the people responsible—together instead of scattered across six apps.", premium: "Premium", monthly: "€3.99", month: "per month", yearly: "€29.99", year: "per year", equivalent: "about €2.50/month", saving: "Save 37% yearly", sameFeatures: "The same complete app. Premium only covers a larger household.", finalBody: "Less chasing. Less ‘who was meant to do that?’ More life handled together." },
+  de: { proof: ["Web-App jetzt offen", "Alle Funktionen bis 4 Personen kostenlos", "Scans bleiben auf eurem Gerät", "Open Source & selbst hostbar"], productProof: "Den ganzen Haushalt auf einen Blick.", productProofBody: "Listen, Aufgaben, Mahlzeiten, Ausgaben, Erinnerungen und Zuständigkeiten—gemeinsam statt über sechs Apps verteilt.", premium: "Premium", monthly: "3,99 €", month: "pro Monat", yearly: "29,99 €", year: "pro Jahr", equivalent: "etwa 2,50 €/Monat", saving: "Jährlich 37 % sparen", sameFeatures: "Dieselbe vollständige App. Premium gilt nur für einen größeren Haushalt.", finalBody: "Weniger Hinterherlaufen. Weniger ‚Wer war dafür zuständig?‘ Mehr gemeinsam erledigt." },
+  es: { proof: ["Aplicación web abierta", "Todas las funciones gratis hasta 4", "Los escaneos se quedan en el móvil", "Código abierto y autoalojable"], productProof: "Todo el hogar de un vistazo.", productProofBody: "Listas, tareas, comidas, gastos, recordatorios y responsables—juntos, no repartidos entre seis aplicaciones.", premium: "Premium", monthly: "3,99 €", month: "al mes", yearly: "29,99 €", year: "al año", equivalent: "unos 2,50 €/mes", saving: "Ahorra un 37 % al año", sameFeatures: "La misma aplicación completa. Premium solo cubre un hogar mayor.", finalBody: "Menos perseguirse. Menos «¿a quién le tocaba?». Más vida resuelta juntos." },
+  fr: { proof: ["Application Web ouverte", "Toutes les fonctions gratuites jusqu’à 4", "Les scans restent sur votre téléphone", "Open source et auto-hébergeable"], productProof: "Tout le foyer en un coup d’œil.", productProofBody: "Listes, tâches, repas, dépenses, rappels et responsables—réunis plutôt que dispersés dans six applications.", premium: "Premium", monthly: "3,99 €", month: "par mois", yearly: "29,99 €", year: "par an", equivalent: "environ 2,50 €/mois", saving: "Économisez 37 % à l’année", sameFeatures: "La même application complète. Premium couvre seulement un foyer plus grand.", finalBody: "Moins de relances. Moins de « c’était à qui ? ». Plus de choses réglées ensemble." },
+  nl: { proof: ["Webapp nu open", "Alle functies gratis tot 4 personen", "Scans blijven op je telefoon", "Open source en zelf te hosten"], productProof: "Het hele huishouden in één oogopslag.", productProofBody: "Lijsten, klussen, maaltijden, uitgaven, herinneringen en wie wat doet—samen in plaats van verspreid over zes apps.", premium: "Premium", monthly: "€ 3,99", month: "per maand", yearly: "€ 29,99", year: "per jaar", equivalent: "ongeveer € 2,50/maand", saving: "Bespaar jaarlijks 37%", sameFeatures: "Dezelfde complete app. Premium is alleen voor een groter huishouden.", finalBody: "Minder najagen. Minder ‘wie zou dat doen?’. Meer samen geregeld." },
+}[language];
+---
+
+<Layout title={copy.metaTitle} description={copy.metaDescription} language={language} localized detectLanguage={detectLanguage}>
+  <SiteHeader home language={language} />
+  <main id="main-content" tabindex="-1">
+    <section class="hero">
+      <div class="wrap hero__grid">
+        <div class="hero__copy">
+          <span class="stamp">{copy.beta}</span>
+          <h1 class="display">{copy.headline}</h1>
+          <p class="lead">{copy.intro}</p>
+          <div class="hero__actions">
+            <a class="btn btn--primary" href={site.appUrl}>{copy.openApp}</a>
+            <a class="btn" href={localizedPath(language, "mobile-beta")}>{copy.mobileBeta}</a>
+          </div>
+          <p class="hero__note">{copy.availability}</p>
+        </div>
+        <div class="hero__board"><Pinwall language={language} /></div>
+      </div>
+    </section>
+
+    <aside class="proof-ribbon" aria-label={elevation.productProof}>
+      <ul class="wrap">{elevation.proof.map((item) => <li><span aria-hidden="true"></span>{item}</li>)}</ul>
+    </aside>
+
+    <section class="proof section-pad" aria-labelledby="product-proof-title">
+      <div class="wrap">
+        <header class="proof__intro reveal"><h2 class="h2" id="product-proof-title">{elevation.productProof}</h2><p>{elevation.productProofBody}</p></header>
+        <div class="shot shot--hero" data-launch-placeholder>
+          <span class="shot__flag">{copy.placeholder}</span>
+          <div class="shot__chrome"><i></i><i></i><i></i><strong>mitlist / household hub</strong></div>
+          <div class="shot__canvas">
+            <div class="shot__sidebar"></div>
+            <div class="shot__notes"><i></i><i></i><i></i><i></i></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-pad" id="features">
+      <div class="wrap">
+        <header class="section-head reveal">
+          <h2 class="h2">{copy.overviewTitle}</h2>
+          <p class="lead">{copy.overviewIntro}</p>
+        </header>
+        <div class="feature-grid">
+          {copy.features.map((feature, index) => (
+            <article class="feature-card reveal">
+              <span class="feature-card__number">0{index + 1}</span>
+              <h3 class="h3">{feature.title}</h3>
+              <p>{feature.body}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section class="workflows section-pad">
+      <div class="wrap">
+        <header class="section-head reveal">
+          <h2 class="h2">{copy.workflowsTitle}</h2>
+        </header>
+        <div class="workflow-grid">
+          {copy.workflows.map((workflow, index) => (
+            <article class="workflow reveal">
+              <div class="shot shot--small" data-launch-placeholder>
+                <span class="shot__flag">{copy.placeholder}</span>
+                <span class={`workflow-art workflow-art--${index + 1}`} aria-hidden="true"><i></i><b></b><em></em></span>
+              </div>
+              <div class="workflow__copy"><span class="workflow__step">{workflow.step}</span><h3 class="h3">{workflow.title}</h3><p>{workflow.body}</p></div>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section class="scanner section-pad">
+      <div class="wrap scanner__grid">
+        <div class="scanner__phone reveal" aria-hidden="true">
+          <div class="scanner__paper"><span>Tomatoes</span><span>Bread</span><span>Oat milk</span></div>
+          <div class="scanner__beam"></div>
+        </div>
+        <div class="scanner__copy reveal">
+          <h2 class="h2">{copy.scannerTitle}</h2>
+          <p class="lead">{copy.scannerBody}</p>
+          <p class="notice">{copy.scannerNote}</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="sync section-pad">
+      <div class="wrap sync__inner reveal">
+        <span class="sync__pulse" aria-hidden="true"></span>
+        <div><h2 class="h2">{copy.syncTitle}</h2><p class="lead">{copy.syncBody}</p></div>
+      </div>
+    </section>
+
+    <section class="pricing section-pad" id="pricing">
+      <div class="wrap">
+        <header class="section-head reveal">
+          <h2 class="h2">{copy.pricingTitle}</h2>
+          <p class="lead">{copy.pricingBody}</p>
+        </header>
+        <div class="price-board reveal">
+          <article class="price-card price-card--free"><h3>{copy.free}</h3><strong class="price-card__amount">€0</strong><p>{copy.freeDetail}</p></article>
+          <article class="price-card price-card--premium"><h3>{elevation.premium}</h3><div class="price-options"><div><strong>{elevation.monthly}</strong><span>{elevation.month}</span></div><div class="price-options__year"><b>{elevation.saving}</b><strong>{elevation.yearly}</strong><span>{elevation.year} · {elevation.equivalent}</span></div></div><p>{copy.premiumDetail}</p><p class="price-card__same">{elevation.sameFeatures}</p></article>
+        </div>
+        <p class="pricing__note">{copy.pricingFootnote}</p>
+        <a class="btn btn--primary pricing__cta" href={site.appUrl}>{copy.openApp}</a>
+      </div>
+    </section>
+
+    <section class="section-pad" id="open">
+      <div class="wrap">
+        <header class="section-head reveal"><h2 class="h2">{copy.trustTitle}</h2></header>
+        <div class="trust-grid">
+          {copy.trust.map((item, index) => (
+            <article class="trust-card reveal">
+              <span>0{index + 1}</span><h3 class="h3">{item.title}</h3><p>{item.body}</p>
+              {item.link && <a href={index === 0 ? site.repositoryUrl : site.docsUrl}>{item.link}</a>}
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section class="roadmap">
+      <div class="wrap roadmap__inner reveal">
+        <div><h2 class="h2">{copy.roadmapTitle}</h2><p class="lead">{copy.roadmapBody}</p></div>
+        <a class="btn btn--primary" href={site.feedbackUrl}>{copy.roadmapCta}</a>
+      </div>
+    </section>
+
+    <section class="faq section-pad">
+      <div class="wrap faq__grid">
+        <h2 class="h2">{copy.faqTitle}</h2>
+        <div class="faq__items">
+          {copy.faq.map((item) => (
+            <details><summary>{item.question}<span aria-hidden="true">+</span></summary><p>{item.answer}</p></details>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta">
+      <div class="wrap final-cta__inner">
+        <h2 class="display">{copy.finalTitle}</h2><p>{elevation.finalBody}</p>
+        <div class="hero__actions"><a class="btn btn--primary" href={site.appUrl}>{copy.openApp}</a><a class="btn btn--dark" href={localizedPath(language, "mobile-beta")}>{copy.mobileBeta}</a></div>
+      </div>
+    </section>
+  </main>
+  <SiteFooter language={language} />
+  <script>
+    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches && "IntersectionObserver" in window) {
+      document.documentElement.classList.add("reveal-ready");
+      const observer = new IntersectionObserver((entries) => entries.forEach((entry) => { if (entry.isIntersecting) { entry.target.classList.add("is-in"); observer.unobserve(entry.target); } }), { threshold: .12 });
+      document.querySelectorAll(".reveal").forEach((element) => observer.observe(element));
+    }
+  </script>
+</Layout>
+
+<style>
+  .hero { background: var(--paper-2); padding-block: clamp(2.5rem, 7vw, 5.5rem); border-bottom: var(--border); overflow: hidden; }
+  .hero__grid { display: grid; grid-template-columns: minmax(0,.92fr) minmax(0,1.08fr); gap: clamp(2rem,5vw,4rem); align-items: center; }
+  .hero .display { max-width: 12ch; margin: 1.4rem 0; }
+  .hero__actions { display: flex; flex-wrap: wrap; gap: .85rem; margin-top: 1.8rem; }
+  .hero__note { margin-top: 1rem; max-width: 52ch; color: var(--ink-3); font-size: .92rem; font-weight: 600; }
+  .section-head { display: grid; gap: .9rem; max-width: 48rem; margin-bottom: clamp(2rem,5vw,3.5rem); }
+  .proof-ribbon { border-bottom: var(--border); background: var(--inverse-bg); color: var(--inverse-fg); }
+  .proof-ribbon ul { display: grid; grid-template-columns: repeat(4,1fr); margin: 0 auto; padding-block: 1rem; list-style: none; }
+  .proof-ribbon li { display: flex; align-items: center; min-width: 0; gap: .55rem; padding-inline: 1rem; font-size: .82rem; font-weight: 700; line-height: 1.25; }
+  .proof-ribbon li + li { border-inline-start: 1px solid var(--inverse-muted); }
+  .proof-ribbon span { position: relative; width: 1rem; height: 1rem; flex: none; border: 2px solid var(--orange-300); }
+  .proof-ribbon span::after { content: ""; position: absolute; width: .48rem; height: .24rem; inset: .18rem auto auto .18rem; border-inline-start: 2px solid var(--orange-300); border-block-end: 2px solid var(--orange-300); transform: rotate(-45deg); }
+  .proof { padding-block: clamp(2rem,5vw,4rem); background: var(--orange); border-bottom: var(--border); }
+  .proof__intro { display: grid; grid-template-columns: .8fr 1.2fr; align-items: end; gap: 2rem; margin-bottom: 2rem; color: var(--on-orange); }
+  .proof__intro p { max-width: 58ch; font-weight: 600; }
+  .shot { position: relative; overflow: hidden; border: var(--border); background: var(--paper); box-shadow: var(--shadow-lg); }
+  .shot__flag { position: absolute; z-index: 2; top: .75rem; right: .75rem; padding: .3rem .55rem; border: 1px solid var(--ink); background: var(--note-yellow); color: var(--note-ink); font-size: .66rem; font-weight: 700; text-transform: uppercase; }
+  .shot--hero { min-height: clamp(260px,48vw,580px); }
+  .shot__chrome { display: flex; align-items: center; gap: .4rem; height: 48px; padding: 0 1rem; border-bottom: var(--border); font-size: .78rem; color: var(--ink-3); }
+  .shot__chrome i { width: 10px; height: 10px; border: 1px solid var(--ink); border-radius: 50%; background: var(--orange); }
+  .shot__chrome strong { margin-left: .5rem; }
+  .shot__canvas { display: grid; grid-template-columns: 22% 1fr; min-height: 500px; background: var(--paper-2); }
+  .shot__sidebar { border-right: var(--border); background: var(--ink); }
+  .shot__notes { display: grid; grid-template-columns: repeat(2,1fr); gap: 1.2rem; padding: clamp(1.2rem,4vw,3rem); }
+  .shot__notes i { display: block; min-height: 150px; border: var(--border); box-shadow: var(--shadow); background: var(--note-yellow); }
+  .shot__notes i:nth-child(2) { background: var(--note-sky); }.shot__notes i:nth-child(3) { background: var(--note-mint); }.shot__notes i:nth-child(4) { background: var(--paper); }
+  .feature-grid { display: grid; grid-template-columns: repeat(12,1fr); border: var(--border); box-shadow: var(--shadow-lg); background: var(--ink); gap: 2px; }
+  .feature-card { min-height: 220px; padding: clamp(1.3rem,3vw,2rem); background: var(--paper); }
+  .feature-card:nth-child(-n+2) { grid-column: span 6; min-height: 260px; display: grid; align-content: end; }
+  .feature-card:nth-child(n+3) { grid-column: span 3; }
+  .feature-card__number,.trust-card>span { color: var(--orange-700); font-size: .78rem; font-weight: 700; }
+  .feature-card .h3,.trust-card .h3 { margin: 1rem 0 .65rem; }.feature-card p,.trust-card p,.workflow p { color: var(--ink-3); }
+  .workflows { background: var(--inverse-bg); color: var(--inverse-fg); border-block: var(--border); }
+  .workflow-grid { display: grid; border-block: 1px solid var(--inverse-muted); }
+  .workflow { display: grid; grid-template-columns: 1.1fr .9fr; align-items: center; gap: clamp(2rem,6vw,5rem); padding-block: clamp(2rem,5vw,4rem); }
+  .workflow + .workflow { border-top: 1px solid var(--inverse-muted); }
+  .workflow:nth-child(even) .shot { order: 2; }
+  .shot--small { height: clamp(260px,34vw,390px); box-shadow: 5px 5px 0 var(--orange); }
+  .workflow__copy { max-width: 32rem; }
+  .workflow__step { color: var(--orange-300); font-weight: 700; }.workflow .h3 { margin: .7rem 0; font-size: clamp(1.6rem,3vw,2.5rem); }.workflow p { color: var(--inverse-muted); }
+  .workflow-art { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: .7rem; height: 100%; padding: 2rem; background: var(--paper-2); }
+  .workflow-art i,.workflow-art em { height: 90px; border: var(--border); background: var(--note-yellow); }.workflow-art em { background: var(--note-mint); }.workflow-art b { position: relative; width: 2.25rem; height: 2px; background: var(--ink); }.workflow-art b::after { content: ""; position: absolute; right: 0; top: 50%; width: .65rem; height: .65rem; border-block-start: 2px solid var(--ink); border-inline-end: 2px solid var(--ink); transform: translateY(-50%) rotate(45deg); }
+  .scanner { background: var(--paper-3); border-bottom: var(--border); }.scanner__grid { display: grid; grid-template-columns: .8fr 1.2fr; gap: clamp(2rem,7vw,6rem); align-items: center; }
+  .scanner__phone { position: relative; max-width: 330px; min-height: 530px; margin: auto; border: 8px solid var(--ink); background: var(--paper); box-shadow: var(--shadow-xl); padding: 5rem 2rem; }
+  .scanner__paper { display: grid; gap: 1.1rem; padding: 2rem 1.2rem; border: var(--border); box-shadow: var(--shadow); transform: rotate(-3deg); font-weight: 600; }
+  .scanner__paper span { display: flex; align-items: center; gap: .6rem; }.scanner__paper span::before { content: ""; width: .9rem; height: .9rem; flex: none; border: 2px solid currentColor; }.scanner__beam { position: absolute; left: 1rem; right: 1rem; top: 52%; height: 3px; background: var(--orange); box-shadow: 0 0 0 4px color-mix(in srgb,var(--orange) 20%,transparent); }
+  .scanner__copy { display: grid; gap: 1rem; }.notice { border: var(--border); padding: .8rem 1rem; background: var(--paper); color: var(--ink-3); box-shadow: var(--shadow-sm); font-size: .9rem; font-weight: 600; }
+  .sync { background: var(--orange-700); color: var(--paper); }.sync__inner { display: grid; grid-template-columns: auto 1fr; gap: 2rem; align-items: center; }.sync .lead { color: var(--orange-100); margin-top: .8rem; }
+  .sync__pulse { width: 70px; height: 70px; border: var(--border); background: var(--success); box-shadow: var(--shadow); transform: rotate(45deg); }
+  .price-board { display: grid; grid-template-columns: .8fr 1.6fr; border: var(--border); box-shadow: var(--shadow-lg); background: var(--ink); gap: 2px; }
+  .price-card { background: var(--paper); padding: clamp(1.5rem,4vw,3rem); }
+  .price-card--premium { background: var(--orange); color: var(--on-orange); }
+  .price-card h3 { font-size: clamp(1.25rem,2vw,1.6rem); }
+  .price-card__amount { display: block; margin-block: 1.5rem .7rem; font-size: clamp(3rem,7vw,5rem); line-height: .9; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+  .price-options { display: grid; grid-template-columns: 1fr 1.3fr; gap: 1rem; margin-block: 1.5rem; }
+  .price-options > div { display: grid; align-content: end; min-width: 0; padding: 1.2rem; border: 2px solid var(--on-orange); background: var(--price-panel); }
+  .price-options strong { font-size: clamp(1.7rem,4vw,3rem); line-height: 1; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+  .price-options span { margin-top: .45rem; font-size: .86rem; font-weight: 700; }
+  .price-options__year { box-shadow: 4px 4px 0 var(--on-orange); }
+  .price-options__year b { justify-self: start; margin-bottom: .8rem; padding: .2rem .45rem; background: var(--on-orange); color: var(--fixed-paper); font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; }
+  .price-card__same { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid currentColor; font-weight: 700; }
+  .pricing__note { margin-top: 1.2rem; color: var(--ink-3); font-size: .88rem; max-width: 80ch; }
+  .pricing__cta { margin-top: 1.5rem; }
+  .trust-grid { display: grid; grid-template-columns: repeat(3,1fr); border: var(--border); box-shadow: var(--shadow-lg); background: var(--ink); gap: 2px; }.trust-card { padding: clamp(1.5rem,3vw,2.2rem); background: var(--paper); }.trust-card a { display: inline-block; margin-top: 1rem; font-weight: 700; text-decoration-color: var(--orange); text-decoration-thickness: 2px; }
+  .roadmap { padding-block: 3rem; border-block: var(--border); background: var(--note-sky); color: var(--note-ink); }.roadmap__inner { display: flex; align-items: center; justify-content: space-between; gap: 2rem; }.roadmap .lead { margin-top: .7rem; color: var(--note-ink); }
+  .faq__grid { display: grid; grid-template-columns: .65fr 1.35fr; gap: clamp(2rem,6vw,5rem); }.faq__items { border-top: var(--border); }details { border-bottom: var(--border); }summary { min-height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 1rem; cursor: pointer; font-weight: 700; list-style: none; }summary::-webkit-details-marker { display:none; }summary span { font-size: 1.5rem; color: var(--orange-700); }details[open] summary span { transform: rotate(45deg); }details p { padding: 0 2rem 1.3rem 0; color: var(--ink-3); }
+  .final-cta { padding-block: clamp(4rem,9vw,8rem); background: var(--inverse-bg); color: var(--inverse-fg); text-align: center; }.final-cta__inner { display: grid; justify-items: center; }.final-cta .display { color: var(--orange); }.final-cta p { margin-top: 1rem; color: var(--inverse-muted); font-size: 1.2rem; }.btn--dark { color: var(--inverse-fg); border-color: var(--inverse-fg); background: var(--inverse-bg); box-shadow: 4px 4px 0 var(--inverse-fg); }
+  @media (max-width: 880px) {
+    .hero__grid,.scanner__grid,.faq__grid,.proof__intro { grid-template-columns: 1fr; }
+    .proof-ribbon ul { grid-template-columns: 1fr 1fr; }
+    .proof-ribbon li:nth-child(3) { border-inline-start: 0; }
+    .proof-ribbon li:nth-child(n+3) { border-top: 1px solid var(--inverse-muted); padding-top: .8rem; margin-top: .8rem; }
+    .feature-card:nth-child(n) { grid-column: span 6; }
+    .workflow { grid-template-columns: 1fr; }
+    .workflow:nth-child(even) .shot { order: initial; }
+    .trust-grid { grid-template-columns: 1fr; }
+    .roadmap__inner { align-items: flex-start; flex-direction: column; }
+  }
+  @media (max-width: 560px) {
+    .proof-ribbon ul,.price-board,.price-options { grid-template-columns: 1fr; }
+    .proof-ribbon li:nth-child(n) { border-inline-start: 0; border-top: 1px solid var(--inverse-muted); padding-block: .75rem; margin: 0; }
+    .proof-ribbon li:first-child { border-top: 0; }
+    .feature-card:nth-child(n) { grid-column: span 12; min-height: auto; }
+    .shot__canvas { grid-template-columns: 1fr; min-height: 340px; }.shot__sidebar { display:none; }.shot__notes { padding: 1rem; }.hero__actions .btn { width: 100%; }.scanner__phone { min-height: 440px; }.sync__inner { grid-template-columns: 1fr; }.sync__pulse { width: 50px; height: 50px; }
+  }
+</style>

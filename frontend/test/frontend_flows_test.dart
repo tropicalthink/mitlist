@@ -621,6 +621,16 @@ void main() {
         overrides: [
           routerProvider.overrideWith((ref) => router),
           authStateProvider.overrideWith((ref) => true),
+          // The households list reads through the group cache now, so the
+          // shell needs a database like every other cache-first screen.
+          appDatabaseProvider.overrideWithValue(
+            AppDatabase(
+              drift.DatabaseConnection(
+                NativeDatabase.memory(),
+                closeStreamsSynchronously: true,
+              ),
+            ),
+          ),
           pinwallServiceProviderAsync
               .overrideWith((ref) async => FakePinwallService()),
           groupServiceProviderAsync.overrideWith((ref) async => groupService),

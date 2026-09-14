@@ -86,20 +86,19 @@ The `dev` profile (`docker compose up`, no profile flag) uses the convenience
 defaults shipped in the root `.env.example` (`mitlist:mitlist`) — intentional
 for local development.
 
-### PlanetScale Postgres
+### Hosted PostgreSQL
 
-The hosted service can use PlanetScale Postgres without a database-specific
-code path. Create a Postgres database, copy its connection string into the
-backend's `DATABASE_URL` (the root `.env` for the prod Compose profile), and
-keep the TLS parameters supplied by PlanetScale. The Go API uses pgx and runs
-the existing PostgreSQL migrations normally.
+The official service uses self-operated replicated PostgreSQL. Point
+`DATABASE_URL` at the deployment's PostgreSQL endpoint (the root `.env` for the
+prod Compose profile), retain the required TLS parameters, and run the existing
+PostgreSQL migrations normally through the Go API's pgx connection.
 
 For this deployment, run only the API service; do not start the bundled
 Postgres container. Keep `RUN_MIGRATIONS_ON_STARTUP=true` for the first
 deployment, then verify `/healthz` and `/readyz` before directing app traffic to
 the server.
-PlanetScale's managed backups cover the database; attachment objects remain in
-R2 and need their own lifecycle/retention policy.
+The official deployment takes PostgreSQL backups twice daily. Attachment
+objects remain in R2 and require a separately tested backup and retention path.
 
 ## Enable error reporting (optional)
 

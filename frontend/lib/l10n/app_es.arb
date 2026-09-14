@@ -5697,6 +5697,8 @@
     }
   },
   "sheetGroupSettingsMembersLabel": "Miembros",
+  "sheetGroupSettingsFormerMembersLabel": "Antiguos miembros",
+  "sheetGroupSettingsFormerMember": "Ya no forma parte del hogar",
   "@sheetGroupSettingsMembersLabel": {
     "description": "Section label for household members"
   },
@@ -5920,8 +5922,6 @@
   "accountOcrTrainingClearTitle": "¿Eliminar los datos de entrenamiento OCR?",
   "accountOcrTrainingClearBody": "Esto elimina permanentemente todos los recortes de líneas guardados en este dispositivo.",
   "billingPremiumTitle": "mitlist premium",
-  "billingLimitReachedTitle": "Esta casa está completa",
-  "billingLimitReachedBody": "Las casas de hasta {limit} personas son gratuitas. Para añadir a la {next}.ª persona, alguien necesita premium, y cubre a todos los de aquí.",
   "billingCoversOneHousehold": "Premium se aplica a una casa a la vez. Tú eliges cuál y puedes cambiarla cuando quieras.",
   "billingCoveredBy": "Premium en esta casa, pagado por {name}.",
   "billingPremiumActive": "Premium está activo aquí",
@@ -5997,7 +5997,7 @@
   "featureBoardInProgress": "En curso",
   "featureBoardShipped": "Publicado",
   "featureBoardUpvote": "Votar función",
-  "featureBoardUpvoted": "Función votada",
+  "featureBoardRemoveUpvote": "Quitar voto",
   "featureBoardVotes": "{count, plural, =1{1 voto} other{{count} votos}}",
   "featureBoardUnderReview": "En revisión",
   "featureBoardFilterAll": "Todo",
@@ -6252,5 +6252,13 @@
   "accentBerry": "Baya",
   "accentViolet": "Violeta",
   "accentLockedHint": "Los colores distintos de Clementina forman parte del pack de apoyo.",
-  "accentUnlock": "Desbloquear con el pack de apoyo"
+  "accentUnlock": "Desbloquear con el pack de apoyo",
+  "pushPromptTitle": "No te pierdas nada de tu casa",
+  "pushPromptBody": "Recibe un aviso cuando alguien añada algo a una lista, una tarea esté por vencer o haya un gasto por saldar. Tú eliges de qué quieres enterarte y puedes cambiarlo en cualquier momento.",
+  "pushPromptEnable": "Activar notificaciones",
+  "pushPromptLater": "Ahora no",
+  "pushPromptDeniedHint": "Las notificaciones de mitlist están desactivadas. Puedes activarlas en los ajustes de tu teléfono.",
+  "notifPrefDeviceOffTitle": "Las notificaciones están desactivadas en este dispositivo",
+  "notifPrefDeviceOffBody": "Los ajustes del hogar de abajo solo tendrán efecto cuando este dispositivo pueda mostrar notificaciones.",
+  "notifPrefDeviceOffAction": "Activar"
 }

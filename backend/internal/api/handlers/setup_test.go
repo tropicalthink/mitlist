@@ -380,6 +380,8 @@ func newAuthRouterWithConfig(t *testing.T, cfg *config.Config) (chi.Router, *Aut
 
 	userSvc := services.NewUserService(userRepo, authRepo, jwtSvc, ps, ms)
 	guestSvc := services.NewGuestServiceWithAuth(userRepo, jwtSvc, ps, authRepo, ms)
+	userSvc.SetFrontendURL(cfg.FrontendURL)
+	guestSvc.SetFrontendURL(cfg.FrontendURL)
 	oauthSvc := services.NewOAuthService(userRepo, authRepo, jwtSvc, nil, nil)
 
 	h := NewAuthHandler(cfg, userSvc, guestSvc, oauthSvc, jwtSvc)

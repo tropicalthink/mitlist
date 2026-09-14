@@ -82,7 +82,11 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen> {
     });
 
     try {
-      final groups = await _fetchGroups(offset: 0);
+      // The first page comes from the household cache (refreshed in the
+      // background) so the list paints offline; further pages are rare
+      // enough to stay on the network.
+      final repo = await ref.read(groupRepositoryProvider.future);
+      final groups = await repo.loadGroups(limit: _pageLimit);
       if (!mounted) return;
       setState(() {
         _groups

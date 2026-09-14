@@ -150,6 +150,9 @@ func (r *RecipeRepo) CreateRecipe(ctx context.Context, rec *models.Recipe) error
 	if rec.ID == uuid.Nil {
 		rec.ID = uuid.New()
 	}
+	if rec.Visibility == "" {
+		rec.Visibility = models.RecipeVisibilityPrivate
+	}
 	now := time.Now().UTC()
 	rec.CreatedAt = now
 	rec.UpdatedAt = now

@@ -1,7 +1,10 @@
 export const legal = {
   siteName: "mitlist",
   siteUrl: "https://mitlist.me",
-  email: "hi@tropicalthink.com",
+  email: "legal@mitlist.me",
+  privacyEmail: "privacy@mitlist.me",
+  supportEmail: "support@mitlist.me",
+  securityEmail: "security@mitlist.me",
   operator: {
     name: "Abdelhalim Ahmed - tropicalthink",
     street: "Gisselberger Str. 2",

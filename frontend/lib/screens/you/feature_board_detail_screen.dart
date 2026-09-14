@@ -84,13 +84,15 @@ class _FeatureBoardDetailScreenState
     }
   }
 
-  Future<void> _upvote() async {
+  Future<void> _toggleVote() async {
     final item = _item;
-    if (item == null || item.hasVoted || _isVoting) return;
+    if (item == null || _isVoting) return;
     setState(() => _isVoting = true);
     try {
-      final vote =
-          await ref.read(feedbackServiceProvider).upvoteBoardFeature(item.id);
+      final service = ref.read(feedbackServiceProvider);
+      final vote = item.hasVoted
+          ? await service.removeBoardVote(item.id)
+          : await service.upvoteBoardFeature(item.id);
       if (!mounted) return;
       final updated = item.copyWith(
         voteCount: vote.voteCount,
@@ -174,7 +176,7 @@ class _FeatureBoardDetailScreenState
                     _RequestHeader(
                       item: item,
                       isVoting: _isVoting,
-                      onUpvote: _upvote,
+                      onToggleVote: _toggleVote,
                     ),
                   const SizedBox(height: MitlistSpacing.lg),
                   Text(
@@ -240,12 +242,12 @@ class _RequestHeader extends StatelessWidget {
   const _RequestHeader({
     required this.item,
     required this.isVoting,
-    required this.onUpvote,
+    required this.onToggleVote,
   });
 
   final FeatureBoardItem item;
   final bool isVoting;
-  final VoidCallback onUpvote;
+  final VoidCallback onToggleVote;
 
   @override
   Widget build(BuildContext context) {
@@ -279,7 +281,7 @@ class _RequestHeader extends StatelessWidget {
                 voteCount: item.voteCount,
                 hasVoted: item.hasVoted,
                 isVoting: isVoting,
-                onPressed: onUpvote,
+                onPressed: onToggleVote,
               ),
               const SizedBox(width: MitlistSpacing.md),
               Expanded(

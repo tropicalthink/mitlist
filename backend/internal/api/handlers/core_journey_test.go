@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/mitlist-app/mitlist/internal/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -135,7 +136,7 @@ func TestCoreJourney_HouseholdWorkflow(t *testing.T) {
 		"prep_time":   10,
 		"cook_time":   15,
 		"servings":    4,
-		"is_public":   false,
+		"visibility":  models.RecipeVisibilityPrivate,
 	}
 	rec = execRequest(t, recipeRouter, "POST", "/api/v1/recipes", recipeBody, token)
 	requireStatus(t, rec, http.StatusCreated)

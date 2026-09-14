@@ -1,0 +1,8 @@
+---
+import InfoPage from "../components/InfoPage.astro";
+import { site } from "../data/site";
+---
+<InfoPage title="Security — mitlist" description="How to report a security issue to mitlist." eyebrow="Report privately" heading="Help us keep households safe." intro="If you believe you have found a vulnerability, please tell us privately so we can investigate and protect people before details are shared publicly.">
+  <section class="info-card"><h2>Report an issue</h2><div><h3>Email our security contact</h3><p>Send a clear description, affected URL or version, reproduction steps, and the impact you observed to <a href={`mailto:${site.contact.security}`}>{site.contact.security}</a>. Please do not include household data you do not own.</p><div class="info-actions"><a class="btn btn--primary" href={`mailto:${site.contact.security}`}>Email security</a></div></div></section>
+  <section class="info-card"><h2>What happens next</h2><div><h3>We will keep you in the loop</h3><ul><li>We acknowledge reports as soon as practical.</li><li>We investigate and share progress when we can.</li><li>We coordinate disclosure after a fix is available.</li><li>We credit reporters who want to be named.</li></ul><p>During public beta, response times are best-effort. Do not open public issues for unpatched vulnerabilities.</p></div></section>
+</InfoPage>

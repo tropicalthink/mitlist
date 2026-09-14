@@ -5001,6 +5001,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get sheetGroupSettingsMembersLabel => 'Mitglieder';
 
   @override
+  String get sheetGroupSettingsFormerMembersLabel => 'Ehemalige Mitglieder';
+
+  @override
+  String get sheetGroupSettingsFormerMember => 'Nicht mehr im Haushalt';
+
+  @override
   String get sheetGroupSettingsInvite => 'Einladen';
 
   @override
@@ -5743,14 +5749,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get billingPremiumTitle => 'mitlist Premium';
 
   @override
-  String get billingLimitReachedTitle => 'Dieser Haushalt ist voll';
-
-  @override
-  String billingLimitReachedBody(num limit, num next) {
-    return 'Haushalte mit bis zu $limit Personen sind kostenlos. Für ein $next. Mitglied braucht eine Person Premium – und das gilt dann für alle hier.';
-  }
-
-  @override
   String get billingCoversOneHousehold =>
       'Premium gilt für einen Haushalt zur Zeit. Du wählst welchen und kannst jederzeit wechseln.';
 
@@ -6029,7 +6027,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get featureBoardUpvote => 'Für Funktion stimmen';
 
   @override
-  String get featureBoardUpvoted => 'Für Funktion gestimmt';
+  String get featureBoardRemoveUpvote => 'Stimme zurücknehmen';
 
   @override
   String featureBoardVotes(num count) {
@@ -6763,4 +6761,32 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get accentUnlock => 'Mit dem Unterstützer-Paket freischalten';
+
+  @override
+  String get pushPromptTitle => 'Verpass nichts in deinem Haushalt';
+
+  @override
+  String get pushPromptBody =>
+      'Erhalte einen Hinweis, wenn jemand etwas auf eine Liste setzt, eine Aufgabe fällig wird oder eine Ausgabe ausgeglichen werden muss. Du entscheidest, worüber du informiert wirst, und kannst es jederzeit ändern.';
+
+  @override
+  String get pushPromptEnable => 'Benachrichtigungen einschalten';
+
+  @override
+  String get pushPromptLater => 'Jetzt nicht';
+
+  @override
+  String get pushPromptDeniedHint =>
+      'Benachrichtigungen für mitlist sind aus. Du kannst sie in den Einstellungen deines Telefons einschalten.';
+
+  @override
+  String get notifPrefDeviceOffTitle =>
+      'Benachrichtigungen sind auf diesem Gerät aus';
+
+  @override
+  String get notifPrefDeviceOffBody =>
+      'Die Haushaltseinstellungen unten wirken erst, wenn dieses Gerät Benachrichtigungen anzeigen darf.';
+
+  @override
+  String get notifPrefDeviceOffAction => 'Einschalten';
 }

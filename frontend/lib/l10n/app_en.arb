@@ -6564,6 +6564,14 @@
   "@sheetGroupSettingsMembersLabel": {
     "description": "Section label for household members"
   },
+  "sheetGroupSettingsFormerMembersLabel": "Former members",
+  "@sheetGroupSettingsFormerMembersLabel": {
+    "description": "Section label for people who left or were removed; their history stays"
+  },
+  "sheetGroupSettingsFormerMember": "No longer in the household",
+  "@sheetGroupSettingsFormerMember": {
+    "description": "Subtitle on a former member's tile in place of their role"
+  },
   "sheetGroupSettingsInvite": "Invite",
   "@sheetGroupSettingsInvite": {
     "description": "Button to invite a member"
@@ -7634,22 +7642,6 @@
   "@billingPremiumTitle": {
     "description": "Title of the premium paywall sheet"
   },
-  "billingLimitReachedTitle": "This household is full",
-  "@billingLimitReachedTitle": {
-    "description": "Paywall title when a household hit the free member limit"
-  },
-  "billingLimitReachedBody": "Households of up to {limit} people are free. To add a {next}th member, one person needs premium — and it covers everyone here.",
-  "@billingLimitReachedBody": {
-    "description": "Paywall explanation of the free member limit",
-    "placeholders": {
-      "limit": {
-        "type": "num"
-      },
-      "next": {
-        "type": "num"
-      }
-    }
-  },
   "billingCoversOneHousehold": "Premium applies to one household at a time. You choose which, and you can move it whenever you like.",
   "@billingCoversOneHousehold": {
     "description": "Explains the single-household (primary) model"
@@ -8028,9 +8020,9 @@
   "@featureBoardUpvote": {
     "description": "Upvote button semantics"
   },
-  "featureBoardUpvoted": "Feature upvoted",
-  "@featureBoardUpvoted": {
-    "description": "Upvoted button semantics"
+  "featureBoardRemoveUpvote": "Remove upvote",
+  "@featureBoardRemoveUpvote": {
+    "description": "Vote button semantics once the user has upvoted; tapping takes the vote back"
   },
   "featureBoardVotes": "{count, plural, =1{1 vote} other{{count} votes}}",
   "@featureBoardVotes": {
@@ -8979,5 +8971,37 @@
   "accentUnlock": "Unlock with the supporter pack",
   "@accentUnlock": {
     "description": "Button in the accent picker leading to the supporter sheet"
+  },
+  "pushPromptTitle": "Don't miss a beat of your house",
+  "@pushPromptTitle": {
+    "description": "Title of the in-app sheet shown before the OS notification permission dialog"
+  },
+  "pushPromptBody": "Get a nudge when someone adds to a list, a chore comes due or an expense needs settling. You choose what to hear about, and you can change your mind any time.",
+  "@pushPromptBody": {
+    "description": "Body of the in-app sheet explaining what push notifications are for"
+  },
+  "pushPromptEnable": "Turn on notifications",
+  "@pushPromptEnable": {
+    "description": "Primary button on the push prompt sheet, leads to the OS dialog"
+  },
+  "pushPromptLater": "Not now",
+  "@pushPromptLater": {
+    "description": "Secondary button on the push prompt sheet, dismisses without asking the OS"
+  },
+  "pushPromptDeniedHint": "Notifications are off for mitlist. You can turn them on in your phone's settings.",
+  "@pushPromptDeniedHint": {
+    "description": "Toast shown when the OS refused notification permission"
+  },
+  "notifPrefDeviceOffTitle": "Notifications are off on this device",
+  "@notifPrefDeviceOffTitle": {
+    "description": "Card title on the notification preferences screen when the device cannot show notifications"
+  },
+  "notifPrefDeviceOffBody": "The household settings below only take effect once this device is allowed to show notifications.",
+  "@notifPrefDeviceOffBody": {
+    "description": "Card body on the notification preferences screen when the device cannot show notifications"
+  },
+  "notifPrefDeviceOffAction": "Turn on",
+  "@notifPrefDeviceOffAction": {
+    "description": "Button on the device-off card that asks the OS for notification permission"
   }
 }

@@ -180,7 +180,7 @@ func TestAuth_PasswordRoutesDisabled(t *testing.T) {
 		requireStatus(t, rec, http.StatusForbidden)
 		var resp map[string]any
 		parseJSONResponse(t, rec, &resp)
-		assert.Equal(t, "permission_denied", resp["code"], tc.path)
+		assert.Equal(t, "permission_denied", resp["error"], tc.path)
 	}
 
 	// Sessions that exist keep working: refresh, logout and guest creation
@@ -318,7 +318,7 @@ func TestAuth_GuestCreationDisabled(t *testing.T) {
 	requireStatus(t, rec, http.StatusForbidden)
 	var resp map[string]any
 	parseJSONResponse(t, rec, &resp)
-	assert.Equal(t, "permission_denied", resp["code"])
+	assert.Equal(t, "permission_denied", resp["error"])
 
 	// Everything else stays open: the flag gates creation, not sign-in.
 	createTestUser(t, "still-open@example.com", "Password123!")

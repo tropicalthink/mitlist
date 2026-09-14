@@ -270,7 +270,9 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
         _groupId = groupId;
         _groupCurrency = group.currency;
         _currency = group.currency;
-        _members = members;
+        // Former members stay in the roster for history; a new split only
+        // goes between people who are still in the household.
+        _members = members.where((m) => m.isActive).toList();
         _membersLoading = false;
         _membersFailed = false;
         _myId = me.id;

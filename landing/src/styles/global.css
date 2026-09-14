@@ -64,6 +64,12 @@
 
   /* Type */
   --font: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --on-orange: #1a1714;
+  --fixed-paper: #fffcf7;
+  --inverse-bg: #1a1714;
+  --inverse-fg: #fffcf7;
+  --inverse-muted: #bab1a1;
+  --price-panel: #fff7ed;
 
   /* Flat offset shadows — the brand's only shadow language */
   --shadow-sm: 2px 2px 0 var(--ink);
@@ -111,6 +117,16 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
+  padding-inline: env(safe-area-inset-left) env(safe-area-inset-right);
+}
+
+::selection {
+  background: var(--orange);
+  color: var(--on-orange);
+}
+
+* {
+  scrollbar-color: var(--orange) var(--paper-3);
 }
 
 h1,
@@ -228,7 +244,7 @@ button {
 
 .btn--primary {
   background: var(--orange);
-  color: var(--ink);
+  color: var(--on-orange);
 }
 
 .btn--primary:hover {
@@ -300,21 +316,62 @@ section {
 }
 
 /* Reveal-on-scroll: enhances an already-visible default */
-.reveal {
-  opacity: 1;
-}
-
 @media (prefers-reduced-motion: no-preference) {
-  .reveal {
+  .reveal-ready .reveal {
     opacity: 0;
     transform: translateY(22px);
     transition:
       opacity 0.6s var(--ease),
       transform 0.6s var(--ease);
   }
-  .reveal.is-in {
+  .reveal-ready .reveal.is-in {
     opacity: 1;
     transform: none;
+  }
+}
+
+.skip-link {
+  position: fixed;
+  z-index: calc(var(--z-toast) + 1);
+  inset-block-start: 0.75rem;
+  inset-inline-start: 0.75rem;
+  padding: 0.7rem 1rem;
+  border: var(--border);
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+  font-weight: 700;
+  transform: translateY(-180%);
+}
+
+.skip-link:focus {
+  transform: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: var(--dark-ink);
+    --ink-2: #f7f4ec;
+    --ink-3: var(--dark-ink-3);
+    --paper: var(--dark-paper);
+    --paper-2: var(--dark-paper-2);
+    --paper-3: var(--dark-paper-3);
+    --line: #6f6257;
+    --line-2: #d7cfc3;
+    --orange-50: #431c0c;
+    --orange-100: var(--dark-selection);
+    --orange-700: #fdba74;
+    --success-700: #6ee7b7;
+    --shadow-sm: 2px 2px 0 var(--dark-shadow);
+    --shadow: 4px 4px 0 var(--dark-shadow);
+    --shadow-lg: 6px 6px 0 var(--dark-shadow);
+    --shadow-xl: 9px 9px 0 var(--dark-shadow);
+    --border: 2px solid var(--ink);
+  }
+
+  .stamp {
+    color: var(--orange-300);
+    border-color: var(--orange);
   }
 }
 

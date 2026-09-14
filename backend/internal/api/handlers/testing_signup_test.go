@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -20,7 +21,7 @@ type memoryTestingSignups struct {
 	err     error
 }
 
-func (s *memoryTestingSignups) Create(_ context.Context, email, platform, consent string) error {
+func (s *memoryTestingSignups) Create(_ context.Context, email, platform, consent string, launchUpdates bool, launchConsent string) error {
 	if s.err != nil {
 		return s.err
 	}
@@ -29,7 +30,14 @@ func (s *memoryTestingSignups) Create(_ context.Context, email, platform, consen
 			return nil
 		}
 	}
-	s.signups = append(s.signups, repositories.TestingSignup{Email: email, Platform: platform, ConsentVersion: consent, CreatedAt: time.Now()})
+	var version *string
+	var consentedAt *time.Time
+	if launchUpdates {
+		version = &launchConsent
+		now := time.Now()
+		consentedAt = &now
+	}
+	s.signups = append(s.signups, repositories.TestingSignup{Email: email, Platform: platform, ConsentVersion: consent, LaunchUpdates: launchUpdates, LaunchConsentVersion: version, LaunchConsentedAt: consentedAt, CreatedAt: time.Now()})
 	return nil
 }
 
@@ -43,12 +51,38 @@ func (s *memoryTestingSignups) List(_ context.Context, platform string) ([]repos
 	return result, s.err
 }
 
+type memoryForwarder struct {
+	mu       sync.Mutex
+	enabled  bool
+	err      error
+	received []repositories.TestingSignup
+}
+
+func (f *memoryForwarder) Enabled() bool { return f.enabled }
+
+func (f *memoryForwarder) ForwardTester(_ context.Context, s repositories.TestingSignup) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.err != nil {
+		return f.err
+	}
+	f.received = append(f.received, s)
+	return nil
+}
+
+func (f *memoryForwarder) count() int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return len(f.received)
+}
+
 func TestTestingSignupValidation(t *testing.T) {
 	for _, tc := range []struct {
 		name, body  string
 		code, count int
 	}{
 		{"valid", `{"email":" Tester@Example.com ","platform":"android","consent":true}`, 202, 1},
+		{"valid with separate launch consent", `{"email":"tester@example.com","platform":"android","consent":true,"launch_updates":true}`, 202, 1},
 		{"ios", `{"email":"tester@example.com","platform":"ios","consent":true}`, 202, 1},
 		{"no consent", `{"email":"tester@example.com","platform":"ios"}`, 400, 0},
 		{"invalid email", `{"email":"bad","platform":"ios","consent":true}`, 400, 0},
@@ -70,6 +104,10 @@ func TestTestingSignupValidation(t *testing.T) {
 			}
 			if tc.count > 0 && (store.signups[0].Email != "tester@example.com" || store.signups[0].ConsentVersion != testingConsentVersion) {
 				t.Fatal("email or consent not normalized")
+			}
+			if tc.name == "valid with separate launch consent" &&
+				(!store.signups[0].LaunchUpdates || store.signups[0].LaunchConsentVersion == nil || store.signups[0].LaunchConsentedAt == nil) {
+				t.Fatal("separate launch consent was not recorded")
 			}
 		})
 	}
@@ -121,5 +159,78 @@ func TestTestingSignupExportIsPrivate(t *testing.T) {
 	}
 	if rec.Header().Get("Cache-Control") != "no-store" {
 		t.Fatal("private export can be cached")
+	}
+}
+
+func TestTestingSignupForwardsAfterCreate(t *testing.T) {
+	middleware.ResetLimit("testing-signup:192.0.2.1")
+	forwarder := &memoryForwarder{enabled: true}
+	handler := NewTestingSignupHandler(&memoryTestingSignups{})
+	handler.SetForwarder(forwarder)
+	rec := httptest.NewRecorder()
+	handler.Create(rec, httptest.NewRequest("POST", "/testing/signups", strings.NewReader(`{"email":"Tester@example.com","platform":"android","consent":true}`)))
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("status %d", rec.Code)
+	}
+	deadline := time.Now().Add(2 * time.Second)
+	for forwarder.count() == 0 && time.Now().Before(deadline) {
+		time.Sleep(5 * time.Millisecond)
+	}
+	if forwarder.count() != 1 || forwarder.received[0].Email != "tester@example.com" || forwarder.received[0].Platform != "android" ||
+		forwarder.received[0].ConsentVersion != testingConsentVersion || forwarder.received[0].CreatedAt.IsZero() {
+		t.Fatalf("forwarded: %#v", forwarder.received)
+	}
+
+	// A failed save forwards nothing: Postgres is the record.
+	middleware.ResetLimit("testing-signup:192.0.2.1")
+	failing := NewTestingSignupHandler(&memoryTestingSignups{err: errors.New("down")})
+	failing.SetForwarder(forwarder)
+	rec = httptest.NewRecorder()
+	failing.Create(rec, httptest.NewRequest("POST", "/testing/signups", strings.NewReader(`{"email":"other@example.com","platform":"ios","consent":true}`)))
+	time.Sleep(20 * time.Millisecond)
+	if rec.Code != http.StatusServiceUnavailable || forwarder.count() != 1 {
+		t.Fatalf("status %d forwarded %d", rec.Code, forwarder.count())
+	}
+}
+
+func TestTestingSignupSync(t *testing.T) {
+	t.Setenv("DEBUG_ALLOWLIST", "")
+	t.Setenv("ADMIN_USER", "operator")
+	t.Setenv("ADMIN_PASS", "testing-sync-password")
+	store := &memoryTestingSignups{signups: []repositories.TestingSignup{
+		{Email: "one@example.com", Platform: "ios", CreatedAt: time.Now()},
+		{Email: "two@example.com", Platform: "android", CreatedAt: time.Now()},
+	}}
+	forwarder := &memoryForwarder{enabled: true}
+	handler := NewTestingSignupHandler(store)
+	handler.SetForwarder(forwarder)
+	router := chi.NewRouter()
+	handler.RegisterRoutes(router)
+
+	unauth := httptest.NewRecorder()
+	router.ServeHTTP(unauth, httptest.NewRequest("POST", "/testing/signups/sync", nil))
+	if unauth.Code != http.StatusUnauthorized || forwarder.count() != 0 {
+		t.Fatal("sync ran without admin authentication")
+	}
+
+	request := httptest.NewRequest("POST", "/testing/signups/sync", nil)
+	request.SetBasicAuth("operator", "testing-sync-password")
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, request)
+	if rec.Code != http.StatusOK || forwarder.count() != 2 || !strings.Contains(rec.Body.String(), `"forwarded":2`) {
+		t.Fatalf("status %d body %s forwarded %d", rec.Code, rec.Body.String(), forwarder.count())
+	}
+
+	// Without a configured forwarder the endpoint says so instead of pretending.
+	bare := NewTestingSignupHandler(store)
+	bare.SetForwarder(&memoryForwarder{})
+	bareRouter := chi.NewRouter()
+	bare.RegisterRoutes(bareRouter)
+	request = httptest.NewRequest("POST", "/testing/signups/sync", nil)
+	request.SetBasicAuth("operator", "testing-sync-password")
+	rec = httptest.NewRecorder()
+	bareRouter.ServeHTTP(rec, request)
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("status %d", rec.Code)
 	}
 }

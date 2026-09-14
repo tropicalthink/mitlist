@@ -39,6 +39,7 @@ class _FakeFeedbackService extends FeedbackService {
       : super(Dio(BaseOptions(baseUrl: 'https://example.test')));
 
   final List<String> upvotes = [];
+  final List<String> removedVotes = [];
   final List<({FeatureBoardKind? kind, FeatureBoardSort sort})> listCalls = [];
   final List<({String title, String? description, FeatureBoardKind kind})>
       submissions = [];
@@ -75,6 +76,21 @@ class _FakeFeedbackService extends FeedbackService {
       requestId: requestId,
       voteCount: 3,
       hasVoted: true,
+    );
+  }
+
+  @override
+  Future<FeatureBoardVote> removeBoardVote(String requestId) async {
+    removedVotes.add(requestId);
+    items = items
+        .map((item) => item.id == requestId
+            ? item.copyWith(voteCount: item.voteCount - 1, hasVoted: false)
+            : item)
+        .toList();
+    return FeatureBoardVote(
+      requestId: requestId,
+      voteCount: 1,
+      hasVoted: false,
     );
   }
 
@@ -158,6 +174,46 @@ void main() {
 
     expect(service.upvotes, ['feature-1']);
     expect(find.text('3'), findsOneWidget);
+  });
+
+  testWidgets('lets the user take an upvote back from the list',
+      (tester) async {
+    final semantics = tester.ensureSemantics();
+    final service = _FakeFeedbackService()..items = [_item(hasVoted: true)];
+    await tester.pumpWidget(_buildApp(service));
+    await tester.pumpAndSettle();
+
+    final button = find.byType(FeatureBoardVoteButton);
+    expect(tester.getSemantics(button).label, contains('Remove upvote'));
+
+    await tester.tap(button);
+    await tester.pumpAndSettle();
+
+    expect(service.removedVotes, ['feature-1']);
+    expect(service.upvotes, isEmpty);
+    expect(find.text('1'), findsOneWidget);
+    expect(tester.getSemantics(button).label, contains('Upvote feature'));
+    semantics.dispose();
+  });
+
+  testWidgets('lets the user take an upvote back from the detail screen',
+      (tester) async {
+    final semantics = tester.ensureSemantics();
+    final service = _FakeFeedbackService()..items = [_item(hasVoted: true)];
+    await tester.pumpWidget(_buildApp(service, initial: '/board/feature-1'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(FeatureBoardDetailScreen), findsOneWidget);
+    final button = find.byType(FeatureBoardVoteButton);
+    expect(tester.getSemantics(button).label, contains('Remove upvote'));
+
+    await tester.tap(button);
+    await tester.pumpAndSettle();
+
+    expect(service.removedVotes, ['feature-1']);
+    expect(find.textContaining('1 vote'), findsOneWidget);
+    expect(tester.getSemantics(button).label, contains('Upvote feature'));
+    semantics.dispose();
   });
 
   testWidgets('filters by kind and sorts through the service', (tester) async {

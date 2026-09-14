@@ -237,6 +237,27 @@ class HubActivityCaches extends Table {
   Set<Column<Object>>? get primaryKey => {groupId};
 }
 
+/// Last good body of every JSON `GET` the API client made, keyed by method and
+/// full URL (query string included).
+///
+/// The per-feature caches above are the primary offline story, but a dozen
+/// screens (products, shopping locations, recurring expenses, notifications,
+/// cookbooks, the feature board, the weekly summary, chore assignments…) read
+/// straight from a service and had no cache at all, so offline they waited out
+/// the connect timeout and rendered an error page. Rather than hand-roll a
+/// table and a `toJson` for each, the [ResponseCacheInterceptor] serves the
+/// stored body whenever the transport fails. Bounded by row count, see
+/// [AppDatabase.upsertResponseCache].
+class ResponseCaches extends Table {
+  TextColumn get cacheKey => text().named('cache_key')();
+  IntColumn get statusCode => integer().named('status_code')();
+  TextColumn get bodyJson => text().named('body_json')();
+  DateTimeColumn get updatedAt => dateTime().named('updated_at')();
+
+  @override
+  Set<Column<Object>>? get primaryKey => {cacheKey};
+}
+
 // =============================================================================
 // Grocery Intelligence Graph
 // =============================================================================
@@ -420,6 +441,7 @@ class LocalItemSignalsTable extends Table {
     SettlementsCaches,
     CalendarCaches,
     MealPlanCaches,
+    ResponseCaches,
     OutboxOps,
     Conflicts,
     CanonicalItemsTable,
@@ -437,7 +459,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 16;
 
   /// The prebuilt read-only global grocery brain (canonical items, seed/OFF
   /// aliases + FTS, store aisles). Attached by [GroceryReferenceInstaller] once
@@ -806,6 +828,10 @@ FROM recipes_table;
                   'ALTER TABLE recipes_table__new RENAME TO recipes_table;');
             }
           }
+          if (from < 16) {
+            // Read-through cache of GET bodies for the offline fallback.
+            await m.createTable(responseCaches);
+          }
         },
         beforeOpen: (details) async {
           await customStatement('pragma foreign_keys = ON;');
@@ -911,6 +937,13 @@ FROM recipes_table;
       ),
       mode: InsertMode.insertOrIgnore,
     );
+  }
+
+  /// Number of queued ops, reactive. Emits after every insert and delete, so
+  /// a listener sees the enqueue of a user's change even when the coordinator
+  /// drains it a moment later.
+  Stream<int> watchOutboxCount() {
+    return outboxOps.count().watchSingle();
   }
 
   /// Drops still-queued ops of [type] targeting [entityId]. Used to coalesce
@@ -1585,6 +1618,53 @@ FROM recipes_table;
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // Response cache (offline fallback for GET requests)
+  // ---------------------------------------------------------------------------
+
+  /// Upper bound on cached responses. Paginated lists and per-chore assignment
+  /// reads each get their own row, so a busy household accumulates a few
+  /// hundred; the oldest are evicted once this is exceeded.
+  static const int maxResponseCacheRows = 600;
+
+  Future<ResponseCache?> getResponseCache(String cacheKey) {
+    return (select(responseCaches)..where((t) => t.cacheKey.equals(cacheKey)))
+        .getSingleOrNull();
+  }
+
+  Future<void> upsertResponseCache({
+    required String cacheKey,
+    required int statusCode,
+    required String bodyJson,
+  }) async {
+    await into(responseCaches).insert(
+      ResponseCachesCompanion(
+        cacheKey: Value(cacheKey),
+        statusCode: Value(statusCode),
+        bodyJson: Value(bodyJson),
+        updatedAt: Value(DateTime.now()),
+      ),
+      mode: InsertMode.insertOrReplace,
+    );
+    await _pruneResponseCache();
+  }
+
+  Future<void> _pruneResponseCache() async {
+    final count = await responseCaches.count().getSingle();
+    if (count <= maxResponseCacheRows) return;
+    final overflow = count - maxResponseCacheRows;
+    final stale = await (select(responseCaches)
+          ..orderBy([(t) => OrderingTerm.asc(t.updatedAt)])
+          ..limit(overflow))
+        .get();
+    if (stale.isEmpty) return;
+    await (delete(responseCaches)
+          ..where((t) => t.cacheKey.isIn(stale.map((r) => r.cacheKey))))
+        .go();
+  }
+
+  Future<void> clearResponseCache() => delete(responseCaches).go();
+
   Future<void> clearAllUserData() {
     return transaction(() async {
       await delete(hubActivityCaches).go();
@@ -1595,6 +1675,7 @@ FROM recipes_table;
       await delete(settlementsCaches).go();
       await delete(calendarCaches).go();
       await delete(mealPlanCaches).go();
+      await delete(responseCaches).go();
       await delete(financeSummaries).go();
       await delete(expensesTable).go();
       await delete(listItemsTable).go();
