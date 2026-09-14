@@ -207,7 +207,8 @@ func (h *GroupHandler) ListMembers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	members, err := h.service.ListMemberProfiles(r.Context(), user.ID, id)
+	includeFormer := r.URL.Query().Get("include_former") == "true"
+	members, err := h.service.ListMemberProfiles(r.Context(), user.ID, id, includeFormer)
 	if err != nil {
 		api.RespondError(w, err)
 		return

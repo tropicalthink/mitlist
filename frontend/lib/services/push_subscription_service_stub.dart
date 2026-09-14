@@ -7,5 +7,7 @@ class PushSubscriptionService {
     if (!kReleaseMode) return;
   }
 
+  Future<bool> isSubscribed() async => false;
+
   Future<void> unsubscribe() async {}
 }

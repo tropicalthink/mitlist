@@ -13,7 +13,7 @@ const { title, description } = Astro.props;
 
 <Layout title={`${title} — ${legal.siteName}`} description={description}>
   <SiteHeader />
-  <main class="legal-main">
+  <main id="main-content" tabindex="-1" class="legal-main">
     <article class="wrap legal-doc">
       <h1>{title}</h1>
       <slot />

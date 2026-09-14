@@ -8733,6 +8733,18 @@ abstract class AppLocalizations {
   /// **'Members'**
   String get sheetGroupSettingsMembersLabel;
 
+  /// Section label for people who left or were removed; their history stays
+  ///
+  /// In en, this message translates to:
+  /// **'Former members'**
+  String get sheetGroupSettingsFormerMembersLabel;
+
+  /// Subtitle on a former member's tile in place of their role
+  ///
+  /// In en, this message translates to:
+  /// **'No longer in the household'**
+  String get sheetGroupSettingsFormerMember;
+
   /// Button to invite a member
   ///
   /// In en, this message translates to:
@@ -9869,18 +9881,6 @@ abstract class AppLocalizations {
   /// **'mitlist premium'**
   String get billingPremiumTitle;
 
-  /// Paywall title when a household hit the free member limit
-  ///
-  /// In en, this message translates to:
-  /// **'This household is full'**
-  String get billingLimitReachedTitle;
-
-  /// Paywall explanation of the free member limit
-  ///
-  /// In en, this message translates to:
-  /// **'Households of up to {limit} people are free. To add a {next}th member, one person needs premium — and it covers everyone here.'**
-  String billingLimitReachedBody(num limit, num next);
-
   /// Explains the single-household (primary) model
   ///
   /// In en, this message translates to:
@@ -10349,11 +10349,11 @@ abstract class AppLocalizations {
   /// **'Upvote feature'**
   String get featureBoardUpvote;
 
-  /// Upvoted button semantics
+  /// Vote button semantics once the user has upvoted; tapping takes the vote back
   ///
   /// In en, this message translates to:
-  /// **'Feature upvoted'**
-  String get featureBoardUpvoted;
+  /// **'Remove upvote'**
+  String get featureBoardRemoveUpvote;
 
   /// Feature vote count
   ///
@@ -11452,6 +11452,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unlock with the supporter pack'**
   String get accentUnlock;
+
+  /// Title of the in-app sheet shown before the OS notification permission dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t miss a beat of your house'**
+  String get pushPromptTitle;
+
+  /// Body of the in-app sheet explaining what push notifications are for
+  ///
+  /// In en, this message translates to:
+  /// **'Get a nudge when someone adds to a list, a chore comes due or an expense needs settling. You choose what to hear about, and you can change your mind any time.'**
+  String get pushPromptBody;
+
+  /// Primary button on the push prompt sheet, leads to the OS dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on notifications'**
+  String get pushPromptEnable;
+
+  /// Secondary button on the push prompt sheet, dismisses without asking the OS
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get pushPromptLater;
+
+  /// Toast shown when the OS refused notification permission
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications are off for mitlist. You can turn them on in your phone\'s settings.'**
+  String get pushPromptDeniedHint;
+
+  /// Card title on the notification preferences screen when the device cannot show notifications
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications are off on this device'**
+  String get notifPrefDeviceOffTitle;
+
+  /// Card body on the notification preferences screen when the device cannot show notifications
+  ///
+  /// In en, this message translates to:
+  /// **'The household settings below only take effect once this device is allowed to show notifications.'**
+  String get notifPrefDeviceOffBody;
+
+  /// Button on the device-off card that asks the OS for notification permission
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on'**
+  String get notifPrefDeviceOffAction;
 }
 
 class _AppLocalizationsDelegate

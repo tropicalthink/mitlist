@@ -127,9 +127,15 @@ class GroupService {
     }
   }
 
+  /// The roster including former members (those carry `leftAt`), so that
+  /// history involving someone who left still resolves to a name. Callers
+  /// that offer people for new work filter on [GroupMemberProfile.isActive].
   Future<List<GroupMemberProfile>> listMembers(String groupId) async {
     try {
-      final response = await _dio.get('/groups/$groupId/members');
+      final response = await _dio.get(
+        '/groups/$groupId/members',
+        queryParameters: {'include_former': 'true'},
+      );
       final data = response.data;
       if (data is! List) return [];
       return data

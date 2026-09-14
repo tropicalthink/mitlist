@@ -25,6 +25,7 @@ import '../../providers/list_provider.dart' show appDatabaseProvider;
 import '../../providers/finance_provider.dart';
 import '../../providers/calendar_provider.dart';
 import '../../router.dart' show currentGroupIdProvider;
+import '../../services/auth_service.dart' show AuthService;
 import '../../services/scan/ocr_training_data_service.dart';
 import '../../providers/billing_provider.dart';
 import '../../config/iap_config.dart';
@@ -147,16 +148,25 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     User? user;
     List<Group> households = [];
 
-    try {
-      final authService = await ref.read(authServiceProviderAsync.future);
-      user = await authService.getMe();
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-        _error = AppLocalizations.of(context)!.accountFailedLoadProfile;
-      });
-      return;
+    // The saved profile paints the screen offline; the network copy replaces
+    // it when it lands. Only a device that has never saved a profile has to
+    // wait on (and can fail on) the request.
+    final authService = await ref.read(authServiceProviderAsync.future);
+    final cached = authService.cachedMe;
+    if (cached != null) {
+      user = cached;
+      unawaited(_refreshProfile(authService));
+    } else {
+      try {
+        user = await authService.getMe();
+      } catch (_) {
+        if (!mounted) return;
+        setState(() {
+          _isLoading = false;
+          _error = AppLocalizations.of(context)!.accountFailedLoadProfile;
+        });
+        return;
+      }
     }
 
     try {
@@ -192,6 +202,26 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       _error = null;
       _ocrTrainingEnabled = ocrTrainingEnabled;
       _ocrTrainingSamples = ocrTrainingSamples;
+    });
+  }
+
+  /// Background refresh behind a cache-first load. Failures are silent: the
+  /// screen already shows the saved profile, and the next open retries.
+  Future<void> _refreshProfile(AuthService authService) async {
+    User fresh;
+    try {
+      fresh = await authService.getMe();
+    } catch (_) {
+      return;
+    }
+    if (!mounted || _isEditingName) return;
+    setState(() {
+      _name = fresh.fullName;
+      _email = fresh.email;
+      _userId = fresh.id;
+      _isGuest = fresh.isGuest;
+      _isVerified = fresh.isVerified;
+      _tipsEmailsEnabled = fresh.tipsEmailsEnabled;
     });
   }
 

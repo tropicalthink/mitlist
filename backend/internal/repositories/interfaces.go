@@ -88,7 +88,8 @@ type GroupRepo interface {
 	CreateMembership(ctx context.Context, m *models.GroupMembership) error
 	GetMembership(ctx context.Context, groupID, userID uuid.UUID) (*models.GroupMembership, error)
 	UpdateMembership(ctx context.Context, m *models.GroupMembership) error
-	DeleteMembership(ctx context.Context, id uuid.UUID) error
+	// EndMembership retires a membership, keeping the row for history.
+	EndMembership(ctx context.Context, id uuid.UUID) error
 	CreateInvite(ctx context.Context, invite *models.GroupInvite) error
 	GetInviteByCode(ctx context.Context, code string) (*models.GroupInvite, error)
 	CreatePendingClaim(ctx context.Context, claim *models.PendingClaim) error

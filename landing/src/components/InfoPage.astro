@@ -15,7 +15,7 @@ const { title, description, eyebrow, heading, intro } = Astro.props;
 
 <Layout title={title} description={description}>
   <SiteHeader />
-  <main>
+  <main id="main-content" tabindex="-1">
     <section class="info-hero">
       <div class="wrap info-hero__copy">
         <span class="stamp">{eyebrow}</span>

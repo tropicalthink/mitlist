@@ -24,6 +24,7 @@ import '../../theme/theme.dart';
 import '../../theme/list_tile_accent.dart';
 import '../../utils/haptics.dart';
 import '../../widgets/alert.dart';
+import '../../widgets/dismiss_keyboard_on_tap.dart';
 import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_icon.dart';
@@ -668,113 +669,122 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                   text: l10n.hubQuickAdd,
                   tooltip: l10n.hubQuickAdd,
                 ),
-      body: _isLoading
-          ? const HubSkeleton()
-          : _error != null && _resolvedGroupId == null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(MitlistSpacing.md),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        AppAlert(
-                          type: AppAlertType.error,
-                          message: l10n.hubLoadError,
-                        ),
-                        const SizedBox(height: MitlistSpacing.md),
-                        AppButton(
-                          text: l10n.commonRetry,
-                          onPressed: () {
-                            setState(() {
-                              _isLoading = true;
-                              _error = null;
-                            });
-                            _resolveAndLoad();
-                          },
-                        ),
-                      ],
-                    ),
+      body: DismissKeyboardOnTap(child: _buildBody(l10n)),
+    );
+  }
+
+  Widget _buildBody(AppLocalizations l10n) {
+    return _isLoading
+        ? const HubSkeleton()
+        : _error != null && _resolvedGroupId == null
+            ? Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(MitlistSpacing.md),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      AppAlert(
+                        type: AppAlertType.error,
+                        message: l10n.hubLoadError,
+                      ),
+                      const SizedBox(height: MitlistSpacing.md),
+                      AppButton(
+                        text: l10n.commonRetry,
+                        onPressed: () {
+                          setState(() {
+                            _isLoading = true;
+                            _error = null;
+                          });
+                          _resolveAndLoad();
+                        },
+                      ),
+                    ],
                   ),
-                )
-              // No household: _resolveAndLoad already sent us to the board
-              // setup flow; keep the skeleton up while the redirect lands.
-              : _resolvedGroupId == null
-                  ? const HubSkeleton()
-                  : _error != null
-                      ? Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(MitlistSpacing.md),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                AppAlert(
-                                  type: AppAlertType.error,
-                                  message: l10n.hubLoadError,
-                                ),
-                                const SizedBox(height: MitlistSpacing.md),
-                                AppButton(
-                                  text: l10n.commonRetry,
-                                  onPressed: _loadData,
-                                ),
-                              ],
-                            ),
-                          ),
-                        )
-                      : RefreshIndicator(
-                          onRefresh: _onRefresh,
-                          child: CustomScrollView(
-                            physics: AlwaysScrollableScrollPhysics(),
-                            slivers: [
-                              SliverAppBar(
-                                pinned: true,
-                                elevation: 0,
-                                backgroundColor:
-                                    Theme.of(context).colorScheme.surface,
-                                leading: null,
-                                title: _buildAppBarTitle(context),
-                                actions: [
-                                  IconButton(
-                                    tooltip: l10n.hubCalendarTooltip,
-                                    icon: const AppIcon(name: 'calendarDays'),
-                                    onPressed: () =>
-                                        context.pushNamed('calendar'),
-                                  ),
-                                  ...shellTrailingActions(context),
-                                  const SizedBox(width: MitlistSpacing.xs),
-                                ],
+                ),
+              )
+            // No household: _resolveAndLoad already sent us to the board
+            // setup flow; keep the skeleton up while the redirect lands.
+            : _resolvedGroupId == null
+                ? const HubSkeleton()
+                : _error != null
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(MitlistSpacing.md),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              AppAlert(
+                                type: AppAlertType.error,
+                                message: l10n.hubLoadError,
                               ),
-                              SliverPadding(
-                                padding:
-                                    const EdgeInsets.all(MitlistSpacing.md),
-                                sliver: SliverList(
-                                  delegate: SliverChildListDelegate([
-                                    if (!(ref
-                                            .watch(
-                                                hubQuickStartDismissedProvider)
-                                            .valueOrNull ??
-                                        true)) ...[
-                                      HubQuickStart(
-                                        groupId: _resolvedGroupId!,
-                                        onDismiss: () => ref.invalidate(
-                                            hubQuickStartDismissedProvider),
-                                      ),
-                                      const SizedBox(height: MitlistSpacing.lg),
-                                    ],
-                                    PinwallSection(
-                                        groupId: _resolvedGroupId!, me: _me),
-                                    const SizedBox(height: MitlistSpacing.lg),
-                                    ActivityWall(
-                                      activities: _snapshot!.activities,
-                                      activityError: _snapshot!.activityError,
-                                      currentUserId: _me?.id,
-                                    ),
-                                    const SizedBox(height: MitlistSpacing.xl),
-                                  ]),
-                                ),
+                              const SizedBox(height: MitlistSpacing.md),
+                              AppButton(
+                                text: l10n.commonRetry,
+                                onPressed: _loadData,
                               ),
                             ],
                           ),
                         ),
-    );
+                      )
+                    : RefreshIndicator(
+                        onRefresh: _onRefresh,
+                        child: CustomScrollView(
+                          physics: AlwaysScrollableScrollPhysics(),
+                          // The pinwall composer's return key inserts a
+                          // newline, so iOS shows no "Done" and there is no
+                          // hardware back to close the keyboard: dragging
+                          // the hub is one of the two ways out (the other
+                          // is a tap on empty space, see the body wrapper).
+                          keyboardDismissBehavior:
+                              ScrollViewKeyboardDismissBehavior.onDrag,
+                          slivers: [
+                            SliverAppBar(
+                              pinned: true,
+                              elevation: 0,
+                              backgroundColor:
+                                  Theme.of(context).colorScheme.surface,
+                              leading: null,
+                              title: _buildAppBarTitle(context),
+                              actions: [
+                                IconButton(
+                                  tooltip: l10n.hubCalendarTooltip,
+                                  icon: const AppIcon(name: 'calendarDays'),
+                                  onPressed: () =>
+                                      context.pushNamed('calendar'),
+                                ),
+                                ...shellTrailingActions(context),
+                                const SizedBox(width: MitlistSpacing.xs),
+                              ],
+                            ),
+                            SliverPadding(
+                              padding: const EdgeInsets.all(MitlistSpacing.md),
+                              sliver: SliverList(
+                                delegate: SliverChildListDelegate([
+                                  if (!(ref
+                                          .watch(hubQuickStartDismissedProvider)
+                                          .valueOrNull ??
+                                      true)) ...[
+                                    HubQuickStart(
+                                      groupId: _resolvedGroupId!,
+                                      onDismiss: () => ref.invalidate(
+                                          hubQuickStartDismissedProvider),
+                                    ),
+                                    const SizedBox(height: MitlistSpacing.lg),
+                                  ],
+                                  PinwallSection(
+                                      groupId: _resolvedGroupId!, me: _me),
+                                  const SizedBox(height: MitlistSpacing.lg),
+                                  ActivityWall(
+                                    activities: _snapshot!.activities,
+                                    activityError: _snapshot!.activityError,
+                                    currentUserId: _me?.id,
+                                  ),
+                                  const SizedBox(height: MitlistSpacing.xl),
+                                ]),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
   }
 }

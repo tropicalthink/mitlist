@@ -27,7 +27,7 @@ service or on a server somebody operates themselves.
 - The apps and the web app carry no analytics or advertising trackers and
   build no usage profiles. The marketing site at `mitlist.me` uses cookieless
   Cloudflare Web Analytics for aggregated page counts; the app does not.
-- Household data lives on a server we run in the European Union.
+- Household data is hosted on infrastructure we operate in Germany and the Netherlands.
 - Export and account deletion are available in the app at any time.
 - Only what is needed to run the service, bill Premium, and keep it secure is
   processed.
@@ -39,20 +39,21 @@ service or on a server somebody operates themselves.
 | Account | Email, chosen name, password hash; or the email, name, and account id from Google / Apple sign-in | Guest accounts have no email, are device-bound, are locked after 30 days of inactivity and anonymised after another 180 days |
 | Sessions | Access and refresh token stored on the device / in browser storage | Invalidated on sign-out or password change |
 | Household content | Lists, chores, expenses and settlements, recipes, meal plans, pinwall notes, calendar, invitations, uploaded photos and receipts, plus timestamps and authorship | Visible to every member of the household. 1 GB per household, 10 MB per file, stored in Cloudflare R2 |
-| Scanner | Nothing leaves the device | Text recognition runs on-device; no AI service is called |
+| Scanner | Nothing leaves the device | Text recognition runs on-device in the iOS and Android apps; scanning is unavailable on web |
 | Recipe import | The URL you paste is fetched by the server | The recipe site sees the server's address, not yours |
 | Push | Device token (FCM / APNs / Web Push) and the notification text | Optional; token deleted on sign-out |
 | Email | Address and message content, sent via Amazon SES (EU, Frankfurt) | Confirmation, password reset, invitations, optional weekly summary, and up to five getting-started tips in the first month after sign-up. The tips can be turned off in the app (You → Tips by email) or with the unsubscribe link in each one. No third-party marketing, no mailing list |
 | Premium | Subscription holder, assigned household, term, status, amount paid | Web payments through Polar (merchant of record), in-app through Apple / Google. Billing records kept up to ten years by law |
-| Security | IP address and connection data at Cloudflare; Turnstile result for guest sign-up on the web; Firebase App Check attestation for the mobile apps; server logs of failed sign-ins | Logs deleted after a short period |
-| Crash reports | Stack trace, app / OS version, device type, environment, sent to a self-run GlitchTip instance | No household content, names, or emails; no performance or usage data |
+| Security | IP address and connection data at Cloudflare; Turnstile result for guest sign-up on the web; Firebase App Check attestation for the mobile apps; server logs of failed sign-ins | Logs normally deleted within 30 days |
+| Crash reports | When configured, stack trace, app / OS version, device type and environment, sent to a self-run GlitchTip instance | No household content, names, emails, auth headers, or cookies; tracing is disabled; retained up to 30 days |
 | Feedback | Text, source screen, app version, platform, locale; on the public board also your account id and first name | Stored in the request tracker on Cloudflare Workers / D1 |
 
 ## Retention and deletion
 
 Mobile testing signups store the email, Android/iOS selection, signup time,
 and consent version privately, solely to arrange access and send testing
-emails. They do not create an app account or public board post. The team may
+emails. A separate optional consent records whether launch updates may be sent;
+declining it does not affect beta access. Signups do not create an app account or public board post. The team may
 add the email to Google Play testing or Apple TestFlight to issue invitations.
 Signups are removed when testing ends or consent is withdrawn; contact the
 operator listed in the Impressum from the registered address to withdraw or
@@ -67,8 +68,10 @@ request deletion.
 - Deleting a household deletes its content.
 - Guest accounts: locked after 30 days idle, anonymised after another 180 days.
 - Billing records: statutory periods, up to ten years.
-- Push tokens: deleted on sign-out. Logs and crash reports: after a short period.
-- Backups are encrypted and overwritten after a limited period.
+- Push tokens: deleted on sign-out. Logs and crash reports: normally within 30 days.
+- Encrypted database backups are taken twice daily. A rolling maximum retention
+  of 30 days is being introduced during public beta; until rollout completes, a
+  recovery copy may be held longer. Restores must reapply recorded deletions.
 - Expenses can be exported as CSV or JSON from the app at any time; other data
   on request.
 
@@ -76,7 +79,7 @@ request deletion.
 
 | Recipient | Purpose | Location / basis |
 |-----------|---------|------------------|
-| Server provider (Heerlen, NL) | Web app, API, PostgreSQL | EU |
+| Infrastructure providers (Eygelshoven, NL and Nuremberg, DE) | Web app, API, self-managed PostgreSQL | EU |
 | Cloudflare, Inc. | Website, network and protection, Turnstile, R2, feedback tracker (Workers, D1) | USA; SCCs, EU-US Data Privacy Framework |
 | Google Ireland Ltd. (Firebase) | Push, App Check, Sign in with Google | Ireland; onward to Google LLC under the DPF and SCCs |
 | Apple Distribution International Ltd. | Sign in with Apple, push on iOS, in-app purchase | Ireland; onward to Apple Inc. under the DPF |

@@ -58,7 +58,7 @@ const weeklyEventsCTE = `
 		SELECT 'recipes', rcp.created_at, rcp.user_id
 		FROM recipes rcp
 		JOIN group_memberships gm ON gm.user_id = rcp.user_id
-		WHERE gm.group_id = $1 AND rcp.created_at >= $2 AND rcp.created_at < $3
+		WHERE gm.group_id = $1 AND (gm.left_at IS NULL OR rcp.created_at < gm.left_at) AND rcp.created_at >= $2 AND rcp.created_at < $3
 	)`
 
 // CountByCategory returns per-category counts for the current week
@@ -169,7 +169,7 @@ func (r *WeeklySummaryRepository) CountActiveMembers(
 	query := weeklyEventsCTE + `
 		SELECT
 			(SELECT COUNT(DISTINCT user_id) FROM events WHERE user_id IS NOT NULL),
-			(SELECT COUNT(*) FROM group_memberships WHERE group_id = $1)
+			(SELECT COUNT(*) FROM group_memberships WHERE group_id = $1 AND left_at IS NULL)
 	`
 	err = r.pool.QueryRow(ctx, query, groupID, currentStart, end).Scan(&active, &total)
 	if err != nil {

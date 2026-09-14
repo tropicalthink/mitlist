@@ -262,8 +262,8 @@ class PinwallNoteCard extends ConsumerWidget {
     final paletteByName = dark
         ? MitlistColors.notePaletteByNameDark
         : MitlistColors.notePaletteByName;
-    final bg = paletteByName[post.color] ??
-        palette[(idHash.abs()) % palette.length];
+    final bg =
+        paletteByName[post.color] ?? palette[(idHash.abs()) % palette.length];
     final border = bg.withValues(alpha: dark ? 0.3 : 0.6);
 
     final pinColors = [
@@ -761,9 +761,8 @@ class PinwallNoteCard extends ConsumerWidget {
     // On the board a plain tap opens the editor. Child gestures (photos,
     // linked-entity chip) still win their own taps; the board's drag wrapper
     // keeps handling pans.
-    final Widget boardCard = onEdit == null
-        ? card
-        : GestureDetector(onTap: onEdit, child: card);
+    final Widget boardCard =
+        onEdit == null ? card : GestureDetector(onTap: onEdit, child: card);
     return Semantics(
       label: l10n.pinwallNoteSemantics(userLabel, content),
       button: onEdit != null,

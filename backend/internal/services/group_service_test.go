@@ -197,7 +197,38 @@ func TestGroupService_InviteMember(t *testing.T) {
 		require.Error(t, err)
 		assert.IsType(t, &api.ValidationError{}, err)
 	})
+
+	t.Run("full household cannot mint an invite", func(t *testing.T) {
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewGroupService(groupRepo, nil)
+		svc.SetMemberGate(stubMemberGate{err: &api.PaymentRequiredError{Message: "full"}})
+
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "admin"}, nil)
+
+		_, err := svc.InviteMember(ctx, userID, groupID, "member")
+		require.Error(t, err)
+		assert.IsType(t, &api.PaymentRequiredError{}, err)
+		groupRepo.AssertNotCalled(t, "CreateInvite", mock.Anything, mock.Anything)
+	})
+
+	t.Run("household with room mints an invite through the gate", func(t *testing.T) {
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewGroupService(groupRepo, nil)
+		svc.SetMemberGate(stubMemberGate{})
+
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+		groupRepo.On("CreateInvite", ctx, mock.AnythingOfType("*models.GroupInvite")).Return(nil)
+
+		invite, err := svc.InviteMember(ctx, userID, groupID, "")
+		require.NoError(t, err)
+		assert.NotEmpty(t, invite.Code)
+	})
 }
+
+// stubMemberGate stands in for the billing service's premium gate.
+type stubMemberGate struct{ err error }
+
+func (g stubMemberGate) EnsureCanAddMember(context.Context, uuid.UUID) error { return g.err }
 
 func TestGroupService_PreviewInvite(t *testing.T) {
 	ctx := context.Background()
@@ -361,7 +392,7 @@ func TestGroupService_LeaveGroup(t *testing.T) {
 		groupRepo.On("WithTx", ctx, mock.Anything).Return(nil)
 		groupRepo.On("LockGroup", ctx, groupID).Return(nil)
 		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{ID: uuid.New(), Role: "member"}, nil)
-		groupRepo.On("DeleteMembership", ctx, mock.AnythingOfType("uuid.UUID")).Return(nil)
+		groupRepo.On("EndMembership", ctx, mock.AnythingOfType("uuid.UUID")).Return(nil)
 
 		err := svc.LeaveGroup(ctx, userID, groupID)
 		require.NoError(t, err)
@@ -432,10 +463,58 @@ func TestGroupService_RemoveMember(t *testing.T) {
 		groupRepo.On("LockGroup", ctx, groupID).Return(nil)
 		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "admin"}, nil)
 		groupRepo.On("GetMembership", ctx, groupID, targetID).Return(&models.GroupMembership{ID: uuid.New(), Role: "member"}, nil)
-		groupRepo.On("DeleteMembership", ctx, mock.AnythingOfType("uuid.UUID")).Return(nil)
+		groupRepo.On("EndMembership", ctx, mock.AnythingOfType("uuid.UUID")).Return(nil)
 
 		err := svc.RemoveMember(ctx, userID, groupID, targetID)
 		require.NoError(t, err)
+	})
+
+	t.Run("plain member may remove another member", func(t *testing.T) {
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewGroupService(groupRepo, nil)
+
+		groupRepo.On("WithTx", ctx, mock.Anything).Return(nil)
+		groupRepo.On("LockGroup", ctx, groupID).Return(nil)
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, targetID).Return(&models.GroupMembership{ID: uuid.New(), Role: "member"}, nil)
+		groupRepo.On("EndMembership", ctx, mock.AnythingOfType("uuid.UUID")).Return(nil)
+
+		err := svc.RemoveMember(ctx, userID, groupID, targetID)
+		require.NoError(t, err)
+		groupRepo.AssertCalled(t, "EndMembership", ctx, mock.AnythingOfType("uuid.UUID"))
+	})
+
+	t.Run("non-member is denied", func(t *testing.T) {
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewGroupService(groupRepo, nil)
+
+		groupRepo.On("WithTx", ctx, mock.Anything).Return(nil)
+		groupRepo.On("LockGroup", ctx, groupID).Return(nil)
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(nil, pgx.ErrNoRows)
+
+		err := svc.RemoveMember(ctx, userID, groupID, targetID)
+		require.Error(t, err)
+		assert.IsType(t, &api.PermissionDeniedError{}, err)
+		groupRepo.AssertNotCalled(t, "EndMembership", mock.Anything, mock.Anything)
+	})
+
+	t.Run("last admin cannot be removed", func(t *testing.T) {
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewGroupService(groupRepo, nil)
+
+		groupRepo.On("WithTx", ctx, mock.Anything).Return(nil)
+		groupRepo.On("LockGroup", ctx, groupID).Return(nil)
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, targetID).Return(&models.GroupMembership{ID: uuid.New(), UserID: targetID, Role: "admin"}, nil)
+		groupRepo.On("ListMembershipsByGroup", ctx, groupID).Return([]models.GroupMembership{
+			{UserID: targetID, Role: "admin"},
+			{UserID: userID, Role: "member"},
+		}, nil)
+
+		err := svc.RemoveMember(ctx, userID, groupID, targetID)
+		require.Error(t, err)
+		assert.IsType(t, &api.ValidationError{}, err)
+		groupRepo.AssertNotCalled(t, "EndMembership", mock.Anything, mock.Anything)
 	})
 }
 

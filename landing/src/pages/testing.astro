@@ -2,84 +2,91 @@
 import Layout from "../layouts/Layout.astro";
 import SiteHeader from "../components/SiteHeader.astro";
 import SiteFooter from "../components/SiteFooter.astro";
-import FeatureBoardLink from "../components/FeatureBoardLink.astro";
+import { site, type SiteLanguage } from "../data/site";
+interface Props { language?: SiteLanguage; }
+const { language = "en" } = Astro.props;
 const api = import.meta.env.PUBLIC_MITLIST_API_URL || "https://api.mitlist.me/api/v1";
+const copy = {
+  en: { title: "Get the mitlist mobile beta", description: "Join mitlist's mobile beta on Android through Google Play or on iOS through TestFlight.", beta: "Now in public beta", headline: "mitlist, in your pocket.", intro: "The web app is open now. Leave your email and we’ll send your Google Play or TestFlight invitation when your mobile beta place is ready.", steps: ["Choose your phone and leave your email.", "We’ll email your Google Play or iOS TestFlight invitation.", "Try it together. Tell us what works and what needs fixing."], web: "Use mitlist on the web now", feedback: "Feedback & roadmap", join: "Join the testing list", account: "No mitlist account needed. This signs you up for testing invitations only.", email: "Your email", hint: "For Android, use the email on your Google Play account so we can add you as a tester.", phone: "Your phone", consent: "I agree to receive the invitation and essential emails about this mobile test.", privacy: "Privacy notice", updates: "Also email me about the official launch and occasional mitlist news. Optional, and you can unsubscribe any time.", withdraw: "You can withdraw at any time using the contact in the privacy notice.", submit: "Sign me up", saving: "Saving your signup…", rate: "Please wait a few minutes before trying again.", error: "We couldn’t save your signup. Please try again in a moment.", success: "You’re on the list! We’ll email your testing invitation when your place is ready.", network: "We couldn’t reach mitlist. Check your connection and try again.", nojs: "Please enable JavaScript to submit the signup form." },
+  de: { title: "Die mitlist Mobile-Beta", description: "Nimm unter Android über Google Play oder unter iOS über TestFlight an der mitlist Mobile-Beta teil.", beta: "Jetzt in der öffentlichen Beta", headline: "mitlist für unterwegs.", intro: "Die Web-App ist bereits offen. Hinterlass deine E-Mail-Adresse und wir senden dir deine Google-Play- oder TestFlight-Einladung, sobald dein Platz bereit ist.", steps: ["Wähle dein Smartphone und gib deine E-Mail-Adresse an.", "Wir senden dir die Google-Play- oder TestFlight-Einladung.", "Probiert mitlist gemeinsam aus und sagt uns, was funktioniert."], web: "mitlist jetzt im Web nutzen", feedback: "Feedback & Roadmap", join: "Für die Testliste anmelden", account: "Kein mitlist-Konto nötig. Diese Anmeldung gilt nur für Testeinladungen.", email: "Deine E-Mail-Adresse", hint: "Nutze für Android die E-Mail-Adresse deines Google-Play-Kontos, damit wir dich hinzufügen können.", phone: "Dein Smartphone", consent: "Ich möchte die Einladung und notwendige E-Mails zu diesem mobilen Test erhalten.", privacy: "Datenschutzerklärung", updates: "Informiert mich außerdem über den offiziellen Start und gelegentliche mitlist-Neuigkeiten. Optional und jederzeit abbestellbar.", withdraw: "Du kannst deine Einwilligung jederzeit über den Kontakt in der Datenschutzerklärung widerrufen.", submit: "Zur Testliste", saving: "Anmeldung wird gespeichert…", rate: "Bitte warte einige Minuten und versuche es erneut.", error: "Wir konnten deine Anmeldung nicht speichern. Versuch es gleich noch einmal.", success: "Du bist auf der Liste! Wir senden deine Testeinladung, sobald dein Platz bereit ist.", network: "mitlist ist gerade nicht erreichbar. Prüfe deine Verbindung und versuche es erneut.", nojs: "Bitte aktiviere JavaScript, um das Formular abzusenden." },
+  es: { title: "Consigue la beta móvil de mitlist", description: "Únete a la beta móvil de mitlist en Android mediante Google Play o en iOS mediante TestFlight.", beta: "Ahora en beta pública", headline: "mitlist, en tu bolsillo.", intro: "La aplicación web ya está abierta. Déjanos tu correo y te enviaremos la invitación de Google Play o TestFlight cuando tu plaza esté lista.", steps: ["Elige tu móvil y deja tu correo.", "Te enviaremos la invitación de Google Play o TestFlight.", "Probadla juntos y contadnos qué funciona y qué falta."], web: "Usar mitlist en la web", feedback: "Opiniones y hoja de ruta", join: "Únete a la lista de pruebas", account: "No necesitas una cuenta de mitlist. Esto solo te apunta a las invitaciones de prueba.", email: "Tu correo", hint: "En Android, usa el correo de tu cuenta de Google Play para que podamos añadirte.", phone: "Tu móvil", consent: "Acepto recibir la invitación y los correos necesarios sobre esta prueba móvil.", privacy: "Aviso de privacidad", updates: "Quiero recibir también noticias sobre el lanzamiento oficial y novedades ocasionales de mitlist. Es opcional y puedes darte de baja cuando quieras.", withdraw: "Puedes retirar tu consentimiento en cualquier momento mediante el contacto del aviso de privacidad.", submit: "Apuntarme", saving: "Guardando tu solicitud…", rate: "Espera unos minutos antes de volver a intentarlo.", error: "No hemos podido guardar tu solicitud. Inténtalo de nuevo en un momento.", success: "¡Estás en la lista! Te enviaremos la invitación cuando tu plaza esté lista.", network: "No hemos podido conectar con mitlist. Comprueba tu conexión e inténtalo de nuevo.", nojs: "Activa JavaScript para enviar el formulario." },
+  fr: { title: "Obtenir la bêta mobile de mitlist", description: "Rejoignez la bêta mobile de mitlist sur Android via Google Play ou sur iOS via TestFlight.", beta: "Désormais en bêta publique", headline: "mitlist, dans votre poche.", intro: "L’application Web est ouverte. Laissez votre adresse e-mail et nous enverrons votre invitation Google Play ou TestFlight dès que votre place sera prête.", steps: ["Choisissez votre téléphone et indiquez votre adresse e-mail.", "Nous enverrons votre invitation Google Play ou TestFlight.", "Essayez mitlist ensemble et dites-nous ce qui fonctionne ou manque."], web: "Utiliser mitlist sur le Web", feedback: "Retours et feuille de route", join: "Rejoindre la liste de test", account: "Aucun compte mitlist n’est nécessaire. Cette inscription concerne uniquement les invitations de test.", email: "Votre adresse e-mail", hint: "Sur Android, utilisez l’adresse de votre compte Google Play afin que nous puissions vous ajouter.", phone: "Votre téléphone", consent: "J’accepte de recevoir l’invitation et les e-mails indispensables à ce test mobile.", privacy: "Avis de confidentialité", updates: "Envoyez-moi aussi des nouvelles du lancement officiel et, occasionnellement, de mitlist. Facultatif et résiliable à tout moment.", withdraw: "Vous pouvez retirer votre consentement à tout moment via le contact indiqué dans l’avis de confidentialité.", submit: "M’inscrire", saving: "Enregistrement de votre inscription…", rate: "Veuillez patienter quelques minutes avant de réessayer.", error: "Nous n’avons pas pu enregistrer votre inscription. Réessayez dans un instant.", success: "Vous êtes sur la liste ! Nous enverrons votre invitation dès que votre place sera prête.", network: "Impossible de joindre mitlist. Vérifiez votre connexion et réessayez.", nojs: "Activez JavaScript pour envoyer le formulaire." },
+  nl: { title: "Download de mobiele bèta van mitlist", description: "Doe mee aan de mobiele bèta van mitlist via Google Play op Android of TestFlight op iOS.", beta: "Nu in openbare bèta", headline: "mitlist, in je broekzak.", intro: "De webapp is nu open. Laat je e-mailadres achter en we sturen je Google Play- of TestFlight-uitnodiging zodra je plek klaar is.", steps: ["Kies je telefoon en laat je e-mailadres achter.", "We mailen je uitnodiging voor Google Play of TestFlight.", "Probeer mitlist samen en vertel wat werkt en wat beter kan."], web: "mitlist nu op het web gebruiken", feedback: "Feedback en roadmap", join: "Aanmelden voor de testlijst", account: "Geen mitlist-account nodig. Hiermee meld je je alleen aan voor testuitnodigingen.", email: "Je e-mailadres", hint: "Gebruik voor Android het e-mailadres van je Google Play-account, zodat we je kunnen toevoegen.", phone: "Je telefoon", consent: "Ik wil de uitnodiging en noodzakelijke e-mails over deze mobiele test ontvangen.", privacy: "Privacyverklaring", updates: "Mail me ook over de officiële lancering en af en toe over mitlist. Optioneel en op elk moment opzegbaar.", withdraw: "Je kunt je toestemming altijd intrekken via het contact in de privacyverklaring.", submit: "Meld me aan", saving: "Je aanmelding wordt opgeslagen…", rate: "Wacht een paar minuten voordat je het opnieuw probeert.", error: "We konden je aanmelding niet opslaan. Probeer het zo opnieuw.", success: "Je staat op de lijst! We mailen je uitnodiging zodra je plek klaar is.", network: "We konden mitlist niet bereiken. Controleer je verbinding en probeer opnieuw.", nojs: "Schakel JavaScript in om het formulier te verzenden." },
+}[language];
+const privacyPath = language === "de" ? "/datenschutz#testing" : "/privacy#testing";
 ---
-<Layout title="Test mitlist on Android or iOS" description="Join mitlist's mobile testing list. Leave your email and we'll send you an invitation for Google Play or TestFlight.">
-  <SiteHeader />
-  <main>
+<Layout title={copy.title} description={copy.description} language={language} path="/mobile-beta" localized>
+  <SiteHeader language={language} languagePath="mobile-beta" />
+  <main id="main-content" tabindex="-1">
     <section class="wrap testing">
       <div class="testing__intro">
-        <span class="stamp">Early access</span>
-        <h1 class="display">A little help.<br />A better mitlist.</h1>
-        <p class="lead">Try mitlist with your household before the mobile launch. Leave your email and we’ll send you a testing invitation when your place is ready.</p>
-        <ol>
-          <li>Choose your phone and leave your email.</li>
-          <li>We’ll email your Google Play or iOS TestFlight invitation.</li>
-          <li>Try it together. Tell us what works and what needs fixing.</li>
-        </ol>
-        <a href="https://feedback.mitlist.me">Visit the feature board ↗</a>
+        <span class="stamp">{copy.beta}</span>
+        <h1 class="display">{copy.headline}</h1>
+        <p class="lead">{copy.intro}</p>
+        <ol>{copy.steps.map((step) => <li>{step}</li>)}</ol>
+        <a href={site.appUrl}>{copy.web}</a>
+        <a href={site.feedbackUrl}>{copy.feedback}</a>
       </div>
       <form id="tester-signup" class="signup" method="post" action={`${api.replace(/\/$/, "")}/testing/signups`} data-endpoint={`${api.replace(/\/$/, "")}/testing/signups`}>
-        <h2 class="h3">Join the testing list</h2>
-        <p>No mitlist account needed. This signs you up for testing invitations only.</p>
-        <label for="tester-email">Your email</label>
+        <h2 class="h3">{copy.join}</h2>
+        <p>{copy.account}</p>
+        <label for="tester-email">{copy.email}</label>
         <input id="tester-email" name="email" type="email" autocomplete="email" maxlength="254" placeholder="you@example.com" required aria-describedby="email-hint" />
-        <p id="email-hint" class="hint">For Android, use the email on your Google Play account so we can add you as a tester.</p>
+        <p id="email-hint" class="hint">{copy.hint}</p>
         <fieldset>
-          <legend>Your phone</legend>
+          <legend>{copy.phone}</legend>
           <div class="platforms">
             <label><input type="radio" name="platform" value="android" required /> Android <small>Google Play</small></label>
             <label><input type="radio" name="platform" value="ios" required /> iOS <small>TestFlight</small></label>
           </div>
         </fieldset>
         <div class="trap" aria-hidden="true"><label>Website <input name="website" tabindex="-1" autocomplete="off" /></label></div>
-        <label class="consent"><input type="checkbox" name="consent" required /><span>I agree to receive emails about mitlist testing. See the <a href="/privacy#testing">privacy notice</a>.</span></label>
-        <p class="hint">You can withdraw at any time using the contact in the privacy notice.</p>
-        <button type="submit" class="btn btn--primary" disabled>Sign me up</button>
+        <label class="consent"><input type="checkbox" name="consent" required /><span>{copy.consent} <a href={privacyPath}>{copy.privacy}</a>.</span></label>
+        <label class="consent"><input type="checkbox" name="launch_updates" /><span>{copy.updates}</span></label>
+        <p class="hint">{copy.withdraw}</p>
+        <button type="submit" class="btn btn--primary" disabled>{copy.submit}</button>
         <p id="signup-status" role="status" aria-live="polite" tabindex="-1"></p>
-        <noscript>Please enable JavaScript to submit the signup form.</noscript>
+        <noscript>{copy.nojs}</noscript>
       </form>
     </section>
-    <FeatureBoardLink />
   </main>
-  <SiteFooter />
-</Layout>
-<script>
-  const form = document.querySelector<HTMLFormElement>("#tester-signup")!;
-  const status = document.querySelector<HTMLParagraphElement>("#signup-status")!;
-  const button = form.querySelector<HTMLButtonElement>('button[type="submit"]')!;
+  <SiteFooter language={language} languagePath="mobile-beta" />
+  <script define:vars={{ messages: { saving: copy.saving, rate: copy.rate, error: copy.error, success: copy.success, network: copy.network } }}>
+    const form = document.querySelector("#tester-signup");
+    const status = document.querySelector("#signup-status");
+    const button = form.querySelector('button[type="submit"]');
   button.disabled = false;
   const platform = new URLSearchParams(location.search).get("platform");
-  if (platform === "android" || platform === "ios") form.querySelector<HTMLInputElement>(`input[value="${platform}"]`)!.checked = true;
+  if (platform === "android" || platform === "ios") form.querySelector(`input[value="${platform}"]`).checked = true;
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (button.disabled || !form.reportValidity()) return;
     button.disabled = true;
     form.setAttribute("aria-busy", "true");
-    status.textContent = "Saving your signup…";
+    status.textContent = messages.saving;
     const data = new FormData(form);
     try {
-      const response = await fetch(form.dataset.endpoint!, {
+      const response = await fetch(form.dataset.endpoint, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: data.get("email"), platform: data.get("platform"), consent: data.get("consent") === "on", website: data.get("website") }),
+        body: JSON.stringify({ email: data.get("email"), platform: data.get("platform"), consent: data.get("consent") === "on", launch_updates: data.get("launch_updates") === "on", website: data.get("website") }),
         signal: AbortSignal.timeout(15000),
       });
       if (!response.ok) {
-        status.textContent = response.status === 429 ? "Please wait a few minutes before trying again." : "We couldn’t save your signup. Please try again in a moment.";
+        status.textContent = response.status === 429 ? messages.rate : messages.error;
         return;
       }
       form.reset();
-      status.textContent = "You’re on the list! We’ll email your testing invitation when your place is ready.";
+      status.textContent = messages.success;
       status.focus();
     } catch {
-      status.textContent = "We couldn’t reach mitlist. Check your connection and try again.";
+      status.textContent = messages.network;
     } finally {
       button.disabled = false;
       form.removeAttribute("aria-busy");
     }
   });
 </script>
+</Layout>
 <style>
   main { color: var(--ink); background: var(--paper-2); }
   .testing { display: grid; grid-template-columns: 1.1fr 1fr; gap: clamp(2rem, 5vw, 4rem); padding-block: 4rem; align-items: start; }
@@ -105,9 +112,4 @@ const api = import.meta.env.PUBLIC_MITLIST_API_URL || "https://api.mitlist.me/ap
   button:disabled { opacity: .65; cursor: wait; }
   #signup-status:empty { display: none; }
   @media (max-width: 760px) { .testing { grid-template-columns: 1fr; padding-block: 2.5rem; } }
-  @media (prefers-color-scheme: dark) {
-    main { --ink: var(--dark-ink); --ink-3: var(--dark-ink-3); --paper: var(--dark-paper); --paper-2: var(--dark-paper-2); --paper-3: var(--dark-paper-3); --orange-100: var(--dark-selection); --orange-50: var(--dark-paper-3); --shadow-lg: 6px 6px 0 var(--dark-shadow); --shadow-sm: 2px 2px 0 var(--dark-shadow); --border: 2px solid var(--ink); }
-    .signup .btn { color: var(--paper-2); }
-    .stamp { color: var(--paper-2); }
-  }
 </style>

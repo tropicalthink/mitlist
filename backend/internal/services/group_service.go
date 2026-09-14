@@ -129,11 +129,25 @@ func (s *GroupService) ListGroups(ctx context.Context, userID uuid.UUID, limit, 
 }
 
 // ListMemberProfiles returns display-ready members for a group.
-func (s *GroupService) ListMemberProfiles(ctx context.Context, userID, groupID uuid.UUID) ([]models.GroupMemberProfile, error) {
+// ListMemberProfiles returns the household roster. Former members are only
+// included on request: clients that know about LeftAt ask for them so the
+// names on old expenses and chores keep resolving, while older clients keep
+// seeing a roster made of people who are actually in the household.
+func (s *GroupService) ListMemberProfiles(ctx context.Context, userID, groupID uuid.UUID, includeFormer bool) ([]models.GroupMemberProfile, error) {
 	if _, err := s.requireMembership(ctx, userID, groupID); err != nil {
 		return nil, err
 	}
-	return s.groupRepo.ListMemberProfilesByGroup(ctx, groupID)
+	profiles, err := s.groupRepo.ListMemberProfilesByGroup(ctx, groupID)
+	if err != nil || includeFormer {
+		return profiles, err
+	}
+	active := profiles[:0]
+	for _, p := range profiles {
+		if p.LeftAt == nil {
+			active = append(active, p)
+		}
+	}
+	return active, nil
 }
 
 // UpdateGroupInput holds optional fields for updating a group.
@@ -215,6 +229,12 @@ func (s *GroupService) DeleteGroup(ctx context.Context, userID, groupID uuid.UUI
 // InviteMember creates an invite code for the group. Any member of the
 // household may invite; the code admits anyone who presents it for a week,
 // and accepting does not use it up.
+//
+// The premium gate is applied here, on the inviter's side, and not only at
+// join time: the person inviting is a household member who can pay, whereas
+// the person presenting a code is a stranger who cannot resolve a paywall.
+// A full household therefore gets a PaymentRequiredError before any code is
+// minted, and the app turns that into the premium flow.
 func (s *GroupService) InviteMember(ctx context.Context, userID, groupID uuid.UUID, role string) (*models.GroupInvite, error) {
 	if _, err := s.requireMembership(ctx, userID, groupID); err != nil {
 		return nil, err
@@ -224,6 +244,9 @@ func (s *GroupService) InviteMember(ctx context.Context, userID, groupID uuid.UU
 	}
 	if role != "member" {
 		return nil, &api.ValidationError{Message: "invites can only grant the member role"}
+	}
+	if err := s.ensureCanAddMember(ctx, groupID); err != nil {
+		return nil, err
 	}
 
 	// Generate short, human-friendly codes. Retry on rare uniqueness collisions.
@@ -363,7 +386,7 @@ func (s *GroupService) LeaveGroup(ctx context.Context, userID, groupID uuid.UUID
 				return &api.ValidationError{Message: "cannot leave group as the last admin"}
 			}
 		}
-		return repo.DeleteMembership(ctx, membership.ID)
+		return repo.EndMembership(ctx, membership.ID)
 	})
 	if err == nil {
 		publishDomainEvent(s.hub, "member:left", groupID, map[string]string{"user_id": userID.String()})
@@ -408,13 +431,17 @@ func (s *GroupService) UpdateMemberRole(ctx context.Context, userID, groupID, ta
 	return err
 }
 
-// RemoveMember removes a member from the group. Only admins may do so.
+// RemoveMember removes a member from the group. Any member of the household
+// may remove another member; the last admin is still protected so the group
+// never ends up without one. The membership is retired, not deleted, so the
+// person's expenses, chores and posts keep their name and balances still add
+// up; accepting a new invite reactivates it.
 func (s *GroupService) RemoveMember(ctx context.Context, userID, groupID, targetUserID uuid.UUID) error {
 	err := s.groupRepo.WithTx(ctx, func(repo repositories.GroupRepo) error {
 		if err := repo.LockGroup(ctx, groupID); err != nil {
 			return err
 		}
-		if err := requireAdmin(ctx, repo, userID, groupID); err != nil {
+		if _, err := requireMembership(ctx, repo, userID, groupID); err != nil {
 			return err
 		}
 		membership, err := repo.GetMembership(ctx, groupID, targetUserID)
@@ -433,7 +460,7 @@ func (s *GroupService) RemoveMember(ctx context.Context, userID, groupID, target
 				return &api.ValidationError{Message: "cannot remove the last admin"}
 			}
 		}
-		return repo.DeleteMembership(ctx, membership.ID)
+		return repo.EndMembership(ctx, membership.ID)
 	})
 	if err == nil {
 		publishDomainEvent(s.hub, "member:removed", groupID, map[string]string{"user_id": targetUserID.String()})
@@ -514,7 +541,11 @@ func (s *GroupService) RejectClaim(ctx context.Context, userID, groupID, claimID
 
 // requireMembership returns the membership or permission denied.
 func (s *GroupService) requireMembership(ctx context.Context, userID, groupID uuid.UUID) (*models.GroupMembership, error) {
-	m, err := s.groupRepo.GetMembership(ctx, groupID, userID)
+	return requireMembership(ctx, s.groupRepo, userID, groupID)
+}
+
+func requireMembership(ctx context.Context, repo repositories.GroupRepo, userID, groupID uuid.UUID) (*models.GroupMembership, error) {
+	m, err := repo.GetMembership(ctx, groupID, userID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) || isNotFound(err) {
 			return nil, &api.PermissionDeniedError{Message: "not a member of this group"}

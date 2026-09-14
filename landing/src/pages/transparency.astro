@@ -1,7 +1,8 @@
 ---
 import InfoPage from "../components/InfoPage.astro";
+import { site } from "../data/site";
 
-const GITHUB = "https://github.com/whtvrboo/mitlist";
+const GITHUB = site.repositoryUrl;
 ---
 
 <InfoPage
@@ -9,7 +10,7 @@ const GITHUB = "https://github.com/whtvrboo/mitlist";
   description="How mitlist plans to keep official hosting free, what it costs, and which promises do not change."
   eyebrow="Show the workings"
   heading="Free should come with a plan."
-  intro="Official hosting is being built to stay modest, legible, and cheap to operate. This page is where the limits, costs, and funding model will be kept in public."
+  intro="Official hosting is designed to stay modest, legible, and inexpensive to operate. This page records the limits, infrastructure, and funding model in public."
 >
   <section class="info-card">
     <h2>What does not change</h2>
@@ -26,8 +27,9 @@ const GITHUB = "https://github.com/whtvrboo/mitlist";
   <section class="info-card">
     <h2>How hosting stays small</h2>
     <div>
-      <p>The hosted stack is one server in a data centre in the Netherlands running the Go API, the web app, and PostgreSQL, with Cloudflare in front of it and Cloudflare R2 for attachments. The expensive path is bounded at the household level: 1 GB of file storage, atomic quota reservations, and cleanup of abandoned uploads.</p>
-      <p>Receipt, list, and recipe text recognition runs on the device. No AI service is called, so a scan never creates a model bill.</p>
+      <p>The hosted service runs across infrastructure we operate in Eygelshoven, the Netherlands, and Nuremberg, Germany. PostgreSQL is self-managed and replicated, Cloudflare fronts the service, and Cloudflare R2 stores attachments under our EU data-location configuration. Each household has 1 GB of file storage, with atomic quota reservations and cleanup of abandoned uploads.</p>
+      <p>Mobile list recognition runs on iOS and Android devices. No hosted AI service is called for a scan.</p>
+      <p>Encrypted PostgreSQL backups are taken twice daily. A rolling 30-day retention policy and a separate recovery copy for R2 attachments are public-beta launch work; until those controls are verified, we do not claim a zero recovery point or independent attachment backup.</p>
       <p>Other services in the loop: Amazon SES in Frankfurt for transactional email, Firebase for push notifications and app attestation, Cloudflare Turnstile for guest sign-up on the web, and a self-run GlitchTip for crash reports. The <a href="/privacy">privacy policy</a> lists each one with what it receives.</p>
     </div>
   </section>
@@ -35,7 +37,7 @@ const GITHUB = "https://github.com/whtvrboo/mitlist";
   <section class="info-card">
     <h2>How the money works</h2>
     <div>
-      <p>Households of up to four members use official hosting for free. Larger households pay for Premium, a flat subscription per household that unlocks nothing else: no feature gates, no ads, no upsells. Web subscriptions run through Polar; in-app subscriptions through the App Store and Google Play. The <a href="/terms">terms</a> spell out renewal and cancellation.</p>
+      <p>Households of up to four members use official hosting for free. Households of five or more people pay €3.99 monthly or €29.99 yearly for Premium. One subscription covers the household and unlocks nothing else: no feature gates, no ads, no upsells. Web subscriptions run through Polar; in-app subscriptions through the App Store and Google Play. Taxes and the final amount are shown before payment, and store prices may vary by region.</p>
       <p>Premium pays for infrastructure first. As the hosted service settles, this page will publish the monthly compute, storage, email, and monitoring totals rather than inventing numbers in advance.</p>
       <p>If Premium cannot cover growth, the first response is tighter fair-use limits, announced here at least 30 days ahead — not feature locks in the open-source app.</p>
       <div class="info-actions"><a class="btn" href={GITHUB} rel="noopener">Follow the work on GitHub</a></div>

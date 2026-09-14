@@ -5697,6 +5697,8 @@
     }
   },
   "sheetGroupSettingsMembersLabel": "Leden",
+  "sheetGroupSettingsFormerMembersLabel": "Voormalige leden",
+  "sheetGroupSettingsFormerMember": "Niet meer in het huishouden",
   "@sheetGroupSettingsMembersLabel": {
     "description": "Section label for household members"
   },
@@ -5920,8 +5922,6 @@
   "accountOcrTrainingClearTitle": "OCR-trainingsgegevens verwijderen?",
   "accountOcrTrainingClearBody": "Hiermee worden alle opgeslagen regeluitsneden permanent van dit apparaat verwijderd.",
   "billingPremiumTitle": "mitlist premium",
-  "billingLimitReachedTitle": "Dit huishouden is vol",
-  "billingLimitReachedBody": "Huishoudens tot {limit} personen zijn gratis. Om een {next}e lid toe te voegen heeft één persoon premium nodig — en dat geldt voor iedereen hier.",
   "billingCoversOneHousehold": "Premium geldt voor één huishouden tegelijk. Jij kiest welke en kunt altijd wisselen.",
   "billingCoveredBy": "Premium op dit huishouden, betaald door {name}.",
   "billingPremiumActive": "Premium is hier actief",
@@ -5997,7 +5997,7 @@
   "featureBoardInProgress": "In uitvoering",
   "featureBoardShipped": "Uitgebracht",
   "featureBoardUpvote": "Stem op functie",
-  "featureBoardUpvoted": "Op functie gestemd",
+  "featureBoardRemoveUpvote": "Stem intrekken",
   "featureBoardVotes": "{count, plural, =1{1 stem} other{{count} stemmen}}",
   "featureBoardUnderReview": "In beoordeling",
   "featureBoardFilterAll": "Alles",
@@ -6252,5 +6252,13 @@
   "accentBerry": "Bes",
   "accentViolet": "Violet",
   "accentLockedHint": "Andere kleuren dan Clementine horen bij het supporterspakket.",
-  "accentUnlock": "Ontgrendel met het supporterspakket"
+  "accentUnlock": "Ontgrendel met het supporterspakket",
+  "pushPromptTitle": "Mis niets van je huis",
+  "pushPromptBody": "Krijg een seintje als iemand iets op een lijst zet, een taak eraan komt of een uitgave verrekend moet worden. Jij kiest waarover je hoort en je kunt het altijd aanpassen.",
+  "pushPromptEnable": "Meldingen inschakelen",
+  "pushPromptLater": "Nu niet",
+  "pushPromptDeniedHint": "Meldingen voor mitlist staan uit. Je kunt ze inschakelen in de instellingen van je telefoon.",
+  "notifPrefDeviceOffTitle": "Meldingen staan uit op dit apparaat",
+  "notifPrefDeviceOffBody": "De huishoudinstellingen hieronder werken pas als dit apparaat meldingen mag tonen.",
+  "notifPrefDeviceOffAction": "Inschakelen"
 }

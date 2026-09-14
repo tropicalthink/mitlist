@@ -5,6 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../../models/notification_models.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/notification_provider.dart';
+import '../../services/api_client.dart' show dioProvider;
+import '../../services/push_permission.dart';
+import '../../services/push_prompt_gate.dart';
 import '../../theme/spacing.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_button.dart';
@@ -33,12 +36,91 @@ class _NotificationPreferencesScreenState
   Map<String, String> _groupNames = {};
   final Map<String, bool> _savingKeys = {};
 
+  /// False when the OS will not show notifications for mitlist on this
+  /// device, in which case the per-household toggles below are moot and a
+  /// card at the top offers to turn them on.
+  bool _deviceCanNotify = true;
+  bool _requestingDevicePermission = false;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _load();
+      if (mounted) {
+        _load();
+        _loadDevicePermission();
+      }
     });
+  }
+
+  Future<void> _loadDevicePermission() async {
+    if (!PushPermission.isSupported) return;
+    final granted = await PushPermission.isGranted();
+    if (!mounted) return;
+    setState(() => _deviceCanNotify = granted);
+  }
+
+  Future<void> _enableDeviceNotifications() async {
+    final l10n = AppLocalizations.of(context)!;
+    setState(() => _requestingDevicePermission = true);
+    final outcome = await PushPermission.request(ref.read(dioProvider));
+    // Answering here is answering the first-action offer as well.
+    await PushPromptStore.markDecided();
+    if (!mounted) return;
+    setState(() {
+      _requestingDevicePermission = false;
+      _deviceCanNotify = outcome == PushPermissionOutcome.granted;
+    });
+    if (outcome == PushPermissionOutcome.denied) {
+      AppToast.info(context, l10n.pushPromptDeniedHint);
+    }
+  }
+
+  Widget _buildDeviceOffCard() {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
+      child: AppCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                AppIcon(
+                  name: 'bellOutline',
+                  size: 22,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: MitlistSpacing.sm),
+                Expanded(
+                  child: Text(
+                    l10n.notifPrefDeviceOffTitle,
+                    style: theme.textTheme.titleMedium,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: MitlistSpacing.sm),
+            Text(
+              l10n.notifPrefDeviceOffBody,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: MitlistSpacing.md),
+            AppButton(
+              text: l10n.notifPrefDeviceOffAction,
+              size: AppButtonSize.sm,
+              isLoading: _requestingDevicePermission,
+              onPressed: _requestingDevicePermission
+                  ? null
+                  : _enableDeviceNotifications,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _load() async {
@@ -314,9 +396,10 @@ class _NotificationPreferencesScreenState
                         ],
                       ),
                     )
-                  else if (_preferences.isNotEmpty)
-                    ..._preferences.map(_buildPreferenceCard)
-                  else
+                  else if (_preferences.isNotEmpty) ...[
+                    if (!_deviceCanNotify) _buildDeviceOffCard(),
+                    ..._preferences.map(_buildPreferenceCard),
+                  ] else
                     AppEmptyState(
                       lottieAsset:
                           'assets/animations/lottie/Notifications.lottie',

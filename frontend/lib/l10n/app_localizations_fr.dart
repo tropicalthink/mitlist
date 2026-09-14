@@ -4986,6 +4986,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get sheetGroupSettingsMembersLabel => 'Membres';
 
   @override
+  String get sheetGroupSettingsFormerMembersLabel => 'Anciens membres';
+
+  @override
+  String get sheetGroupSettingsFormerMember => 'Ne fait plus partie du foyer';
+
+  @override
   String get sheetGroupSettingsInvite => 'Inviter';
 
   @override
@@ -5729,14 +5735,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get billingPremiumTitle => 'mitlist premium';
 
   @override
-  String get billingLimitReachedTitle => 'Ce foyer est complet';
-
-  @override
-  String billingLimitReachedBody(num limit, num next) {
-    return 'Les foyers jusqu’à $limit personnes sont gratuits. Pour ajouter un ${next}e membre, une personne doit prendre premium — et cela couvre tout le monde ici.';
-  }
-
-  @override
   String get billingCoversOneHousehold =>
       'Premium s’applique à un seul foyer à la fois. Vous choisissez lequel et pouvez en changer quand vous voulez.';
 
@@ -6013,7 +6011,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get featureBoardUpvote => 'Voter pour la fonctionnalité';
 
   @override
-  String get featureBoardUpvoted => 'Vote enregistré';
+  String get featureBoardRemoveUpvote => 'Retirer le vote';
 
   @override
   String featureBoardVotes(num count) {
@@ -6749,4 +6747,32 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get accentUnlock => 'Débloquer avec le pack soutien';
+
+  @override
+  String get pushPromptTitle => 'Ne ratez rien de votre maison';
+
+  @override
+  String get pushPromptBody =>
+      'Recevez un rappel quand quelqu\'un ajoute un article à une liste, qu\'une corvée arrive à échéance ou qu\'une dépense doit être réglée. Vous choisissez ce dont vous voulez être informé et pouvez changer d\'avis à tout moment.';
+
+  @override
+  String get pushPromptEnable => 'Activer les notifications';
+
+  @override
+  String get pushPromptLater => 'Pas maintenant';
+
+  @override
+  String get pushPromptDeniedHint =>
+      'Les notifications de mitlist sont désactivées. Vous pouvez les activer dans les réglages de votre téléphone.';
+
+  @override
+  String get notifPrefDeviceOffTitle =>
+      'Les notifications sont désactivées sur cet appareil';
+
+  @override
+  String get notifPrefDeviceOffBody =>
+      'Les réglages du foyer ci-dessous ne s\'appliqueront que lorsque cet appareil pourra afficher des notifications.';
+
+  @override
+  String get notifPrefDeviceOffAction => 'Activer';
 }

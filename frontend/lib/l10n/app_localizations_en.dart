@@ -4923,6 +4923,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sheetGroupSettingsMembersLabel => 'Members';
 
   @override
+  String get sheetGroupSettingsFormerMembersLabel => 'Former members';
+
+  @override
+  String get sheetGroupSettingsFormerMember => 'No longer in the household';
+
+  @override
   String get sheetGroupSettingsInvite => 'Invite';
 
   @override
@@ -5652,14 +5658,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get billingPremiumTitle => 'mitlist premium';
 
   @override
-  String get billingLimitReachedTitle => 'This household is full';
-
-  @override
-  String billingLimitReachedBody(num limit, num next) {
-    return 'Households of up to $limit people are free. To add a ${next}th member, one person needs premium — and it covers everyone here.';
-  }
-
-  @override
   String get billingCoversOneHousehold =>
       'Premium applies to one household at a time. You choose which, and you can move it whenever you like.';
 
@@ -5932,7 +5930,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get featureBoardUpvote => 'Upvote feature';
 
   @override
-  String get featureBoardUpvoted => 'Feature upvoted';
+  String get featureBoardRemoveUpvote => 'Remove upvote';
 
   @override
   String featureBoardVotes(num count) {
@@ -6662,4 +6660,31 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accentUnlock => 'Unlock with the supporter pack';
+
+  @override
+  String get pushPromptTitle => 'Don\'t miss a beat of your house';
+
+  @override
+  String get pushPromptBody =>
+      'Get a nudge when someone adds to a list, a chore comes due or an expense needs settling. You choose what to hear about, and you can change your mind any time.';
+
+  @override
+  String get pushPromptEnable => 'Turn on notifications';
+
+  @override
+  String get pushPromptLater => 'Not now';
+
+  @override
+  String get pushPromptDeniedHint =>
+      'Notifications are off for mitlist. You can turn them on in your phone\'s settings.';
+
+  @override
+  String get notifPrefDeviceOffTitle => 'Notifications are off on this device';
+
+  @override
+  String get notifPrefDeviceOffBody =>
+      'The household settings below only take effect once this device is allowed to show notifications.';
+
+  @override
+  String get notifPrefDeviceOffAction => 'Turn on';
 }
