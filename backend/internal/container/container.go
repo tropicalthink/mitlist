@@ -444,9 +444,9 @@ func (c *Container) PolarClient() *polarsvc.Client {
 func (c *Container) AppleIAPClient() *appstoresvc.Client {
 	c.appleIAPClientOnce.Do(func() {
 		c.appleIAPClient = appstoresvc.New(appstoresvc.Config{
-			BundleID:         c.cfg.AppleIAPBundleID,
-			Environment:      c.cfg.AppleIAPEnvironment,
-			AppAppleID:       int64(c.cfg.AppleIAPAppID),
+			BundleID:           c.cfg.AppleIAPBundleID,
+			Environment:        c.cfg.AppleIAPEnvironment,
+			AppAppleID:         int64(c.cfg.AppleIAPAppID),
 			ProductIDMonthly:   c.cfg.AppleIAPProductMonthly,
 			ProductIDYearly:    c.cfg.AppleIAPProductYearly,
 			ProductIDSupporter: c.cfg.AppleIAPProductSupporter,
