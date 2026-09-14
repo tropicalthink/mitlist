@@ -1,10 +1,11 @@
 # Mobile testing signups
 
-The landing page at `/testing` collects an email, one platform (`android` or
-`ios`), and explicit consent to testing emails. It creates no app account.
-`POST /api/v1/testing/signups` stores the signup in PostgreSQL; migration 000064
-is required. The same email may register once per platform. Repeats return
-the same 202 response without changing the original signup or consent timestamp.
+The landing page at `/mobile-beta` collects an email, one platform (`android`
+or `ios`), and explicit consent to testing emails. `/testing` remains an alias
+for older links. A separate optional checkbox records consent to launch updates;
+declining it never affects beta access. The form creates no app account.
+`POST /api/v1/testing/signups` stores the signup in PostgreSQL; migrations
+000064 and 000067 are required. The same email may register once per platform.
 The endpoint limits requests per IP, caps input at 4 KB, validates the email
 and platform, and ignores honeypot submissions. It sends no email automatically.
 
@@ -36,7 +37,8 @@ invited. The CSV export below still works and needs no Staffroom.
    or `?platform=ios` using the existing operator HTTP Basic credentials
    (`ADMIN_USER` / `ADMIN_PASS`). The existing `DEBUG_ALLOWLIST` also applies.
    Omit the platform filter to export both. Anonymous access is denied.
-2. The CSV contains email, platform, signup time, and consent version. Treat it
+2. The CSV contains email, platform, signup time, testing consent, and the
+   separate optional launch-update consent and timestamp. Treat it
    as private personal data, never upload it to the public feature board.
    Formula-leading email addresses are prefixed with an apostrophe for safe
    spreadsheet viewing; remove that prefix if importing the address into a store.
@@ -54,7 +56,7 @@ Apple: https://developer.apple.com/help/app-store-connect/test-a-beta-version/in
 
 ## Withdrawal and retention
 
-Process withdrawal requests sent to the operator email in `/privacy#testing`.
+Process withdrawal requests sent to `privacy@mitlist.me`, as listed in `/privacy#testing`.
 Delete the matching email from `testing_signups`, remove the row in
 Staffroom (the trash icon on the tester list), remove it from any exported
 copies and store tester lists, and stop sending testing invitations. Use a
@@ -64,7 +66,7 @@ signups and exports when the testing programme ends, as stated in the notice.
 
 ## Deployment and local verification
 
-Deploy the backend with migration 000064 first, then the static landing site.
+Deploy the backend with migrations 000064 and 000067 first, then the static landing site.
 The feature-board link needs no feedback Worker changes. No new mail credentials
 or external storage are required. `TESTING_SIGNUP_ORIGIN` defaults to
 `https://mitlist.me`. For local landing development, use the development backend

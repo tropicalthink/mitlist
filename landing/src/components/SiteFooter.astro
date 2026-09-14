@@ -1,40 +1,46 @@
+---
+import LanguageSwitcher from "./LanguageSwitcher.astro";
+import { localizedPath, site, type SiteLanguage } from "../data/site";
+interface Props { language?: SiteLanguage; languagePath?: string; }
+const { language = "en", languagePath = "" } = Astro.props;
+const homePath = localizedPath(language);
+const text = {
+  en: { product: "Product", trust: "Trust & community", legal: "Legal", app: "Web app", features: "Features", pricing: "Pricing", mobile: "Mobile beta", hosting: "Hosting", status: "Status", feedback: "Feedback & roadmap", source: "Source code", support: "Support", security: "Security", terms: "Terms", privacy: "Privacy", notice: "Legal notice", tagline: "One shared place for the life you manage together.", credit: "Made by" },
+  de: { product: "Produkt", trust: "Vertrauen & Community", legal: "Rechtliches", app: "Web-App", features: "Funktionen", pricing: "Preise", mobile: "Mobile-Beta", hosting: "Hosting", status: "Status", feedback: "Feedback & Roadmap", source: "Quellcode", support: "Support", security: "Sicherheit", terms: "AGB", privacy: "Datenschutz", notice: "Impressum", tagline: "Ein gemeinsamer Ort für das Leben, das ihr zusammen organisiert.", credit: "Von" },
+  es: { product: "Producto", trust: "Confianza y comunidad", legal: "Legal", app: "Aplicación web", features: "Funciones", pricing: "Precios", mobile: "Beta móvil", hosting: "Alojamiento", status: "Estado", feedback: "Opiniones y hoja de ruta", source: "Código fuente", support: "Soporte", security: "Seguridad", terms: "Términos", privacy: "Privacidad", notice: "Aviso legal", tagline: "Un espacio común para la vida que organizáis juntos.", credit: "Creado por" },
+  fr: { product: "Produit", trust: "Confiance et communauté", legal: "Mentions légales", app: "Application Web", features: "Fonctions", pricing: "Tarifs", mobile: "Bêta mobile", hosting: "Hébergement", status: "État du service", feedback: "Retours et feuille de route", source: "Code source", support: "Assistance", security: "Sécurité", terms: "Conditions", privacy: "Confidentialité", notice: "Mentions légales", tagline: "Un espace commun pour la vie que vous organisez ensemble.", credit: "Créé par" },
+  nl: { product: "Product", trust: "Vertrouwen en community", legal: "Juridisch", app: "Webapp", features: "Functies", pricing: "Prijzen", mobile: "Mobiele bèta", hosting: "Hosting", status: "Status", feedback: "Feedback en roadmap", source: "Broncode", support: "Ondersteuning", security: "Beveiliging", terms: "Voorwaarden", privacy: "Privacy", notice: "Colofon", tagline: "Eén gedeelde plek voor het leven dat jullie samen regelen.", credit: "Gemaakt door" },
+}[language];
+---
+
 <footer class="foot">
   <div class="wrap foot__inner">
-    <a class="brand" href="/">
-      <span class="brand__mark" aria-hidden="true">
-        <svg viewBox="0 0 24 24"><path d="M4 7.5l3 3 6-6.5" /><path d="M4 14.5l3 3 6-6.5" /><line x1="15" y1="6" x2="21" y2="6" /><line x1="15" y1="16" x2="21" y2="16" /></svg>
-      </span>
-      mitlist
-    </a>
-    <nav class="foot__links" aria-label="Footer">
-      <a href="https://app.mitlist.me">Web app</a>
-      <a href="/#features">Features</a>
-      <a href="/hosting">Hosting</a>
-      <a href="/transparency">Transparency</a>
-      <a href="/testing">Join testing</a>
-      <a href="https://feedback.mitlist.me">Feature board</a>
-      <a href="https://github.com/whtvrboo/mitlist" rel="noopener">GitHub</a>
-      <a href="/terms">Terms</a>
-      <a href="/privacy">Privacy</a>
-      <a href="/agb">AGB</a>
-      <a href="/datenschutz">Datenschutz</a>
-      <a href="/impressum">Impressum</a>
-    </nav>
-    <p class="foot__copy">The shared notebook that actually works.
-      <br />Built with <img src="/tt.svg" alt="" class="foot__tt" aria-hidden="true" /> by <a href="https://tropicalthink.com" target="_blank">tropicalthink</a>
+    <div class="foot__brand"><a class="brand" href={homePath}>
+        <span class="brand__mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7.5l3 3 6-6.5" /><path d="M4 14.5l3 3 6-6.5" /><line x1="15" y1="6" x2="21" y2="6" /><line x1="15" y1="16" x2="21" y2="16" /></svg></span>mitlist
+      </a><p>{text.tagline}</p><LanguageSwitcher language={language} path={languagePath} /></div>
+    <nav class="foot__group" aria-label={text.product}><h2>{text.product}</h2><a href={site.appUrl}>{text.app}</a><a href={`${homePath}#features`}>{text.features}</a><a href={`${homePath}#pricing`}>{text.pricing}</a><a href={localizedPath(language, "mobile-beta")}>{text.mobile}</a></nav>
+    <nav class="foot__group" aria-label={text.trust}><h2>{text.trust}</h2><a href="/hosting">{text.hosting}</a><a href={site.statusUrl}>{text.status}</a><a href={site.feedbackUrl}>{text.feedback}</a><a href={site.repositoryUrl} rel="noopener">{text.source}</a><a href={`mailto:${site.contact.support}`}>{text.support}</a></nav>
+    <nav class="foot__group" aria-label={text.legal}><h2>{text.legal}</h2><a href="/security">{text.security}</a><a href={language === "de" ? "/agb" : "/terms"}>{text.terms}</a><a href={language === "de" ? "/datenschutz" : "/privacy"}>{text.privacy}</a><a href="/impressum">{text.notice}</a></nav>
+    <p class="foot__copy">
+      {text.credit} <img src="/tt.svg" alt="" class="foot__tt" aria-hidden="true" /> <a href="https://tropicalthink.com" target="_blank" rel="noopener">tropicalthink</a>
       <br />© 2026 mitlist.</p>
   </div>
 </footer>
 
 <style>
   .foot { background: var(--paper-2); border-top: var(--border); padding-block: 2.5rem; }
-  .foot__inner { display: flex; flex-wrap: wrap; align-items: center; gap: 1.2rem 2rem; }
-  .brand { display: inline-flex; align-items: center; gap: 0.55rem; font-weight: 700; font-size: 1.1rem; letter-spacing: -0.03em; text-decoration: none; color: var(--ink); }
-  .brand__mark { width: 34px; height: 34px; display: grid; place-items: center; background: var(--orange); border: var(--border); box-shadow: var(--shadow-sm); }
+  .foot__inner { display: grid; grid-template-columns: 1.35fr repeat(3,1fr); align-items: start; gap: 2rem; }
+  .foot__brand { display: grid; justify-items: start; gap: 1rem; max-width: 28ch; }
+  .foot__brand p { color: var(--ink-3); }
+  .brand { display: inline-flex; align-items: center; min-height: 44px; gap: .55rem; font-weight: 700; font-size: 1.1rem; letter-spacing: -.03em; text-decoration: none; color: var(--ink); }
+  .brand__mark { width: 38px; height: 38px; display: grid; place-items: center; background: var(--orange); border: var(--border); box-shadow: var(--shadow-sm); }
   .brand__mark svg { width: 20px; height: 20px; fill: none; stroke: var(--ink); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
-  .foot__links { display: flex; flex-wrap: wrap; gap: 1.3rem; font-weight: 500; font-size: 0.95rem; }
-  .foot__links a { text-decoration: none; color: var(--ink-3); }
-  .foot__links a:hover { color: var(--ink); }
-  .foot__copy { width: 100%; color: var(--line-2); font-size: 0.88rem; font-weight: 500; }
-  .foot__tt { display: inline-block; width: 1.1em; height: 1.1em; vertical-align: -0.15em; }
+  .foot__group { display: grid; align-content: start; }
+  .foot__group h2 { margin-bottom: .7rem; font-size: .78rem; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+  .foot__group a { display: flex; align-items: center; min-height: 44px; text-decoration: none; color: var(--ink-3); font-size: .9rem; font-weight: 600; }
+  .foot__group a:hover { color: var(--ink); text-decoration: underline; text-decoration-color: var(--orange); text-underline-offset: .25em; }
+  .foot__copy { grid-column: 1 / -1; color: var(--ink-3); font-size: .88rem; font-weight: 500; border-top: 1px solid var(--line); padding-top: 1rem; }
+  .foot__tt { display: inline-block; width: 1.1em; height: 1.1em; vertical-align: -.15em; }
+  @media (max-width: 820px) { .foot__inner { grid-template-columns: 1fr 1fr; }.foot__brand { grid-column: 1 / -1; }.foot__copy { grid-column: 1 / -1; } }
+  @media (max-width: 520px) { .foot__inner { grid-template-columns: 1fr; }.foot__brand,.foot__copy { grid-column: auto; } }
 </style>

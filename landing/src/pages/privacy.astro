@@ -6,7 +6,7 @@
 import LegalPage from "../components/LegalPage.astro";
 import { legal } from "../data/legal";
 const { operator } = legal;
-const lastUpdated = "6 September 2026";
+const lastUpdated = "14 September 2026";
 ---
 
 <LegalPage title="Privacy" description="What data mitlist handles, where it goes, how long it stays, and what you can do about it — for the website, the apps, and the official hosted service.">
@@ -14,7 +14,7 @@ const lastUpdated = "6 September 2026";
   <p class="legal-lang">Deutsche Fassung: <a href="/datenschutz">Datenschutzerklärung</a>. Where the two differ, the German version prevails.</p>
 
   <h2>1. Who is responsible</h2>
-  <p>{operator.name}<br />{operator.street}<br />{operator.postalCode} {operator.city}<br />Germany<br />Email: <a href={`mailto:${legal.email}`}>{legal.email}</a></p>
+  <p>{operator.name}<br />{operator.street}<br />{operator.postalCode} {operator.city}<br />Germany<br />Email: <a href={`mailto:${legal.privacyEmail}`}>{legal.privacyEmail}</a></p>
   <p>We have not appointed a data protection officer because the legal thresholds for one are not met. Send any privacy question to the address above.</p>
 
   <h2>2. What this policy covers</h2>
@@ -31,7 +31,7 @@ const lastUpdated = "6 September 2026";
   <ul>
     <li>No ads, and no selling of data.</li>
     <li>The apps and the web app contain no analytics or advertising trackers and build no usage profiles.</li>
-    <li>Your household data lives on a server we run in the European Union.</li>
+    <li>Your household data is hosted on infrastructure we operate in Germany and the Netherlands.</li>
     <li>You can export your data and delete your account from inside the app at any time.</li>
     <li>We only process what is needed to run the service, bill Premium, and keep the service secure.</li>
   </ul>
@@ -41,7 +41,7 @@ const lastUpdated = "6 September 2026";
   <p><strong>Cookieless page counts.</strong> On the website (not in the app) we use Cloudflare Web Analytics to see how often each page is read. It sets no cookies, stores nothing on your device, and does not fingerprint you; the result is aggregated and not tied to individual people. Legal basis: Art. 6(1)(f) GDPR (understanding which content is read). Because nothing is stored on or read from your device, no consent is required for it.</p>
 
   <h3 id="testing">Mobile testing signup</h3>
-  <p>When you join the testing list, we store your email, chosen platform (Android or iOS), signup time, and the version of the consent you gave. We use these details to arrange testing access and email you about the test, not for a newsletter. The list is private and does not create a mitlist account or a feature-board post. To invite you, we may add your email to Google Play testing or Apple TestFlight. We remove the signup when testing ends or when you withdraw. To withdraw or ask us to delete your signup, email <a href={`mailto:${legal.email}`}>{legal.email}</a> from the address you registered.</p>
+  <p>When you join the testing list, we store your email, chosen platform (Android or iOS), signup time, and the version of the consent you gave. We use these details to arrange testing access and email you about the test. A separate, optional consent covers official-launch and occasional mitlist news; it is not required to join the test. The list is private and does not create a mitlist account or a feature-board post. To invite you, we may add your email to Google Play testing or Apple TestFlight. We remove the signup when testing ends or when you withdraw. To withdraw or ask us to delete your signup, email <a href={`mailto:${legal.privacyEmail}`}>{legal.privacyEmail}</a> from the address you registered.</p>
 
   <h2>5. Accounts and sign-in</h2>
   <p><strong>Email registration.</strong> When you create an account we process your email address, the name you choose, and a password that is stored only as a hash. We email you codes to confirm the address and to reset the password. Legal basis: Art. 6(1)(b) GDPR.</p>
@@ -74,24 +74,24 @@ const lastUpdated = "6 September 2026";
   <p><strong>Cloudflare.</strong> The web app and the API are reached through Cloudflare, which forwards requests to our server, blocks attacks, and processes IP addresses and connection data to do so. Legal basis: Art. 6(1)(f) GDPR.</p>
   <p><strong>Turnstile.</strong> Creating a guest account in the browser runs an invisible Cloudflare Turnstile check so that automated sign-ups do not overwhelm the service. Cloudflare receives the technical browser signals it needs; we receive only the pass or fail. The token is checked once and never stored against your account. Cloudflare's <a href="https://www.cloudflare.com/application-services/products/turnstile-privacy-addendum/" target="_blank" rel="noopener noreferrer">Turnstile Privacy Addendum</a> applies. Legal basis: Art. 6(1)(f) GDPR.</p>
   <p><strong>App Check.</strong> The iOS and Android apps prove to our server that they are genuine installations using Firebase App Check (Google Ireland Ltd.), which verifies device attestations from Apple or Google. Household data is not involved. Legal basis: Art. 6(1)(f) GDPR.</p>
-  <p><strong>Server logs.</strong> Our server logs errors and security-relevant events such as failed sign-ins, with IP address and time. Addresses that repeatedly misbehave are blocked temporarily. Logs are deleted after a short period unless they are needed to investigate an incident. Legal basis: Art. 6(1)(f) GDPR.</p>
+  <p><strong>Server logs.</strong> Our servers log errors and security-relevant events such as failed sign-ins, with IP address and time. Addresses that repeatedly misbehave are blocked temporarily. Logs are kept for no longer than 30 days unless they are needed to investigate an incident. Legal basis: Art. 6(1)(f) GDPR.</p>
 
   <h2>11. Crash reports</h2>
-  <p>When the app crashes or hits an unexpected error, the web app, the apps, and the server send an error report to a GlitchTip instance we operate. A report contains the technical trace of the error (stack trace), app and operating system version, device type, and environment. Household content, names, and email addresses are deliberately excluded, and no performance or usage data is collected. Reports are kept only as long as they are needed to fix the error. Legal basis: Art. 6(1)(f) GDPR (a stable service).</p>
+  <p>When error reporting is enabled in an official build or service, an unexpected error may be sent to a GlitchTip instance we operate. A report contains the technical trace of the error (stack trace), app and operating system version, device type, and environment. Household content, names, email addresses, authentication headers, and cookies are deliberately excluded. Performance tracing is disabled and no usage profile is created. Reports are kept for up to 30 days. Legal basis: Art. 6(1)(f) GDPR (a stable service).</p>
 
   <h2>12. Feedback</h2>
   <p><strong>In the app.</strong> The feedback area in the app lets you report wishes and bugs. We receive your text, the screen you were on, the app version, platform, and language, and store them in our request tracker, which runs on Cloudflare Workers and Cloudflare D1.</p>
   <p><strong>Feedback board.</strong> The public board at feedback.mitlist.me can be read without signing in. To vote, post, or comment you sign in with your mitlist account, and the board then sets a strictly necessary session cookie. Posts and comments store your account identifier and show your first name. Legal basis: Art. 6(1)(b) GDPR.</p>
 
   <h2>13. Hosting, recipients, and international transfers</h2>
-  <p>The service (web app, API, and database) runs on a server we manage in a data centre in Heerlen, the Netherlands. Database backups are encrypted and overwritten after a limited period. The following providers process data on our behalf or as independent controllers:</p>
+  <p>The service runs across infrastructure we manage in Eygelshoven, the Netherlands, and Nuremberg, Germany. We operate PostgreSQL ourselves and take encrypted database backups twice daily. A rolling maximum retention of 30 days is being introduced during the public beta; until that rollout is complete, a recovery copy may be held longer. Attachments are stored in Cloudflare R2 under our EU data-location configuration. The following providers process data on our behalf or as independent controllers:</p>
   <div class="table-scroll">
     <table>
       <thead>
         <tr><th>Recipient</th><th>Purpose</th><th>Location / transfer basis</th></tr>
       </thead>
       <tbody>
-        <tr><td>Server provider (Heerlen data centre)</td><td>Runs the web app, API, and database</td><td>Netherlands (EU)</td></tr>
+        <tr><td>Infrastructure providers (Eygelshoven and Nuremberg)</td><td>Run the web app, API, and our PostgreSQL database</td><td>Netherlands and Germany (EU)</td></tr>
         <tr><td>Cloudflare, Inc.</td><td>Website, network and protection, Turnstile, R2 object storage, feedback tracker (Workers, D1)</td><td>USA; EU standard contractual clauses, certified under the EU-US Data Privacy Framework</td></tr>
         <tr><td>Google Ireland Ltd. (Firebase)</td><td>Push notifications, App Check, Sign in with Google</td><td>Ireland; transfers to Google LLC (USA) under the EU-US Data Privacy Framework and standard contractual clauses</td></tr>
         <tr><td>Apple Distribution International Ltd.</td><td>Sign in with Apple, push on iOS, in-app purchase</td><td>Ireland; transfers to Apple Inc. (USA) under the EU-US Data Privacy Framework</td></tr>
@@ -110,8 +110,8 @@ const lastUpdated = "6 September 2026";
     <li><strong>Households</strong> and their content are deleted when the household is deleted.</li>
     <li><strong>Guest accounts</strong> are locked after 30 days of inactivity and anonymised after another 180 days.</li>
     <li><strong>Billing records</strong> for Premium are kept for the statutory periods of up to ten years.</li>
-    <li><strong>Push tokens</strong> are deleted when you sign out; <strong>logs</strong> and <strong>crash reports</strong> after a short period.</li>
-    <li><strong>Backups</strong> are overwritten after a limited period, so deleted data disappears from them as well.</li>
+    <li><strong>Push tokens</strong> are deleted when you sign out; <strong>logs</strong> and <strong>crash reports</strong> are normally deleted within 30 days.</li>
+    <li><strong>Backups.</strong> We are introducing a rolling maximum retention of 30 days during public beta. Deleted data may remain in an encrypted recovery copy until it expires; restoration procedures reapply recorded deletions before service is reopened.</li>
   </ul>
   <p><strong>Export.</strong> You can export your expenses as CSV or JSON from the app at any time. We provide other data on request in a common format (Art. 20 GDPR).</p>
 
@@ -122,7 +122,7 @@ const lastUpdated = "6 September 2026";
   <p>The official service is intended for people aged 16 and over. Younger people may use it only with the consent of a parent or guardian. If we learn that an account was created without that consent, we delete it.</p>
 
   <h2>17. Your rights</h2>
-  <p>You have the right of access (Art. 15 GDPR), rectification (Art. 16), erasure (Art. 17), restriction of processing (Art. 18), data portability (Art. 20), and objection to processing based on Art. 6(1)(f) GDPR (Art. 21). You can withdraw any consent at any time with effect for the future (Art. 7(3)). An informal email to <a href={`mailto:${legal.email}`}>{legal.email}</a> is enough, and you can delete your account and data yourself in the app at any time.</p>
+  <p>You have the right of access (Art. 15 GDPR), rectification (Art. 16), erasure (Art. 17), restriction of processing (Art. 18), data portability (Art. 20), and objection to processing based on Art. 6(1)(f) GDPR (Art. 21). You can withdraw any consent at any time with effect for the future (Art. 7(3)). An informal email to <a href={`mailto:${legal.privacyEmail}`}>{legal.privacyEmail}</a> is enough, and you can delete your account and data yourself in the app at any time.</p>
   <p>You also have the right to lodge a complaint with a data protection authority (Art. 77 GDPR). The authority responsible for us is the Hessian Commissioner for Data Protection and Freedom of Information, Gustav-Stresemann-Ring 1, 65189 Wiesbaden, Germany, <a href="https://datenschutz.hessen.de" target="_blank" rel="noopener noreferrer">datenschutz.hessen.de</a>. You may also contact the authority where you live.</p>
 
   <h2>18. Changes</h2>

@@ -1,0 +1,13 @@
+---
+import TestingPage from "../testing.astro";
+import { supportedLanguages, type SiteLanguage } from "../../data/site";
+
+export function getStaticPaths() {
+  return supportedLanguages.map((lang) => ({ params: { lang }, props: { language: lang } }));
+}
+
+interface Props { language: SiteLanguage; }
+const { language } = Astro.props;
+---
+
+<TestingPage language={language} />

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/csv"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/mail"
@@ -18,9 +19,10 @@ import (
 )
 
 const testingConsentVersion = "testing-invitations-v1"
+const launchUpdatesConsentVersion = "launch-updates-v1"
 
 type testingSignupStore interface {
-	Create(context.Context, string, string, string) error
+	Create(context.Context, string, string, string, bool, string) error
 	List(context.Context, string) ([]repositories.TestingSignup, error)
 }
 
@@ -64,10 +66,11 @@ func (h *TestingSignupHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, 4096)
 	var input struct {
-		Email    string `json:"email"`
-		Platform string `json:"platform"`
-		Consent  bool   `json:"consent"`
-		Website  string `json:"website"`
+		Email         string `json:"email"`
+		Platform      string `json:"platform"`
+		Consent       bool   `json:"consent"`
+		Website       string `json:"website"`
+		LaunchUpdates bool   `json:"launch_updates"`
 	}
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&input); err != nil {
@@ -89,11 +92,24 @@ func (h *TestingSignupHandler) Create(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Enter a valid email, choose your phone, and agree to testing emails.", http.StatusBadRequest)
 		return
 	}
-	if err := h.store.Create(r.Context(), email, input.Platform, testingConsentVersion); err != nil {
+	if err := h.store.Create(r.Context(), email, input.Platform, testingConsentVersion, input.LaunchUpdates, launchUpdatesConsentVersion); err != nil {
 		http.Error(w, "We couldn’t save your signup. Please try again later.", http.StatusServiceUnavailable)
 		return
 	}
-	h.forwardAsync(repositories.TestingSignup{Email: email, Platform: input.Platform, ConsentVersion: testingConsentVersion, CreatedAt: time.Now()})
+	forwardedSignup := repositories.TestingSignup{
+		Email:          email,
+		Platform:       input.Platform,
+		ConsentVersion: testingConsentVersion,
+		LaunchUpdates:  input.LaunchUpdates,
+		CreatedAt:      time.Now(),
+	}
+	if input.LaunchUpdates {
+		launchVersion := launchUpdatesConsentVersion
+		consentedAt := forwardedSignup.CreatedAt
+		forwardedSignup.LaunchConsentVersion = &launchVersion
+		forwardedSignup.LaunchConsentedAt = &consentedAt
+	}
+	h.forwardAsync(forwardedSignup)
 	w.WriteHeader(http.StatusAccepted)
 }
 
@@ -159,14 +175,21 @@ func (h *TestingSignupHandler) Export(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Disposition", `attachment; filename="mitlist-testers.csv"`)
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	writer := csv.NewWriter(w)
-	_ = writer.Write([]string{"email", "platform", "signed_up_at", "consent_version"})
+	_ = writer.Write([]string{"email", "platform", "signed_up_at", "consent_version", "launch_updates", "launch_consent_version", "launch_consented_at"})
 	for _, signup := range signups {
 		email := signup.Email
 		// Email local parts can start with spreadsheet formula characters.
 		if len(email) > 0 && strings.ContainsAny(email[:1], "=+-@") {
 			email = "'" + email
 		}
-		if err := writer.Write([]string{email, signup.Platform, signup.CreatedAt.UTC().Format(time.RFC3339), signup.ConsentVersion}); err != nil {
+		launchVersion, launchAt := "", ""
+		if signup.LaunchConsentVersion != nil {
+			launchVersion = *signup.LaunchConsentVersion
+		}
+		if signup.LaunchConsentedAt != nil {
+			launchAt = signup.LaunchConsentedAt.UTC().Format(time.RFC3339)
+		}
+		if err := writer.Write([]string{email, signup.Platform, signup.CreatedAt.UTC().Format(time.RFC3339), signup.ConsentVersion, fmt.Sprint(signup.LaunchUpdates), launchVersion, launchAt}); err != nil {
 			return
 		}
 	}

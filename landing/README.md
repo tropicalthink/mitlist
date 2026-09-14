@@ -25,12 +25,15 @@ settle with inertia and a rotation wobble. No animation library; physics are a
 small `requestAnimationFrame` loop. Respects `prefers-reduced-motion` (static,
 still draggable, no inertia).
 
-## What to wire up before launch
+## Launch configuration
 
-- **Mobile testing:** `/testing` collects email, Android/iOS selection and
-  consent. Store badges select the matching platform on that page. Invitations
-  are sent manually after adding people to the appropriate store testing group.
-- **GitHub URL:** the `GITHUB` constant at the top of `index.astro`.
+- Shared launch facts, URLs, pricing, and contact addresses live in
+  `src/data/site.ts`; do not hardcode copies in components.
+- `/mobile-beta` collects the required testing-invitation consent and a separate,
+  optional launch-updates consent. `/testing` remains available for old links.
+- Replace all elements carrying `data-launch-placeholder` with real product
+  screenshots before the official launch.
+- Localized homepages ship at `/en/`, `/de/`, `/es/`, `/fr/`, and `/nl/`.
 
 ## Commands
 
@@ -43,16 +46,18 @@ still draggable, no inertia).
 
 ## Testing signup and feature board
 
-The homepage and `/testing` have a compact callout linking directly to
-`https://feedback.mitlist.me`. The feature board is also linked in the header
-and footer. The landing site does not fetch board data or need an intake key.
+The homepage and footer link to `https://feedback.mitlist.me` as the public
+feedback-driven roadmap. The landing site does not fetch board data or need an
+intake key.
 
 Signups post to `https://api.mitlist.me/api/v1/testing/signups` (override with
 `PUBLIC_MITLIST_API_URL` at build time for a local or self-hosted backend).
-Deploy backend migration `000064` and the signup endpoint **before** publishing
+Deploy backend migrations `000064` and `000067` and the signup endpoint **before** publishing
 the landing update. The backend's `TESTING_SIGNUP_ORIGIN` defaults to
 `https://mitlist.me`; change it for a different landing origin. This CORS
 permission covers only the public signup endpoint.
 
 For the private export and invitation workflow, see
 [the testing operator guide](../backend/docs/testing-signups.md).
+Before changing the public-beta wording to an official launch, replace every
+screenshot marked `data-launch-placeholder` and run `npm run check:official-launch`.
