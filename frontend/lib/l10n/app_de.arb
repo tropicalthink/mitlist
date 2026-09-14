@@ -2322,5 +2322,13 @@
   "accentBerry": "Beere",
   "accentViolet": "Violett",
   "accentLockedHint": "Andere Farben als Clementine gehören zum Unterstützer-Paket.",
-  "accentUnlock": "Mit dem Unterstützer-Paket freischalten"
+  "accentUnlock": "Mit dem Unterstützer-Paket freischalten",
+  "pushPromptTitle": "Verpass nichts in deinem Haushalt",
+  "pushPromptBody": "Erhalte einen Hinweis, wenn jemand etwas auf eine Liste setzt, eine Aufgabe fällig wird oder eine Ausgabe ausgeglichen werden muss. Du entscheidest, worüber du informiert wirst, und kannst es jederzeit ändern.",
+  "pushPromptEnable": "Benachrichtigungen einschalten",
+  "pushPromptLater": "Jetzt nicht",
+  "pushPromptDeniedHint": "Benachrichtigungen für mitlist sind aus. Du kannst sie in den Einstellungen deines Telefons einschalten.",
+  "notifPrefDeviceOffTitle": "Benachrichtigungen sind auf diesem Gerät aus",
+  "notifPrefDeviceOffBody": "Die Haushaltseinstellungen unten wirken erst, wenn dieses Gerät Benachrichtigungen anzeigen darf.",
+  "notifPrefDeviceOffAction": "Einschalten"
 }

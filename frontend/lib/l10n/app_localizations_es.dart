@@ -6713,4 +6713,32 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get accentUnlock => 'Desbloquear con el pack de apoyo';
+
+  @override
+  String get pushPromptTitle => 'No te pierdas nada de tu casa';
+
+  @override
+  String get pushPromptBody =>
+      'Recibe un aviso cuando alguien añada algo a una lista, una tarea esté por vencer o haya un gasto por saldar. Tú eliges de qué quieres enterarte y puedes cambiarlo en cualquier momento.';
+
+  @override
+  String get pushPromptEnable => 'Activar notificaciones';
+
+  @override
+  String get pushPromptLater => 'Ahora no';
+
+  @override
+  String get pushPromptDeniedHint =>
+      'Las notificaciones de mitlist están desactivadas. Puedes activarlas en los ajustes de tu teléfono.';
+
+  @override
+  String get notifPrefDeviceOffTitle =>
+      'Las notificaciones están desactivadas en este dispositivo';
+
+  @override
+  String get notifPrefDeviceOffBody =>
+      'Los ajustes del hogar de abajo solo tendrán efecto cuando este dispositivo pueda mostrar notificaciones.';
+
+  @override
+  String get notifPrefDeviceOffAction => 'Activar';
 }

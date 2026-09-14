@@ -6761,4 +6761,32 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get accentUnlock => 'Mit dem Unterstützer-Paket freischalten';
+
+  @override
+  String get pushPromptTitle => 'Verpass nichts in deinem Haushalt';
+
+  @override
+  String get pushPromptBody =>
+      'Erhalte einen Hinweis, wenn jemand etwas auf eine Liste setzt, eine Aufgabe fällig wird oder eine Ausgabe ausgeglichen werden muss. Du entscheidest, worüber du informiert wirst, und kannst es jederzeit ändern.';
+
+  @override
+  String get pushPromptEnable => 'Benachrichtigungen einschalten';
+
+  @override
+  String get pushPromptLater => 'Jetzt nicht';
+
+  @override
+  String get pushPromptDeniedHint =>
+      'Benachrichtigungen für mitlist sind aus. Du kannst sie in den Einstellungen deines Telefons einschalten.';
+
+  @override
+  String get notifPrefDeviceOffTitle =>
+      'Benachrichtigungen sind auf diesem Gerät aus';
+
+  @override
+  String get notifPrefDeviceOffBody =>
+      'Die Haushaltseinstellungen unten wirken erst, wenn dieses Gerät Benachrichtigungen anzeigen darf.';
+
+  @override
+  String get notifPrefDeviceOffAction => 'Einschalten';
 }

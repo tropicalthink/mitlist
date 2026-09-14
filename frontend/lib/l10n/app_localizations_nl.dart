@@ -6727,4 +6727,31 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get accentUnlock => 'Ontgrendel met het supporterspakket';
+
+  @override
+  String get pushPromptTitle => 'Mis niets van je huis';
+
+  @override
+  String get pushPromptBody =>
+      'Krijg een seintje als iemand iets op een lijst zet, een taak eraan komt of een uitgave verrekend moet worden. Jij kiest waarover je hoort en je kunt het altijd aanpassen.';
+
+  @override
+  String get pushPromptEnable => 'Meldingen inschakelen';
+
+  @override
+  String get pushPromptLater => 'Nu niet';
+
+  @override
+  String get pushPromptDeniedHint =>
+      'Meldingen voor mitlist staan uit. Je kunt ze inschakelen in de instellingen van je telefoon.';
+
+  @override
+  String get notifPrefDeviceOffTitle => 'Meldingen staan uit op dit apparaat';
+
+  @override
+  String get notifPrefDeviceOffBody =>
+      'De huishoudinstellingen hieronder werken pas als dit apparaat meldingen mag tonen.';
+
+  @override
+  String get notifPrefDeviceOffAction => 'Inschakelen';
 }

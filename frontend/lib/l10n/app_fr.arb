@@ -6252,5 +6252,13 @@
   "accentBerry": "Baie",
   "accentViolet": "Violet",
   "accentLockedHint": "Les couleurs autres que Clémentine font partie du pack soutien.",
-  "accentUnlock": "Débloquer avec le pack soutien"
+  "accentUnlock": "Débloquer avec le pack soutien",
+  "pushPromptTitle": "Ne ratez rien de votre maison",
+  "pushPromptBody": "Recevez un rappel quand quelqu'un ajoute un article à une liste, qu'une corvée arrive à échéance ou qu'une dépense doit être réglée. Vous choisissez ce dont vous voulez être informé et pouvez changer d'avis à tout moment.",
+  "pushPromptEnable": "Activer les notifications",
+  "pushPromptLater": "Pas maintenant",
+  "pushPromptDeniedHint": "Les notifications de mitlist sont désactivées. Vous pouvez les activer dans les réglages de votre téléphone.",
+  "notifPrefDeviceOffTitle": "Les notifications sont désactivées sur cet appareil",
+  "notifPrefDeviceOffBody": "Les réglages du foyer ci-dessous ne s'appliqueront que lorsque cet appareil pourra afficher des notifications.",
+  "notifPrefDeviceOffAction": "Activer"
 }

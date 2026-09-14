@@ -15,9 +15,12 @@ const _prefDeviceTokenId = 'fcm_device_token_id';
 
 /// Handles Firebase Cloud Messaging setup and device token registration.
 ///
-/// Call [FcmService.init] once after the user is authenticated.
-/// The service registers the FCM token with the backend so the server can
-/// send push notifications to this device.
+/// Call [FcmService.init] once after the user is authenticated. It wires the
+/// message listeners and, when the OS permission is already granted,
+/// registers the device token with the backend. It never shows the system
+/// permission dialog: that is [requestPermission], which the app calls at a
+/// moment of its choosing (after the user has done their first thing in a
+/// household, see `PushPromptGate`) rather than on the first cold start.
 ///
 /// Subscribe to [FcmService.onForegroundMessage] to show in-app banners
 /// for notifications that arrive while the app is open.
@@ -48,13 +51,16 @@ class FcmService {
   /// For cold-start taps (app killed), use [checkInitialMessage] instead.
   static Stream<RemoteMessage> get onNotificationTap => _tapController.stream;
 
+  /// FCM is a mobile-only transport; web uses VAPID, desktop has no push.
+  static bool get isSupported =>
+      !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+
   /// Ensures the default Firebase app exists. Safe to call multiple times.
   ///
   /// Returns false when Firebase config is missing (e.g. no google-services.json
   /// in a local dev build). Call from [main] before registering background handlers.
   static Future<bool> ensureFirebaseCore() async {
-    if (kIsWeb) return false;
-    if (!Platform.isAndroid && !Platform.isIOS) return false;
+    if (!isSupported) return false;
     if (Firebase.apps.isNotEmpty) return true;
     try {
       await Firebase.initializeApp();
@@ -65,35 +71,37 @@ class FcmService {
     }
   }
 
-  /// Initialise Firebase and register the FCM device token with the backend.
-  ///
-  /// Safe to call multiple times; re-registers only when the token changes.
-  /// Returns true when FCM listeners were registered successfully.
-  static Future<bool> init(Dio dio) async {
-    if (kIsWeb) return false; // web uses VAPID, not FCM
-    if (!Platform.isAndroid && !Platform.isIOS) return false;
+  static bool _isGranted(AuthorizationStatus status) =>
+      status == AuthorizationStatus.authorized ||
+      status == AuthorizationStatus.provisional;
 
+  /// Whether this device may show notifications, read without prompting.
+  ///
+  /// Android 12 and older have no runtime permission and report authorized.
+  static Future<bool> hasPermission() async {
+    if (!isSupported || Firebase.apps.isEmpty) return false;
+    try {
+      final settings =
+          await FirebaseMessaging.instance.getNotificationSettings();
+      return _isGranted(settings.authorizationStatus);
+    } catch (e) {
+      _log.w('FCM getNotificationSettings failed: $e');
+      return false;
+    }
+  }
+
+  /// Initialise Firebase, wire the message listeners, and register the FCM
+  /// device token with the backend when the OS permission is already granted.
+  ///
+  /// Never shows the permission dialog. Safe to call multiple times;
+  /// re-registers only when the token changes. Returns true when the
+  /// listeners were registered, whether or not permission is granted, so the
+  /// caller can subscribe to the streams once and have them start delivering
+  /// as soon as [requestPermission] succeeds later.
+  static Future<bool> init(Dio dio) async {
     if (!await ensureFirebaseCore()) return false;
 
     final messaging = FirebaseMessaging.instance;
-
-    final settings = await messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
-    if (settings.authorizationStatus == AuthorizationStatus.denied) {
-      _log.i('Push permission denied');
-      return false;
-    }
-
-    final token = await messaging.getToken();
-    if (token == null) {
-      _log.w('FCM token is null');
-      return false;
-    }
-
-    await _registerToken(dio, token);
 
     // Cancel any existing subscriptions before re-registering to prevent
     // duplicate handlers stacking across logout/login cycles.
@@ -116,7 +124,49 @@ class FcmService {
     _tapSub = FirebaseMessaging.onMessageOpenedApp.listen((message) {
       _tapController.add(message);
     });
+
+    final settings = await messaging.getNotificationSettings();
+    if (_isGranted(settings.authorizationStatus)) {
+      await _registerCurrentToken(dio, messaging);
+    } else {
+      _log.i('Push permission not granted yet; token registration deferred');
+    }
     return true;
+  }
+
+  /// Shows the OS notification permission dialog and, when the user allows
+  /// it, registers the device token with the backend.
+  ///
+  /// On Android 13+ the system stops showing the dialog after two refusals
+  /// and this returns [AuthorizationStatus.denied] at once; the caller should
+  /// then point the user at the phone's settings.
+  static Future<AuthorizationStatus> requestPermission(Dio dio) async {
+    if (!await ensureFirebaseCore()) return AuthorizationStatus.notDetermined;
+
+    final messaging = FirebaseMessaging.instance;
+    final settings = await messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+    if (_isGranted(settings.authorizationStatus)) {
+      await _registerCurrentToken(dio, messaging);
+    } else {
+      _log.i('Push permission denied');
+    }
+    return settings.authorizationStatus;
+  }
+
+  static Future<void> _registerCurrentToken(
+    Dio dio,
+    FirebaseMessaging messaging,
+  ) async {
+    final token = await messaging.getToken();
+    if (token == null) {
+      _log.w('FCM token is null');
+      return;
+    }
+    await _registerToken(dio, token);
   }
 
   /// Cancels all active FCM stream subscriptions.
@@ -135,8 +185,7 @@ class FcmService {
   /// Returns the notification that launched the app from a killed state, or
   /// null if the app was opened normally.  Call after [init] completes.
   static Future<RemoteMessage?> checkInitialMessage() async {
-    if (kIsWeb) return null;
-    if (!Platform.isAndroid && !Platform.isIOS) return null;
+    if (!isSupported) return null;
     if (Firebase.apps.isEmpty) return null;
     try {
       return await FirebaseMessaging.instance.getInitialMessage();
@@ -150,8 +199,7 @@ class FcmService {
   ///
   /// Call during logout so the user stops receiving push notifications.
   static Future<void> unregisterToken(Dio dio) async {
-    if (kIsWeb) return;
-    if (!Platform.isAndroid && !Platform.isIOS) return;
+    if (!isSupported) return;
     final prefs = await SharedPreferences.getInstance();
     final id = prefs.getString(_prefDeviceTokenId);
     try {
