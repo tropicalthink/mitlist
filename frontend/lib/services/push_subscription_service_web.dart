@@ -75,6 +75,12 @@ class PushSubscriptionService {
     }
   }
 
+  /// Whether this browser holds a subscription the backend knows about.
+  Future<bool> isSubscribed() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_subscribedKey) == true;
+  }
+
   Future<void> unsubscribe() async {
     try {
       final prefs = await SharedPreferences.getInstance();

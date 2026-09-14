@@ -939,6 +939,13 @@ FROM recipes_table;
     );
   }
 
+  /// Number of queued ops, reactive. Emits after every insert and delete, so
+  /// a listener sees the enqueue of a user's change even when the coordinator
+  /// drains it a moment later.
+  Stream<int> watchOutboxCount() {
+    return outboxOps.count().watchSingle();
+  }
+
   /// Drops still-queued ops of [type] targeting [entityId]. Used to coalesce
   /// last-write-wins ops (e.g. pinwall note moves) so only the newest queued
   /// value survives.

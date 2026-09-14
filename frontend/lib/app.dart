@@ -6,7 +6,7 @@ import 'l10n/app_localizations.dart';
 import 'theme/theme.dart';
 import 'router.dart';
 import 'providers/list_provider.dart'
-    show sseServiceProvider, grocerySeedProvider;
+    show sseServiceProvider, grocerySeedProvider, appDatabaseProvider;
 import 'providers/outbox_provider.dart';
 import 'services/api_client.dart' show dioProvider;
 import 'services/canonical_display.dart' show setGroceryDisplayLang;
@@ -17,7 +17,9 @@ import 'providers/notification_provider.dart';
 import 'services/error_reporter.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'services/fcm_service.dart';
-import 'services/push_subscription_service.dart';
+import 'services/push_permission.dart';
+import 'services/push_prompt_gate.dart';
+import 'widgets/push_permission_sheet.dart';
 import 'providers/billing_provider.dart' show iapServiceProvider;
 import 'providers/initial_sync_provider.dart';
 import 'services/iap_service.dart';
@@ -39,6 +41,7 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
   final _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
   StreamSubscription? _fcmSub;
   StreamSubscription? _fcmTapSub;
+  PushPromptGate? _pushPromptGate;
   bool _deferredInitDone = false;
 
   @override
@@ -81,10 +84,49 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
       );
     }
     _initPushSubscriptions();
+    _startPushPromptGate();
+  }
+
+  /// Offers push notifications after the user's first change inside a
+  /// household, not on the first cold start. The OS dialog only appears once
+  /// they have accepted the in-app explainer.
+  void _startPushPromptGate() {
+    if (!PushPermission.isSupported) return;
+    _pushPromptGate = PushPromptGate(
+      // Drift replays the current count on subscribe; skip it so ops left
+      // over from a previous offline session do not trigger the offer on
+      // launch, which is exactly the moment this gate exists to avoid.
+      firstActions: ref
+          .read(appDatabaseProvider)
+          .watchOutboxCount()
+          .skip(1)
+          .where((count) => count > 0),
+      hasHousehold: () => ref.read(currentGroupIdProvider) != null,
+      isDecided: PushPromptStore.isDecided,
+      hasSystemPermission: PushPermission.isGranted,
+      showPrompt: _offerPushNotifications,
+    )..start();
+  }
+
+  Future<void> _offerPushNotifications() async {
+    final context = rootNavigatorKey.currentContext;
+    if (context == null || !mounted) return;
+    final accepted = await showPushPermissionSheet(context);
+    // Swiping the sheet away counts as an answer too: asking again on the
+    // next tap would be nagging.
+    await PushPromptStore.markDecided();
+    if (accepted != true || !mounted) return;
+
+    final outcome = await PushPermission.request(ref.read(dioProvider));
+    if (outcome != PushPermissionOutcome.denied || !context.mounted) return;
+    final l10n = AppLocalizations.of(context);
+    if (l10n == null) return;
+    AppToast.info(context, l10n.pushPromptDeniedHint);
   }
 
   void _initPushSubscriptions() {
-    PushSubscriptionService().init();
+    // Listeners only; the token is registered when permission is already
+    // granted and otherwise after [_offerPushNotifications] succeeds.
     FcmService.init(ref.read(dioProvider)).then((ready) {
       if (!ready || !mounted) return;
 
@@ -180,6 +222,7 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
   void dispose() {
     _fcmSub?.cancel();
     _fcmTapSub?.cancel();
+    _pushPromptGate?.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }

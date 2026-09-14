@@ -6252,5 +6252,13 @@
   "accentBerry": "Bes",
   "accentViolet": "Violet",
   "accentLockedHint": "Andere kleuren dan Clementine horen bij het supporterspakket.",
-  "accentUnlock": "Ontgrendel met het supporterspakket"
+  "accentUnlock": "Ontgrendel met het supporterspakket",
+  "pushPromptTitle": "Mis niets van je huis",
+  "pushPromptBody": "Krijg een seintje als iemand iets op een lijst zet, een taak eraan komt of een uitgave verrekend moet worden. Jij kiest waarover je hoort en je kunt het altijd aanpassen.",
+  "pushPromptEnable": "Meldingen inschakelen",
+  "pushPromptLater": "Nu niet",
+  "pushPromptDeniedHint": "Meldingen voor mitlist staan uit. Je kunt ze inschakelen in de instellingen van je telefoon.",
+  "notifPrefDeviceOffTitle": "Meldingen staan uit op dit apparaat",
+  "notifPrefDeviceOffBody": "De huishoudinstellingen hieronder werken pas als dit apparaat meldingen mag tonen.",
+  "notifPrefDeviceOffAction": "Inschakelen"
 }

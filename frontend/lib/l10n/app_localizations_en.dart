@@ -6660,4 +6660,31 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accentUnlock => 'Unlock with the supporter pack';
+
+  @override
+  String get pushPromptTitle => 'Don\'t miss a beat of your house';
+
+  @override
+  String get pushPromptBody =>
+      'Get a nudge when someone adds to a list, a chore comes due or an expense needs settling. You choose what to hear about, and you can change your mind any time.';
+
+  @override
+  String get pushPromptEnable => 'Turn on notifications';
+
+  @override
+  String get pushPromptLater => 'Not now';
+
+  @override
+  String get pushPromptDeniedHint =>
+      'Notifications are off for mitlist. You can turn them on in your phone\'s settings.';
+
+  @override
+  String get notifPrefDeviceOffTitle => 'Notifications are off on this device';
+
+  @override
+  String get notifPrefDeviceOffBody =>
+      'The household settings below only take effect once this device is allowed to show notifications.';
+
+  @override
+  String get notifPrefDeviceOffAction => 'Turn on';
 }
