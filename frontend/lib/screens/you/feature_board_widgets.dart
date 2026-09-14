@@ -176,8 +176,7 @@ class FeatureBoardVoteButton extends StatelessWidget {
 
     return Semantics(
       button: enabled,
-      label:
-          hasVoted ? l10n.featureBoardRemoveUpvote : l10n.featureBoardUpvote,
+      label: hasVoted ? l10n.featureBoardRemoveUpvote : l10n.featureBoardUpvote,
       value: l10n.featureBoardVotes(voteCount),
       child: Material(
         color: background,

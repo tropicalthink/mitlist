@@ -69,7 +69,8 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
     try {
       final authService = await ref.read(authServiceProviderAsync.future);
       final rememberMe = await authService.consumePendingOAuthRememberMe();
-      final parkedNavigation = await authService.consumePendingOAuthNavigation();
+      final parkedNavigation =
+          await authService.consumePendingOAuthNavigation();
       if (handoff != null && handoff.isNotEmpty) {
         await authService.exchangeOAuthHandoff(
           handoff,
