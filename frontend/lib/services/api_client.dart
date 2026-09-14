@@ -5,6 +5,9 @@ import 'package:logger/logger.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/api_config.dart';
 import '../providers/auth_provider.dart';
+import '../providers/list_provider.dart' show appDatabaseProvider;
+import '../providers/outbox_provider.dart' show connectivityServiceProvider;
+import 'response_cache_interceptor.dart';
 import 'token_refresh_coordinator.dart';
 import 'token_store.dart';
 import 'dio_platform.dart';
@@ -221,6 +224,16 @@ Dio createApiClient([Ref? ref, TokenStore? tokenStore]) {
 
   configureDioForPlatform(dio);
 
+  // First in the chain so a transport failure is answered from the cache
+  // before the refresh interceptor ever sees it (it only cares about 401s),
+  // and so a known-offline GET never reaches the wire at all. Standalone
+  // clients built without a [Ref] have no database to cache into.
+  if (ref != null) {
+    dio.interceptors.add(ResponseCacheInterceptor(
+      store: () => DriftResponseCacheStore(ref.read(appDatabaseProvider)),
+      isKnownOffline: () => ref.read(connectivityServiceProvider).isKnownOffline,
+    ));
+  }
   dio.interceptors.add(TokenRefreshInterceptor(dio, ref, store));
   dio.interceptors.add(AuthInterceptor(store));
 
