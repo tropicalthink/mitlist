@@ -25,7 +25,7 @@ func TestRecipe_CreateRecipe(t *testing.T) {
 		"prep_time":   10,
 		"cook_time":   20,
 		"servings":    2,
-		"is_public":   false,
+		"visibility":  models.RecipeVisibilityPrivate,
 	}
 	rec := execRequest(t, router, "POST", "/api/v1/recipes", body, token)
 	requireStatus(t, rec, http.StatusCreated)
