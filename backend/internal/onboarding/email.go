@@ -21,6 +21,7 @@ type Email struct {
 // where this person's unsubscribe link points.
 type Links struct {
 	AppURL         string
+	HeroURL        string
 	UnsubscribeURL string
 }
 
@@ -31,6 +32,10 @@ type emailData struct {
 	Greeting       string
 	Intro          string
 	Tips           []Tip
+	SeriesPosition int
+	SeriesTotal    int
+	HeroURL        string
+	HeroAlt        string
 	ButtonLabel    string
 	ButtonURL      string
 	UnsubscribeURL string
@@ -83,13 +88,24 @@ var emailTemplate = template.Must(template.New("onboarding-email").Parse(`<!DOCT
         <tr>
           <td style="background:#1a1714;padding:0 7px 7px 0;">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#fffcf7;border:2px solid #1a1714;">
+              <!-- Static, content-specific illustration for this series step. -->
+              <tr>
+                <td style="background:#f7f4ec;border-bottom:2px solid #1a1714;">
+                  <a href="{{.ButtonURL}}" style="display:block;text-decoration:none;">
+                    <img src="{{.HeroURL}}" width="556" alt="{{.HeroAlt}}" style="display:block;width:100%;max-width:556px;height:auto;border:0;line-height:100%;">
+                  </a>
+                </td>
+              </tr>
               <tr>
                 <td class="card-pad" style="padding:34px 36px 30px;">
 
-                  <!-- Eyebrow chip -->
-                  <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                  <!-- Eyebrow and series progress -->
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                     <tr>
-                      <td style="background:#f97316;border:2px solid #1a1714;padding:4px 10px;font-family:'JetBrains Mono',Menlo,Consolas,monospace;font-size:11px;line-height:14px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#1a1714;">{{.Eyebrow}}</td>
+                      <td align="left">
+                        <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td style="background:#f97316;border:2px solid #1a1714;padding:4px 10px;font-family:'JetBrains Mono',Menlo,Consolas,monospace;font-size:11px;line-height:14px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#1a1714;">{{.Eyebrow}}</td></tr></table>
+                      </td>
+                      <td align="right" style="font-family:'JetBrains Mono',Menlo,Consolas,monospace;font-size:11px;line-height:14px;font-weight:700;letter-spacing:0.08em;color:#5d4037;">EMAIL {{.SeriesPosition}} / {{.SeriesTotal}}</td>
                     </tr>
                   </table>
 
@@ -114,8 +130,11 @@ var emailTemplate = template.Must(template.New("onboarding-email").Parse(`<!DOCT
                   </table>
                   {{end}}
 
-                  <!-- Button with flat offset shadow -->
+                  <!-- Action block and button with flat offset shadow -->
                   <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:28px auto 0;">
+                    <tr>
+                      <td align="center" style="padding:0 0 8px;font-family:'JetBrains Mono',Menlo,Consolas,monospace;font-size:11px;line-height:14px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#5d4037;">Try it now</td>
+                    </tr>
                     <tr>
                       <td style="background:#1a1714;padding:0 5px 5px 0;">
                         <a href="{{.ButtonURL}}" style="display:block;background:#f97316;border:2px solid #1a1714;padding:14px 26px;font-family:'Space Grotesk',Helvetica,Arial,sans-serif;font-size:16px;line-height:20px;font-weight:700;color:#1a1714;text-decoration:none;text-align:center;">{{.ButtonLabel}} &rarr;</a>
@@ -154,6 +173,13 @@ var emailTemplate = template.Must(template.New("onboarding-email").Parse(`<!DOCT
 // firstName may be empty; the greeting is dropped rather than saying "Hi ,".
 func Render(step Step, firstName string, links Links) Email {
 	buttonURL := joinURL(links.AppURL, step.CTAPath)
+	seriesPosition := 1
+	for i, candidate := range Steps {
+		if candidate.Key == step.Key {
+			seriesPosition = i + 1
+			break
+		}
+	}
 	greeting := ""
 	if name := strings.TrimSpace(firstName); name != "" {
 		greeting = "Hi " + name + "."
@@ -179,6 +205,10 @@ func Render(step Step, firstName string, links Links) Email {
 		Greeting:       greeting,
 		Intro:          step.Intro,
 		Tips:           step.Tips,
+		SeriesPosition: seriesPosition,
+		SeriesTotal:    len(Steps),
+		HeroURL:        links.HeroURL,
+		HeroAlt:        step.HeroAlt,
 		ButtonLabel:    step.CTALabel,
 		ButtonURL:      buttonURL,
 		UnsubscribeURL: links.UnsubscribeURL,
@@ -202,4 +232,9 @@ func Render(step Step, firstName string, links Links) Email {
 // token.
 func UnsubscribeURL(publicAPIURL, apiPrefix, token string) string {
 	return fmt.Sprintf("%s/v1/email/unsubscribe?token=%s", joinURL(publicAPIURL, apiPrefix), token)
+}
+
+// HeroURL is the public, cacheable static illustration used by one series step.
+func HeroURL(publicAPIURL, apiPrefix, filename string) string {
+	return joinURL(joinURL(publicAPIURL, apiPrefix), "/v1/email/assets/"+filename)
 }

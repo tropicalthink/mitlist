@@ -112,6 +112,19 @@ func TestMigration_Rollback(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, deletedAtExists, "list_items.deleted_at should exist after migration up")
 
+	var onboardingAttemptedAtExists bool
+	err = pool.QueryRow(ctx, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM information_schema.columns
+			WHERE table_schema = 'public'
+			  AND table_name = 'onboarding_email_sends'
+			  AND column_name = 'attempted_at'
+		)
+	`).Scan(&onboardingAttemptedAtExists)
+	require.NoError(t, err)
+	assert.True(t, onboardingAttemptedAtExists, "onboarding_email_sends.attempted_at should exist after migration up")
+
 	// Run migrations down.
 	err = m.Down()
 	require.NoError(t, err)

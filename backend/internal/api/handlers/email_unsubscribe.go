@@ -37,6 +37,21 @@ func NewEmailUnsubscribeHandler(cfg *config.Config, store tipsOptOutStore) *Emai
 func (h *EmailUnsubscribeHandler) RegisterRoutes(r chi.Router) {
 	r.Get("/email/unsubscribe", h.Unsubscribe)
 	r.Post("/email/unsubscribe", h.Unsubscribe)
+	r.Get("/email/assets/{filename}", h.Hero)
+}
+
+// Hero serves a campaign's embedded static illustration. It contains no recipient
+// identifier or tracking parameter and is safe for public, long-lived caches.
+func (h *EmailUnsubscribeHandler) Hero(w http.ResponseWriter, r *http.Request) {
+	data, ok := onboarding.HeroImage(chi.URLParam(r, "filename"))
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+	w.Header().Set("Content-Type", "image/jpeg")
+	w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(data)
 }
 
 // Unsubscribe turns the tips series off for the account named by the token.

@@ -24,6 +24,10 @@ type Step struct {
 	Heading string
 	Intro   string
 	Tips    []Tip
+	// HeroFilename selects the embedded static illustration for this step;
+	// HeroAlt describes the linked image to screen-reader users.
+	HeroFilename string
+	HeroAlt      string
 	// CTA is the button. Path is relative to the web app origin.
 	CTALabel string
 	CTAPath  string
@@ -51,8 +55,10 @@ var Steps = []Step{
 			{Title: "Send one invite link", Body: "Open your household, tap Invite, and share the link in your house group chat. Anyone who opens it lands in your household, no codes to type."},
 			{Title: "Start with the shopping list", Body: "It is the easiest habit to build together. One shared list, and whoever is in the shop just ticks things off."},
 		},
-		CTALabel: "Open your household",
-		CTAPath:  "/home",
+		HeroFilename: "day1-household.jpg",
+		HeroAlt:      "Invite your housemates and start one shared shopping list",
+		CTALabel:     "Open your household",
+		CTAPath:      "/home",
 	},
 	{
 		Key:     "day3-lists",
@@ -66,8 +72,10 @@ var Steps = []Step{
 			{Title: "Scan a paper note", Body: "The scanner reads a handwritten list straight into the app. It runs on your phone; nothing is uploaded."},
 			{Title: "From meal plan to list", Body: "Plan the week's dinners and send the ingredients to the shopping list in one tap."},
 		},
-		CTALabel: "Open your lists",
-		CTAPath:  "/lists",
+		HeroFilename: "day3-lists.jpg",
+		HeroAlt:      "Scan a paper list, sort it by aisle, and add meal-plan ingredients",
+		CTALabel:     "Open your lists",
+		CTAPath:      "/lists",
 	},
 	{
 		Key:     "day7-money",
@@ -81,8 +89,10 @@ var Steps = []Step{
 			{Title: "Rent, internet, streaming", Body: "Set an expense to repeat monthly and it books itself. No one has to remember the first of the month."},
 			{Title: "Settle up", Body: "When someone pays another back, record it and the balance goes to zero. Snap a receipt onto any expense for later."},
 		},
-		CTALabel: "Open money",
-		CTAPath:  "/money",
+		HeroFilename: "day7-money.jpg",
+		HeroAlt:      "Split expenses, repeat bills, and settle household balances",
+		CTALabel:     "Open money",
+		CTAPath:      "/money",
 	},
 	{
 		Key:     "day14-chores",
@@ -96,8 +106,10 @@ var Steps = []Step{
 			{Title: "The pinwall", Body: "For everything that is not a chore: notes for the house, the wifi password, a reminder that the plumber comes Thursday. Notes can carry reminders."},
 			{Title: "Your calendar, your way", Body: "Chores, meals and pinwall dates all show up on the calendar tab, and you can export them to the calendar app you already use."},
 		},
-		CTALabel: "Open chores",
-		CTAPath:  "/chores",
+		HeroFilename: "day14-chores.jpg",
+		HeroAlt:      "Rotate recurring chores and send automatic reminders",
+		CTALabel:     "Open chores",
+		CTAPath:      "/chores",
 	},
 	{
 		Key:     "day30-checkin",
@@ -112,8 +124,10 @@ var Steps = []Step{
 			{Title: "Home Assistant", Body: "Run a smart home? The mitlist integration shows your lists and chores on your dashboard."},
 			{Title: "Tell us what is missing", Body: "The feedback board is where features come from. If something is clumsy, say so; we read all of it."},
 		},
-		CTALabel: "Open mitlist",
-		CTAPath:  "/home",
+		HeroFilename: "day30-checkin.jpg",
+		HeroAlt:      "Discover recipes, weekly summaries, smart-home tools, and feedback",
+		CTALabel:     "Open mitlist",
+		CTAPath:      "/home",
 	},
 }
 

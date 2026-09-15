@@ -171,6 +171,41 @@ func (s *Service) SendHTMLWithHeaders(to, subject, html, text string, headers []
 	return s.sendSMTPWithFallback(s.fromAddress(), to, buildMultipartMessage(s.fromHeader(), to, subject, text, html, headers...))
 }
 
+// SendHTMLWithHeadersOnce submits a message to exactly one configured
+// provider. It is for non-critical campaigns where an ambiguous provider
+// timeout must not fan out into a duplicate through the normal fallback path.
+// Transactional account mail should keep using SendHTMLWithHeaders.
+func (s *Service) SendHTMLWithHeadersOnce(to, subject, html, text string, headers []Header) error {
+	if s.sesEnabled() {
+		if err := s.sendViaSES(s.fromHeader(), to, subject, html, text, headers); err != nil {
+			return err
+		}
+		s.log.Info().Str("provider", "ses").Str("to", to).Msg("email sent")
+		return nil
+	}
+
+	msg := buildMultipartMessage(s.fromHeader(), to, subject, text, html, headers...)
+	type smtpProvider struct {
+		name, host, user, pass string
+		port                   int
+	}
+	providers := []smtpProvider{
+		{"sendgrid", s.cfg.SendGridSMTPHost, s.cfg.SendGridSMTPUser, s.cfg.SendGridSMTPPass, s.cfg.SendGridSMTPPort},
+		{"brevo", s.cfg.BrevoSMTPHost, s.cfg.BrevoSMTPUser, s.cfg.BrevoSMTPPass, s.cfg.BrevoSMTPPort},
+	}
+	for _, provider := range providers {
+		if provider.host == "" || provider.port == 0 {
+			continue
+		}
+		if err := s.sendViaSMTP(provider.host, provider.port, provider.user, provider.pass, s.fromAddress(), []string{to}, msg); err != nil {
+			return fmt.Errorf("send email via %s: %w", provider.name, err)
+		}
+		s.log.Info().Str("provider", provider.name).Str("to", to).Msg("email sent")
+		return nil
+	}
+	return fmt.Errorf("send email: no mail provider configured")
+}
+
 // fromAddress is the bare sender address: the SMTP envelope sender, and what
 // must be a verified identity at the provider.
 func (s *Service) fromAddress() string {
