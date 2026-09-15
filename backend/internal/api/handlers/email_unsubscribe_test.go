@@ -72,3 +72,34 @@ func TestEmailUnsubscribe_BadTokenIsRejectedWithoutTouchingStore(t *testing.T) {
 		t.Errorf("store touched for bad tokens: %v", store.calls)
 	}
 }
+
+func TestEmailUnsubscribe_HeroIsPublicAndCacheable(t *testing.T) {
+	r, _ := newUnsubscribeRouter(&fakeTipsStore{})
+	req := httptest.NewRequest(http.MethodGet, "/email/assets/day1-household.jpg", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", w.Code)
+	}
+	if got := w.Header().Get("Content-Type"); got != "image/jpeg" {
+		t.Errorf("Content-Type = %q", got)
+	}
+	if got := w.Header().Get("Cache-Control"); got != "public, max-age=31536000, immutable" {
+		t.Errorf("Cache-Control = %q", got)
+	}
+	if body := w.Body.Bytes(); len(body) < 3 || body[0] != 0xff || body[1] != 0xd8 || body[2] != 0xff {
+		t.Error("response is not an embedded JPEG")
+	}
+}
+
+func TestEmailUnsubscribe_HeroRejectsUnknownAssets(t *testing.T) {
+	r, _ := newUnsubscribeRouter(&fakeTipsStore{})
+	req := httptest.NewRequest(http.MethodGet, "/email/assets/not-a-campaign-file.jpg", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want 404", w.Code)
+	}
+}
