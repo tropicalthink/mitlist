@@ -3,6 +3,7 @@ package mail
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/service/sesv2"
@@ -173,5 +174,25 @@ func TestSendHTML_FallsBackToSMTPWhenSESFails(t *testing.T) {
 	}
 	if fake.calls != 1 {
 		t.Errorf("SES attempted %d times, want 1", fake.calls)
+	}
+}
+
+func TestSendHTMLWithHeadersOnce_DoesNotFallbackWhenSESFails(t *testing.T) {
+	fake := &fakeSES{err: errors.New("ambiguous ses timeout")}
+	s := newTestService(t, &config.Config{
+		SESRegion:     "eu-central-1",
+		MailFromEmail: "noreply@mitlist.me",
+		BrevoSMTPHost: "smtp.example.test",
+		BrevoSMTPPort: 587,
+		BrevoSMTPUser: "user",
+		BrevoSMTPPass: "pass",
+	}, fake)
+
+	err := s.SendHTMLWithHeadersOnce("user@example.com", "Tips", "<p>h</p>", "t", nil)
+	if err == nil || !strings.Contains(err.Error(), "ambiguous ses timeout") {
+		t.Fatalf("error = %v, want the SES failure", err)
+	}
+	if fake.calls != 1 {
+		t.Fatalf("SES calls = %d, want exactly one provider submission", fake.calls)
 	}
 }
