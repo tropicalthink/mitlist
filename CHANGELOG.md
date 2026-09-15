@@ -8,6 +8,18 @@ follow [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Every tip in the onboarding emails links to the screen it describes (the
+  title and an "Open" link on each sticky note, and an `Open:` line in the
+  plain-text body), and a step carries at most three tips; the day-30 email
+  drops the Home Assistant tip to fit.
+
+- The app's sections (`/home`, `/lists`, `/money`, `/chores`, `/recipes`,
+  `/calendar`, `/you`, `/scanner` and their sub-paths) are now App Link / Universal Link
+  paths on app.mitlist.me, so the buttons in the onboarding tips emails open
+  the installed app instead of the web app in a browser. Needs a new store
+  build on both platforms; auth, `/auth/callback` and `/premium` stay
+  browser-only on purpose.
+
 - Onboarding tips: five emails over the first month after sign-up (day 1, 3,
   7, 14, 30) on households, lists, money, chores and the rest of the app, in
   the same paper / ink / orange style as the account emails. Sent by an

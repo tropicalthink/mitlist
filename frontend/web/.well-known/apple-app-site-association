@@ -4,7 +4,26 @@
     "details": [
       {
         "appID": "__APPLE_TEAM_ID__.me.mitlist",
-        "paths": ["/join/*", "/r/*", "/verify", "/reset-password"]
+        "paths": [
+          "/join/*",
+          "/r/*",
+          "/verify",
+          "/reset-password",
+          "/home",
+          "/home/*",
+          "/lists",
+          "/lists/*",
+          "/money",
+          "/money/*",
+          "/chores",
+          "/chores/*",
+          "/recipes",
+          "/recipes/*",
+          "/calendar",
+          "/you",
+          "/you/*",
+          "/scanner"
+        ]
       }
     ]
   }

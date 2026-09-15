@@ -25,13 +25,20 @@ type Links struct {
 	UnsubscribeURL string
 }
 
+// tipView is a Tip with its path resolved against the app origin.
+type tipView struct {
+	Title string
+	Body  string
+	URL   string
+}
+
 type emailData struct {
 	Preheader      string
 	Eyebrow        string
 	Heading        string
 	Greeting       string
 	Intro          string
-	Tips           []Tip
+	Tips           []tipView
 	SeriesPosition int
 	SeriesTotal    int
 	HeroURL        string
@@ -120,8 +127,9 @@ var emailTemplate = template.Must(template.New("onboarding-email").Parse(`<!DOCT
                         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#fff9c4;border:2px solid #1a1714;">
                           <tr>
                             <td style="padding:14px 16px 16px;">
-                              <div style="font-family:'JetBrains Mono',Menlo,Consolas,monospace;font-size:11px;line-height:14px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#5d4037;">{{.Title}}</div>
+                              <a href="{{.URL}}" style="display:block;font-family:'JetBrains Mono',Menlo,Consolas,monospace;font-size:11px;line-height:14px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#5d4037;text-decoration:none;">{{.Title}}</a>
                               <div style="margin-top:6px;font-family:'Space Grotesk',Helvetica,Arial,sans-serif;font-size:15px;line-height:22px;color:#1a1714;">{{.Body}}</div>
+                              <a href="{{.URL}}" style="display:inline-block;margin-top:10px;font-family:'JetBrains Mono',Menlo,Consolas,monospace;font-size:11px;line-height:14px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#c2410c;text-decoration:underline;">Open &rarr;</a>
                             </td>
                           </tr>
                         </table>
@@ -173,6 +181,10 @@ var emailTemplate = template.Must(template.New("onboarding-email").Parse(`<!DOCT
 // firstName may be empty; the greeting is dropped rather than saying "Hi ,".
 func Render(step Step, firstName string, links Links) Email {
 	buttonURL := joinURL(links.AppURL, step.CTAPath)
+	tips := make([]tipView, 0, len(step.Tips))
+	for _, tip := range step.Tips {
+		tips = append(tips, tipView{Title: tip.Title, Body: tip.Body, URL: joinURL(links.AppURL, tip.Path)})
+	}
 	seriesPosition := 1
 	for i, candidate := range Steps {
 		if candidate.Key == step.Key {
@@ -191,8 +203,8 @@ func Render(step Step, firstName string, links Links) Email {
 		text.WriteString(greeting + " ")
 	}
 	text.WriteString(step.Intro + "\n")
-	for _, tip := range step.Tips {
-		text.WriteString("\n" + strings.ToUpper(tip.Title) + "\n" + tip.Body + "\n")
+	for _, tip := range tips {
+		text.WriteString("\n" + strings.ToUpper(tip.Title) + "\n" + tip.Body + "\nOpen: " + tip.URL + "\n")
 	}
 	text.WriteString("\n" + step.CTALabel + ": " + buttonURL + "\n")
 	text.WriteString("\nYou get these because you made a mitlist account. They stop after a few weeks; to stop them now, open this link:\n" + links.UnsubscribeURL + "\nAccount emails like password resets still arrive.\n")
@@ -204,7 +216,7 @@ func Render(step Step, firstName string, links Links) Email {
 		Heading:        step.Heading,
 		Greeting:       greeting,
 		Intro:          step.Intro,
-		Tips:           step.Tips,
+		Tips:           tips,
 		SeriesPosition: seriesPosition,
 		SeriesTotal:    len(Steps),
 		HeroURL:        links.HeroURL,
