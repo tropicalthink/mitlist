@@ -50,6 +50,20 @@
                 <!-- Buttons in the sign-up and password reset emails. -->
                 <data android:scheme="https" android:host="app.mitlist.me" android:pathPrefix="/verify" />
                 <data android:scheme="https" android:host="app.mitlist.me" android:pathPrefix="/reset-password" />
+                <!-- The app's own sections, so the buttons in the onboarding
+                     tips (and any other mail pointing at a tab) open the app
+                     rather than the web app in a browser. Auth routes,
+                     /auth/callback and /premium stay unclaimed on purpose:
+                     the web sign-in and the Polar return page must finish in
+                     the browser that started them. -->
+                <data android:scheme="https" android:host="app.mitlist.me" android:pathPrefix="/home" />
+                <data android:scheme="https" android:host="app.mitlist.me" android:pathPrefix="/lists" />
+                <data android:scheme="https" android:host="app.mitlist.me" android:pathPrefix="/money" />
+                <data android:scheme="https" android:host="app.mitlist.me" android:pathPrefix="/chores" />
+                <data android:scheme="https" android:host="app.mitlist.me" android:pathPrefix="/recipes" />
+                <data android:scheme="https" android:host="app.mitlist.me" android:pathPrefix="/calendar" />
+                <data android:scheme="https" android:host="app.mitlist.me" android:pathPrefix="/you" />
+                <data android:scheme="https" android:host="app.mitlist.me" android:pathPrefix="/scanner" />
             </intent-filter>
         </activity>
         <!-- The one activity for every mitlist:// link: the OAuth callback
