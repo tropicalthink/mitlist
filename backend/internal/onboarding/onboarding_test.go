@@ -90,6 +90,17 @@ func TestSteps_KeysUniqueAndOrdered(t *testing.T) {
 			t.Errorf("step %q reuses hero %q", s.Key, s.HeroFilename)
 		}
 		heroes[s.HeroFilename] = true
+		if len(s.Tips) > MaxTips {
+			t.Errorf("step %q asks for %d things; at most %d per email", s.Key, len(s.Tips), MaxTips)
+		}
+		for _, tip := range s.Tips {
+			if tip.Title == "" || tip.Body == "" {
+				t.Errorf("step %q has a tip missing copy", s.Key)
+			}
+			if !strings.HasPrefix(tip.Path, "/") {
+				t.Errorf("step %q tip %q does not link anywhere (path %q)", s.Key, tip.Title, tip.Path)
+			}
+		}
 	}
 }
 
@@ -119,6 +130,16 @@ func TestRender_CarriesUnsubscribeAndButton(t *testing.T) {
 	anon := Render(Steps[1], "  ", links)
 	if strings.Contains(anon.HTML, "Hi ") || strings.Contains(anon.Text, "Hi ") {
 		t.Error("greeting rendered with an empty name")
+	}
+	// Every tip is a link to the screen it talks about, in both bodies.
+	for _, tip := range Steps[1].Tips {
+		want := "https://app.mitlist.me" + tip.Path
+		if !strings.Contains(msg.HTML, `href="`+want+`"`) {
+			t.Errorf("HTML tip %q does not link to %s", tip.Title, want)
+		}
+		if !strings.Contains(msg.Text, "Open: "+want) {
+			t.Errorf("text tip %q does not link to %s", tip.Title, want)
+		}
 	}
 	if !strings.Contains(msg.HTML, `src="https://api.mitlist.me/api/v1/email/assets/day3-lists.jpg"`) {
 		t.Error("HTML lacks the onboarding hero")

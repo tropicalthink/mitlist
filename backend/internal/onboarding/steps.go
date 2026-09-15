@@ -33,10 +33,18 @@ type Step struct {
 	CTAPath  string
 }
 
-// Tip is one titled paragraph in the body of a step.
+// MaxTips caps how much one email asks of a person. Three things to try is
+// a nudge; more is a manual nobody reads.
+const MaxTips = 3
+
+// Tip is one titled paragraph in the body of a step. Each one links straight
+// to the screen where the reader can do what it describes, so the tip is a
+// button and not just a description.
 type Tip struct {
 	Title string
 	Body  string
+	// Path is where the tip opens, relative to the web app origin.
+	Path string
 }
 
 // Steps is the series, in order. Timings are the usual retention curve: the
@@ -52,8 +60,8 @@ var Steps = []Step{
 		Heading: "Get the others in",
 		Intro:   "mitlist works when the people you live with are in it too. Everything you add shows up on their phones the moment you add it, and the other way round.",
 		Tips: []Tip{
-			{Title: "Send one invite link", Body: "Open your household, tap Invite, and share the link in your house group chat. Anyone who opens it lands in your household, no codes to type."},
-			{Title: "Start with the shopping list", Body: "It is the easiest habit to build together. One shared list, and whoever is in the shop just ticks things off."},
+			{Title: "Send one invite link", Body: "Open your household, tap Invite, and share the link in your house group chat. Anyone who opens it lands in your household, no codes to type.", Path: "/home"},
+			{Title: "Start with the shopping list", Body: "It is the easiest habit to build together. One shared list, and whoever is in the shop just ticks things off.", Path: "/lists"},
 		},
 		HeroFilename: "day1-household.jpg",
 		HeroAlt:      "Invite your housemates and start one shared shopping list",
@@ -68,9 +76,9 @@ var Steps = []Step{
 		Heading: "Lists that keep up with you",
 		Intro:   "A few things the shopping list does that are easy to miss.",
 		Tips: []Tip{
-			{Title: "Sorted by aisle", Body: "Pick the store you shop at and the list groups itself the way the shop is laid out, so you stop walking back for the onions."},
-			{Title: "Scan a paper note", Body: "The scanner reads a handwritten list straight into the app. It runs on your phone; nothing is uploaded."},
-			{Title: "From meal plan to list", Body: "Plan the week's dinners and send the ingredients to the shopping list in one tap."},
+			{Title: "Sorted by aisle", Body: "Pick the store you shop at and the list groups itself the way the shop is laid out, so you stop walking back for the onions.", Path: "/you/shopping-locations"},
+			{Title: "Scan a paper note", Body: "The scanner reads a handwritten list straight into the app. It runs on your phone; nothing is uploaded.", Path: "/scanner"},
+			{Title: "From meal plan to list", Body: "Plan the week's dinners and send the ingredients to the shopping list in one tap.", Path: "/recipes/meal-plan"},
 		},
 		HeroFilename: "day3-lists.jpg",
 		HeroAlt:      "Scan a paper list, sort it by aisle, and add meal-plan ingredients",
@@ -85,9 +93,9 @@ var Steps = []Step{
 		Heading: "Split the bills once, then forget them",
 		Intro:   "Shared money is where most households get tense. mitlist keeps a running balance so nobody has to bring it up.",
 		Tips: []Tip{
-			{Title: "Add an expense, pick a split", Body: "Equal, by share, or exact amounts. Everyone involved sees it and the balances update straight away."},
-			{Title: "Rent, internet, streaming", Body: "Set an expense to repeat monthly and it books itself. No one has to remember the first of the month."},
-			{Title: "Settle up", Body: "When someone pays another back, record it and the balance goes to zero. Snap a receipt onto any expense for later."},
+			{Title: "Add an expense, pick a split", Body: "Equal, by share, or exact amounts. Everyone involved sees it and the balances update straight away.", Path: "/money"},
+			{Title: "Rent, internet, streaming", Body: "Set an expense to repeat monthly and it books itself. No one has to remember the first of the month.", Path: "/money/recurring"},
+			{Title: "Settle up", Body: "When someone pays another back, record it and the balance goes to zero. Snap a receipt onto any expense for later.", Path: "/money"},
 		},
 		HeroFilename: "day7-money.jpg",
 		HeroAlt:      "Split expenses, repeat bills, and settle household balances",
@@ -102,9 +110,9 @@ var Steps = []Step{
 		Heading: "Stop being the one who reminds everyone",
 		Intro:   "Set up the recurring jobs once and let the app do the nagging.",
 		Tips: []Tip{
-			{Title: "Rotation", Body: "Put the bins, the bathroom, the kitchen on a schedule and choose who is in the rotation. mitlist assigns the next person each time and reminds them."},
-			{Title: "The pinwall", Body: "For everything that is not a chore: notes for the house, the wifi password, a reminder that the plumber comes Thursday. Notes can carry reminders."},
-			{Title: "Your calendar, your way", Body: "Chores, meals and pinwall dates all show up on the calendar tab, and you can export them to the calendar app you already use."},
+			{Title: "Rotation", Body: "Put the bins, the bathroom, the kitchen on a schedule and choose who is in the rotation. mitlist assigns the next person each time and reminds them.", Path: "/chores"},
+			{Title: "The pinwall", Body: "For everything that is not a chore: notes for the house, the wifi password, a reminder that the plumber comes Thursday. Notes can carry reminders.", Path: "/home"},
+			{Title: "Your calendar, your way", Body: "Chores, meals and pinwall dates all show up on the calendar tab, and you can export them to the calendar app you already use.", Path: "/calendar"},
 		},
 		HeroFilename: "day14-chores.jpg",
 		HeroAlt:      "Rotate recurring chores and send automatic reminders",
@@ -117,12 +125,11 @@ var Steps = []Step{
 		Subject: "One month in: a few things you may have missed",
 		Eyebrow: "Month 1",
 		Heading: "Make it yours",
-		Intro:   "You have had mitlist for a month. Here is the rest of it.",
+		Intro:   "You have had mitlist for a month. Three more things worth a look.",
 		Tips: []Tip{
-			{Title: "Recipes from anywhere", Body: "Paste a link to a recipe and mitlist imports it, ingredients and all. Plan it for a day and the ingredients are one tap from the shopping list."},
-			{Title: "A weekly summary, if you want one", Body: "Turn on the weekly digest under notifications and get one email a week with what happened in the household. Off by default."},
-			{Title: "Home Assistant", Body: "Run a smart home? The mitlist integration shows your lists and chores on your dashboard."},
-			{Title: "Tell us what is missing", Body: "The feedback board is where features come from. If something is clumsy, say so; we read all of it."},
+			{Title: "Recipes from anywhere", Body: "Paste a link to a recipe and mitlist imports it, ingredients and all. Plan it for a day and the ingredients are one tap from the shopping list.", Path: "/recipes"},
+			{Title: "A weekly summary, if you want one", Body: "Turn on the weekly digest under notifications and get one email a week with what happened in the household. Off by default.", Path: "/you/notification-preferences"},
+			{Title: "Tell us what is missing", Body: "The feedback board is where features come from. If something is clumsy, say so; we read all of it.", Path: "/you/feature-board"},
 		},
 		HeroFilename: "day30-checkin.jpg",
 		HeroAlt:      "Discover recipes, weekly summaries, smart-home tools, and feedback",
