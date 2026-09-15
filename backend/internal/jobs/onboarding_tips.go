@@ -2,9 +2,11 @@ package jobs
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/mitlist-app/mitlist/internal/onboarding"
 	"github.com/mitlist-app/mitlist/internal/repositories"
@@ -14,7 +16,7 @@ import (
 
 // onboardingMailer is the slice of the mail service this job needs.
 type onboardingMailer interface {
-	SendHTMLWithHeaders(to, subject, html, text string, headers []mailservice.Header) error
+	SendHTMLWithHeadersOnce(to, subject, html, text string, headers []mailservice.Header) error
 }
 
 // onboardingCandidate is a person who may be owed a step.
@@ -29,15 +31,12 @@ type onboardingRepo interface {
 	// ListCandidates returns verified, non-guest, subscribed accounts created
 	// inside the series' overall reach. Anyone older is past every window.
 	ListCandidates(ctx context.Context, createdAfter time.Time, limit int) ([]onboardingCandidate, error)
-	// LedgerFor returns the send ledger of one person: step key -> entry.
-	LedgerFor(ctx context.Context, userID uuid.UUID) (map[string]onboardingLedgerEntry, error)
+	// ClaimStep atomically reserves one delivery before mail leaves the process.
+	// Competing scheduler instances may inspect the same candidate, but only one
+	// can claim a given (user, step) pair.
+	ClaimStep(ctx context.Context, userID uuid.UUID, step string) (bool, error)
 	MarkSent(ctx context.Context, userID uuid.UUID, step string) error
 	MarkFailed(ctx context.Context, userID uuid.UUID, step string, reason string) error
-}
-
-type onboardingLedgerEntry struct {
-	Sent           bool
-	FailedAttempts int
 }
 
 // OnboardingTips sends the post-sign-up tips series. Runs hourly; each run
@@ -57,8 +56,6 @@ type OnboardingTips struct {
 }
 
 const (
-	// onboardingMaxAttempts stops retrying a step that keeps failing.
-	onboardingMaxAttempts = 3
 	// onboardingPerRunCap bounds one run's sends. SES in production allows
 	// far more, but a job that drains a backlog gradually is easier to
 	// reason about and survives the sandbox's 200/day while testing.
@@ -124,14 +121,13 @@ func (j *OnboardingTips) run(ctx context.Context) (sent, failed int) {
 		if len(due) == 0 {
 			continue
 		}
-		ledger, err := j.repo.LedgerFor(ctx, c.ID)
-		if err != nil {
-			j.log.WithError(err).Error().Str("user_id", c.ID.String()).Msg("onboarding tips: read ledger failed")
-			continue
-		}
 		for _, step := range due {
-			entry := ledger[step.Key]
-			if entry.Sent || entry.FailedAttempts >= onboardingMaxAttempts {
+			claimed, err := j.repo.ClaimStep(ctx, c.ID, step.Key)
+			if err != nil {
+				j.log.WithError(err).Error().Str("user_id", c.ID.String()).Str("step", step.Key).Msg("onboarding tips: claim failed")
+				continue
+			}
+			if !claimed {
 				continue
 			}
 			if err := j.send(c, step); err != nil {
@@ -143,9 +139,9 @@ func (j *OnboardingTips) run(ctx context.Context) (sent, failed int) {
 				continue
 			}
 			if err := j.repo.MarkSent(ctx, c.ID, step.Key); err != nil {
-				// The mail is out; a ledger write failing is the one case
-				// that can double-send. Log loudly so it is seen.
-				j.log.WithError(err).Error().Str("user_id", c.ID.String()).Str("step", step.Key).Msg("onboarding tips: mark sent failed after delivery")
+				// ClaimStep already made the attempt durable, so a ledger write
+				// failure here cannot cause another delivery.
+				j.log.WithError(err).Error().Str("user_id", c.ID.String()).Str("step", step.Key).Msg("onboarding tips: record success failed")
 			}
 			sent++
 			// One step per person per run: two steps due at once (a stalled
@@ -159,12 +155,16 @@ func (j *OnboardingTips) run(ctx context.Context) (sent, failed int) {
 func (j *OnboardingTips) send(c onboardingCandidate, step onboarding.Step) error {
 	token := onboarding.UnsubscribeToken(j.secret, c.ID)
 	unsubscribe := onboarding.UnsubscribeURL(j.apiURL, j.apiPrefix, token)
-	msg := onboarding.Render(step, c.FirstName, onboarding.Links{AppURL: j.appURL, UnsubscribeURL: unsubscribe})
+	msg := onboarding.Render(step, c.FirstName, onboarding.Links{
+		AppURL:         j.appURL,
+		HeroURL:        onboarding.HeroURL(j.apiURL, j.apiPrefix, step.HeroFilename),
+		UnsubscribeURL: unsubscribe,
+	})
 	headers := []mailservice.Header{
 		{Name: "List-Unsubscribe", Value: "<" + unsubscribe + ">"},
 		{Name: "List-Unsubscribe-Post", Value: "List-Unsubscribe=One-Click"},
 	}
-	return j.mail.SendHTMLWithHeaders(c.Email, msg.Subject, msg.HTML, msg.Text, headers)
+	return j.mail.SendHTMLWithHeadersOnce(c.Email, msg.Subject, msg.HTML, msg.Text, headers)
 }
 
 // onboardingRepoImpl is the SQL behind the job.
@@ -199,34 +199,25 @@ func (r *onboardingRepoImpl) ListCandidates(ctx context.Context, createdAfter ti
 	return out, rows.Err()
 }
 
-func (r *onboardingRepoImpl) LedgerFor(ctx context.Context, userID uuid.UUID) (map[string]onboardingLedgerEntry, error) {
-	rows, err := r.db.Query(ctx, `
-		SELECT step, sent_at IS NOT NULL, failed_attempts
-		FROM onboarding_email_sends
-		WHERE user_id = $1
-	`, userID)
-	if err != nil {
-		return nil, err
+func (r *onboardingRepoImpl) ClaimStep(ctx context.Context, userID uuid.UUID, step string) (bool, error) {
+	var claimed bool
+	err := r.db.QueryRow(ctx, `
+		INSERT INTO onboarding_email_sends (user_id, step, attempted_at, last_error, updated_at)
+		VALUES ($1, $2, now(), NULL, now())
+		ON CONFLICT (user_id, step) DO NOTHING
+		RETURNING true
+	`, userID, step).Scan(&claimed)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
 	}
-	defer rows.Close()
-	out := map[string]onboardingLedgerEntry{}
-	for rows.Next() {
-		var key string
-		var e onboardingLedgerEntry
-		if err := rows.Scan(&key, &e.Sent, &e.FailedAttempts); err != nil {
-			return nil, err
-		}
-		out[key] = e
-	}
-	return out, rows.Err()
+	return claimed, err
 }
 
 func (r *onboardingRepoImpl) MarkSent(ctx context.Context, userID uuid.UUID, step string) error {
 	_, err := r.db.Exec(ctx, `
-		INSERT INTO onboarding_email_sends (user_id, step, sent_at, last_error, updated_at)
-		VALUES ($1, $2, now(), NULL, now())
-		ON CONFLICT (user_id, step) DO UPDATE
+		UPDATE onboarding_email_sends
 		SET sent_at = now(), last_error = NULL, updated_at = now()
+		WHERE user_id = $1 AND step = $2
 	`, userID, step)
 	return err
 }

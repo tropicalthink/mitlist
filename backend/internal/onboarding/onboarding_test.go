@@ -1,6 +1,8 @@
 package onboarding
 
 import (
+	"bytes"
+	"image/jpeg"
 	"strings"
 	"testing"
 	"time"
@@ -70,6 +72,7 @@ func TestDue_WindowsAndOldAccounts(t *testing.T) {
 
 func TestSteps_KeysUniqueAndOrdered(t *testing.T) {
 	seen := map[string]bool{}
+	heroes := map[string]bool{}
 	var prev time.Duration
 	for _, s := range Steps {
 		if seen[s.Key] {
@@ -80,14 +83,22 @@ func TestSteps_KeysUniqueAndOrdered(t *testing.T) {
 			t.Errorf("step %q (after %v) is not later than the one before (%v)", s.Key, s.After, prev)
 		}
 		prev = s.After
-		if s.Subject == "" || s.Heading == "" || len(s.Tips) == 0 || s.CTAPath == "" {
+		if s.Subject == "" || s.Heading == "" || len(s.Tips) == 0 || s.CTAPath == "" || s.HeroFilename == "" || s.HeroAlt == "" {
 			t.Errorf("step %q is missing copy", s.Key)
 		}
+		if heroes[s.HeroFilename] {
+			t.Errorf("step %q reuses hero %q", s.Key, s.HeroFilename)
+		}
+		heroes[s.HeroFilename] = true
 	}
 }
 
 func TestRender_CarriesUnsubscribeAndButton(t *testing.T) {
-	links := Links{AppURL: "https://app.mitlist.me/", UnsubscribeURL: "https://api.mitlist.me/api/v1/email/unsubscribe?token=abc"}
+	links := Links{
+		AppURL:         "https://app.mitlist.me/",
+		HeroURL:        "https://api.mitlist.me/api/v1/email/assets/day3-lists.jpg",
+		UnsubscribeURL: "https://api.mitlist.me/api/v1/email/unsubscribe?token=abc",
+	}
 	msg := Render(Steps[1], "Sam", links)
 
 	if msg.Subject != Steps[1].Subject {
@@ -109,6 +120,15 @@ func TestRender_CarriesUnsubscribeAndButton(t *testing.T) {
 	if strings.Contains(anon.HTML, "Hi ") || strings.Contains(anon.Text, "Hi ") {
 		t.Error("greeting rendered with an empty name")
 	}
+	if !strings.Contains(msg.HTML, `src="https://api.mitlist.me/api/v1/email/assets/day3-lists.jpg"`) {
+		t.Error("HTML lacks the onboarding hero")
+	}
+	if !strings.Contains(msg.HTML, "EMAIL 2 / 5") {
+		t.Error("HTML lacks the series progress marker")
+	}
+	if !strings.Contains(msg.HTML, `alt="Scan a paper list, sort it by aisle, and add meal-plan ingredients"`) {
+		t.Error("linked hero lacks an accessible action label")
+	}
 	// Copy is HTML-escaped on the way in.
 	if strings.Contains(msg.HTML, "\"do we need milk?\"") {
 		t.Error("subject quotes leaked unescaped into HTML")
@@ -119,6 +139,32 @@ func TestUnsubscribeURL(t *testing.T) {
 	got := UnsubscribeURL("https://api.mitlist.me/", "/api", "tok")
 	if got != "https://api.mitlist.me/api/v1/email/unsubscribe?token=tok" {
 		t.Errorf("url = %q", got)
+	}
+}
+
+func TestHeroURL(t *testing.T) {
+	got := HeroURL("https://api.mitlist.me/", "/api", "day7-money.jpg")
+	if got != "https://api.mitlist.me/api/v1/email/assets/day7-money.jpg" {
+		t.Errorf("hero URL = %q", got)
+	}
+}
+
+func TestHeroImagesAreValidJPEGs(t *testing.T) {
+	for _, step := range Steps {
+		data, ok := HeroImage(step.HeroFilename)
+		if !ok {
+			t.Errorf("hero %q is not embedded", step.HeroFilename)
+			continue
+		}
+		image, err := jpeg.Decode(bytes.NewReader(data))
+		if err != nil {
+			t.Errorf("decode JPEG hero %q: %v", step.HeroFilename, err)
+			continue
+		}
+		bounds := image.Bounds()
+		if bounds.Dx() != 1040 || bounds.Dy() != 693 {
+			t.Errorf("hero %q size = %dx%d, want 1040x693", step.HeroFilename, bounds.Dx(), bounds.Dy())
+		}
 	}
 }
 
