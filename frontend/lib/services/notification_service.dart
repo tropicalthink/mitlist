@@ -84,6 +84,19 @@ class NotificationService {
     await _dio.patch('/notifications/preferences', data: pref.toJson());
   }
 
+  /// Releases every server-side notification digest this user has pending
+  /// (list items, meal plan edits, expenses) so housemates get their one
+  /// summary as soon as the editing session ends. Sent when the app goes to
+  /// the background, which ends whatever screen was open. Fire-and-forget:
+  /// on failure the server's fallback window delivers a little later.
+  Future<void> flushAllDigests() async {
+    try {
+      await _dio.post('/notifications/flush');
+    } on DioException catch (e) {
+      _logger.w('Flush all notification digests failed: ${e.response?.data}');
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Push subscriptions (web push)
   // ---------------------------------------------------------------------------

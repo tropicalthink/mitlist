@@ -105,6 +105,82 @@ void main() {
     );
   });
 
+  test('renders meal plan and expense digests in every supported locale', () {
+    final locales = <AppLocalizations>[
+      AppLocalizationsEn(),
+      AppLocalizationsDe(),
+      AppLocalizationsEs(),
+      AppLocalizationsFr(),
+      AppLocalizationsNl(),
+    ];
+    final mealPlan = {
+      'copy': {
+        'version': 1,
+        'template': 'meal_plan_changed_digest',
+        'params': {
+          'actor_name': 'Mina',
+          'group_name': 'Flatmates',
+          'change_count': '5',
+          'item_names': 'Pasta, Curry, Tacos, …',
+        },
+      },
+    };
+    final expenses = {
+      'copy': {
+        'version': 1,
+        'template': 'expenses_created_digest',
+        'params': {
+          'actor_name': 'Mina',
+          'group_name': 'Flatmates',
+          'expense_count': '3',
+        },
+      },
+    };
+
+    for (final l10n in locales) {
+      final meals = resolveNotificationText(
+        l10n: l10n,
+        fallbackTitle: 'server title',
+        fallbackBody: 'server body',
+        data: mealPlan,
+      );
+      expect(meals.title, l10n.notificationMealPlanTitle);
+      expect(meals.body, contains('5'));
+      expect(meals.body, contains('Pasta, Curry, Tacos, …'));
+
+      final money = resolveNotificationText(
+        l10n: l10n,
+        fallbackTitle: 'server title',
+        fallbackBody: 'server body',
+        data: expenses,
+      );
+      expect(money.title, l10n.notificationExpensesDigestTitle);
+      expect(money.body, contains('Mina'));
+      expect(money.body, contains('3'));
+      expect(money.body, isNot(contains(':')));
+    }
+  });
+
+  test('digest copy with a single change falls back to the server text', () {
+    final result = resolveNotificationText(
+      l10n: AppLocalizationsEn(),
+      fallbackTitle: 'Meal plan updated',
+      fallbackBody: 'Mina updated the meal plan in Flatmates.',
+      data: {
+        'copy': {
+          'version': 1,
+          'template': 'meal_plan_changed_digest',
+          'params': {
+            'actor_name': 'Mina',
+            'group_name': 'Flatmates',
+            'change_count': '1',
+          },
+        },
+      },
+    );
+    expect(result.body, 'Mina updated the meal plan in Flatmates.');
+  });
+
   test('supports string-encoded push copy and legacy fallback', () {
     final l10n = AppLocalizationsEn();
     final structured = resolveNotificationText(

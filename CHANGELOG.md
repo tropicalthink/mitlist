@@ -44,6 +44,23 @@ follow [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Notifications follow the editing session instead of every change. A visit
+  to a screen yields one notification for the household: meal plan edits and
+  expenses added by one person are collected while they stay on the screen
+  and delivered as a single summary when they leave it or put the app in the
+  background, the same way list items already were. A single change is
+  delivered word for word as before; a burst becomes "Mina made 5 changes to
+  the meal plan in Flatmates: Pasta, Curry, Tacos, …" or "Mina added 3
+  expenses in Flatmates: …". `POST /notifications/flush` releases one digest
+  (`group_id` + `type`) or, with an empty body, everything the caller has
+  pending in every list and group; the app sends the latter on backgrounding.
+  The server-side idle window is now only a fallback for sessions that never
+  end cleanly (app killed, offline sync) and was widened from three minutes
+  after the last change (fifteen after the first) to ten (thirty), for list
+  items too, so a pause on the screen no longer splits a session in two.
+  Needs migration 000069 and a new app build for the localized summary copy;
+  older apps show the server's English text.
+
 - Confirming a password reset signs the person in. `POST
   /auth/password-reset/confirm` now answers with a session (user, access and
   refresh token) instead of a message, and the app saves it and goes home

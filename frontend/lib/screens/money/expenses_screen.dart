@@ -10,6 +10,9 @@ import '../../router.dart' show BottomNavScaffold, currentGroupIdProvider;
 import '../../utils/shell_tab_load.dart';
 import '../../utils/friendly_error.dart';
 import '../../utils/haptics.dart';
+import '../../providers/finance_provider.dart'
+    show financeServiceProviderAsync;
+import '../../services/finance_service.dart';
 import '../../sheets/expense_creation_sheet.dart';
 import '../../sheets/expense_detail_sheet.dart';
 import '../../sheets/settlement_confirmation_dialog.dart';
@@ -49,6 +52,12 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
 
   bool _tabLoadStarted = false;
 
+  // Set once an expense is added from this screen so leaving it can release
+  // the household's batched notification. The service and group are
+  // remembered because providers must not be read once the widget is disposed.
+  FinanceService? _addedWith;
+  String? _addedInGroup;
+
   @override
   void initState() {
     super.initState();
@@ -82,6 +91,14 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
 
   @override
   void dispose() {
+    final addedWith = _addedWith;
+    final addedInGroup = _addedInGroup;
+    if (addedWith != null && addedInGroup != null) {
+      // Leaving the expenses screen ends the entry session: release the
+      // notification digest now. Best-effort; the server's fallback window
+      // still delivers if this never arrives.
+      unawaited(addedWith.flushExpenseNotifications(addedInGroup));
+    }
     _timelineScrollController.removeListener(_onTimelineScroll);
     _timelineScrollController.dispose();
     _confettiController.dispose();
@@ -179,6 +196,12 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     unawaited(Haptics.light());
     final created = await ExpenseCreationSheet.show(context);
     if (created == true && mounted) {
+      final groupId = _controller.groupId;
+      if (groupId != null) {
+        _addedInGroup = groupId;
+        _addedWith ??= await ref.read(financeServiceProviderAsync.future);
+      }
+      if (!mounted) return;
       await _controller.load(AppLocalizations.of(context)!);
     }
   }

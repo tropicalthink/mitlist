@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -67,6 +68,57 @@ func TestNotificationRepository_FlushListNotificationBatches(t *testing.T) {
 		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
 
 	err := repo.FlushListNotificationBatches(context.Background(), actorID, listID)
+	require.NoError(t, err)
+	assert.NoError(t, mockDB.ExpectationsWereMet())
+}
+
+func TestNotificationRepository_QueueActivityNotification(t *testing.T) {
+	mockDB := newMockDB(t)
+	repo := NewNotificationRepository(mockDB)
+	groupID, actorID := uuid.New(), uuid.New()
+	payload := json.RawMessage(`{"screen":"mealPlan"}`)
+
+	mockDB.ExpectExec("INSERT INTO activity_notification_batches").
+		WithArgs(groupID, actorID, models.NotificationTypeMealPlanChanged, groupID.String(), "Mina", "Tacos",
+			"Meal plan updated", "Mina updated the meal plan.", payload, activityNotificationBatchMaxNames).
+		WillReturnResult(pgxmock.NewResult("INSERT", 1))
+
+	err := repo.QueueActivityNotification(context.Background(), models.ActivityNotificationBatch{
+		GroupID: groupID, ActorID: actorID, Type: models.NotificationTypeMealPlanChanged,
+		ScopeKey: groupID.String(), ActorName: "Mina", ItemName: "Tacos",
+		Title: "Meal plan updated", Body: "Mina updated the meal plan.", Payload: payload,
+	})
+	require.NoError(t, err)
+	assert.NoError(t, mockDB.ExpectationsWereMet())
+}
+
+func TestNotificationRepository_FlushActivityNotificationBatches(t *testing.T) {
+	mockDB := newMockDB(t)
+	repo := NewNotificationRepository(mockDB)
+	actorID, groupID := uuid.New(), uuid.New()
+
+	mockDB.ExpectExec("UPDATE activity_notification_batches").
+		WithArgs(actorID, groupID, models.NotificationTypeMealPlanChanged).
+		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
+
+	err := repo.FlushActivityNotificationBatches(context.Background(), actorID, groupID, models.NotificationTypeMealPlanChanged)
+	require.NoError(t, err)
+	assert.NoError(t, mockDB.ExpectationsWereMet())
+}
+
+func TestNotificationRepository_FlushAllNotificationBatches(t *testing.T) {
+	mockDB := newMockDB(t)
+	repo := NewNotificationRepository(mockDB)
+	actorID := uuid.New()
+
+	mockDB.ExpectExec("UPDATE list_notification_batches").
+		WithArgs(actorID).
+		WillReturnResult(pgxmock.NewResult("UPDATE", 2))
+	mockDB.ExpectExec("UPDATE activity_notification_batches").
+		WithArgs(actorID).
+		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
+
+	err := repo.FlushAllNotificationBatches(context.Background(), actorID)
 	require.NoError(t, err)
 	assert.NoError(t, mockDB.ExpectationsWereMet())
 }

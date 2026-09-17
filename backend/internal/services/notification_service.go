@@ -109,22 +109,70 @@ type notificationPushTarget struct {
 	notificationID uuid.UUID
 }
 
+// coalescedNotificationTypes are interactive group notifications that fire once
+// per edit and therefore spam the household during a planning or entry session
+// (seven meal slots, a stack of receipts). Instead of delivering immediately
+// they are queued per actor and delivered as one notification when the burst
+// ends; see NotificationRepo.QueueActivityNotification for the window.
+// List items have their own, older queue (QueueListItemNotification).
+var coalescedNotificationTypes = map[string]bool{
+	models.NotificationTypeMealPlanChanged: true,
+	models.NotificationTypeExpenseCreated:  true,
+}
+
+// IsCoalescedNotificationType reports whether nType is delivered through the
+// activity digest rather than immediately.
+func IsCoalescedNotificationType(nType string) bool { return coalescedNotificationTypes[nType] }
+
 // DispatchToGroup persists in-app notifications and sends push to every group
 // member (except actorID) whose preferences allow this type. Persist is
 // synchronous (the feed must be reliable); push is fired in the background so it
 // never blocks the caller. Best-effort: push errors are logged, not returned.
+// Types listed in coalescedNotificationTypes are queued for the activity digest
+// instead of being delivered right away.
 func (s *NotificationService) DispatchToGroup(ctx context.Context, groupID, actorID uuid.UUID, nType, title, body string, payload models.NotificationPayload) error {
-	return s.dispatchToGroup(ctx, groupID, actorID, nType, title, body, payload, false)
+	return s.dispatchToGroup(ctx, groupID, actorID, nType, title, body, payload, false, false)
+}
+
+// DispatchToGroupNow delivers immediately even for coalesced types. It exists
+// for the activity digest job, which has already waited out the burst; every
+// other caller should use DispatchToGroup.
+func (s *NotificationService) DispatchToGroupNow(ctx context.Context, groupID, actorID uuid.UUID, nType, title, body string, payload models.NotificationPayload) error {
+	return s.dispatchToGroup(ctx, groupID, actorID, nType, title, body, payload, false, true)
 }
 
 // DispatchToGroupAndWait is used by scheduled reminders. Unlike interactive
 // notifications it waits for push delivery, allowing the job to retry instead
-// of permanently acknowledging a provider failure.
+// of permanently acknowledging a provider failure. Scheduled work is never
+// coalesced.
 func (s *NotificationService) DispatchToGroupAndWait(ctx context.Context, groupID, actorID uuid.UUID, nType, title, body string, payload models.NotificationPayload) error {
-	return s.dispatchToGroup(ctx, groupID, actorID, nType, title, body, payload, true)
+	return s.dispatchToGroup(ctx, groupID, actorID, nType, title, body, payload, true, true)
 }
 
-func (s *NotificationService) dispatchToGroup(ctx context.Context, groupID, actorID uuid.UUID, nType, title, body string, payload models.NotificationPayload, waitForPush bool) error {
+func (s *NotificationService) dispatchToGroup(ctx context.Context, groupID, actorID uuid.UUID, nType, title, body string, payload models.NotificationPayload, waitForPush, immediate bool) error {
+	if !immediate && coalescedNotificationTypes[nType] && actorID != uuid.Nil && payload.ActorName != "" {
+		data, _ := json.Marshal(payload)
+		itemName := payload.ItemName
+		if itemName == "" {
+			itemName = payload.EntityName
+		}
+		err := s.notificationRepo.QueueActivityNotification(ctx, models.ActivityNotificationBatch{
+			GroupID:   groupID,
+			ActorID:   actorID,
+			Type:      nType,
+			ScopeKey:  groupID.String(),
+			ActorName: payload.ActorName,
+			ItemName:  itemName,
+			Title:     title,
+			Body:      body,
+			Payload:   data,
+		})
+		if err != nil {
+			s.logDispatchFailure(err, groupID, nType, "queue activity notification digest")
+			return fmt.Errorf("dispatch: queue activity digest: %w", err)
+		}
+		return nil
+	}
 	if nType == models.NotificationTypeListItemAdded && payload.ID != "" && payload.ActorName != "" && payload.EntityName != "" && payload.ItemName != "" {
 		listID, err := uuid.Parse(payload.ID)
 		if err != nil {
@@ -211,6 +259,27 @@ func (s *NotificationService) dispatchToGroup(ctx context.Context, groupID, acto
 // Only the caller's own batches are affected, so no membership check is needed.
 func (s *NotificationService) FlushListItemDigest(ctx context.Context, userID, listID uuid.UUID) error {
 	return s.notificationRepo.FlushListNotificationBatches(ctx, userID, listID)
+}
+
+// FlushActivityDigest releases the caller's queued digest of one coalesced type
+// in a group (for example their meal plan edits) so the digest job delivers it
+// on its next run. Called when the person leaves the screen where they made the
+// changes; a no-op when nothing is queued. Only the caller's own batches are
+// affected, so no membership check is needed.
+func (s *NotificationService) FlushActivityDigest(ctx context.Context, userID, groupID uuid.UUID, nType string) error {
+	if !coalescedNotificationTypes[nType] {
+		return &api.ValidationError{Field: "type", Message: "not a batched notification type"}
+	}
+	return s.notificationRepo.FlushActivityNotificationBatches(ctx, userID, groupID, nType)
+}
+
+// FlushAllDigests releases every queued digest of the caller: list items in any
+// list and every coalesced activity type in any group. Called when the app goes
+// to the background, which ends whatever editing session was open, so the
+// household gets its one summary right away instead of after the fallback
+// window. A no-op when nothing is queued.
+func (s *NotificationService) FlushAllDigests(ctx context.Context, userID uuid.UUID) error {
+	return s.notificationRepo.FlushAllNotificationBatches(ctx, userID)
 }
 
 // DispatchToUsers persists in-app notifications and sends push to the specified
