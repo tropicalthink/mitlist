@@ -22,6 +22,24 @@ const (
 	NotificationTypePinwallReminder         = "pinwall_reminder"
 )
 
+// ActivityNotificationBatch is one interactive event queued for coalescing.
+// Events by the same actor, of the same type, in the same scope, are merged
+// into a single notification when the burst ends (see
+// NotificationRepo.QueueActivityNotification). Title, Body, and Payload are the
+// notification that would have been sent immediately; they are replayed as-is
+// when the burst turns out to contain a single event.
+type ActivityNotificationBatch struct {
+	GroupID   uuid.UUID
+	ActorID   uuid.UUID
+	Type      string
+	ScopeKey  string
+	ActorName string
+	ItemName  string
+	Title     string
+	Body      string
+	Payload   json.RawMessage
+}
+
 type Notification struct {
 	ID        uuid.UUID       `json:"id"`
 	UserID    uuid.UUID       `json:"user_id"`

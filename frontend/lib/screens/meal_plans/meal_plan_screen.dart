@@ -10,6 +10,7 @@ import '../../models/recipe_models.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/meal_plan_provider.dart';
 import '../../providers/recipe_provider.dart';
+import '../../services/meal_plan_service.dart';
 import '../../router.dart' show currentGroupIdProvider;
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
@@ -45,6 +46,10 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
   final Set<String> _activeOperations = {};
   final LatestRequestGuard _loadGuard = LatestRequestGuard();
   String? _resolvedGroupId;
+  // Set once an edit succeeds so leaving the screen can release the
+  // household's batched notification. The service is remembered because
+  // providers must not be read once the widget is disposed.
+  MealPlanService? _editedWith;
 
   @override
   void initState() {
@@ -68,6 +73,14 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
 
   @override
   void dispose() {
+    final editedWith = _editedWith;
+    final groupId = _resolvedGroupId;
+    if (editedWith != null && groupId != null) {
+      // Leaving the planner ends the editing session: release the
+      // notification digest now. Best-effort; the server's idle window
+      // still delivers if this never arrives.
+      unawaited(editedWith.flushMealPlanNotifications(groupId));
+    }
     _loadGuard.dispose();
     super.dispose();
   }
@@ -212,6 +225,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
         recipeId: recipe.id,
         servings: servings,
       ));
+      _editedWith = svc;
       await _load();
     } catch (e) {
       if (mounted) {
@@ -231,6 +245,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
     try {
       final svc = await ref.read(mealPlanServiceProviderAsync.future);
       await svc.deleteMealPlan(planId);
+      _editedWith = svc;
       await _load();
     } catch (e) {
       if (mounted) {
@@ -268,6 +283,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
             recipeId: recipe.id,
             servings: servings,
           ));
+      _editedWith = svc;
       await _load();
     } catch (e) {
       if (mounted) {

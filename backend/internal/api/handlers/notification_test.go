@@ -216,6 +216,40 @@ func TestNotification_UpdatePreferencesRequiresGroup(t *testing.T) {
 	requireStatus(t, rec, http.StatusBadRequest)
 }
 
+func TestNotification_FlushDigestsEmptyBodyReleasesEverything(t *testing.T) {
+	clearTables(t)
+	router, _ := newNotificationRouter(t)
+	user := createTestUser(t, "flushall@example.com", "Password123!")
+	token := generateTestToken(user.ID)
+
+	// The app sends this when it goes to the background; nothing queued is fine.
+	rec := execRequest(t, router, "POST", "/notifications/flush", nil, token)
+	requireStatus(t, rec, http.StatusNoContent)
+}
+
+func TestNotification_FlushDigestTypeNeedsGroup(t *testing.T) {
+	clearTables(t)
+	router, _ := newNotificationRouter(t)
+	user := createTestUser(t, "flushtype@example.com", "Password123!")
+	token := generateTestToken(user.ID)
+
+	rec := execRequest(t, router, "POST", "/notifications/flush", map[string]any{
+		"type": "meal_plan_changed",
+	}, token)
+	requireStatus(t, rec, http.StatusBadRequest)
+
+	rec = execRequest(t, router, "POST", "/notifications/flush", map[string]any{
+		"group_id": uuid.New().String(),
+	}, token)
+	requireStatus(t, rec, http.StatusBadRequest)
+
+	rec = execRequest(t, router, "POST", "/notifications/flush", map[string]any{
+		"group_id": uuid.New().String(),
+		"type":     "chore_due",
+	}, token)
+	requireStatus(t, rec, http.StatusBadRequest)
+}
+
 func TestNotification_IntegrationCredentialIsScopedToNotificationGroups(t *testing.T) {
 	userID := uuid.New()
 	allowedID := uuid.New()

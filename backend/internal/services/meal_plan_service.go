@@ -66,6 +66,11 @@ func (s *MealPlanService) notifyChanged(ctx context.Context, userID uuid.UUID, m
 	}
 	payload.ActorName = actorName
 	payload.EntityName = "Meal plan"
+	// The recipe name is what the household digest lists when several changes
+	// are batched into one notification ("Pasta, Curry, Tacos").
+	if recipe, err := s.recipeRepo.GetRecipeByID(ctx, mp.RecipeID); err == nil && strings.TrimSpace(recipe.Title) != "" {
+		payload.ItemName = recipe.Title
+	}
 	payload.Copy = models.NewNotificationCopy(models.NotificationTemplateMealPlanChanged, map[string]string{
 		"actor_name": actorName,
 		"group_name": householdName,

@@ -23,6 +23,13 @@ type ReliableNotificationDispatcher interface {
 	DispatchToUsersAndWait(ctx context.Context, userIDs []uuid.UUID, groupID uuid.UUID, nType, title, body string, payload models.NotificationPayload) error
 }
 
+// ImmediateNotificationDispatcher bypasses per-actor coalescing. Only the
+// activity digest job uses it: it has already waited out the burst and must not
+// re-queue the summary it is delivering.
+type ImmediateNotificationDispatcher interface {
+	DispatchToGroupNow(ctx context.Context, groupID, actorID uuid.UUID, nType, title, body string, payload models.NotificationPayload) error
+}
+
 // Pusher abstracts push notification delivery.
 type Pusher interface {
 	SendToUser(userID uuid.UUID, payload string) error

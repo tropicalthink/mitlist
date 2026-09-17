@@ -138,6 +138,32 @@ NotificationText resolveNotificationText({
         );
       }
       break;
+    case 'meal_plan_changed_digest':
+      final itemNames = value('item_names');
+      final count = int.tryParse(value('change_count') ?? '');
+      if (actor != null && group != null && count != null && count > 1) {
+        return NotificationText(
+          title: l10n.notificationMealPlanTitle,
+          body: itemNames == null
+              ? l10n.notificationMealPlanDigestBody(actor, count, group)
+              : l10n.notificationMealPlanDigestNamesBody(
+                  actor, count, group, itemNames),
+        );
+      }
+      break;
+    case 'expenses_created_digest':
+      final expenseNames = value('expense_names');
+      final count = int.tryParse(value('expense_count') ?? '');
+      if (actor != null && group != null && count != null && count > 1) {
+        return NotificationText(
+          title: l10n.notificationExpensesDigestTitle,
+          body: expenseNames == null
+              ? l10n.notificationExpensesDigestBody(actor, count, group)
+              : l10n.notificationExpensesDigestNamesBody(
+                  actor, count, group, expenseNames),
+        );
+      }
+      break;
     case 'weekly_digest':
       final count = int.tryParse(value('activity_count') ?? '');
       if (count != null && count >= 0) {

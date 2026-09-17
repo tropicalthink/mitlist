@@ -181,6 +181,65 @@ func TestNotificationService_DispatchToGroup(t *testing.T) {
 		groupRepo.AssertNotCalled(t, "ListMembershipsByGroup", mock.Anything, mock.Anything)
 	})
 
+	t.Run("queues meal plan and expense events for the activity digest", func(t *testing.T) {
+		for _, nType := range []string{models.NotificationTypeMealPlanChanged, models.NotificationTypeExpenseCreated} {
+			notifRepo := new(mocks.MockNotificationRepo)
+			groupRepo := new(mocks.MockGroupRepo)
+			svc := NewNotificationService(notifRepo, nil, groupRepo, nil)
+			payload := models.NotificationPayload{
+				Screen: models.ScreenMealPlan, EntityType: models.EntityTypeMealPlan,
+				ID: uuid.New().String(), GroupID: groupID.String(), ActorName: "Mina",
+				EntityName: "Meal plan", ItemName: "Tacos",
+			}
+			notifRepo.On("QueueActivityNotification", ctx, mock.MatchedBy(func(b models.ActivityNotificationBatch) bool {
+				return b.GroupID == groupID && b.ActorID == actorID && b.Type == nType &&
+					b.ScopeKey == groupID.String() && b.ActorName == "Mina" && b.ItemName == "Tacos" &&
+					b.Title == "T" && b.Body == "B" && len(b.Payload) > 0
+			})).Return(nil)
+
+			err := svc.DispatchToGroup(ctx, groupID, actorID, nType, "T", "B", payload)
+
+			require.NoError(t, err)
+			notifRepo.AssertExpectations(t)
+			notifRepo.AssertNotCalled(t, "CreateNotificationsBatch", mock.Anything, mock.Anything)
+			groupRepo.AssertNotCalled(t, "ListMembershipsByGroup", mock.Anything, mock.Anything)
+		}
+	})
+
+	t.Run("falls back to the entity name when no item name is set", func(t *testing.T) {
+		notifRepo := new(mocks.MockNotificationRepo)
+		svc := NewNotificationService(notifRepo, nil, new(mocks.MockGroupRepo), nil)
+		payload := models.NotificationPayload{
+			Screen: models.ScreenExpenseDetail, EntityType: models.EntityTypeExpense,
+			ID: uuid.New().String(), ActorName: "Mina", EntityName: "Pizza",
+		}
+		notifRepo.On("QueueActivityNotification", ctx, mock.MatchedBy(func(b models.ActivityNotificationBatch) bool {
+			return b.ItemName == "Pizza"
+		})).Return(nil)
+
+		require.NoError(t, svc.DispatchToGroup(ctx, groupID, actorID, models.NotificationTypeExpenseCreated, "T", "B", payload))
+		notifRepo.AssertExpectations(t)
+	})
+
+	t.Run("DispatchToGroupNow delivers coalesced types immediately", func(t *testing.T) {
+		notifRepo := new(mocks.MockNotificationRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewNotificationService(notifRepo, nil, groupRepo, nil)
+		payload := models.NotificationPayload{ActorName: "Mina", EntityName: "Meal plan"}
+
+		groupRepo.On("ListMembershipsByGroup", ctx, groupID).Return(memberships, nil)
+		notifRepo.On("GetPreferencesByGroup", ctx, groupID).Return(map[uuid.UUID]*models.NotificationPreference{}, nil)
+		notifRepo.On("CreateNotificationsBatch", ctx, mock.MatchedBy(func(rows []models.Notification) bool {
+			return len(rows) == 2 && rows[0].Type == models.NotificationTypeMealPlanChanged
+		})).Return(nil)
+
+		err := svc.DispatchToGroupNow(ctx, groupID, actorID, models.NotificationTypeMealPlanChanged, "T", "B", payload)
+
+		require.NoError(t, err)
+		notifRepo.AssertExpectations(t)
+		notifRepo.AssertNotCalled(t, "QueueActivityNotification", mock.Anything, mock.Anything)
+	})
+
 	t.Run("persists rows and pushes for eligible members, excludes actor", func(t *testing.T) {
 		notifRepo := new(mocks.MockNotificationRepo)
 		groupRepo := new(mocks.MockGroupRepo)
@@ -331,6 +390,39 @@ func TestNotificationService_DispatchToGroup(t *testing.T) {
 		case <-time.After(time.Second):
 			t.Fatal("timed out waiting for async push")
 		}
+	})
+}
+
+func TestNotificationService_FlushDigests(t *testing.T) {
+	ctx := context.Background()
+	userID, groupID := uuid.New(), uuid.New()
+
+	t.Run("one type in one group", func(t *testing.T) {
+		notificationRepo := new(mocks.MockNotificationRepo)
+		svc := NewNotificationService(notificationRepo, nil, nil, nil)
+		notificationRepo.On("FlushActivityNotificationBatches", ctx, userID, groupID, models.NotificationTypeExpenseCreated).Return(nil)
+
+		require.NoError(t, svc.FlushActivityDigest(ctx, userID, groupID, models.NotificationTypeExpenseCreated))
+		notificationRepo.AssertExpectations(t)
+	})
+
+	t.Run("rejects a type that is never batched", func(t *testing.T) {
+		notificationRepo := new(mocks.MockNotificationRepo)
+		svc := NewNotificationService(notificationRepo, nil, nil, nil)
+
+		err := svc.FlushActivityDigest(ctx, userID, groupID, models.NotificationTypeChoreDue)
+		var verr *api.ValidationError
+		require.ErrorAs(t, err, &verr)
+		notificationRepo.AssertNotCalled(t, "FlushActivityNotificationBatches", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+	})
+
+	t.Run("everything of mine", func(t *testing.T) {
+		notificationRepo := new(mocks.MockNotificationRepo)
+		svc := NewNotificationService(notificationRepo, nil, nil, nil)
+		notificationRepo.On("FlushAllNotificationBatches", ctx, userID).Return(nil)
+
+		require.NoError(t, svc.FlushAllDigests(ctx, userID))
+		notificationRepo.AssertExpectations(t)
 	})
 }
 
