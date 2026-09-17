@@ -107,6 +107,14 @@ func (r *Runner) RegisterAll() {
 		r.register("list-notification-digest", "* * * * *", ld.Run, true)
 	}
 
+	// Activity digests (meal plan edits, expenses added in a row) — every
+	// minute. Needs a dispatcher that can bypass its own coalescing, otherwise
+	// the summary would be queued again instead of delivered.
+	if immediate, ok := r.dispatcher.(ImmediateNotificationDispatcher); ok {
+		ad := NewActivityNotificationDigest(r.db, immediate, r.log)
+		r.register("activity-notification-digest", "* * * * *", ad.Run, true)
+	}
+
 	// Guest lifecycle — daily at 03:15. Guests are locked after 30 days without
 	// activity and retained for a 180-day recovery grace period before cleanup.
 	gc := NewGuestCleanup(r.db, r.log)

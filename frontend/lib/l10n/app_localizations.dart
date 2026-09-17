@@ -9329,6 +9329,40 @@ abstract class AppLocalizations {
   /// **'{actorName} updated the meal plan in {groupName}.'**
   String notificationMealPlanBody(String actorName, String groupName);
 
+  /// Digest body when one person made several meal plan changes in a row
+  ///
+  /// In en, this message translates to:
+  /// **'{actorName} made {count} changes to the meal plan in {groupName}.'**
+  String notificationMealPlanDigestBody(
+      String actorName, num count, String groupName);
+
+  /// Meal plan digest body listing the recipes involved
+  ///
+  /// In en, this message translates to:
+  /// **'{actorName} made {count} changes to the meal plan in {groupName}: {itemNames}'**
+  String notificationMealPlanDigestNamesBody(
+      String actorName, num count, String groupName, String itemNames);
+
+  /// Title when one person added several expenses in a row
+  ///
+  /// In en, this message translates to:
+  /// **'Expenses added'**
+  String get notificationExpensesDigestTitle;
+
+  /// No description provided for @notificationExpensesDigestBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{actorName} added {count} expenses in {groupName}.'**
+  String notificationExpensesDigestBody(
+      String actorName, num count, String groupName);
+
+  /// No description provided for @notificationExpensesDigestNamesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{actorName} added {count} expenses in {groupName}: {expenseNames}'**
+  String notificationExpensesDigestNamesBody(
+      String actorName, num count, String groupName, String expenseNames);
+
   /// No description provided for @notificationWeeklyDigestTitle.
   ///
   /// In en, this message translates to:

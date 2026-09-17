@@ -35,6 +35,8 @@ const (
 	NotificationTemplateSettlementConfirmed     = "settlement_confirmed"
 	NotificationTemplateSettlementDeclined      = "settlement_declined"
 	NotificationTemplateMealPlanChanged         = "meal_plan_changed"
+	NotificationTemplateMealPlanChangedDigest   = "meal_plan_changed_digest"
+	NotificationTemplateExpensesCreatedDigest   = "expenses_created_digest"
 	NotificationTemplateWeeklyDigest            = "weekly_digest"
 	NotificationTemplatePinwallReminder         = "pinwall_reminder"
 )

@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -463,10 +464,11 @@ func (r *NotificationRepository) CreateNotificationsBatchIdempotent(ctx context.
 const listNotificationBatchMaxNames = 8
 
 // QueueListItemNotification coalesces additions by the same person to the same
-// list into one pending digest. Each add pushes delivery out by three minutes;
-// the client flushes the batch when the person leaves the list screen, so the
-// sliding window only fires for sessions that never end cleanly (app killed,
-// offline sync). A fifteen-minute cap guarantees delivery regardless.
+// list into one pending digest. The app flushes the batch when the person
+// leaves the list screen (or the app goes to the background), so a visit yields
+// exactly one notification. Each add still pushes delivery out by ten minutes
+// and a thirty-minute cap guarantees delivery: that sliding window is only the
+// fallback for sessions that never end cleanly (app killed, offline sync).
 func (r *NotificationRepository) QueueListItemNotification(ctx context.Context, groupID, actorID, listID uuid.UUID, actorName, listName, itemName string) error {
 	_, err := r.db.Exec(ctx, `
 		INSERT INTO list_notification_batches (
@@ -492,10 +494,10 @@ func (r *NotificationRepository) QueueListItemNotification(ctx context.Context, 
 			updated_at = NOW(),
 			deliver_after = CASE
 				WHEN list_notification_batches.claimed_at IS NULL THEN LEAST(
-					list_notification_batches.first_at + INTERVAL '15 minutes',
-					NOW() + INTERVAL '3 minutes'
+					list_notification_batches.first_at + INTERVAL '30 minutes',
+					NOW() + INTERVAL '10 minutes'
 				)
-				ELSE NOW() + INTERVAL '3 minutes'
+				ELSE NOW() + INTERVAL '10 minutes'
 			END,
 			claimed_at = NULL
 	`, groupID, actorID, listID, actorName, listName, itemName, listNotificationBatchMaxNames)
@@ -519,6 +521,109 @@ func (r *NotificationRepository) FlushListNotificationBatches(ctx context.Contex
 	`, actorID, listID)
 	if err != nil {
 		return fmt.Errorf("flush list notification batches: %w", err)
+	}
+	return nil
+}
+
+// activityNotificationBatchMaxNames caps how many item names an activity batch
+// remembers for the digest body; the count keeps growing past it.
+const activityNotificationBatchMaxNames = 8
+
+// QueueActivityNotification coalesces interactive events by the same person, of
+// the same type, in the same scope into one pending digest. The app flushes
+// the batch when the person leaves the screen where the burst happened (or the
+// app goes to the background), so a visit yields exactly one notification. Each
+// event still pushes delivery out by ten minutes and a thirty-minute cap from
+// the first event guarantees delivery; that window is only the fallback for
+// sessions that never end cleanly. The stored title, body,
+// and payload are always the latest event's, so a single-event batch replays
+// exactly the notification that would have been sent immediately.
+func (r *NotificationRepository) QueueActivityNotification(ctx context.Context, batch models.ActivityNotificationBatch) error {
+	payload := batch.Payload
+	if len(payload) == 0 {
+		payload = json.RawMessage(`{}`)
+	}
+	_, err := r.db.Exec(ctx, `
+		INSERT INTO activity_notification_batches (
+			group_id, actor_id, n_type, scope_key, actor_name, last_item_name, item_names,
+			title, body, payload, deliver_after
+		) VALUES (
+			$1, $2, $3, $4, $5, $6,
+			CASE WHEN $6 = '' THEN '{}'::TEXT[] ELSE ARRAY[$6::TEXT] END,
+			$7, $8, $9, NOW() + INTERVAL '10 minutes'
+		)
+		ON CONFLICT (group_id, actor_id, n_type, scope_key) DO UPDATE SET
+			actor_name = EXCLUDED.actor_name,
+			last_item_name = EXCLUDED.last_item_name,
+			title = EXCLUDED.title,
+			body = EXCLUDED.body,
+			payload = EXCLUDED.payload,
+			item_count = CASE
+				WHEN activity_notification_batches.claimed_at IS NULL THEN activity_notification_batches.item_count + 1
+				ELSE 1
+			END,
+			item_names = CASE
+				WHEN activity_notification_batches.claimed_at IS NOT NULL THEN EXCLUDED.item_names
+				WHEN $6 = '' THEN activity_notification_batches.item_names
+				WHEN COALESCE(array_length(activity_notification_batches.item_names, 1), 0) >= $10 THEN activity_notification_batches.item_names
+				ELSE activity_notification_batches.item_names || $6::TEXT
+			END,
+			first_at = CASE
+				WHEN activity_notification_batches.claimed_at IS NULL THEN activity_notification_batches.first_at
+				ELSE NOW()
+			END,
+			updated_at = NOW(),
+			deliver_after = CASE
+				WHEN activity_notification_batches.claimed_at IS NULL THEN LEAST(
+					activity_notification_batches.first_at + INTERVAL '30 minutes',
+					NOW() + INTERVAL '10 minutes'
+				)
+				ELSE NOW() + INTERVAL '10 minutes'
+			END,
+			claimed_at = NULL
+	`, batch.GroupID, batch.ActorID, batch.Type, batch.ScopeKey, batch.ActorName, batch.ItemName,
+		batch.Title, batch.Body, payload, activityNotificationBatchMaxNames)
+	if err != nil {
+		return fmt.Errorf("queue activity notification: %w", err)
+	}
+	return nil
+}
+
+// FlushActivityNotificationBatches makes every pending batch of one type by this
+// actor in this group deliverable immediately. Called when the person leaves the
+// screen where the burst happened. updated_at is left untouched for the same
+// reason as FlushListNotificationBatches: a claimed batch is deleted only when
+// updated_at is unchanged, and a flush must not look like a fresh edit.
+func (r *NotificationRepository) FlushActivityNotificationBatches(ctx context.Context, actorID, groupID uuid.UUID, nType string) error {
+	_, err := r.db.Exec(ctx, `
+		UPDATE activity_notification_batches
+		SET deliver_after = NOW()
+		WHERE actor_id = $1 AND group_id = $2 AND n_type = $3 AND claimed_at IS NULL
+	`, actorID, groupID, nType)
+	if err != nil {
+		return fmt.Errorf("flush activity notification batches: %w", err)
+	}
+	return nil
+}
+
+// FlushAllNotificationBatches makes every pending batch of this actor, of any
+// type, list, or group, deliverable immediately. Called when the app goes to the
+// background, which ends whatever editing session was open. Same updated_at
+// caveat as the narrower flushes.
+func (r *NotificationRepository) FlushAllNotificationBatches(ctx context.Context, actorID uuid.UUID) error {
+	if _, err := r.db.Exec(ctx, `
+		UPDATE list_notification_batches
+		SET deliver_after = NOW()
+		WHERE actor_id = $1 AND claimed_at IS NULL
+	`, actorID); err != nil {
+		return fmt.Errorf("flush all list notification batches: %w", err)
+	}
+	if _, err := r.db.Exec(ctx, `
+		UPDATE activity_notification_batches
+		SET deliver_after = NOW()
+		WHERE actor_id = $1 AND claimed_at IS NULL
+	`, actorID); err != nil {
+		return fmt.Errorf("flush all activity notification batches: %w", err)
 	}
 	return nil
 }

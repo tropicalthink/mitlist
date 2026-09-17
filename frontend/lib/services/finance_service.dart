@@ -17,6 +17,22 @@ class FinanceService {
     return FinanceService._(dio);
   }
 
+  /// Releases the server-side digest of this user's added expenses so
+  /// housemates get their one summary notification right after the entry
+  /// session ends. Fire-and-forget: failure only means the server's fallback
+  /// window delivers the digest a little later, so errors are logged and
+  /// swallowed.
+  Future<void> flushExpenseNotifications(String groupId) async {
+    try {
+      await _dio.post('/notifications/flush', data: {
+        'group_id': groupId,
+        'type': 'expense_created',
+      });
+    } on DioException catch (e) {
+      _logger.w('Flush expense notifications failed: ${e.response?.data}');
+    }
+  }
+
   Future<Expense> createExpense(CreateExpenseRequest req,
       {String? idempotencyKey}) async {
     try {

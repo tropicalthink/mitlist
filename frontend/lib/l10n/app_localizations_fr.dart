@@ -5368,6 +5368,33 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String notificationMealPlanDigestBody(
+      String actorName, num count, String groupName) {
+    return '$actorName a apporté $count modifications au menu dans $groupName.';
+  }
+
+  @override
+  String notificationMealPlanDigestNamesBody(
+      String actorName, num count, String groupName, String itemNames) {
+    return '$actorName a apporté $count modifications au menu dans $groupName : $itemNames';
+  }
+
+  @override
+  String get notificationExpensesDigestTitle => 'Dépenses ajoutées';
+
+  @override
+  String notificationExpensesDigestBody(
+      String actorName, num count, String groupName) {
+    return '$actorName a ajouté $count dépenses dans $groupName.';
+  }
+
+  @override
+  String notificationExpensesDigestNamesBody(
+      String actorName, num count, String groupName, String expenseNames) {
+    return '$actorName a ajouté $count dépenses dans $groupName : $expenseNames';
+  }
+
+  @override
   String get notificationWeeklyDigestTitle => 'Résumé de la semaine';
 
   @override

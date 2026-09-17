@@ -280,6 +280,9 @@ type NotificationRepo interface {
 	CreateNotificationsBatch(ctx context.Context, notifications []models.Notification) error
 	QueueListItemNotification(ctx context.Context, groupID, actorID, listID uuid.UUID, actorName, listName, itemName string) error
 	FlushListNotificationBatches(ctx context.Context, actorID, listID uuid.UUID) error
+	QueueActivityNotification(ctx context.Context, batch models.ActivityNotificationBatch) error
+	FlushActivityNotificationBatches(ctx context.Context, actorID, groupID uuid.UUID, nType string) error
+	FlushAllNotificationBatches(ctx context.Context, actorID uuid.UUID) error
 	UpsertPreference(ctx context.Context, pref *models.NotificationPreference) error
 }
 

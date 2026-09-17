@@ -229,6 +229,17 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused && ref.read(authStateProvider)) {
+      // Leaving the app ends whatever editing session was open (a list, the
+      // meal plan, expenses): release the batched notifications now so the
+      // household gets its one summary right away. Best-effort; the server's
+      // fallback window still delivers if this never arrives.
+      unawaited(
+        ref
+            .read(notificationServiceProviderAsync.future)
+            .then((service) => service.flushAllDigests()),
+      );
+    }
     if (state == AppLifecycleState.resumed) {
       // Whatever the connectivity service believes right now was learned before
       // we lost the foreground, when the OS may have been holding our network
