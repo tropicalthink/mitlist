@@ -9,6 +9,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/calendar_models.dart';
 import '../../providers/calendar_provider.dart';
 import '../../providers/chore_provider.dart';
+import '../../providers/finance_provider.dart'
+    show financeServiceProviderAsync;
 import '../../providers/group_provider.dart';
 import '../../router.dart' show currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
@@ -779,9 +781,22 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           // date is a follow-up once the sheet exposes it.)
           ChoreCreationSheet.show(context);
         case 'add_expense':
-          ExpenseCreationSheet.show(context);
+          unawaited(_addExpense());
       }
     });
+  }
+
+  /// One expense added from the calendar is a complete entry session: release
+  /// its notification right away instead of waiting for the fallback window.
+  Future<void> _addExpense() async {
+    final created = await ExpenseCreationSheet.show(context);
+    if (created != true || !mounted) return;
+    final groupId =
+        resolveActiveGroupId(ref.read(cachedGroupsProvider).valueOrNull ?? const [],
+            ref.read(currentGroupIdProvider));
+    if (groupId == null) return;
+    final service = await ref.read(financeServiceProviderAsync.future);
+    unawaited(service.flushExpenseNotifications(groupId));
   }
 
   // ── Agenda View ─────────────────────────────────────────────────────────

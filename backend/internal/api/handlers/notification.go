@@ -45,6 +45,59 @@ func (h *NotificationHandler) RegisterRoutes(r chi.Router) {
 	r.Get("/notifications/preferences", h.GetPreferences)
 	r.Patch("/notifications/preferences", h.UpdatePreferences)
 	r.Post("/lists/{id}/notifications/flush", h.FlushListDigest)
+	r.Post("/notifications/flush", h.FlushActivityDigest)
+}
+
+type flushActivityDigestRequest struct {
+	GroupID uuid.UUID `json:"group_id"`
+	Type    string    `json:"type"`
+}
+
+// FlushActivityDigest handles POST /api/v1/notifications/flush. The app calls
+// it when the user leaves a screen where their edits were being batched (meal
+// plan, expenses), releasing the queued digest so the household gets one
+// summary notification now instead of waiting out the fallback window. With
+// group_id and type it releases that one digest; with an empty body it releases
+// every pending digest of the caller, in every list and group, which the app
+// sends when it goes to the background. Idempotent; 204 even when nothing was
+// queued.
+func (h *NotificationHandler) FlushActivityDigest(w http.ResponseWriter, r *http.Request) {
+	userID, err := currentUserID(r)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+
+	var req flushActivityDigestRequest
+	if r.ContentLength != 0 {
+		if err := decodeJSON(r, &req); err != nil {
+			api.RespondError(w, err)
+			return
+		}
+	}
+	if req.Type == "" && req.GroupID == uuid.Nil {
+		if err := h.service.FlushAllDigests(r.Context(), userID); err != nil {
+			api.RespondError(w, err)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	if req.GroupID == uuid.Nil {
+		api.RespondError(w, &api.ValidationError{Field: "group_id", Message: "group_id is required with type"})
+		return
+	}
+	if req.Type == "" {
+		api.RespondError(w, &api.ValidationError{Field: "type", Message: "type is required with group_id"})
+		return
+	}
+
+	if err := h.service.FlushActivityDigest(r.Context(), userID, req.GroupID, req.Type); err != nil {
+		api.RespondError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // FlushListDigest handles POST /api/v1/lists/{id}/notifications/flush. The app

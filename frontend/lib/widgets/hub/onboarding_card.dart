@@ -98,7 +98,15 @@ class HubQuickStart extends ConsumerWidget {
             ReceiptScrap(label: l10n.hubOnboardingTrackExpense, ghost: ghost),
         onTap: () {
           Haptics.light();
-          ExpenseCreationSheet.show(context);
+          // One expense from the quick-start strip is a complete entry
+          // session: release its notification right away instead of waiting
+          // for the fallback window.
+          unawaited(ExpenseCreationSheet.show(context).then((created) async {
+            if (created != true) return;
+            final service =
+                await ref.read(financeServiceProviderAsync.future);
+            unawaited(service.flushExpenseNotifications(groupId));
+          }));
         },
       ),
     ];

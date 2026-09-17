@@ -44,13 +44,10 @@ const elevation = {
     <section class="proof section-pad" aria-labelledby="product-proof-title">
       <div class="wrap">
         <header class="proof__intro reveal"><h2 class="h2" id="product-proof-title">{elevation.productProof}</h2><p>{elevation.productProofBody}</p></header>
-        <div class="shot shot--hero" data-launch-placeholder>
-          <span class="shot__flag">{copy.placeholder}</span>
-          <div class="shot__chrome"><i></i><i></i><i></i><strong>mitlist / household hub</strong></div>
-          <div class="shot__canvas">
-            <div class="shot__sidebar"></div>
-            <div class="shot__notes"><i></i><i></i><i></i><i></i></div>
-          </div>
+        <div class="phones reveal">
+          {[["chores", copy.features[2].title], ["home", copy.features[5].title], ["money", copy.features[1].title]].map(([name, alt]) => (
+            <figure class="phone"><img src={`/screenshots/${name}.webp`} width="860" height="1864" alt={alt} loading="lazy" decoding="async" /></figure>
+          ))}
         </div>
       </div>
     </section>
@@ -81,10 +78,7 @@ const elevation = {
         <div class="workflow-grid">
           {copy.workflows.map((workflow, index) => (
             <article class="workflow reveal">
-              <div class="shot shot--small" data-launch-placeholder>
-                <span class="shot__flag">{copy.placeholder}</span>
-                <span class={`workflow-art workflow-art--${index + 1}`} aria-hidden="true"><i></i><b></b><em></em></span>
-              </div>
+              <figure class="phone workflow__phone"><img src={`/screenshots/${["meal-plan", "grocery-list", "calendar"][index]}.webp`} width="860" height="1864" alt={workflow.title} loading="lazy" decoding="async" /></figure>
               <div class="workflow__copy"><span class="workflow__step">{workflow.step}</span><h3 class="h3">{workflow.title}</h3><p>{workflow.body}</p></div>
             </article>
           ))}
@@ -193,17 +187,10 @@ const elevation = {
   .proof { padding-block: clamp(2rem,5vw,4rem); background: var(--orange); border-bottom: var(--border); }
   .proof__intro { display: grid; grid-template-columns: .8fr 1.2fr; align-items: end; gap: 2rem; margin-bottom: 2rem; color: var(--on-orange); }
   .proof__intro p { max-width: 58ch; font-weight: 600; }
-  .shot { position: relative; overflow: hidden; border: var(--border); background: var(--paper); box-shadow: var(--shadow-lg); }
-  .shot__flag { position: absolute; z-index: 2; top: .75rem; right: .75rem; padding: .3rem .55rem; border: 1px solid var(--ink); background: var(--note-yellow); color: var(--note-ink); font-size: .66rem; font-weight: 700; text-transform: uppercase; }
-  .shot--hero { min-height: clamp(260px,48vw,580px); }
-  .shot__chrome { display: flex; align-items: center; gap: .4rem; height: 48px; padding: 0 1rem; border-bottom: var(--border); font-size: .78rem; color: var(--ink-3); }
-  .shot__chrome i { width: 10px; height: 10px; border: 1px solid var(--ink); border-radius: 50%; background: var(--orange); }
-  .shot__chrome strong { margin-left: .5rem; }
-  .shot__canvas { display: grid; grid-template-columns: 22% 1fr; min-height: 500px; background: var(--paper-2); }
-  .shot__sidebar { border-right: var(--border); background: var(--ink); }
-  .shot__notes { display: grid; grid-template-columns: repeat(2,1fr); gap: 1.2rem; padding: clamp(1.2rem,4vw,3rem); }
-  .shot__notes i { display: block; min-height: 150px; border: var(--border); box-shadow: var(--shadow); background: var(--note-yellow); }
-  .shot__notes i:nth-child(2) { background: var(--note-sky); }.shot__notes i:nth-child(3) { background: var(--note-mint); }.shot__notes i:nth-child(4) { background: var(--paper); }
+  .phone { margin: 0; border: 3px solid var(--ink); background: var(--ink); box-shadow: var(--shadow-lg); }
+  .phone img { display: block; width: 100%; height: auto; }
+  .phones { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: clamp(1rem,3vw,2.5rem); align-items: end; max-width: 58rem; margin: 0 auto; padding-top: 1.5rem; }
+  .phones .phone:nth-child(2) { transform: translateY(-1.5rem); box-shadow: var(--shadow-xl); }
   .feature-grid { display: grid; grid-template-columns: repeat(12,1fr); border: var(--border); box-shadow: var(--shadow-lg); background: var(--ink); gap: 2px; }
   .feature-card { min-height: 220px; padding: clamp(1.3rem,3vw,2rem); background: var(--paper); }
   .feature-card:nth-child(-n+2) { grid-column: span 6; min-height: 260px; display: grid; align-content: end; }
@@ -214,12 +201,10 @@ const elevation = {
   .workflow-grid { display: grid; border-block: 1px solid var(--inverse-muted); }
   .workflow { display: grid; grid-template-columns: 1.1fr .9fr; align-items: center; gap: clamp(2rem,6vw,5rem); padding-block: clamp(2rem,5vw,4rem); }
   .workflow + .workflow { border-top: 1px solid var(--inverse-muted); }
-  .workflow:nth-child(even) .shot { order: 2; }
-  .shot--small { height: clamp(260px,34vw,390px); box-shadow: 5px 5px 0 var(--orange); }
+  .workflow:nth-child(even) .workflow__phone { order: 2; }
+  .workflow__phone { width: min(100%, 300px); margin-inline: auto; box-shadow: 8px 8px 0 var(--orange); }
   .workflow__copy { max-width: 32rem; }
   .workflow__step { color: var(--orange-300); font-weight: 700; }.workflow .h3 { margin: .7rem 0; font-size: clamp(1.6rem,3vw,2.5rem); }.workflow p { color: var(--inverse-muted); }
-  .workflow-art { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: .7rem; height: 100%; padding: 2rem; background: var(--paper-2); }
-  .workflow-art i,.workflow-art em { height: 90px; border: var(--border); background: var(--note-yellow); }.workflow-art em { background: var(--note-mint); }.workflow-art b { position: relative; width: 2.25rem; height: 2px; background: var(--ink); }.workflow-art b::after { content: ""; position: absolute; right: 0; top: 50%; width: .65rem; height: .65rem; border-block-start: 2px solid var(--ink); border-inline-end: 2px solid var(--ink); transform: translateY(-50%) rotate(45deg); }
   .scanner { background: var(--paper-3); border-bottom: var(--border); }.scanner__grid { display: grid; grid-template-columns: .8fr 1.2fr; gap: clamp(2rem,7vw,6rem); align-items: center; }
   .scanner__phone { position: relative; max-width: 330px; min-height: 530px; margin: auto; border: 8px solid var(--ink); background: var(--paper); box-shadow: var(--shadow-xl); padding: 5rem 2rem; }
   .scanner__paper { display: grid; gap: 1.1rem; padding: 2rem 1.2rem; border: var(--border); box-shadow: var(--shadow); transform: rotate(-3deg); font-weight: 600; }
@@ -252,7 +237,7 @@ const elevation = {
     .proof-ribbon li:nth-child(n+3) { border-top: 1px solid var(--inverse-muted); padding-top: .8rem; margin-top: .8rem; }
     .feature-card:nth-child(n) { grid-column: span 6; }
     .workflow { grid-template-columns: 1fr; }
-    .workflow:nth-child(even) .shot { order: initial; }
+    .workflow:nth-child(even) .workflow__phone { order: initial; }
     .trust-grid { grid-template-columns: 1fr; }
     .roadmap__inner { align-items: flex-start; flex-direction: column; }
   }
@@ -261,6 +246,6 @@ const elevation = {
     .proof-ribbon li:nth-child(n) { border-inline-start: 0; border-top: 1px solid var(--inverse-muted); padding-block: .75rem; margin: 0; }
     .proof-ribbon li:first-child { border-top: 0; }
     .feature-card:nth-child(n) { grid-column: span 12; min-height: auto; }
-    .shot__canvas { grid-template-columns: 1fr; min-height: 340px; }.shot__sidebar { display:none; }.shot__notes { padding: 1rem; }.hero__actions .btn { width: 100%; }.scanner__phone { min-height: 440px; }.sync__inner { grid-template-columns: 1fr; }.sync__pulse { width: 50px; height: 50px; }
+    .phones { display: flex; gap: 1rem; padding: 1.5rem 0 .5rem; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }.phones .phone { flex: 0 0 72%; scroll-snap-align: center; transform: none; }.phones .phone:nth-child(2) { box-shadow: var(--shadow-lg); }.hero__actions .btn { width: 100%; }.scanner__phone { min-height: 440px; }.sync__inner { grid-template-columns: 1fr; }.sync__pulse { width: 50px; height: 50px; }
   }
 </style>

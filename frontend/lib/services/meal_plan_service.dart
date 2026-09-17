@@ -83,6 +83,22 @@ class MealPlanService {
     }
   }
 
+  /// Releases the server-side digest of this user's meal plan edits so
+  /// housemates get their one summary notification right after the planning
+  /// session ends. Fire-and-forget: failure only means the server's idle-window
+  /// fallback delivers the digest a little later, so errors are logged and
+  /// swallowed.
+  Future<void> flushMealPlanNotifications(String groupId) async {
+    try {
+      await _dio.post('/notifications/flush', data: {
+        'group_id': groupId,
+        'type': 'meal_plan_changed',
+      });
+    } on DioException catch (e) {
+      _logger.w('Flush meal plan notifications failed: ${e.response?.data}');
+    }
+  }
+
   Future<void> deleteMealPlan(String id) async {
     try {
       await _dio.delete('/meal-plans/$id');

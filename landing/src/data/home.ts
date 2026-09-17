@@ -39,7 +39,6 @@ export interface HomeCopy {
   faq: Array<{ question: string; answer: string }>;
   finalTitle: string;
   finalBody: string;
-  placeholder: string;
 }
 
 export const homeCopy: Record<SiteLanguage, HomeCopy> = {
@@ -176,7 +175,6 @@ export const homeCopy: Record<SiteLanguage, HomeCopy> = {
     finalTitle: "Bring the household together.",
     finalBody:
       "Open the web app now, or join the mobile beta on iOS and Android.",
-    placeholder: "Screenshot placeholder — replace before official launch",
   },
   de: {
     metaTitle: "mitlist — ein gemeinsamer Ort für euren Haushalt",
@@ -309,7 +307,6 @@ export const homeCopy: Record<SiteLanguage, HomeCopy> = {
     ],
     finalTitle: "Bringt euren Haushalt zusammen.",
     finalBody: "Öffnet jetzt die Web-App oder nehmt an der Mobile-Beta teil.",
-    placeholder: "Screenshot-Platzhalter — vor dem offiziellen Start ersetzen",
   },
   es: {} as HomeCopy,
   fr: {} as HomeCopy,
@@ -453,7 +450,6 @@ derived("es", {
   ],
   finalTitle: "Reunid vuestro hogar.",
   finalBody: "Abrid la app web o uníos a la beta móvil en iOS y Android.",
-  placeholder: "Marcador de captura — sustituir antes del lanzamiento oficial",
 });
 derived("fr", {
   metaTitle: "mitlist — un espace commun pour votre foyer",
@@ -588,8 +584,6 @@ derived("fr", {
   finalTitle: "Rassemblez votre foyer.",
   finalBody:
     "Ouvrez l’application Web ou rejoignez la bêta mobile sur iOS et Android.",
-  placeholder:
-    "Emplacement de capture — à remplacer avant le lancement officiel",
 });
 derived("nl", {
   metaTitle: "mitlist — één gedeelde plek voor jullie huishouden",
@@ -723,6 +717,4 @@ derived("nl", {
   ],
   finalTitle: "Breng het huishouden samen.",
   finalBody: "Open de webapp of doe mee met de mobiele bèta op iOS en Android.",
-  placeholder:
-    "Tijdelijke schermafbeelding — vervangen voor officiële lancering",
 });

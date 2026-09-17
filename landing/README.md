@@ -31,8 +31,9 @@ still draggable, no inertia).
   `src/data/site.ts`; do not hardcode copies in components.
 - `/mobile-beta` collects the required testing-invitation consent and a separate,
   optional launch-updates consent. `/testing` remains available for old links.
-- Replace all elements carrying `data-launch-placeholder` with real product
-  screenshots before the official launch.
+- Product screenshots live in `public/screenshots/*.webp` (phone captures of
+  the live web app at 430×932 CSS px, 2× scale). `npm run check:official-launch`
+  fails while any `data-launch-placeholder` element remains in `HomePage.astro`.
 - Localized homepages ship at `/en/`, `/de/`, `/es/`, `/fr/`, and `/nl/`.
 
 ## Commands

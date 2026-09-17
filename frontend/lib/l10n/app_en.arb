@@ -6997,6 +6997,11 @@
   "notificationSettlementDeclinedBody": "{actorName} declined your settlement of {amount} in {groupName}.",
   "notificationMealPlanTitle": "Meal plan updated",
   "notificationMealPlanBody": "{actorName} updated the meal plan in {groupName}.",
+  "notificationMealPlanDigestBody": "{actorName} made {count} changes to the meal plan in {groupName}.",
+  "notificationMealPlanDigestNamesBody": "{actorName} made {count} changes to the meal plan in {groupName}: {itemNames}",
+  "notificationExpensesDigestTitle": "Expenses added",
+  "notificationExpensesDigestBody": "{actorName} added {count} expenses in {groupName}.",
+  "notificationExpensesDigestNamesBody": "{actorName} added {count} expenses in {groupName}: {expenseNames}",
   "notificationWeeklyDigestTitle": "Weekly summary",
   "notificationWeeklyDigestBody": "{count, plural, =0{No household activity this week} =1{Your household had 1 activity this week} other{Your household had {count} activities this week}}",
   "notificationPinwallReminderTitle": "Reminder",
@@ -7150,6 +7155,69 @@
         "type": "String"
       },
       "groupName": {
+        "type": "String"
+      }
+    }
+  },
+  "@notificationMealPlanDigestBody": {
+    "description": "Digest body when one person made several meal plan changes in a row",
+    "placeholders": {
+      "actorName": {
+        "type": "String"
+      },
+      "count": {
+        "type": "num"
+      },
+      "groupName": {
+        "type": "String"
+      }
+    }
+  },
+  "@notificationMealPlanDigestNamesBody": {
+    "description": "Meal plan digest body listing the recipes involved",
+    "placeholders": {
+      "actorName": {
+        "type": "String"
+      },
+      "count": {
+        "type": "num"
+      },
+      "groupName": {
+        "type": "String"
+      },
+      "itemNames": {
+        "type": "String"
+      }
+    }
+  },
+  "@notificationExpensesDigestTitle": {
+    "description": "Title when one person added several expenses in a row"
+  },
+  "@notificationExpensesDigestBody": {
+    "placeholders": {
+      "actorName": {
+        "type": "String"
+      },
+      "count": {
+        "type": "num"
+      },
+      "groupName": {
+        "type": "String"
+      }
+    }
+  },
+  "@notificationExpensesDigestNamesBody": {
+    "placeholders": {
+      "actorName": {
+        "type": "String"
+      },
+      "count": {
+        "type": "num"
+      },
+      "groupName": {
+        "type": "String"
+      },
+      "expenseNames": {
         "type": "String"
       }
     }
