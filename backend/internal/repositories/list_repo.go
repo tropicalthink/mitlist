@@ -172,6 +172,36 @@ func (r *ListRepository) SetListReminder(ctx context.Context, id uuid.UUID, remi
 	return err
 }
 
+// ListListsByGroupAndRemindAtRange returns the group's unarchived lists whose
+// reminder falls in [from, to), ordered by remind_at. Delivered reminders are
+// included so the calendar can show them as past events.
+func (r *ListRepository) ListListsByGroupAndRemindAtRange(ctx context.Context, groupID uuid.UUID, from, to time.Time) ([]models.List, error) {
+	query := `
+		SELECT id, group_id, name, type, archived_at, remind_at, reminder_sent_at, created_at, updated_at
+		FROM lists
+		WHERE group_id = $1
+		  AND archived_at IS NULL
+		  AND remind_at IS NOT NULL
+		  AND remind_at >= $2
+		  AND remind_at < $3
+		ORDER BY remind_at ASC, id ASC`
+	rows, err := r.pool.Query(ctx, query, groupID, from, to)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var lists []models.List
+	for rows.Next() {
+		var l models.List
+		if err := rows.Scan(&l.ID, &l.GroupID, &l.Name, &l.Type, &l.ArchivedAt, &l.RemindAt, &l.ReminderSentAt, &l.CreatedAt, &l.UpdatedAt); err != nil {
+			return nil, err
+		}
+		lists = append(lists, l)
+	}
+	return lists, rows.Err()
+}
+
 // HardDeleteList permanently deletes a list by ID.
 func (r *ListRepository) HardDeleteList(ctx context.Context, id uuid.UUID) error {
 	_, err := r.pool.Exec(ctx, `DELETE FROM lists WHERE id = $1`, id)

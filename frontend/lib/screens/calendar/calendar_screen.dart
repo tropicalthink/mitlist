@@ -59,6 +59,10 @@ enum _CalendarView { week, month, agenda }
         icon: Icons.push_pin_outlined,
         color: cs.error
       ),
+    CalendarEventType.listReminder => (
+        icon: Icons.notifications_active_outlined,
+        color: cs.error
+      ),
   };
 }
 
@@ -947,6 +951,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       CalendarEventType.recurringExpense => l10n.calendarEventRecurring,
       CalendarEventType.expense => l10n.calendarEventExpense,
       CalendarEventType.pinwallReminder => l10n.calendarEventReminder,
+      CalendarEventType.listReminder => l10n.calendarEventListReminder,
     };
     return (visual.icon, visual.color, label);
   }
@@ -981,6 +986,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       case CalendarEventType.pinwallReminder:
         // Reminders live on the pinwall (home tab); take the user there.
         context.goNamed('home');
+      case CalendarEventType.listReminder:
+        final listId = event.listReminder?.listId;
+        if (listId != null && listId.isNotEmpty) {
+          context.pushNamed('listDetail', pathParameters: {'listId': listId});
+        }
     }
   }
 
@@ -1175,6 +1185,7 @@ class _EventRow extends StatelessWidget {
       CalendarEventType.recurringExpense => l10n.calendarEventRecurring,
       CalendarEventType.expense => l10n.calendarEventExpense,
       CalendarEventType.pinwallReminder => l10n.calendarEventReminder,
+      CalendarEventType.listReminder => l10n.calendarEventListReminder,
     };
 
     return Padding(
