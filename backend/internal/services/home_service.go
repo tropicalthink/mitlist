@@ -15,24 +15,24 @@ type homeGroupReader interface {
 }
 
 type homeActivityReader interface {
-	ListRecentActivity(context.Context, *models.User, uuid.UUID, int) ([]models.ActivityEvent, error)
+	listRecentActivityForMember(context.Context, uuid.UUID, int) ([]models.ActivityEvent, error)
 }
 
 type homePinwallReader interface {
-	ListPosts(context.Context, *models.User, uuid.UUID, int, int) ([]models.PinwallPost, error)
+	listPostsForMember(context.Context, *models.User, uuid.UUID, int, int) ([]models.PinwallPost, error)
 }
 
 type homeMealPlanReader interface {
-	ListMealPlans(context.Context, *models.User, uuid.UUID, time.Time, time.Time) ([]models.MealPlan, error)
+	listMealPlansForMember(context.Context, uuid.UUID, time.Time, time.Time) ([]models.MealPlan, error)
 }
 
 type homeRecipeReader interface {
-	GetRecipe(context.Context, uuid.UUID, uuid.UUID) (*models.Recipe, error)
+	getRecipesForMember(context.Context, uuid.UUID, uuid.UUID, []uuid.UUID) (map[uuid.UUID]*models.Recipe, error)
 }
 
 // HomeService builds the data needed for the initial household screen in one
-// authenticated request. The existing feature services remain the source of
-// authorization and business rules.
+// authenticated request. GroupService proves membership once; package-private
+// feature reads then reuse that proof while preserving their other rules.
 type HomeService struct {
 	groups    homeGroupReader
 	activity  homeActivityReader
@@ -79,7 +79,7 @@ func (s *HomeService) GetSnapshot(
 	wg.Add(3)
 	go func() {
 		defer wg.Done()
-		events, sectionErr := s.activity.ListRecentActivity(ctx, user, groupID, 10)
+		events, sectionErr := s.activity.listRecentActivityForMember(ctx, groupID, 10)
 		if sectionErr != nil {
 			snapshot.ActivityError = true
 			return
@@ -88,7 +88,7 @@ func (s *HomeService) GetSnapshot(
 	}()
 	go func() {
 		defer wg.Done()
-		posts, sectionErr := s.pinwall.ListPosts(ctx, user, groupID, 50, 0)
+		posts, sectionErr := s.pinwall.listPostsForMember(ctx, user, groupID, 50, 0)
 		if sectionErr != nil {
 			snapshot.PinwallError = true
 			return
@@ -97,18 +97,28 @@ func (s *HomeService) GetSnapshot(
 	}()
 	go func() {
 		defer wg.Done()
-		plans, sectionErr := s.mealPlans.ListMealPlans(ctx, user, groupID, date, date)
+		plans, sectionErr := s.mealPlans.listMealPlansForMember(ctx, groupID, date, date)
 		if sectionErr != nil {
 			snapshot.TodayMealError = true
 			return
 		}
+		recipeIDs := make([]uuid.UUID, 0, len(plans))
+		seenRecipes := make(map[uuid.UUID]struct{}, len(plans))
+		for i := range plans {
+			if _, seen := seenRecipes[plans[i].RecipeID]; seen {
+				continue
+			}
+			seenRecipes[plans[i].RecipeID] = struct{}{}
+			recipeIDs = append(recipeIDs, plans[i].RecipeID)
+		}
+		recipes, recipeErr := s.recipes.getRecipesForMember(ctx, user.ID, groupID, recipeIDs)
+		if recipeErr != nil {
+			recipes = nil
+		}
 		meals := make([]models.HomeMeal, len(plans))
 		for i := range plans {
 			meals[i].Plan = plans[i]
-			recipe, recipeErr := s.recipes.GetRecipe(ctx, user.ID, plans[i].RecipeID)
-			if recipeErr == nil {
-				meals[i].Recipe = recipe
-			}
+			meals[i].Recipe = recipes[plans[i].RecipeID]
 		}
 		snapshot.TodayMeals = meals
 	}()

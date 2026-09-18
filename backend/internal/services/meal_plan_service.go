@@ -165,6 +165,12 @@ func (s *MealPlanService) ListMealPlans(ctx context.Context, user *models.User, 
 	if err := s.requireMembership(ctx, user.ID, groupID); err != nil {
 		return nil, err
 	}
+	return s.listMealPlansForMember(ctx, groupID, from, to)
+}
+
+// listMealPlansForMember is for composite services that have already proved
+// membership in groupID.
+func (s *MealPlanService) listMealPlansForMember(ctx context.Context, groupID uuid.UUID, from, to time.Time) ([]models.MealPlan, error) {
 	return s.mealPlanRepo.ListMealPlansByGroup(ctx, groupID, from, to)
 }
 
