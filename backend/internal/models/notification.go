@@ -20,6 +20,7 @@ const (
 	NotificationTypeMealPlanChanged         = "meal_plan_changed"
 	NotificationTypeWeeklyDigest            = "weekly_digest"
 	NotificationTypePinwallReminder         = "pinwall_reminder"
+	NotificationTypeListReminder            = "list_reminder"
 )
 
 // ActivityNotificationBatch is one interactive event queued for coalescing.

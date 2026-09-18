@@ -9,6 +9,11 @@ class ItemList {
   final bool isArchived;
   final DateTime? archivedAt;
 
+  /// One-time household reminder for this list (server `remind_at`).
+  /// [reminderSentAt] is set once the reminder was delivered.
+  final DateTime? remindAt;
+  final DateTime? reminderSentAt;
+
   /// First lines from the list (hub card preview), from API `item_preview`.
   final List<String> itemPreview;
   final DateTime createdAt;
@@ -22,10 +27,15 @@ class ItemList {
     this.itemCount,
     this.isArchived = false,
     this.archivedAt,
+    this.remindAt,
+    this.reminderSentAt,
     this.itemPreview = const [],
     required this.createdAt,
     required this.updatedAt,
   });
+
+  /// True while a reminder is scheduled and has not been delivered yet.
+  bool get hasPendingReminder => remindAt != null && reminderSentAt == null;
 
   factory ItemList.fromJson(Map<String, dynamic> json) {
     final rawPreview = json['item_preview'];
@@ -34,6 +44,8 @@ class ItemList {
       preview = rawPreview.whereType<String>().toList();
     }
     final archivedAtRaw = json['archived_at'];
+    final remindAtRaw = json['remind_at'];
+    final reminderSentAtRaw = json['reminder_sent_at'];
     return ItemList(
       id: json['id'] as String,
       groupId: json['group_id'] as String,
@@ -43,6 +55,11 @@ class ItemList {
       isArchived: json['archived_at'] != null,
       archivedAt: archivedAtRaw != null
           ? DateTime.parse(archivedAtRaw as String)
+          : null,
+      remindAt:
+          remindAtRaw is String ? DateTime.parse(remindAtRaw).toLocal() : null,
+      reminderSentAt: reminderSentAtRaw is String
+          ? DateTime.parse(reminderSentAtRaw).toLocal()
           : null,
       itemPreview: preview,
       createdAt: DateTime.parse(json['created_at'] as String),
@@ -56,6 +73,9 @@ class ItemList {
         'name': name,
         'type': type,
         if (itemCount != null) 'item_count': itemCount,
+        if (remindAt != null) 'remind_at': remindAt!.toUtc().toIso8601String(),
+        if (reminderSentAt != null)
+          'reminder_sent_at': reminderSentAt!.toUtc().toIso8601String(),
         if (itemPreview.isNotEmpty) 'item_preview': itemPreview,
         'created_at': createdAt.toIso8601String(),
         'updated_at': updatedAt.toIso8601String(),

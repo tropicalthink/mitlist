@@ -5058,13 +5058,13 @@ abstract class AppLocalizations {
   /// Toggle label for pinwall reminders
   ///
   /// In en, this message translates to:
-  /// **'Pinwall reminders'**
+  /// **'Reminders'**
   String get notifPrefPinwallReminders;
 
   /// Toggle subtitle for pinwall reminders
   ///
   /// In en, this message translates to:
-  /// **'When someone pins a reminder for later'**
+  /// **'When a pinwall note or a list reminder comes due'**
   String get notifPrefPinwallRemindersDesc;
 
   /// Toggle label for push notifications
@@ -9380,6 +9380,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reminder'**
   String get notificationPinwallReminderTitle;
+
+  /// Title for a scheduled list reminder notification
+  ///
+  /// In en, this message translates to:
+  /// **'List reminder'**
+  String get notificationListReminderTitle;
+
+  /// Body for a list reminder: list name plus unchecked item count
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{{listName}} =1{{listName} · 1 item left} other{{listName} · {count} items left}}'**
+  String notificationListReminderBody(String listName, int count);
+
+  /// List menu item: schedule a household reminder
+  ///
+  /// In en, this message translates to:
+  /// **'Set reminder'**
+  String get listReminderMenuSet;
+
+  /// List menu item: change the scheduled reminder
+  ///
+  /// In en, this message translates to:
+  /// **'Change reminder'**
+  String get listReminderMenuChange;
+
+  /// List menu item: remove the scheduled reminder
+  ///
+  /// In en, this message translates to:
+  /// **'Clear reminder'**
+  String get listReminderMenuClear;
+
+  /// Toast after scheduling a list reminder
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder set for {label}.'**
+  String listReminderSaved(String label);
+
+  /// Toast after clearing a list reminder
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder cleared.'**
+  String get listReminderCleared;
+
+  /// Error toast when saving a list reminder fails
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save the reminder. Try again.'**
+  String get listReminderCouldNotSave;
+
+  /// Tooltip/semantics for the reminder chip on a list
+  ///
+  /// In en, this message translates to:
+  /// **'Household reminder. Tap to change.'**
+  String get listReminderChipTooltip;
 
   /// Generic photo label
   ///

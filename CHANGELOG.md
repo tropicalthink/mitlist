@@ -8,6 +8,16 @@ follow [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- List reminders: a list's ⋮ menu now has "Set reminder", which picks a date
+  and time; the household then gets a push and inbox notification ("List
+  reminder · Groceries · 3 items left") that opens the list. A chip under the
+  list header shows the scheduled time, tap it to change, or clear it from
+  the menu. Server side this is `PUT /lists/{id}/reminder` (`remind_at`
+  RFC3339 or null), a `list-reminder` cron job every minute with the same
+  claim/lease dedupe as pinwall reminders, and migration 000073. Delivery
+  follows the existing "Reminders" notification toggle, which now covers both
+  pinwall notes and lists.
+
 - Every tip in the onboarding emails links to the screen it describes (the
   title and an "Open" link on each sticky note, and an `Open:` line in the
   plain-text body), and a step carries at most three tips; the day-30 email
@@ -76,6 +86,16 @@ follow [Semantic Versioning](https://semver.org/).
   `docs/iap-subscriptions-plan.md`.
 
 ### Fixed
+
+- Notification preferences can be changed again. Every toggle under You >
+  Notifications had failed with "Couldn't save that preference" since the API
+  started rejecting unknown JSON keys: the app echoed the whole record back on
+  `PATCH /notifications/preferences`, `id` and `user_id` included, and the
+  strict decoder answered 400. The app now sends only the household and the
+  toggles, and the API accepts (and ignores) the server-owned fields so older
+  app builds save too. The duplicate toggles in the household settings sheet
+  are gone: preferences are personal, so each member sets their own under You
+  > Notifications, one card per household.
 
 - Polar checkout and webhooks work in production again. Every checkout had
   been refused since launch because all three Polar products were still

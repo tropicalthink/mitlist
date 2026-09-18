@@ -2876,11 +2876,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get notifPrefWeeklyDigestDesc => 'Un résumé de l\'activité du foyer';
 
   @override
-  String get notifPrefPinwallReminders => 'Rappels Pinwall';
+  String get notifPrefPinwallReminders => 'Rappels';
 
   @override
   String get notifPrefPinwallRemindersDesc =>
-      'Quand quelqu\'un épingle un rappel pour plus tard';
+      'Quand une note Pinwall ou un rappel de liste arrive à échéance';
 
   @override
   String get notifPrefPushNotifications => 'Notifications push';
@@ -5411,6 +5411,46 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get notificationPinwallReminderTitle => 'Rappel';
+
+  @override
+  String get notificationListReminderTitle => 'Rappel de liste';
+
+  @override
+  String notificationListReminderBody(String listName, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$listName · $count articles restants',
+      one: '$listName · 1 article restant',
+      zero: '$listName',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get listReminderMenuSet => 'Ajouter un rappel';
+
+  @override
+  String get listReminderMenuChange => 'Modifier le rappel';
+
+  @override
+  String get listReminderMenuClear => 'Supprimer le rappel';
+
+  @override
+  String listReminderSaved(String label) {
+    return 'Rappel défini pour $label.';
+  }
+
+  @override
+  String get listReminderCleared => 'Rappel supprimé.';
+
+  @override
+  String get listReminderCouldNotSave =>
+      'Impossible d\'enregistrer le rappel. Réessayez.';
+
+  @override
+  String get listReminderChipTooltip =>
+      'Rappel du foyer. Touchez pour modifier.';
 
   @override
   String get commonPhoto => 'Photo';

@@ -2862,11 +2862,11 @@ class AppLocalizationsEs extends AppLocalizations {
       'Un resumen de la actividad del hogar';
 
   @override
-  String get notifPrefPinwallReminders => 'Recordatorios del Pinwall';
+  String get notifPrefPinwallReminders => 'Recordatorios';
 
   @override
   String get notifPrefPinwallRemindersDesc =>
-      'Cuando alguien fija un recordatorio para más tarde';
+      'Cuando vence una nota del Pinwall o un recordatorio de lista';
 
   @override
   String get notifPrefPushNotifications => 'Notificaciones push';
@@ -5381,6 +5381,46 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get notificationPinwallReminderTitle => 'Recordatorio';
+
+  @override
+  String get notificationListReminderTitle => 'Recordatorio de lista';
+
+  @override
+  String notificationListReminderBody(String listName, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$listName · $count artículos pendientes',
+      one: '$listName · 1 artículo pendiente',
+      zero: '$listName',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get listReminderMenuSet => 'Poner recordatorio';
+
+  @override
+  String get listReminderMenuChange => 'Cambiar recordatorio';
+
+  @override
+  String get listReminderMenuClear => 'Quitar recordatorio';
+
+  @override
+  String listReminderSaved(String label) {
+    return 'Recordatorio puesto para $label.';
+  }
+
+  @override
+  String get listReminderCleared => 'Recordatorio quitado.';
+
+  @override
+  String get listReminderCouldNotSave =>
+      'No se pudo guardar el recordatorio. Inténtalo de nuevo.';
+
+  @override
+  String get listReminderChipTooltip =>
+      'Recordatorio del hogar. Toca para cambiarlo.';
 
   @override
   String get commonPhoto => 'Foto';

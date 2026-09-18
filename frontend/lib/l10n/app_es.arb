@@ -3278,11 +3278,11 @@
   "@notifPrefWeeklyDigestDesc": {
     "description": "Toggle subtitle for weekly digest"
   },
-  "notifPrefPinwallReminders": "Recordatorios del Pinwall",
+  "notifPrefPinwallReminders": "Recordatorios",
   "@notifPrefPinwallReminders": {
     "description": "Toggle label for pinwall reminders"
   },
-  "notifPrefPinwallRemindersDesc": "Cuando alguien fija un recordatorio para más tarde",
+  "notifPrefPinwallRemindersDesc": "Cuando vence una nota del Pinwall o un recordatorio de lista",
   "@notifPrefPinwallRemindersDesc": {
     "description": "Toggle subtitle for pinwall reminders"
   },
@@ -4757,6 +4757,15 @@
   "notificationWeeklyDigestTitle": "Resumen semanal",
   "notificationWeeklyDigestBody": "{count, plural, =0{No hubo actividad en el hogar esta semana} =1{Tu hogar tuvo 1 actividad esta semana} other{Tu hogar tuvo {count} actividades esta semana}}",
   "notificationPinwallReminderTitle": "Recordatorio",
+  "notificationListReminderTitle": "Recordatorio de lista",
+  "notificationListReminderBody": "{count, plural, =0{{listName}} =1{{listName} · 1 artículo pendiente} other{{listName} · {count} artículos pendientes}}",
+  "listReminderMenuSet": "Poner recordatorio",
+  "listReminderMenuChange": "Cambiar recordatorio",
+  "listReminderMenuClear": "Quitar recordatorio",
+  "listReminderSaved": "Recordatorio puesto para {label}.",
+  "listReminderCleared": "Recordatorio quitado.",
+  "listReminderCouldNotSave": "No se pudo guardar el recordatorio. Inténtalo de nuevo.",
+  "listReminderChipTooltip": "Recordatorio del hogar. Toca para cambiarlo.",
   "@commonView": {
     "description": "Generic view button"
   },
