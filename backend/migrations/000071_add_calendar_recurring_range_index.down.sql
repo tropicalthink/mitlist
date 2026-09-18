@@ -1,0 +1,1 @@
+DROP INDEX CONCURRENTLY IF EXISTS idx_recurring_expenses_group_next_due_active;
