@@ -37,6 +37,17 @@ class RecipeRepository {
     return rows.map(_toRecipe).toList();
   }
 
+  Future<api.Recipe?> getRecipeOnce(String recipeId) async {
+    final row = await (_db.select(_db.recipesTable)
+          ..where((table) => table.id.equals(recipeId)))
+        .getSingleOrNull();
+    return row == null ? null : _toRecipe(row);
+  }
+
+  Future<void> cacheRecipes(Iterable<api.Recipe> recipes) async {
+    await _db.upsertRecipesRows(recipes.map(_toRow));
+  }
+
   Future<int> refreshRecipes({int limit = 50, int offset = 0}) async {
     final remote = await _remote.listRecipes(limit: limit, offset: offset);
     await _db.upsertRecipesRows(remote.map(_toRow));

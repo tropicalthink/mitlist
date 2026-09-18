@@ -13,6 +13,7 @@ import 'package:mitlist/models/auth_models.dart';
 import 'package:mitlist/models/chore_models.dart';
 import 'package:mitlist/models/finance_models.dart';
 import 'package:mitlist/models/group_models.dart';
+import 'package:mitlist/models/home_models.dart';
 import 'package:mitlist/models/list_models.dart';
 import 'package:mitlist/models/notification_models.dart';
 import 'package:mitlist/models/pinwall_models.dart';
@@ -27,6 +28,7 @@ import 'package:mitlist/providers/activity_provider.dart';
 import 'package:mitlist/providers/chore_provider.dart';
 import 'package:mitlist/providers/finance_provider.dart';
 import 'package:mitlist/providers/group_provider.dart';
+import 'package:mitlist/providers/home_provider.dart';
 import 'package:mitlist/providers/list_provider.dart';
 import 'package:mitlist/providers/notification_provider.dart';
 import 'package:mitlist/providers/pinwall_provider.dart';
@@ -56,6 +58,7 @@ import 'package:mitlist/services/auth_service.dart';
 import 'package:mitlist/services/chore_service.dart';
 import 'package:mitlist/services/finance_service.dart';
 import 'package:mitlist/services/group_service.dart';
+import 'package:mitlist/services/home_service.dart';
 import 'package:mitlist/services/list_service.dart';
 import 'package:mitlist/services/notification_service.dart';
 import 'package:mitlist/services/recipe_service.dart';
@@ -484,6 +487,8 @@ void main() {
               .overrideWith((ref) async => FakeRecipeService()),
           activityServiceProviderAsync
               .overrideWith((ref) async => FakeActivityService()),
+          homeServiceProviderAsync
+              .overrideWith((ref) async => FakeHomeService(group)),
           choreRepositoryProvider.overrideWith(
               (ref) async => FakeChoreRepository(FakeChoreService())),
           listRepositoryProvider
@@ -1448,6 +1453,8 @@ void main() {
         groupServiceProviderAsync.overrideWith((ref) async => groupService),
         activityServiceProviderAsync
             .overrideWith((ref) async => activityService),
+        homeServiceProviderAsync
+            .overrideWith((ref) async => FakeHomeService(group)),
         authServiceProviderAsync.overrideWith((ref) async => authService),
         pinwallServiceProviderAsync
             .overrideWith((ref) async => FakePinwallService()),
@@ -1953,6 +1960,30 @@ class FakeActivityService implements ActivityService {
     int offset = 0,
   }) async =>
       _activities.skip(offset).take(limit).toList();
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+class FakeHomeService implements HomeService {
+  FakeHomeService(this.group);
+
+  final Group group;
+
+  @override
+  Future<HomeSnapshot> getSnapshot(
+    String groupId, {
+    required String date,
+  }) async =>
+      HomeSnapshot(
+        group: group,
+        activities: const [],
+        activityError: false,
+        pinwallPosts: const [],
+        pinwallError: false,
+        todayMeals: const [],
+        todayMealError: false,
+      );
 
   @override
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
@@ -2532,6 +2563,13 @@ class FakePinwallRepository implements PinwallRepository {
   @override
   Future<List<PinwallPost>> getPostsOnce(String groupId) async =>
       _service.listPosts(groupId);
+
+  @override
+  Future<List<PinwallPost>?> getFreshPosts(
+    String groupId, {
+    Duration maxAge = const Duration(seconds: 30),
+  }) async =>
+      null;
 
   @override
   Future<void> refreshPosts(String groupId,

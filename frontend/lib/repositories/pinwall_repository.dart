@@ -74,6 +74,20 @@ class PinwallRepository {
     return _decode(row?.postsJson);
   }
 
+  /// Returns a recently refreshed cache entry, or null when the caller should
+  /// contact the server. Home uses this to share its aggregate response with
+  /// the pinwall provider without immediately issuing the old duplicate GET.
+  Future<List<PinwallPost>?> getFreshPosts(
+    String groupId, {
+    Duration maxAge = const Duration(seconds: 30),
+  }) async {
+    final row = await _db.getPinwallPostsOnce(groupId);
+    if (row == null || DateTime.now().difference(row.updatedAt) > maxAge) {
+      return null;
+    }
+    return _decode(row.postsJson);
+  }
+
   /// Replaces the cached post list for [groupId] with the server's.
   ///
   /// [limit] matches the server's own default. It must not be lowered per

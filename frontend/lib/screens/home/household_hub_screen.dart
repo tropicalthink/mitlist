@@ -13,7 +13,9 @@ import '../../providers/chore_provider.dart';
 import '../../providers/finance_provider.dart';
 import '../../providers/list_provider.dart';
 import '../../providers/group_provider.dart';
+import '../../providers/home_provider.dart';
 import '../../providers/pinwall_provider.dart';
+import '../../providers/recipe_provider.dart';
 import '../../l10n/app_localizations.dart';
 import '../../repositories/hub_repository.dart';
 import '../../router.dart' show currentGroupIdProvider;
@@ -216,6 +218,8 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
 
       final actF = ref.read(activityServiceProviderAsync.future);
       final authF = ref.read(authServiceProviderAsync.future);
+      final homeF = ref.read(homeServiceProviderAsync.future);
+      final recipeRepoF = ref.read(recipeRepositoryProvider.future);
 
       // Paint from the saved profile and refresh it in the background. Awaiting
       // `/auth/me` here held the cached hub behind a full connect timeout on
@@ -231,11 +235,15 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
       }
 
       final activityService = await actF;
+      final homeService = await homeF;
+      final recipeRepository = await recipeRepoF;
 
       final repo = HubRepository(
         db: ref.read(appDatabaseProvider),
         groups: groupService,
         activity: activityService,
+        home: homeService,
+        recipes: recipeRepository,
       );
 
       final cachedGroup = await repo.getGroupOnce(_resolvedGroupId!);
@@ -301,10 +309,12 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
     ref.invalidate(cachedFinanceSummaryByGroupProvider(_resolvedGroupId!));
     ref.invalidate(cachedListsByGroupProvider(_resolvedGroupId!));
     ref.invalidate(cachedCurrentChoresByGroupProvider(_resolvedGroupId!));
-    ref.invalidate(pinwallPostsByGroupProvider(_resolvedGroupId!));
-    ref.invalidate(todayMealPlansProvider(_resolvedGroupId!));
     ref.invalidate(weekMealPlansSummaryProvider(_resolvedGroupId!));
     await _loadData();
+    // Rebuild these providers only after the aggregate has written their
+    // fresh cache rows, so pull-to-refresh does not race duplicate requests.
+    ref.invalidate(pinwallPostsByGroupProvider(_resolvedGroupId!));
+    ref.invalidate(todayMealPlansProvider(_resolvedGroupId!));
 
     try {
       final financeRepo = await ref.read(financeRepositoryProvider.future);
@@ -317,13 +327,6 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
     try {
       final choreRepo = await ref.read(choreRepositoryProvider.future);
       await choreRepo.refreshCurrentChores(_resolvedGroupId!);
-    } catch (_) {}
-    try {
-      final pinRepo = await ref.read(pinwallRepositoryProvider.future);
-      // Deliberately the default limit: the hub only renders the first handful
-      // of notes, but it shares one cache blob with the board, so refreshing a
-      // short page here would drop the board's remaining notes.
-      await pinRepo.refreshPosts(_resolvedGroupId!);
     } catch (_) {}
   }
 
