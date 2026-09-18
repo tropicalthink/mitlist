@@ -532,19 +532,15 @@ def seed_account(client: ApiClient, account: Account, items: int) -> None:
 def route_sets(account: Account) -> dict[str, list[tuple[str, str]]]:
     group = quote(account.group_id)
     today = date.today()
-    week_end = today + timedelta(days=7)
     month_start = today - timedelta(days=14)
     month_end = today + timedelta(days=30)
     return {
         "home": [
             ("auth.me", f"{API_PREFIX}/auth/me"),
-            ("group.detail", f"{API_PREFIX}/groups/{group}"),
-            ("activity.list", f"{API_PREFIX}/activity?group_id={group}&limit=10"),
+            ("home.snapshot", f"{API_PREFIX}/groups/{group}/home?date={today}"),
             ("finance.summary", f"{API_PREFIX}/finance/summary?group_id={group}"),
             ("lists.list", f"{API_PREFIX}/lists?group_id={group}&limit=50&offset=0"),
             ("chores.current", f"{API_PREFIX}/chores/current?group_id={group}&due_soon_days=7"),
-            ("pinwall.list", f"{API_PREFIX}/pinwall/posts?group_id={group}&limit=50&offset=0"),
-            ("mealplans.week", f"{API_PREFIX}/meal-plans?group_id={group}&from={today}&to={week_end}"),
             ("notifications.unread", f"{API_PREFIX}/notifications/unread-count"),
         ],
         "lists": [
