@@ -50,8 +50,7 @@ func TestGroupService_GetGroup(t *testing.T) {
 		groupRepo := new(mocks.MockGroupRepo)
 		svc := NewGroupService(groupRepo, nil)
 
-		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
-		groupRepo.On("GetGroupByID", ctx, groupID).Return(&models.Group{ID: groupID, Name: "G"}, nil)
+		groupRepo.On("GetGroupByIDForUser", ctx, groupID, userID).Return(&models.Group{ID: groupID, Name: "G"}, nil)
 
 		g, err := svc.GetGroup(ctx, userID, groupID)
 		require.NoError(t, err)
@@ -62,7 +61,7 @@ func TestGroupService_GetGroup(t *testing.T) {
 		groupRepo := new(mocks.MockGroupRepo)
 		svc := NewGroupService(groupRepo, nil)
 
-		groupRepo.On("GetMembership", ctx, groupID, userID).Return(nil, pgx.ErrNoRows)
+		groupRepo.On("GetGroupByIDForUser", ctx, groupID, userID).Return(nil, pgx.ErrNoRows)
 
 		_, err := svc.GetGroup(ctx, userID, groupID)
 		require.Error(t, err)

@@ -1,0 +1,1 @@
+DROP INDEX CONCURRENTLY IF EXISTS idx_pinwall_posts_group_remind_at;

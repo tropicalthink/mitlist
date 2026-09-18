@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -260,6 +261,46 @@ func TestUserService_GetMe(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, userID, u.ID)
 		userRepo.AssertExpectations(t)
+	})
+}
+
+func TestUserService_GetMeForAccessToken(t *testing.T) {
+	ctx := context.Background()
+	userID := uuid.New()
+	issuedAt := time.Now().UTC()
+
+	t.Run("active access returns user", func(t *testing.T) {
+		userRepo := new(mocks.MockUserRepo)
+		svc := NewUserService(userRepo, nil, nil, nil, nil)
+		user := &models.User{ID: userID, IsActive: true, IsVerified: true}
+		userRepo.On("GetByAccessToken", ctx, userID, "access-jti", issuedAt).
+			Return(user, true, nil)
+
+		got, err := svc.GetMeForAccessToken(ctx, userID, "access-jti", issuedAt)
+		require.NoError(t, err)
+		assert.Same(t, user, got)
+		userRepo.AssertExpectations(t)
+	})
+
+	t.Run("revoked access is rejected", func(t *testing.T) {
+		userRepo := new(mocks.MockUserRepo)
+		svc := NewUserService(userRepo, nil, nil, nil, nil)
+		userRepo.On("GetByAccessToken", ctx, userID, "access-jti", issuedAt).
+			Return(&models.User{ID: userID}, false, nil)
+
+		_, err := svc.GetMeForAccessToken(ctx, userID, "access-jti", issuedAt)
+		require.ErrorIs(t, err, ErrAccessRevoked)
+	})
+
+	t.Run("database errors remain visible", func(t *testing.T) {
+		userRepo := new(mocks.MockUserRepo)
+		svc := NewUserService(userRepo, nil, nil, nil, nil)
+		dbErr := errors.New("database unavailable")
+		userRepo.On("GetByAccessToken", ctx, userID, "access-jti", issuedAt).
+			Return(nil, false, dbErr)
+
+		_, err := svc.GetMeForAccessToken(ctx, userID, "access-jti", issuedAt)
+		require.ErrorIs(t, err, dbErr)
 	})
 }
 

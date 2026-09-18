@@ -38,7 +38,7 @@ DATABASE_URL="$DATABASE_URL" go run ./cmd/migrate version
 ```
 
 The release artifact and database must agree on their migration head. This
-checkout's head is `67`. Verify the filenames in `backend/migrations` before
+checkout's head is `72`. Verify the filenames in `backend/migrations` before
 every release rather than relying on an older image's recorded head.
 
 If the database reports `dirty: true`, stop. Take a backup and inspect the
@@ -52,7 +52,7 @@ DATABASE_URL="$DATABASE_URL" go run ./cmd/migrate up
 DATABASE_URL="$DATABASE_URL" go run ./cmd/migrate version
 ```
 
-- [ ] The resulting version is `67`, `dirty: false`.
+- [ ] The resulting version is `72`, `dirty: false`.
 - [ ] `groups.storage_used_bytes` and `groups.storage_reserved_bytes` exist.
 - [ ] `auth_sessions` exists.
 - [ ] `billing_subscriptions` and `billing_webhook_events` exist.
@@ -61,6 +61,8 @@ DATABASE_URL="$DATABASE_URL" go run ./cmd/migrate version
 - [ ] `idx_notifications_scheduled_dedupe` exists.
 - [ ] `users.guest_last_seen_at` and `users.guest_locked_at` exist.
 - [ ] `testing_signups.launch_updates` and its consent metadata columns exist.
+- [ ] `idx_expenses_group_date`, `idx_recurring_expenses_group_next_due_active`,
+      and `idx_pinwall_posts_group_remind_at` exist.
 
 ## 3. Cut over the API
 
@@ -69,7 +71,7 @@ DATABASE_URL="$DATABASE_URL" go run ./cmd/migrate version
       runtime configuration. They are no longer read.
 - [ ] Start one API replica first.
 - [ ] Confirm startup logs show a successful database connection and migration
-      version 67, with no panic or repeated connection retries.
+      version 72, with no panic or repeated connection retries.
 - [ ] Keep coarse IP abuse protection enabled at the edge. Fine-grained API
       rate-limit buckets are process-local, so replicas do not share them.
 
@@ -226,7 +228,7 @@ The application, tests, CI, and Compose stack no longer require Redis.
 ## Rollback
 
 Prefer an application rollback without rolling the database down. Before
-rollback, verify that the previous image tolerates schema version 67; migrations
+rollback, verify that the previous image tolerates schema version 72; migrations
 40, 45, and 47 include destructive security cleanup and cannot be reversed into
 the deleted credentials or duplicate device ownership records.
 

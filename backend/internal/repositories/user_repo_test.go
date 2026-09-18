@@ -120,6 +120,32 @@ func TestUserRepository_GetByID_NotFound(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
+func TestUserRepository_GetByAccessToken(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewUserRepository(mock)
+	id := fixedUUID()
+	issuedAt := fixedTime()
+
+	rows := pgxmock.NewRows([]string{
+		"id", "email", "password_hash", "first_name", "last_name", "avatar_url",
+		"is_active", "is_verified", "is_guest", "tips_emails_enabled", "created_at", "updated_at",
+		"access_active",
+	}).AddRow(
+		id, "test@example.com", "hash", "Test", "User", nil,
+		true, true, false, true, fixedTime(), fixedTime(), true,
+	)
+
+	mock.ExpectQuery("SELECT id, email, .* auth_access_revocations").
+		WithArgs(id, "access-jti", issuedAt).
+		WillReturnRows(rows)
+
+	user, accessActive, err := repo.GetByAccessToken(context.Background(), id, "access-jti", issuedAt)
+	require.NoError(t, err)
+	assert.True(t, accessActive)
+	assert.Equal(t, id, user.ID)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
 func TestUserRepository_TouchGuestActivity(t *testing.T) {
 	mock := newMockDB(t)
 	repo := NewUserRepository(mock)
