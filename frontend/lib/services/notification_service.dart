@@ -81,7 +81,7 @@ class NotificationService {
   }
 
   Future<void> updatePreference(NotificationPreferenceModel pref) async {
-    await _dio.patch('/notifications/preferences', data: pref.toJson());
+    await _dio.patch('/notifications/preferences', data: pref.toPatchJson());
   }
 
   /// Releases every server-side notification digest this user has pending
