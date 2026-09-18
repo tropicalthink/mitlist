@@ -36,6 +36,8 @@
 
 ## Store assets
 
-- App icon: `frontend/assets/icon/icon.png` (1024x1024)
+- App icon: `store/icons/app-store-1024.png` (App Store, 1024x1024) and `store/icons/google-play-512.png` (Play, 512x512).
+  Both are the website header mark. Regenerate every icon (landing favicon, Flutter launcher sources, store PNGs) with
+  `cd landing && node scripts/brand-icons.mjs`, then `cd frontend && dart run flutter_launcher_icons`.
 - Feature graphic (Play Store): 1024x500px, PNG, no alpha
 - Screenshots: minimum 1080x1920px per `store/screenshot_spec.txt`
