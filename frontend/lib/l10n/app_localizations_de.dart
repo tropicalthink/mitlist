@@ -2890,11 +2890,11 @@ class AppLocalizationsDe extends AppLocalizations {
       'Eine Zusammenfassung der Haushaltsaktivität';
 
   @override
-  String get notifPrefPinwallReminders => 'Pinwall-Erinnerungen';
+  String get notifPrefPinwallReminders => 'Erinnerungen';
 
   @override
   String get notifPrefPinwallRemindersDesc =>
-      'Wenn jemand eine Erinnerung für später anpinnt';
+      'Wenn eine Pinwall-Notiz oder eine Listen-Erinnerung fällig wird';
 
   @override
   String get notifPrefPushNotifications => 'Push-Benachrichtigungen';
@@ -5426,6 +5426,46 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get notificationPinwallReminderTitle => 'Erinnerung';
+
+  @override
+  String get notificationListReminderTitle => 'Listen-Erinnerung';
+
+  @override
+  String notificationListReminderBody(String listName, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$listName · $count Einträge offen',
+      one: '$listName · 1 Eintrag offen',
+      zero: '$listName',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get listReminderMenuSet => 'Erinnerung setzen';
+
+  @override
+  String get listReminderMenuChange => 'Erinnerung ändern';
+
+  @override
+  String get listReminderMenuClear => 'Erinnerung entfernen';
+
+  @override
+  String listReminderSaved(String label) {
+    return 'Erinnerung gesetzt für $label.';
+  }
+
+  @override
+  String get listReminderCleared => 'Erinnerung entfernt.';
+
+  @override
+  String get listReminderCouldNotSave =>
+      'Erinnerung konnte nicht gespeichert werden. Bitte erneut versuchen.';
+
+  @override
+  String get listReminderChipTooltip =>
+      'Haushalts-Erinnerung. Zum Ändern antippen.';
 
   @override
   String get commonPhoto => 'Foto';

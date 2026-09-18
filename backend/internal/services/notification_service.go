@@ -95,6 +95,7 @@ var emailEligibleTypes = map[string]bool{
 	models.NotificationTypeRecurringExpenseCreated: true,
 	models.NotificationTypeSettlementRequested:     true,
 	models.NotificationTypePinwallReminder:         true,
+	models.NotificationTypeListReminder:            true,
 }
 
 // NotificationDispatcher is the interface implemented by NotificationService.
@@ -494,7 +495,8 @@ func preferenceForType(pref *models.NotificationPreference, nType string) bool {
 		return pref.MealPlanChanged
 	case models.NotificationTypeWeeklyDigest:
 		return pref.WeeklyDigest
-	case models.NotificationTypePinwallReminder:
+	case models.NotificationTypePinwallReminder, models.NotificationTypeListReminder:
+		// One "reminders" toggle covers both pinwall and list reminders.
 		return pref.PinwallReminder
 	default:
 		return true

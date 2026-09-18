@@ -2843,11 +2843,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notifPrefWeeklyDigestDesc => 'A summary of household activity';
 
   @override
-  String get notifPrefPinwallReminders => 'Pinwall reminders';
+  String get notifPrefPinwallReminders => 'Reminders';
 
   @override
   String get notifPrefPinwallRemindersDesc =>
-      'When someone pins a reminder for later';
+      'When a pinwall note or a list reminder comes due';
 
   @override
   String get notifPrefPushNotifications => 'Push notifications';
@@ -5342,6 +5342,45 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notificationPinwallReminderTitle => 'Reminder';
+
+  @override
+  String get notificationListReminderTitle => 'List reminder';
+
+  @override
+  String notificationListReminderBody(String listName, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$listName · $count items left',
+      one: '$listName · 1 item left',
+      zero: '$listName',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get listReminderMenuSet => 'Set reminder';
+
+  @override
+  String get listReminderMenuChange => 'Change reminder';
+
+  @override
+  String get listReminderMenuClear => 'Clear reminder';
+
+  @override
+  String listReminderSaved(String label) {
+    return 'Reminder set for $label.';
+  }
+
+  @override
+  String get listReminderCleared => 'Reminder cleared.';
+
+  @override
+  String get listReminderCouldNotSave =>
+      'Couldn\'t save the reminder. Try again.';
+
+  @override
+  String get listReminderChipTooltip => 'Household reminder. Tap to change.';
 
   @override
   String get commonPhoto => 'Photo';

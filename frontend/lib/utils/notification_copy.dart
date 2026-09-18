@@ -182,6 +182,16 @@ NotificationText resolveNotificationText({
         );
       }
       break;
+    case 'list_reminder':
+      final list = value('list_name');
+      final count = int.tryParse(value('item_count') ?? '');
+      if (list != null) {
+        return NotificationText(
+          title: l10n.notificationListReminderTitle,
+          body: l10n.notificationListReminderBody(list, count ?? 0),
+        );
+      }
+      break;
   }
   return NotificationText(title: fallbackTitle, body: fallbackBody);
 }

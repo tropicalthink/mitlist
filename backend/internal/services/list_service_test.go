@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -136,6 +137,77 @@ func TestListService_UpdateList(t *testing.T) {
 		l, err := svc.UpdateList(ctx, user, listID, "New", "shopping")
 		require.NoError(t, err)
 		assert.Equal(t, "New", l.Name)
+	})
+}
+
+func TestListService_SetListReminder(t *testing.T) {
+	ctx := context.Background()
+	user := validUser()
+	listID := uuid.New()
+	groupID := uuid.New()
+
+	t.Run("schedules a future reminder", func(t *testing.T) {
+		listRepo := new(mocks.MockListRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewListService(listRepo, groupRepo)
+		remindAt := time.Now().Add(2 * time.Hour)
+
+		listRepo.On("GetListByID", ctx, listID).Return(&models.List{ID: listID, GroupID: groupID, Name: "Groceries"}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
+		listRepo.On("SetListReminder", ctx, listID, mock.AnythingOfType("*time.Time")).Return(nil)
+
+		l, err := svc.SetListReminder(ctx, user, listID, &remindAt)
+		require.NoError(t, err)
+		require.NotNil(t, l.RemindAt)
+		assert.Equal(t, remindAt.UTC(), *l.RemindAt)
+		assert.Nil(t, l.ReminderSentAt)
+		listRepo.AssertExpectations(t)
+	})
+
+	t.Run("rejects a past time", func(t *testing.T) {
+		listRepo := new(mocks.MockListRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewListService(listRepo, groupRepo)
+		past := time.Now().Add(-time.Minute)
+
+		listRepo.On("GetListByID", ctx, listID).Return(&models.List{ID: listID, GroupID: groupID}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
+
+		_, err := svc.SetListReminder(ctx, user, listID, &past)
+		var verr *api.ValidationError
+		require.ErrorAs(t, err, &verr)
+		assert.Equal(t, "remind_at", verr.Field)
+		listRepo.AssertNotCalled(t, "SetListReminder", mock.Anything, mock.Anything, mock.Anything)
+	})
+
+	t.Run("clears with nil", func(t *testing.T) {
+		listRepo := new(mocks.MockListRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewListService(listRepo, groupRepo)
+		existing := time.Now().Add(time.Hour)
+
+		listRepo.On("GetListByID", ctx, listID).Return(&models.List{ID: listID, GroupID: groupID, RemindAt: &existing}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
+		listRepo.On("SetListReminder", ctx, listID, (*time.Time)(nil)).Return(nil)
+
+		l, err := svc.SetListReminder(ctx, user, listID, nil)
+		require.NoError(t, err)
+		assert.Nil(t, l.RemindAt)
+		listRepo.AssertExpectations(t)
+	})
+
+	t.Run("requires membership", func(t *testing.T) {
+		listRepo := new(mocks.MockListRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewListService(listRepo, groupRepo)
+		remindAt := time.Now().Add(time.Hour)
+
+		listRepo.On("GetListByID", ctx, listID).Return(&models.List{ID: listID, GroupID: groupID}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(nil, pgx.ErrNoRows)
+
+		_, err := svc.SetListReminder(ctx, user, listID, &remindAt)
+		require.Error(t, err)
+		listRepo.AssertNotCalled(t, "SetListReminder", mock.Anything, mock.Anything, mock.Anything)
 	})
 }
 

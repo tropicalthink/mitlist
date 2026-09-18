@@ -39,6 +39,7 @@ const (
 	NotificationTemplateExpensesCreatedDigest   = "expenses_created_digest"
 	NotificationTemplateWeeklyDigest            = "weekly_digest"
 	NotificationTemplatePinwallReminder         = "pinwall_reminder"
+	NotificationTemplateListReminder            = "list_reminder"
 )
 
 func NewNotificationCopy(template string, params map[string]string) *NotificationCopy {
