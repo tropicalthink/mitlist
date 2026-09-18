@@ -476,14 +476,9 @@ func (h *AuthHandler) PasswordResetConfirm(w http.ResponseWriter, r *http.Reques
 }
 
 func (h *AuthHandler) GetMe(w http.ResponseWriter, r *http.Request) {
-	userID, err := currentUserID(r)
-	if err != nil {
-		api.RespondError(w, err)
-		return
-	}
-	user, err := h.userService.GetMe(r.Context(), userID)
-	if err != nil {
-		api.RespondError(w, err)
+	user, ok := api.UserFromContext(r.Context())
+	if !ok {
+		api.RespondError(w, api.ErrUnauthorized)
 		return
 	}
 	api.RespondJSON(w, http.StatusOK, user)

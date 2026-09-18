@@ -12,6 +12,7 @@ import (
 type UserRepo interface {
 	Create(ctx context.Context, user *models.User) error
 	GetByID(ctx context.Context, id uuid.UUID) (*models.User, error)
+	GetByAccessToken(ctx context.Context, id uuid.UUID, jti string, issuedAt time.Time) (*models.User, bool, error)
 	GetByEmail(ctx context.Context, email string) (*models.User, error)
 	GetByOAuth(ctx context.Context, provider, providerUserID string) (*models.User, error)
 	Update(ctx context.Context, user *models.User) error

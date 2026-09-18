@@ -2,6 +2,7 @@ package mocks
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/mitlist-app/mitlist/internal/models"
@@ -24,6 +25,14 @@ func (m *MockUserRepo) GetByID(ctx context.Context, id uuid.UUID) (*models.User,
 		return u.(*models.User), args.Error(1)
 	}
 	return nil, args.Error(1)
+}
+
+func (m *MockUserRepo) GetByAccessToken(ctx context.Context, id uuid.UUID, jti string, issuedAt time.Time) (*models.User, bool, error) {
+	args := m.Called(ctx, id, jti, issuedAt)
+	if u := args.Get(0); u != nil {
+		return u.(*models.User), args.Bool(1), args.Error(2)
+	}
+	return nil, args.Bool(1), args.Error(2)
 }
 
 func (m *MockUserRepo) GetByEmail(ctx context.Context, email string) (*models.User, error) {
