@@ -3,6 +3,7 @@ enum CalendarEventType {
   chore,
   recurringExpense,
   pinwallReminder,
+  listReminder,
   expense
 }
 
@@ -17,6 +18,7 @@ class CalendarEvent {
   final CalendarRecurringExpense? recurringExpense;
   final CalendarExpense? expense;
   final CalendarPinwallReminder? pinwallReminder;
+  final CalendarListReminder? listReminder;
 
   const CalendarEvent({
     required this.id,
@@ -29,18 +31,17 @@ class CalendarEvent {
     this.recurringExpense,
     this.expense,
     this.pinwallReminder,
+    this.listReminder,
   });
 
   factory CalendarEvent.fromJson(Map<String, dynamic> json) {
     final typeStr = json['type'] as String;
+    // Server types are snake_case ("list_reminder"); enum names are camelCase
+    // ("listReminder"). Compare with underscores stripped, case-insensitively.
+    final wanted = typeStr.replaceAll('_', '').toLowerCase();
     final type = CalendarEventType.values.firstWhere(
-      (e) => e.name == typeStr.replaceAll('_', ''),
-      orElse: () {
-        if (typeStr == 'pinwall_reminder') {
-          return CalendarEventType.pinwallReminder;
-        }
-        return CalendarEventType.mealPlan;
-      },
+      (e) => e.name.toLowerCase() == wanted,
+      orElse: () => CalendarEventType.mealPlan,
     );
     return CalendarEvent(
       id: json['id'] as String,
@@ -67,6 +68,10 @@ class CalendarEvent {
       pinwallReminder: json['pinwall_reminder'] != null
           ? CalendarPinwallReminder.fromJson(
               (json['pinwall_reminder'] as Map).cast<String, dynamic>())
+          : null,
+      listReminder: json['list_reminder'] != null
+          ? CalendarListReminder.fromJson(
+              (json['list_reminder'] as Map).cast<String, dynamic>())
           : null,
     );
   }
@@ -161,6 +166,30 @@ class CalendarPinwallReminder {
         postId: json['post_id'] as String,
         userId: json['user_id'] as String,
         content: json['content'] as String,
+        sent: json['sent'] as bool? ?? false,
+      );
+}
+
+/// The one-time household reminder scheduled on a list (server
+/// `list_reminder`). [sent] flips once the reminder job delivered it.
+class CalendarListReminder {
+  final String listId;
+  final String listName;
+  final String listType;
+  final bool sent;
+
+  const CalendarListReminder({
+    required this.listId,
+    required this.listName,
+    required this.listType,
+    required this.sent,
+  });
+
+  factory CalendarListReminder.fromJson(Map<String, dynamic> json) =>
+      CalendarListReminder(
+        listId: json['list_id'] as String,
+        listName: json['list_name'] as String? ?? '',
+        listType: json['list_type'] as String? ?? '',
         sent: json['sent'] as bool? ?? false,
       );
 }

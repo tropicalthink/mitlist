@@ -606,7 +606,7 @@ func (c *Container) MealPlanService() *services.MealPlanService {
 // CalendarService returns the singleton calendar service.
 func (c *Container) CalendarService() *services.CalendarService {
 	c.calendarServiceOnce.Do(func() {
-		c.calendarService = services.NewCalendarService(c.MealPlanRepo(), c.RecipeRepo(), c.ChoreRepo(), c.FinanceRepo(), c.GroupRepo(), c.PinwallRepo())
+		c.calendarService = services.NewCalendarService(c.MealPlanRepo(), c.RecipeRepo(), c.ChoreRepo(), c.FinanceRepo(), c.GroupRepo(), c.PinwallRepo(), c.ListRepo())
 	})
 	return c.calendarService
 }

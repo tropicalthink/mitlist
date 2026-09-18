@@ -313,6 +313,13 @@ type CalendarPinwallRepo interface {
 	ListPostsByGroupAndRemindAtRange(ctx context.Context, groupID uuid.UUID, from, to time.Time) ([]models.PinwallPost, error)
 }
 
+// CalendarListRepo lists list reminders for calendar aggregation.
+type CalendarListRepo interface {
+	// ListListsByGroupAndRemindAtRange returns the group's unarchived lists
+	// whose reminder falls in [from, to), ordered by remind_at.
+	ListListsByGroupAndRemindAtRange(ctx context.Context, groupID uuid.UUID, from, to time.Time) ([]models.List, error)
+}
+
 // AttachmentRepo is the interface for attachment repository operations.
 type AttachmentRepo interface {
 	Reserve(ctx context.Context, a *models.Attachment, limitBytes int64) error

@@ -676,6 +676,7 @@
   "calendarEventChore": "Aufgabe",
   "calendarEventRecurring": "Wiederkehrend",
   "calendarEventExpense": "Ausgabe",
+  "calendarEventListReminder": "Listen-Erinnerung",
   "calendarEventReminder": "Erinnerung",
   "calendarServingsPpl": "{servings} Pers. ",
   "calendarNoHouseholdDesc": "Tritt einem Haushalt bei oder erstelle einen, um den Kalender zu sehen",
