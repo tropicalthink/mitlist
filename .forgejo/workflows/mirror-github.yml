@@ -1,0 +1,40 @@
+# Mirror the main branches to the public GitHub repository.
+#
+# Forgejo is the source of truth: CI, builds and releases run here. GitHub is
+# a read-mostly mirror for discoverability and issues. This workflow pushes
+# ONLY the branch that was just updated (plus tags), never refs/pull/*, so
+# review refs and their history stay on Forgejo. It force-pushes on purpose:
+# a mirror must follow a rewrite, not fight it.
+#
+# Needs one repository secret: MIRROR_GITHUB_TOKEN, a fine-grained GitHub
+# token scoped to tropicalthink/mitlist with "Contents: read and write".
+name: mirror-github
+
+on:
+  push:
+    branches: [new-main-fr, prod]
+    tags: ['*']
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Push the updated ref to GitHub
+        env:
+          MIRROR_GITHUB_TOKEN: ${{ secrets.MIRROR_GITHUB_TOKEN }}
+          REF: ${{ github.ref }}
+        run: |
+          set -eu
+          test -n "$MIRROR_GITHUB_TOKEN"
+          git remote add github \
+            "https://x-access-token:${MIRROR_GITHUB_TOKEN}@github.com/tropicalthink/mitlist.git"
+          # Refuse to ship anything that is not a branch or a tag.
+          case "$REF" in
+            refs/heads/*|refs/tags/*) ;;
+            *) echo "not mirroring $REF" >&2; exit 0 ;;
+          esac
+          git push --force github "HEAD:$REF"

@@ -1,0 +1,38 @@
+# gitleaks configuration for the secret-scan CI job (.forgejo/workflows/ci.yml).
+#
+# Forgejo has no built-in secret scanning, so CI runs gitleaks over the full
+# history of every push and pull request and fails when it finds a credential.
+# GitHub's own scanner covers the mirror; this is the equivalent for the
+# source of truth. Run it locally the same way before pushing:
+#
+#   gitleaks git . --config .gitleaks.toml --redact
+#
+# Everything allowlisted below was reviewed by hand on 2026-09-18 and is not a
+# secret. Keep entries as narrow as possible: a broad pattern here is a hole in
+# the scanner.
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Data files whose words contain 'api' or 'pi' (tapioca, lapiz, papilla, tapis, pilz): grocery seed aliases, not keys"
+paths = [
+  '''^frontend/assets/grocery/seed\.json$''',
+  '''^intelligence/ml/data/.*\.json$''',
+  '''^intelligence/ml/data/.*\.jsonl$''',
+]
+
+[[allowlists]]
+description = "Apple root certificates bundled for App Store receipt validation are public"
+paths = [
+  '''^backend/internal/services/appstore/AppleRootCA-.*\.pem$''',
+]
+
+[[allowlists]]
+description = "Synthetic fixtures in tests and retired CI files: alphabet-sequence Polar webhook secrets, a throwaway VAPID key, and a literal 'test' secret key"
+regexTarget = "match"
+regexes = [
+  '''whsec_(Ab3d|ZZZd)EfGh1jKlMnOpQrStUvWxYz0123456789abcdefg''',
+  '''VapidPrivateKey:\s*"p0vB[A-Za-z0-9_-]+"''',
+  '''SECRET_KEY:\s*test[-_a-z0-9]+''',
+]
