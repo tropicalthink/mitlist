@@ -7,7 +7,7 @@
 # a mirror must follow a rewrite, not fight it.
 #
 # Needs one repository secret: GITHUB_MIRROR_TOKEN, a fine-grained GitHub
-# token scoped to atropicalthink/mitlist with "Contents: read and write".
+# token scoped to tropicalthink/mitlist with "Contents: read and write".
 name: mirror-github
 
 on:
@@ -31,7 +31,7 @@ jobs:
           set -eu
           test -n "$GITHUB_MIRROR_TOKEN"
           git remote add github \
-            "https://x-access-token:${GITHUB_MIRROR_TOKEN}@github.com/atropicalthink/mitlist.git"
+            "https://x-access-token:${GITHUB_MIRROR_TOKEN}@github.com/tropicalthink/mitlist.git"
           # Refuse to ship anything that is not a branch or a tag.
           case "$REF" in
             refs/heads/*|refs/tags/*) ;;
