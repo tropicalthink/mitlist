@@ -1,11 +1,11 @@
-# Flutter wrapper — the Flutter Gradle plugin also injects its own rules,
-# but keep the embedding explicitly to be safe.
--keep class io.flutter.app.** { *; }
--keep class io.flutter.plugin.** { *; }
--keep class io.flutter.util.** { *; }
--keep class io.flutter.view.** { *; }
--keep class io.flutter.** { *; }
--keep class io.flutter.plugins.** { *; }
+# The Flutter embedding AAR ships its own consumer keep rules and the Flutter
+# Gradle plugin injects flutter_proguard_rules.pro, so no blanket io.flutter.**
+# keep is needed here. A `-keep class io.flutter.** { *; }` used to live here and
+# exempted about half of the DEX from R8 (Play "App optimisation" review, 2026-09-18).
+
+# Move every obfuscated class into the root package: smaller DEX, and Play's
+# "Repackage classes" check. Default behaviour from AGP 9.1.
+-repackageclasses ''
 
 # Keep the app entry point referenced from the manifest.
 -keep class me.mitlist.MainActivity { *; }
@@ -34,9 +34,11 @@
 -dontwarn com.google.android.play.core.tasks.OnSuccessListener
 -dontwarn com.google.android.play.core.tasks.Task
 
-# TensorFlow Lite (tflite_flutter) — keep the interpreter runtime, and suppress
-# the optional GPU delegate which we don't bundle (CPU-only inference; see
+# TensorFlow Lite / LiteRT (tflite_flutter) — Dart talks to the C API through
+# dart:ffi, so the Java classes only need their JNI entry points preserved.
+# The optional GPU delegate is not bundled (CPU-only inference; see
 # grocery_classifier_service.dart). Matches missing_rules.txt.
--keep class org.tensorflow.lite.** { *; }
+-keepclasseswithmembers class org.tensorflow.lite.** { native <methods>; }
+-keepclasseswithmembers class com.google.ai.edge.litert.** { native <methods>; }
 -dontwarn org.tensorflow.lite.gpu.GpuDelegateFactory$Options
 -dontwarn org.tensorflow.lite.gpu.**
