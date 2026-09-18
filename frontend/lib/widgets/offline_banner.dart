@@ -128,7 +128,8 @@ class _Banner extends ConsumerWidget {
           else
             Text(
               '$value',
-              style: MitlistTypography.monoBody(),
+              style: MitlistTypography.monoBody(
+                  color: Theme.of(context).colorScheme.onSurface),
             ),
         ],
       ),

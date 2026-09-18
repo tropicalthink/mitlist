@@ -275,7 +275,8 @@ class _ExpenseCard extends StatelessWidget {
               Text(
                 formatExpenseCurrency(expense.amount,
                     currency: expense.currency),
-                style: MitlistTypography.monoBody(),
+                style: MitlistTypography.monoBody(
+                    color: Theme.of(context).colorScheme.onSurface),
               ),
               if (expense.isConverted) ...[
                 const SizedBox(height: MitlistSpacing.space1),
