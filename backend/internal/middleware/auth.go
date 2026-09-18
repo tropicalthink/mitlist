@@ -154,7 +154,7 @@ func AuthWithCredentials(jwt *jwtservice.Service, userSvc *services.UserService,
 				return
 			}
 
-			claims, err := jwt.ValidateAccessToken(token)
+			claims, err := jwt.ValidateAccessTokenClaims(token)
 			if err != nil {
 				msg := "session expired or invalid"
 				if errors.Is(err, jwtservice.ErrRevokedToken) {
@@ -169,9 +169,18 @@ func AuthWithCredentials(jwt *jwtservice.Service, userSvc *services.UserService,
 				api.WriteError(w, fmt.Errorf("invalid session: %w", api.ErrUnauthorized))
 				return
 			}
+			issuedAt, err := claims.GetIssuedAt()
+			if err != nil || issuedAt == nil {
+				api.WriteError(w, fmt.Errorf("invalid session: %w", api.ErrUnauthorized))
+				return
+			}
 
-			user, err := userSvc.GetMe(r.Context(), userID)
+			user, err := userSvc.GetMeForAccessToken(r.Context(), userID, claims.ID, issuedAt.Time)
 			if err != nil {
+				if errors.Is(err, services.ErrAccessRevoked) {
+					api.WriteError(w, fmt.Errorf("session revoked: %w", api.ErrUnauthorized))
+					return
+				}
 				// Preserve the original message (e.g., "account is not active")
 				// while still returning an unauthorized code.
 				api.WriteError(w, fmt.Errorf("%s: %w", err.Error(), api.ErrUnauthorized))

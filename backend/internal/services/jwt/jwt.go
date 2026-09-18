@@ -268,12 +268,9 @@ func refreshLifetime(roles []string) time.Duration {
 }
 
 func (s *Service) ValidateAccessToken(token string) (*Claims, error) {
-	claims, err := s.parse(token, TokenTypeAccess)
+	claims, err := s.ValidateAccessTokenClaims(token)
 	if err != nil {
 		return nil, err
-	}
-	if s.isAccessRevoked(claims.ID) {
-		return nil, ErrRevokedToken
 	}
 	if s.sessions != nil {
 		userID, parseErr := uuid.Parse(claims.Subject)
@@ -290,6 +287,20 @@ func (s *Service) ValidateAccessToken(token string) (*Claims, error) {
 		if !active {
 			return nil, ErrRevokedToken
 		}
+	}
+	return claims, nil
+}
+
+// ValidateAccessTokenClaims validates the signed access token and the local
+// revocation set without querying the persistent session store. Callers must
+// apply the persistent auth_valid_after and access-revocation predicates.
+func (s *Service) ValidateAccessTokenClaims(token string) (*Claims, error) {
+	claims, err := s.parse(token, TokenTypeAccess)
+	if err != nil {
+		return nil, err
+	}
+	if s.isAccessRevoked(claims.ID) {
+		return nil, ErrRevokedToken
 	}
 	return claims, nil
 }
