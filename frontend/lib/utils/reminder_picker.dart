@@ -15,9 +15,10 @@ Future<DateTime?> pickReminderDateTime(
 }) async {
   final l10n = AppLocalizations.of(context)!;
   final now = DateTime.now();
+  final seed = reminderPickerSeed(initial, now);
   final pickedDate = await showDatePicker(
     context: context,
-    initialDate: initial?.isAfter(now) == true ? initial! : now,
+    initialDate: seed,
     firstDate: now,
     lastDate: now.add(const Duration(days: 365)),
     helpText: l10n.pinwallChooseReminderDate,
@@ -26,7 +27,7 @@ Future<DateTime?> pickReminderDateTime(
 
   final pickedTime = await showTimePicker(
     context: context,
-    initialTime: TimeOfDay.fromDateTime(initial ?? now),
+    initialTime: TimeOfDay.fromDateTime(seed),
     helpText: l10n.pinwallChooseReminderTime,
   );
   if (!context.mounted || pickedTime == null) return null;
@@ -43,4 +44,13 @@ Future<DateTime?> pickReminderDateTime(
     return null;
   }
   return combined;
+}
+
+/// The moment both pickers open on: the existing reminder when it is still
+/// in the future, otherwise [now]. Using one seed for the date *and* the time
+/// keeps them consistent; previously a reminder that had already fired fell
+/// back to today's date but kept its stale time of day.
+DateTime reminderPickerSeed(DateTime? initial, DateTime now) {
+  if (initial != null && initial.isAfter(now)) return initial.toLocal();
+  return now;
 }
