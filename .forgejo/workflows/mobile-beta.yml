@@ -33,6 +33,11 @@ jobs:
             printf 'keyAlias=%s\n' "$ANDROID_KEY_ALIAS"
             printf 'storeFile=release.jks\n'
           } > frontend/android/key.properties
+      - name: Fetch on-device OCR models
+        env:
+          MITLIST_OCR_MODELS_URL: ${{ secrets.OCR_MODELS_URL }}
+        run: cd frontend && python3 tool/fetch_ocr_models.py
+
       - name: Build signed Android App Bundle
         env:
           API_BASE_URL: ${{ secrets.BETA_API_BASE_URL }}
@@ -122,6 +127,11 @@ jobs:
           printf '%s' "$IOS_PROVISIONING_PROFILE_B64" | base64 -d > "$HOME/Library/MobileDevice/Provisioning Profiles/mitlist.mobileprovision"
           printf '%s' "$IOS_EXPORT_OPTIONS_PLIST_B64" | base64 -d > frontend/ios/ExportOptions.plist
           printf '\nDEVELOPMENT_TEAM=%s\nCODE_SIGN_IDENTITY=Apple Distribution\n' "$IOS_DEVELOPMENT_TEAM" >> frontend/ios/Flutter/Release.xcconfig
+      - name: Fetch on-device OCR models
+        env:
+          MITLIST_OCR_MODELS_URL: ${{ secrets.OCR_MODELS_URL }}
+        run: cd frontend && python3 tool/fetch_ocr_models.py
+
       - name: Build iOS archive
         env:
           API_BASE_URL: ${{ secrets.BETA_API_BASE_URL }}

@@ -1,11 +1,9 @@
-# Build production images and push them to tropicalthink's own registry.
+# Build production images and push them to the project's own container
+# registry (Forgejo packages). Runs on the self-hosted Forgejo runner only;
+# GitHub ignores .forgejo/workflows.
 #
-# Migrated from .gitea/workflows/deploy-prod.yml. Both exist during the
-# transition; retire the Gitea one after mitlist is cut over to anansi so
-# nobody pushes to vinylnostalgia out of habit.
-#
-# What changed, and why:
-#   - runs-on: dind — our runner has no `ubuntu-latest`. The `dind` label maps
+# Notes on the shape of this file:
+#   - runs-on: dind — the runner has no `ubuntu-latest`. The `dind` label maps
 #     to docker:28-cli. `docker` maps to node:22, which has no docker CLI.
 #   - DOCKER_HOST is the default gateway. Job containers are created by the
 #     dind daemon, so they cannot resolve the compose service name.
@@ -14,40 +12,23 @@
 #     and then fails the push with "unauthorized: reqPackageAccess".
 #   - No docker/setup-buildx-action: third-party actions resolve through
 #     Forgejo's proxy and fail confusingly when they are not mirrored.
-#   - Images are tagged with the commit SHA. The old workflow used a
-#     date-and-short-sha string; SHA alone is what hosts/anansi/stacks/mitlist
+#   - Images are tagged with the commit SHA. That is what the deployment
 #     pins via MITLIST_TAG, and it makes rollback a tag change.
+#   - Pushes go to REGISTRY_PUSH_HOST (a secret: the registry's private
+#     host:port), not to the public hostname. The public name sits behind
+#     Cloudflare, and a Docker blob is uploaded in ONE request, so any layer
+#     over Cloudflare's 100MB body limit dies with a 413 — which is what the
+#     PWA image did. Forgejo keys packages by /v2/<owner>/<image> rather than
+#     by the hostname the client used, so the public pull URL is unchanged.
+#     The runner's dind must trust that host as an insecure registry.
 #
-# Every `test -n` gate below is carried over deliberately: the official image
-# must never fall back to an unattested guest endpoint.
+# Every `test -n` gate below is deliberate: the official image must never
+# fall back to an unattested guest endpoint.
 #
-# What changed 2026-08-19 (2): pushes no longer go to the public registry
-# name. git.tropicalthink.com resolves to Cloudflare, and a Docker blob is
-# uploaded in ONE request, so any layer over Cloudflare's 100MB body limit
-# dies with a 413 after five retries — which is what the PWA image did.
-# Forgejo is one container away on `edge`, so writes go to forgejo:3000 over
-# the LAN instead. Same registry, same package, same pull URL: Forgejo keys
-# packages by /v2/<owner>/<image> rather than by the hostname the client
-# used, and its blob-upload Location headers are relative, so an upload stays
-# on the connection it started on. Only the auth realm is absolute (ROOT_URL)
-# — a token GET with no body, which the tunnel handles fine.
-# Requires dind on `edge` with --insecure-registry forgejo:3000; see
-# hosts/anansi/stacks/forgejo-runner/compose.yml. Deploy that FIRST.
-#
-# What changed 2026-08-19: the web build no longer carries Firebase or App
-# Check values at all. App Check's only web provider is reCAPTCHA Enterprise,
-# which needs GCP billing to protect exactly one endpoint, so web attests with
-# Cloudflare Turnstile and mobile keeps App Check. The API accepts either.
-#
-# What changed 2026-08-27: writes go to anansi's tailnet IP, not forgejo:3000.
-# The runner moved to ada (anansi's disk I/O fault, 2026-08-25), where the
-# compose service name resolves to nothing — every build died at docker login
-# with "lookup forgejo: no such host". The forgejo stack publishes the
-# registry on anansi's Tailscale IP for exactly this (see that compose.yml's
-# ports: note); same registry, same package, same public pull URL, and the
-# Cloudflare 100MB reasoning above still holds because the tailnet path also
-# bypasses the tunnel. Requires ada's dind to trust it as an insecure
-# registry (plain HTTP over WireGuard), per ada's stack-tofu-runner.yml.
+# The web build carries no Firebase or App Check values. App Check's only web
+# provider is reCAPTCHA Enterprise, which needs GCP billing to protect exactly
+# one endpoint, so web attests with Cloudflare Turnstile and mobile keeps App
+# Check. The API accepts either.
 name: build-prod
 
 on:
@@ -56,11 +37,9 @@ on:
   workflow_dispatch:
 
 env:
-  # Two names for one registry. REGISTRY/PUSH_PREFIX is the LAN path used for
-  # every write; IMAGE_PREFIX is the public name the mitlist stack pulls by,
-  # and the only one that belongs in a MITLIST_TAG instruction.
-  REGISTRY: 100.123.249.48:3000
-  PUSH_PREFIX: 100.123.249.48:3000/tropicalthink/mitlist
+  # The public image name the deployment pulls by, and the only one that
+  # belongs in a MITLIST_TAG instruction. The push path is resolved per job
+  # from the REGISTRY_PUSH_HOST secret.
   IMAGE_PREFIX: git.tropicalthink.com/tropicalthink/mitlist
 
 jobs:
@@ -84,6 +63,17 @@ jobs:
         run: |
           set -eu
           echo "DOCKER_HOST=tcp://$(ip route | awk '/default/{print $3}'):2375" >> "$GITHUB_ENV"
+
+      - name: Resolve the registry push host
+        env:
+          REGISTRY_PUSH_HOST: ${{ secrets.REGISTRY_PUSH_HOST }}
+        run: |
+          set -eu
+          # Fail closed: without the private push host the build would push to
+          # nothing, or worse, to the tunnelled public name and 413.
+          test -n "$REGISTRY_PUSH_HOST"
+          echo "REGISTRY=$REGISTRY_PUSH_HOST" >> "$GITHUB_ENV"
+          echo "PUSH_PREFIX=$REGISTRY_PUSH_HOST/${{ github.repository }}" >> "$GITHUB_ENV"
 
       - name: Log in to the registry
         run: |
@@ -113,9 +103,9 @@ jobs:
         run: |
           set -eu
           # Fail closed on everything the official build must not ship without.
-          # No Firebase or App Check values here any more: App Check is
-          # mobile-only (see AppCheckConfig), and the web build attests with
-          # Turnstile, so a missing site key is the thing worth stopping for.
+          # No Firebase or App Check values here: App Check is mobile-only (see
+          # AppCheckConfig), and the web build attests with Turnstile, so a
+          # missing site key is the thing worth stopping for.
           test -n "$API_BASE_URL"
           test -n "$APPLE_TEAM_ID"
           test -n "$TURNSTILE_SITE_KEY"
@@ -159,13 +149,12 @@ jobs:
 
       - name: Tell us what to pin
         run: |
-          # Two app nodes serve api.mitlist.me behind one tunnel. Pinning only
-          # one leaves the other on the old image and requests alternate
-          # between versions — pin BOTH, in the same sitting.
-          echo "Deploy by setting MITLIST_TAG=${{ github.sha }} on EVERY app node:"
-          echo "  infra: hosts/anansi/stacks/mitlist/secrets.sops.env"
-          echo "  infra: hosts/fuwuqier/stacks/mitlist/secrets.sops.env"
-          echo "(staffroom_set_stack_secrets once per host; verify both image tags match)"
+          # Several app nodes serve the API behind one tunnel. Pinning only
+          # one leaves the others on the old image and requests alternate
+          # between versions — pin ALL of them, in the same sitting.
+          echo "Deploy by setting MITLIST_TAG=${{ github.sha }} on EVERY app node"
+          echo "(image name: $IMAGE_PREFIX-backend / $IMAGE_PREFIX-frontend);"
+          echo "verify all nodes report the same image tag afterwards."
 
       - name: Log out
         if: always()
