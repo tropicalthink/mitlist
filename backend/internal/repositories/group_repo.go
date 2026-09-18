@@ -86,6 +86,26 @@ func (r *GroupRepository) GetGroupByID(ctx context.Context, id uuid.UUID) (*mode
 	return &g, nil
 }
 
+// GetGroupByIDForUser retrieves a group only when userID has an active
+// membership. Combining the lookup with the membership proof saves a database
+// round trip on every authenticated group read.
+func (r *GroupRepository) GetGroupByIDForUser(ctx context.Context, id, userID uuid.UUID) (*models.Group, error) {
+	query := `
+		SELECT g.id, g.name, g.description, g.currency, g.chore_zones, g.created_by, g.created_at, g.updated_at
+		FROM groups g
+		JOIN group_memberships gm ON gm.group_id = g.id
+		WHERE g.id = $1 AND gm.user_id = $2 AND gm.left_at IS NULL
+	`
+	row := r.pool.QueryRow(ctx, query, id, userID)
+
+	var g models.Group
+	err := row.Scan(&g.ID, &g.Name, &g.Description, &g.Currency, &g.ChoreZones, &g.CreatedBy, &g.CreatedAt, &g.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &g, nil
+}
+
 // ListGroupsByUser returns all groups a user is a member of.
 func (r *GroupRepository) ListGroupsByUser(ctx context.Context, userID uuid.UUID, limit, offset int) ([]models.Group, error) {
 	if limit <= 0 {

@@ -82,7 +82,7 @@ func TestMigration_Rollback(t *testing.T) {
 	version, dirty, err := m.Version()
 	require.NoError(t, err)
 	assert.False(t, dirty, "migration should not be dirty after up")
-	assert.Greater(t, version, uint(0), "migration version should be > 0")
+	assert.Equal(t, uint(72), version, "migration version should match the repository head")
 
 	// Verify schema: check some tables exist.
 	tables := []string{
@@ -124,6 +124,23 @@ func TestMigration_Rollback(t *testing.T) {
 	`).Scan(&onboardingAttemptedAtExists)
 	require.NoError(t, err)
 	assert.True(t, onboardingAttemptedAtExists, "onboarding_email_sends.attempted_at should exist after migration up")
+
+	indexes := []string{
+		"idx_expenses_group_date",
+		"idx_recurring_expenses_group_next_due_active",
+		"idx_pinwall_posts_group_remind_at",
+	}
+	for _, index := range indexes {
+		var exists bool
+		err := pool.QueryRow(ctx, `
+			SELECT EXISTS (
+				SELECT 1 FROM pg_indexes
+				WHERE schemaname = 'public' AND indexname = $1
+			)
+		`, index).Scan(&exists)
+		require.NoError(t, err, "checking index %s", index)
+		assert.True(t, exists, "index %s should exist after migration up", index)
+	}
 
 	// Run migrations down.
 	err = m.Down()

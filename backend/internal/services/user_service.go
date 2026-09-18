@@ -41,6 +41,10 @@ func (s *UserService) SetFrontendURL(frontendURL string) {
 // password comparison as known accounts, reducing account-enumeration timing.
 const dummyPasswordHash = "$2b$12$gJZj6I3Qm7va1CXdAY2VHe5QWxOlueQEP0li/hhhjIy.HF9LJhLF."
 
+// ErrAccessRevoked means the persistent session predicates rejected an access
+// token even though its signature and registered claims were valid.
+var ErrAccessRevoked = errors.New("access token revoked")
+
 // NewUserService creates a new UserService.
 func NewUserService(
 	userRepo repositories.UserRepo,
@@ -274,13 +278,39 @@ func (s *UserService) GetMe(ctx context.Context, userID uuid.UUID) (*models.User
 		}
 		return nil, err
 	}
+	return s.validateCurrentUser(ctx, user)
+}
+
+// GetMeForAccessToken combines the persistent access-token check and user load
+// in one database query. Signature and registered-claim validation happens in
+// the JWT service before this method is called.
+func (s *UserService) GetMeForAccessToken(
+	ctx context.Context,
+	userID uuid.UUID,
+	jti string,
+	issuedAt time.Time,
+) (*models.User, error) {
+	user, accessActive, err := s.userRepo.GetByAccessToken(ctx, userID, jti, issuedAt)
+	if err != nil {
+		if isNotFound(err) {
+			return nil, ErrAccessRevoked
+		}
+		return nil, err
+	}
+	if !accessActive {
+		return nil, ErrAccessRevoked
+	}
+	return s.validateCurrentUser(ctx, user)
+}
+
+func (s *UserService) validateCurrentUser(ctx context.Context, user *models.User) (*models.User, error) {
 	if !user.IsActive {
 		return nil, &api.ValidationError{Message: "account is inactive"}
 	}
 	if user.IsGuest {
 		// Activity is deliberately refreshed only after the account has passed
 		// the active checks above. A stale token cannot revive a locked guest.
-		if err := s.userRepo.TouchGuestActivity(ctx, userID); err != nil {
+		if err := s.userRepo.TouchGuestActivity(ctx, user.ID); err != nil {
 			return nil, err
 		}
 	}

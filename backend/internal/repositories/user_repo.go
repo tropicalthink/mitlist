@@ -95,6 +95,53 @@ func (r *UserRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.Use
 	return &user, nil
 }
 
+// GetByAccessToken loads a user and atomically evaluates the persistent access
+// token predicates that would otherwise require a separate database round trip.
+func (r *UserRepository) GetByAccessToken(
+	ctx context.Context,
+	id uuid.UUID,
+	jti string,
+	issuedAt time.Time,
+) (*models.User, bool, error) {
+	query := `
+		SELECT id, email, password_hash, first_name, last_name, avatar_url,
+			is_active, is_verified, is_guest, tips_emails_enabled, created_at, updated_at,
+			deleted_at IS NULL
+			AND is_active
+			AND auth_valid_after <= $3
+			AND NOT EXISTS (
+				SELECT 1 FROM auth_access_revocations r
+				WHERE r.jti = $2 AND r.expires_at > NOW()
+			) AS access_active
+		FROM users
+		WHERE id = $1
+	`
+	var user models.User
+	var accessActive bool
+	err := r.db.QueryRow(ctx, query, id, jti, issuedAt).Scan(
+		&user.ID,
+		&user.Email,
+		&user.PasswordHash,
+		&user.FirstName,
+		&user.LastName,
+		&user.AvatarURL,
+		&user.IsActive,
+		&user.IsVerified,
+		&user.IsGuest,
+		&user.TipsEmailsEnabled,
+		&user.CreatedAt,
+		&user.UpdatedAt,
+		&accessActive,
+	)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, false, fmt.Errorf("user not found")
+		}
+		return nil, false, err
+	}
+	return &user, accessActive, nil
+}
+
 // GetByEmail retrieves a user by email, excluding soft-deleted records.
 func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*models.User, error) {
 	query := `

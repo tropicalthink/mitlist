@@ -235,6 +235,10 @@ func main() {
 			activityHandler := handlers.NewActivityHandler(cnt.ActivityService())
 			activityHandler.RegisterRoutes(r)
 
+			// Initial Home payload (group, activity, pinwall, and today's meals)
+			homeHandler := handlers.NewHomeHandler(cnt.HomeService())
+			homeHandler.RegisterRoutes(r)
+
 			// Weekly summary
 			weeklySummaryHandler := handlers.NewWeeklySummaryHandler(cnt.WeeklySummaryService())
 			weeklySummaryHandler.RegisterRoutes(r)

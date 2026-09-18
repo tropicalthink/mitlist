@@ -40,6 +40,14 @@ func (m *MockGroupRepo) GetGroupByID(ctx context.Context, id uuid.UUID) (*models
 	return nil, args.Error(1)
 }
 
+func (m *MockGroupRepo) GetGroupByIDForUser(ctx context.Context, id, userID uuid.UUID) (*models.Group, error) {
+	args := m.Called(ctx, id, userID)
+	if g := args.Get(0); g != nil {
+		return g.(*models.Group), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
 func (m *MockGroupRepo) ListGroupsByUser(ctx context.Context, userID uuid.UUID, limit, offset int) ([]models.Group, error) {
 	args := m.Called(ctx, userID, limit, offset)
 	if g := args.Get(0); g != nil {

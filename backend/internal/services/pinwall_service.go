@@ -103,6 +103,16 @@ func (s *PinwallService) ListPosts(ctx context.Context, user *models.User, group
 	return s.repo.ListPostsByGroup(ctx, groupID, limit, offset)
 }
 
+// listPostsForMember is for composite services that have already proved
+// membership. User status is still checked because it is part of pinwall read
+// authorization independently of household membership.
+func (s *PinwallService) listPostsForMember(ctx context.Context, user *models.User, groupID uuid.UUID, limit, offset int) ([]models.PinwallPost, error) {
+	if !user.IsActive || !user.IsVerified {
+		return nil, &api.PermissionDeniedError{Message: "user is not active or verified"}
+	}
+	return s.repo.ListPostsByGroup(ctx, groupID, limit, offset)
+}
+
 // DeletePost deletes a post; any group member may delete.
 func (s *PinwallService) DeletePost(ctx context.Context, user *models.User, groupID, postID uuid.UUID) error {
 	if !user.IsActive || !user.IsVerified {

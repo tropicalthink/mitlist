@@ -254,8 +254,12 @@ showAppDialog<bool>(
 | 000028–000033 | List item canonical ids, finance additions, chore zones, notification preferences, pinwall positioning |
 | 000034 | Attachment storage accounting and quota reservations |
 | 000035 | PostgreSQL-backed refresh-token sessions |
+| 000036–000067 | Settlement approval, billing, auth hardening, integrations, recipe sharing, and launch consent |
+| 000068 | Onboarding email attempt reservation |
+| 000069 | Batched activity notifications |
+| 000070–000072 | Calendar range-query indexes for expenses, recurring expenses, and pinwall reminders |
 
-Latest migration: `000035_add_auth_sessions`.
+Latest migration: `000072_add_calendar_pinwall_range_index`.
 
 ## Key API Endpoints Added
 

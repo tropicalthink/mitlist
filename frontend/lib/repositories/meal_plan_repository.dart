@@ -61,4 +61,26 @@ class MealPlanRepository {
       return null;
     }
   }
+
+  /// A cached range that is recent enough to reuse without another request.
+  /// The Home aggregate writes this range immediately before its widgets are
+  /// built, avoiding a duplicate meal-plan GET on the same screen load.
+  Future<List<MealPlan>?> getFreshCached(
+    String groupId, {
+    required String from,
+    required String to,
+    Duration maxAge = const Duration(seconds: 30),
+  }) async {
+    final row = await _db.getMealPlanRange(groupId, rangeKey(from, to));
+    if (row == null || DateTime.now().difference(row.updatedAt) > maxAge) {
+      return null;
+    }
+    try {
+      final decoded = jsonDecode(row.plansJson);
+      if (decoded is! List) return null;
+      return MealPlanService.parseMealPlans(decoded);
+    } catch (_) {
+      return null;
+    }
+  }
 }

@@ -145,6 +145,9 @@ type Container struct {
 	activityServiceOnce sync.Once
 	activityService     *services.ActivityService
 
+	homeServiceOnce sync.Once
+	homeService     *services.HomeService
+
 	weeklySummaryServiceOnce sync.Once
 	weeklySummaryService     *services.WeeklySummaryService
 
@@ -628,6 +631,20 @@ func (c *Container) ActivityService() *services.ActivityService {
 		c.activityService = services.NewActivityService(c.ActivityRepo(), c.GroupRepo())
 	})
 	return c.activityService
+}
+
+// HomeService returns the service that composes the initial household view.
+func (c *Container) HomeService() *services.HomeService {
+	c.homeServiceOnce.Do(func() {
+		c.homeService = services.NewHomeService(
+			c.GroupService(),
+			c.ActivityService(),
+			c.PinwallService(),
+			c.MealPlanService(),
+			c.RecipeService(),
+		)
+	})
+	return c.homeService
 }
 
 // WeeklySummaryService returns the singleton weekly summary service.

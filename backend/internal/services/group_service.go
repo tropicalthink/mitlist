@@ -110,13 +110,10 @@ func (s *GroupService) CreateGroup(ctx context.Context, userID uuid.UUID, input 
 
 // GetGroup returns a group if the user is a member.
 func (s *GroupService) GetGroup(ctx context.Context, userID, groupID uuid.UUID) (*models.Group, error) {
-	if _, err := s.requireMembership(ctx, userID, groupID); err != nil {
-		return nil, err
-	}
-	group, err := s.groupRepo.GetGroupByID(ctx, groupID)
+	group, err := s.groupRepo.GetGroupByIDForUser(ctx, groupID, userID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) || isNotFound(err) {
-			return nil, &api.NotFoundError{Resource: "group"}
+			return nil, &api.PermissionDeniedError{Action: "access group"}
 		}
 		return nil, err
 	}

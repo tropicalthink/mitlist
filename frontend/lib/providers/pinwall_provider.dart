@@ -31,6 +31,12 @@ final pinwallPostsByGroupProvider =
     StreamProvider.family<List<PinwallPost>, String>((ref, groupId) async* {
   ref.keepAlive();
   final repo = await ref.watch(pinwallRepositoryProvider.future);
+  final fresh = await repo.getFreshPosts(groupId);
+  if (fresh != null) {
+    yield fresh;
+    yield* repo.watchPosts(groupId);
+    return;
+  }
   final cached = await repo.getPostsOnce(groupId);
   if (cached.isNotEmpty) {
     yield cached;

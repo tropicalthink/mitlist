@@ -30,16 +30,22 @@ final todayMealPlansProvider =
   ref.keepAlive();
   final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
   final repo = await ref.read(mealPlanRepositoryProvider.future);
-  final plans = await repo.load(groupId, from: today, to: today);
+  final plans = await repo.getFreshCached(groupId, from: today, to: today) ??
+      await repo.load(groupId, from: today, to: today);
 
   // Recipe lookups stay best-effort and per-plan: a null recipe already
   // degrades gracefully, so an offline miss shows the plan without its title
   // rather than failing the whole card.
+  final recipeRepo = await ref.read(recipeRepositoryProvider.future);
   final recipeSvc = await ref.read(recipeServiceProviderAsync.future);
   final recipes = await Future.wait(
     plans.map((plan) async {
+      final cached = await recipeRepo.getRecipeOnce(plan.recipeId);
+      if (cached != null) return cached;
       try {
-        return await recipeSvc.getRecipe(plan.recipeId);
+        final recipe = await recipeSvc.getRecipe(plan.recipeId);
+        await recipeRepo.cacheRecipes([recipe]);
+        return recipe;
       } catch (_) {
         return null;
       }
