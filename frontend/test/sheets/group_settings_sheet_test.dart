@@ -5,14 +5,11 @@ import 'package:go_router/go_router.dart';
 import 'package:mitlist/l10n/app_localizations.dart';
 import 'package:mitlist/models/attachment_models.dart';
 import 'package:mitlist/models/group_models.dart';
-import 'package:mitlist/models/notification_models.dart';
 import 'package:mitlist/providers/attachment_provider.dart';
 import 'package:mitlist/providers/group_provider.dart';
-import 'package:mitlist/providers/notification_provider.dart';
 import 'package:mitlist/repositories/group_repository.dart';
 import 'package:mitlist/services/attachment_service.dart';
 import 'package:mitlist/services/group_service.dart';
-import 'package:mitlist/services/notification_service.dart';
 import 'package:mitlist/sheets/group_settings_sheet.dart';
 
 import '../support/grocery_seed_test_helper.dart';
@@ -69,18 +66,6 @@ class _FakeGroupService implements GroupService {
       '${invocation.memberName} not implemented on _FakeGroupService');
 }
 
-class _FakeNotificationService implements NotificationService {
-  @override
-  Future<NotificationPreferenceModel> getGroupPreference(
-          String groupId) async =>
-      NotificationPreferenceModel(
-          id: 'pref-1', userId: _adminId, groupId: groupId);
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError(
-      '${invocation.memberName} not implemented on _FakeNotificationService');
-}
-
 class _FakeAttachmentService implements AttachmentService {
   @override
   Future<StorageUsage> getStorageUsage({required String groupId}) async =>
@@ -133,8 +118,6 @@ void main() {
           groupServiceProviderAsync.overrideWith((ref) async => groups),
           groupRepositoryProvider.overrideWith(
               (ref) async => GroupRepository(db: db, groups: groups)),
-          notificationServiceProviderAsync
-              .overrideWith((ref) async => _FakeNotificationService()),
           attachmentServiceProviderAsync
               .overrideWith((ref) async => _FakeAttachmentService()),
         ],

@@ -3819,11 +3819,11 @@
   "@notifPrefWeeklyDigestDesc": {
     "description": "Toggle subtitle for weekly digest"
   },
-  "notifPrefPinwallReminders": "Pinwall reminders",
+  "notifPrefPinwallReminders": "Reminders",
   "@notifPrefPinwallReminders": {
     "description": "Toggle label for pinwall reminders"
   },
-  "notifPrefPinwallRemindersDesc": "When someone pins a reminder for later",
+  "notifPrefPinwallRemindersDesc": "When a pinwall note or a list reminder comes due",
   "@notifPrefPinwallRemindersDesc": {
     "description": "Toggle subtitle for pinwall reminders"
   },
@@ -7005,6 +7005,55 @@
   "notificationWeeklyDigestTitle": "Weekly summary",
   "notificationWeeklyDigestBody": "{count, plural, =0{No household activity this week} =1{Your household had 1 activity this week} other{Your household had {count} activities this week}}",
   "notificationPinwallReminderTitle": "Reminder",
+  "notificationListReminderTitle": "List reminder",
+  "@notificationListReminderTitle": {
+    "description": "Title for a scheduled list reminder notification"
+  },
+  "notificationListReminderBody": "{count, plural, =0{{listName}} =1{{listName} · 1 item left} other{{listName} · {count} items left}}",
+  "@notificationListReminderBody": {
+    "description": "Body for a list reminder: list name plus unchecked item count",
+    "placeholders": {
+      "listName": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "listReminderMenuSet": "Set reminder",
+  "@listReminderMenuSet": {
+    "description": "List menu item: schedule a household reminder"
+  },
+  "listReminderMenuChange": "Change reminder",
+  "@listReminderMenuChange": {
+    "description": "List menu item: change the scheduled reminder"
+  },
+  "listReminderMenuClear": "Clear reminder",
+  "@listReminderMenuClear": {
+    "description": "List menu item: remove the scheduled reminder"
+  },
+  "listReminderSaved": "Reminder set for {label}.",
+  "@listReminderSaved": {
+    "description": "Toast after scheduling a list reminder",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "listReminderCleared": "Reminder cleared.",
+  "@listReminderCleared": {
+    "description": "Toast after clearing a list reminder"
+  },
+  "listReminderCouldNotSave": "Couldn't save the reminder. Try again.",
+  "@listReminderCouldNotSave": {
+    "description": "Error toast when saving a list reminder fails"
+  },
+  "listReminderChipTooltip": "Household reminder. Tap to change.",
+  "@listReminderChipTooltip": {
+    "description": "Tooltip/semantics for the reminder chip on a list"
+  },
   "@notificationChoreDueSoonBody": {
     "placeholders": {
       "choreName": {

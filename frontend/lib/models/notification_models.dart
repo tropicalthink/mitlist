@@ -87,6 +87,23 @@ class NotificationPreferenceModel {
     );
   }
 
+  /// The body for `PATCH /notifications/preferences`. Only the household
+  /// and the toggles: `id`, `user_id` and timestamps are server-owned and
+  /// the API rejects a body that carries unknown keys, so echoing the full
+  /// record (see [toJson]) fails every save with 400.
+  Map<String, dynamic> toPatchJson() => {
+        'group_id': groupId,
+        'chore_due': choreDue,
+        'chore_due_day_of': choreDueDayOf,
+        'list_item_added': listItemAdded,
+        'expense_created': expenseCreated,
+        'meal_plan_changed': mealPlanChanged,
+        'weekly_digest': weeklyDigest,
+        'pinwall_reminder': pinwallReminder,
+        'push_enabled': pushEnabled,
+        'email_enabled': emailEnabled,
+      };
+
   Map<String, dynamic> toJson() => {
         'id': id,
         'user_id': userId,

@@ -3278,11 +3278,11 @@
   "@notifPrefWeeklyDigestDesc": {
     "description": "Toggle subtitle for weekly digest"
   },
-  "notifPrefPinwallReminders": "Prikbord-herinneringen",
+  "notifPrefPinwallReminders": "Herinneringen",
   "@notifPrefPinwallReminders": {
     "description": "Toggle label for pinwall reminders"
   },
-  "notifPrefPinwallRemindersDesc": "Wanneer iemand een herinnering voor later vastzet",
+  "notifPrefPinwallRemindersDesc": "Wanneer een prikbordnotitie of lijstherinnering afgaat",
   "@notifPrefPinwallRemindersDesc": {
     "description": "Toggle subtitle for pinwall reminders"
   },
@@ -4757,6 +4757,15 @@
   "notificationWeeklyDigestTitle": "Weekoverzicht",
   "notificationWeeklyDigestBody": "{count, plural, =0{Deze week was er geen huishoudactiviteit} =1{Je huishouden had deze week 1 activiteit} other{Je huishouden had deze week {count} activiteiten}}",
   "notificationPinwallReminderTitle": "Herinnering",
+  "notificationListReminderTitle": "Lijstherinnering",
+  "notificationListReminderBody": "{count, plural, =0{{listName}} =1{{listName} · 1 item open} other{{listName} · {count} items open}}",
+  "listReminderMenuSet": "Herinnering instellen",
+  "listReminderMenuChange": "Herinnering wijzigen",
+  "listReminderMenuClear": "Herinnering verwijderen",
+  "listReminderSaved": "Herinnering ingesteld voor {label}.",
+  "listReminderCleared": "Herinnering verwijderd.",
+  "listReminderCouldNotSave": "Herinnering kon niet worden opgeslagen. Probeer het opnieuw.",
+  "listReminderChipTooltip": "Huishoudherinnering. Tik om te wijzigen.",
   "@commonView": {
     "description": "Generic view button"
   },

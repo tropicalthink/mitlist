@@ -3278,11 +3278,11 @@
   "@notifPrefWeeklyDigestDesc": {
     "description": "Toggle subtitle for weekly digest"
   },
-  "notifPrefPinwallReminders": "Rappels Pinwall",
+  "notifPrefPinwallReminders": "Rappels",
   "@notifPrefPinwallReminders": {
     "description": "Toggle label for pinwall reminders"
   },
-  "notifPrefPinwallRemindersDesc": "Quand quelqu'un épingle un rappel pour plus tard",
+  "notifPrefPinwallRemindersDesc": "Quand une note Pinwall ou un rappel de liste arrive à échéance",
   "@notifPrefPinwallRemindersDesc": {
     "description": "Toggle subtitle for pinwall reminders"
   },
@@ -4757,6 +4757,15 @@
   "notificationWeeklyDigestTitle": "Résumé de la semaine",
   "notificationWeeklyDigestBody": "{count, plural, =0{Aucune activité du foyer cette semaine} =1{Votre foyer a eu 1 activité cette semaine} other{Votre foyer a eu {count} activités cette semaine}}",
   "notificationPinwallReminderTitle": "Rappel",
+  "notificationListReminderTitle": "Rappel de liste",
+  "notificationListReminderBody": "{count, plural, =0{{listName}} =1{{listName} · 1 article restant} other{{listName} · {count} articles restants}}",
+  "listReminderMenuSet": "Ajouter un rappel",
+  "listReminderMenuChange": "Modifier le rappel",
+  "listReminderMenuClear": "Supprimer le rappel",
+  "listReminderSaved": "Rappel défini pour {label}.",
+  "listReminderCleared": "Rappel supprimé.",
+  "listReminderCouldNotSave": "Impossible d'enregistrer le rappel. Réessayez.",
+  "listReminderChipTooltip": "Rappel du foyer. Touchez pour modifier.",
   "@commonView": {
     "description": "Generic view button"
   },

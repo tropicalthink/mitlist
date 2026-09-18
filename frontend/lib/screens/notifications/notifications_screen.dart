@@ -591,6 +591,12 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         background: light ? MitlistColors.noteSky : MitlistColors.noteSkyDark,
         foreground: light ? MitlistColors.noteSkyDark : MitlistColors.noteSky,
       );
+    case 'list_reminder':
+      return (
+        icon: 'bellOutline',
+        background: light ? MitlistColors.primary100 : MitlistColors.primary900,
+        foreground: light ? MitlistColors.primary700 : MitlistColors.primary300,
+      );
     case 'pinwall_reminder':
       return (
         icon: 'pushPinOutline',

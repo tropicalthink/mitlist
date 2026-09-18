@@ -204,6 +204,45 @@ func TestNotification_UpdatePreferences(t *testing.T) {
 	assert.False(t, pref.EmailEnabled)
 }
 
+func TestNotification_UpdatePreferencesAcceptsEchoedRecord(t *testing.T) {
+	clearTables(t)
+	router, _ := newNotificationRouter(t)
+	user := createTestUser(t, "echopref@example.com", "Password123!")
+	token := generateTestToken(user.ID)
+
+	groupRepo := newTestGroupRepo()
+	group := &models.Group{
+		ID:        uuid.New(),
+		Name:      "Echo Group",
+		CreatedBy: user.ID,
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
+	}
+	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
+
+	// The app used to PATCH the whole record it got from GET, server-owned
+	// fields included. Those must not trip the strict decoder.
+	body := map[string]any{
+		"id":            uuid.Nil.String(),
+		"user_id":       user.ID.String(),
+		"group_id":      group.ID.String(),
+		"chore_due":     false,
+		"push_enabled":  true,
+		"email_enabled": false,
+		"created_at":    "2026-01-01T00:00:00Z",
+		"updated_at":    "2026-01-01T00:00:00Z",
+	}
+	rec := execRequest(t, router, "PATCH", "/notifications/preferences", body, token)
+	requireStatus(t, rec, http.StatusNoContent)
+
+	pref, err := newTestNotificationRepo().GetPreference(context.Background(), user.ID, group.ID)
+	require.NoError(t, err)
+	assert.False(t, pref.ChoreDue)
+	assert.Equal(t, user.ID, pref.UserID)
+	assert.NotEqual(t, uuid.Nil, pref.ID, "the echoed nil id must not become the row id")
+}
+
 func TestNotification_UpdatePreferencesRequiresGroup(t *testing.T) {
 	clearTables(t)
 	router, _ := newNotificationRouter(t)

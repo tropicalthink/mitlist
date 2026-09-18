@@ -87,6 +87,8 @@ class ListDetailController extends ChangeNotifier {
   bool _doneSectionExpanded = true;
   String? _groupId;
   String? _listType;
+  DateTime? _remindAt;
+  DateTime? _reminderSentAt;
   final HouseholdSuggestionEngine _suggestionEngine =
       HouseholdSuggestionEngine();
   Future<List<Product>>? _productCatalogFuture;
@@ -144,6 +146,13 @@ class ListDetailController extends ChangeNotifier {
   bool get doneSectionExpanded => _doneSectionExpanded;
   String? get groupId => _groupId;
   String? get listType => _listType;
+
+  /// Scheduled household reminder for this list, if any (server truth; not
+  /// cached locally, so it appears once the detail fetch lands).
+  DateTime? get remindAt => _remindAt;
+
+  /// True while a reminder is scheduled and has not been delivered yet.
+  bool get hasPendingReminder => _remindAt != null && _reminderSentAt == null;
   String? get userId => _userId;
   String get groupCurrency => _groupCurrency;
   List<HouseholdSuggestion> get suggestions => _suggestionEngine.suggestions;
@@ -276,6 +285,8 @@ class ListDetailController extends ChangeNotifier {
       _listName = list.name;
       _groupId = list.groupId;
       _listType = list.type;
+      _remindAt = list.remindAt;
+      _reminderSentAt = list.reminderSentAt;
       _notify();
       unawaited(_backfillCanonicalLinks(repo, list.groupId));
 
@@ -952,6 +963,18 @@ class ListDetailController extends ChangeNotifier {
     } catch (_) {}
     if (_disposed) return;
     _listName = newName;
+    _notify();
+  }
+
+  /// Schedules (or clears, with null) the household reminder for this list.
+  /// Throws on failure so the screen can show its own message.
+  Future<void> setReminder(DateTime? remindAt) async {
+    final service = _service;
+    if (service == null) return;
+    final updated = await service.setListReminder(listId, remindAt);
+    if (_disposed) return;
+    _remindAt = updated.remindAt;
+    _reminderSentAt = updated.reminderSentAt;
     _notify();
   }
 

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import '../../models/list_models.dart';
 import '../../services/restock_service.dart';
 import '../../theme/animations.dart';
@@ -11,6 +12,7 @@ import '../../theme/theme.dart';
 import '../../utils/format_currency.dart';
 import '../../utils/haptics.dart';
 import '../../utils/friendly_error.dart';
+import '../../utils/reminder_picker.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_dialog.dart';
 import '../../widgets/app_icon.dart';
@@ -604,12 +606,65 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       case 'cost_summary':
         _showCostSummary();
         break;
+      case 'reminder':
+        _pickReminder();
+        break;
+      case 'clear_reminder':
+        _clearReminder();
+        break;
       case 'archive':
         _archiveList();
         break;
       case 'delete':
         _deleteList();
         break;
+    }
+  }
+
+  String _formatReminder(DateTime at) {
+    final locale = Localizations.localeOf(context).toString();
+    return DateFormat.MMMEd(locale).add_jm().format(at);
+  }
+
+  /// Schedules (or reschedules) the household reminder for this list. The
+  /// date/time pickers enforce a future time locally, so the only failure the
+  /// user can hit here is the network, which gets the generic reminder toast.
+  Future<void> _pickReminder() async {
+    final operation = _operationKey('list-reminder');
+    if (!_beginOperation(operation)) return;
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      final picked = await pickReminderDateTime(
+        context,
+        initial: _controller.remindAt,
+      );
+      if (!mounted || picked == null) return;
+      unawaited(Haptics.light());
+      await _controller.setReminder(picked);
+      if (!mounted) return;
+      AppToast.success(context, l10n.listReminderSaved(_formatReminder(picked)));
+    } catch (_) {
+      if (!mounted) return;
+      AppToast.error(context, l10n.listReminderCouldNotSave);
+    } finally {
+      _finishOperation(operation);
+    }
+  }
+
+  Future<void> _clearReminder() async {
+    final operation = _operationKey('list-reminder');
+    if (!_beginOperation(operation)) return;
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      unawaited(Haptics.light());
+      await _controller.setReminder(null);
+      if (!mounted) return;
+      AppToast.info(context, l10n.listReminderCleared);
+    } catch (_) {
+      if (!mounted) return;
+      AppToast.error(context, l10n.listReminderCouldNotSave);
+    } finally {
+      _finishOperation(operation);
     }
   }
 
@@ -1096,6 +1151,19 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                       value: 'cost_summary',
                       child: Text(l10n.listDetailCostSummary),
                     ),
+                    PopupMenuItem(
+                      value: 'reminder',
+                      child: Text(
+                        _controller.hasPendingReminder
+                            ? l10n.listReminderMenuChange
+                            : l10n.listReminderMenuSet,
+                      ),
+                    ),
+                    if (_controller.hasPendingReminder)
+                      PopupMenuItem(
+                        value: 'clear_reminder',
+                        child: Text(l10n.listReminderMenuClear),
+                      ),
                     const PopupMenuDivider(),
                     PopupMenuItem(
                       value: 'complete_all',
@@ -1128,6 +1196,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
               ],
             ),
             _buildProgressStripe(accent),
+            if (_controller.hasPendingReminder) _buildReminderChip(),
             if (_showSearch)
               Padding(
                 padding: const EdgeInsets.fromLTRB(
@@ -1189,6 +1258,49 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
           widthFactor: total == 0 ? 0 : (done / total).clamp(0.0, 1.0),
           heightFactor: 1,
           child: ColoredBox(color: accent.stripe),
+        ),
+      ),
+    );
+  }
+
+  /// A slim row under the stripe showing when the household will be reminded
+  /// about this list. Tap to reschedule; the trailing button clears it.
+  Widget _buildReminderChip() {
+    final l10n = AppLocalizations.of(context)!;
+    final remindAt = _controller.remindAt;
+    if (remindAt == null) return const SizedBox.shrink();
+    final scheme = Theme.of(context).colorScheme;
+    final label = l10n.pinwallReminderLabel(_formatReminder(remindAt));
+    return Semantics(
+      button: true,
+      label: l10n.listReminderChipTooltip,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: _pickReminder,
+        child: Padding(
+          padding: const EdgeInsets.only(left: MitlistSpacing.md),
+          child: Row(
+            children: [
+              AppIcon(name: 'bellOutline', size: 16, color: scheme.primary),
+              const SizedBox(width: MitlistSpacing.sm),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: scheme.primary),
+                ),
+              ),
+              IconButton(
+                icon: const AppIcon(name: 'xMark', size: 18),
+                tooltip: l10n.listReminderMenuClear,
+                onPressed: _clearReminder,
+              ),
+            ],
+          ),
         ),
       ),
     );

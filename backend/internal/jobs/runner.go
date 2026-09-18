@@ -100,6 +100,15 @@ func (r *Runner) RegisterAll() {
 	}
 	r.register("pinwall-reminder", "* * * * *", pr.Run, true)
 
+	// List reminders — every minute
+	var lr *ListReminder
+	if r.dispatcher != nil {
+		lr = NewListReminderWithDispatcher(r.db, r.dispatcher, r.log)
+	} else {
+		lr = NewListReminder(r.db, r.push, r.log)
+	}
+	r.register("list-reminder", "* * * * *", lr.Run, true)
+
 	// List item digests — every minute. This requires the durable notification
 	// dispatcher, so legacy push-only runners do not consume the queue.
 	if r.dispatcher != nil {

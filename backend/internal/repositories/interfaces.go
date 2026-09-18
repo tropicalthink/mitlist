@@ -114,6 +114,9 @@ type ListRepo interface {
 	ListListsByGroup(ctx context.Context, groupID uuid.UUID, limit, offset int) ([]models.List, error)
 	ListItemPreviewLinesByListIDs(ctx context.Context, listIDs []uuid.UUID, perList int) (map[uuid.UUID][]string, error)
 	UpdateList(ctx context.Context, list *models.List) error
+	// SetListReminder sets (or clears, with nil) the list's one-time reminder
+	// and resets its delivery state so a new time fires again.
+	SetListReminder(ctx context.Context, id uuid.UUID, remindAt *time.Time) error
 	HardDeleteList(ctx context.Context, id uuid.UUID) error
 	SetListArchived(ctx context.Context, id, actorID uuid.UUID, archived bool) error
 	CreateItem(ctx context.Context, item *models.ListItem) error
