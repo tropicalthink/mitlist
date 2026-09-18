@@ -39,20 +39,26 @@ func UserIDFromContext(ctx context.Context) string {
 }
 
 type bucketState struct {
+	key        string
 	tokens     float64
 	lastRefill float64
-	lastSeen   time.Time
+	newer      *bucketState
+	older      *bucketState
 }
 
 // Limiter is a bounded in-process token-bucket store. Cloudflare remains the
 // first line of IP abuse protection; this protects the Go process without an
 // additional datastore.
 type Limiter struct {
-	mu      sync.Mutex
-	buckets map[string]bucketState
+	mu          sync.Mutex
+	buckets     map[string]*bucketState
+	mostRecent  *bucketState
+	leastRecent *bucketState
 }
 
-func NewLimiter() *Limiter { return &Limiter{buckets: make(map[string]bucketState)} }
+func NewLimiter() *Limiter {
+	return &Limiter{buckets: make(map[string]*bucketState)}
+}
 
 var defaultLimiter = NewLimiter()
 
@@ -65,7 +71,18 @@ func (l *Limiter) Allow(key string, capacity int, refillRate float64, now float6
 
 	state, ok := l.buckets[key]
 	if !ok {
-		state = bucketState{tokens: float64(capacity), lastRefill: now}
+		if len(l.buckets) >= maxRateLimitBuckets {
+			oldest := l.leastRecent
+			if oldest != nil {
+				l.remove(oldest)
+				delete(l.buckets, oldest.key)
+			}
+		}
+		state = &bucketState{key: key, tokens: float64(capacity), lastRefill: now}
+		l.markMostRecent(state)
+		l.buckets[key] = state
+	} else {
+		l.markMostRecent(state)
 	}
 	elapsed := now - state.lastRefill
 	if elapsed < 0 {
@@ -73,37 +90,51 @@ func (l *Limiter) Allow(key string, capacity int, refillRate float64, now float6
 	}
 	state.tokens = min(float64(capacity), state.tokens+elapsed*refillRate)
 	state.lastRefill = now
-	state.lastSeen = time.Now()
 	if state.tokens < 1 {
-		l.buckets[key] = state
 		return false
 	}
 	state.tokens--
-	l.buckets[key] = state
-
-	if len(l.buckets) > maxRateLimitBuckets {
-		cutoff := time.Now().Add(-2 * time.Hour)
-		for bucketKey, bucket := range l.buckets {
-			if bucket.lastSeen.Before(cutoff) {
-				delete(l.buckets, bucketKey)
-			}
-		}
-		// Under a spray of unique identifiers, recent buckets can still exceed
-		// the cap. Evict arbitrary entries; rate limiting is best-effort state.
-		for bucketKey := range l.buckets {
-			if len(l.buckets) <= maxRateLimitBuckets {
-				break
-			}
-			delete(l.buckets, bucketKey)
-		}
-	}
 	return true
 }
 
 func (l *Limiter) Reset(key string) {
 	l.mu.Lock()
-	delete(l.buckets, key)
+	if state, ok := l.buckets[key]; ok {
+		l.remove(state)
+		delete(l.buckets, key)
+	}
 	l.mu.Unlock()
+}
+
+func (l *Limiter) markMostRecent(state *bucketState) {
+	if l.mostRecent == state {
+		return
+	}
+	if state.newer != nil || state.older != nil || l.leastRecent == state {
+		l.remove(state)
+	}
+	state.older = l.mostRecent
+	if l.mostRecent != nil {
+		l.mostRecent.newer = state
+	} else {
+		l.leastRecent = state
+	}
+	l.mostRecent = state
+}
+
+func (l *Limiter) remove(state *bucketState) {
+	if state.newer != nil {
+		state.newer.older = state.older
+	} else {
+		l.mostRecent = state.older
+	}
+	if state.older != nil {
+		state.older.newer = state.newer
+	} else {
+		l.leastRecent = state.newer
+	}
+	state.newer = nil
+	state.older = nil
 }
 
 func RateLimit(apiPrefix string) func(next http.Handler) http.Handler {
