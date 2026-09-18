@@ -28,6 +28,14 @@ type updateNotificationPreferencesRequest struct {
 	PinwallReminder *bool      `json:"pinwall_reminder"`
 	PushEnabled     *bool      `json:"push_enabled"`
 	EmailEnabled    *bool      `json:"email_enabled"`
+
+	// Server-owned fields a client may echo back from the record GET returned.
+	// decodeJSON rejects unknown keys, and app builds before 2026-09 sent the
+	// whole record, so every toggle failed with 400. Accepted and ignored.
+	ID        any `json:"id"`
+	UserID    any `json:"user_id"`
+	CreatedAt any `json:"created_at"`
+	UpdatedAt any `json:"updated_at"`
 }
 
 // NewNotificationHandler creates a new NotificationHandler.
