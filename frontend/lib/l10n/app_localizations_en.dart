@@ -2435,6 +2435,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get calendarEventExpense => 'Expense';
 
   @override
+  String get calendarEventListReminder => 'List reminder';
+
+  @override
   String get calendarEventReminder => 'Reminder';
 
   @override

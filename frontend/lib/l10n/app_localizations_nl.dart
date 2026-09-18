@@ -2458,6 +2458,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get calendarEventExpense => 'Uitgave';
 
   @override
+  String get calendarEventListReminder => 'Lijstherinnering';
+
+  @override
   String get calendarEventReminder => 'Herinnering';
 
   @override

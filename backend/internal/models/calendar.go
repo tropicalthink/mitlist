@@ -15,6 +15,7 @@ const (
 	EventTypeRecurringExpense CalendarEventType = "recurring_expense"
 	EventTypeExpense          CalendarEventType = "expense"
 	EventTypePinwallReminder  CalendarEventType = "pinwall_reminder"
+	EventTypeListReminder     CalendarEventType = "list_reminder"
 )
 
 // CalendarEvent is a unified event for the household calendar.
@@ -30,6 +31,7 @@ type CalendarEvent struct {
 	RecurringExpense *CalendarRecurringExpense `json:"recurring_expense,omitempty"`
 	Expense          *CalendarExpense          `json:"expense,omitempty"`
 	PinwallReminder  *CalendarPinwallReminder  `json:"pinwall_reminder,omitempty"`
+	ListReminder     *CalendarListReminder     `json:"list_reminder,omitempty"`
 }
 
 // CalendarMealPlan holds meal-plan-specific calendar data.
@@ -64,6 +66,15 @@ type CalendarPinwallReminder struct {
 	UserID  uuid.UUID `json:"user_id"`
 	Content string    `json:"content"`
 	Sent    bool      `json:"sent"`
+}
+
+// CalendarListReminder holds list-reminder-specific calendar data: the
+// one-time household reminder scheduled on a list.
+type CalendarListReminder struct {
+	ListID   uuid.UUID `json:"list_id"`
+	ListName string    `json:"list_name"`
+	ListType string    `json:"list_type"`
+	Sent     bool      `json:"sent"`
 }
 
 // CalendarExpense holds expense-specific calendar data.

@@ -4323,6 +4323,12 @@ abstract class AppLocalizations {
   /// **'Expense'**
   String get calendarEventExpense;
 
+  /// Default event label: a household reminder scheduled on a list
+  ///
+  /// In en, this message translates to:
+  /// **'List reminder'**
+  String get calendarEventListReminder;
+
   /// Default event label: reminder
   ///
   /// In en, this message translates to:

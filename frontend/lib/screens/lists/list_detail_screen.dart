@@ -1052,8 +1052,13 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     // The search row hosts a text field, so its slot must grow with the
     // user's font scale or the field clips.
     final searchRowHeight = MediaQuery.textScalerOf(context).scale(52.0);
-    final headerHeight =
-        kToolbarHeight + 6 + (_showSearch ? searchRowHeight : 0);
+    // The reminder banner sits inside the app bar's preferred size too, so
+    // the header must grow for it or the row overflows into the body.
+    final reminderRowHeight = _reminderRowHeight(context);
+    final headerHeight = kToolbarHeight +
+        6 +
+        (_controller.hasPendingReminder ? reminderRowHeight : 0) +
+        (_showSearch ? searchRowHeight : 0);
 
     return PopScope(
       // System back closes transient editing states (search, title edit)
@@ -1263,43 +1268,74 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     );
   }
 
-  /// A slim row under the stripe showing when the household will be reminded
-  /// about this list. Tap to reschedule; the trailing button clears it.
+  /// Height of the reminder banner. Hosts a single line of label text, so it
+  /// scales with the user's font size like the search row does.
+  double _reminderRowHeight(BuildContext context) =>
+      MediaQuery.textScalerOf(context).scale(36.0);
+
+  /// A tinted banner under the stripe showing when the household will be
+  /// reminded about this list, styled like the "shared with" banner below
+  /// it. Tap to reschedule; the trailing button clears it.
   Widget _buildReminderChip() {
     final l10n = AppLocalizations.of(context)!;
     final remindAt = _controller.remindAt;
     if (remindAt == null) return const SizedBox.shrink();
-    final scheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     final label = l10n.pinwallReminderLabel(_formatReminder(remindAt));
-    return Semantics(
-      button: true,
-      label: l10n.listReminderChipTooltip,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: _pickReminder,
-        child: Padding(
-          padding: const EdgeInsets.only(left: MitlistSpacing.md),
-          child: Row(
-            children: [
-              AppIcon(name: 'bellOutline', size: 16, color: scheme.primary),
-              const SizedBox(width: MitlistSpacing.sm),
-              Expanded(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodySmall
-                      ?.copyWith(color: scheme.primary),
-                ),
+    return SizedBox(
+      height: _reminderRowHeight(context),
+      width: double.infinity,
+      child: Material(
+        color: scheme.primaryContainer,
+        child: InkWell(
+          onTap: _pickReminder,
+          child: Semantics(
+            button: true,
+            label: l10n.listReminderChipTooltip,
+            child: Padding(
+              padding: const EdgeInsets.only(
+                left: MitlistSpacing.md,
+                right: MitlistSpacing.sm,
               ),
-              IconButton(
-                icon: const AppIcon(name: 'xMark', size: 18),
-                tooltip: l10n.listReminderMenuClear,
-                onPressed: _clearReminder,
+              child: Row(
+                children: [
+                  AppIcon(
+                    name: 'bellOutline',
+                    size: 14,
+                    color: scheme.onPrimaryContainer,
+                  ),
+                  const SizedBox(width: MitlistSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: scheme.onPrimaryContainer,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: MitlistSpacing.xs),
+                  IconButton(
+                    icon: AppIcon(
+                      name: 'xMark',
+                      size: 16,
+                      color: scheme.onPrimaryContainer,
+                    ),
+                    tooltip: l10n.listReminderMenuClear,
+                    onPressed: _clearReminder,
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints.tightFor(
+                      width: 32,
+                      height: 32,
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
