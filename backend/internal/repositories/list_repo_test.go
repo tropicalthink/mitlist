@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -38,8 +39,8 @@ func TestListRepository_GetListByID(t *testing.T) {
 	repo := NewListRepository(mock)
 	id := fixedUUID()
 
-	rows := pgxmock.NewRows([]string{"id", "group_id", "name", "type", "archived_at", "created_at", "updated_at"}).
-		AddRow(id, fixedUUID(), "Groceries", "shopping", nil, fixedTime(), fixedTime())
+	rows := pgxmock.NewRows([]string{"id", "group_id", "name", "type", "archived_at", "remind_at", "reminder_sent_at", "created_at", "updated_at"}).
+		AddRow(id, fixedUUID(), "Groceries", "shopping", nil, nil, nil, fixedTime(), fixedTime())
 
 	mock.ExpectQuery("SELECT .* FROM lists WHERE id = .*").
 		WithArgs(id).
@@ -71,8 +72,8 @@ func TestListRepository_ListListsByGroup(t *testing.T) {
 	repo := NewListRepository(mock)
 	gid := fixedUUID()
 
-	rows := pgxmock.NewRows([]string{"id", "group_id", "name", "type", "archived_at", "created_at", "updated_at"}).
-		AddRow(fixedUUID(), gid, "Groceries", "shopping", nil, fixedTime(), fixedTime())
+	rows := pgxmock.NewRows([]string{"id", "group_id", "name", "type", "archived_at", "remind_at", "reminder_sent_at", "created_at", "updated_at"}).
+		AddRow(fixedUUID(), gid, "Groceries", "shopping", nil, nil, nil, fixedTime(), fixedTime())
 
 	mock.ExpectQuery("SELECT .* FROM lists WHERE group_id = .*").
 		WithArgs(gid, 50, 0).
@@ -117,6 +118,33 @@ func TestListRepository_UpdateList(t *testing.T) {
 	list := &models.List{ID: id, Name: "New Name", Type: "todo"}
 	err := repo.UpdateList(context.Background(), list)
 	require.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestListRepository_SetListReminder(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewListRepository(mock)
+	id := fixedUUID()
+	remindAt := fixedTime()
+
+	mock.ExpectExec("UPDATE lists SET remind_at = .*, reminder_sent_at = NULL, reminder_claimed_at = NULL").
+		WithArgs(&remindAt, id).
+		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
+
+	require.NoError(t, repo.SetListReminder(context.Background(), id, &remindAt))
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestListRepository_ClearListReminder(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewListRepository(mock)
+	id := fixedUUID()
+
+	mock.ExpectExec("UPDATE lists SET remind_at = .*").
+		WithArgs((*time.Time)(nil), id).
+		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
+
+	require.NoError(t, repo.SetListReminder(context.Background(), id, nil))
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
@@ -295,8 +323,8 @@ func TestListRepository_GetListsByIDs(t *testing.T) {
 	id := fixedUUID()
 	gid := fixedUUID()
 
-	rows := pgxmock.NewRows([]string{"id", "group_id", "name", "type", "archived_at", "created_at", "updated_at"}).
-		AddRow(id, gid, "Groceries", "shopping", nil, fixedTime(), fixedTime())
+	rows := pgxmock.NewRows([]string{"id", "group_id", "name", "type", "archived_at", "remind_at", "reminder_sent_at", "created_at", "updated_at"}).
+		AddRow(id, gid, "Groceries", "shopping", nil, nil, nil, fixedTime(), fixedTime())
 
 	mock.ExpectQuery("SELECT .* FROM lists WHERE id = ANY").
 		WithArgs([]uuid.UUID{id}).

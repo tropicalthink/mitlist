@@ -38,11 +38,11 @@ func (r *ListRepository) CreateList(ctx context.Context, list *models.List) erro
 
 // GetListByID retrieves a list by ID.
 func (r *ListRepository) GetListByID(ctx context.Context, id uuid.UUID) (*models.List, error) {
-	query := `SELECT id, group_id, name, type, archived_at, created_at, updated_at FROM lists WHERE id = $1`
+	query := `SELECT id, group_id, name, type, archived_at, remind_at, reminder_sent_at, created_at, updated_at FROM lists WHERE id = $1`
 	row := r.pool.QueryRow(ctx, query, id)
 
 	var l models.List
-	err := row.Scan(&l.ID, &l.GroupID, &l.Name, &l.Type, &l.ArchivedAt, &l.CreatedAt, &l.UpdatedAt)
+	err := row.Scan(&l.ID, &l.GroupID, &l.Name, &l.Type, &l.ArchivedAt, &l.RemindAt, &l.ReminderSentAt, &l.CreatedAt, &l.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +55,7 @@ func (r *ListRepository) GetListsByIDs(ctx context.Context, ids []uuid.UUID) ([]
 		return nil, nil
 	}
 	rows, err := r.pool.Query(ctx, `
-		SELECT id, group_id, name, type, archived_at, created_at, updated_at
+		SELECT id, group_id, name, type, archived_at, remind_at, reminder_sent_at, created_at, updated_at
 		FROM lists
 		WHERE id = ANY($1)
 	`, ids)
@@ -67,7 +67,7 @@ func (r *ListRepository) GetListsByIDs(ctx context.Context, ids []uuid.UUID) ([]
 	var lists []models.List
 	for rows.Next() {
 		var l models.List
-		if err := rows.Scan(&l.ID, &l.GroupID, &l.Name, &l.Type, &l.ArchivedAt, &l.CreatedAt, &l.UpdatedAt); err != nil {
+		if err := rows.Scan(&l.ID, &l.GroupID, &l.Name, &l.Type, &l.ArchivedAt, &l.RemindAt, &l.ReminderSentAt, &l.CreatedAt, &l.UpdatedAt); err != nil {
 			return nil, err
 		}
 		lists = append(lists, l)
@@ -80,7 +80,7 @@ func (r *ListRepository) ListListsByGroup(ctx context.Context, groupID uuid.UUID
 	if limit <= 0 {
 		limit = 50
 	}
-	query := `SELECT id, group_id, name, type, archived_at, created_at, updated_at FROM lists WHERE group_id = $1 AND archived_at IS NULL ORDER BY created_at DESC, id DESC LIMIT $2 OFFSET $3`
+	query := `SELECT id, group_id, name, type, archived_at, remind_at, reminder_sent_at, created_at, updated_at FROM lists WHERE group_id = $1 AND archived_at IS NULL ORDER BY created_at DESC, id DESC LIMIT $2 OFFSET $3`
 	rows, err := r.pool.Query(ctx, query, groupID, limit, offset)
 	if err != nil {
 		return nil, err
@@ -90,7 +90,7 @@ func (r *ListRepository) ListListsByGroup(ctx context.Context, groupID uuid.UUID
 	var lists []models.List
 	for rows.Next() {
 		var l models.List
-		if err := rows.Scan(&l.ID, &l.GroupID, &l.Name, &l.Type, &l.ArchivedAt, &l.CreatedAt, &l.UpdatedAt); err != nil {
+		if err := rows.Scan(&l.ID, &l.GroupID, &l.Name, &l.Type, &l.ArchivedAt, &l.RemindAt, &l.ReminderSentAt, &l.CreatedAt, &l.UpdatedAt); err != nil {
 			return nil, err
 		}
 		lists = append(lists, l)
@@ -160,6 +160,15 @@ func (r *ListRepository) ListItemPreviewLinesByListIDs(ctx context.Context, list
 func (r *ListRepository) UpdateList(ctx context.Context, list *models.List) error {
 	query := `UPDATE lists SET name = $1, type = $2, updated_at = NOW() WHERE id = $3`
 	_, err := r.pool.Exec(ctx, query, list.Name, list.Type, list.ID)
+	return err
+}
+
+// SetListReminder sets or clears (nil) the one-time reminder on a list. Any
+// pending delivery state is reset so a rescheduled reminder fires again and a
+// claimed-but-undelivered reminder is released.
+func (r *ListRepository) SetListReminder(ctx context.Context, id uuid.UUID, remindAt *time.Time) error {
+	query := `UPDATE lists SET remind_at = $1, reminder_sent_at = NULL, reminder_claimed_at = NULL, updated_at = NOW() WHERE id = $2`
+	_, err := r.pool.Exec(ctx, query, remindAt, id)
 	return err
 }
 

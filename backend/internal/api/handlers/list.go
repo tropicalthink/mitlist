@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -38,6 +39,7 @@ func (h *ListHandler) RegisterRoutes(r chi.Router) {
 	r.Get("/products", h.ListProducts)
 	r.Get("/lists/{id}", h.GetList)
 	r.Patch("/lists/{id}", h.UpdateList)
+	r.Put("/lists/{id}/reminder", h.SetListReminder)
 	r.Delete("/lists/{id}", h.DeleteList)
 	r.Post("/lists/{id}/items", h.CreateItem)
 	r.Get("/lists/{id}/items", h.ListItems)
@@ -259,6 +261,49 @@ func (h *ListHandler) UpdateList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	list, err := h.service.UpdateList(r.Context(), user, id, req.Name, req.Type)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	api.RespondJSON(w, http.StatusOK, list)
+}
+
+// SetListReminder handles PUT /api/v1/lists/{id}/reminder.
+// Body: {"remind_at": "<RFC3339>"} schedules a reminder; {"remind_at": null}
+// (or an empty string) clears it.
+func (h *ListHandler) SetListReminder(w http.ResponseWriter, r *http.Request) {
+	user, ok := userFromContext(r)
+	if !ok {
+		api.RespondError(w, api.ErrUnauthorized)
+		return
+	}
+
+	id, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		api.RespondError(w, &api.ValidationError{Field: "id", Message: "invalid UUID"})
+		return
+	}
+
+	var req struct {
+		RemindAt *string `json:"remind_at"`
+	}
+	if err := decodeJSON(r, &req); err != nil {
+		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
+		return
+	}
+
+	var remindAt *time.Time
+	if req.RemindAt != nil && strings.TrimSpace(*req.RemindAt) != "" {
+		parsed, err := time.Parse(time.RFC3339, strings.TrimSpace(*req.RemindAt))
+		if err != nil {
+			api.RespondError(w, &api.ValidationError{Field: "remind_at", Message: "invalid RFC3339 timestamp"})
+			return
+		}
+		parsed = parsed.UTC()
+		remindAt = &parsed
+	}
+
+	list, err := h.service.SetListReminder(r.Context(), user, id, remindAt)
 	if err != nil {
 		api.RespondError(w, err)
 		return

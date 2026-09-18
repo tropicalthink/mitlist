@@ -5,10 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/attachment_models.dart';
 import '../models/group_models.dart';
-import '../models/notification_models.dart';
 import '../providers/attachment_provider.dart';
 import '../providers/group_provider.dart';
-import '../providers/notification_provider.dart';
 import '../providers/presence_provider.dart';
 import '../theme/spacing.dart';
 import '../widgets/alert.dart';
@@ -20,7 +18,6 @@ import '../widgets/app_currency_dropdown.dart';
 import '../widgets/app_dialog.dart';
 import '../widgets/app_icon.dart';
 import '../widgets/app_input.dart';
-import '../widgets/app_switch.dart';
 import '../widgets/supporter_badge.dart';
 import '../widgets/chip.dart';
 import '../utils/friendly_error.dart';
@@ -55,9 +52,7 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
 
   Group? _group;
   List<GroupMemberProfile> _members = [];
-  NotificationPreferenceModel? _notificationPref;
   StorageUsage? _storageUsage;
-  final Map<String, bool> _savingKeys = {};
 
   late final TextEditingController _nameController;
   late final TextEditingController _descriptionController;
@@ -89,13 +84,11 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
     });
     try {
       final svc = await ref.read(groupServiceProviderAsync.future);
-      final notifSvc = await ref.read(notificationServiceProviderAsync.future);
       final attachmentSvc =
           await ref.read(attachmentServiceProviderAsync.future);
       final results = await Future.wait([
         svc.getGroup(widget.groupId),
         svc.listMembers(widget.groupId),
-        notifSvc.getGroupPreference(widget.groupId),
         attachmentSvc
             .getStorageUsage(groupId: widget.groupId)
             .then<StorageUsage?>((value) => value)
@@ -104,15 +97,13 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
       if (!mounted) return;
       final group = results[0] as Group;
       final members = results[1] as List<GroupMemberProfile>;
-      final pref = results[2] as NotificationPreferenceModel;
-      final storageUsage = results[3] as StorageUsage?;
+      final storageUsage = results[2] as StorageUsage?;
       _nameController.text = group.name;
       _descriptionController.text = group.description ?? '';
       setState(() {
         _group = group;
         _groupCurrency = group.currency;
         _members = members;
-        _notificationPref = pref;
         _storageUsage = storageUsage;
         _isLoading = false;
         _nameChanged = false;
@@ -298,8 +289,6 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
           const SizedBox(height: MitlistSpacing.lg),
           _buildMembersSection(),
           const SizedBox(height: MitlistSpacing.lg),
-          _buildNotificationsSection(),
-          const SizedBox(height: MitlistSpacing.lg),
           _buildDangerZone(),
         ],
       ),
@@ -369,114 +358,8 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
     return '$bytes B';
   }
 
-  Future<void> _toggleNotifPref(String field, bool value) async {
-    final pref = _notificationPref;
-    if (pref == null) return;
-    final key = '$field:${pref.id}';
-    setState(() => _savingKeys[key] = true);
-
-    try {
-      final svc = await ref.read(notificationServiceProviderAsync.future);
-      final updated = NotificationPreferenceModel(
-        id: pref.id,
-        userId: pref.userId,
-        groupId: pref.groupId,
-        choreDue: field == 'chore_due' ? value : pref.choreDue,
-        choreDueDayOf: field == 'chore_due_day_of' ? value : pref.choreDueDayOf,
-        listItemAdded: field == 'list_item_added' ? value : pref.listItemAdded,
-        expenseCreated:
-            field == 'expense_created' ? value : pref.expenseCreated,
-        mealPlanChanged:
-            field == 'meal_plan_changed' ? value : pref.mealPlanChanged,
-        weeklyDigest: field == 'weekly_digest' ? value : pref.weeklyDigest,
-        pinwallReminder:
-            field == 'pinwall_reminder' ? value : pref.pinwallReminder,
-        pushEnabled: field == 'push_enabled' ? value : pref.pushEnabled,
-        emailEnabled: field == 'email_enabled' ? value : pref.emailEnabled,
-      );
-      await svc.updatePreference(updated);
-      if (!mounted) return;
-      setState(() {
-        _notificationPref = updated;
-        _savingKeys.remove(key);
-      });
-    } catch (e) {
-      if (mounted) {
-        setState(() => _savingKeys.remove(key));
-        AppToast.error(
-            context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
-      }
-    }
-  }
-
-  Widget _buildNotificationsSection() {
-    final l10n = AppLocalizations.of(context)!;
-    final pref = _notificationPref;
-    if (pref == null) return const SizedBox.shrink();
-
-    return AppCard(
-      variant: AppCardVariant.outlined,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(l10n.notifPrefGroupName,
-              style: Theme.of(context).textTheme.titleSmall),
-          const SizedBox(height: MitlistSpacing.sm),
-          const AppDivider(),
-          _notifToggle(
-              l10n.notifPrefChoreDueReminders, pref.choreDue, 'chore_due'),
-          _notifToggle(l10n.notifPrefListItemAdded, pref.listItemAdded,
-              'list_item_added'),
-          _notifToggle(l10n.notifPrefExpenseCreated, pref.expenseCreated,
-              'expense_created'),
-          _notifToggle(l10n.notifPrefMealPlanChanged, pref.mealPlanChanged,
-              'meal_plan_changed'),
-          _notifToggle(
-              l10n.notifPrefWeeklyDigest, pref.weeklyDigest, 'weekly_digest'),
-          _notifToggle(l10n.notifPrefPinwallReminders, pref.pinwallReminder,
-              'pinwall_reminder'),
-          const AppDivider(),
-          _notifToggle(l10n.notifPrefPushNotifications, pref.pushEnabled,
-              'push_enabled'),
-          _notifToggle(l10n.notifPrefEmailNotifications, pref.emailEnabled,
-              'email_enabled'),
-        ],
-      ),
-    );
-  }
-
-  Widget _notifToggle(String label, bool value, String field) {
-    final key = '$field:${_notificationPref?.id}';
-    final saving = _savingKeys[key] == true;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.xs),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodyMedium),
-          ),
-          if (saving)
-            const Padding(
-              padding: EdgeInsets.all(MitlistSpacing.sm),
-              child: SizedBox(
-                width: MitlistSpacing.space4,
-                height: MitlistSpacing.space4,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            )
-          else
-            AppSwitch(
-              value: value,
-              onChanged: (v) => _toggleNotifPref(field, v),
-            ),
-        ],
-      ),
-    );
-  }
+  // Notification preferences are personal, not household settings: each
+  // member sets their own under You > Notifications, one card per household.
 
   Widget _buildDetailsSection() {
     final l10n = AppLocalizations.of(context)!;

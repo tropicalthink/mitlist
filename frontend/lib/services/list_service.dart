@@ -168,6 +168,20 @@ class ListService {
     }
   }
 
+  /// Schedules (or clears, with null) the list's one-time household reminder.
+  /// Returns the updated list.
+  Future<ItemList> setListReminder(String id, DateTime? remindAt) async {
+    try {
+      final r = await _dio.put('/lists/$id/reminder', data: {
+        'remind_at': remindAt?.toUtc().toIso8601String(),
+      });
+      return ItemList.fromJson(r.data);
+    } on DioException catch (e) {
+      _logger.e('Set list reminder failed: ${e.response?.data}');
+      throw apiException(e);
+    }
+  }
+
   Future<ListItem> createItem(String listId, CreateListItemRequest req,
       {String? idempotencyKey}) async {
     try {

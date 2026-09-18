@@ -2872,11 +2872,11 @@ class AppLocalizationsNl extends AppLocalizations {
       'Een overzicht van huishoudactiviteit';
 
   @override
-  String get notifPrefPinwallReminders => 'Prikbord-herinneringen';
+  String get notifPrefPinwallReminders => 'Herinneringen';
 
   @override
   String get notifPrefPinwallRemindersDesc =>
-      'Wanneer iemand een herinnering voor later vastzet';
+      'Wanneer een prikbordnotitie of lijstherinnering afgaat';
 
   @override
   String get notifPrefPushNotifications => 'Push-notificaties';
@@ -5395,6 +5395,46 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get notificationPinwallReminderTitle => 'Herinnering';
+
+  @override
+  String get notificationListReminderTitle => 'Lijstherinnering';
+
+  @override
+  String notificationListReminderBody(String listName, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$listName · $count items open',
+      one: '$listName · 1 item open',
+      zero: '$listName',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get listReminderMenuSet => 'Herinnering instellen';
+
+  @override
+  String get listReminderMenuChange => 'Herinnering wijzigen';
+
+  @override
+  String get listReminderMenuClear => 'Herinnering verwijderen';
+
+  @override
+  String listReminderSaved(String label) {
+    return 'Herinnering ingesteld voor $label.';
+  }
+
+  @override
+  String get listReminderCleared => 'Herinnering verwijderd.';
+
+  @override
+  String get listReminderCouldNotSave =>
+      'Herinnering kon niet worden opgeslagen. Probeer het opnieuw.';
+
+  @override
+  String get listReminderChipTooltip =>
+      'Huishoudherinnering. Tik om te wijzigen.';
 
   @override
   String get commonPhoto => 'Foto';

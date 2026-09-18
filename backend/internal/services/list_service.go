@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -222,6 +223,38 @@ func (s *ListService) UpdateList(ctx context.Context, user *models.User, listID 
 	if err := s.listRepo.UpdateList(ctx, list); err != nil {
 		return nil, fmt.Errorf("failed to update list: %w", err)
 	}
+	s.publishListEvent("list:updated", list.GroupID, list.ID)
+	return list, nil
+}
+
+// SetListReminder schedules (or clears, with nil) a one-time household
+// reminder for a list. A new time resets any earlier delivery so it fires again.
+func (s *ListService) SetListReminder(ctx context.Context, user *models.User, listID uuid.UUID, remindAt *time.Time) (*models.List, error) {
+	if err := s.requireActiveVerifiedUser(user); err != nil {
+		return nil, err
+	}
+	list, err := s.listRepo.GetListByID(ctx, listID)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, &api.NotFoundError{Resource: "list", ID: listID.String()}
+		}
+		return nil, fmt.Errorf("failed to get list: %w", err)
+	}
+	if err := s.requireMembership(ctx, user.ID, list.GroupID); err != nil {
+		return nil, err
+	}
+	if remindAt != nil {
+		utc := remindAt.UTC()
+		if !utc.After(time.Now().UTC()) {
+			return nil, &api.ValidationError{Field: "remind_at", Message: "must be in the future"}
+		}
+		remindAt = &utc
+	}
+	if err := s.listRepo.SetListReminder(ctx, listID, remindAt); err != nil {
+		return nil, fmt.Errorf("failed to set list reminder: %w", err)
+	}
+	list.RemindAt = remindAt
+	list.ReminderSentAt = nil
 	s.publishListEvent("list:updated", list.GroupID, list.ID)
 	return list, nil
 }

@@ -41,6 +41,63 @@ void main() {
     }
   });
 
+  test('renders list reminder copy with open item count in every locale', () {
+    Map<String, dynamic> data(int count) => {
+          'copy': {
+            'version': 1,
+            'template': 'list_reminder',
+            'params': {'list_name': 'Groceries', 'item_count': '$count'},
+          },
+        };
+
+    final en = AppLocalizationsEn();
+    expect(
+      resolveNotificationText(
+        l10n: en,
+        fallbackTitle: 'server title',
+        fallbackBody: 'server body',
+        data: data(3),
+      ).body,
+      'Groceries · 3 items left',
+    );
+    expect(
+      resolveNotificationText(
+        l10n: en,
+        fallbackTitle: 'server title',
+        fallbackBody: 'server body',
+        data: data(1),
+      ).body,
+      'Groceries · 1 item left',
+    );
+    expect(
+      resolveNotificationText(
+        l10n: en,
+        fallbackTitle: 'server title',
+        fallbackBody: 'server body',
+        data: data(0),
+      ).body,
+      'Groceries',
+    );
+
+    for (final l10n in <AppLocalizations>[
+      AppLocalizationsEn(),
+      AppLocalizationsDe(),
+      AppLocalizationsEs(),
+      AppLocalizationsFr(),
+      AppLocalizationsNl(),
+    ]) {
+      final result = resolveNotificationText(
+        l10n: l10n,
+        fallbackTitle: 'server title',
+        fallbackBody: 'server body',
+        data: data(2),
+      );
+      expect(result.title, isNot('server title'));
+      expect(result.body, contains('Groceries'));
+      expect(result.body, contains('2'));
+    }
+  });
+
   test('renders singular and plural list batches', () {
     final l10n = AppLocalizationsEn();
     Map<String, dynamic> data(int count) => {

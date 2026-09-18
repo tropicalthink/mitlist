@@ -129,6 +129,64 @@ func TestList_UpdateList(t *testing.T) {
 	assert.Equal(t, "New Name", resp["name"])
 }
 
+func TestList_SetListReminder(t *testing.T) {
+	clearTables(t)
+	router, _ := newListRouter(t)
+	user := createTestUser(t, "listreminder@example.com", "Password123!")
+	token := generateTestToken(user.ID)
+
+	groupRepo := newTestGroupRepo()
+	group := &models.Group{
+		ID:        uuid.New(),
+		Name:      "G",
+		CreatedBy: user.ID,
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
+	}
+	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
+	listRepo := newTestListRepo()
+	list := &models.List{
+		ID:        uuid.New(),
+		GroupID:   group.ID,
+		Name:      "Groceries",
+		Type:      "shopping",
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
+	}
+	require.NoError(t, listRepo.CreateList(context.Background(), list))
+	url := "/api/v1/lists/" + list.ID.String() + "/reminder"
+
+	remindAt := time.Now().UTC().Add(3 * time.Hour).Truncate(time.Second)
+	rec := execRequest(t, router, "PUT", url, map[string]any{"remind_at": remindAt.Format(time.RFC3339)}, token)
+	requireStatus(t, rec, http.StatusOK)
+	var resp map[string]any
+	parseJSONResponse(t, rec, &resp)
+	gotRemindAt, err := time.Parse(time.RFC3339, resp["remind_at"].(string))
+	require.NoError(t, err)
+	assert.True(t, gotRemindAt.Equal(remindAt))
+
+	stored, err := listRepo.GetListByID(context.Background(), list.ID)
+	require.NoError(t, err)
+	require.NotNil(t, stored.RemindAt)
+	assert.True(t, stored.RemindAt.Equal(remindAt))
+
+	// Past time is rejected.
+	rec = execRequest(t, router, "PUT", url, map[string]any{"remind_at": time.Now().UTC().Add(-time.Hour).Format(time.RFC3339)}, token)
+	requireStatus(t, rec, http.StatusBadRequest)
+
+	// Garbage timestamp is rejected.
+	rec = execRequest(t, router, "PUT", url, map[string]any{"remind_at": "tomorrow-ish"}, token)
+	requireStatus(t, rec, http.StatusBadRequest)
+
+	// null clears the reminder.
+	rec = execRequest(t, router, "PUT", url, map[string]any{"remind_at": nil}, token)
+	requireStatus(t, rec, http.StatusOK)
+	stored, err = listRepo.GetListByID(context.Background(), list.ID)
+	require.NoError(t, err)
+	assert.Nil(t, stored.RemindAt)
+}
+
 func TestList_DeleteList(t *testing.T) {
 	clearTables(t)
 	router, _ := newListRouter(t)

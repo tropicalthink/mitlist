@@ -2,6 +2,7 @@ package mocks
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/mitlist-app/mitlist/internal/models"
@@ -52,6 +53,11 @@ func (m *MockListRepo) ListItemPreviewLinesByListIDs(ctx context.Context, listID
 
 func (m *MockListRepo) UpdateList(ctx context.Context, list *models.List) error {
 	args := m.Called(ctx, list)
+	return args.Error(0)
+}
+
+func (m *MockListRepo) SetListReminder(ctx context.Context, id uuid.UUID, remindAt *time.Time) error {
+	args := m.Called(ctx, id, remindAt)
 	return args.Error(0)
 }
 
