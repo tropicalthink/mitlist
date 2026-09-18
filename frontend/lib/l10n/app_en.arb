@@ -3255,6 +3255,10 @@
   "@calendarEventExpense": {
     "description": "Default event label: expense"
   },
+  "calendarEventListReminder": "List reminder",
+  "@calendarEventListReminder": {
+    "description": "Default event label: a household reminder scheduled on a list"
+  },
   "calendarEventReminder": "Reminder",
   "@calendarEventReminder": {
     "description": "Default event label: reminder"

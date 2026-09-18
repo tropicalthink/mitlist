@@ -11,7 +11,7 @@ import (
 	"github.com/mitlist-app/mitlist/internal/repositories"
 )
 
-// CalendarService aggregates meal plans, chores, and recurring expenses into calendar events.
+// CalendarService aggregates meal plans, chores, expenses and reminders into calendar events.
 type CalendarService struct {
 	mealPlanRepo repositories.MealPlanRepoIface
 	recipeRepo   repositories.RecipeRepoIface
@@ -19,6 +19,7 @@ type CalendarService struct {
 	financeRepo  repositories.FinanceRepoIface
 	groupRepo    repositories.GroupRepo
 	pinwallRepo  repositories.CalendarPinwallRepo
+	listRepo     repositories.CalendarListRepo
 }
 
 func NewCalendarService(
@@ -28,6 +29,7 @@ func NewCalendarService(
 	financeRepo repositories.FinanceRepoIface,
 	groupRepo repositories.GroupRepo,
 	pinwallRepo repositories.CalendarPinwallRepo,
+	listRepo repositories.CalendarListRepo,
 ) *CalendarService {
 	return &CalendarService{
 		mealPlanRepo: mealPlanRepo,
@@ -36,6 +38,7 @@ func NewCalendarService(
 		financeRepo:  financeRepo,
 		groupRepo:    groupRepo,
 		pinwallRepo:  pinwallRepo,
+		listRepo:     listRepo,
 	}
 }
 
@@ -59,6 +62,7 @@ func (s *CalendarService) GetCalendar(ctx context.Context, user *models.User, gr
 		assignments  []models.ChoreAssignment
 		recurring    []models.RecurringExpense
 		pinwallPosts []models.PinwallPost
+		listsDue     []models.List
 		expenses     []models.Expense
 		wg           sync.WaitGroup
 		errOnce      sync.Once
@@ -115,13 +119,18 @@ func (s *CalendarService) GetCalendar(ctx context.Context, user *models.User, gr
 		expenses, err = s.financeRepo.ListExpensesByDateRange(queryCtx, groupID, from, to)
 		return err
 	})
+	run(func() error {
+		var err error
+		listsDue, err = s.listRepo.ListListsByGroupAndRemindAtRange(queryCtx, groupID, from, to)
+		return err
+	})
 	wg.Wait()
 	if firstErr != nil {
 		return nil, firstErr
 	}
 
 	events := make([]models.CalendarEvent, 0,
-		len(plans)+len(assignments)+len(recurring)+len(pinwallPosts)+len(expenses))
+		len(plans)+len(assignments)+len(recurring)+len(pinwallPosts)+len(listsDue)+len(expenses))
 
 	// Meal plans
 	for _, p := range plans {
@@ -204,6 +213,26 @@ func (s *CalendarService) GetCalendar(ctx context.Context, user *models.User, gr
 				UserID:  p.UserID,
 				Content: p.Content,
 				Sent:    p.ReminderSentAt != nil,
+			},
+		})
+	}
+
+	// List reminders
+	for _, l := range listsDue {
+		if l.RemindAt == nil {
+			continue
+		}
+		events = append(events, models.CalendarEvent{
+			ID:      "list_reminder_" + l.ID.String(),
+			Type:    models.EventTypeListReminder,
+			Title:   l.Name,
+			Date:    *l.RemindAt,
+			GroupID: l.GroupID,
+			ListReminder: &models.CalendarListReminder{
+				ListID:   l.ID,
+				ListName: l.Name,
+				ListType: l.Type,
+				Sent:     l.ReminderSentAt != nil,
 			},
 		})
 	}
