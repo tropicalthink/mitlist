@@ -38,5 +38,12 @@ func (s *ActivityService) ListRecentActivity(ctx context.Context, user *models.U
 	if err := s.requireMembership(ctx, user.ID, groupID); err != nil {
 		return nil, err
 	}
+	return s.listRecentActivityForMember(ctx, groupID, limit)
+}
+
+// listRecentActivityForMember is for composite services that have already
+// proved membership. Keeping it package-private prevents handlers from
+// bypassing the public authorization boundary.
+func (s *ActivityService) listRecentActivityForMember(ctx context.Context, groupID uuid.UUID, limit int) ([]models.ActivityEvent, error) {
 	return s.repo.ListRecentActivity(ctx, groupID, limit)
 }

@@ -83,6 +83,7 @@ type GroupRepo interface {
 	LockGroup(ctx context.Context, groupID uuid.UUID) error
 	CreateGroup(ctx context.Context, group *models.Group) error
 	GetGroupByID(ctx context.Context, id uuid.UUID) (*models.Group, error)
+	GetGroupByIDForUser(ctx context.Context, id, userID uuid.UUID) (*models.Group, error)
 	ListGroupsByUser(ctx context.Context, userID uuid.UUID, limit, offset int) ([]models.Group, error)
 	UpdateGroup(ctx context.Context, group *models.Group) error
 	DeleteGroup(ctx context.Context, id uuid.UUID) error
@@ -234,6 +235,7 @@ type RecipeRepoIface interface {
 	CreateRecipe(ctx context.Context, rec *models.Recipe) error
 	GetRecipeByID(ctx context.Context, id uuid.UUID) (*models.Recipe, error)
 	GetRecipesByIDs(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]*models.Recipe, error)
+	GetReadableRecipesByIDs(ctx context.Context, ids []uuid.UUID, userID, groupID uuid.UUID) (map[uuid.UUID]*models.Recipe, error)
 	ListRecipes(ctx context.Context, userID uuid.UUID, filter RecipeFilter) ([]models.Recipe, error)
 	ListDistinctTags(ctx context.Context, userID uuid.UUID, groupID *uuid.UUID, limit int) ([]models.RecipeTagCount, error)
 	GetRecipeByShareToken(ctx context.Context, token string) (*models.Recipe, error)

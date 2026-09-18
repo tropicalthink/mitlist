@@ -91,6 +91,25 @@ func TestRecipeRepo_GetRecipesByIDs(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
+func TestRecipeRepo_GetReadableRecipesByIDs(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewRecipeRepo(mock)
+	id := fixedUUID()
+	userID := uuid.New()
+	groupID := uuid.New()
+	rows := pgxmock.NewRows(recipeCols()).AddRow(recipeRow(id, userID)...)
+
+	mock.ExpectQuery("SELECT .* FROM recipes r WHERE r.id = ANY.*recipe_shares").
+		WithArgs([]uuid.UUID{id}, userID, groupID, models.RecipeVisibilityHousehold).
+		WillReturnRows(rows)
+
+	recipes, err := repo.GetReadableRecipesByIDs(context.Background(), []uuid.UUID{id}, userID, groupID)
+	require.NoError(t, err)
+	require.Len(t, recipes, 1)
+	assert.Equal(t, "Pasta", recipes[id].Title)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
 func TestRecipeRepo_ListIngredientsByRecipeIDs(t *testing.T) {
 	mock := newMockDB(t)
 	repo := NewRecipeRepo(mock)

@@ -67,6 +67,25 @@ func TestGroupRepository_GetGroupByID_NotFound(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
+func TestGroupRepository_GetGroupByIDForUser(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewGroupRepository(mock)
+	id := fixedUUID()
+	userID := uuid.New()
+
+	rows := pgxmock.NewRows([]string{"id", "name", "description", "currency", "chore_zones", "created_by", "created_at", "updated_at"}).
+		AddRow(id, "Home", nil, "USD", []string{}, userID, fixedTime(), fixedTime())
+
+	mock.ExpectQuery("SELECT .* FROM groups g JOIN group_memberships gm").
+		WithArgs(id, userID).
+		WillReturnRows(rows)
+
+	group, err := repo.GetGroupByIDForUser(context.Background(), id, userID)
+	require.NoError(t, err)
+	assert.Equal(t, id, group.ID)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
 func TestGroupRepository_ListGroupsByUser(t *testing.T) {
 	mock := newMockDB(t)
 	repo := NewGroupRepository(mock)

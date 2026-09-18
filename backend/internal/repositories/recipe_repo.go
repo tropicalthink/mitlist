@@ -195,6 +195,45 @@ func (r *RecipeRepo) GetRecipesByIDs(ctx context.Context, ids []uuid.UUID) (map[
 	return out, rows.Err()
 }
 
+// GetReadableRecipesByIDs returns full recipes that userID may read as their
+// owner, through the already-authorized household, or through an explicit
+// share. Callers must prove membership in groupID before invoking this query.
+func (r *RecipeRepo) GetReadableRecipesByIDs(ctx context.Context, ids []uuid.UUID, userID, groupID uuid.UUID) (map[uuid.UUID]*models.Recipe, error) {
+	out := make(map[uuid.UUID]*models.Recipe)
+	if len(ids) == 0 {
+		return out, nil
+	}
+	rows, err := r.pool.Query(ctx, `
+		SELECT `+recipeColumns("r")+`
+		FROM recipes r
+		WHERE r.id = ANY($1)
+		  AND (
+			r.user_id = $2
+			OR (r.group_id = $3 AND r.visibility = $4)
+			OR EXISTS (
+				SELECT 1 FROM recipe_shares rs
+				WHERE rs.recipe_id = r.id AND rs.shared_with_user_id = $2
+			)
+		  )
+	`, ids, userID, groupID, models.RecipeVisibilityHousehold)
+	if err != nil {
+		return nil, fmt.Errorf("get readable recipes by ids: %w", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		rec, scanErr := scanRecipe(rows)
+		if scanErr != nil {
+			return nil, fmt.Errorf("scan readable recipe: %w", scanErr)
+		}
+		recCopy := rec
+		out[rec.ID] = &recCopy
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // GetRecipeByID retrieves a recipe by its ID. It applies no access control —
 // RecipeService.GetRecipe decides who may see the result.
 func (r *RecipeRepo) GetRecipeByID(ctx context.Context, id uuid.UUID) (*models.Recipe, error) {

@@ -166,6 +166,13 @@ func (s *RecipeService) GetRecipe(ctx context.Context, userID, recipeID uuid.UUI
 	return nil, err
 }
 
+// getRecipesForMember batches recipe enrichment for a composite household
+// read whose caller has already proved membership in groupID. The repository
+// still enforces owner, household-visibility, and explicit-share rules.
+func (s *RecipeService) getRecipesForMember(ctx context.Context, userID, groupID uuid.UUID, recipeIDs []uuid.UUID) (map[uuid.UUID]*models.Recipe, error) {
+	return s.recipeRepo.GetReadableRecipesByIDs(ctx, recipeIDs, userID, groupID)
+}
+
 // ListRecipes returns the user's own recipes and, when filter.GroupID names a
 // household they belong to, everything shared with that household.
 func (s *RecipeService) ListRecipes(ctx context.Context, userID uuid.UUID, filter repositories.RecipeFilter) ([]models.Recipe, error) {

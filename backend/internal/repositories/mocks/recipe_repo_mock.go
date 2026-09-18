@@ -35,6 +35,14 @@ func (m *MockRecipeRepo) GetRecipesByIDs(ctx context.Context, ids []uuid.UUID) (
 	return nil, args.Error(1)
 }
 
+func (m *MockRecipeRepo) GetReadableRecipesByIDs(ctx context.Context, ids []uuid.UUID, userID, groupID uuid.UUID) (map[uuid.UUID]*models.Recipe, error) {
+	args := m.Called(ctx, ids, userID, groupID)
+	if r := args.Get(0); r != nil {
+		return r.(map[uuid.UUID]*models.Recipe), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
+
 func (m *MockRecipeRepo) ListRecipes(ctx context.Context, userID uuid.UUID, filter repositories.RecipeFilter) ([]models.Recipe, error) {
 	args := m.Called(ctx, userID, filter)
 	if r := args.Get(0); r != nil {
