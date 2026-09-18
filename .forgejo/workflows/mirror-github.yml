@@ -6,7 +6,7 @@
 # review refs and their history stay on Forgejo. It force-pushes on purpose:
 # a mirror must follow a rewrite, not fight it.
 #
-# Needs one repository secret: GITHUB_MIRROR_TOKEN, a fine-grained GitHub
+# Needs one repository secret: MIRROR_GITHUB_TOKEN, a fine-grained GitHub
 # token scoped to tropicalthink/mitlist with "Contents: read and write".
 name: mirror-github
 
@@ -25,13 +25,13 @@ jobs:
 
       - name: Push the updated ref to GitHub
         env:
-          GITHUB_MIRROR_TOKEN: ${{ secrets.GITHUB_MIRROR_TOKEN }}
+          MIRROR_GITHUB_TOKEN: ${{ secrets.MIRROR_GITHUB_TOKEN }}
           REF: ${{ github.ref }}
         run: |
           set -eu
-          test -n "$GITHUB_MIRROR_TOKEN"
+          test -n "$MIRROR_GITHUB_TOKEN"
           git remote add github \
-            "https://x-access-token:${GITHUB_MIRROR_TOKEN}@github.com/tropicalthink/mitlist.git"
+            "https://x-access-token:${MIRROR_GITHUB_TOKEN}@github.com/tropicalthink/mitlist.git"
           # Refuse to ship anything that is not a branch or a tag.
           case "$REF" in
             refs/heads/*|refs/tags/*) ;;
