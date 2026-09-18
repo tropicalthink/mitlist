@@ -24,7 +24,7 @@ from pathlib import Path
 
 DEFAULT_BASE_URL = (
     os.environ.get("MITLIST_OCR_MODELS_URL")
-    or "https://github.com/atropicalthink/mitlist/releases/download/ocr-models-v1"
+    or "https://github.com/tropicalthink/mitlist/releases/download/ocr-models-v1"
 )
 
 # (published file name, destination relative to frontend/, size, sha256)
