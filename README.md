@@ -29,7 +29,7 @@ household, not per person. That is what keeps the servers on.
 
 | | mitlist | [Splitwise](https://www.splitwise.com/pro) | [Flatastic](https://flatastic-app.com) | [Bring!](https://www.getbring.com) |
 |---|---|---|---|---|
-| **Install it today from a store** | ❌ build it yourself | ✅ | ✅ | ✅ |
+| **Install it today from a store** | ⚠️ public beta: TestFlight and Google Play testing; web app at [app.mitlist.me](https://app.mitlist.me) | ✅ | ✅ | ✅ |
 | **Price** | Self-host: free. Hosted: free up to 4 members; one €3.49/mo or €27.99/yr sub per household for 5+. No ads | Free tier (ads + daily expense cap); Pro $4.99/mo or $39.99/yr | Free tier; Premium $1.99/mo · $18.49/yr solo, $6.49/mo · $34.99/yr household | Free tier (ads); Premium $1.99/mo or $8.99/yr |
 | **Expense splitting** (equal, exact, %, shares) | ✅ | ✅ | ⚠️ tracks who paid what and the resulting balances | ❌ |
 | **Settlement tracking** | ✅ counterparty must confirm | ✅ | ⚠️ balances + monthly overview | ❌ |
@@ -55,7 +55,7 @@ household, not per person. That is what keeps the servers on.
 |---|---|---|---|---|---|
 | **License** | AGPL-3.0 | MIT | ❌ proprietary ² | BSD | MIT |
 | **Price** | Free self-hosted; hosted free up to 4 members, then €27.99/yr per household | Free | Free solo; household $4.99/mo · $49.99/yr · $149.99 lifetime | Free | Free |
-| **Install it today from a store** | ❌ build it yourself | ⚠️ community apps ³ | ✅ official iOS + Android | ❌ web only | ⚠️ iOS app shipped; Android on the roadmap |
+| **Install it today from a store** | ⚠️ public beta: TestFlight and Google Play testing; web app at [app.mitlist.me](https://app.mitlist.me) | ⚠️ community apps ³ | ✅ official iOS + Android | ❌ web only | ⚠️ iOS app shipped; Android on the roadmap |
 | **Expense splitting** | ✅ | ❌ | ✅ | ✅ | ❌ ¹ |
 | **Chore rotation** | ✅ | ✅ | ✅ | ❌ | ❌ |
 | **Shopping lists** | ✅ | ✅ | ✅ | ❌ | ❌ |
