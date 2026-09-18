@@ -1,6 +1,6 @@
 # mitlist
 
-**The shared household. Free. Open source. Your server.**
+**The shared household. Open source. Self-host it for free, or let us host it.**
 
 Lists, chores, money, meal plans — all in one place. Built for flatmates who want less friction and more clarity. Try it as a guest, no sign-up. No ads. No tracking.
 
@@ -10,7 +10,12 @@ Lists, chores, money, meal plans — all in one place. Built for flatmates who w
 
 You're already paying rent. Most of these apps have a usable free tier — but the
 free tiers come with ads, daily limits, or the features you actually wanted
-sitting behind a subscription. mitlist has one tier, and it's the whole thing.
+sitting behind a subscription. mitlist never gates features: every household
+gets the whole app. Self-hosting is free, forever, with no limits. On the
+official hosted service, households of up to four people are free; a household
+of five or more needs one Premium subscription (€3.49/month or €27.99/year on
+the web, €3.99/month or €29.99/year through the app stores), paid once per
+household, not per person. That is what keeps the servers on.
 
 > **How to read these tables.** ✅ = yes · ⚠️ = partial, see the note · ❌ = no ·
 > ? = we couldn't verify it. Competitor facts were checked on **2026-07-27**
@@ -25,7 +30,7 @@ sitting behind a subscription. mitlist has one tier, and it's the whole thing.
 | | mitlist | [Splitwise](https://www.splitwise.com/pro) | [Flatastic](https://flatastic-app.com) | [Bring!](https://www.getbring.com) |
 |---|---|---|---|---|
 | **Install it today from a store** | ❌ build it yourself | ✅ | ✅ | ✅ |
-| **Price** | Free, no tiers, no ads | Free tier (ads + daily expense cap); Pro $4.99/mo or $39.99/yr | Free tier; Premium $1.99/mo · $18.49/yr solo, $6.49/mo · $34.99/yr household | Free tier (ads); Premium $1.99/mo or $8.99/yr |
+| **Price** | Self-host: free. Hosted: free up to 4 members; one €3.49/mo or €27.99/yr sub per household for 5+. No ads | Free tier (ads + daily expense cap); Pro $4.99/mo or $39.99/yr | Free tier; Premium $1.99/mo · $18.49/yr solo, $6.49/mo · $34.99/yr household | Free tier (ads); Premium $1.99/mo or $8.99/yr |
 | **Expense splitting** (equal, exact, %, shares) | ✅ | ✅ | ⚠️ tracks who paid what and the resulting balances | ❌ |
 | **Settlement tracking** | ✅ counterparty must confirm | ✅ | ⚠️ balances + monthly overview | ❌ |
 | **Recurring expenses** | ✅ | ✅ | ? | ❌ |
@@ -49,7 +54,7 @@ sitting behind a subscription. mitlist has one tier, and it's the whole thing.
 | | mitlist | [Grocy](https://grocy.info) | [Homechart](https://homechart.app) | [IHateMoney](https://ihatemoney.org) | [Actual Budget](https://actualbudget.org) |
 |---|---|---|---|---|---|
 | **License** | AGPL-3.0 | MIT | ❌ proprietary ² | BSD | MIT |
-| **Price** | Free | Free | Free solo; household $4.99/mo · $49.99/yr · $149.99 lifetime | Free | Free |
+| **Price** | Free self-hosted; hosted free up to 4 members, then €27.99/yr per household | Free | Free solo; household $4.99/mo · $49.99/yr · $149.99 lifetime | Free | Free |
 | **Install it today from a store** | ❌ build it yourself | ⚠️ community apps ³ | ✅ official iOS + Android | ❌ web only | ⚠️ iOS app shipped; Android on the roadmap |
 | **Expense splitting** | ✅ | ❌ | ✅ | ✅ | ❌ ¹ |
 | **Chore rotation** | ✅ | ✅ | ✅ | ❌ | ❌ |
@@ -259,8 +264,11 @@ If any of these are dealbreakers, one of the apps above will serve you better �
 mitlist exists because there was no free, pretty, self-hostable option. The
 complete self-hosted product stays free and open source: no locked community
 edition, no ads, and no sale of household data. Official hosting is free for
-normal household use while it remains sustainable, with limits and operating
-costs explained publicly on the landing site's transparency page.
+households of up to four members. Larger households pay for one Premium
+subscription per household (€3.49/month or €27.99/year on the web, €3.99 or
+€29.99 through the stores), and anyone can buy a one-time €4.99 Supporter pack
+for a badge and accent colours. That revenue pays for the servers; the limits
+and operating costs are explained on the landing site's transparency page.
 
 Ways to help, in order of usefulness:
 
@@ -269,8 +277,9 @@ Ways to help, in order of usefulness:
    hidden in builds without a tracker key, so self-hosted clients send nothing.
 2. **Star the repo** and tell the next flat that's drowning in group-chat math.
 3. **Self-host it** — costs the project nothing, gives you everything.
-4. **Chip in for server costs** — donations are opening soon and will be
-   accounted for in the open.
+4. **Chip in for server costs** — subscribe on the hosted service if your
+   household needs it, or buy the Supporter pack. Costs are accounted for in
+   the open.
 
 ---
 
@@ -282,6 +291,7 @@ See [AGENTS.md](AGENTS.md) for architecture and development guidelines.
 # Frontend
 cd frontend
 flutter pub get
+python tool/fetch_ocr_models.py   # ~82 MB of on-device OCR models, kept out of git
 flutter run
 
 # Backend
@@ -301,7 +311,7 @@ out of the box for local development. For production, set strong values (see
 
 ## License
 
-[AGPL-3.0](LICENSE) — Free forever. Share your improvements.
+[AGPL-3.0](LICENSE) — Self-hosting is free forever. Share your improvements.
 
 This repository contains the complete corresponding source. You may obtain it
 from this repository as permitted under the GNU Affero General Public License.

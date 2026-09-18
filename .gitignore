@@ -27,3 +27,12 @@ __pycache__/
 # metadata under store/fastlane is uploaded from a local checkout. The
 # already-tracked text listings stay tracked; nothing new is added.
 store/
+
+# On-device OCR models (~82 MB) are distributed as release assets, not in git.
+# Run frontend/tool/fetch_ocr_models.py to download them; see
+# frontend/assets/models/ocr/README.md.
+frontend/assets/models/ocr/*/inference.onnx
+
+# AI design-critique logs are local working notes, not project docs.
+.impeccable/
+**/.impeccable/
