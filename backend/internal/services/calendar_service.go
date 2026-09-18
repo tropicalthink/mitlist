@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -50,25 +51,79 @@ func (s *CalendarService) GetCalendar(ctx context.Context, user *models.User, gr
 		return nil, err
 	}
 
-	var events []models.CalendarEvent
+	queryCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	var (
+		plans        []models.MealPlan
+		recipeTitles map[uuid.UUID]*models.Recipe
+		assignments  []models.ChoreAssignment
+		recurring    []models.RecurringExpense
+		pinwallPosts []models.PinwallPost
+		expenses     []models.Expense
+		wg           sync.WaitGroup
+		errOnce      sync.Once
+		firstErr     error
+	)
+	run := func(query func() error) {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if err := query(); err != nil {
+				errOnce.Do(func() {
+					firstErr = err
+					cancel()
+				})
+			}
+		}()
+	}
+
+	// Meal plans and their recipe titles form one dependent query branch.
+	run(func() error {
+		var err error
+		plans, err = s.mealPlanRepo.ListMealPlansByGroup(queryCtx, groupID, from, to)
+		if err != nil {
+			return err
+		}
+		recipeIDs := make([]uuid.UUID, 0, len(plans))
+		seenRecipes := make(map[uuid.UUID]struct{}, len(plans))
+		for _, p := range plans {
+			if _, ok := seenRecipes[p.RecipeID]; !ok {
+				seenRecipes[p.RecipeID] = struct{}{}
+				recipeIDs = append(recipeIDs, p.RecipeID)
+			}
+		}
+		recipeTitles, err = s.recipeRepo.GetRecipesByIDs(queryCtx, recipeIDs)
+		return err
+	})
+	run(func() error {
+		var err error
+		assignments, err = s.choreRepo.ListDueAssignmentsByGroup(queryCtx, groupID, from, to)
+		return err
+	})
+	run(func() error {
+		var err error
+		recurring, err = s.financeRepo.ListRecurringExpensesByDateRange(queryCtx, groupID, from, to)
+		return err
+	})
+	run(func() error {
+		var err error
+		pinwallPosts, err = s.pinwallRepo.ListPostsByGroupAndRemindAtRange(queryCtx, groupID, from, to)
+		return err
+	})
+	run(func() error {
+		var err error
+		expenses, err = s.financeRepo.ListExpensesByDateRange(queryCtx, groupID, from, to)
+		return err
+	})
+	wg.Wait()
+	if firstErr != nil {
+		return nil, firstErr
+	}
+
+	events := make([]models.CalendarEvent, 0,
+		len(plans)+len(assignments)+len(recurring)+len(pinwallPosts)+len(expenses))
 
 	// Meal plans
-	plans, err := s.mealPlanRepo.ListMealPlansByGroup(ctx, groupID, from, to)
-	if err != nil {
-		return nil, err
-	}
-	recipeIDs := make([]uuid.UUID, 0, len(plans))
-	seenRecipes := make(map[uuid.UUID]struct{}, len(plans))
-	for _, p := range plans {
-		if _, ok := seenRecipes[p.RecipeID]; !ok {
-			seenRecipes[p.RecipeID] = struct{}{}
-			recipeIDs = append(recipeIDs, p.RecipeID)
-		}
-	}
-	recipeTitles, err := s.recipeRepo.GetRecipesByIDs(ctx, recipeIDs)
-	if err != nil {
-		return nil, err
-	}
 	for _, p := range plans {
 		title := "Meal"
 		if recipe, ok := recipeTitles[p.RecipeID]; ok && recipe != nil {
@@ -91,10 +146,6 @@ func (s *CalendarService) GetCalendar(ctx context.Context, user *models.User, gr
 	}
 
 	// Chores
-	assignments, err := s.choreRepo.ListDueAssignmentsByGroup(ctx, groupID, from, to)
-	if err != nil {
-		return nil, err
-	}
 	for _, a := range assignments {
 		title := a.ChoreName
 		if title == "" {
@@ -116,10 +167,6 @@ func (s *CalendarService) GetCalendar(ctx context.Context, user *models.User, gr
 	}
 
 	// Recurring expenses
-	recurring, err := s.financeRepo.ListRecurringExpensesByDateRange(ctx, groupID, from, to)
-	if err != nil {
-		return nil, err
-	}
 	for _, re := range recurring {
 		events = append(events, models.CalendarEvent{
 			ID:      re.ID.String(),
@@ -138,10 +185,6 @@ func (s *CalendarService) GetCalendar(ctx context.Context, user *models.User, gr
 	}
 
 	// Pinwall reminders
-	pinwallPosts, err := s.pinwallRepo.ListPostsByGroupAndRemindAtRange(ctx, groupID, from, to)
-	if err != nil {
-		return nil, err
-	}
 	for _, p := range pinwallPosts {
 		if p.RemindAt == nil {
 			continue
@@ -166,10 +209,6 @@ func (s *CalendarService) GetCalendar(ctx context.Context, user *models.User, gr
 	}
 
 	// One-time expenses
-	expenses, err := s.financeRepo.ListExpensesByDateRange(ctx, groupID, from, to)
-	if err != nil {
-		return nil, err
-	}
 	for _, e := range expenses {
 		events = append(events, models.CalendarEvent{
 			ID:      "expense_" + e.ID.String(),
