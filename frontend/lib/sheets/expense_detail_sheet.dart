@@ -478,7 +478,8 @@ class _SplitRow extends StatelessWidget {
             ),
           Text(
             formatCurrency(split.amount < 0 ? 0 : split.amount, currency),
-            style: MitlistTypography.monoBody(),
+            style: MitlistTypography.monoBody(
+                color: Theme.of(context).colorScheme.onSurface),
           ),
         ],
       ),
