@@ -145,6 +145,20 @@ final outboxStateProvider = StreamProvider<OutboxState>((ref) async* {
     // strictly better than sampling something we cannot trust.
     final lifecycle = WidgetsBinding.instance.lifecycleState;
     if (lifecycle != null && lifecycle != AppLifecycleState.resumed) continue;
-    yield await computeState();
+    final state = await computeState();
+    // A drain kicked off by a repository write does not re-arm itself: when
+    // its first attempt hits a transient error (timeout, 5xx, 409-with-
+    // Retry-After) the op just sits pending until the next write, resume, or
+    // connectivity flip — with the banner saying "Syncing" the whole time.
+    // Only the coordinator's own drain schedules follow-ups, so nudge it here
+    // whenever something is pending and we are online. It is idempotent, and
+    // the per-op 5s backoff makes the extra call a no-op between attempts.
+    if (state.isSyncing) {
+      unawaited(
+        ref.read(outboxCoordinatorProvider).valueOrNull?.drain() ??
+            Future.value(),
+      );
+    }
+    yield state;
   }
 });

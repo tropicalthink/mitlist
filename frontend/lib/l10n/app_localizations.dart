@@ -6735,6 +6735,12 @@ abstract class AppLocalizations {
   /// **'Delete'**
   String get listItemDeleteAction;
 
+  /// Under a list item, which household member put it on the list
+  ///
+  /// In en, this message translates to:
+  /// **'{name} added this'**
+  String listItemAddedBy(String name);
+
   /// Semantics label for reorder handle
   ///
   /// In en, this message translates to:

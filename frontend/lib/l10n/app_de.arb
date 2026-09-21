@@ -1070,6 +1070,7 @@
   "listOpenCount": "{count, plural, =0{Alles erledigt} =1{1 offen} other{{count} offen}}",
   "listSortListView": "Listenansicht",
   "listItemDeleteAction": "Löschen",
+  "listItemAddedBy": "Von {name} eingetragen",
   "listItemReorder": "Neu anordnen",
   "listItemMarkUnchecked": "{name} als unerledigt markieren",
   "listItemMarkChecked": "{name} als erledigt markieren",

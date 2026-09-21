@@ -258,8 +258,10 @@ showAppDialog<bool>(
 | 000068 | Onboarding email attempt reservation |
 | 000069 | Batched activity notifications |
 | 000070–000072 | Calendar range-query indexes for expenses, recurring expenses, and pinwall reminders |
+| 000073 | List reminders |
+| 000074 | `invited_at` on `testing_signups` (store invitation email) |
 
-Latest migration: `000072_add_calendar_pinwall_range_index`.
+Latest migration: `000074_add_testing_signup_invited_at`.
 
 ## Key API Endpoints Added
 
@@ -268,3 +270,4 @@ Latest migration: `000072_add_calendar_pinwall_range_index`.
 | `GET` | `/expenses/{id}/splits` | Calendar density — list expense splits |
 | `GET` | (via calendar) `ListExpensesByDateRange` | Calendar density — one-time expenses in calendar |
 | `GET` | (via pinwall) `ListPostsByGroupAndRemindAtRange` | Pinwall reminders in calendar |
+| `GET`/`POST` | `/testing/signups/invite[/preview]` | Admin-only store invitation email to mobile-beta signups (`backend/docs/testing-signups.md`) |

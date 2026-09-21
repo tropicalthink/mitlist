@@ -32,8 +32,12 @@ still draggable, no inertia).
 - `/mobile-beta` collects the required testing-invitation consent and a separate,
   optional launch-updates consent. `/testing` remains available for old links.
 - Product screenshots live in `public/screenshots/*.webp` (phone captures of
-  the live web app at 430×932 CSS px, 2× scale). `npm run check:official-launch`
-  fails while any `data-launch-placeholder` element remains in `HomePage.astro`.
+  the live web app at 430×932 CSS px, 2× scale). Each `<name>.webp` has a
+  `<name>-dark.webp` twin that the homepage serves under
+  `prefers-color-scheme: dark`. `scripts/capture-screenshots.mjs` opens a
+  phone-sized Chrome in either scheme for recapturing them.
+  `npm run check:official-launch` fails while any `data-launch-placeholder`
+  element remains in `HomePage.astro`.
 - Localized homepages ship at `/en/`, `/de/`, `/es/`, `/fr/`, and `/nl/`.
 
 ## Commands

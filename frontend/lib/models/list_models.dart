@@ -94,6 +94,11 @@ class ListItem {
   final bool checked;
   final int position;
   final String? claimedBy;
+
+  /// Household member who put the item on the list; null for rows that
+  /// predate the column or arrived without one. Rendered as the "added by"
+  /// line so a shared list shows who asked for what.
+  final String? addedBy;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -109,6 +114,7 @@ class ListItem {
     required this.checked,
     required this.position,
     this.claimedBy,
+    this.addedBy,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -126,6 +132,7 @@ class ListItem {
       checked: json['checked'] as bool? ?? false,
       position: json['position'] as int? ?? 0,
       claimedBy: json['claimed_by'] as String?,
+      addedBy: json['added_by'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
@@ -142,6 +149,7 @@ class ListItem {
         if (canonicalItemId != null) 'canonical_item_id': canonicalItemId,
         'checked': checked,
         'position': position,
+        if (addedBy != null) 'added_by': addedBy,
         'created_at': createdAt.toIso8601String(),
         'updated_at': updatedAt.toIso8601String(),
       };

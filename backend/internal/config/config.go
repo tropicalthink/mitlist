@@ -128,6 +128,11 @@ type Config struct {
 	OnboardingEmailsEnabled bool   `env:"ONBOARDING_EMAILS_ENABLED" default:"true"`
 	PublicAPIURL            string `env:"PUBLIC_API_URL"`
 
+	// Store listings the mobile-beta invitation emails point at. An empty
+	// value means that platform's invitation cannot be sent yet.
+	PlayStoreURL string `env:"PLAY_STORE_URL" default:"https://play.google.com/store/apps/details?id=me.mitlist"`
+	AppStoreURL  string `env:"APP_STORE_URL"`
+
 	// Sentry / GlitchTip error tracking
 	SentryDSN              string  `env:"SENTRY_DSN"`
 	SentryRelease          string  `env:"SENTRY_RELEASE"`

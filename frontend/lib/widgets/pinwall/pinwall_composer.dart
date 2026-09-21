@@ -17,6 +17,7 @@ import '../../theme/spacing.dart';
 import '../../theme/theme.dart';
 import '../../utils/friendly_error.dart';
 import '../../utils/haptics.dart';
+import '../../utils/reminder_picker.dart';
 import '../app_bottom_sheet.dart';
 import '../app_button.dart';
 import '../app_toast.dart';
@@ -72,9 +73,10 @@ class _PinwallComposerState extends ConsumerState<PinwallComposer> {
     unawaited(Haptics.light());
 
     final now = DateTime.now();
+    final seed = reminderPickerSeed(_remindAt, now);
     final pickedDate = await showDatePicker(
       context: context,
-      initialDate: _remindAt?.isAfter(now) == true ? _remindAt! : now,
+      initialDate: seed,
       firstDate: now,
       lastDate: now.add(const Duration(days: 365)),
       helpText: l10n.pinwallChooseReminderDate,
@@ -83,7 +85,7 @@ class _PinwallComposerState extends ConsumerState<PinwallComposer> {
 
     final pickedTime = await showTimePicker(
       context: context,
-      initialTime: TimeOfDay.fromDateTime(_remindAt ?? now),
+      initialTime: TimeOfDay.fromDateTime(seed),
       helpText: l10n.pinwallChooseReminderTime,
     );
     if (!mounted || pickedTime == null) return;

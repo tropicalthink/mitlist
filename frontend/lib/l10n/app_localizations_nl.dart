@@ -3846,6 +3846,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get listItemDeleteAction => 'Verwijderen';
 
   @override
+  String listItemAddedBy(String name) {
+    return 'Toegevoegd door $name';
+  }
+
+  @override
   String get listItemReorder => 'Herschikken';
 
   @override

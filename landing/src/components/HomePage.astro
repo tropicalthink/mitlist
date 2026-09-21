@@ -46,7 +46,7 @@ const elevation = {
         <header class="proof__intro reveal"><h2 class="h2" id="product-proof-title">{elevation.productProof}</h2><p>{elevation.productProofBody}</p></header>
         <div class="phones reveal">
           {[["chores", copy.features[2].title], ["home", copy.features[5].title], ["money", copy.features[1].title]].map(([name, alt]) => (
-            <figure class="phone"><img src={`/screenshots/${name}.webp`} width="860" height="1864" alt={alt} loading="lazy" decoding="async" /></figure>
+            <figure class="phone"><picture><source srcset={`/screenshots/${name}-dark.webp`} media="(prefers-color-scheme: dark)" /><img src={`/screenshots/${name}.webp`} width="860" height="1864" alt={alt} loading="lazy" decoding="async" /></picture></figure>
           ))}
         </div>
       </div>
@@ -78,7 +78,7 @@ const elevation = {
         <div class="workflow-grid">
           {copy.workflows.map((workflow, index) => (
             <article class="workflow reveal">
-              <figure class="phone workflow__phone"><img src={`/screenshots/${["meal-plan", "grocery-list", "calendar"][index]}.webp`} width="860" height="1864" alt={workflow.title} loading="lazy" decoding="async" /></figure>
+              <figure class="phone workflow__phone"><picture><source srcset={`/screenshots/${["meal-plan", "grocery-list", "calendar"][index]}-dark.webp`} media="(prefers-color-scheme: dark)" /><img src={`/screenshots/${["meal-plan", "grocery-list", "calendar"][index]}.webp`} width="860" height="1864" alt={workflow.title} loading="lazy" decoding="async" /></picture></figure>
               <div class="workflow__copy"><span class="workflow__step">{workflow.step}</span><h3 class="h3">{workflow.title}</h3><p>{workflow.body}</p></div>
             </article>
           ))}

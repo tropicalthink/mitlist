@@ -51,6 +51,19 @@ func (s *memoryTestingSignups) List(_ context.Context, platform string) ([]repos
 	return result, s.err
 }
 
+func (s *memoryTestingSignups) MarkInvited(_ context.Context, email, platform string) error {
+	if s.err != nil {
+		return s.err
+	}
+	for i := range s.signups {
+		if s.signups[i].Email == email && s.signups[i].Platform == platform && s.signups[i].InvitedAt == nil {
+			now := time.Now()
+			s.signups[i].InvitedAt = &now
+		}
+	}
+	return nil
+}
+
 type memoryForwarder struct {
 	mu       sync.Mutex
 	enabled  bool

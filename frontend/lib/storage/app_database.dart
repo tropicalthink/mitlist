@@ -42,6 +42,7 @@ class ListItemsTable extends Table {
   IntColumn get priceCents => integer().named('price_cents').nullable()();
   TextColumn get canonicalItemId =>
       text().named('canonical_item_id').nullable()();
+  TextColumn get addedBy => text().named('added_by').nullable()();
   DateTimeColumn get createdAt => dateTime().named('created_at')();
   DateTimeColumn get updatedAt => dateTime().named('updated_at')();
 
@@ -459,7 +460,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 16;
+  int get schemaVersion => 17;
 
   /// The prebuilt read-only global grocery brain (canonical items, seed/OFF
   /// aliases + FTS, store aisles). Attached by [GroceryReferenceInstaller] once
@@ -831,6 +832,10 @@ FROM recipes_table;
           if (from < 16) {
             // Read-through cache of GET bodies for the offline fallback.
             await m.createTable(responseCaches);
+          }
+          if (from < 17) {
+            // Who put each item on the list, for the "added by" row line.
+            await m.addColumn(listItemsTable, listItemsTable.addedBy);
           }
         },
         beforeOpen: (details) async {
@@ -1299,6 +1304,9 @@ FROM recipes_table;
         priceCents: Value(server.priceCents ?? local?.priceCents),
         canonicalItemId:
             Value(server.canonicalItemId ?? local?.canonicalItemId),
+        // The optimistic row already knows who added it; keep that when the
+        // server response predates the column or omits it.
+        addedBy: Value(server.addedBy ?? local?.addedBy),
         createdAt: Value(server.createdAt),
         updatedAt: Value(server.updatedAt),
       )

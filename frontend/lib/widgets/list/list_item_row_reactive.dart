@@ -18,6 +18,7 @@ class ListItemRowReactive extends ConsumerWidget {
     this.onTap,
     this.photoUrl,
     this.claimedLabel,
+    this.addedByName,
     this.onPhotoTap,
     this.reorderIndex,
     this.shoppingVisual = false,
@@ -28,6 +29,9 @@ class ListItemRowReactive extends ConsumerWidget {
   final String? photoUrl;
   final String currencySymbol;
   final String? claimedLabel;
+
+  /// Display name of whoever added the item, when it was someone else.
+  final String? addedByName;
   final ValueChanged<bool> onToggle;
   final VoidCallback? onTap;
   final VoidCallback? onPhotoTap;
@@ -44,6 +48,7 @@ class ListItemRowReactive extends ConsumerWidget {
       photoUrl: photoUrl,
       currencySymbol: currencySymbol,
       claimedLabel: claimedLabel,
+      addedByName: addedByName,
       onToggle: onToggle,
       onTap: onTap,
       onPhotoTap: onPhotoTap,

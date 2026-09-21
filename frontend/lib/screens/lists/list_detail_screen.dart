@@ -1517,6 +1517,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       photoUrl: thumbUrl,
       currencySymbol: currencySymbol(_controller.groupCurrency),
       claimedLabel: item.claimedBy != null ? '· claimed' : null,
+      addedByName: _addedByName(item),
       onToggle: (val) => _toggleItem(item, val),
       onTap: () => _toggleItem(item, !item.checked),
       onPhotoTap: thumbUrl != null
@@ -1527,6 +1528,15 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       shoppingVisual: _controller.listType == 'shopping',
       groceryCategory: _controller.categoryFor(item),
     );
+  }
+
+  /// Name to credit under the row. Your own additions stay unlabelled: on a
+  /// list you fill yourself every row would otherwise repeat your name, and
+  /// the point of the line is spotting what the others asked for.
+  String? _addedByName(ListItem item) {
+    final addedBy = item.addedBy;
+    if (addedBy == null || addedBy == _controller.userId) return null;
+    return _controller.memberName(addedBy);
   }
 
   void _clearSearch() {

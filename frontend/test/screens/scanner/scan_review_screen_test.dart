@@ -315,6 +315,7 @@ class _FakeListRepository implements ListRepository {
     String listId,
     CreateListItemRequest req, {
     bool deferImmediateSync = false,
+    String? addedBy,
   }) async {
     createItemCalls.add(_CreateItemCall(listId, req));
     final now = DateTime.utc(2026, 1, 1);

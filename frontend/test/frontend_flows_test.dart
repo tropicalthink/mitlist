@@ -2327,6 +2327,7 @@ class FakeListRepository implements ListRepository {
     String listId,
     CreateListItemRequest req, {
     bool deferImmediateSync = false,
+    String? addedBy,
   }) async =>
       ListItem(
         id: '',
@@ -2410,6 +2411,7 @@ class FakeListRepository implements ListRepository {
     String note = '',
     String? canonicalItemId,
     bool deferImmediateSync = false,
+    String? addedBy,
   }) async =>
       ListItem(
         id: '',

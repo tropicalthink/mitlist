@@ -20,6 +20,7 @@ class ListItemRow extends StatelessWidget {
     this.photoUrl,
     this.currencySymbol = '\$',
     this.claimedLabel,
+    this.addedByName,
     this.onPhotoTap,
     this.onLongPress,
     this.reorderIndex,
@@ -37,6 +38,10 @@ class ListItemRow extends StatelessWidget {
   final String? photoUrl;
   final String currencySymbol;
   final String? claimedLabel;
+
+  /// Display name of the household member who added the item, shown as a
+  /// small line under the row. Null when it was the viewer or unknown.
+  final String? addedByName;
   final VoidCallback? onPhotoTap;
   final VoidCallback? onLongPress;
   final int? reorderIndex;
@@ -217,6 +222,15 @@ class ListItemRow extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: MitlistTypography.monoBody(
+                      color: secondaryTextColor,
+                    ),
+                  ),
+                if (addedByName != null && addedByName!.isNotEmpty)
+                  Text(
+                    l10n.listItemAddedBy(addedByName!),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: MitlistTypography.labelXSmall(
                       color: secondaryTextColor,
                     ),
                   ),

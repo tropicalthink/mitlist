@@ -3835,6 +3835,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get listItemDeleteAction => 'Eliminar';
 
   @override
+  String listItemAddedBy(String name) {
+    return 'Lo añadió $name';
+  }
+
+  @override
   String get listItemReorder => 'Reordenar';
 
   @override
