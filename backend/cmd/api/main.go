@@ -191,6 +191,7 @@ func main() {
 		// STAFFROOM_INTAKE_URL/KEY are set; otherwise they only live here.
 		testingSignups := handlers.NewTestingSignupHandler(repositories.NewTestingSignupRepository(pool))
 		testingSignups.SetForwarder(staffroomservice.New(cfg))
+		testingSignups.SetInviter(cnt.Mail(), map[string]string{"android": cfg.PlayStoreURL, "ios": cfg.AppStoreURL})
 		testingSignups.RegisterRoutes(r)
 		// Unsubscribe from the tips series: the token in the link is the
 		// credential, so this works from any mail client without a session.

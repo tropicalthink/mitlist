@@ -223,12 +223,12 @@ Tagged `home-assistant-v*` releases can be installed through HACS using this
 repository as an Integration custom repository. See the
 [Home Assistant guide](home_assistant/README.md) for setup and security details.
 
-mitlist is now in public beta. The hosted web app is open to everyone at [app.mitlist.me](https://app.mitlist.me); iOS and Android are distributed through TestFlight and Google Play testing while the mobile apps remain in beta.
+mitlist is now in public beta. The hosted web app is open to everyone at [app.mitlist.me](https://app.mitlist.me); Android is on Google Play, and iOS is distributed through TestFlight while the iOS app remains in beta.
 
 | Platform | Status |
 |----------|--------|
 | iOS | Public beta through TestFlight |
-| Android | Public beta through Google Play testing |
+| Android | On [Google Play](https://play.google.com/store/apps/details?id=me.mitlist) |
 | Web | Public beta at `app.mitlist.me`, or point a build at your own instance |
 | Self-host | `docker compose --profile prod up -d` |
 

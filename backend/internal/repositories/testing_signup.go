@@ -15,6 +15,8 @@ type TestingSignup struct {
 	LaunchConsentVersion *string
 	LaunchConsentedAt    *time.Time
 	CreatedAt            time.Time
+	// InvitedAt is when the store invitation email went out; nil until then.
+	InvitedAt *time.Time
 }
 
 type TestingSignupRepository struct{ pool *pgxpool.Pool }
@@ -44,7 +46,7 @@ func (r *TestingSignupRepository) Create(ctx context.Context, email, platform, c
 }
 
 func (r *TestingSignupRepository) List(ctx context.Context, platform string) ([]TestingSignup, error) {
-	rows, err := r.pool.Query(ctx, `SELECT email, platform, consent_version, launch_updates, launch_consent_version, launch_consented_at, created_at FROM testing_signups
+	rows, err := r.pool.Query(ctx, `SELECT email, platform, consent_version, launch_updates, launch_consent_version, launch_consented_at, created_at, invited_at FROM testing_signups
 		WHERE ($1 = '' OR platform = $1) ORDER BY created_at, id`, platform)
 	if err != nil {
 		return nil, err
@@ -53,10 +55,17 @@ func (r *TestingSignupRepository) List(ctx context.Context, platform string) ([]
 	result := []TestingSignup{}
 	for rows.Next() {
 		var signup TestingSignup
-		if err := rows.Scan(&signup.Email, &signup.Platform, &signup.ConsentVersion, &signup.LaunchUpdates, &signup.LaunchConsentVersion, &signup.LaunchConsentedAt, &signup.CreatedAt); err != nil {
+		if err := rows.Scan(&signup.Email, &signup.Platform, &signup.ConsentVersion, &signup.LaunchUpdates, &signup.LaunchConsentVersion, &signup.LaunchConsentedAt, &signup.CreatedAt, &signup.InvitedAt); err != nil {
 			return nil, err
 		}
 		result = append(result, signup)
 	}
 	return result, rows.Err()
+}
+
+// MarkInvited records that the invitation email was accepted by the provider.
+// It only ever moves forward: a repeat send keeps the first timestamp.
+func (r *TestingSignupRepository) MarkInvited(ctx context.Context, email, platform string) error {
+	_, err := r.pool.Exec(ctx, `UPDATE testing_signups SET invited_at = COALESCE(invited_at, now()) WHERE email = $1 AND platform = $2`, email, platform)
+	return err
 }

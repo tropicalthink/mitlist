@@ -154,7 +154,7 @@ export const homeCopy: Record<SiteLanguage, HomeCopy> = {
       {
         question: "Where can I use it?",
         answer:
-          "The web app is open to everyone. iOS is available through TestFlight and Android through Google Play testing while the mobile apps remain in beta.",
+          "The web app is open to everyone. Android is on Google Play. iOS is available through TestFlight while the iOS app remains in beta.",
       },
       {
         question: "Does the scanner upload my list?",
@@ -287,7 +287,7 @@ export const homeCopy: Record<SiteLanguage, HomeCopy> = {
       {
         question: "Wo kann ich mitlist nutzen?",
         answer:
-          "Die Web-App ist für alle offen. iOS läuft über TestFlight und Android über den Google-Play-Test.",
+          "Die Web-App ist für alle offen. Android gibt es bei Google Play. iOS läuft über TestFlight, solange die iOS-App in der Beta ist.",
       },
       {
         question: "Wird meine gescannte Liste hochgeladen?",
@@ -430,7 +430,7 @@ derived("es", {
     {
       question: "¿Dónde puedo usarlo?",
       answer:
-        "La app web está abierta. iOS se prueba mediante TestFlight y Android mediante Google Play.",
+        "La app web está abierta. Android está en Google Play. iOS se prueba mediante TestFlight mientras la app de iOS sigue en beta.",
     },
     {
       question: "¿Se sube mi lista escaneada?",
@@ -563,7 +563,7 @@ derived("fr", {
     {
       question: "Où puis-je l’utiliser ?",
       answer:
-        "L’application Web est ouverte. iOS passe par TestFlight et Android par les tests Google Play.",
+        "L’application Web est ouverte. Android est sur Google Play. iOS passe par TestFlight tant que l’application iOS reste en bêta.",
     },
     {
       question: "Ma liste scannée est-elle envoyée ?",
@@ -697,7 +697,7 @@ derived("nl", {
     {
       question: "Waar kan ik het gebruiken?",
       answer:
-        "De webapp staat voor iedereen open. iOS loopt via TestFlight en Android via Google Play-tests.",
+        "De webapp staat voor iedereen open. Android staat in Google Play. iOS loopt via TestFlight zolang de iOS-app in bèta is.",
     },
     {
       question: "Wordt mijn scan geüpload?",

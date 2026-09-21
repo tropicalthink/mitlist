@@ -15,6 +15,7 @@ export const site = {
   appUrl: "https://app.mitlist.me",
   apiUrl: "https://api.mitlist.me/api/v1",
   mobileBetaPath: "/mobile-beta",
+  playStoreUrl: "https://play.google.com/store/apps/details?id=me.mitlist",
   docsUrl: "https://docs.mitlist.me",
   statusUrl: "https://status.mitlist.me",
   feedbackUrl: "https://feedback.mitlist.me",

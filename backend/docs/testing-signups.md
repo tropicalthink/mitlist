@@ -54,6 +54,45 @@ invited. The CSV export below still works and needs no Staffroom.
 Google: https://support.google.com/googleplay/android-developer/answer/9845334
 Apple: https://developer.apple.com/help/app-store-connect/test-a-beta-version/invite-external-testers/
 
+## Send the invitation email (Android is on Google Play)
+
+Once a platform's app is installable, the API can email every signup for it
+a styled invitation with the store link, using the normal mail service (SES
+in production). The listing comes from `PLAY_STORE_URL` (defaults to the
+Google Play page for `me.mitlist`) and `APP_STORE_URL` (empty until the iOS
+app has a public TestFlight or App Store link; the iOS invite refuses to send
+without it). Migration 000074 adds `invited_at`, so a person is emailed once
+no matter how often the endpoint runs.
+
+1. Look at it first, in a browser, with the operator credentials:
+   `https://api.mitlist.me/api/v1/testing/signups/invite/preview?platform=android`
+   (`&format=text` shows the plain-text alternative).
+2. See who would get it without sending anything:
+
+   ```sh
+   curl -u "$ADMIN_USER:$ADMIN_PASS" -H 'Content-Type: application/json' \
+     -d '{"dry_run":true}' \
+     "https://api.mitlist.me/api/v1/testing/signups/invite?platform=android"
+   ```
+
+3. Send. The response lists `sent`, `failed`, and `already_invited`. Anyone
+   in `failed` was not marked, so running the same command again reaches
+   only them:
+
+   ```sh
+   curl -u "$ADMIN_USER:$ADMIN_PASS" -X POST \
+     "https://api.mitlist.me/api/v1/testing/signups/invite?platform=android"
+   ```
+
+Options in the JSON body: `"emails": [...]` limits the run to those
+addresses (send yourself one first), `"resend": true` includes people already
+invited (their original `invited_at` is kept). The message goes through the
+single-provider path, so a provider timeout never fans out into a duplicate.
+
+Testers signed up before this endpoint existed and were invited by hand
+through Play Console are not marked; use `emails` or accept that the first
+full run reaches them too.
+
 ## Withdrawal and retention
 
 Process withdrawal requests sent to `privacy@mitlist.me`, as listed in `/privacy#testing`.
@@ -66,7 +105,7 @@ signups and exports when the testing programme ends, as stated in the notice.
 
 ## Deployment and local verification
 
-Deploy the backend with migrations 000064 and 000067 first, then the static landing site.
+Deploy the backend with migrations 000064, 000067 and 000074 first, then the static landing site.
 The feature-board link needs no feedback Worker changes. No new mail credentials
 or external storage are required. `TESTING_SIGNUP_ORIGIN` defaults to
 `https://mitlist.me`. For local landing development, use the development backend
@@ -76,7 +115,7 @@ The handler unit tests can run without PostgreSQL despite the package's
 database-dependent TestMain:
 
 ```sh
-go test ./internal/api/handlers/testing_signup.go ./internal/api/handlers/testing_signup_test.go ./internal/api/handlers/admin_guard.go
+go test ./internal/api/handlers/testing_signup.go ./internal/api/handlers/testing_invite_email.go ./internal/api/handlers/testing_signup_test.go ./internal/api/handlers/testing_invite_test.go ./internal/api/handlers/admin_guard.go
 go test ./internal/services/staffroom
 go test ./internal/middleware -run Cors
 ```
