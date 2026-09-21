@@ -112,4 +112,31 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('2 l · claimed'), findsOneWidget);
   });
+
+  testWidgets('credits the household member who added the item',
+      (tester) async {
+    await tester.pumpWidget(
+      _host(
+        ListItemRow(
+          item: _milk,
+          onToggle: (_) {},
+          addedByName: 'Sam',
+          shoppingVisual: true,
+          groceryCategory: 'dairy',
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Sam added this'), findsOneWidget);
+  });
+
+  testWidgets('shows no credit line without an adder', (tester) async {
+    await tester.pumpWidget(
+      _host(ListItemRow(item: _milk, onToggle: (_) {})),
+    );
+    await tester.pump();
+
+    expect(find.textContaining('added this'), findsNothing);
+  });
 }

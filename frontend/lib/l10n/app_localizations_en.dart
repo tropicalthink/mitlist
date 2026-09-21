@@ -3811,6 +3811,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get listItemDeleteAction => 'Delete';
 
   @override
+  String listItemAddedBy(String name) {
+    return '$name added this';
+  }
+
+  @override
   String get listItemReorder => 'Reorder';
 
   @override

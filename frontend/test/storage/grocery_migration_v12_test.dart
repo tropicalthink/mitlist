@@ -22,6 +22,13 @@ CREATE TABLE "expenses_table" (
   "currency" TEXT NOT NULL, "notes" TEXT NOT NULL,
   "date" INTEGER NOT NULL, "created_at" INTEGER NOT NULL,
   PRIMARY KEY ("id"));
+CREATE TABLE "list_items_table" (
+  "id" TEXT NOT NULL, "list_id" TEXT NOT NULL, "name" TEXT NOT NULL,
+  "quantity" REAL NOT NULL, "unit" TEXT NOT NULL,
+  "checked" INTEGER NOT NULL CHECK ("checked" IN (0, 1)),
+  "position" INTEGER NOT NULL, "price_cents" INTEGER, "canonical_item_id" TEXT,
+  "created_at" INTEGER NOT NULL, "updated_at" INTEGER NOT NULL,
+  PRIMARY KEY ("id"));
 CREATE TABLE "canonical_items_table" (
   "id" TEXT NOT NULL, "group_id" TEXT NOT NULL,
   "name_de" TEXT NOT NULL DEFAULT '', "name_en" TEXT NOT NULL DEFAULT '',

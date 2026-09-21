@@ -223,6 +223,8 @@ class ListRepository {
               position: pos,
               priceCents: item.priceCents,
               canonicalItemId: item.canonicalItemId,
+              claimedBy: item.claimedBy,
+              addedBy: item.addedBy,
               createdAt: item.createdAt,
               updatedAt: item.updatedAt,
             ),
@@ -248,6 +250,7 @@ class ListRepository {
     String listId,
     CreateListItemRequest req, {
     bool deferImmediateSync = false,
+    String? addedBy,
   }) async {
     final tempId = _uuid.v4();
     final now = DateTime.now();
@@ -273,6 +276,7 @@ class ListRepository {
       position: maxPos + 1,
       priceCents: req.priceCents,
       canonicalItemId: req.canonicalItemId,
+      addedBy: addedBy,
       createdAt: now,
       updatedAt: now,
     );
@@ -328,6 +332,7 @@ class ListRepository {
     String note = '',
     String? canonicalItemId,
     bool deferImmediateSync = false,
+    String? addedBy,
   }) async {
     final now = DateTime.now();
     final existingRows = await _db.getItemsByListOnce(listId);
@@ -353,6 +358,7 @@ class ListRepository {
         priceCents: existing.priceCents,
         canonicalItemId: existing.canonicalItemId ?? canonicalItemId,
         claimedBy: existing.claimedBy,
+        addedBy: existing.addedBy,
         createdAt: existing.createdAt,
         updatedAt: now,
       );
@@ -373,6 +379,7 @@ class ListRepository {
         checked: false,
         position: maxPos + 1,
         canonicalItemId: canonicalItemId,
+        addedBy: addedBy,
         createdAt: now,
         updatedAt: now,
       );
@@ -464,6 +471,8 @@ class ListRepository {
                   existing.name.trim().toLowerCase()
           ? null
           : existing.canonicalItemId,
+      claimedBy: existing.claimedBy,
+      addedBy: existing.addedBy,
       createdAt: existing.createdAt,
       updatedAt: DateTime.now(),
     );
@@ -608,6 +617,7 @@ class ListRepository {
         priceCents: existing.priceCents,
         canonicalItemId: existing.canonicalItemId,
         claimedBy: existing.claimedBy,
+        addedBy: existing.addedBy,
         createdAt: existing.createdAt,
         updatedAt: now,
       )));
@@ -1101,6 +1111,7 @@ class ListRepository {
       position: Value(item.position),
       priceCents: Value(item.priceCents),
       canonicalItemId: Value(item.canonicalItemId),
+      addedBy: Value(item.addedBy),
       createdAt: Value(item.createdAt),
       updatedAt: Value(item.updatedAt),
     );
@@ -1118,6 +1129,7 @@ class ListRepository {
       position: row.position,
       priceCents: row.priceCents,
       canonicalItemId: row.canonicalItemId,
+      addedBy: row.addedBy,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     );

@@ -4122,6 +4122,7 @@
   "listOpenCount": "{count, plural, =0{Alles klaar} =1{1 te gaan} other{{count} te gaan}}",
   "listSortListView": "Lijstweergave",
   "listItemDeleteAction": "Verwijderen",
+  "listItemAddedBy": "Toegevoegd door {name}",
   "listItemReorder": "Herschikken",
   "listItemMarkUnchecked": "{name} als niet-afgevinkt markeren",
   "listItemMarkChecked": "{name} als afgevinkt markeren",

@@ -147,6 +147,7 @@ class _ControlledListRepository implements ListRepository {
     String listId,
     CreateListItemRequest req, {
     bool deferImmediateSync = false,
+    String? addedBy,
   }) async {
     createCalls++;
     return ListItem(
@@ -172,6 +173,7 @@ class _ControlledListRepository implements ListRepository {
     String note = '',
     String? canonicalItemId,
     bool deferImmediateSync = false,
+    String? addedBy,
   }) async {
     amountAdds.add(name);
     return ListItem(

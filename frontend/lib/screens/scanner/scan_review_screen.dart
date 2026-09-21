@@ -359,6 +359,7 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
               unit: p.unit,
               canonicalItemId: p.canonicalItemId,
             ),
+            addedBy: widget.userId,
           )));
 
       // This is deliberately best-effort and local-only. A collector failure

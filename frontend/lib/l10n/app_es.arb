@@ -4122,6 +4122,7 @@
   "listOpenCount": "{count, plural, =0{Todo hecho} =1{Queda 1} other{Quedan {count}}}",
   "listSortListView": "Vista de lista",
   "listItemDeleteAction": "Eliminar",
+  "listItemAddedBy": "Lo añadió {name}",
   "listItemReorder": "Reordenar",
   "listItemMarkUnchecked": "Marcar {name} como no completado",
   "listItemMarkChecked": "Marcar {name} como completado",

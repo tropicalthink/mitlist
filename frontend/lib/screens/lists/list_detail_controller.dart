@@ -111,6 +111,11 @@ class ListDetailController extends ChangeNotifier {
   static const int _listItemSuggestionLimit = 3;
   String _groupCurrency = 'USD';
   String? _userId;
+
+  /// Display names of the household roster, keyed by user id, so item rows can
+  /// say who added them. Former members stay in the server roster, so an item
+  /// from someone who since left still carries their name.
+  Map<String, String> _memberNames = const {};
   int _suggestGeneration = 0;
 
   /// Bumped instead of [notifyListeners] when only the composer suggestions
@@ -155,6 +160,11 @@ class ListDetailController extends ChangeNotifier {
   bool get hasPendingReminder => _remindAt != null && _reminderSentAt == null;
   String? get userId => _userId;
   String get groupCurrency => _groupCurrency;
+
+  /// Display name for [userId], or null when the roster has not loaded or
+  /// does not know them.
+  String? memberName(String? userId) =>
+      userId == null ? null : _memberNames[userId];
   List<HouseholdSuggestion> get suggestions => _suggestionEngine.suggestions;
 
   List<ListItemPhoto>? photosFor(String itemId) => _photosByItemId[itemId];
@@ -315,6 +325,14 @@ class ListDetailController extends ChangeNotifier {
         final group = await groupService.getGroup(list.groupId);
         if (!_disposed) {
           _groupCurrency = group.currency;
+          _notify();
+        }
+      } catch (_) {}
+      try {
+        final groupService = await ref.read(groupServiceProviderAsync.future);
+        final members = await groupService.listMembers(list.groupId);
+        if (!_disposed) {
+          _memberNames = {for (final m in members) m.userId: m.displayName};
           _notify();
         }
       } catch (_) {}
@@ -624,6 +642,7 @@ class ListDetailController extends ChangeNotifier {
               -1, (max, item) => item.position > max ? item.position : max) +
           1,
       canonicalItemId: canonicalItemId,
+      addedBy: _userId,
       createdAt: now,
       updatedAt: now,
     );
@@ -645,6 +664,7 @@ class ListDetailController extends ChangeNotifier {
             canonicalItemId: canonicalItemId,
           ),
           deferImmediateSync: shouldResolve,
+          addedBy: _userId,
         );
       } else {
         created = await repo.addItemAmountOfflineFirst(
@@ -657,6 +677,7 @@ class ListDetailController extends ChangeNotifier {
           unit: parsed.unit,
           canonicalItemId: canonicalItemId,
           deferImmediateSync: shouldResolve,
+          addedBy: _userId,
         );
       }
       _itemsAddedThisSession = true;
@@ -768,6 +789,7 @@ class ListDetailController extends ChangeNotifier {
         name: suggestion.name,
         canonicalItemId: suggestion.canonicalItemId,
       ),
+      addedBy: _userId,
     );
     _itemsAddedThisSession = true;
     if (_disposed) return AddItemOutcome.created;
@@ -827,6 +849,7 @@ class ListDetailController extends ChangeNotifier {
         priceCents: item.priceCents,
         canonicalItemId: item.canonicalItemId,
       ),
+      addedBy: item.addedBy ?? _userId,
     );
     if (item.checked) {
       await repo.updateItemOfflineFirst(
@@ -1111,6 +1134,7 @@ class ListDetailController extends ChangeNotifier {
         priceCents: item.priceCents,
         canonicalItemId: item.canonicalItemId,
         claimedBy: item.claimedBy,
+        addedBy: item.addedBy,
         createdAt: item.createdAt,
         updatedAt: item.updatedAt,
       );
@@ -1150,6 +1174,7 @@ class ListDetailController extends ChangeNotifier {
         priceCents: item.priceCents,
         canonicalItemId: item.canonicalItemId,
         claimedBy: item.claimedBy,
+        addedBy: item.addedBy,
         createdAt: item.createdAt,
         updatedAt: item.updatedAt,
       );

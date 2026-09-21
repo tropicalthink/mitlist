@@ -4122,6 +4122,7 @@
   "listOpenCount": "{count, plural, =0{Tout est fait} =1{1 restant} other{{count} restants}}",
   "listSortListView": "Vue liste",
   "listItemDeleteAction": "Supprimer",
+  "listItemAddedBy": "Ajouté par {name}",
   "listItemReorder": "Réorganiser",
   "listItemMarkUnchecked": "Marquer {name} comme non coché",
   "listItemMarkChecked": "Marquer {name} comme coché",

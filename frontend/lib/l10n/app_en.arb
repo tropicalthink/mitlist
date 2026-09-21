@@ -5129,6 +5129,15 @@
   "@listItemDeleteAction": {
     "description": "Action: delete item from list"
   },
+  "listItemAddedBy": "{name} added this",
+  "@listItemAddedBy": {
+    "description": "Under a list item, which household member put it on the list",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "listItemReorder": "Reorder",
   "@listItemReorder": {
     "description": "Semantics label for reorder handle"
