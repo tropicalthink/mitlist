@@ -24,6 +24,7 @@ class ChoreDetailSheet extends StatefulWidget {
     required this.assignee,
     this.nextAssignee,
     this.frequencyLabel,
+    this.zone,
     required this.dueDate,
     this.trackedCount,
     this.lastTrackedAt,
@@ -56,6 +57,9 @@ class ChoreDetailSheet extends StatefulWidget {
   /// Human rhythm label ("Every 2 weeks", "As needed"); the one fact the sheet
   /// was missing about a recurring chore.
   final String? frequencyLabel;
+
+  /// Household zone (kitchen, bathroom, ...) the chore is filed under.
+  final String? zone;
   final DateTime dueDate;
   final int? trackedCount;
   final DateTime? lastTrackedAt;
@@ -83,6 +87,7 @@ class ChoreDetailSheet extends StatefulWidget {
     required String assignee,
     String? nextAssignee,
     String? frequencyLabel,
+    String? zone,
     required DateTime dueDate,
     int? trackedCount,
     DateTime? lastTrackedAt,
@@ -113,6 +118,7 @@ class ChoreDetailSheet extends StatefulWidget {
         assignee: assignee,
         nextAssignee: nextAssignee,
         frequencyLabel: frequencyLabel,
+        zone: zone,
         dueDate: dueDate,
         trackedCount: trackedCount,
         lastTrackedAt: lastTrackedAt,
@@ -296,6 +302,10 @@ class _ChoreDetailSheetState extends State<ChoreDetailSheet> {
                   label: l10n.choreDetailRhythm,
                   value: widget.frequencyLabel!,
                 ),
+                const AppDivider(),
+              ],
+              if (widget.zone != null && widget.zone!.isNotEmpty) ...[
+                _DetailRow(label: l10n.choreDetailZone, value: widget.zone!),
                 const AppDivider(),
               ],
               _DetailRow(
