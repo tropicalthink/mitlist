@@ -7,7 +7,10 @@ declining it never affects beta access. The form creates no app account.
 `POST /api/v1/testing/signups` stores the signup in PostgreSQL; migrations
 000064 and 000067 are required. The same email may register once per platform.
 The endpoint limits requests per IP, caps input at 4 KB, validates the email
-and platform, and ignores honeypot submissions. It sends no email automatically.
+and platform, and, when `TURNSTILE_SECRET_KEY` is set, requires a Cloudflare
+Turnstile token in `X-Mitlist-Turnstile` — the same proof web guest creation
+uses. The landing site sends one when built with `PUBLIC_TURNSTILE_SITE_KEY`.
+It sends no email automatically.
 
 ## Staffroom tester list
 
@@ -110,6 +113,14 @@ The feature-board link needs no feedback Worker changes. No new mail credentials
 or external storage are required. `TESTING_SIGNUP_ORIGIN` defaults to
 `https://mitlist.me`. For local landing development, use the development backend
 and set `PUBLIC_MITLIST_API_URL=http://localhost:8000/api/v1` (adjust its port).
+
+Turnstile enforcement reaches signups through the same `TURNSTILE_SECRET_KEY`
+as guest creation, so the official service already enforces it. Attestation
+fails closed: a landing page built without `PUBLIC_TURNSTILE_SITE_KEY` sends no
+token, and an enforcing API rejects every signup. Set the site key in the
+landing build (and add the landing hostname to the widget in the Cloudflare
+dashboard) **before** deploying an API with enforcement, or the form will
+return "couldn't save" for everyone.
 
 The handler unit tests can run without PostgreSQL despite the package's
 database-dependent TestMain:

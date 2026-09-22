@@ -17,6 +17,7 @@ import (
 	"github.com/mitlist-app/mitlist/internal/middleware"
 	"github.com/mitlist-app/mitlist/internal/repositories"
 	mailservice "github.com/mitlist-app/mitlist/internal/services/mail"
+	turnstileservice "github.com/mitlist-app/mitlist/internal/services/turnstile"
 )
 
 const testingConsentVersion = "testing-invitations-v1"
@@ -46,6 +47,11 @@ type TestingSignupHandler struct {
 	store     testingSignupStore
 	forwarder testerForwarder
 	mailer    inviteMailer
+	// turnstile attests web submissions, the way App Check attests mobile
+	// guest creation. A configured verifier rejects a submission without a
+	// valid token; unset means the endpoint is unattested, which is the
+	// self-hoster's call to make.
+	turnstile *turnstileservice.Verifier
 	// storeURLs maps a platform to its listing; a missing or empty entry
 	// means invitations for that platform are not available yet.
 	storeURLs map[string]string
@@ -61,6 +67,13 @@ func NewTestingSignupHandler(store testingSignupStore) *TestingSignupHandler {
 // SetForwarder enables mirroring new signups to the team's tester list.
 func (h *TestingSignupHandler) SetForwarder(f testerForwarder) {
 	h.forwarder = f
+}
+
+// SetTurnstileVerifier requires a solved Turnstile challenge on every
+// submission. The token travels in X-Mitlist-Turnstile, the same header the
+// web app uses for guest creation.
+func (h *TestingSignupHandler) SetTurnstileVerifier(v *turnstileservice.Verifier) {
+	h.turnstile = v
 }
 
 // SetInviter enables the invitation email. storeURLs maps platform to the
@@ -90,7 +103,6 @@ func (h *TestingSignupHandler) Create(w http.ResponseWriter, r *http.Request) {
 		Email         string `json:"email"`
 		Platform      string `json:"platform"`
 		Consent       bool   `json:"consent"`
-		Website       string `json:"website"`
 		LaunchUpdates bool   `json:"launch_updates"`
 	}
 	decoder := json.NewDecoder(r.Body)
@@ -102,9 +114,12 @@ func (h *TestingSignupHandler) Create(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Please check your signup details.", http.StatusBadRequest)
 		return
 	}
-	if input.Website != "" {
-		w.WriteHeader(http.StatusAccepted)
-		return
+	if h.turnstile != nil && h.turnstile.Enabled() {
+		if _, err := h.turnstile.Verify(r.Context(), r.Header.Get("X-Mitlist-Turnstile"), middleware.ExtractIP(r)); err != nil {
+			log.Warn().Err(err).Str("ip", middleware.ExtractIP(r)).Msg("testing signup: turnstile verification failed")
+			http.Error(w, "Complete the verification challenge and try again.", http.StatusBadRequest)
+			return
+		}
 	}
 	email := strings.ToLower(strings.TrimSpace(input.Email))
 	address, err := mail.ParseAddress(email)

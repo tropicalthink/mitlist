@@ -64,6 +64,14 @@ the landing update. The backend's `TESTING_SIGNUP_ORIGIN` defaults to
 `https://mitlist.me`; change it for a different landing origin. This CORS
 permission covers only the public signup endpoint.
 
+The form submits a Cloudflare Turnstile token (`X-Mitlist-Turnstile`) when the
+site is built with `PUBLIC_TURNSTILE_SITE_KEY` — the same site key as the web
+app, whose widget's hostname list must include the landing host. Attestation
+fails closed: publish the landing with the site key before the backend enforces
+Turnstile, because a build without it sends no token and the API then rejects
+every signup. Self-hosted setups that leave `TURNSTILE_SECRET_KEY` unset accept
+signups unattested and need no site key.
+
 For the private export and invitation workflow, see
 [the testing operator guide](../backend/docs/testing-signups.md).
 Before changing the public-beta wording to an official launch, replace every

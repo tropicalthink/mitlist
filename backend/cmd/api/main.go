@@ -183,8 +183,10 @@ func main() {
 	authHandler.SetIntegrationCredentialService(cnt.IntegrationCredentialService())
 	// Web guest creation attests with Turnstile instead of App Check. Absent
 	// TURNSTILE_SECRET_KEY the verifier is simply disabled, which is what a
-	// self-hosted deployment wants.
-	authHandler.SetTurnstileVerifier(turnstileservice.New(cfg))
+	// self-hosted deployment wants. The same verifier guards landing-page
+	// testing signups.
+	turnstileVerifier := turnstileservice.New(cfg)
+	authHandler.SetTurnstileVerifier(turnstileVerifier)
 	srv.Router().Route(cfg.APIPrefix+"/v1", func(r chi.Router) {
 		authHandler.RegisterRoutes(r)
 		// Tester signups are mirrored to Staffroom's tester list when
@@ -192,6 +194,7 @@ func main() {
 		testingSignups := handlers.NewTestingSignupHandler(repositories.NewTestingSignupRepository(pool))
 		testingSignups.SetForwarder(staffroomservice.New(cfg))
 		testingSignups.SetInviter(cnt.Mail(), map[string]string{"android": cfg.PlayStoreURL, "ios": cfg.AppStoreURL})
+		testingSignups.SetTurnstileVerifier(turnstileVerifier)
 		testingSignups.RegisterRoutes(r)
 		// Unsubscribe from the tips series: the token in the link is the
 		// credential, so this works from any mail client without a session.

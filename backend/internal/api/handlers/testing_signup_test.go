@@ -14,6 +14,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/mitlist-app/mitlist/internal/middleware"
 	"github.com/mitlist-app/mitlist/internal/repositories"
+	turnstileservice "github.com/mitlist-app/mitlist/internal/services/turnstile"
 )
 
 type memoryTestingSignups struct {
@@ -101,7 +102,6 @@ func TestTestingSignupValidation(t *testing.T) {
 		{"invalid email", `{"email":"bad","platform":"ios","consent":true}`, 400, 0},
 		{"display name", `{"email":"Tester <tester@example.com>","platform":"ios","consent":true}`, 400, 0},
 		{"platform", `{"email":"tester@example.com","platform":"web","consent":true}`, 400, 0},
-		{"honeypot", `{"website":"spam","email":"tester@example.com","platform":"ios","consent":true}`, 202, 0},
 		{"malformed", `{`, 400, 0},
 		{"trailing json", `{"email":"tester@example.com","platform":"ios","consent":true}{}`, 400, 0},
 		{"large body", `{"email":"` + strings.Repeat("a", 5000) + `@example.com","platform":"ios","consent":true}`, 400, 0},
@@ -121,6 +121,53 @@ func TestTestingSignupValidation(t *testing.T) {
 			if tc.name == "valid with separate launch consent" &&
 				(!store.signups[0].LaunchUpdates || store.signups[0].LaunchConsentVersion == nil || store.signups[0].LaunchConsentedAt == nil) {
 				t.Fatal("separate launch consent was not recorded")
+			}
+		})
+	}
+}
+
+// testingSiteverifyStub stands in for Cloudflare, answering every request
+// with the given body. Deliberately separate from the auth tests' stub so this
+// file stays runnable without the database-backed TestMain.
+func testingSiteverifyStub(t *testing.T, body string) *httptest.Server {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(body))
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func TestTestingSignupVerifiesTurnstile(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		enforce  bool
+		token    string
+		response string
+		code     int
+		count    int
+	}{
+		{"unconfigured accepts without a token", false, "", `{"success":true}`, 202, 1},
+		{"valid token", true, "solved", `{"success":true,"hostname":"mitlist.me"}`, 202, 1},
+		{"missing token", true, "", `{"success":true}`, 400, 0},
+		{"failed challenge", true, "forged", `{"success":false,"error-codes":["invalid-input-response"]}`, 400, 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			middleware.ResetLimit("testing-signup:192.0.2.1")
+			stub := testingSiteverifyStub(t, tc.response)
+			store := &memoryTestingSignups{}
+			handler := NewTestingSignupHandler(store)
+			if tc.enforce {
+				handler.SetTurnstileVerifier(turnstileservice.NewForTesting("secret", stub.URL, stub.Client()))
+			}
+			request := httptest.NewRequest("POST", "/testing/signups", strings.NewReader(`{"email":"tester@example.com","platform":"android","consent":true}`))
+			if tc.token != "" {
+				request.Header.Set("X-Mitlist-Turnstile", tc.token)
+			}
+			rec := httptest.NewRecorder()
+			handler.Create(rec, request)
+			if rec.Code != tc.code || len(store.signups) != tc.count {
+				t.Fatalf("status=%d signups=%d body=%s", rec.Code, len(store.signups), rec.Body.String())
 			}
 		})
 	}

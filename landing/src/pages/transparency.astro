@@ -30,7 +30,7 @@ const GITHUB = site.repositoryUrl;
       <p>The hosted service runs across infrastructure we operate in Eygelshoven, the Netherlands, and Nuremberg, Germany. PostgreSQL is self-managed and replicated, Cloudflare fronts the service, and Cloudflare R2 stores attachments under our EU data-location configuration. Each household has 1 GB of file storage, with atomic quota reservations and cleanup of abandoned uploads.</p>
       <p>Mobile list recognition runs on iOS and Android devices. No hosted AI service is called for a scan.</p>
       <p>Encrypted PostgreSQL backups are taken twice daily. A rolling 30-day retention policy and a separate recovery copy for R2 attachments are public-beta launch work; until those controls are verified, we do not claim a zero recovery point or independent attachment backup.</p>
-      <p>Other services in the loop: Amazon SES in Frankfurt for transactional email, Firebase for push notifications and app attestation, Cloudflare Turnstile for guest sign-up on the web, and a self-run GlitchTip for crash reports. The <a href="/privacy">privacy policy</a> lists each one with what it receives.</p>
+      <p>Other services in the loop: Amazon SES in Frankfurt for transactional email, Firebase for push notifications and app attestation, Cloudflare Turnstile for web guest sign-up and testing-list signups, and a self-run GlitchTip for crash reports. The <a href="/privacy">privacy policy</a> lists each one with what it receives.</p>
     </div>
   </section>
 
