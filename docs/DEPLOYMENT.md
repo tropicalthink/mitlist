@@ -60,7 +60,6 @@ DATABASE_URL="$DATABASE_URL" go run ./cmd/migrate version
 - [ ] `request_idempotency` exists.
 - [ ] `idx_notifications_scheduled_dedupe` exists.
 - [ ] `users.guest_last_seen_at` and `users.guest_locked_at` exist.
-- [ ] `testing_signups.launch_updates` and its consent metadata columns exist.
 - [ ] `idx_expenses_group_date`, `idx_recurring_expenses_group_next_due_active`,
       and `idx_pinwall_posts_group_remind_at` exist.
 
@@ -117,7 +116,7 @@ all.
 ### Sign-up attestation
 
 Two unauthenticated routes take public input: guest creation and the landing
-page's testing signup. The proof depends on the platform:
+page's testing signup. They are handled in different places:
 
 - **Mobile guest creation** presents a Firebase App Check token (Play Integrity
   / App Attest).
@@ -125,32 +124,21 @@ page's testing signup. The proof depends on the platform:
   only web provider is reCAPTCHA Enterprise, which would add a GCP billing
   dependency to protect one endpoint, so the browser solves an invisible
   Turnstile challenge instead.
-- **Testing signups** from the landing page present the same Turnstile token in
-  `X-Mitlist-Turnstile`. The landing site is built with
-  `PUBLIC_TURNSTILE_SITE_KEY` (same site key as the web app) and the widget's
-  hostname list must include the landing host.
+- **Testing signups** never reach this API. The landing page posts straight to
+  Staffroom (reqtrack) at
+  `/api/v1/public/apps/<slug>/testers`, which verifies its own Turnstile token
+  with the per-app secret in the `TURNSTILE_SECRETS` Wrangler secret. See
+  Staffroom's `apps/api` docs.
 
-The API accepts either proof, and rejects a caller that presents neither while
-the relevant check is enforced. Turnstile needs one runtime variable:
+The API accepts either guest proof, and rejects a caller that presents neither
+while the relevant check is enforced. Turnstile needs one runtime variable:
 
 ```dotenv
 TURNSTILE_SECRET_KEY=0x...
 ```
 
-Leave it unset and web guests and signups are unattested — the correct default
-for a self-hosted instance, and not acceptable for the official service.
-
-Enforcement fails closed, so publish the landing page with the site key
-**before** deploying an API that enforces Turnstile; otherwise every signup is
-rejected. A landing build without the site key sends no token.
-
-Beta-tester signups from the landing page can be mirrored to Staffroom's
-tester list (see `backend/docs/testing-signups.md`):
-
-```dotenv
-STAFFROOM_INTAKE_URL=https://reqtrack.tropicalthink.com/api/v1/intake
-STAFFROOM_INTAKE_KEY=<mitlist intake app key>
-```
+Leave it unset and web guests are unattested — the correct default for a
+self-hosted instance, and not acceptable for the official service.
 
 #### App Check enforcement (mobile)
 

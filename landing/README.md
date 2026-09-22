@@ -57,22 +57,18 @@ The homepage and footer link to `https://feedback.mitlist.me` as the public
 feedback-driven roadmap. The landing site does not fetch board data or need an
 intake key.
 
-Signups post to `https://api.mitlist.me/api/v1/testing/signups` (override with
-`PUBLIC_MITLIST_API_URL` at build time for a local or self-hosted backend).
-Deploy backend migrations `000064` and `000067` and the signup endpoint **before** publishing
-the landing update. The backend's `TESTING_SIGNUP_ORIGIN` defaults to
-`https://mitlist.me`; change it for a different landing origin. This CORS
-permission covers only the public signup endpoint.
+Tester signups go straight to Cloudflare, not the mitlist API:
+`POST https://reqtrack.tropicalthink.com/api/v1/intake/public/apps/mitlist-09ee/testers`
+(Staffroom/reqtrack, override with `PUBLIC_TESTING_SIGNUP_URL` at build time).
+The app slug is the public identifier there; the team works the list under
+Apps → mitlist → Testers. No backend deploy is involved in a signup.
 
-The form submits a Cloudflare Turnstile token (`X-Mitlist-Turnstile`) when the
+The form submits a Cloudflare Turnstile token in the request body when the
 site is built with `PUBLIC_TURNSTILE_SITE_KEY` — the same site key as the web
-app, whose widget's hostname list must include the landing host. Attestation
-fails closed: publish the landing with the site key before the backend enforces
-Turnstile, because a build without it sends no token and the API then rejects
-every signup. Self-hosted setups that leave `TURNSTILE_SECRET_KEY` unset accept
-signups unattested and need no site key.
+app, whose widget's hostname list must include the landing host. The matching
+secret lives in Staffroom's `TURNSTILE_SECRETS` Wrangler secret, keyed by the
+app slug; an app with no entry rejects public signups. Attestation fails
+closed, so the site key must be configured before relying on signups.
 
-For the private export and invitation workflow, see
-[the testing operator guide](../backend/docs/testing-signups.md).
 Before changing the public-beta wording to an official launch, replace every
 screenshot marked `data-launch-placeholder` and run `npm run check:official-launch`.
