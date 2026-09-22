@@ -20,6 +20,7 @@ import '../../providers/group_provider.dart';
 import '../../providers/oauth_provider.dart';
 import '../../providers/onboarding_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../providers/text_settings_provider.dart';
 import '../../providers/locale_provider.dart';
 import '../../providers/list_provider.dart' show appDatabaseProvider;
 import '../../providers/finance_provider.dart';
@@ -685,6 +686,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
   Widget _buildPreferencesCard() {
     final l10n = AppLocalizations.of(context)!;
     final themeMode = ref.watch(themeModeProvider);
+    final textSize = ref.watch(textSizeProvider);
+    final boldText = ref.watch(boldTextProvider);
     final locale = ref.watch(localeProvider);
 
     return AppCard(
@@ -748,6 +751,47 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                   ref.read(themeModeProvider.notifier).set(mode);
                 }
               },
+            ),
+          ),
+          Divider(color: Theme.of(context).colorScheme.outlineVariant),
+          _MenuRow(
+            icon: const AppIcon(name: 'textFields'),
+            label: l10n.accountTextSize,
+            trailing: DropdownButton<TextSizeOption>(
+              value: textSize,
+              underline: const SizedBox.shrink(),
+              isDense: true,
+              items: [
+                DropdownMenuItem(
+                    value: TextSizeOption.small,
+                    child: Text(l10n.accountTextSizeSmall)),
+                DropdownMenuItem(
+                    value: TextSizeOption.defaultSize,
+                    child: Text(l10n.accountTextSizeDefault)),
+                DropdownMenuItem(
+                    value: TextSizeOption.large,
+                    child: Text(l10n.accountTextSizeLarge)),
+                DropdownMenuItem(
+                    value: TextSizeOption.extraLarge,
+                    child: Text(l10n.accountTextSizeExtraLarge)),
+              ],
+              onChanged: (option) {
+                if (option != null) {
+                  ref.read(textSizeProvider.notifier).set(option);
+                }
+              },
+            ),
+          ),
+          Divider(color: Theme.of(context).colorScheme.outlineVariant),
+          _MenuRow(
+            icon: const AppIcon(name: 'formatBold'),
+            label: l10n.accountBoldText,
+            value: l10n.accountBoldTextHint,
+            onTap: () => ref.read(boldTextProvider.notifier).set(!boldText),
+            trailing: Switch.adaptive(
+              value: boldText,
+              onChanged: (enabled) =>
+                  ref.read(boldTextProvider.notifier).set(enabled),
             ),
           ),
           Divider(color: Theme.of(context).colorScheme.outlineVariant),

@@ -32,9 +32,24 @@ import '../../widgets/pinwall/pinwall_stat_rows.dart';
 
 const double _kBoardW = 3200;
 const double _kBoardH = 2400;
+// The footprint of a medium note at the text size the board was designed for.
+// Everything that lays out, clamps or measures a card multiplies these by
+// `_cardScale`, so raising the app's text size grows the cards with the text
+// instead of clipping it.
 const double _kCardW = 180;
 const double _kCardH = 240;
 const double _kMargin = 80;
+
+// How far the cards are allowed to grow with the viewer's text size. The lower
+// bound is 1.0 because the board's grid and spacing are tuned for the design
+// size — a "small" text setting should not shrink the cards below it.
+const double _kCardScaleMin = 1.0;
+const double _kCardScaleMax = 1.4;
+
+/// The zoom the board opens at, at the very least: below this the note text is
+/// too small to read. Users can still pinch out to `minScale` to see the whole
+/// cork at once.
+const double _kMinReadableScale = 0.8;
 
 // Pinned hub-summary band that sits on the cork above the notes.
 const double _kSummaryStatsW = 600;
@@ -89,8 +104,10 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
   // Live list of notes, seeded from the snapshot handed in at open time and
   // then kept in sync with the realtime stream (see _syncPosts).
   late List<PinwallPost> _posts;
-  late final Map<String, Offset> _positions;
-  late final Map<String, Offset> _persistedPositions;
+  // Seeded in didChangeDependencies rather than initState: the cards' real
+  // footprint depends on the text scale, which is only readable from there.
+  final Map<String, Offset> _positions = {};
+  final Map<String, Offset> _persistedPositions = {};
   final Map<String, int> _positionGenerations = {};
   // Pinned hub-summary cards are draggable too, so they get their own state.
   Offset _statsPos = const Offset(_kMargin, _kMargin);
@@ -108,6 +125,11 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
   // it can't slide under its neighbours.
   String? _activeId;
   bool _didSetInitialTransform = false;
+  bool _didSeedPositions = false;
+
+  /// How much the note cards are enlarged so their text stays readable at the
+  /// viewer's chosen text size. 1.0 is the size the board was designed at.
+  double _cardScale = _kCardScaleMin;
 
   static const String _statsId = '__stats__';
   static const String _tonightId = '__tonight__';
@@ -119,11 +141,6 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
   void initState() {
     super.initState();
     _posts = List.of(widget.posts);
-    _positions = {
-      for (var i = 0; i < widget.posts.length; i++)
-        widget.posts[i].id: _positionFor(widget.posts[i], i),
-    };
-    _persistedPositions = Map.of(_positions);
 
     _staggerCtrl = AnimationController(
       vsync: this,
@@ -182,9 +199,48 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+
+    // Cards grow with the viewer's text size (the app's own "Text size" setting
+    // composes into the platform scaler, so this picks up both). A rebuild
+    // always follows didChangeDependencies, so mutating state here needs no
+    // setState.
+    final scale = MediaQuery.textScalerOf(context)
+        .scale(1.0)
+        .clamp(_kCardScaleMin, _kCardScaleMax);
+
+    if (!_didSeedPositions) {
+      _didSeedPositions = true;
+      _cardScale = scale;
+      for (var i = 0; i < widget.posts.length; i++) {
+        final post = widget.posts[i];
+        _positions[post.id] = _positionFor(post, i);
+      }
+      _persistedPositions.addAll(_positions);
+    } else if (scale != _cardScale) {
+      _cardScale = scale;
+      // Bigger cards reach further right/down, so a card parked at the cork's
+      // edge has to come back inside it. Placement itself is untouched.
+      _reclampPositions();
+    }
+
     if (!_didSetInitialTransform) {
       _didSetInitialTransform = true;
       _centerOnNotes();
+    }
+  }
+
+  /// A medium note's footprint at the current text size. Everything that lays
+  /// out, clamps or measures a card goes through these.
+  double get _cardW => _kCardW * _cardScale;
+  double get _cardH => _kCardH * _cardScale;
+
+  void _reclampPositions() {
+    for (final id in _positions.keys.toList()) {
+      _positions[id] = _clamp(_positions[id]!, _noteWidthById(id), _cardH);
+    }
+    for (final id in _persistedPositions.keys.toList()) {
+      _persistedPositions[id] =
+          _clamp(_persistedPositions[id]!, _noteWidthById(id), _cardH);
     }
   }
 
@@ -215,7 +271,7 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
         // Adopt a placement made on another device (or the server's confirmed
         // value), but never yank a card the user is actively dragging.
         final confirmed =
-            _clamp(Offset(p.posX!, p.posY!), _noteWidth(p), _kCardH);
+            _clamp(Offset(p.posX!, p.posY!), _noteWidth(p), _cardH);
         _positions[p.id] = confirmed;
         _persistedPositions[p.id] = confirmed;
       }
@@ -231,19 +287,21 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
     });
   }
 
-  /// A note's rendered width on the board, which follows its chosen size.
-  /// Used for clamping so a large note can't hang off the cork's edge.
-  static double _noteWidth(PinwallPost post) {
-    return switch (post.size) {
-      'small' => 150,
-      'large' => 250,
+  /// A note's rendered width on the board, which follows its chosen size and
+  /// the viewer's text size. Used for the card itself, for clamping so a large
+  /// note can't hang off the cork's edge, and for the opening camera fit.
+  double _noteWidth(PinwallPost post) {
+    final base = switch (post.size) {
+      'small' => 150.0,
+      'large' => 250.0,
       _ => _kCardW,
     };
+    return base * _cardScale;
   }
 
   double _noteWidthById(String id) {
     final post = _posts.firstWhereOrNull((p) => p.id == id);
-    return post == null ? _kCardW : _noteWidth(post);
+    return post == null ? _cardW : _noteWidth(post);
   }
 
   /// A note's board position: its saved placement when the server has one,
@@ -252,7 +310,7 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
     final px = post.posX;
     final py = post.posY;
     if (px != null && py != null) {
-      return _clamp(Offset(px, py), _noteWidth(post), _kCardH);
+      return _clamp(Offset(px, py), _noteWidth(post), _cardH);
     }
     return _gridPosition(index, post.id.hashCode);
   }
@@ -262,14 +320,14 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
     final col = index % cols;
     final row = index ~/ cols;
 
-    final baseX = _kMargin + col * (_kCardW + 60.0);
-    final baseY = _kMargin + _kSummaryBandH + row * (_kCardH + 50.0);
+    final baseX = _kMargin + col * (_cardW + 60.0);
+    final baseY = _kMargin + _kSummaryBandH + row * (_cardH + 50.0);
 
     final h = idHash.abs();
     final jx = ((h % 80) - 40).toDouble();
     final jy = (((h >> 8) % 60) - 30).toDouble();
 
-    return _clamp(Offset(baseX + jx, baseY + jy), _kCardW, _kCardH);
+    return _clamp(Offset(baseX + jx, baseY + jy), _cardW, _cardH);
   }
 
   /// Keep a card's top-left inside the cork so a note can never be dragged off
@@ -284,30 +342,65 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
     );
   }
 
+  /// Aim the camera when the board opens.
+  ///
+  /// The board used to fit the whole cluster to the viewport at any zoom down
+  /// to 0.35, which on a phone with a spread-out cluster opened on unreadable
+  /// note text. Now the fit never goes below [_kMinReadableScale]: if the
+  /// cluster doesn't fit at that zoom we stop shrinking and point the camera at
+  /// the newest note instead, so the board opens on something you can read and
+  /// the rest is a pinch (or a pan) away — the InteractiveViewer still allows
+  /// zooming all the way out to its `minScale`.
   void _centerOnNotes() {
     final size = MediaQuery.of(context).size;
+    if (size.isEmpty) return;
 
     // Start from the pinned summary band so it's always in view, then expand
     // to include the notes cluster.
     double minX = _kMargin, minY = _kMargin;
     double maxX = _kSummaryRight, maxY = _kMargin + _kSummaryBandH;
-    for (final p in _positions.values) {
+    for (final entry in _positions.entries) {
+      final p = entry.value;
+      final w = _noteWidthById(entry.key);
       if (p.dx < minX) minX = p.dx;
       if (p.dy < minY) minY = p.dy;
-      if (p.dx + _kCardW > maxX) maxX = p.dx + _kCardW;
-      if (p.dy + _kCardH > maxY) maxY = p.dy + _kCardH;
+      if (p.dx + w > maxX) maxX = p.dx + w;
+      if (p.dy + _cardH > maxY) maxY = p.dy + _cardH;
     }
 
     final clusterW = maxX - minX;
     final clusterH = maxY - minY;
-    final scale = (size.width / (clusterW + 80)).clamp(0.35, 1.0);
+    final fit = size.width / (clusterW + 80);
+    final scale = fit.clamp(_kMinReadableScale, 1.0);
 
-    final tx = size.width / 2 - (minX + clusterW / 2) * scale;
-    final ty = size.height / 2 - (minY + clusterH / 2) * scale;
+    // Fits at a readable zoom → frame the whole cluster. Otherwise centre on
+    // the note most recently pinned, which is what the viewer came to see.
+    final clusterCentre = Offset(minX + clusterW / 2, minY + clusterH / 2);
+    final focus = fit >= _kMinReadableScale
+        ? clusterCentre
+        : (_newestNoteCentre() ?? clusterCentre);
+
+    final tx = size.width / 2 - focus.dx * scale;
+    final ty = size.height / 2 - focus.dy * scale;
 
     _transformCtrl.value = Matrix4.identity()
       ..translateByDouble(tx, ty, 0, 1)
       ..scaleByDouble(scale, scale, 1, 1);
+  }
+
+  /// Where to point the camera when the cluster is too wide to frame at a
+  /// readable zoom: the centre of the most recently pinned note. Null on an
+  /// empty board, where the caller's cluster centre already frames the summary
+  /// band and the empty-board hint.
+  Offset? _newestNoteCentre() {
+    PinwallPost? newest;
+    for (final p in _posts) {
+      if (!_positions.containsKey(p.id)) continue;
+      if (newest == null || p.createdAt.isAfter(newest.createdAt)) newest = p;
+    }
+    if (newest == null) return null;
+    final pos = _positions[newest.id]!;
+    return Offset(pos.dx + _noteWidth(newest) / 2, pos.dy + _cardH / 2);
   }
 
   // Inside InteractiveViewer's transform, drag deltas are already reported in
@@ -316,7 +409,7 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
     setState(() {
       final cur = _positions[postId] ?? Offset.zero;
       _positions[postId] =
-          _clamp(cur + details.delta, _noteWidthById(postId), _kCardH);
+          _clamp(cur + details.delta, _noteWidthById(postId), _cardH);
     });
   }
 
@@ -454,6 +547,10 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
             groupId: widget.groupId,
             me: widget.me,
             post: post,
+            // Grow the card with the viewer's text size so bigger note text
+            // gets a bigger sticky note instead of a tighter one. Matches the
+            // width the board clamps and measures with.
+            width: _noteWidth(post),
             onOpenLinkedEntity: (ctx) => _openLinkedEntity(ctx, post),
             onEdit: () {
               unawaited(Haptics.light());
@@ -630,10 +727,16 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
                 right: 0,
                 child: IgnorePointer(
                   child: Center(
-                    child: _BoardChip(
-                      label: l10n.pinwallDragHint,
-                      icon: Icons.open_with_rounded,
-                      dark: dark,
+                    child: Padding(
+                      // Leaves the chip room to shrink rather than run off the
+                      // screen once the hint is translated and text-scaled up.
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: MitlistSpacing.lg),
+                      child: _BoardChip(
+                        label: l10n.pinwallDragHint,
+                        icon: Icons.open_with_rounded,
+                        dark: dark,
+                      ),
                     ),
                   ),
                 ),
@@ -1234,12 +1337,16 @@ class _BoardStatsCard extends ConsumerWidget {
                     const SizedBox(width: 6),
                     _FolderTab(color: scheme.primary),
                     const SizedBox(width: MitlistSpacing.sm),
-                    Text(
-                      l10n.choreSectionThisWeek.toUpperCase(),
-                      style: textTheme.labelMedium?.copyWith(
-                        color: muted,
-                        letterSpacing: 1.5,
-                        fontWeight: FontWeight.w700,
+                    Flexible(
+                      child: Text(
+                        l10n.choreSectionThisWeek.toUpperCase(),
+                        style: textTheme.labelMedium?.copyWith(
+                          color: muted,
+                          letterSpacing: 1.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -1425,12 +1532,16 @@ class _BoardTonightTicket extends ConsumerWidget {
                   children: [
                     Icon(Icons.restaurant_outlined, size: 15, color: accent),
                     const SizedBox(width: MitlistSpacing.xs),
-                    Text(
-                      eyebrow.toUpperCase(),
-                      style: textTheme.labelMedium?.copyWith(
-                        color: accent,
-                        letterSpacing: 1.4,
-                        fontWeight: FontWeight.w700,
+                    Flexible(
+                      child: Text(
+                        eyebrow.toUpperCase(),
+                        style: textTheme.labelMedium?.copyWith(
+                          color: accent,
+                          letterSpacing: 1.4,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -1601,11 +1712,17 @@ class _BoardChip extends StatelessWidget {
           children: [
             Icon(icon, size: 14, color: MitlistColors.surfaceSoft),
             const SizedBox(width: MitlistSpacing.xs),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: MitlistColors.surfaceSoft,
-                  ),
+            // Flexible so a long localized label at a large text size ellipsizes
+            // instead of overflowing the chip off the side of the board.
+            Flexible(
+              child: Text(
+                label,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: MitlistColors.surfaceSoft,
+                    ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),
@@ -1646,11 +1763,15 @@ class _BoardAddNoteButton extends StatelessWidget {
               const Icon(Icons.push_pin_outlined,
                   size: 16, color: MitlistColors.surfaceSoft),
               const SizedBox(width: MitlistSpacing.xs),
-              Text(
-                l10n.pinwallAddNote,
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: MitlistColors.surfaceSoft,
-                    ),
+              Flexible(
+                child: Text(
+                  l10n.pinwallAddNote,
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: MitlistColors.surfaceSoft,
+                      ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),

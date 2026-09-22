@@ -2676,6 +2676,28 @@ class AppLocalizationsDe extends AppLocalizations {
   String get accountAppearanceDark => 'Dunkel';
 
   @override
+  String get accountTextSize => 'Textgröße';
+
+  @override
+  String get accountTextSizeSmall => 'Klein';
+
+  @override
+  String get accountTextSizeDefault => 'Standard';
+
+  @override
+  String get accountTextSizeLarge => 'Groß';
+
+  @override
+  String get accountTextSizeExtraLarge => 'Sehr groß';
+
+  @override
+  String get accountBoldText => 'Fetter Text';
+
+  @override
+  String get accountBoldTextHint =>
+      'Kräftigere Schrift in der ganzen App für bessere Lesbarkeit';
+
+  @override
   String get accountChangePasswordRow => 'Passwort ändern';
 
   @override
@@ -6864,4 +6886,21 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get notifPrefDeviceOffAction => 'Einschalten';
+
+  @override
+  String get choreDetailZone => 'Bereich';
+
+  @override
+  String get choreZoneAll => 'Alle Bereiche';
+
+  @override
+  String choreZoneEmpty(String zone) {
+    return 'Nichts in $zone';
+  }
+
+  @override
+  String get choreZoneEmptyDesc => 'Keine offenen Aufgaben in diesem Bereich.';
+
+  @override
+  String get choreZoneShowAll => 'Alle Bereiche anzeigen';
 }

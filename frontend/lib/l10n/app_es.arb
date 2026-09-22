@@ -3067,6 +3067,34 @@
   "@accountAppearanceDark": {
     "description": "Theme option: dark mode"
   },
+  "accountTextSize": "Tamaño del texto",
+  "@accountTextSize": {
+    "description": "Menu row: text size setting"
+  },
+  "accountTextSizeSmall": "Pequeño",
+  "@accountTextSizeSmall": {
+    "description": "Text size option: small"
+  },
+  "accountTextSizeDefault": "Predeterminado",
+  "@accountTextSizeDefault": {
+    "description": "Text size option: default"
+  },
+  "accountTextSizeLarge": "Grande",
+  "@accountTextSizeLarge": {
+    "description": "Text size option: large"
+  },
+  "accountTextSizeExtraLarge": "Muy grande",
+  "@accountTextSizeExtraLarge": {
+    "description": "Text size option: extra large"
+  },
+  "accountBoldText": "Texto en negrita",
+  "@accountBoldText": {
+    "description": "Menu row: bold text toggle"
+  },
+  "accountBoldTextHint": "Tipografía más gruesa en toda la app para leer mejor",
+  "@accountBoldTextHint": {
+    "description": "Subtitle explaining the bold text toggle"
+  },
   "accountChangePasswordRow": "Cambiar contraseña",
   "@accountChangePasswordRow": {
     "description": "Menu row: change password"
@@ -6276,5 +6304,10 @@
   "pushPromptDeniedHint": "Las notificaciones de mitlist están desactivadas. Puedes activarlas en los ajustes de tu teléfono.",
   "notifPrefDeviceOffTitle": "Las notificaciones están desactivadas en este dispositivo",
   "notifPrefDeviceOffBody": "Los ajustes del hogar de abajo solo tendrán efecto cuando este dispositivo pueda mostrar notificaciones.",
-  "notifPrefDeviceOffAction": "Activar"
+  "notifPrefDeviceOffAction": "Activar",
+  "choreDetailZone": "Zona",
+  "choreZoneAll": "Todas las zonas",
+  "choreZoneEmpty": "Nada en {zone}",
+  "choreZoneEmptyDesc": "No hay tareas abiertas en esta zona.",
+  "choreZoneShowAll": "Mostrar todas las zonas"
 }

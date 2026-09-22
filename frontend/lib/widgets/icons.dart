@@ -138,6 +138,8 @@ class AppIcons {
   static const IconData groceryPersonalCare = Icons.spa_outlined;
   static const IconData groceryBaby = Icons.child_care;
   static const IconData groceryFlowers = Icons.local_florist_outlined;
+  static const IconData textFields = Icons.text_fields;
+  static const IconData formatBold = Icons.format_bold;
 
   /// Resolves a semantic [name] to its placeholder [IconData].
   ///
@@ -270,6 +272,8 @@ class AppIcons {
       'groceryPersonalCare' => groceryPersonalCare,
       'groceryBaby' => groceryBaby,
       'groceryFlowers' => groceryFlowers,
+      'textFields' => textFields,
+      'formatBold' => formatBold,
       _ => null,
     };
   }

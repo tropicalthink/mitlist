@@ -3067,6 +3067,34 @@
   "@accountAppearanceDark": {
     "description": "Theme option: dark mode"
   },
+  "accountTextSize": "Tekstgrootte",
+  "@accountTextSize": {
+    "description": "Menu row: text size setting"
+  },
+  "accountTextSizeSmall": "Klein",
+  "@accountTextSizeSmall": {
+    "description": "Text size option: small"
+  },
+  "accountTextSizeDefault": "Standaard",
+  "@accountTextSizeDefault": {
+    "description": "Text size option: default"
+  },
+  "accountTextSizeLarge": "Groot",
+  "@accountTextSizeLarge": {
+    "description": "Text size option: large"
+  },
+  "accountTextSizeExtraLarge": "Extra groot",
+  "@accountTextSizeExtraLarge": {
+    "description": "Text size option: extra large"
+  },
+  "accountBoldText": "Vette tekst",
+  "@accountBoldText": {
+    "description": "Menu row: bold text toggle"
+  },
+  "accountBoldTextHint": "Zwaarder lettertype in de hele app voor beter lezen",
+  "@accountBoldTextHint": {
+    "description": "Subtitle explaining the bold text toggle"
+  },
   "accountChangePasswordRow": "Wachtwoord wijzigen",
   "@accountChangePasswordRow": {
     "description": "Menu row: change password"
@@ -6276,5 +6304,10 @@
   "pushPromptDeniedHint": "Meldingen voor mitlist staan uit. Je kunt ze inschakelen in de instellingen van je telefoon.",
   "notifPrefDeviceOffTitle": "Meldingen staan uit op dit apparaat",
   "notifPrefDeviceOffBody": "De huishoudinstellingen hieronder werken pas als dit apparaat meldingen mag tonen.",
-  "notifPrefDeviceOffAction": "Inschakelen"
+  "notifPrefDeviceOffAction": "Inschakelen",
+  "choreDetailZone": "Zone",
+  "choreZoneAll": "Alle zones",
+  "choreZoneEmpty": "Niets in {zone}",
+  "choreZoneEmptyDesc": "Geen open taken in deze zone.",
+  "choreZoneShowAll": "Alle zones tonen"
 }

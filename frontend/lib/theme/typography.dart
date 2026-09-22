@@ -25,7 +25,57 @@ class MitlistTypography {
     );
   }
 
-  static TextTheme get lightTextTheme => TextTheme(
+  /// One step heavier, for the "bold text" readability setting: w400/w500 →
+  /// w600, w600 → w700, w700 stays put. Both bundled faces are variable fonts,
+  /// so the in-between weights render as real weights rather than a synthetic
+  /// smear.
+  static TextStyle? _heavier(TextStyle? style) {
+    if (style == null) return style;
+    return switch (style.fontWeight) {
+      FontWeight.w400 || FontWeight.w500 =>
+        style.copyWith(fontWeight: FontWeight.w600),
+      FontWeight.w600 => style.copyWith(fontWeight: FontWeight.w700),
+      _ => style,
+    };
+  }
+
+  static TextTheme _bolder(TextTheme base) => TextTheme(
+        displayLarge: _heavier(base.displayLarge),
+        displayMedium: _heavier(base.displayMedium),
+        displaySmall: _heavier(base.displaySmall),
+        headlineLarge: _heavier(base.headlineLarge),
+        headlineMedium: _heavier(base.headlineMedium),
+        headlineSmall: _heavier(base.headlineSmall),
+        titleLarge: _heavier(base.titleLarge),
+        titleMedium: _heavier(base.titleMedium),
+        titleSmall: _heavier(base.titleSmall),
+        bodyLarge: _heavier(base.bodyLarge),
+        bodyMedium: _heavier(base.bodyMedium),
+        bodySmall: _heavier(base.bodySmall),
+        labelLarge: _heavier(base.labelLarge),
+        labelMedium: _heavier(base.labelMedium),
+        labelSmall: _heavier(base.labelSmall),
+      );
+
+  /// The light text theme, optionally in the heavier weights the readability
+  /// setting asks for.
+  static TextTheme lightTextThemeWith({bool bold = false}) {
+    final base = _lightTextTheme;
+    return bold ? _bolder(base) : base;
+  }
+
+  /// The dark text theme, optionally in the heavier weights the readability
+  /// setting asks for.
+  static TextTheme darkTextThemeWith({bool bold = false}) {
+    final base = _darkTextTheme;
+    return bold ? _bolder(base) : base;
+  }
+
+  static TextTheme get lightTextTheme => lightTextThemeWith();
+
+  static TextTheme get darkTextTheme => darkTextThemeWith();
+
+  static TextTheme get _lightTextTheme => TextTheme(
         displayLarge: _grotesk(
             size: 57, weight: FontWeight.w700, height: 64 / 57, spacing: -0.25),
         displayMedium: _grotesk(
@@ -70,7 +120,7 @@ class MitlistTypography {
             color: MitlistColors.textTertiary),
       );
 
-  static TextTheme get darkTextTheme => TextTheme(
+  static TextTheme get _darkTextTheme => TextTheme(
         displayLarge: _grotesk(
             size: 57,
             weight: FontWeight.w700,

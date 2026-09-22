@@ -3546,6 +3546,34 @@
   "@accountAppearanceDark": {
     "description": "Theme option: dark mode"
   },
+  "accountTextSize": "Text size",
+  "@accountTextSize": {
+    "description": "Menu row: text size setting"
+  },
+  "accountTextSizeSmall": "Small",
+  "@accountTextSizeSmall": {
+    "description": "Text size option: small"
+  },
+  "accountTextSizeDefault": "Default",
+  "@accountTextSizeDefault": {
+    "description": "Text size option: default"
+  },
+  "accountTextSizeLarge": "Large",
+  "@accountTextSizeLarge": {
+    "description": "Text size option: large"
+  },
+  "accountTextSizeExtraLarge": "Extra large",
+  "@accountTextSizeExtraLarge": {
+    "description": "Text size option: extra large"
+  },
+  "accountBoldText": "Bold text",
+  "@accountBoldText": {
+    "description": "Menu row: bold text toggle"
+  },
+  "accountBoldTextHint": "Heavier type across the app for easier reading",
+  "@accountBoldTextHint": {
+    "description": "Subtitle explaining the bold text toggle"
+  },
   "accountChangePasswordRow": "Change Password",
   "@accountChangePasswordRow": {
     "description": "Menu row: change password"
@@ -9133,5 +9161,31 @@
   "notifPrefDeviceOffAction": "Turn on",
   "@notifPrefDeviceOffAction": {
     "description": "Button on the device-off card that asks the OS for notification permission"
+  },
+  "choreDetailZone": "Zone",
+  "@choreDetailZone": {
+    "description": "Detail row label for the zone (area of the home) a chore is filed under"
+  },
+  "choreZoneAll": "All zones",
+  "@choreZoneAll": {
+    "description": "Filter chip on the chores screen that clears the zone filter"
+  },
+  "choreZoneEmpty": "Nothing in {zone}",
+  "@choreZoneEmpty": {
+    "description": "Empty state title when the selected zone filter has no open chores",
+    "placeholders": {
+      "zone": {
+        "type": "String",
+        "example": "Kitchen"
+      }
+    }
+  },
+  "choreZoneEmptyDesc": "No open chores are filed under this zone.",
+  "@choreZoneEmptyDesc": {
+    "description": "Empty state body when the selected zone filter has no open chores"
+  },
+  "choreZoneShowAll": "Show all zones",
+  "@choreZoneShowAll": {
+    "description": "Empty state action that clears the zone filter"
   }
 }
