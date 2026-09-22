@@ -5,8 +5,12 @@ import SiteFooter from "../components/SiteFooter.astro";
 import { site, type SiteLanguage } from "../data/site";
 interface Props { language?: SiteLanguage; }
 const { language = "en" } = Astro.props;
-const api = import.meta.env.PUBLIC_MITLIST_API_URL || "https://api.mitlist.me/api/v1";
 const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY || "";
+// Tester signups live in Staffroom (reqtrack), not the mitlist API, so the
+// form talks to Cloudflare directly. The app slug identifies mitlist there.
+const signupEndpoint =
+  import.meta.env.PUBLIC_TESTING_SIGNUP_URL ||
+  "https://reqtrack.tropicalthink.com/api/v1/intake/public/apps/mitlist-09ee/testers";
 const copy = {
   en: { android: "Android? mitlist is on Google Play now: install it directly, no signup needed.", androidButton: "Get it on Google Play", title: "Get the mitlist mobile beta", description: "Join mitlist's mobile beta on Android through Google Play or on iOS through TestFlight.", beta: "Now in public beta", headline: "mitlist, in your pocket.", intro: "The web app is open now. Leave your email and we’ll send your Google Play or TestFlight invitation when your mobile beta place is ready.", steps: ["Choose your phone and leave your email.", "We’ll email your Google Play or iOS TestFlight invitation.", "Try it together. Tell us what works and what needs fixing."], web: "Use mitlist on the web now", feedback: "Feedback & roadmap", join: "Join the testing list", account: "No mitlist account needed. This signs you up for testing invitations only.", email: "Your email", hint: "For Android, use the email on your Google Play account so we can add you as a tester.", phone: "Your phone", consent: "I agree to receive the invitation and essential emails about this mobile test.", privacy: "Privacy notice", updates: "Also email me about the official launch and occasional mitlist news. Optional, and you can unsubscribe any time.", withdraw: "You can withdraw at any time using the contact in the privacy notice.", submit: "Sign me up", saving: "Saving your signup…", rate: "Please wait a few minutes before trying again.", error: "We couldn’t save your signup. Please try again in a moment.", success: "You’re on the list! We’ll email your testing invitation when your place is ready.", network: "We couldn’t reach mitlist. Check your connection and try again.", nojs: "Please enable JavaScript to submit the signup form.", challenge: "Verification is still checking your browser. Please tap “Sign me up” again in a moment." },
   de: { android: "Android? mitlist gibt es jetzt bei Google Play: direkt installieren, keine Anmeldung nötig.", androidButton: "Bei Google Play laden", title: "Die mitlist Mobile-Beta", description: "Nimm unter Android über Google Play oder unter iOS über TestFlight an der mitlist Mobile-Beta teil.", beta: "Jetzt in der öffentlichen Beta", headline: "mitlist für unterwegs.", intro: "Die Web-App ist bereits offen. Hinterlass deine E-Mail-Adresse und wir senden dir deine Google-Play- oder TestFlight-Einladung, sobald dein Platz bereit ist.", steps: ["Wähle dein Smartphone und gib deine E-Mail-Adresse an.", "Wir senden dir die Google-Play- oder TestFlight-Einladung.", "Probiert mitlist gemeinsam aus und sagt uns, was funktioniert."], web: "mitlist jetzt im Web nutzen", feedback: "Feedback & Roadmap", join: "Für die Testliste anmelden", account: "Kein mitlist-Konto nötig. Diese Anmeldung gilt nur für Testeinladungen.", email: "Deine E-Mail-Adresse", hint: "Nutze für Android die E-Mail-Adresse deines Google-Play-Kontos, damit wir dich hinzufügen können.", phone: "Dein Smartphone", consent: "Ich möchte die Einladung und notwendige E-Mails zu diesem mobilen Test erhalten.", privacy: "Datenschutzerklärung", updates: "Informiert mich außerdem über den offiziellen Start und gelegentliche mitlist-Neuigkeiten. Optional und jederzeit abbestellbar.", withdraw: "Du kannst deine Einwilligung jederzeit über den Kontakt in der Datenschutzerklärung widerrufen.", submit: "Zur Testliste", saving: "Anmeldung wird gespeichert…", rate: "Bitte warte einige Minuten und versuche es erneut.", error: "Wir konnten deine Anmeldung nicht speichern. Versuch es gleich noch einmal.", success: "Du bist auf der Liste! Wir senden deine Testeinladung, sobald dein Platz bereit ist.", network: "mitlist ist gerade nicht erreichbar. Prüfe deine Verbindung und versuche es erneut.", nojs: "Bitte aktiviere JavaScript, um das Formular abzusenden.", challenge: "Die Verifizierung prüft deinen Browser noch. Tippe gleich noch einmal auf „Zur Testliste“." },
@@ -29,7 +33,7 @@ const privacyPath = language === "de" ? "/datenschutz#testing" : "/privacy#testi
         <a href={site.appUrl}>{copy.web}</a>
         <a href={site.feedbackUrl}>{copy.feedback}</a>
       </div>
-      <form id="tester-signup" class="signup" method="post" action={`${api.replace(/\/$/, "")}/testing/signups`} data-endpoint={`${api.replace(/\/$/, "")}/testing/signups`}>
+      <form id="tester-signup" class="signup" method="post" action={signupEndpoint} data-endpoint={signupEndpoint}>
         <h2 class="h3">{copy.join}</h2>
         <p>{copy.account}</p>
         <label for="tester-email">{copy.email}</label>
@@ -97,12 +101,11 @@ const privacyPath = language === "de" ? "/datenschutz#testing" : "/privacy#testi
     form.setAttribute("aria-busy", "true");
     status.textContent = messages.saving;
     const data = new FormData(form);
-    const headers = { "Content-Type": "application/json" };
-    if (token) headers["X-Mitlist-Turnstile"] = token;
+    const launchUpdates = data.get("launch_updates") === "on";
     try {
       const response = await fetch(form.dataset.endpoint, {
-        method: "POST", headers,
-        body: JSON.stringify({ email: data.get("email"), platform: data.get("platform"), consent: data.get("consent") === "on", launch_updates: data.get("launch_updates") === "on" }),
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: data.get("email"), platform: data.get("platform"), consent: data.get("consent") === "on", consentVersion: "testing-invitations-v1", launchUpdates, launchConsentVersion: launchUpdates ? "launch-updates-v1" : undefined, turnstileToken: token }),
         signal: AbortSignal.timeout(15000),
       });
       if (!response.ok) {

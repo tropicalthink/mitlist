@@ -270,4 +270,4 @@ Latest migration: `000074_add_testing_signup_invited_at`.
 | `GET` | `/expenses/{id}/splits` | Calendar density — list expense splits |
 | `GET` | (via calendar) `ListExpensesByDateRange` | Calendar density — one-time expenses in calendar |
 | `GET` | (via pinwall) `ListPostsByGroupAndRemindAtRange` | Pinwall reminders in calendar |
-| `GET`/`POST` | `/testing/signups/invite[/preview]` | Admin-only store invitation email to mobile-beta signups (`backend/docs/testing-signups.md`) |
+| `POST` | `/testing/signups` (Staffroom/reqtrack, not this API) | Public Turnstile-attested mobile-beta signups; see the staffroom repo's `apps/api` |

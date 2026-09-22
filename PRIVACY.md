@@ -44,16 +44,18 @@ service or on a server somebody operates themselves.
 | Push | Device token (FCM / APNs / Web Push) and the notification text | Optional; token deleted on sign-out |
 | Email | Address and message content, sent via Amazon SES (EU, Frankfurt) | Confirmation, password reset, invitations, optional weekly summary, and up to five getting-started tips in the first month after sign-up. The tips can be turned off in the app (You → Tips by email) or with the unsubscribe link in each one. No third-party marketing, no mailing list |
 | Premium | Subscription holder, assigned household, term, status, amount paid | Web payments through Polar (merchant of record), in-app through Apple / Google. Billing records kept up to ten years by law |
-| Security | IP address and connection data at Cloudflare; Turnstile result for guest sign-up on the web; Firebase App Check attestation for the mobile apps; server logs of failed sign-ins | Logs normally deleted within 30 days |
+| Security | IP address and connection data at Cloudflare; Turnstile results for guest sign-up and the testing list on the web; Firebase App Check attestation for the mobile apps; server logs of failed sign-ins | Logs normally deleted within 30 days |
 | Crash reports | When configured, stack trace, app / OS version, device type and environment, sent to a self-run GlitchTip instance | No household content, names, emails, auth headers, or cookies; tracing is disabled; retained up to 30 days |
 | Feedback | Text, source screen, app version, platform, locale; on the public board also your account id and first name | Stored in the request tracker on Cloudflare Workers / D1 |
 
 ## Retention and deletion
 
 Mobile testing signups store the email, Android/iOS selection, signup time,
-and consent version privately, solely to arrange access and send testing
-emails. A separate optional consent records whether launch updates may be sent;
-declining it does not affect beta access. Signups do not create an app account or public board post. The team may
+consent versions, and whether the optional launch-update consent was given.
+They are held in the team's request tracker on Cloudflare Workers / D1, solely
+to arrange access and send testing emails; a Cloudflare Turnstile check runs
+when the form is submitted. Declining launch updates does not affect beta
+access. Signups do not create an app account or public board post. The team may
 add the email to Google Play testing or Apple TestFlight to issue invitations.
 Signups are removed when testing ends or consent is withdrawn; contact the
 operator listed in the Impressum from the registered address to withdraw or
@@ -112,7 +114,7 @@ described, and the operator is responsible for that provider's terms.
 | Google / Apple OAuth | Sign in with Google / Apple | `GOOGLE_CLIENT_ID` + secret, `APPLE_*` |
 | Firebase / FCM | Mobile push notifications | `FIREBASE_PROJECT_ID` + `FIREBASE_SERVICE_ACCOUNT_JSON` |
 | Firebase App Check | Mobile app attestation | `FIREBASE_APP_CHECK_REQUIRED` + `FIREBASE_PROJECT_NUMBER` |
-| Cloudflare Turnstile | Web guest sign-up abuse prevention | `TURNSTILE_SECRET_KEY` (+ `TURNSTILE_SITE_KEY` in the web build) |
+| Cloudflare Turnstile | Web guest sign-up and testing-list abuse prevention | `TURNSTILE_SECRET_KEY` (+ `TURNSTILE_SITE_KEY` in the web build; the testing list's secret lives in the tracker) |
 | Web Push (VAPID) | Browser push notifications | `VAPID_PRIVATE_KEY` + `VAPID_PUBLIC_KEY` |
 | S3 / Cloudflare R2 | File and photo storage | `AWS_ACCESS_KEY_ID` + `S3_BUCKET_NAME` + `S3_ENDPOINT_URL` |
 | Polar | Premium subscriptions on the web | `POLAR_ACCESS_TOKEN` (+ product ids) |
@@ -121,7 +123,7 @@ described, and the operator is responsible for that provider's terms.
 | Sentry / GlitchTip | Crash reports (web / apps) | `GLITCHTIP_DSN` build-time define |
 | FlareSolverr | Recipe import from sites that block data-centre IPs | `SCRAPER_FLARESOLVER_URL` |
 | FX rate feed | Live exchange rates for expenses | `FX_RATE_API_URL` |
-| reqtrack | In-app feedback and feature board | `REQTRACK_APP_KEY` + `REQTRACK_URL` build-time defines |
+| reqtrack | In-app feedback, feature board, and mobile testing signups | `REQTRACK_APP_KEY` + `REQTRACK_URL` build-time defines |
 
 Crash reporting is worth calling out: the SDK is configured with
 `tracesSampleRate = 0.0` and no PII capture, so reports carry stack traces and

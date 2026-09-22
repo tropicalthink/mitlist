@@ -18,11 +18,9 @@ import (
 	"github.com/mitlist-app/mitlist/internal/jobs"
 	"github.com/mitlist-app/mitlist/internal/middleware"
 	"github.com/mitlist-app/mitlist/internal/observability"
-	"github.com/mitlist-app/mitlist/internal/repositories"
 	"github.com/mitlist-app/mitlist/internal/server"
 	"github.com/mitlist-app/mitlist/internal/services"
 	appcheckservice "github.com/mitlist-app/mitlist/internal/services/appcheck"
-	staffroomservice "github.com/mitlist-app/mitlist/internal/services/staffroom"
 	turnstileservice "github.com/mitlist-app/mitlist/internal/services/turnstile"
 	"github.com/mitlist-app/mitlist/pkg/logger"
 )
@@ -189,13 +187,6 @@ func main() {
 	authHandler.SetTurnstileVerifier(turnstileVerifier)
 	srv.Router().Route(cfg.APIPrefix+"/v1", func(r chi.Router) {
 		authHandler.RegisterRoutes(r)
-		// Tester signups are mirrored to Staffroom's tester list when
-		// STAFFROOM_INTAKE_URL/KEY are set; otherwise they only live here.
-		testingSignups := handlers.NewTestingSignupHandler(repositories.NewTestingSignupRepository(pool))
-		testingSignups.SetForwarder(staffroomservice.New(cfg))
-		testingSignups.SetInviter(cnt.Mail(), map[string]string{"android": cfg.PlayStoreURL, "ios": cfg.AppStoreURL})
-		testingSignups.SetTurnstileVerifier(turnstileVerifier)
-		testingSignups.RegisterRoutes(r)
 		// Unsubscribe from the tips series: the token in the link is the
 		// credential, so this works from any mail client without a session.
 		handlers.NewEmailUnsubscribeHandler(cfg, cnt.UserRepo()).RegisterRoutes(r)

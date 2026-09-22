@@ -26,7 +26,6 @@ type Config struct {
 	// Application
 	Environment              string `env:"ENVIRONMENT" default:"development"`
 	FrontendURL              string `env:"FRONTEND_URL" default:"http://localhost:5173"`
-	TestingSignupOrigin      string `env:"TESTING_SIGNUP_ORIGIN" default:"https://mitlist.me"`
 	Port                     string `env:"PORT" default:"8000"`
 	APIPrefix                string `env:"API_PREFIX" default:"/api"`
 	AccessTokenExpireMinutes int    `env:"ACCESS_TOKEN_EXPIRE_MINUTES" default:"15"`
@@ -88,13 +87,6 @@ type Config struct {
 	// so the two run side by side rather than one replacing the other.
 	TurnstileSecretKey string `env:"TURNSTILE_SECRET_KEY"`
 
-	// Staffroom (reqtrack) intake, so beta-tester signups from the landing
-	// page land on the team's tester list as they happen. The key is the
-	// app's intake key, the same one the feedback site uses. Leave both empty
-	// and signups are only kept in Postgres, which is what self-hosters want.
-	StaffroomIntakeURL string `env:"STAFFROOM_INTAKE_URL"`
-	StaffroomIntakeKey string `env:"STAFFROOM_INTAKE_KEY"`
-
 	// Email. Setting AWS_SES_REGION opts into Amazon SES as the primary
 	// provider; leave it empty to fall back to the SMTP providers below.
 	//
@@ -127,11 +119,6 @@ type Config struct {
 	// working unsubscribe link and that link points at this API.
 	OnboardingEmailsEnabled bool   `env:"ONBOARDING_EMAILS_ENABLED" default:"true"`
 	PublicAPIURL            string `env:"PUBLIC_API_URL"`
-
-	// Store listings the mobile-beta invitation emails point at. An empty
-	// value means that platform's invitation cannot be sent yet.
-	PlayStoreURL string `env:"PLAY_STORE_URL" default:"https://play.google.com/store/apps/details?id=me.mitlist"`
-	AppStoreURL  string `env:"APP_STORE_URL"`
 
 	// Sentry / GlitchTip error tracking
 	SentryDSN              string  `env:"SENTRY_DSN"`
