@@ -35,7 +35,9 @@ still draggable, no inertia).
   the live web app at 430×932 CSS px, 2× scale). Each `<name>.webp` has a
   `<name>-dark.webp` twin that the homepage serves under
   `prefers-color-scheme: dark`. `scripts/capture-screenshots.mjs` opens a
-  phone-sized Chrome in either scheme for recapturing them.
+  phone-sized Chrome in either scheme for recapturing them; pass `ipad` as
+  the second argument for a 13-inch iPad window (2064×2752 at 2×), the size
+  App Store Connect requires.
   `npm run check:official-launch` fails while any `data-launch-placeholder`
   element remains in `HomePage.astro`.
 - Localized homepages ship at `/en/`, `/de/`, `/es/`, `/fr/`, and `/nl/`.
