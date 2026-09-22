@@ -11,6 +11,7 @@ import 'providers/outbox_provider.dart';
 import 'services/api_client.dart' show dioProvider;
 import 'services/canonical_display.dart' show setGroceryDisplayLang;
 import 'providers/theme_provider.dart';
+import 'providers/text_settings_provider.dart';
 import 'providers/locale_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/notification_provider.dart';
@@ -291,6 +292,7 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
     final router = ref.watch(routerProvider);
     final themeMode = ref.watch(themeModeProvider);
     final accent = ref.watch(effectiveAccentProvider);
+    final boldText = ref.watch(boldTextProvider);
     final locale = ref.watch(localeProvider);
     // Keep the grocery label language in sync with the app locale so canonical
     // items render in the user's language (de/en/fr/es shipped in the seed).
@@ -300,8 +302,8 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
       title: 'mitlist',
       debugShowCheckedModeBanner: false,
       scaffoldMessengerKey: _scaffoldMessengerKey,
-      theme: MitlistTheme.lightWith(accent),
-      darkTheme: MitlistTheme.darkWith(accent),
+      theme: MitlistTheme.lightWith(accent, boldText: boldText),
+      darkTheme: MitlistTheme.darkWith(accent, boldText: boldText),
       themeMode: themeMode,
       routerConfig: router,
       locale: locale,
@@ -313,15 +315,28 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
               orElse: () => false,
             );
 
-        var content = child!;
+        final textSize = ref.watch(textSizeProvider);
+        final mediaQuery = MediaQuery.of(context);
+
+        var data = mediaQuery;
         if (showBanner) {
-          final mediaQuery = MediaQuery.of(context);
-          content = MediaQuery(
-            data: mediaQuery.copyWith(
-              padding: mediaQuery.padding.copyWith(top: 0),
+          // The banner occupies the status-bar strip, so the routed content
+          // below it must not inset for it a second time.
+          data = data.copyWith(padding: data.padding.copyWith(top: 0));
+        }
+        if (textSize != TextSizeOption.defaultSize) {
+          // Composed with whatever the platform asks for, so the app setting
+          // reads as "a bit bigger than my phone already makes it".
+          data = data.copyWith(
+            textScaler: TextScaler.linear(
+              mediaQuery.textScaler.scale(1.0) * textSize.scale,
             ),
-            child: content,
           );
+        }
+
+        var content = child!;
+        if (data != mediaQuery) {
+          content = MediaQuery(data: data, child: content);
         }
 
         return Column(

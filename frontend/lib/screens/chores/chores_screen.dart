@@ -14,6 +14,7 @@ import '../../providers/group_provider.dart';
 import '../../providers/list_provider.dart';
 import '../../router.dart' show BottomNavScaffold, currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
+import '../../services/sse_service.dart' show SseEvent;
 import '../../sheets/chore_creation_sheet.dart';
 import '../../sheets/chore_detail_sheet.dart';
 import '../../sheets/chore_load_sheet.dart';
@@ -73,7 +74,13 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
 
   AppLocalizations get _l10n => AppLocalizations.of(context)!;
   StreamSubscription<List<CurrentChore>>? _sub;
+  StreamSubscription<SseEvent>? _groupEventsSub;
   bool _filterMe = true;
+
+  /// Household zone the queue is narrowed to, on top of Me/Everyone.
+  /// Session-only: a zone is a momentary "what's left in the kitchen"
+  /// question, not a standing preference like whose queue to show.
+  String? _zoneFilter;
   bool _isMutating = false;
   bool _hasHousehold = false;
   String? _groupId;
@@ -115,6 +122,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   @override
   void dispose() {
     _sub?.cancel();
+    _groupEventsSub?.cancel();
     super.dispose();
   }
 
@@ -165,6 +173,16 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       // Attach SSE so completions from other household members arrive live.
       final sseService = ref.read(sseServiceProvider);
       repo.attachSse(sseService, gid);
+      // Zones live on the household, so a zone another member adds arrives
+      // as a group update, not a chore event. Without this the chips stay
+      // stale until the next cold start for everyone but the person who
+      // added it.
+      await _groupEventsSub?.cancel();
+      _groupEventsSub = sseService.events.listen((event) {
+        if (event.type == 'group:updated' && event.groupId == gid) {
+          unawaited(refreshCachedGroups(ref));
+        }
+      });
 
       final cached = await repo.getCurrentChoresOnce(gid);
       if (!mounted) return;
@@ -306,6 +324,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     // is the system widening the view for one moment, not the user changing
     // their mind, so it must not overwrite their saved filter preference.
     if (_filterMe) _setFilterMe(false, persist: false);
+    if (_zoneFilter != null) _setZoneFilter(null);
 
     // Keep the live subscription and paint the local create immediately.
     // Restarting the entire load waits for member lookup and resubscription
@@ -407,6 +426,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
           ? _frequencyLabel(
               _l10n, details.chore.frequency, details.chore.periodInterval)
           : _frequencyLabel(_l10n, chore.frequency, chore.periodInterval),
+      zone: details?.chore.category ?? chore.category,
       dueDate: details?.pendingAssignment?.dueDate ?? chore.dueDate,
       trackedCount: details?.stats.trackedCount,
       lastTrackedAt: details?.stats.lastTrackedAt,
@@ -765,10 +785,27 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   }
 
   List<_Chore> get _filteredChores {
-    if (_filterMe) {
-      return _chores.where((c) => c.isMine).toList();
-    }
-    return _chores.toList();
+    final zone = _zoneFilter;
+    return _chores
+        .where((c) => !_filterMe || c.isMine)
+        .where((c) => zone == null || c.category == zone)
+        .toList();
+  }
+
+  void _setZoneFilter(String? zone) {
+    if (zone == _zoneFilter) return;
+    setState(() => _zoneFilter = zone);
+  }
+
+  /// The active household's zones, or null while the household cache has
+  /// not resolved yet (distinct from a household that simply has none).
+  List<String>? _activeZones() {
+    final groups = ref.watch(cachedGroupsProvider).valueOrNull;
+    if (groups == null) return null;
+    final groupId = _groupId;
+    if (groupId == null) return const [];
+    return groups.firstWhereOrNull((g) => g.id == groupId)?.choreZones ??
+        const [];
   }
 
   void _setFilterMe(bool value, {bool persist = true}) {
@@ -862,6 +899,17 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       }
     });
 
+    final loadedZones = _activeZones();
+    final zones = loadedZones ?? const <String>[];
+    // A zone removed in settings while it was the active filter would leave
+    // the list pinned to something no chip can clear any more.
+    if (_zoneFilter != null &&
+        loadedZones != null &&
+        !zones.contains(_zoneFilter)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _setZoneFilter(null);
+      });
+    }
     final filtered = _filteredChores;
     final sections = _groupBySection(filtered);
     final myActive = _chores.where((c) => c.isMine && !c.completed).length;
@@ -1086,11 +1134,68 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                             ),
                           ],
                         ),
+                        // Where in the home. The household's zones are a
+                        // second cut across whichever queue is showing, and
+                        // the same chips the chore editor files under.
+                        if (zones.isNotEmpty) ...[
+                          const SizedBox(height: MitlistSpacing.sm),
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            clipBehavior: Clip.none,
+                            child: Row(
+                              children: [
+                                AppChip(
+                                  label: l10n.choreZoneAll,
+                                  selected: _zoneFilter == null,
+                                  onSelected: (_) => _setZoneFilter(null),
+                                ),
+                                for (final zone in zones) ...[
+                                  const SizedBox(width: MitlistSpacing.sm),
+                                  AppChip(
+                                    label: zone,
+                                    leading: const AppIcon(
+                                        name: 'tagOutline', size: 14),
+                                    selected: _zoneFilter == zone,
+                                    onSelected: (_) => _setZoneFilter(
+                                        _zoneFilter == zone ? null : zone),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
                 ),
-              if (filtered.isEmpty && _filterMe)
+              if (filtered.isEmpty && _zoneFilter != null)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      MitlistSpacing.md,
+                      MitlistSpacing.xl,
+                      MitlistSpacing.md,
+                      MitlistSpacing.md,
+                    ),
+                    child: AppEmptyState(
+                      icon: AppIcon(
+                        name: 'tagOutline',
+                        size: 48,
+                        color: Theme.of(context).colorScheme.tertiary,
+                      ),
+                      title: l10n.choreZoneEmpty(_zoneFilter!),
+                      description: l10n.choreZoneEmptyDesc,
+                      actions: [
+                        AppButton(
+                          text: l10n.choreZoneShowAll,
+                          variant: AppButtonVariant.outline,
+                          onPressed: () => _setZoneFilter(null),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else if (filtered.isEmpty && _filterMe)
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(
@@ -1929,6 +2034,7 @@ class _ChoreItem extends StatelessWidget {
     // A linear screen-reader pass doesn't get the visual cues (section header,
     // turn pill, supplies icon, due-date column), so fold them into the row's
     // accessible name. Order: what it is, its state, whose turn, when it's due.
+    final zone = (chore.category ?? '').isEmpty ? null : chore.category;
     final suppliesLabel = chore.supplies.isEmpty
         ? null
         : (chore.supplies.length == 1
@@ -1942,6 +2048,7 @@ class _ChoreItem extends StatelessWidget {
         l10n.choreNextInRotation(chore.nextTurnName!),
       if (!chore.hasAssignee && !isComplete) l10n.choreUpForGrabs,
       _frequencyLabel(l10n, chore.frequency, chore.periodInterval),
+      if (zone != null) zone,
       if (suppliesLabel != null) suppliesLabel,
       _formatDate(chore.dueDate),
     ].join(', ');
@@ -2005,6 +2112,14 @@ class _ChoreItem extends StatelessWidget {
                             _MetaChip(
                               icon: 'arrowRight',
                               label: chore.nextTurnName!,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          // Where in the home it's filed, so a glance
+                          // down the list reads as rooms, not just names.
+                          if (zone != null)
+                            _MetaChip(
+                              icon: 'tagOutline',
+                              label: zone,
                               color: colorScheme.onSurfaceVariant,
                             ),
                           if (chore.supplies.isNotEmpty)

@@ -4683,6 +4683,48 @@ abstract class AppLocalizations {
   /// **'Dark'**
   String get accountAppearanceDark;
 
+  /// Menu row: text size setting
+  ///
+  /// In en, this message translates to:
+  /// **'Text size'**
+  String get accountTextSize;
+
+  /// Text size option: small
+  ///
+  /// In en, this message translates to:
+  /// **'Small'**
+  String get accountTextSizeSmall;
+
+  /// Text size option: default
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get accountTextSizeDefault;
+
+  /// Text size option: large
+  ///
+  /// In en, this message translates to:
+  /// **'Large'**
+  String get accountTextSizeLarge;
+
+  /// Text size option: extra large
+  ///
+  /// In en, this message translates to:
+  /// **'Extra large'**
+  String get accountTextSizeExtraLarge;
+
+  /// Menu row: bold text toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Bold text'**
+  String get accountBoldText;
+
+  /// Subtitle explaining the bold text toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Heavier type across the app for easier reading'**
+  String get accountBoldTextHint;
+
   /// Menu row: change password
   ///
   /// In en, this message translates to:
@@ -11600,6 +11642,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Turn on'**
   String get notifPrefDeviceOffAction;
+
+  /// Detail row label for the zone (area of the home) a chore is filed under
+  ///
+  /// In en, this message translates to:
+  /// **'Zone'**
+  String get choreDetailZone;
+
+  /// Filter chip on the chores screen that clears the zone filter
+  ///
+  /// In en, this message translates to:
+  /// **'All zones'**
+  String get choreZoneAll;
+
+  /// Empty state title when the selected zone filter has no open chores
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing in {zone}'**
+  String choreZoneEmpty(String zone);
+
+  /// Empty state body when the selected zone filter has no open chores
+  ///
+  /// In en, this message translates to:
+  /// **'No open chores are filed under this zone.'**
+  String get choreZoneEmptyDesc;
+
+  /// Empty state action that clears the zone filter
+  ///
+  /// In en, this message translates to:
+  /// **'Show all zones'**
+  String get choreZoneShowAll;
 }
 
 class _AppLocalizationsDelegate

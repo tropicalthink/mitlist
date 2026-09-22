@@ -46,6 +46,10 @@ function markSvg({ size, glyph = 20 / 38, border = false, fill = true }) {
 
 const png = (svg, size) =>
   sharp(Buffer.from(svg), { density: 384 }).resize(size, size).png().toBuffer();
+// Store uploads must not carry an alpha channel: App Store Connect rejects the
+// 1024px icon outright if one is present, even when every pixel is opaque.
+const pngOpaque = (svg, size) =>
+  sharp(Buffer.from(svg), { density: 384 }).resize(size, size).removeAlpha().png().toBuffer();
 
 async function write(rel, buf) {
   const file = path.join(root, rel);
@@ -70,9 +74,9 @@ await write("frontend/assets/icon/icon.png", await png(markSvg({ size: 1024 }), 
 await write("frontend/assets/icon/icon_foreground.png", await png(markSvg({ size: 1024, glyph: 0.4, fill: false }), 1024));
 
 // ---- Store uploads ----
-await write("store/icons/app-store-1024.png", await png(markSvg({ size: 1024 }), 1024));
-await write("store/icons/google-play-512.png", await png(markSvg({ size: 512 }), 512));
-await write("store/icons/icon-bordered-1024.png", await png(markSvg({ size: 1024, border: true }), 1024));
+await write("store/icons/app-store-1024.png", await pngOpaque(markSvg({ size: 1024 }), 1024));
+await write("store/icons/google-play-512.png", await pngOpaque(markSvg({ size: 512 }), 512));
+await write("store/icons/icon-bordered-1024.png", await pngOpaque(markSvg({ size: 1024, border: true }), 1024));
 await write("store/icons/icon.svg", markSvg({ size: 1024 }) + "\n");
 
 function buildIco(sizes, pngs) {

@@ -2663,6 +2663,28 @@ class AppLocalizationsNl extends AppLocalizations {
   String get accountAppearanceDark => 'Donker';
 
   @override
+  String get accountTextSize => 'Tekstgrootte';
+
+  @override
+  String get accountTextSizeSmall => 'Klein';
+
+  @override
+  String get accountTextSizeDefault => 'Standaard';
+
+  @override
+  String get accountTextSizeLarge => 'Groot';
+
+  @override
+  String get accountTextSizeExtraLarge => 'Extra groot';
+
+  @override
+  String get accountBoldText => 'Vette tekst';
+
+  @override
+  String get accountBoldTextHint =>
+      'Zwaarder lettertype in de hele app voor beter lezen';
+
+  @override
   String get accountChangePasswordRow => 'Wachtwoord wijzigen';
 
   @override
@@ -6829,4 +6851,21 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get notifPrefDeviceOffAction => 'Inschakelen';
+
+  @override
+  String get choreDetailZone => 'Zone';
+
+  @override
+  String get choreZoneAll => 'Alle zones';
+
+  @override
+  String choreZoneEmpty(String zone) {
+    return 'Niets in $zone';
+  }
+
+  @override
+  String get choreZoneEmptyDesc => 'Geen open taken in deze zone.';
+
+  @override
+  String get choreZoneShowAll => 'Alle zones tonen';
 }

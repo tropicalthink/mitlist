@@ -114,25 +114,35 @@ configured: with guests on, accounts can still be created but nobody can sign
 back in on a second device; with guests off as well, nobody can get in at
 all.
 
-### Guest sign-up attestation
+### Sign-up attestation
 
-The guest endpoint is the only unauthenticated, abuse-sensitive route, and the
-proof it demands depends on the platform:
+Two unauthenticated routes take public input: guest creation and the landing
+page's testing signup. The proof depends on the platform:
 
-- **Mobile** presents a Firebase App Check token (Play Integrity / App Attest).
-- **Web** presents a Cloudflare Turnstile token. App Check's only web provider
-  is reCAPTCHA Enterprise, which would add a GCP billing dependency to protect
-  one endpoint, so the browser solves an invisible Turnstile challenge instead.
+- **Mobile guest creation** presents a Firebase App Check token (Play Integrity
+  / App Attest).
+- **Web guest creation** presents a Cloudflare Turnstile token. App Check's
+  only web provider is reCAPTCHA Enterprise, which would add a GCP billing
+  dependency to protect one endpoint, so the browser solves an invisible
+  Turnstile challenge instead.
+- **Testing signups** from the landing page present the same Turnstile token in
+  `X-Mitlist-Turnstile`. The landing site is built with
+  `PUBLIC_TURNSTILE_SITE_KEY` (same site key as the web app) and the widget's
+  hostname list must include the landing host.
 
-The API accepts either, and rejects a caller that presents neither while App
-Check is enforced. Turnstile needs one runtime variable:
+The API accepts either proof, and rejects a caller that presents neither while
+the relevant check is enforced. Turnstile needs one runtime variable:
 
 ```dotenv
 TURNSTILE_SECRET_KEY=0x...
 ```
 
-Leave it unset and web guests are unattested — the correct default for a
-self-hosted instance, and not acceptable for the official service.
+Leave it unset and web guests and signups are unattested — the correct default
+for a self-hosted instance, and not acceptable for the official service.
+
+Enforcement fails closed, so publish the landing page with the site key
+**before** deploying an API that enforces Turnstile; otherwise every signup is
+rejected. A landing build without the site key sends no token.
 
 Beta-tester signups from the landing page can be mirrored to Staffroom's
 tester list (see `backend/docs/testing-signups.md`):

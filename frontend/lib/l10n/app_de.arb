@@ -736,6 +736,13 @@
   "accountAppearanceSystem": "System",
   "accountAppearanceLight": "Hell",
   "accountAppearanceDark": "Dunkel",
+  "accountTextSize": "Textgröße",
+  "accountTextSizeSmall": "Klein",
+  "accountTextSizeDefault": "Standard",
+  "accountTextSizeLarge": "Groß",
+  "accountTextSizeExtraLarge": "Sehr groß",
+  "accountBoldText": "Fetter Text",
+  "accountBoldTextHint": "Kräftigere Schrift in der ganzen App für bessere Lesbarkeit",
   "accountChangePasswordRow": "Passwort ändern",
   "accountVersion": "Version",
   "accountOpenDataRow": "Offene Daten",
@@ -2346,5 +2353,10 @@
   "pushPromptDeniedHint": "Benachrichtigungen für mitlist sind aus. Du kannst sie in den Einstellungen deines Telefons einschalten.",
   "notifPrefDeviceOffTitle": "Benachrichtigungen sind auf diesem Gerät aus",
   "notifPrefDeviceOffBody": "Die Haushaltseinstellungen unten wirken erst, wenn dieses Gerät Benachrichtigungen anzeigen darf.",
-  "notifPrefDeviceOffAction": "Einschalten"
+  "notifPrefDeviceOffAction": "Einschalten",
+  "choreDetailZone": "Bereich",
+  "choreZoneAll": "Alle Bereiche",
+  "choreZoneEmpty": "Nichts in {zone}",
+  "choreZoneEmptyDesc": "Keine offenen Aufgaben in diesem Bereich.",
+  "choreZoneShowAll": "Alle Bereiche anzeigen"
 }

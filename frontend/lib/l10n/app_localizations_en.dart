@@ -2638,6 +2638,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountAppearanceDark => 'Dark';
 
   @override
+  String get accountTextSize => 'Text size';
+
+  @override
+  String get accountTextSizeSmall => 'Small';
+
+  @override
+  String get accountTextSizeDefault => 'Default';
+
+  @override
+  String get accountTextSizeLarge => 'Large';
+
+  @override
+  String get accountTextSizeExtraLarge => 'Extra large';
+
+  @override
+  String get accountBoldText => 'Bold text';
+
+  @override
+  String get accountBoldTextHint =>
+      'Heavier type across the app for easier reading';
+
+  @override
   String get accountChangePasswordRow => 'Change Password';
 
   @override
@@ -6761,4 +6783,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notifPrefDeviceOffAction => 'Turn on';
+
+  @override
+  String get choreDetailZone => 'Zone';
+
+  @override
+  String get choreZoneAll => 'All zones';
+
+  @override
+  String choreZoneEmpty(String zone) {
+    return 'Nothing in $zone';
+  }
+
+  @override
+  String get choreZoneEmptyDesc => 'No open chores are filed under this zone.';
+
+  @override
+  String get choreZoneShowAll => 'Show all zones';
 }

@@ -23,7 +23,7 @@ class MitlistTheme {
 
   /// The light theme with [accent] as its primary ramp. Everything but the
   /// primary colours is identical across accents.
-  static ThemeData lightWith(MitlistAccent accent) {
+  static ThemeData lightWith(MitlistAccent accent, {bool boldText = false}) {
     final p = accent.palette;
     final colorScheme = ColorScheme(
       brightness: Brightness.light,
@@ -61,7 +61,7 @@ class MitlistTheme {
       surfaceTint: p.s500,
     );
 
-    final textTheme = MitlistTypography.lightTextTheme;
+    final textTheme = MitlistTypography.lightTextThemeWith(bold: boldText);
 
     return ThemeData(
       useMaterial3: true,
@@ -241,7 +241,7 @@ class MitlistTheme {
   }
 
   /// The dark theme with [accent] as its primary ramp.
-  static ThemeData darkWith(MitlistAccent accent) {
+  static ThemeData darkWith(MitlistAccent accent, {bool boldText = false}) {
     final p = accent.palette;
     final colorScheme = ColorScheme(
       brightness: Brightness.dark,
@@ -278,7 +278,7 @@ class MitlistTheme {
       surfaceTint: p.s400,
     );
 
-    final textTheme = MitlistTypography.darkTextTheme;
+    final textTheme = MitlistTypography.darkTextThemeWith(bold: boldText);
 
     return ThemeData(
       useMaterial3: true,
