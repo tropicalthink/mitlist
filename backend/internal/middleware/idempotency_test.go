@@ -21,7 +21,7 @@ type memoryIdempotencyDB struct {
 	records map[string]idempotencyRecord
 }
 
-func (d *memoryIdempotencyDB) Exec(_ context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
+func (d *memoryIdempotencyDB) Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	if strings.Contains(sql, "WHERE expires_at < NOW()") {
@@ -36,6 +36,11 @@ func (d *memoryIdempotencyDB) Exec(_ context.Context, sql string, args ...any) (
 		d.records[key] = idempotencyRecord{requestHash: args[2].(string), state: "processing"}
 		return pgconn.NewCommandTag("INSERT 0 1"), nil
 	case strings.Contains(sql, "SET state = 'completed'"):
+		// A real pool refuses work on a cancelled context; mirror that so a
+		// test can prove the finalisation survives a client disconnect.
+		if err := ctx.Err(); err != nil {
+			return pgconn.CommandTag{}, err
+		}
 		record := d.records[key]
 		record.state = "completed"
 		record.status = args[2].(int)
@@ -106,4 +111,34 @@ func TestIdempotency_ReplaysCompletedMutation(t *testing.T) {
 	mismatch := request(`{"amount":200}`)
 	assert.Equal(t, http.StatusConflict, mismatch.Code)
 	assert.Equal(t, 1, calls)
+}
+
+func TestIdempotency_FinalisesAfterClientDisconnect(t *testing.T) {
+	db := &memoryIdempotencyDB{records: make(map[string]idempotencyRecord)}
+	handler := Idempotency(db)(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	userID := uuid.New().String()
+
+	// The client gives up (mobile timeout, tunnel drop) while the handler is
+	// still running: its request context is cancelled before the middleware
+	// gets to record the outcome.
+	ctx, cancel := context.WithCancel(WithUserID(context.Background(), userID))
+	cancel()
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/lists/x/items", strings.NewReader(`{"name":"Milk"}`)).WithContext(ctx)
+	req.Header.Set("Idempotency-Key", "create-item:one")
+	handler.ServeHTTP(httptest.NewRecorder(), req)
+
+	// The outbox retries with the same key must get the stored answer, not
+	// five minutes of 409 "still processing".
+	retry := httptest.NewRequest(http.MethodPost, "/api/v1/lists/x/items", strings.NewReader(`{"name":"Milk"}`))
+	retry = retry.WithContext(WithUserID(retry.Context(), userID))
+	retry.Header.Set("Idempotency-Key", "create-item:one")
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, retry)
+
+	assert.Equal(t, http.StatusOK, response.Code)
+	assert.Equal(t, "true", response.Header().Get("Idempotency-Replayed"))
+	assert.JSONEq(t, `{"ok":true}`, response.Body.String())
 }

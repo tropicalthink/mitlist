@@ -333,6 +333,7 @@ func (s *MealPlanService) GenerateShoppingList(ctx context.Context, user *models
 			Name:     key.name,
 			Quantity: qty,
 			Unit:     key.unit,
+			AddedBy:  &user.ID,
 		}
 		if s.resolveCanonical != nil {
 			if canonicalID, resolveErr := s.resolveCanonical(ctx, groupID, key.name); resolveErr == nil {

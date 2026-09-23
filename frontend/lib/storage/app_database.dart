@@ -1177,6 +1177,27 @@ FROM recipes_table;
         .watch();
   }
 
+  /// Reactive view of still-queued ops (attempt_count < maxAttempts), oldest
+  /// first — drives the "what is syncing" list in the sync-status sheet.
+  Stream<List<OutboxOp>> watchPendingOutboxOps({int maxAttempts = 10}) {
+    return (select(outboxOps)
+          ..where((t) => t.attemptCount.isSmallerThanValue(maxAttempts))
+          ..orderBy([
+            (t) =>
+                OrderingTerm(expression: t.createdAt, mode: OrderingMode.asc)
+          ]))
+        .watch();
+  }
+
+  /// Name of a cached list item, or null when it is not in the local cache.
+  /// Best-effort lookup used to label queued `updateItem` ops, whose payload
+  /// carries only the item id and the patch.
+  Future<String?> getListItemNameById(String id) async {
+    final row = await (select(listItemsTable)..where((t) => t.id.equals(id)))
+        .getSingleOrNull();
+    return row?.name;
+  }
+
   /// Re-arms dead-lettered ops for another drain pass: resets attempt_count to
   /// 0 and clears the backoff timestamp/error so [getOutboxBatchByTypes] picks
   /// them up again. Pass an [id] to re-arm a single op, or omit to re-arm all.

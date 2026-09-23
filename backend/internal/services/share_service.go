@@ -120,6 +120,7 @@ func (s *ShareService) CreateListFromShare(ctx context.Context, userID uuid.UUID
 			Name:     line,
 			Quantity: 1,
 			Position: i,
+			AddedBy:  &userID,
 		}
 		if err := s.listRepo.CreateItem(ctx, item); err != nil {
 			return nil, nil, fmt.Errorf("create list item: %w", err)

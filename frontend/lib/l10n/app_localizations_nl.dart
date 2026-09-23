@@ -6868,4 +6868,47 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get choreZoneShowAll => 'Alle zones tonen';
+
+  @override
+  String get outboxOpAddItemAmount => 'Hoeveelheid toevoegen';
+
+  @override
+  String get outboxOpClearItems => 'Lijst leegmaken';
+
+  @override
+  String get outboxOpClearCheckedItems => 'Afgevinkte items wissen';
+
+  @override
+  String get outboxOpRecordPurchase => 'Aankoop vastleggen';
+
+  @override
+  String get outboxOpCreateChore => 'Taak toevoegen';
+
+  @override
+  String get outboxOpCreateSettlement => 'Verrekening vastleggen';
+
+  @override
+  String get outboxOpMovePinwallPost => 'Prikbordnotitie verplaatsen';
+
+  @override
+  String get outboxOpCheckItem => 'Afvinken';
+
+  @override
+  String get outboxOpUncheckItem => 'Vinkje weghalen';
+
+  @override
+  String get offlineBannerQueueHeading => 'Wacht op synchronisatie';
+
+  @override
+  String get offlineBannerQueueEmpty => 'Niets in de wachtrij';
+
+  @override
+  String offlineBannerQueueMore(int count) {
+    return 'en nog $count';
+  }
+
+  @override
+  String offlineBannerQueueAttempt(int count) {
+    return 'poging $count';
+  }
 }

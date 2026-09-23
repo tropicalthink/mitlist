@@ -171,6 +171,7 @@ func (s *TemplateService) ApplyTemplate(ctx context.Context, user *models.User, 
 			Quantity: float64(ti.Quantity),
 			Unit:     ti.Unit,
 			Position: i,
+			AddedBy:  &user.ID,
 		}
 		if err := s.listRepo.CreateItem(ctx, item); err != nil {
 			return nil, fmt.Errorf("failed to create list item: %w", err)

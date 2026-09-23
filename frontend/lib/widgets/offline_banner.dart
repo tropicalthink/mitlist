@@ -8,10 +8,13 @@ import '../providers/initial_sync_provider.dart';
 import '../providers/outbox_provider.dart';
 import '../router.dart';
 import '../sheets/conflict_resolution_sheet.dart';
+import '../screens/you/feature_board_widgets.dart' show featureBoardRelativeTime;
 import '../sheets/failed_changes_sheet.dart';
+import '../storage/app_database.dart';
 import '../theme/colors.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
+import '../utils/outbox_op_label.dart';
 import 'app_card.dart';
 import 'app_bottom_sheet.dart';
 
@@ -79,6 +82,8 @@ class _Banner extends ConsumerWidget {
                 state.pendingCount, colorScheme),
             _detailRow(context, Icons.sync_problem,
                 l10n.offlineBannerStatusFailed, state.failedCount, colorScheme),
+            const SizedBox(height: MitlistSpacing.md),
+            const _PendingOpsSection(),
             const SizedBox(height: MitlistSpacing.md),
             if (state.hasErrors)
               AppCard(
@@ -253,6 +258,162 @@ class _Banner extends ConsumerWidget {
   void _retry(WidgetRef ref) {
     final coordinator = ref.read(outboxCoordinatorProvider).valueOrNull;
     coordinator?.retryFailed();
+  }
+}
+
+/// The "what is syncing" list in the sync-status sheet: every still-queued
+/// outbox op, oldest first, labelled by what it does ("Check off — Milk").
+class _PendingOpsSection extends ConsumerWidget {
+  const _PendingOpsSection();
+
+  /// Rows rendered before collapsing the rest into an "and N more" footer.
+  static const _maxRows = 50;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final ops =
+        ref.watch(pendingOutboxOpsProvider).valueOrNull ?? const <OutboxOp>[];
+    final shown = ops.take(_maxRows).toList(growable: false);
+    final hidden = ops.length - shown.length;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
+          child: Text(
+            l10n.offlineBannerQueueHeading,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.titleSmall,
+          ),
+        ),
+        if (ops.isEmpty)
+          Text(
+            l10n.offlineBannerQueueEmpty,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall
+                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          )
+        else
+          AppCard(
+            variant: AppCardVariant.outlined,
+            padding: AppCardPadding.none,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var i = 0; i < shown.length; i++) ...[
+                  if (i > 0)
+                    Divider(height: 1, color: theme.colorScheme.outlineVariant),
+                  _PendingOpRow(op: shown[i]),
+                ],
+              ],
+            ),
+          ),
+        if (hidden > 0)
+          Padding(
+            padding: const EdgeInsets.only(top: MitlistSpacing.sm),
+            child: Text(
+              l10n.offlineBannerQueueMore(hidden),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _PendingOpRow extends ConsumerWidget {
+  const _PendingOpRow({required this.op});
+
+  final OutboxOp op;
+
+  static IconData _icon(OutboxOpDomain domain) => switch (domain) {
+        OutboxOpDomain.list => Icons.checklist,
+        OutboxOpDomain.money => Icons.payments_outlined,
+        OutboxOpDomain.chores => Icons.cleaning_services_outlined,
+        OutboxOpDomain.recipes => Icons.restaurant_menu,
+        OutboxOpDomain.pinboard => Icons.push_pin_outlined,
+        OutboxOpDomain.telemetry => Icons.insights_outlined,
+        OutboxOpDomain.other => Icons.sync,
+      };
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+
+    final itemId = outboxOpItemIdForNameLookup(op);
+    final itemName = itemId == null
+        ? null
+        : ref.watch(outboxListItemNameProvider(itemId)).valueOrNull;
+    final label = outboxOpLabel(l10n, op, itemName: itemName);
+
+    final meta = [
+      featureBoardRelativeTime(l10n, op.createdAt),
+      if (op.attemptCount > 0) l10n.offlineBannerQueueAttempt(op.attemptCount),
+    ].join(' · ');
+    final error = op.lastError?.trim();
+
+    return Semantics(
+      container: true,
+      label: '$label, $meta',
+      excludeSemantics: true,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: MitlistSpacing.space11),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: MitlistSpacing.space3,
+            vertical: MitlistSpacing.sm,
+          ),
+          child: Row(
+            children: [
+              Icon(_icon(outboxOpDomain(op)), size: 20, color: muted),
+              const SizedBox(width: MitlistSpacing.space3),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                    Text(
+                      meta,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(color: muted),
+                    ),
+                    if (op.attemptCount > 0 &&
+                        error != null &&
+                        error.isNotEmpty)
+                      Text(
+                        error,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall
+                            ?.copyWith(color: theme.colorScheme.error),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

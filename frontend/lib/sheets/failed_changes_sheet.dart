@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -7,6 +5,7 @@ import '../l10n/app_localizations.dart';
 import '../providers/outbox_provider.dart';
 import '../storage/app_database.dart';
 import '../theme/spacing.dart';
+import '../utils/outbox_op_label.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_card.dart';
 import '../widgets/app_bottom_sheet.dart';
@@ -83,6 +82,10 @@ class _FailedOpCard extends ConsumerWidget {
     final l10nChild = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final coordinator = ref.read(outboxCoordinatorProvider).valueOrNull;
+    final itemId = outboxOpItemIdForNameLookup(op);
+    final itemName = itemId == null
+        ? null
+        : ref.watch(outboxListItemNameProvider(itemId)).valueOrNull;
 
     return AppCard(
       variant: AppCardVariant.soft,
@@ -91,7 +94,12 @@ class _FailedOpCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(_label(l10nChild, op), style: theme.textTheme.bodyMedium),
+          Text(
+            outboxOpLabel(l10nChild, op, itemName: itemName),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodyMedium,
+          ),
           if (op.lastError != null && op.lastError!.isNotEmpty) ...[
             const SizedBox(height: MitlistSpacing.xs),
             Text(
@@ -126,43 +134,5 @@ class _FailedOpCard extends ConsumerWidget {
         ],
       ),
     );
-  }
-
-  /// Human-readable summary of what the op was trying to do, using the entity
-  /// name from the payload when available.
-  static String _label(AppLocalizations l10n, OutboxOp op) {
-    final verb = switch (op.type) {
-      'createItem' => l10n.sheetFailedChangesOpAddItem,
-      'updateItem' => l10n.sheetFailedChangesOpUpdateItem,
-      'deleteItem' => l10n.sheetFailedChangesOpDeleteItem,
-      'reorderItems' => l10n.sheetFailedChangesOpReorderItems,
-      'createExpense' => l10n.sheetFailedChangesOpCreateExpense,
-      'updateExpense' => l10n.sheetFailedChangesOpUpdateExpense,
-      'deleteExpense' => l10n.sheetFailedChangesOpDeleteExpense,
-      'createRecipe' => l10n.sheetFailedChangesOpCreateRecipe,
-      'updateRecipe' => l10n.sheetFailedChangesOpUpdateRecipe,
-      'deleteRecipe' => l10n.sheetFailedChangesOpDeleteRecipe,
-      'completeChore' => l10n.sheetFailedChangesOpCompleteChore,
-      'skipChore' => l10n.sheetFailedChangesOpSkipChore,
-      'rescheduleChore' => l10n.sheetFailedChangesOpRescheduleChore,
-      'undoChore' => l10n.sheetFailedChangesOpUndoChore,
-      'createPinwallPost' => l10n.sheetFailedChangesOpCreatePinwallPost,
-      'deletePinwallPost' => l10n.sheetFailedChangesOpDeletePinwallPost,
-      'updatePinwallPost' => l10n.sheetFailedChangesOpUpdatePinwallPost,
-      _ => l10n.sheetFailedChangesOpChange,
-    };
-    final name = _payloadName(op.payloadJson);
-    return name == null ? verb : '$verb — $name';
-  }
-
-  static String? _payloadName(String payloadJson) {
-    try {
-      final map = (jsonDecode(payloadJson) as Map).cast<String, dynamic>();
-      final name = map['name'] ?? map['content'] ?? map['title'];
-      if (name is String && name.trim().isNotEmpty) return name.trim();
-    } catch (_) {
-      // Best-effort label only.
-    }
-    return null;
   }
 }

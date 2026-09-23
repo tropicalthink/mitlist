@@ -74,10 +74,15 @@ func Idempotency(db idempotencyDB) func(http.Handler) http.Handler {
 			if status == 0 {
 				status = http.StatusOK
 			}
+			// The handler has run; the record must be finalised even when the
+			// client has already gone away (mobile timeout, tunnel hiccup). With
+			// the request context a cancelled client left the key 'processing'
+			// for five minutes, and every retry of the same op got 409 until then.
+			finalizeCtx := context.WithoutCancel(r.Context())
 			if status >= 500 {
-				_, _ = db.Exec(r.Context(), `DELETE FROM request_idempotency WHERE user_id = $1 AND idempotency_key = $2`, userID, key)
+				_, _ = db.Exec(finalizeCtx, `DELETE FROM request_idempotency WHERE user_id = $1 AND idempotency_key = $2`, userID, key)
 			} else {
-				_, err = db.Exec(r.Context(), `
+				_, err = db.Exec(finalizeCtx, `
 					UPDATE request_idempotency
 					SET state = 'completed', response_status = $3, response_content_type = $4,
 					    response_body = $5, completed_at = NOW()

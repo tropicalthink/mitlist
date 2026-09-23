@@ -397,6 +397,8 @@ func TestListService_AddItemAmount_CreatesWhenMissing(t *testing.T) {
 	item, err := svc.AddItemAmount(ctx, user, listID, "Milk", 2, "", "")
 	require.NoError(t, err)
 	assert.Equal(t, "Milk", item.Name)
+	require.NotNil(t, item.AddedBy, "an add-amount create must credit the adder like a plain create")
+	assert.Equal(t, user.ID, *item.AddedBy)
 }
 
 func TestListService_RemoveItemAmount_DecrementsOrDeletes(t *testing.T) {

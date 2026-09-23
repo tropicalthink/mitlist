@@ -1218,6 +1218,7 @@ func (s *ChoreService) AddSuppliesToList(ctx context.Context, user *models.User,
 			ListID:  listID,
 			Name:    supply,
 			Checked: false,
+			AddedBy: &user.ID,
 		}
 		if s.resolveCanonical != nil {
 			if canonicalID, resolveErr := s.resolveCanonical(ctx, chore.GroupID, supply); resolveErr == nil {

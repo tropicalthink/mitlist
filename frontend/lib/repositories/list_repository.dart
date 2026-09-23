@@ -480,11 +480,6 @@ class ListRepository {
       await _db.upsertListItemsRows([_toListItemsRow(patched)]);
       await _patchListPreviewFromLocalItems(listId);
 
-      // Record purchase signal when item transitions to checked.
-      if ((req.checked ?? false) && !existing.checked) {
-        await _recordPurchaseSignal(listId, itemId, existingRow);
-      }
-
       // Optimistic-concurrency base: the server updated_at this edit was based
       // on. Skip it when an edit is already queued for this item — that chain is
       // all ours, so there's no foreign server base to guard against (and using
@@ -509,6 +504,14 @@ class ListRepository {
         entityId: itemId,
       );
     });
+
+    // Purchase telemetry for a check-off runs after the edit has committed.
+    // It writes in a transaction of its own and fires best-effort network
+    // work; inside the edit's transaction that work outlived the transaction
+    // and every later local write failed as "used after being closed".
+    if ((req.checked ?? false) && !existing.checked) {
+      await _recordPurchaseSignal(listId, itemId, existingRow);
+    }
 
     if (_autoSync) unawaited(drainOutboxOnce());
     return patched;
@@ -1282,7 +1285,14 @@ class ListRepository {
           entityId: eventId,
         );
       });
-      if (_autoSync) unawaited(drainOutboxOnce());
+      // No drain here. Both callers run this inside the transaction of the
+      // check-off that triggered it, and a drain started from inside a Drift
+      // transaction zone keeps using that transaction after it commits: the
+      // request reaches the server, then every local write ("delete the op",
+      // "record the attempt") fails with "transaction was used after being
+      // closed". The op stays queued with the server already updated, and the
+      // banner reads "Syncing" until the app restarts. The callers drain once
+      // their transaction has committed.
     } catch (error, stackTrace) {
       ErrorReporter().captureException(error, stackTrace: stackTrace);
     }

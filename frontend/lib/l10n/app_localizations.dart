@@ -11672,6 +11672,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show all zones'**
   String get choreZoneShowAll;
+
+  /// Outbox op label: add quantity to an existing list item
+  ///
+  /// In en, this message translates to:
+  /// **'Add more'**
+  String get outboxOpAddItemAmount;
+
+  /// Outbox op label: remove all items from a list
+  ///
+  /// In en, this message translates to:
+  /// **'Clear list'**
+  String get outboxOpClearItems;
+
+  /// Outbox op label: remove checked items from a list
+  ///
+  /// In en, this message translates to:
+  /// **'Clear checked items'**
+  String get outboxOpClearCheckedItems;
+
+  /// Outbox op label: record grocery purchase history
+  ///
+  /// In en, this message translates to:
+  /// **'Record purchase'**
+  String get outboxOpRecordPurchase;
+
+  /// Outbox op label: create chore
+  ///
+  /// In en, this message translates to:
+  /// **'Add chore'**
+  String get outboxOpCreateChore;
+
+  /// Outbox op label: create settlement
+  ///
+  /// In en, this message translates to:
+  /// **'Record settlement'**
+  String get outboxOpCreateSettlement;
+
+  /// Outbox op label: move a pinwall note
+  ///
+  /// In en, this message translates to:
+  /// **'Move pinwall post'**
+  String get outboxOpMovePinwallPost;
+
+  /// Outbox op label: mark a list item as checked
+  ///
+  /// In en, this message translates to:
+  /// **'Check off'**
+  String get outboxOpCheckItem;
+
+  /// Outbox op label: mark a list item as unchecked
+  ///
+  /// In en, this message translates to:
+  /// **'Uncheck'**
+  String get outboxOpUncheckItem;
+
+  /// Sync status sheet: heading above the list of queued changes
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting to sync'**
+  String get offlineBannerQueueHeading;
+
+  /// Sync status sheet: shown when no changes are queued
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing waiting'**
+  String get offlineBannerQueueEmpty;
+
+  /// Sync status sheet: footer when the queued list is truncated
+  ///
+  /// In en, this message translates to:
+  /// **'and {count} more'**
+  String offlineBannerQueueMore(int count);
+
+  /// Sync status sheet: how many times a queued change has been tried
+  ///
+  /// In en, this message translates to:
+  /// **'attempt {count}'**
+  String offlineBannerQueueAttempt(int count);
 }
 
 class _AppLocalizationsDelegate

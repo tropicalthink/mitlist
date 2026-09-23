@@ -6309,5 +6309,18 @@
   "choreZoneAll": "Alle zones",
   "choreZoneEmpty": "Niets in {zone}",
   "choreZoneEmptyDesc": "Geen open taken in deze zone.",
-  "choreZoneShowAll": "Alle zones tonen"
+  "choreZoneShowAll": "Alle zones tonen",
+  "outboxOpAddItemAmount": "Hoeveelheid toevoegen",
+  "outboxOpClearItems": "Lijst leegmaken",
+  "outboxOpClearCheckedItems": "Afgevinkte items wissen",
+  "outboxOpRecordPurchase": "Aankoop vastleggen",
+  "outboxOpCreateChore": "Taak toevoegen",
+  "outboxOpCreateSettlement": "Verrekening vastleggen",
+  "outboxOpMovePinwallPost": "Prikbordnotitie verplaatsen",
+  "outboxOpCheckItem": "Afvinken",
+  "outboxOpUncheckItem": "Vinkje weghalen",
+  "offlineBannerQueueHeading": "Wacht op synchronisatie",
+  "offlineBannerQueueEmpty": "Niets in de wachtrij",
+  "offlineBannerQueueMore": "en nog {count}",
+  "offlineBannerQueueAttempt": "poging {count}"
 }
