@@ -240,6 +240,12 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
             .read(notificationServiceProviderAsync.future)
             .then((service) => service.flushAllDigests()),
       );
+      // Same for queued writes: the sync session ends with the visit, so push
+      // them now while the OS still lets us use the network.
+      final coordinator = ref.read(outboxCoordinatorProvider).valueOrNull;
+      if (coordinator != null) {
+        unawaited(coordinator.flushSession(reason: 'app paused'));
+      }
     }
     if (state == AppLifecycleState.resumed) {
       // Whatever the connectivity service believes right now was learned before

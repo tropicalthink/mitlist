@@ -330,7 +330,7 @@ class PinwallNoteCard extends ConsumerWidget {
       // Offline-first: removes the note from the cache immediately (the Drift
       // stream re-paints) and queues the server delete for the next drain.
       await repo.deletePostOfflineFirst(groupId, post.id);
-      unawaited(repo.drainOutboxOnce().catchError((_) {}));
+      repo.noteLocalWrite();
     }
 
     Widget mediaRow() {

@@ -16,6 +16,10 @@ class FinanceRepository {
   final Uuid _uuid;
   final bool _autoSync;
 
+  /// Production hook for the sync session: told when a write queued an op,
+  /// instead of draining right away. See [_afterLocalWrite].
+  final void Function()? _onLocalWrite;
+
   bool _isDraining = false;
 
   FinanceRepository({
@@ -23,10 +27,12 @@ class FinanceRepository {
     required FinanceService remote,
     Uuid? uuid,
     bool autoSync = true,
+    void Function()? onLocalWrite,
   })  : _db = db,
         _remote = remote,
         _uuid = uuid ?? const Uuid(),
-        _autoSync = autoSync;
+        _autoSync = autoSync,
+        _onLocalWrite = onLocalWrite;
 
   // ---------------------------------------------------------------------------
   // Read (cache-first)
@@ -261,7 +267,7 @@ class FinanceRepository {
       settlementsJson:
           jsonEncode([...current, local].map((s) => s.toJson()).toList()),
     );
-    if (_autoSync) unawaited(drainOutboxOnce());
+    _afterLocalWrite();
     return local;
   }
 
@@ -333,7 +339,7 @@ class FinanceRepository {
       );
     });
 
-    if (_autoSync) unawaited(drainOutboxOnce());
+    _afterLocalWrite();
     return local;
   }
 
@@ -404,7 +410,7 @@ class FinanceRepository {
       );
     }
 
-    if (_autoSync) unawaited(drainOutboxOnce());
+    _afterLocalWrite();
 
     final row = (await (_db.select(_db.expensesTable)
           ..where((t) => t.id.equals(expenseId)))
@@ -429,7 +435,20 @@ class FinanceRepository {
       );
     });
 
-    if (_autoSync) unawaited(drainOutboxOnce());
+    _afterLocalWrite();
+  }
+
+  /// Called after a write has queued an op (always after its transaction).
+  /// Production passes [_onLocalWrite], which only opens the sync session;
+  /// without it (tests, direct constructions) the op drains right away.
+  void _afterLocalWrite() {
+    if (!_autoSync) return;
+    final onLocalWrite = _onLocalWrite;
+    if (onLocalWrite != null) {
+      onLocalWrite();
+    } else {
+      unawaited(drainOutboxOnce());
+    }
   }
 
   Future<void> drainOutboxOnce() async {
@@ -614,7 +633,7 @@ class FinanceRepository {
       // Best-effort; the conflict is cleared regardless so it doesn't linger.
     }
     await _db.resolveConflict(conflict.id);
-    if (_autoSync) unawaited(drainOutboxOnce());
+    _afterLocalWrite();
   }
 
   Future<void> _syncDeleteExpense(

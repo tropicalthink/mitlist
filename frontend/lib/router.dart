@@ -9,6 +9,7 @@ import 'providers/group_provider.dart' show cachedGroupsProvider;
 import 'widgets/mitlist_bottom_nav.dart';
 import 'widgets/shell_branch_switcher.dart';
 import 'providers/nav_badge_provider.dart';
+import 'providers/outbox_provider.dart' show outboxCoordinatorProvider;
 import 'providers/grocery_provider.dart' show groceryGraphSyncProvider;
 import 'theme/animations.dart';
 import 'utils/active_group_context.dart';
@@ -559,8 +560,15 @@ final routerProvider = Provider<GoRouter>((ref) {
   // Feed the feedback sheet's page attribution: record every location change
   // so submissions can report the screen the user was on (and came from).
   router.routerDelegate.addListener(() {
-    RouteHistory.record(
-        router.routerDelegate.currentConfiguration.uri.toString());
+    final location = router.routerDelegate.currentConfiguration.uri.toString();
+    RouteHistory.record(location);
+    // Leaving a screen ends its sync session. Read lazily so building the
+    // router never waits on (or depends on) the outbox coordinator; it only
+    // flushes when the location really changed and writes are queued.
+    ref
+        .read(outboxCoordinatorProvider)
+        .valueOrNull
+        ?.onLocationChanged(location);
   });
 
   return router;

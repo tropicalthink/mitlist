@@ -16,7 +16,11 @@ final pinwallRepositoryProvider =
     FutureProvider<PinwallRepository>((ref) async {
   final db = ref.watch(appDatabaseProvider);
   final service = await ref.read(pinwallServiceProviderAsync.future);
-  return PinwallRepository(db: db, remote: service);
+  return PinwallRepository(
+    db: db,
+    remote: service,
+    onLocalWrite: ref.watch(syncSchedulerProvider).noteLocalWrite,
+  );
 });
 
 final pinwallMediaByPostProvider = FutureProvider.family<List<PinwallMediaItem>,

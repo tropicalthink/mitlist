@@ -22,6 +22,10 @@ class ListRepository {
   final Uuid _uuid;
   final bool _autoSync;
 
+  /// Production hook for the sync session: told when a write queued an op,
+  /// instead of draining right away. See [_afterLocalWrite].
+  final void Function()? _onLocalWrite;
+
   /// Promotes repeatedly-checked-off words the resolver couldn't map into
   /// household-local canonical items. Defaults to a db-backed instance so
   /// direct constructions (tests) still learn; production injects the same.
@@ -57,12 +61,14 @@ class ListRepository {
     required ListService remote,
     Uuid? uuid,
     bool autoSync = true,
+    void Function()? onLocalWrite,
     LocalItemPromotionService? promotionService,
     GroceryRepository? groceryRepo,
   })  : _db = db,
         _remote = remote,
         _uuid = uuid ?? const Uuid(),
         _autoSync = autoSync,
+        _onLocalWrite = onLocalWrite,
         _promotionService = promotionService ?? LocalItemPromotionService(db),
         _groceryRepo = groceryRepo;
 
@@ -312,7 +318,7 @@ class ListRepository {
     });
 
     // Best-effort immediate sync.
-    if (_autoSync && !deferImmediateSync) unawaited(drainOutboxOnce());
+    if (!deferImmediateSync) _afterLocalWrite();
     return local;
   }
 
@@ -409,7 +415,7 @@ class ListRepository {
       );
     });
 
-    if (_autoSync && !deferImmediateSync) unawaited(drainOutboxOnce());
+    if (!deferImmediateSync) _afterLocalWrite();
     return local;
   }
 
@@ -441,7 +447,7 @@ class ListRepository {
   /// Restarts best-effort sync after a caller briefly deferred it to enrich a
   /// durable optimistic row.
   void triggerAutoSync() {
-    if (_autoSync) unawaited(drainOutboxOnce());
+    _afterLocalWrite();
   }
 
   Future<ListItem> updateItemOfflineFirst(
@@ -513,7 +519,7 @@ class ListRepository {
       await _recordPurchaseSignal(listId, itemId, existingRow);
     }
 
-    if (_autoSync) unawaited(drainOutboxOnce());
+    _afterLocalWrite();
     return patched;
   }
 
@@ -549,6 +555,7 @@ class ListRepository {
             priceCents: existing.priceCents,
             canonicalItemId: existing.canonicalItemId,
             claimedBy: existing.claimedBy,
+            addedBy: existing.addedBy,
             createdAt: existing.createdAt,
             updatedAt: DateTime.now(),
           ),
@@ -570,7 +577,7 @@ class ListRepository {
       );
     });
 
-    if (_autoSync) unawaited(drainOutboxOnce());
+    _afterLocalWrite();
   }
 
   Future<void> deleteItemOfflineFirst(String listId, String itemId) async {
@@ -589,7 +596,7 @@ class ListRepository {
       );
     });
 
-    if (_autoSync) unawaited(drainOutboxOnce());
+    _afterLocalWrite();
   }
 
   /// Offline-first bulk check / uncheck. Flips every row whose `checked`
@@ -655,7 +662,7 @@ class ListRepository {
       );
     }
 
-    if (_autoSync) unawaited(drainOutboxOnce());
+    _afterLocalWrite();
   }
 
   /// Offline-first clear. Deletes the matching rows locally in one write (one
@@ -683,7 +690,20 @@ class ListRepository {
       entityId: listId,
     );
 
-    if (_autoSync) unawaited(drainOutboxOnce());
+    _afterLocalWrite();
+  }
+
+  /// Called after a write has queued an op (always after its transaction).
+  /// Production passes [_onLocalWrite], which only opens the sync session;
+  /// without it (tests, direct constructions) the op drains right away.
+  void _afterLocalWrite() {
+    if (!_autoSync) return;
+    final onLocalWrite = _onLocalWrite;
+    if (onLocalWrite != null) {
+      onLocalWrite();
+    } else {
+      unawaited(drainOutboxOnce());
+    }
   }
 
   Future<void> drainOutboxOnce() async {
@@ -948,7 +968,7 @@ class ListRepository {
       // Best-effort; the conflict is cleared regardless so it doesn't linger.
     }
     await _db.resolveConflict(conflict.id);
-    if (_autoSync) unawaited(drainOutboxOnce());
+    _afterLocalWrite();
   }
 
   // ---------------------------------------------------------------------------
@@ -1151,6 +1171,7 @@ class ListRepository {
       checked: item.checked,
       position: item.position,
       claimedBy: item.claimedBy,
+      addedBy: item.addedBy,
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,
     );

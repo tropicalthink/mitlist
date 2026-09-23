@@ -265,9 +265,9 @@ class _PinwallComposerState extends ConsumerState<PinwallComposer> {
         userId: widget.me?.id ?? '',
         remindAt: restoreRemindAt,
       );
-      // Best-effort immediate sync; offline leaves the queued + synthetic
+      // Queued for the sync session; offline leaves the queued + synthetic
       // post in place until connectivity returns.
-      unawaited(repo.drainOutboxOnce().catchError((_) {}));
+      repo.noteLocalWrite();
       if (mounted) widget.onPosted?.call();
     } catch (e) {
       if (!mounted) return;

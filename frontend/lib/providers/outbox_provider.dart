@@ -39,7 +39,14 @@ final outboxCoordinatorProvider =
   );
 
   coordinator.start();
-  ref.onDispose(coordinator.dispose);
+  // Repositories were built first and hold the scheduler, not the
+  // coordinator; point it here so their writes open a sync session.
+  final scheduler = ref.watch(syncSchedulerProvider);
+  scheduler.attach(coordinator.noteLocalWrite);
+  ref.onDispose(() {
+    scheduler.detach(coordinator.noteLocalWrite);
+    coordinator.dispose();
+  });
   return coordinator;
 });
 
@@ -107,6 +114,11 @@ final outboxStateProvider = StreamProvider<OutboxState>((ref) async* {
   final db = ref.watch(appDatabaseProvider);
   final connectivity = ref.watch(connectivityServiceProvider);
 
+  // Read lazily: the banner must not wait for (or rebuild with) the
+  // coordinator, which only exists once the user is signed in.
+  OutboxCoordinator? coordinator() =>
+      ref.read(outboxCoordinatorProvider).valueOrNull;
+
   Future<OutboxState> computeState() async {
     final online = await connectivity.isOnline();
     final pending = await db.outboxPendingCount();
@@ -135,14 +147,18 @@ final outboxStateProvider = StreamProvider<OutboxState>((ref) async* {
         failedCount: failed,
       );
     }
-    if (pending > 0) {
+    // Queued ops wait for the sync session to flush (leaving the screen,
+    // pausing the app, the idle window), so "pending" alone is normal and
+    // silent. Only an actual drain in flight shows "Syncing"; the deferred ops
+    // still count in pendingCount for the sync-status sheet.
+    if (pending > 0 && (coordinator()?.isDraining ?? false)) {
       return OutboxState(
         status: OutboxStatus.syncing,
         pendingCount: pending,
         failedCount: 0,
       );
     }
-    return const OutboxState(status: OutboxStatus.online);
+    return OutboxState(status: OutboxStatus.online, pendingCount: pending);
   }
 
   // Yield immediately, then poll every 3 seconds.
@@ -161,18 +177,19 @@ final outboxStateProvider = StreamProvider<OutboxState>((ref) async* {
     final lifecycle = WidgetsBinding.instance.lifecycleState;
     if (lifecycle != null && lifecycle != AppLifecycleState.resumed) continue;
     final state = await computeState();
-    // A drain kicked off by a repository write does not re-arm itself: when
-    // its first attempt hits a transient error (timeout, 5xx, 409-with-
-    // Retry-After) the op just sits pending until the next write, resume, or
-    // connectivity flip — with the banner saying "Syncing" the whole time.
-    // Only the coordinator's own drain schedules follow-ups, so nudge it here
-    // whenever something is pending and we are online. It is idempotent, and
-    // the per-op 5s backoff makes the extra call a no-op between attempts.
-    if (state.isSyncing) {
-      unawaited(
-        ref.read(outboxCoordinatorProvider).valueOrNull?.drain() ??
-            Future.value(),
-      );
+    // Fallback for a drain that died without re-arming itself (timeout, 5xx,
+    // 409-with-Retry-After): ops pending while online, no drain running and no
+    // sync session waiting to flush means nothing else will pick them up
+    // before the next write, resume or connectivity flip. Never nudge while a
+    // session is armed — that would turn every write back into an immediate
+    // sync. Idempotent, and the per-op 5s backoff makes repeats cheap.
+    final c = coordinator();
+    if (c != null &&
+        state.status == OutboxStatus.online &&
+        state.pendingCount > 0 &&
+        !c.isDraining &&
+        !c.hasPendingSession) {
+      unawaited(c.drain());
     }
     yield state;
   }

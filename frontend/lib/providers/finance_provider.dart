@@ -12,7 +12,11 @@ final financeRepositoryProvider =
     FutureProvider<FinanceRepository>((ref) async {
   final db = ref.watch(appDatabaseProvider);
   final service = await ref.read(financeServiceProviderAsync.future);
-  return FinanceRepository(db: db, remote: service);
+  return FinanceRepository(
+    db: db,
+    remote: service,
+    onLocalWrite: ref.watch(syncSchedulerProvider).noteLocalWrite,
+  );
 });
 
 final cachedExpensesByGroupProvider =

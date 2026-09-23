@@ -15,6 +15,10 @@ class PinwallRepository {
   final PinwallService _remote;
   final Uuid _uuid;
 
+  /// Production hook for the sync session: told when a write queued an op,
+  /// instead of draining right away. See [noteLocalWrite].
+  final void Function()? _onLocalWrite;
+
   SseService? _sseService;
   StreamSubscription<SseEvent>? _sseSub;
   String? _sseGroupId;
@@ -23,9 +27,11 @@ class PinwallRepository {
     required AppDatabase db,
     required PinwallService remote,
     Uuid? uuid,
+    void Function()? onLocalWrite,
   })  : _db = db,
         _remote = remote,
-        _uuid = uuid ?? const Uuid();
+        _uuid = uuid ?? const Uuid(),
+        _onLocalWrite = onLocalWrite;
 
   /// Subscribe to the group's SSE stream so a flatmate pinning or removing a
   /// note repaints every open board. Events carry only an id; we reconcile
@@ -312,6 +318,20 @@ class PinwallRepository {
       );
     } catch (_) {
       // Best-effort; the drain + refresh reconciles.
+    }
+  }
+
+  /// Tells the sync session that a pinwall write queued an op. The board,
+  /// composer and editor call this after an `*OfflineFirst` write (the writes
+  /// themselves stay side-effect free so callers pick the moment). Production
+  /// passes [_onLocalWrite], which only opens the session; without it (tests,
+  /// direct constructions) the op drains right away.
+  void noteLocalWrite() {
+    final onLocalWrite = _onLocalWrite;
+    if (onLocalWrite != null) {
+      onLocalWrite();
+    } else {
+      unawaited(drainOutboxOnce().catchError((_) {}));
     }
   }
 

@@ -2605,6 +2605,9 @@ class FakePinwallRepository implements PinwallRepository {
   }) async {}
 
   @override
+  void noteLocalWrite() {}
+
+  @override
   Future<void> drainOutboxOnce() async {}
 
   @override

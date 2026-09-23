@@ -11,7 +11,11 @@ final recipeServiceProviderAsync = FutureProvider<RecipeService>((ref) async {
 final recipeRepositoryProvider = FutureProvider<RecipeRepository>((ref) async {
   final db = ref.watch(appDatabaseProvider);
   final service = await ref.read(recipeServiceProviderAsync.future);
-  return RecipeRepository(db: db, remote: service);
+  return RecipeRepository(
+    db: db,
+    remote: service,
+    onLocalWrite: ref.watch(syncSchedulerProvider).noteLocalWrite,
+  );
 });
 
 final cachedRecipesProvider = StreamProvider<List<Recipe>>((ref) async* {

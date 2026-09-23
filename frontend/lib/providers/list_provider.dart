@@ -4,6 +4,7 @@ import '../repositories/list_repository.dart';
 import '../services/grocery_reference_installer.dart';
 import '../services/list_service.dart';
 import '../services/sse_service.dart';
+import '../services/sync_scheduler.dart';
 import '../storage/app_database.dart';
 import 'grocery_provider.dart';
 
@@ -17,6 +18,12 @@ final sseServiceProvider = Provider<SseService>((ref) {
 final listServiceProviderAsync = FutureProvider<ListService>((ref) async {
   return await ListService.create(ref);
 });
+
+/// Forwards "an op was queued" from every repository to the outbox
+/// coordinator's sync session. Dependency-free on purpose: the repositories
+/// are built before the coordinator (which needs them), so they take this
+/// holder and `outboxCoordinatorProvider` attaches itself once it exists.
+final syncSchedulerProvider = Provider<SyncScheduler>((ref) => SyncScheduler());
 
 final appDatabaseProvider = Provider<AppDatabase>((ref) {
   final db = AppDatabase();
@@ -52,7 +59,12 @@ final listRepositoryProvider = FutureProvider<ListRepository>((ref) async {
   final db = ref.watch(appDatabaseProvider);
   final service = await ref.read(listServiceProviderAsync.future);
   final groceryRepo = await ref.read(groceryRepositoryProvider.future);
-  return ListRepository(db: db, remote: service, groceryRepo: groceryRepo);
+  return ListRepository(
+    db: db,
+    remote: service,
+    groceryRepo: groceryRepo,
+    onLocalWrite: ref.watch(syncSchedulerProvider).noteLocalWrite,
+  );
 });
 
 // ---------------------------------------------------------------------------
