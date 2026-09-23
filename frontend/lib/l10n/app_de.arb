@@ -2358,5 +2358,18 @@
   "choreZoneAll": "Alle Bereiche",
   "choreZoneEmpty": "Nichts in {zone}",
   "choreZoneEmptyDesc": "Keine offenen Aufgaben in diesem Bereich.",
-  "choreZoneShowAll": "Alle Bereiche anzeigen"
+  "choreZoneShowAll": "Alle Bereiche anzeigen",
+  "outboxOpAddItemAmount": "Menge erhöhen",
+  "outboxOpClearItems": "Liste leeren",
+  "outboxOpClearCheckedItems": "Abgehakte Einträge entfernen",
+  "outboxOpRecordPurchase": "Einkauf erfassen",
+  "outboxOpCreateChore": "Aufgabe hinzufügen",
+  "outboxOpCreateSettlement": "Ausgleich erfassen",
+  "outboxOpMovePinwallPost": "Pinnwand-Notiz verschieben",
+  "outboxOpCheckItem": "Abhaken",
+  "outboxOpUncheckItem": "Haken entfernen",
+  "offlineBannerQueueHeading": "Wartet auf Synchronisierung",
+  "offlineBannerQueueEmpty": "Nichts ausstehend",
+  "offlineBannerQueueMore": "und {count} weitere",
+  "offlineBannerQueueAttempt": "Versuch {count}"
 }

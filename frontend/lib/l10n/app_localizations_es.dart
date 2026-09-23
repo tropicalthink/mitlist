@@ -6855,4 +6855,47 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get choreZoneShowAll => 'Mostrar todas las zonas';
+
+  @override
+  String get outboxOpAddItemAmount => 'Añadir cantidad';
+
+  @override
+  String get outboxOpClearItems => 'Vaciar lista';
+
+  @override
+  String get outboxOpClearCheckedItems => 'Quitar artículos marcados';
+
+  @override
+  String get outboxOpRecordPurchase => 'Registrar compra';
+
+  @override
+  String get outboxOpCreateChore => 'Añadir tarea';
+
+  @override
+  String get outboxOpCreateSettlement => 'Registrar liquidación';
+
+  @override
+  String get outboxOpMovePinwallPost => 'Mover nota del tablón';
+
+  @override
+  String get outboxOpCheckItem => 'Marcar';
+
+  @override
+  String get outboxOpUncheckItem => 'Desmarcar';
+
+  @override
+  String get offlineBannerQueueHeading => 'Pendiente de sincronizar';
+
+  @override
+  String get offlineBannerQueueEmpty => 'Nada pendiente';
+
+  @override
+  String offlineBannerQueueMore(int count) {
+    return 'y $count más';
+  }
+
+  @override
+  String offlineBannerQueueAttempt(int count) {
+    return 'intento $count';
+  }
 }

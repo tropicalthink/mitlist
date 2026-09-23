@@ -9187,5 +9187,67 @@
   "choreZoneShowAll": "Show all zones",
   "@choreZoneShowAll": {
     "description": "Empty state action that clears the zone filter"
+  },
+  "outboxOpAddItemAmount": "Add more",
+  "@outboxOpAddItemAmount": {
+    "description": "Outbox op label: add quantity to an existing list item"
+  },
+  "outboxOpClearItems": "Clear list",
+  "@outboxOpClearItems": {
+    "description": "Outbox op label: remove all items from a list"
+  },
+  "outboxOpClearCheckedItems": "Clear checked items",
+  "@outboxOpClearCheckedItems": {
+    "description": "Outbox op label: remove checked items from a list"
+  },
+  "outboxOpRecordPurchase": "Record purchase",
+  "@outboxOpRecordPurchase": {
+    "description": "Outbox op label: record grocery purchase history"
+  },
+  "outboxOpCreateChore": "Add chore",
+  "@outboxOpCreateChore": {
+    "description": "Outbox op label: create chore"
+  },
+  "outboxOpCreateSettlement": "Record settlement",
+  "@outboxOpCreateSettlement": {
+    "description": "Outbox op label: create settlement"
+  },
+  "outboxOpMovePinwallPost": "Move pinwall post",
+  "@outboxOpMovePinwallPost": {
+    "description": "Outbox op label: move a pinwall note"
+  },
+  "outboxOpCheckItem": "Check off",
+  "@outboxOpCheckItem": {
+    "description": "Outbox op label: mark a list item as checked"
+  },
+  "outboxOpUncheckItem": "Uncheck",
+  "@outboxOpUncheckItem": {
+    "description": "Outbox op label: mark a list item as unchecked"
+  },
+  "offlineBannerQueueHeading": "Waiting to sync",
+  "@offlineBannerQueueHeading": {
+    "description": "Sync status sheet: heading above the list of queued changes"
+  },
+  "offlineBannerQueueEmpty": "Nothing waiting",
+  "@offlineBannerQueueEmpty": {
+    "description": "Sync status sheet: shown when no changes are queued"
+  },
+  "offlineBannerQueueMore": "and {count} more",
+  "@offlineBannerQueueMore": {
+    "description": "Sync status sheet: footer when the queued list is truncated",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "offlineBannerQueueAttempt": "attempt {count}",
+  "@offlineBannerQueueAttempt": {
+    "description": "Sync status sheet: how many times a queued change has been tried",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

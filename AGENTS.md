@@ -54,6 +54,7 @@ docker compose up -d        # Start postgres
 - **Sheets**: `frontend/lib/sheets/` — bottom sheet creation/detail forms
   - **Sheet vs. Page threshold**: If a form has >3 distinct sections or >6 interactive fields, push a full-page route instead of a bottom sheet. Bottom sheets are for focused, single-purpose actions. Complex creation/edit flows (recipe creation, household settings) should be full screens.
 - **Services**: `frontend/lib/services/` — API clients (Dio)
+- **Offline outbox**: `frontend/lib/repositories/outbox_drainer.dart` + `services/outbox_coordinator.dart`. Never start a drain (`drainOutboxOnce()`) or other fire-and-forget DB work from inside a `_db.transaction(...)` callback: Drift binds every query in that async chain to the transaction, which has committed by the time the network call returns, and the local bookkeeping then fails with "transaction was used after being closed" while the server has already applied the write (`test/repositories/list_repository_checkoff_drain_test.dart`).
 - **Models**: `frontend/lib/models/` — data classes with `fromJson`/`toJson`
 - **Providers**: `frontend/lib/providers/` — Riverpod async providers for services
 - **Error Handling**: `frontend/lib/services/error_reporter.dart` — GlitchTip/Sentry-compatible error reporter

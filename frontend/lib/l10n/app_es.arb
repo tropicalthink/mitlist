@@ -6309,5 +6309,18 @@
   "choreZoneAll": "Todas las zonas",
   "choreZoneEmpty": "Nada en {zone}",
   "choreZoneEmptyDesc": "No hay tareas abiertas en esta zona.",
-  "choreZoneShowAll": "Mostrar todas las zonas"
+  "choreZoneShowAll": "Mostrar todas las zonas",
+  "outboxOpAddItemAmount": "Añadir cantidad",
+  "outboxOpClearItems": "Vaciar lista",
+  "outboxOpClearCheckedItems": "Quitar artículos marcados",
+  "outboxOpRecordPurchase": "Registrar compra",
+  "outboxOpCreateChore": "Añadir tarea",
+  "outboxOpCreateSettlement": "Registrar liquidación",
+  "outboxOpMovePinwallPost": "Mover nota del tablón",
+  "outboxOpCheckItem": "Marcar",
+  "outboxOpUncheckItem": "Desmarcar",
+  "offlineBannerQueueHeading": "Pendiente de sincronizar",
+  "offlineBannerQueueEmpty": "Nada pendiente",
+  "offlineBannerQueueMore": "y {count} más",
+  "offlineBannerQueueAttempt": "intento {count}"
 }

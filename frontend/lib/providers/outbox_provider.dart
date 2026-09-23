@@ -50,6 +50,21 @@ final failedOutboxOpsProvider = StreamProvider<List<OutboxOp>>((ref) {
   return db.watchFailedOutboxOps();
 });
 
+/// Still-queued ops (not yet dead-lettered), oldest first, reactive — drives
+/// the "what is syncing" list in the sync-status sheet.
+final pendingOutboxOpsProvider = StreamProvider<List<OutboxOp>>((ref) {
+  final db = ref.watch(appDatabaseProvider);
+  return db.watchPendingOutboxOps();
+});
+
+/// Name of a cached list item by id, for labelling queued `updateItem` ops
+/// whose payload carries only the patch. Best-effort: null when not cached.
+final outboxListItemNameProvider =
+    FutureProvider.autoDispose.family<String?, String>((ref, itemId) {
+  final db = ref.watch(appDatabaseProvider);
+  return db.getListItemNameById(itemId);
+});
+
 /// Ids of entities with a failed change, for per-row badging in lists.
 final failedEntityIdsProvider = Provider<Set<String>>((ref) {
   final ops = ref.watch(failedOutboxOpsProvider).valueOrNull ?? const [];

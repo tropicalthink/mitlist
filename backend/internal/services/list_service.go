@@ -503,6 +503,7 @@ func (s *ListService) AddItemAmount(ctx context.Context, user *models.User, list
 		Quantity: amount,
 		Unit:     unit,
 		Note:     note,
+		AddedBy:  &user.ID,
 		Position: -1, // append at the end (repo resolves to max+1)
 	}
 	if err := s.listRepo.CreateItem(ctx, item); err != nil {
@@ -589,6 +590,7 @@ func (s *ListService) AddItemsBatch(ctx context.Context, user *models.User, list
 			Unit:            unit,
 			Note:            note,
 			CanonicalItemID: input.CanonicalItemID,
+			AddedBy:         &user.ID,
 			Position:        -1, // append at the end (repo resolves to max+1)
 		}
 		if err := s.listRepo.CreateItem(ctx, &item); err != nil {
