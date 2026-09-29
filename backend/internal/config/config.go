@@ -119,6 +119,10 @@ type Config struct {
 	// working unsubscribe link and that link points at this API.
 	OnboardingEmailsEnabled bool   `env:"ONBOARDING_EMAILS_ENABLED" default:"true"`
 	PublicAPIURL            string `env:"PUBLIC_API_URL"`
+	// Re-engagement check-in: one feedback request to accounts that have not
+	// opened the app for a week. Same opt-out and PUBLIC_API_URL requirement
+	// as the tips.
+	ReengagementEmailsEnabled bool `env:"REENGAGEMENT_EMAILS_ENABLED" default:"true"`
 
 	// Sentry / GlitchTip error tracking
 	SentryDSN              string  `env:"SENTRY_DSN"`

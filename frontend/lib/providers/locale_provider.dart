@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,6 +15,12 @@ class LocaleNotifier extends StateNotifier<Locale?> {
 
   static const _key = 'app_locale';
 
+  final _loaded = Completer<void>();
+
+  /// Completes once the saved choice has been read, so a caller that needs
+  /// the real setting does not mistake the initial null for "System".
+  Future<void> get ready => _loaded.future;
+
   static const _availableLanguages = {
     'en': 'English',
     'de': 'Deutsch',
@@ -24,16 +32,20 @@ class LocaleNotifier extends StateNotifier<Locale?> {
   static Map<String, String> get availableLanguages => _availableLanguages;
 
   Future<void> _load() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_key);
-    state = switch (raw) {
-      'en' => const Locale('en'),
-      'de' => const Locale('de'),
-      'es' => const Locale('es'),
-      'fr' => const Locale('fr'),
-      'nl' => const Locale('nl'),
-      _ => null,
-    };
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_key);
+      state = switch (raw) {
+        'en' => const Locale('en'),
+        'de' => const Locale('de'),
+        'es' => const Locale('es'),
+        'fr' => const Locale('fr'),
+        'nl' => const Locale('nl'),
+        _ => null,
+      };
+    } finally {
+      if (!_loaded.isCompleted) _loaded.complete();
+    }
   }
 
   Future<void> set(Locale? locale) async {

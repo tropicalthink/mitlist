@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/pashagolub/pgxmock/v4"
 
+	"github.com/mitlist-app/mitlist/internal/onboarding"
 	mailservice "github.com/mitlist-app/mitlist/internal/services/mail"
 	"github.com/mitlist-app/mitlist/pkg/logger"
 )
@@ -277,5 +278,31 @@ func TestOnboardingTips_OneStepPerPersonPerRunAndDoesNotRetryAttempts(t *testing
 	job.run(context.Background())
 	if len(repo.failed) != 1 {
 		t.Errorf("failed delivery retried %d times, want one attempt", len(repo.failed))
+	}
+}
+
+func TestOnboardingTips_WritesInTheStoredLanguage(t *testing.T) {
+	now := time.Date(2026, 9, 8, 12, 0, 0, 0, time.UTC)
+	german := onboardingCandidate{ID: uuid.New(), Email: "de@example.com", CreatedAt: now.Add(-24 * time.Hour), Language: "de"}
+	unknown := onboardingCandidate{ID: uuid.New(), Email: "none@example.com", CreatedAt: now.Add(-24 * time.Hour)}
+	repo := &fakeOnboardingRepo{
+		candidates: []onboardingCandidate{german, unknown},
+		ledger:     map[uuid.UUID]map[string]onboardingLedgerEntry{},
+	}
+	mailer := &fakeMailer{}
+	job := newOnboardingTips(repo, mailer, logger.New("test"))
+	job.now = func() time.Time { return now }
+
+	job.run(context.Background())
+	subjects := map[string]string{}
+	for _, m := range mailer.sent {
+		subjects[m.to] = m.subject
+	}
+	step := onboarding.Steps[0]
+	if want := onboarding.Localize(step, "de").Subject; subjects[german.Email] != want {
+		t.Errorf("german account got %q, want %q", subjects[german.Email], want)
+	}
+	if subjects[unknown.Email] != step.Subject {
+		t.Errorf("account without a language got %q, want the English %q", subjects[unknown.Email], step.Subject)
 	}
 }

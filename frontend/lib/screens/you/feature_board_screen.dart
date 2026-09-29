@@ -31,6 +31,8 @@ class _FeatureBoardScreenState extends ConsumerState<FeatureBoardScreen> {
   final ValueNotifier<bool> _createSheetDirty = ValueNotifier(false);
   FeatureBoardKind? _kind;
   FeatureBoardSort _sort = FeatureBoardSort.top;
+  // Shipped requests are done, so they stay out of the way until asked for.
+  bool _showShipped = false;
   bool _isLoading = true;
   String? _error;
 
@@ -86,6 +88,17 @@ class _FeatureBoardScreenState extends ConsumerState<FeatureBoardScreen> {
       _items = const [];
     });
     _load();
+  }
+
+  List<FeatureBoardItem> get _visibleItems => _showShipped
+      ? _items
+      : _items
+          .where((item) => item.status != FeatureBoardStatus.shipped)
+          .toList(growable: false);
+
+  void _setShowShipped(bool value) {
+    if (value == _showShipped) return;
+    setState(() => _showShipped = value);
   }
 
   Future<void> _toggleVote(FeatureBoardItem item) async {
@@ -162,6 +175,7 @@ class _FeatureBoardScreenState extends ConsumerState<FeatureBoardScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final items = _visibleItems;
     return Scaffold(
       appBar: MitlistAppBar.titleText(
         l10n.featureBoardTitle,
@@ -186,8 +200,10 @@ class _FeatureBoardScreenState extends ConsumerState<FeatureBoardScreen> {
             _FilterRow(
               kind: _kind,
               sort: _sort,
+              showShipped: _showShipped,
               onKindChanged: _setKind,
               onSortChanged: _setSort,
+              onShowShippedChanged: _setShowShipped,
             ),
             const SizedBox(height: MitlistSpacing.md),
             if (_isLoading)
@@ -205,7 +221,25 @@ class _FeatureBoardScreenState extends ConsumerState<FeatureBoardScreen> {
                   AppButton(text: l10n.commonRetry, onPressed: _load),
                 ],
               )
-            else if (_items.isEmpty)
+            else if (items.isEmpty && _items.isNotEmpty)
+              AppEmptyState(
+                icon: const AppIcon(name: 'checkCircle'),
+                title: l10n.featureBoardAllShippedTitle,
+                description: l10n.featureBoardAllShippedBody,
+                actions: [
+                  AppButton(
+                    text: l10n.featureBoardShowShipped,
+                    variant: AppButtonVariant.outline,
+                    onPressed: () => _setShowShipped(true),
+                  ),
+                  AppButton(
+                    text: l10n.featureBoardAdd,
+                    icon: const AppIcon(name: 'plus'),
+                    onPressed: _openCreateSheet,
+                  ),
+                ],
+              )
+            else if (items.isEmpty)
               AppEmptyState(
                 icon: const AppIcon(name: 'chatBubbleLeftRight'),
                 title: l10n.featureBoardNoFeaturesTitle,
@@ -219,14 +253,14 @@ class _FeatureBoardScreenState extends ConsumerState<FeatureBoardScreen> {
                 ],
               )
             else
-              for (var index = 0; index < _items.length; index++) ...[
+              for (var index = 0; index < items.length; index++) ...[
                 _FeatureCard(
-                  item: _items[index],
-                  isVoting: _votingIds.contains(_items[index].id),
-                  onToggleVote: () => _toggleVote(_items[index]),
-                  onOpen: () => _open(_items[index]),
+                  item: items[index],
+                  isVoting: _votingIds.contains(items[index].id),
+                  onToggleVote: () => _toggleVote(items[index]),
+                  onOpen: () => _open(items[index]),
                 ),
-                if (index != _items.length - 1)
+                if (index != items.length - 1)
                   const SizedBox(height: MitlistSpacing.sm),
               ],
           ],
@@ -240,14 +274,18 @@ class _FilterRow extends StatelessWidget {
   const _FilterRow({
     required this.kind,
     required this.sort,
+    required this.showShipped,
     required this.onKindChanged,
     required this.onSortChanged,
+    required this.onShowShippedChanged,
   });
 
   final FeatureBoardKind? kind;
   final FeatureBoardSort sort;
+  final bool showShipped;
   final ValueChanged<FeatureBoardKind?> onKindChanged;
   final ValueChanged<FeatureBoardSort> onSortChanged;
+  final ValueChanged<bool> onShowShippedChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -275,6 +313,13 @@ class _FilterRow extends StatelessWidget {
             leading: const AppIcon(name: 'bugReport'),
             selected: kind == FeatureBoardKind.bug,
             onSelected: (_) => onKindChanged(FeatureBoardKind.bug),
+          ),
+          const SizedBox(width: MitlistSpacing.space2),
+          AppChip(
+            label: l10n.featureBoardShipped,
+            leading: const AppIcon(name: 'checkCircle'),
+            selected: showShipped,
+            onSelected: onShowShippedChanged,
           ),
           const SizedBox(width: MitlistSpacing.space4),
           AppChip(

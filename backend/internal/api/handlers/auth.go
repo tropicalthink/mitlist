@@ -198,6 +198,9 @@ type updateMeReq struct {
 	LastName          *string `json:"last_name,omitempty"`
 	AvatarURL         *string `json:"avatar_url,omitempty"`
 	TipsEmailsEnabled *bool   `json:"tips_emails_enabled,omitempty"`
+	// Language is the app's UI language ("" clears it); see
+	// validation.SupportedLanguages.
+	Language *string `json:"language,omitempty"`
 }
 
 type changePasswordReq struct {
@@ -500,6 +503,7 @@ func (h *AuthHandler) UpdateMe(w http.ResponseWriter, r *http.Request) {
 		LastName:          req.LastName,
 		AvatarURL:         req.AvatarURL,
 		TipsEmailsEnabled: req.TipsEmailsEnabled,
+		Language:          req.Language,
 	})
 	if err != nil {
 		api.RespondError(w, err)

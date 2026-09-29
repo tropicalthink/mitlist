@@ -129,3 +129,17 @@ func Name(s, field string) error {
 	}
 	return MaxLength(s, MaxNameLength, field)
 }
+
+// SupportedLanguages are the app's UI languages (frontend/lib/l10n), which
+// are also the languages server-sent email is written in.
+var SupportedLanguages = []string{"en", "de", "es", "fr", "nl"}
+
+// Language validates a stored UI language code: one of SupportedLanguages.
+func Language(code, field string) error {
+	for _, supported := range SupportedLanguages {
+		if code == supported {
+			return nil
+		}
+	}
+	return NewFieldError(field, field+" must be one of "+strings.Join(SupportedLanguages, ", "))
+}

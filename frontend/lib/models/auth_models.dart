@@ -11,6 +11,10 @@ class User {
   /// Opt-out for the post-sign-up tips emails. Account-level, unlike the
   /// per-household notification preferences.
   final bool tipsEmailsEnabled;
+
+  /// The app language the server has on record for email (`en`, `de`, ...);
+  /// null until the app has reported one.
+  final String? language;
   final String? avatarUrl;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -24,6 +28,7 @@ class User {
     required this.isVerified,
     required this.isGuest,
     this.tipsEmailsEnabled = true,
+    this.language,
     this.avatarUrl,
     required this.createdAt,
     required this.updatedAt,
@@ -40,6 +45,7 @@ class User {
       isGuest: json['is_guest'] as bool,
       // Older servers do not send the flag; treat that as the default (on).
       tipsEmailsEnabled: json['tips_emails_enabled'] as bool? ?? true,
+      language: json['language'] as String?,
       avatarUrl: json['avatar_url'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
@@ -56,6 +62,7 @@ class User {
       'is_verified': isVerified,
       'is_guest': isGuest,
       'tips_emails_enabled': tipsEmailsEnabled,
+      if (language != null) 'language': language,
       if (avatarUrl != null) 'avatar_url': avatarUrl,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
@@ -240,11 +247,15 @@ class UpdateUserRequest {
   final String? avatarUrl;
   final bool? tipsEmailsEnabled;
 
+  /// The app's UI language, reported so server email matches it.
+  final String? language;
+
   const UpdateUserRequest({
     this.firstName,
     this.lastName,
     this.avatarUrl,
     this.tipsEmailsEnabled,
+    this.language,
   });
 
   factory UpdateUserRequest.fromJson(Map<String, dynamic> json) {
@@ -253,6 +264,7 @@ class UpdateUserRequest {
       lastName: json['last_name'] as String?,
       avatarUrl: json['avatar_url'] as String?,
       tipsEmailsEnabled: json['tips_emails_enabled'] as bool?,
+      language: json['language'] as String?,
     );
   }
 
@@ -262,6 +274,7 @@ class UpdateUserRequest {
       if (lastName != null) 'last_name': lastName,
       if (avatarUrl != null) 'avatar_url': avatarUrl,
       if (tipsEmailsEnabled != null) 'tips_emails_enabled': tipsEmailsEnabled,
+      if (language != null) 'language': language,
     };
   }
 }

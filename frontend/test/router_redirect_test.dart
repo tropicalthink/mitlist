@@ -358,5 +358,64 @@ void main() {
 
       expect(result.redirect, '/tour');
     });
+
+    test('a signed-out email link is remembered for after sign-in', () {
+      final result = resolveAppRedirect(
+        const AppRedirectInput(
+          location: '/you/feature-board',
+          queryParameters: {},
+          authBootstrapLoading: false,
+          authState: false,
+          requestedPathWithQuery: '/you/feature-board?from=email',
+        ),
+      );
+
+      expect(result.redirect, '/welcome');
+      expect(result.resumeAfterAuth, '/you/feature-board?from=email');
+    });
+
+    test('a cold-start email link survives the session gate', () {
+      final result = resolveAppRedirect(
+        const AppRedirectInput(
+          location: '/_session',
+          queryParameters: {'continue': '%2Fyou%2Ffeature-board'},
+          authBootstrapLoading: false,
+          authState: false,
+        ),
+      );
+
+      expect(result.redirect, '/welcome');
+      expect(result.resumeAfterAuth, '/you/feature-board');
+    });
+
+    test('home and the bare gate are not worth resuming', () {
+      for (final location in ['/home', '/_session']) {
+        final result = resolveAppRedirect(
+          AppRedirectInput(
+            location: location,
+            queryParameters: const {},
+            authBootstrapLoading: false,
+            authState: false,
+          ),
+        );
+        expect(result.redirect, '/welcome');
+        expect(result.resumeAfterAuth, isNull, reason: location);
+      }
+    });
+
+    test('signing in resumes the remembered link', () {
+      final result = resolveAppRedirect(
+        const AppRedirectInput(
+          location: '/login',
+          queryParameters: {},
+          authBootstrapLoading: false,
+          authState: true,
+          pendingAuthNavigation: '/you/feature-board',
+        ),
+      );
+
+      expect(result.redirect, '/you/feature-board');
+      expect(result.clearPendingAuth, isTrue);
+    });
   });
 }

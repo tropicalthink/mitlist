@@ -8215,6 +8215,18 @@
   "@featureBoardSortNew": {
     "description": "Board sort chip: newest first"
   },
+  "featureBoardAllShippedTitle": "Everything here has shipped",
+  "@featureBoardAllShippedTitle": {
+    "description": "Board empty state title when every listed request has shipped and shipped ones are hidden"
+  },
+  "featureBoardAllShippedBody": "Nothing is open right now. Show what's already live, or suggest something new.",
+  "@featureBoardAllShippedBody": {
+    "description": "Board empty state body when only shipped requests exist and they are hidden"
+  },
+  "featureBoardShowShipped": "Show shipped",
+  "@featureBoardShowShipped": {
+    "description": "Board button that reveals shipped requests"
+  },
   "featureBoardKindLabel": "What is it?",
   "@featureBoardKindLabel": {
     "description": "Label above the feature/bug selector when creating a request"
@@ -9215,6 +9227,10 @@
   "outboxOpMovePinwallPost": "Move pinwall post",
   "@outboxOpMovePinwallPost": {
     "description": "Outbox op label: move a pinwall note"
+  },
+  "outboxOpSetLanguage": "Update email language",
+  "@outboxOpSetLanguage": {
+    "description": "Outbox op label: report the app language to the server so emails use it"
   },
   "outboxOpCheckItem": "Check off",
   "@outboxOpCheckItem": {

@@ -33,6 +33,9 @@ type tipView struct {
 }
 
 type emailData struct {
+	Lang           string
+	Chrome         chromeCopy
+	SeriesLabel    string
 	Preheader      string
 	Eyebrow        string
 	Heading        string
@@ -53,7 +56,7 @@ type emailData struct {
 // it comes from the same product. Table layout and inline styles because mail
 // clients render nothing else reliably.
 var emailTemplate = template.Must(template.New("onboarding-email").Parse(`<!DOCTYPE html>
-<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<html lang="{{.Lang}}" xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -112,7 +115,7 @@ var emailTemplate = template.Must(template.New("onboarding-email").Parse(`<!DOCT
                       <td align="left">
                         <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td style="background:#f97316;border:2px solid #1a1714;padding:4px 10px;font-family:'JetBrains Mono',Menlo,Consolas,monospace;font-size:11px;line-height:14px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#1a1714;">{{.Eyebrow}}</td></tr></table>
                       </td>
-                      <td align="right" style="font-family:'JetBrains Mono',Menlo,Consolas,monospace;font-size:11px;line-height:14px;font-weight:700;letter-spacing:0.08em;color:#5d4037;">EMAIL {{.SeriesPosition}} / {{.SeriesTotal}}</td>
+                      <td align="right" style="font-family:'JetBrains Mono',Menlo,Consolas,monospace;font-size:11px;line-height:14px;font-weight:700;letter-spacing:0.08em;color:#5d4037;">{{.SeriesLabel}}</td>
                     </tr>
                   </table>
 
@@ -129,7 +132,7 @@ var emailTemplate = template.Must(template.New("onboarding-email").Parse(`<!DOCT
                             <td style="padding:14px 16px 16px;">
                               <a href="{{.URL}}" style="display:block;font-family:'JetBrains Mono',Menlo,Consolas,monospace;font-size:11px;line-height:14px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#5d4037;text-decoration:none;">{{.Title}}</a>
                               <div style="margin-top:6px;font-family:'Space Grotesk',Helvetica,Arial,sans-serif;font-size:15px;line-height:22px;color:#1a1714;">{{.Body}}</div>
-                              <a href="{{.URL}}" style="display:inline-block;margin-top:10px;font-family:'JetBrains Mono',Menlo,Consolas,monospace;font-size:11px;line-height:14px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#c2410c;text-decoration:underline;">Open &rarr;</a>
+                              <a href="{{.URL}}" style="display:inline-block;margin-top:10px;font-family:'JetBrains Mono',Menlo,Consolas,monospace;font-size:11px;line-height:14px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#c2410c;text-decoration:underline;">{{$.Chrome.Open}} &rarr;</a>
                             </td>
                           </tr>
                         </table>
@@ -141,7 +144,7 @@ var emailTemplate = template.Must(template.New("onboarding-email").Parse(`<!DOCT
                   <!-- Action block and button with flat offset shadow -->
                   <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:28px auto 0;">
                     <tr>
-                      <td align="center" style="padding:0 0 8px;font-family:'JetBrains Mono',Menlo,Consolas,monospace;font-size:11px;line-height:14px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#5d4037;">Try it now</td>
+                      <td align="center" style="padding:0 0 8px;font-family:'JetBrains Mono',Menlo,Consolas,monospace;font-size:11px;line-height:14px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#5d4037;">{{.Chrome.TryItNow}}</td>
                     </tr>
                     <tr>
                       <td style="background:#1a1714;padding:0 5px 5px 0;">
@@ -155,7 +158,7 @@ var emailTemplate = template.Must(template.New("onboarding-email").Parse(`<!DOCT
                     <tr><td style="border-top:2px dashed #bab1a1;font-size:0;line-height:0;">&nbsp;</td></tr>
                   </table>
 
-                  <p style="margin:16px 0 0;font-family:'Space Grotesk',Helvetica,Arial,sans-serif;font-size:13px;line-height:19px;color:#453d36;">You get these because you made a mitlist account. They stop after a few weeks; to stop them now, <a href="{{.UnsubscribeURL}}" style="color:#c2410c;">unsubscribe</a>. Account emails like password resets still arrive.</p>
+                  <p style="margin:16px 0 0;font-family:'Space Grotesk',Helvetica,Arial,sans-serif;font-size:13px;line-height:19px;color:#453d36;">{{.Chrome.TipsFooterLead}} <a href="{{.UnsubscribeURL}}" style="color:#c2410c;">{{.Chrome.UnsubscribeLink}}</a>. {{.Chrome.AccountNote}}</p>
                 </td>
               </tr>
             </table>
@@ -165,8 +168,8 @@ var emailTemplate = template.Must(template.New("onboarding-email").Parse(`<!DOCT
         <!-- Footer -->
         <tr>
           <td style="padding:22px 2px 0;font-family:'Space Grotesk',Helvetica,Arial,sans-serif;font-size:12px;line-height:18px;color:#453d36;">
-            mitlist &middot; the shared household desk: lists, money, chores, recipes.<br>
-            <a href="https://mitlist.me" style="color:#453d36;">mitlist.me</a> &middot; <a href="{{.UnsubscribeURL}}" style="color:#453d36;">Unsubscribe</a>
+            mitlist &middot; {{.Chrome.Tagline}}<br>
+            <a href="https://mitlist.me" style="color:#453d36;">mitlist.me</a> &middot; <a href="{{.UnsubscribeURL}}" style="color:#453d36;">{{.Chrome.Unsubscribe}}</a>
           </td>
         </tr>
       </table>
@@ -177,9 +180,13 @@ var emailTemplate = template.Must(template.New("onboarding-email").Parse(`<!DOCT
 </html>
 `))
 
-// Render produces the HTML and plain-text bodies of a step for one person.
+// Render produces the HTML and plain-text bodies of a step for one person, in
+// their stored app language (English when it is empty or unsupported).
 // firstName may be empty; the greeting is dropped rather than saying "Hi ,".
-func Render(step Step, firstName string, links Links) Email {
+func Render(step Step, language, firstName string, links Links) Email {
+	lang := languageFor(language)
+	chrome := chromeCopies[lang]
+	step = Localize(step, lang)
 	buttonURL := joinURL(links.AppURL, step.CTAPath)
 	tips := make([]tipView, 0, len(step.Tips))
 	for _, tip := range step.Tips {
@@ -194,7 +201,7 @@ func Render(step Step, firstName string, links Links) Email {
 	}
 	greeting := ""
 	if name := strings.TrimSpace(firstName); name != "" {
-		greeting = "Hi " + name + "."
+		greeting = fmt.Sprintf(chrome.Greeting, name)
 	}
 
 	var text strings.Builder
@@ -204,13 +211,16 @@ func Render(step Step, firstName string, links Links) Email {
 	}
 	text.WriteString(step.Intro + "\n")
 	for _, tip := range tips {
-		text.WriteString("\n" + strings.ToUpper(tip.Title) + "\n" + tip.Body + "\nOpen: " + tip.URL + "\n")
+		text.WriteString("\n" + strings.ToUpper(tip.Title) + "\n" + tip.Body + "\n" + chrome.Open + ": " + tip.URL + "\n")
 	}
 	text.WriteString("\n" + step.CTALabel + ": " + buttonURL + "\n")
-	text.WriteString("\nYou get these because you made a mitlist account. They stop after a few weeks; to stop them now, open this link:\n" + links.UnsubscribeURL + "\nAccount emails like password resets still arrive.\n")
+	text.WriteString("\n" + chrome.TipsTextFooterLead + "\n" + links.UnsubscribeURL + "\n" + chrome.AccountNote + "\n")
 
 	var buf bytes.Buffer
 	err := emailTemplate.Execute(&buf, emailData{
+		Lang:           lang,
+		Chrome:         chrome,
+		SeriesLabel:    fmt.Sprintf(chrome.EmailCounter, seriesPosition, len(Steps)),
 		Preheader:      step.Intro,
 		Eyebrow:        step.Eyebrow,
 		Heading:        step.Heading,

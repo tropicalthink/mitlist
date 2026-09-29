@@ -85,13 +85,14 @@ func TestUserRepository_GetByID(t *testing.T) {
 	mock := newMockDB(t)
 	repo := NewUserRepository(mock)
 	id := fixedUUID()
+	lang := "de"
 
 	rows := pgxmock.NewRows([]string{
 		"id", "email", "password_hash", "first_name", "last_name", "avatar_url",
-		"is_active", "is_verified", "is_guest", "tips_emails_enabled", "created_at", "updated_at",
+		"is_active", "is_verified", "is_guest", "tips_emails_enabled", "language", "created_at", "updated_at",
 	}).AddRow(
 		id, "test@example.com", "hash", "Test", "User", nil,
-		true, true, false, true, fixedTime(), fixedTime(),
+		true, true, false, true, &lang, fixedTime(), fixedTime(),
 	)
 
 	mock.ExpectQuery("SELECT .* FROM users WHERE id = .* AND deleted_at IS NULL").
@@ -101,6 +102,8 @@ func TestUserRepository_GetByID(t *testing.T) {
 	user, err := repo.GetByID(context.Background(), id)
 	require.NoError(t, err)
 	assert.Equal(t, id, user.ID)
+	require.NotNil(t, user.Language)
+	assert.Equal(t, "de", *user.Language)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
@@ -128,11 +131,11 @@ func TestUserRepository_GetByAccessToken(t *testing.T) {
 
 	rows := pgxmock.NewRows([]string{
 		"id", "email", "password_hash", "first_name", "last_name", "avatar_url",
-		"is_active", "is_verified", "is_guest", "tips_emails_enabled", "created_at", "updated_at",
-		"access_active",
+		"is_active", "is_verified", "is_guest", "tips_emails_enabled", "language", "created_at", "updated_at",
+		"last_active_at", "access_active",
 	}).AddRow(
 		id, "test@example.com", "hash", "Test", "User", nil,
-		true, true, false, true, fixedTime(), fixedTime(), true,
+		true, true, false, true, nil, fixedTime(), fixedTime(), nil, true,
 	)
 
 	mock.ExpectQuery("SELECT id, email, .* auth_access_revocations").
@@ -156,6 +159,37 @@ func TestUserRepository_TouchGuestActivity(t *testing.T) {
 		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
 
 	require.NoError(t, repo.TouchGuestActivity(context.Background(), id))
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestUserRepository_SetLanguage(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewUserRepository(mock)
+	id := fixedUUID()
+	lang := "fr"
+
+	mock.ExpectExec(`UPDATE users SET language = \$2`).
+		WithArgs(id, &lang).
+		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
+	mock.ExpectExec(`UPDATE users SET language = \$2`).
+		WithArgs(id, (*string)(nil)).
+		WillReturnResult(pgxmock.NewResult("UPDATE", 0))
+
+	require.NoError(t, repo.SetLanguage(context.Background(), id, &lang))
+	require.Error(t, repo.SetLanguage(context.Background(), id, nil), "a missing user is reported")
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestUserRepository_TouchActivity(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewUserRepository(mock)
+	id := fixedUUID()
+
+	mock.ExpectExec(`UPDATE users SET last_active_at = NOW\(\) WHERE id = \$1 AND NOT is_guest`).
+		WithArgs(id).
+		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
+
+	require.NoError(t, repo.TouchActivity(context.Background(), id))
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 

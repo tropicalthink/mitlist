@@ -25,6 +25,9 @@ type onboardingCandidate struct {
 	Email     string
 	FirstName string
 	CreatedAt time.Time
+	// Language is the app language the person's app last reported; empty
+	// when it never has, and the tips fall back to English.
+	Language string
 }
 
 type onboardingRepo interface {
@@ -155,7 +158,7 @@ func (j *OnboardingTips) run(ctx context.Context) (sent, failed int) {
 func (j *OnboardingTips) send(c onboardingCandidate, step onboarding.Step) error {
 	token := onboarding.UnsubscribeToken(j.secret, c.ID)
 	unsubscribe := onboarding.UnsubscribeURL(j.apiURL, j.apiPrefix, token)
-	msg := onboarding.Render(step, c.FirstName, onboarding.Links{
+	msg := onboarding.Render(step, c.Language, c.FirstName, onboarding.Links{
 		AppURL:         j.appURL,
 		HeroURL:        onboarding.HeroURL(j.apiURL, j.apiPrefix, step.HeroFilename),
 		UnsubscribeURL: unsubscribe,
@@ -174,7 +177,7 @@ type onboardingRepoImpl struct {
 
 func (r *onboardingRepoImpl) ListCandidates(ctx context.Context, createdAfter time.Time, limit int) ([]onboardingCandidate, error) {
 	rows, err := r.db.Query(ctx, `
-		SELECT id, email, first_name, created_at
+		SELECT id, email, first_name, created_at, COALESCE(language, '')
 		FROM users
 		WHERE deleted_at IS NULL
 		  AND is_active AND is_verified AND NOT is_guest
@@ -191,7 +194,7 @@ func (r *onboardingRepoImpl) ListCandidates(ctx context.Context, createdAfter ti
 	var out []onboardingCandidate
 	for rows.Next() {
 		var c onboardingCandidate
-		if err := rows.Scan(&c.ID, &c.Email, &c.FirstName, &c.CreatedAt); err != nil {
+		if err := rows.Scan(&c.ID, &c.Email, &c.FirstName, &c.CreatedAt, &c.Language); err != nil {
 			return nil, err
 		}
 		out = append(out, c)

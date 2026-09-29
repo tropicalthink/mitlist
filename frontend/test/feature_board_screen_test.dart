@@ -9,6 +9,8 @@ import 'package:mitlist/screens/you/feature_board_detail_screen.dart';
 import 'package:mitlist/screens/you/feature_board_screen.dart';
 import 'package:mitlist/screens/you/feature_board_widgets.dart';
 import 'package:mitlist/services/feedback_service.dart';
+import 'package:mitlist/widgets/app_button.dart';
+import 'package:mitlist/widgets/chip.dart';
 
 FeatureBoardItem _item({
   String id = 'feature-1',
@@ -214,6 +216,59 @@ void main() {
     expect(find.textContaining('1 vote'), findsOneWidget);
     expect(tester.getSemantics(button).label, contains('Upvote feature'));
     semantics.dispose();
+  });
+
+  testWidgets('hides shipped requests until the Shipped chip is on',
+      (tester) async {
+    final service = _FakeFeedbackService()
+      ..items = [
+        _item(),
+        _item(
+          id: 'shipped-1',
+          title: 'Dark mode',
+          status: FeatureBoardStatus.shipped,
+        ),
+      ];
+    await tester.pumpWidget(_buildApp(service));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Shared grocery templates'), findsOneWidget);
+    expect(find.text('Dark mode'), findsNothing);
+
+    await tester.tap(find.widgetWithText(AppChip, 'Shipped'));
+    await tester.pumpAndSettle();
+    expect(find.text('Dark mode'), findsOneWidget);
+    expect(service.listCalls, hasLength(1));
+
+    await tester.tap(find.widgetWithText(AppChip, 'Shipped'));
+    await tester.pumpAndSettle();
+    expect(find.text('Dark mode'), findsNothing);
+  });
+
+  testWidgets('offers to show shipped when nothing else is open',
+      (tester) async {
+    final service = _FakeFeedbackService()
+      ..items = [
+        _item(
+          id: 'shipped-1',
+          title: 'Dark mode',
+          status: FeatureBoardStatus.shipped,
+        ),
+      ];
+    await tester.pumpWidget(_buildApp(service));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Everything here has shipped'), findsOneWidget);
+    expect(find.text('Dark mode'), findsNothing);
+
+    final showShipped = find.byWidgetPredicate(
+      (widget) => widget is AppButton && widget.text == 'Show shipped',
+    );
+    await tester.ensureVisible(showShipped);
+    await tester.pumpAndSettle();
+    await tester.tap(showShipped);
+    await tester.pumpAndSettle();
+    expect(find.text('Dark mode'), findsOneWidget);
   });
 
   testWidgets('filters by kind and sorts through the service', (tester) async {

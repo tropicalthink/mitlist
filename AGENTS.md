@@ -261,8 +261,9 @@ showAppDialog<bool>(
 | 000070–000072 | Calendar range-query indexes for expenses, recurring expenses, and pinwall reminders |
 | 000073 | List reminders |
 | 000074 | `invited_at` on `testing_signups` (store invitation email) |
+| 000075 | `users.last_active_at`, `users.language` (app UI language, reported by the app) + `reengagement_email_sends` (feedback check-in after 7 days away) |
 
-Latest migration: `000074_add_testing_signup_invited_at`.
+Latest migration: `000075_add_reengagement_emails`.
 
 ## Key API Endpoints Added
 

@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:logger/logger.dart';
 
+import '../repositories/account_repository.dart';
 import '../repositories/chore_repository.dart';
 import '../repositories/finance_repository.dart';
 import '../repositories/list_repository.dart';
@@ -34,6 +35,10 @@ class OutboxCoordinator {
   final RecipeRepository _recipeRepo;
   final ChoreRepository _choreRepo;
   final PinwallRepository _pinwallRepo;
+
+  /// Account-level writes (the UI language). Optional so the domain-focused
+  /// tests need not build one.
+  final AccountRepository? _accountRepo;
   final Logger _logger = Logger();
 
   /// Fallback flush delay for an open sync session; see [noteLocalWrite].
@@ -53,8 +58,10 @@ class OutboxCoordinator {
     required RecipeRepository recipeRepo,
     required ChoreRepository choreRepo,
     required PinwallRepository pinwallRepo,
+    AccountRepository? accountRepo,
     this.sessionIdleWindow = kSyncSessionIdleWindow,
   })  : _db = db,
+        _accountRepo = accountRepo,
         _connectivity = connectivity,
         _listRepo = listRepo,
         _financeRepo = financeRepo,
@@ -150,6 +157,7 @@ class OutboxCoordinator {
       await _financeRepo.drainOutboxOnce();
       await _choreRepo.drainOutboxOnce();
       await _pinwallRepo.drainOutboxOnce();
+      await _accountRepo?.drainOutboxOnce();
 
       // Schedule a follow-up in case new ops were queued during drain
       final remaining = await _db.outboxCount();

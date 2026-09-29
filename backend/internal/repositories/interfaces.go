@@ -18,6 +18,8 @@ type UserRepo interface {
 	Update(ctx context.Context, user *models.User) error
 	SoftDelete(ctx context.Context, id uuid.UUID) error
 	TouchGuestActivity(ctx context.Context, id uuid.UUID) error
+	TouchActivity(ctx context.Context, id uuid.UUID) error
+	SetLanguage(ctx context.Context, id uuid.UUID, language *string) error
 	ReactivateGuest(ctx context.Context, id uuid.UUID) error
 	List(ctx context.Context, limit, offset int) ([]models.User, error)
 }

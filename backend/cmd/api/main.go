@@ -105,6 +105,11 @@ func main() {
 	} else {
 		log.Info().Bool("enabled", cfg.OnboardingEmailsEnabled).Bool("public_api_url_set", cfg.PublicAPIURL != "").Msg("onboarding tips disabled")
 	}
+	if cfg.ReengagementEmailsEnabled && cfg.PublicAPIURL != "" {
+		runner.RegisterReengagement(jobs.NewReengagement(pool, cnt.Mail(), cfg.SecretKey, cfg.FrontendURL, cfg.PublicAPIURL, cfg.APIPrefix, log))
+	} else {
+		log.Info().Bool("enabled", cfg.ReengagementEmailsEnabled).Bool("public_api_url_set", cfg.PublicAPIURL != "").Msg("reengagement emails disabled")
+	}
 	runner.Start()
 
 	srv := server.New(cfg, cnt, runner)

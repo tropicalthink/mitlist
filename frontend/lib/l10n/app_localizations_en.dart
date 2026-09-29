@@ -6058,6 +6058,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get featureBoardSortNew => 'New';
 
   @override
+  String get featureBoardAllShippedTitle => 'Everything here has shipped';
+
+  @override
+  String get featureBoardAllShippedBody =>
+      'Nothing is open right now. Show what\'s already live, or suggest something new.';
+
+  @override
+  String get featureBoardShowShipped => 'Show shipped';
+
+  @override
   String get featureBoardKindLabel => 'What is it?';
 
   @override
@@ -6821,6 +6831,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get outboxOpMovePinwallPost => 'Move pinwall post';
+
+  @override
+  String get outboxOpSetLanguage => 'Update email language';
 
   @override
   String get outboxOpCheckItem => 'Check off';

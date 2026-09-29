@@ -140,6 +140,15 @@ func (r *Runner) RegisterOnboardingTips(job *OnboardingTips) {
 	r.register("onboarding-tips", "20 * * * *", job.Run, true)
 }
 
+// RegisterReengagement adds the feedback check-in for lapsed accounts, daily
+// at 16:40 UTC: early evening across Europe, when people read personal mail.
+func (r *Runner) RegisterReengagement(job *Reengagement) {
+	if job == nil {
+		return
+	}
+	r.register("reengagement", "40 16 * * *", job.Run, true)
+}
+
 // RegisterAttachmentCleanup adds the storage reservation sweeper. It is kept
 // separate from RegisterAll because it depends on the configured object store.
 func (r *Runner) RegisterAttachmentCleanup(fn func()) {

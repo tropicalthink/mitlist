@@ -10539,6 +10539,24 @@ abstract class AppLocalizations {
   /// **'New'**
   String get featureBoardSortNew;
 
+  /// Board empty state title when every listed request has shipped and shipped ones are hidden
+  ///
+  /// In en, this message translates to:
+  /// **'Everything here has shipped'**
+  String get featureBoardAllShippedTitle;
+
+  /// Board empty state body when only shipped requests exist and they are hidden
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is open right now. Show what\'s already live, or suggest something new.'**
+  String get featureBoardAllShippedBody;
+
+  /// Board button that reveals shipped requests
+  ///
+  /// In en, this message translates to:
+  /// **'Show shipped'**
+  String get featureBoardShowShipped;
+
   /// Label above the feature/bug selector when creating a request
   ///
   /// In en, this message translates to:
@@ -11714,6 +11732,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Move pinwall post'**
   String get outboxOpMovePinwallPost;
+
+  /// Outbox op label: report the app language to the server so emails use it
+  ///
+  /// In en, this message translates to:
+  /// **'Update email language'**
+  String get outboxOpSetLanguage;
 
   /// Outbox op label: mark a list item as checked
   ///

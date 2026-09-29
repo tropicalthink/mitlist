@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/connectivity_service.dart';
 import '../services/outbox_coordinator.dart';
 import '../storage/app_database.dart';
+import 'account_provider.dart';
 import 'chore_provider.dart';
 import 'finance_provider.dart';
 import 'list_provider.dart';
@@ -27,6 +28,7 @@ final outboxCoordinatorProvider =
   final recipeRepo = await ref.watch(recipeRepositoryProvider.future);
   final choreRepo = await ref.watch(choreRepositoryProvider.future);
   final pinwallRepo = await ref.watch(pinwallRepositoryProvider.future);
+  final accountRepo = await ref.watch(accountRepositoryProvider.future);
 
   final coordinator = OutboxCoordinator(
     db: db,
@@ -36,6 +38,7 @@ final outboxCoordinatorProvider =
     recipeRepo: recipeRepo,
     choreRepo: choreRepo,
     pinwallRepo: pinwallRepo,
+    accountRepo: accountRepo,
   );
 
   coordinator.start();

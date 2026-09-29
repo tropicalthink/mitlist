@@ -86,3 +86,16 @@ func TestName(t *testing.T) {
 		t.Fatal("expected error for name too long")
 	}
 }
+
+func TestLanguage(t *testing.T) {
+	for _, ok := range SupportedLanguages {
+		if err := Language(ok, "language"); err != nil {
+			t.Errorf("Language(%q) = %v, want nil", ok, err)
+		}
+	}
+	for _, bad := range []string{"", "EN", "de-DE", "it", "english"} {
+		if err := Language(bad, "language"); err == nil {
+			t.Errorf("Language(%q) accepted", bad)
+		}
+	}
+}

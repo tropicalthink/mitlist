@@ -193,6 +193,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (result.clearPendingAuth) {
         ref.read(pendingAuthNavigationProvider.notifier).state = null;
       }
+      // An invite or other destination parked by a screen is more specific
+      // than the route the visitor was bounced from; keep it.
+      final resume = result.resumeAfterAuth;
+      if (resume != null && ref.read(pendingAuthNavigationProvider) == null) {
+        ref.read(pendingAuthNavigationProvider.notifier).state = resume;
+      }
       return result.redirect;
     },
     routes: [

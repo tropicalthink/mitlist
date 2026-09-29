@@ -10,6 +10,9 @@ import 'providers/list_provider.dart'
 import 'providers/outbox_provider.dart';
 import 'services/api_client.dart' show dioProvider;
 import 'services/canonical_display.dart' show setGroceryDisplayLang;
+import 'services/server_language_sync.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'providers/account_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/text_settings_provider.dart';
 import 'providers/locale_provider.dart';
@@ -44,6 +47,7 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
   StreamSubscription? _fcmTapSub;
   PushPromptGate? _pushPromptGate;
   bool _deferredInitDone = false;
+  Future<void> _languageReport = Future.value();
 
   @override
   void initState() {
@@ -86,6 +90,47 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
     }
     _initPushSubscriptions();
     _startPushPromptGate();
+    _queueLanguageReport();
+  }
+
+  /// Keeps the server's copy of the UI language current, so email arrives in
+  /// the language the app shows. Runs after sign-in, on a language change
+  /// under You, and when the device language changes; runs one at a time so a
+  /// start-up burst queues at most one outbox op.
+  void _queueLanguageReport() {
+    _languageReport = _languageReport.then((_) => _reportLanguage());
+  }
+
+  Future<void> _reportLanguage() async {
+    try {
+      await ref.read(localeProvider.notifier).ready;
+      if (!mounted || !ref.read(authStateProvider)) return;
+      final language = effectiveLanguageCode(
+        ref.read(localeProvider),
+        WidgetsBinding.instance.platformDispatcher.locales,
+      );
+      final authService = await ref.read(authServiceProviderAsync.future);
+      final prefs = await SharedPreferences.getInstance();
+      final marker = languageToQueueMarker(
+        language: language,
+        me: authService.cachedMe,
+        lastQueued: prefs.getString(kQueuedServerLanguageKey),
+      );
+      if (marker == null) return;
+      // Queued, not sent: the outbox delivers it with the next sync, so a
+      // change made offline still reaches the server.
+      final accounts = await ref.read(accountRepositoryProvider.future);
+      await accounts.queueLanguage(language);
+      await prefs.setString(kQueuedServerLanguageKey, marker);
+    } catch (_) {
+      // Signed out mid-flight or storage unavailable: the next launch or
+      // language change tries again.
+    }
+  }
+
+  @override
+  void didChangeLocales(List<Locale>? locales) {
+    if (ref.read(authStateProvider)) _queueLanguageReport();
   }
 
   /// Offers push notifications after the user's first change inside a
@@ -290,6 +335,11 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
       next.whenData((authenticated) {
         if (authenticated) _ensureDeferredInit();
       });
+    });
+    ref.listen<Locale?>(localeProvider, (previous, next) {
+      if (previous != next && ref.read(authStateProvider)) {
+        _queueLanguageReport();
+      }
     });
     if (ref.read(authStateProvider)) {
       _ensureDeferredInit();

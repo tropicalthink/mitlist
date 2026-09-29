@@ -98,6 +98,7 @@ String outboxOpLabel(
     'deletePinwallPost' => l10n.sheetFailedChangesOpDeletePinwallPost,
     'updatePinwallPost' => l10n.sheetFailedChangesOpUpdatePinwallPost,
     'updatePinwallPostPosition' => l10n.outboxOpMovePinwallPost,
+    'setLanguage' => l10n.outboxOpSetLanguage,
     _ => l10n.sheetFailedChangesOpChange,
   };
   final name = _payloadName(payload) ?? _clean(itemName);
