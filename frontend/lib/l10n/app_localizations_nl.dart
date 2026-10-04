@@ -6924,4 +6924,16 @@ class AppLocalizationsNl extends AppLocalizations {
   String offlineBannerQueueAttempt(int count) {
     return 'poging $count';
   }
+
+  @override
+  String get shortcutAddItem => 'Artikel toevoegen';
+
+  @override
+  String get shortcutScan => 'Scannen';
+
+  @override
+  String get shortcutLogExpense => 'Uitgave toevoegen';
+
+  @override
+  String get shortcutChoresToday => 'Taken vandaag';
 }

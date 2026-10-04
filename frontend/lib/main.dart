@@ -14,6 +14,9 @@ import 'utils/url_strategy.dart';
 /// Must be a top-level function so the OS can invoke it in a separate isolate.
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // Home screen widget refreshes are handled natively, without Dart
+  // (plans/047, contract C6).
+  if (message.data['type'] == 'widget_refresh') return;
   // Firebase must be initialised before any Firebase services are used.
   await Firebase.initializeApp();
   // The OS displays the notification in the system tray automatically when a

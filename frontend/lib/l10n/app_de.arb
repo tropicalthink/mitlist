@@ -2375,5 +2375,9 @@
   "offlineBannerQueueHeading": "Wartet auf Synchronisierung",
   "offlineBannerQueueEmpty": "Nichts ausstehend",
   "offlineBannerQueueMore": "und {count} weitere",
-  "offlineBannerQueueAttempt": "Versuch {count}"
+  "offlineBannerQueueAttempt": "Versuch {count}",
+  "shortcutAddItem": "Artikel hinzufügen",
+  "shortcutScan": "Scannen",
+  "shortcutLogExpense": "Ausgabe erfassen",
+  "shortcutChoresToday": "Aufgaben heute"
 }

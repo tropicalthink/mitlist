@@ -9,6 +9,7 @@ import '../repositories/finance_repository.dart';
 import '../repositories/list_repository.dart';
 import '../repositories/pinwall_repository.dart';
 import '../repositories/recipe_repository.dart';
+import '../repositories/widget_ops_repository.dart';
 import '../storage/app_database.dart';
 import 'connectivity_service.dart';
 
@@ -39,6 +40,10 @@ class OutboxCoordinator {
   /// Account-level writes (the UI language). Optional so the domain-focused
   /// tests need not build one.
   final AccountRepository? _accountRepo;
+
+  /// Requests replayed from home screen widgets and other native surfaces
+  /// (plans/047). Optional for the same reason.
+  final WidgetOpsRepository? _widgetOpsRepo;
   final Logger _logger = Logger();
 
   /// Fallback flush delay for an open sync session; see [noteLocalWrite].
@@ -59,9 +64,11 @@ class OutboxCoordinator {
     required ChoreRepository choreRepo,
     required PinwallRepository pinwallRepo,
     AccountRepository? accountRepo,
+    WidgetOpsRepository? widgetOpsRepo,
     this.sessionIdleWindow = kSyncSessionIdleWindow,
   })  : _db = db,
         _accountRepo = accountRepo,
+        _widgetOpsRepo = widgetOpsRepo,
         _connectivity = connectivity,
         _listRepo = listRepo,
         _financeRepo = financeRepo,
@@ -158,6 +165,7 @@ class OutboxCoordinator {
       await _choreRepo.drainOutboxOnce();
       await _pinwallRepo.drainOutboxOnce();
       await _accountRepo?.drainOutboxOnce();
+      await _widgetOpsRepo?.drainOutboxOnce();
 
       // Schedule a follow-up in case new ops were queued during drain
       final remaining = await _db.outboxCount();
@@ -199,7 +207,7 @@ class OutboxCoordinator {
 
     final entityType = op.entityType;
     final entityId = op.entityId;
-    final isCreate = op.type.startsWith('create');
+    final isCreate = op.type.startsWith('create') || _isWidgetAdd(op);
 
     if (isCreate && entityType != null && entityId != null) {
       await _db.deleteLocalEntity(entityType, entityId);
@@ -208,6 +216,17 @@ class OutboxCoordinator {
 
     if (!isCreate) {
       await _reconcileAfterDiscard(op);
+    }
+  }
+
+  /// A replayed widget "add item": its optimistic row is a create too.
+  static bool _isWidgetAdd(OutboxOp op) {
+    if (op.type != WidgetOpsRepository.outboxType) return false;
+    try {
+      final payload = jsonDecode(op.payloadJson);
+      return payload is Map && payload['type'] == 'list_item.add';
+    } catch (_) {
+      return false;
     }
   }
 

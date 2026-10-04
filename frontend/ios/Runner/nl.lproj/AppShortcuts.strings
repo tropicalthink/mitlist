@@ -1,0 +1,4 @@
+/* Siri phrases for AddItemIntent (plan 047). Each keeps ${applicationName}. */
+"Add to ${list} in ${applicationName}" = "Toevoegen aan ${list} in ${applicationName}";
+"Add to my ${applicationName} list" = "Toevoegen aan mijn ${applicationName}-lijst";
+"Add to my list in ${applicationName}" = "Toevoegen aan mijn lijst in ${applicationName}";

@@ -8,6 +8,7 @@ import '../services/outbox_coordinator.dart';
 import '../storage/app_database.dart';
 import 'account_provider.dart';
 import 'chore_provider.dart';
+import 'home_widgets_provider.dart';
 import 'finance_provider.dart';
 import 'list_provider.dart';
 import 'pinwall_provider.dart';
@@ -29,6 +30,7 @@ final outboxCoordinatorProvider =
   final choreRepo = await ref.watch(choreRepositoryProvider.future);
   final pinwallRepo = await ref.watch(pinwallRepositoryProvider.future);
   final accountRepo = await ref.watch(accountRepositoryProvider.future);
+  final widgetOpsRepo = await ref.watch(widgetOpsRepositoryProvider.future);
 
   final coordinator = OutboxCoordinator(
     db: db,
@@ -39,6 +41,7 @@ final outboxCoordinatorProvider =
     choreRepo: choreRepo,
     pinwallRepo: pinwallRepo,
     accountRepo: accountRepo,
+    widgetOpsRepo: widgetOpsRepo,
   );
 
   coordinator.start();

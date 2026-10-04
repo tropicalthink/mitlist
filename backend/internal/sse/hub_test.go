@@ -404,3 +404,14 @@ func TestConcurrencyRace(t *testing.T) {
 		t.Fatal("concurrency test exceeded deadline")
 	}
 }
+
+func TestHubOnPublishSeesLocalEventsOnce(t *testing.T) {
+	h := New()
+	var seen []Event
+	h.OnPublish(func(e Event) { seen = append(seen, e) })
+	h.Publish("group-1", Event{Type: "list:item_created"})
+	h.deliver(Event{ID: "relayed-1", Type: "list:item_updated", GroupID: "group-1"})
+	if len(seen) != 1 || seen[0].Type != "list:item_created" || seen[0].GroupID != "group-1" {
+		t.Fatalf("observer saw %+v, want only the local publish", seen)
+	}
+}

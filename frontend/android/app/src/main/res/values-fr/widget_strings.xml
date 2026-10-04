@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_shopping_list_name">Liste de courses</string>
+    <string name="widget_shopping_list_description">Cochez des articles et ajoutez-en</string>
+    <string name="widget_chores_name">Tâches du jour</string>
+    <string name="widget_chores_description">Tâches à faire avec un bouton Fait</string>
+    <string name="widget_household_today_name">Le foyer aujourd\'hui</string>
+    <string name="widget_household_today_description">Tâches, courses, dîner et votre solde</string>
+    <string name="widget_balance_name">Solde</string>
+    <string name="widget_balance_description">Qui doit quoi à qui dans le foyer</string>
+    <string name="widget_quick_add_name">Ajout rapide</string>
+    <string name="widget_quick_add_description">Ajoutez à la liste en tapant ou à la voix</string>
+
+    <string name="widget_open_app">Ouvrir mitlist</string>
+    <string name="widget_open_app_to_sync">Ouvrez mitlist pour synchroniser</string>
+    <string name="widget_updated_ago">Mis à jour %1$s</string>
+    <string name="widget_loading">Chargement du foyer…</string>
+    <string name="widget_signed_out">Connectez-vous à mitlist pour utiliser ce widget</string>
+    <string name="widget_no_lists">Aucune liste pour l\'instant</string>
+    <string name="widget_no_household">Aucun foyer pour l\'instant</string>
+    <string name="widget_refresh">Actualiser</string>
+    <string name="widget_syncing">Synchronisation des widgets</string>
+    <string name="widget_sync_channel">Synchronisation des widgets</string>
+
+    <plurals name="widget_items_left">
+        <item quantity="one">%1$d article restant</item>
+        <item quantity="many">%1$d articles restants</item>
+        <item quantity="other">%1$d articles restants</item>
+    </plurals>
+    <string name="widget_add_item_to">Ajouter un article à %1$s</string>
+    <string name="widget_list_empty">Tout est fait, plus rien à acheter</string>
+    <string name="widget_list_empty_action">Touchez pour ajouter un article</string>
+    <string name="widget_more_items">+%1$d de plus</string>
+    <string name="widget_tick_off">Cocher %1$s</string>
+    <string name="widget_item_waiting">%1$s, en attente de synchronisation</string>
+    <string name="widget_waiting_to_sync">En attente de synchronisation</string>
+    <string name="widget_added_by">ajouté par %1$s</string>
+
+    <string name="widget_chores_title">Tâches</string>
+    <string name="widget_chores_nothing_due_short">Rien à faire</string>
+    <plurals name="widget_chores_due">
+        <item quantity="one">%1$d tâche à faire</item>
+        <item quantity="many">%1$d tâches à faire</item>
+        <item quantity="other">%1$d tâches à faire</item>
+    </plurals>
+    <plurals name="widget_chores_mine">
+        <item quantity="one">dont %1$d pour vous</item>
+        <item quantity="many">dont %1$d pour vous</item>
+        <item quantity="other">dont %1$d pour vous</item>
+    </plurals>
+    <string name="widget_chores_empty">Rien à faire</string>
+    <string name="widget_chores_empty_action">Touchez pour ajouter une tâche</string>
+    <string name="widget_chore_done">Fait</string>
+    <string name="widget_chore_done_cd">Marquer %1$s comme fait</string>
+    <string name="widget_chore_next">Ensuite : %1$s</string>
+    <string name="widget_chore_you">Vous</string>
+    <string name="widget_due_overdue">En retard</string>
+    <string name="widget_due_today">Aujourd\'hui</string>
+    <string name="widget_due_tomorrow">Demain</string>
+    <string name="widget_due_soon">Bientôt</string>
+
+    <string name="widget_today">Aujourd\'hui</string>
+    <string name="widget_tonight">Ce soir : %1$s</string>
+    <string name="widget_tonight_nothing">Rien de prévu ce soir</string>
+    <string name="widget_balance_settled">Tout est réglé</string>
+    <string name="widget_balance_you_owe">Vous devez %2$s à %1$s</string>
+    <string name="widget_balance_owes_you">%1$s vous doit %2$s</string>
+    <string name="widget_balance_net_owe">Vous devez %1$s</string>
+    <string name="widget_balance_net_owed">On vous doit %1$s</string>
+
+    <string name="widget_add_to">Ajouter à %1$s</string>
+    <string name="quick_add_title">Ajouter à la liste</string>
+    <string name="quick_add_tile">Ajouter à la liste</string>
+    <string name="quick_add_hint">Ajouter un article</string>
+    <string name="quick_add_button">Ajouter</string>
+    <string name="quick_add_voice">Dicter un article</string>
+    <string name="quick_add_voice_prompt">Qu\'ajouter à la liste ?</string>
+    <string name="quick_add_voice_unavailable">La saisie vocale n\'est pas disponible sur cet appareil</string>
+    <string name="quick_add_target">%1$s · %2$s</string>
+    <string name="quick_add_choose_list">Choisir une liste</string>
+    <string name="quick_add_choose_list_cd">Liste : %1$s. Touchez pour en choisir une autre</string>
+    <string name="quick_add_empty">Saisissez d\'abord un article</string>
+    <string name="quick_add_added">Ajouté à %1$s</string>
+    <string name="quick_add_setup">Ouvrez mitlist une fois pour configurer l\'ajout rapide.</string>
+
+    <string name="widget_config_choose_list">Choisir une liste</string>
+    <string name="widget_config_choose_household">Choisir un foyer</string>
+    <string name="widget_config_default_list">Ma liste par défaut</string>
+    <string name="widget_config_default_household">Mon foyer par défaut</string>
+    <string name="widget_config_no_data">Ouvrez mitlist une fois pour charger vos foyers. D\'ici là, le widget utilise vos choix par défaut.</string>
+    <string name="widget_config_save">Enregistrer</string>
+
+    <string name="widget_sample_household">Coloc 3B</string>
+    <string name="widget_sample_list">Courses</string>
+    <string name="widget_sample_item_1">Lait d\'avoine</string>
+    <string name="widget_sample_item_2">Pain</string>
+    <string name="widget_sample_item_3">Café en grains</string>
+    <string name="widget_sample_item_4">Œufs</string>
+    <string name="widget_sample_chore_1">Sortir les poubelles</string>
+    <string name="widget_sample_chore_2">Nettoyer la salle de bain</string>
+    <string name="widget_sample_meal">Lasagnes</string>
+</resources>

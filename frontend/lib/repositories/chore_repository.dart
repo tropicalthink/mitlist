@@ -287,6 +287,12 @@ class ChoreRepository {
     }
   }
 
+  /// Shows a chore completed outside the app (a home screen widget,
+  /// plans/047) in the cache. The completion request is queued separately,
+  /// so nothing is enqueued here.
+  Future<void> applyExternalCompletion(String groupId, String choreId) =>
+      _patchCachedAssignmentStatus(groupId, choreId, 'completed');
+
   Future<void> skipOfflineFirst(String choreId,
       {String? reason, String? groupId}) async {
     if (groupId != null) {

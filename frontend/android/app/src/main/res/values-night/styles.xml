@@ -15,4 +15,10 @@
     <style name="NormalTheme" parent="@android:style/Theme.Black.NoTitleBar">
         <item name="android:windowBackground">?android:colorBackground</item>
     </style>
+    <!-- Native widget dialogs: quick add and widget settings (plans/047). -->
+    <style name="WidgetDialogTheme" parent="@android:style/Theme.DeviceDefault.Dialog">
+        <item name="android:colorAccent">#F97316</item>
+        <item name="android:windowMinWidthMajor">80%</item>
+        <item name="android:windowMinWidthMinor">90%</item>
+    </style>
 </resources>

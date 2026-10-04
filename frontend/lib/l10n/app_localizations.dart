@@ -11774,6 +11774,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'attempt {count}'**
   String offlineBannerQueueAttempt(int count);
+
+  /// App icon long-press shortcut: open the default shopping list with the item composer focused.
+  ///
+  /// In en, this message translates to:
+  /// **'Add item'**
+  String get shortcutAddItem;
+
+  /// App icon long-press shortcut: open the scanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan'**
+  String get shortcutScan;
+
+  /// App icon long-press shortcut: open the new expense sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Log expense'**
+  String get shortcutLogExpense;
+
+  /// App icon long-press shortcut: open the chores tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Chores today'**
+  String get shortcutChoresToday;
 }
 
 class _AppLocalizationsDelegate

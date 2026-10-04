@@ -47,6 +47,8 @@
 	<string>The camera component declares microphone access as part of video capture support; mitlist does not record audio.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>mitlist lets you attach photos from your library to expenses, notes, and recipes.</string>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIBackgroundModes</key>

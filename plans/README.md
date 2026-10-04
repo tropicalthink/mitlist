@@ -101,6 +101,7 @@ traceability.
 | 044 | Archive completed plan sets (001–019, frontend/plans) | P3 | S | 001–019 DONE | DONE ✓v |
 | 045 | SPIKE: household dashboard as primary landing surface | P3 | L | — | DONE ✓v |
 | 046 | Rank grocery suggestions with one shared household prior | P2 | M–L | — | DONE |
+| 047 | Home screen widgets and quick actions (staged; per-stage table in the plan) | P2 | XL | — | IN PROGRESS (all stages built 2026-10-03; device, push and APNs checks open) |
 
 ## Reconcile log — 2026-07-04 (HEAD `eca86757`, Batch-2 work uncommitted in working tree)
 

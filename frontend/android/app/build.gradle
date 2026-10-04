@@ -1,6 +1,7 @@
 plugins {
     id "com.android.application"
     id "kotlin-android"
+    id "org.jetbrains.kotlin.plugin.compose"
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id "dev.flutter.flutter-gradle-plugin"
     id "com.google.gms.google-services"
@@ -36,6 +37,20 @@ android {
 
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_17
+    }
+
+    // Home screen widgets are Jetpack Glance (Compose for RemoteViews).
+    buildFeatures {
+        compose = true
+    }
+
+    testOptions {
+        unitTests {
+            // Widget core tests read the shared fixtures in contracts/widgets.
+            all {
+                systemProperty "mitlist.contracts.dir", rootProject.file("../../contracts/widgets").absolutePath
+            }
+        }
     }
 
     defaultConfig {
@@ -83,6 +98,18 @@ dependencies {
     // Chrome Custom Tabs: OAuth sign-in renders inside the app instead of
     // handing the user off to a separate browser app.
     implementation "androidx.browser:browser:1.8.0"
+
+    // Home screen widgets, quick add and the widget sync worker (plans/047).
+    // Glance 1.2.x is the newest stable line that builds on AGP 8.13; 1.3
+    // needs AGP 9.2. WorkManager is pinned to the 2.10 line, built with an
+    // older Kotlin than this project's 2.1 compiler.
+    implementation "androidx.glance:glance-appwidget:1.2.0"
+    implementation "androidx.work:work-runtime-ktx:2.10.5"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1"
+
+    // org.json is stubbed in android.jar; the JVM tests need the real one.
+    testImplementation "junit:junit:4.13.2"
+    testImplementation "org.json:json:20240303"
 }
 
 flutter {

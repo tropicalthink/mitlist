@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- updatePeriodMillis is 0: freshness comes from the refresh push and the
+     WorkManager backstop (plans/047, D6), not from the launcher's timer. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="110dp"
+    android:minHeight="40dp"
+    android:targetCellWidth="2"
+    android:targetCellHeight="1"
+    android:minResizeWidth="110dp"
+    android:minResizeHeight="40dp"
+    android:resizeMode="horizontal|vertical"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen|not_keyguard"
+    android:description="@string/widget_balance_description"
+    android:initialLayout="@layout/glance_default_loading_layout"
+    android:previewLayout="@layout/widget_preview_balance"
+    android:previewImage="@drawable/widget_preview_generic"
+    android:configure="me.mitlist.widgets.WidgetConfigActivity"
+    android:widgetFeatures="reconfigurable|configuration_optional" />

@@ -10,8 +10,9 @@ import '../../router.dart' show BottomNavScaffold, currentGroupIdProvider;
 import '../../utils/shell_tab_load.dart';
 import '../../utils/friendly_error.dart';
 import '../../utils/haptics.dart';
-import '../../providers/finance_provider.dart'
-    show financeServiceProviderAsync;
+import '../../providers/app_link_provider.dart';
+import '../../utils/app_link_intent.dart';
+import '../../providers/finance_provider.dart' show financeServiceProviderAsync;
 import '../../services/finance_service.dart';
 import '../../sheets/expense_creation_sheet.dart';
 import '../../sheets/expense_detail_sheet.dart';
@@ -71,7 +72,18 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       final saved = prefs.getInt('expenses_selected_tab');
       if (saved == 0 || saved == 1) setState(() => _selectedTab = saved!);
     });
-    WidgetsBinding.instance.addPostFrameCallback((_) => _activateTabIfNeeded());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _activateTabIfNeeded();
+      _openLinkedDraft(ref.read(pendingExpenseDraftProvider));
+    });
+  }
+
+  /// Opens the expense sheet a link asked for (`/money?add=1`, e.g. the
+  /// shopping-trip Live Activity's "Add expense").
+  void _openLinkedDraft(PendingExpenseDraft? draft) {
+    if (draft == null || !mounted) return;
+    ref.read(pendingExpenseDraftProvider.notifier).state = null;
+    unawaited(_openCreateExpense(initialAmount: draft.initialAmount));
   }
 
   void _onControllerChanged() {
@@ -192,9 +204,10 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
         .then((p) => p.setInt('expenses_selected_tab', tab));
   }
 
-  Future<void> _openCreateExpense() async {
+  Future<void> _openCreateExpense({String? initialAmount}) async {
     unawaited(Haptics.light());
-    final created = await ExpenseCreationSheet.show(context);
+    final created =
+        await ExpenseCreationSheet.show(context, initialAmount: initialAmount);
     if (created == true && mounted) {
       final groupId = _controller.groupId;
       if (groupId != null) {
@@ -281,6 +294,8 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     ref.listen(shellVisitedTabsProvider, (previous, next) {
       _activateTabIfNeeded();
     });
+    ref.listen<PendingExpenseDraft?>(pendingExpenseDraftProvider,
+        (previous, next) => _openLinkedDraft(next));
     ref.listen<String?>(currentGroupIdProvider, (previous, next) {
       if (previous != next) {
         _controller.load(AppLocalizations.of(context)!);

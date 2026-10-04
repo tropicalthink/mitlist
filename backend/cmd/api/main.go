@@ -81,6 +81,8 @@ func main() {
 	}
 
 	cnt := container.New(cfg, pool, log)
+	// Home screen widgets refresh when the household changes (plans/047).
+	cnt.SSEHub().OnPublish(cnt.WidgetRefreshNotifier().Observe)
 
 	runner := jobs.NewRunnerWithDispatcher(pool, cnt.NotificationService(), log)
 	runner.EnableSentryMonitoring(sentryOn)
@@ -238,6 +240,11 @@ func main() {
 			// Initial Home payload (group, activity, pinwall, and today's meals)
 			homeHandler := handlers.NewHomeHandler(cnt.HomeService())
 			homeHandler.RegisterRoutes(r)
+
+			// Home screen widgets (snapshot; their writes use the list and
+			// chore routes below, narrowed by the auth middleware)
+			widgetHandler := handlers.NewWidgetHandler(cnt.WidgetService(), cnt.WidgetDeviceRepo())
+			widgetHandler.RegisterRoutes(r)
 
 			// Weekly summary
 			weeklySummaryHandler := handlers.NewWeeklySummaryHandler(cnt.WeeklySummaryService())

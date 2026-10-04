@@ -54,6 +54,13 @@ OutboxOpDomain outboxOpDomain(OutboxOp op) {
 /// the local cache (the op payload carries only the patch, not the name).
 /// Null for every other op type.
 String? outboxOpItemIdForNameLookup(OutboxOp op) {
+  if (op.type == 'widgetRequest') {
+    final payload = _decode(op.payloadJson);
+    final itemId = payload?['itemId'];
+    return payload?['type'] == 'list_item.check' && itemId is String
+        ? itemId
+        : null;
+  }
   if (op.type != 'updateItem') return null;
   if (op.entityId != null && op.entityId!.isNotEmpty) return op.entityId;
   final itemId = _decode(op.payloadJson)?['itemId'];
@@ -99,6 +106,13 @@ String outboxOpLabel(
     'updatePinwallPost' => l10n.sheetFailedChangesOpUpdatePinwallPost,
     'updatePinwallPostPosition' => l10n.outboxOpMovePinwallPost,
     'setLanguage' => l10n.outboxOpSetLanguage,
+    // Replayed from a home screen widget, Siri or the quick add (plans/047).
+    'widgetRequest' => switch (payload?['type']) {
+        'list_item.check' => l10n.outboxOpCheckItem,
+        'list_item.add' => l10n.sheetFailedChangesOpAddItem,
+        'chore.complete' => l10n.sheetFailedChangesOpCompleteChore,
+        _ => l10n.sheetFailedChangesOpChange,
+      },
     _ => l10n.sheetFailedChangesOpChange,
   };
   final name = _payloadName(payload) ?? _clean(itemName);

@@ -42,3 +42,9 @@
 -keepclasseswithmembers class com.google.ai.edge.litert.** { native <methods>; }
 -dontwarn org.tensorflow.lite.gpu.GpuDelegateFactory$Options
 -dontwarn org.tensorflow.lite.gpu.**
+
+# Home screen widgets (plans/047). Glance ships keep rules for ActionCallback
+# implementations and WorkManager for workers; the receivers are kept through
+# the manifest. setWidgetPreviews() also instantiates each receiver
+# reflectively through its no-argument constructor.
+-keep class me.mitlist.widgets.** extends androidx.glance.appwidget.GlanceAppWidgetReceiver { <init>(); }

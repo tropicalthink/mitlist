@@ -148,6 +148,15 @@ type Container struct {
 	homeServiceOnce sync.Once
 	homeService     *services.HomeService
 
+	widgetServiceOnce sync.Once
+	widgetService     *services.WidgetService
+
+	widgetDeviceRepoOnce sync.Once
+	widgetDeviceRepo     *repositories.WidgetDeviceRepository
+
+	widgetRefreshOnce sync.Once
+	widgetRefresh     *services.WidgetRefreshNotifier
+
 	weeklySummaryServiceOnce sync.Once
 	weeklySummaryService     *services.WeeklySummaryService
 
@@ -645,6 +654,43 @@ func (c *Container) HomeService() *services.HomeService {
 		)
 	})
 	return c.homeService
+}
+
+// WidgetService returns the service behind the home screen widget snapshot.
+func (c *Container) WidgetService() *services.WidgetService {
+	c.widgetServiceOnce.Do(func() {
+		c.widgetService = services.NewWidgetService(c.GroupService(), c.ListService(), c.ChoreService()).
+			WithHouseholdToday(c.MealPlanService(), c.RecipeRepo(), c.FinanceService())
+	})
+	return c.widgetService
+}
+
+// WidgetDeviceRepo returns the singleton widget device repository.
+func (c *Container) WidgetDeviceRepo() *repositories.WidgetDeviceRepository {
+	c.widgetDeviceRepoOnce.Do(func() {
+		c.widgetDeviceRepo = repositories.NewWidgetDeviceRepository(c.db)
+	})
+	return c.widgetDeviceRepo
+}
+
+// WidgetRefreshNotifier returns the singleton widget refresh notifier. It
+// sends WidgetKit pushes too when APNs token auth is configured.
+func (c *Container) WidgetRefreshNotifier() *services.WidgetRefreshNotifier {
+	c.widgetRefreshOnce.Do(func() {
+		var widgetKit *pushservice.APNSClient
+		client, err := pushservice.NewAPNSClient(c.cfg.APNSKeyP8, c.cfg.APNSKeyID, c.cfg.APNSTeamID, c.cfg.APNSBundleID, c.cfg.APNSSandbox)
+		if err != nil {
+			c.logger.Warn().Err(err).Msg("APNs is misconfigured; WidgetKit push is off")
+		} else {
+			widgetKit = client
+		}
+		if widgetKit == nil {
+			c.widgetRefresh = services.NewWidgetRefreshNotifier(c.GroupRepo(), c.WidgetDeviceRepo(), c.Push(), nil, c.logger)
+		} else {
+			c.widgetRefresh = services.NewWidgetRefreshNotifier(c.GroupRepo(), c.WidgetDeviceRepo(), c.Push(), widgetKit, c.logger)
+		}
+	})
+	return c.widgetRefresh
 }
 
 // WeeklySummaryService returns the singleton weekly summary service.

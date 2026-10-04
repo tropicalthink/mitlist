@@ -14,6 +14,7 @@ import 'turnstile_service.dart';
 import 'fcm_service.dart';
 import 'push_subscription_service.dart';
 import 'token_store.dart';
+import 'widgets/widget_credential_provisioner.dart';
 import 'dio_platform.dart';
 import 'token_refresh_coordinator.dart';
 
@@ -222,6 +223,8 @@ class AuthService {
     try {
       await Future.wait<void>([
         FcmService.unregisterToken(cleanupDio),
+        // Home screen widgets stop working on this device (plans/047).
+        WidgetCredentialProvisioner.revokeOnSignOut(cleanupDio),
         PushSubscriptionService(_tokenStore).unsubscribe(),
         if (refreshToken != null || kIsWeb)
           cleanupDio.post<void>('/auth/logout',

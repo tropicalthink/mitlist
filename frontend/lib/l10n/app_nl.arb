@@ -6326,5 +6326,9 @@
   "offlineBannerQueueHeading": "Wacht op synchronisatie",
   "offlineBannerQueueEmpty": "Niets in de wachtrij",
   "offlineBannerQueueMore": "en nog {count}",
-  "offlineBannerQueueAttempt": "poging {count}"
+  "offlineBannerQueueAttempt": "poging {count}",
+  "shortcutAddItem": "Artikel toevoegen",
+  "shortcutScan": "Scannen",
+  "shortcutLogExpense": "Uitgave toevoegen",
+  "shortcutChoresToday": "Taken vandaag"
 }

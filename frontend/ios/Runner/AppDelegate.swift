@@ -1,6 +1,7 @@
 import AuthenticationServices
 import Flutter
 import UIKit
+import WidgetKit
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -32,9 +33,28 @@ import UIKit
         }
         self.startAuthSession(call: call, result: result)
       }
+
+      // Home screen widgets, Siri and the shopping-trip Live Activity
+      // (plan 047, contract C4).
+      WidgetChannel.register(with: controller.binaryMessenger)
     }
 
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  /// The silent "widgets stale" push (plan 047, C6): ask every widget to
+  /// refetch, then hand the message to FlutterFire through `super`, which
+  /// calls the completion handler exactly once.
+  override func application(
+    _ application: UIApplication,
+    didReceiveRemoteNotification userInfo: [AnyHashable: Any],
+    fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
+  ) {
+    if userInfo["type"] as? String == "widget_refresh" {
+      WidgetStorage.shared?.refreshRequested = true
+      WidgetCenter.shared.reloadAllTimelines()
+    }
+    super.application(application, didReceiveRemoteNotification: userInfo, fetchCompletionHandler: completionHandler)
   }
 
   /// Runs the provider sign-in inside the app as a sheet rather than handing the

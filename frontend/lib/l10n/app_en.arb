@@ -9265,5 +9265,21 @@
         "type": "int"
       }
     }
+  },
+  "shortcutAddItem": "Add item",
+  "@shortcutAddItem": {
+    "description": "App icon long-press shortcut: open the default shopping list with the item composer focused."
+  },
+  "shortcutScan": "Scan",
+  "@shortcutScan": {
+    "description": "App icon long-press shortcut: open the scanner."
+  },
+  "shortcutLogExpense": "Log expense",
+  "@shortcutLogExpense": {
+    "description": "App icon long-press shortcut: open the new expense sheet."
+  },
+  "shortcutChoresToday": "Chores today",
+  "@shortcutChoresToday": {
+    "description": "App icon long-press shortcut: open the chores tab."
   }
 }

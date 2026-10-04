@@ -6945,4 +6945,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String offlineBannerQueueAttempt(int count) {
     return 'tentative $count';
   }
+
+  @override
+  String get shortcutAddItem => 'Ajouter un article';
+
+  @override
+  String get shortcutScan => 'Scanner';
+
+  @override
+  String get shortcutLogExpense => 'Ajouter une dépense';
+
+  @override
+  String get shortcutChoresToday => 'Tâches du jour';
 }

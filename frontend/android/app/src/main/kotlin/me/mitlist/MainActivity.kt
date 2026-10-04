@@ -2,14 +2,27 @@ package me.mitlist
 
 import android.content.ActivityNotFoundException
 import android.net.Uri
+import android.os.Bundle
 import androidx.browser.customtabs.CustomTabsIntent
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import me.mitlist.widgets.WidgetChannel
+import me.mitlist.widgets.WidgetUpdater
 
 class MainActivity: FlutterActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        // Android 15 cancels a widget's PendingIntents when the app is
+        // force-stopped; re-push every widget so their taps work again.
+        WidgetUpdater.onAppStart(this)
+    }
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+
+        // Home screen widgets bridge (plans/047, contract C4).
+        WidgetChannel.register(flutterEngine.dartExecutor.binaryMessenger, this)
 
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,

@@ -1,0 +1,6 @@
+// The widget extension shares the app's version (from Flutter's generated
+// settings) but none of its CocoaPods settings.
+#include "../Flutter/Generated.xcconfig"
+APS_ENVIRONMENT=development
+MARKETING_VERSION=$(FLUTTER_BUILD_NAME)
+CURRENT_PROJECT_VERSION=$(FLUTTER_BUILD_NUMBER)

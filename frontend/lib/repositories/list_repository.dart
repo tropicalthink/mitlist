@@ -523,6 +523,93 @@ class ListRepository {
     return patched;
   }
 
+  // ---------------------------------------------------------------------------
+  // Changes made outside the app: home screen widgets, Siri, quick add
+  // (plans/047). The native side already queued the request, and the app
+  // replays it as a `widgetRequest` outbox op, so these only touch the cache.
+  // ---------------------------------------------------------------------------
+
+  /// Shows [itemId] as checked in the local cache. No-op when it is not
+  /// cached (a household the app has not opened yet).
+  Future<void> applyExternalCheck(String listId, String itemId) async {
+    final rows = await _db.getItemsByListOnce(listId);
+    final row = rows.firstWhereOrNull((r) => r.id == itemId);
+    if (row == null || row.checked) return;
+    final item = _toListItem(row);
+    await _db.upsertListItemsRows([
+      _toListItemsRow(ListItem(
+        id: item.id,
+        listId: item.listId,
+        name: item.name,
+        quantity: item.quantity,
+        unit: item.unit,
+        note: item.note,
+        checked: true,
+        position: item.position,
+        priceCents: item.priceCents,
+        canonicalItemId: item.canonicalItemId,
+        claimedBy: item.claimedBy,
+        addedBy: item.addedBy,
+        createdAt: item.createdAt,
+        updatedAt: DateTime.now(),
+      )),
+    ]);
+    await _patchListPreviewFromLocalItems(listId);
+  }
+
+  /// Shows an item added outside the app under [tempId] (the native op id)
+  /// until its request syncs and [applyServerItem] swaps in the server row.
+  /// No-op when the list is not cached.
+  Future<void> applyExternalAdd(
+    String listId, {
+    required String tempId,
+    required String name,
+  }) async {
+    if (await _db.getListGroupId(listId) == null) return;
+    final rows = await _db.getItemsByListOnce(listId);
+    if (rows.any((r) => r.id == tempId)) return;
+    var maxPos = -1;
+    for (final r in rows) {
+      if (r.position > maxPos) maxPos = r.position;
+    }
+    final now = DateTime.now();
+    await _db.upsertListItemsRows([
+      _toListItemsRow(ListItem(
+        id: tempId,
+        listId: listId,
+        name: name,
+        quantity: 1,
+        unit: '',
+        note: '',
+        checked: false,
+        position: maxPos + 1,
+        createdAt: now,
+        updatedAt: now,
+      )),
+    ]);
+    await _patchListPreviewFromLocalItems(listId);
+  }
+
+  /// Stores an item as the server returned it. With [tempId], replaces that
+  /// optimistic row and points queued ops at the server id.
+  Future<void> applyServerItem(ListItem server, {String? tempId}) async {
+    if (tempId != null && tempId != server.id) {
+      await _db.transaction(() async {
+        await _db.replaceTempItemId(tempId: tempId, server: server);
+        await _db.rewriteOutboxPayloadIds(oldId: tempId, newId: server.id);
+      });
+    } else {
+      await _db.upsertListItemsRows([_toListItemsRow(server)]);
+    }
+    await _patchListPreviewFromLocalItems(server.listId);
+  }
+
+  /// Drops the optimistic row of an outside add the server refused.
+  Future<void> discardExternalAdd(String listId, String tempId) async {
+    await _db.deleteListItemsByIds([tempId]);
+    await _patchListPreviewFromLocalItems(listId);
+  }
+
   Future<void> deleteListLocal(String listId) async {
     await (_db.delete(_db.listsTable)..where((t) => t.id.equals(listId))).go();
     await (_db.delete(_db.listItemsTable)

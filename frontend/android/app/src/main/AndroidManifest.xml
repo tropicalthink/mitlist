@@ -2,11 +2,16 @@
     <!-- Required for all builds (release included) to reach the backend API.
          Debug/profile manifests declare this separately for the Flutter tool. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- The widget sync worker is expedited work, which runs as a foreground
+         service before Android 12. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
 
     <application
         android:label="mitlist"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:fullBackupContent="@xml/backup_rules"
+        android:dataExtractionRules="@xml/data_extraction_rules">
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -86,6 +91,104 @@
                 <data android:scheme="mitlist" />
             </intent-filter>
         </activity>
+        <!-- Home screen widgets, quick add and the Quick Settings tile
+             (plans/047, contract C7). All Jetpack Glance or plain Android;
+             none of them starts Flutter. -->
+        <receiver
+            android:name=".widgets.ShoppingListWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_shopping_list_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_shopping_list_info" />
+        </receiver>
+        <receiver
+            android:name=".widgets.ChoresWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_chores_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_chores_info" />
+        </receiver>
+        <receiver
+            android:name=".widgets.HouseholdTodayWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_household_today_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_household_today_info" />
+        </receiver>
+        <!-- Never on the lock screen: amounts owed are private (not_keyguard). -->
+        <receiver
+            android:name=".widgets.BalanceWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_balance_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_balance_info" />
+        </receiver>
+        <receiver
+            android:name=".widgets.QuickAddWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_quick_add_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_quick_add_info" />
+        </receiver>
+        <activity
+            android:name=".widgets.WidgetConfigActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:theme="@style/WidgetDialogTheme">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".widgets.QuickAddActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:label="@string/quick_add_title"
+            android:taskAffinity=""
+            android:theme="@style/WidgetDialogTheme"
+            android:windowSoftInputMode="stateVisible|adjustResize" />
+        <service
+            android:name=".widgets.QuickAddTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_widget_add"
+            android:label="@string/quick_add_tile"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+        <!-- The "household changed" data push (contract C6). FCM delivers
+             data messages as this broadcast to every matching receiver in
+             the app, FlutterFire's included, so both see it. -->
+        <receiver
+            android:name=".widgets.WidgetPushReceiver"
+            android:exported="true"
+            android:permission="com.google.android.c2dm.permission.SEND">
+            <intent-filter>
+                <action android:name="com.google.android.c2dm.intent.RECEIVE" />
+            </intent-filter>
+        </receiver>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
@@ -101,6 +204,13 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- Voice input in the quick-add dialog. -->
+        <intent>
+            <action android:name="android.speech.RecognitionService"/>
+        </intent>
+        <intent>
+            <action android:name="android.speech.action.RECOGNIZE_SPEECH"/>
         </intent>
     </queries>
 </manifest>

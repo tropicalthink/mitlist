@@ -6326,5 +6326,9 @@
   "offlineBannerQueueHeading": "En attente de synchronisation",
   "offlineBannerQueueEmpty": "Rien en attente",
   "offlineBannerQueueMore": "et {count} de plus",
-  "offlineBannerQueueAttempt": "tentative {count}"
+  "offlineBannerQueueAttempt": "tentative {count}",
+  "shortcutAddItem": "Ajouter un article",
+  "shortcutScan": "Scanner",
+  "shortcutLogExpense": "Ajouter une dépense",
+  "shortcutChoresToday": "Tâches du jour"
 }

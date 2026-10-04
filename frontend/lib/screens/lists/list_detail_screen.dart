@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -128,9 +129,39 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         !_controller.hasError) {
       _autoFocusDone = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) FocusScope.of(context).requestFocus(_composerFocusNode);
+        if (mounted) _focusComposer();
       });
     }
+  }
+
+  /// Focuses the item composer and brings up the keyboard. Opened from
+  /// outside the app (a home screen widget's "+", an app icon shortcut), the
+  /// route is built before the app is back in the foreground, and Android
+  /// drops a keyboard request made before its window has input focus; the
+  /// keyboard is asked for again once the app has resumed.
+  void _focusComposer() {
+    FocusScope.of(context).requestFocus(_composerFocusNode);
+    void show() {
+      if (mounted &&
+          _composerFocusNode.hasFocus &&
+          MediaQuery.viewInsetsOf(context).bottom == 0) {
+        // Hide first: Android can still think the keyboard is requested
+        // from before the app went to the background, and then ignores a
+        // plain show.
+        SystemChannels.textInput.invokeMethod<void>('TextInput.hide').then(
+            (_) =>
+                SystemChannels.textInput.invokeMethod<void>('TextInput.show'));
+      }
+    }
+
+    if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
+      late final AppLifecycleListener listener;
+      listener = AppLifecycleListener(onResume: () {
+        listener.dispose();
+        Future<void>.delayed(const Duration(milliseconds: 250), show);
+      });
+    }
+    Future<void>.delayed(const Duration(milliseconds: 600), show);
   }
 
   /// Runs the controller load, then pops the keyboard only for an empty list
@@ -157,7 +188,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         !_autoFocusDone &&
         (_controller.items.isEmpty || widget.autoFocusComposer)) {
       _autoFocusDone = true;
-      FocusScope.of(context).requestFocus(_composerFocusNode);
+      _focusComposer();
     }
   }
 
@@ -642,7 +673,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       unawaited(Haptics.light());
       await _controller.setReminder(picked);
       if (!mounted) return;
-      AppToast.success(context, l10n.listReminderSaved(_formatReminder(picked)));
+      AppToast.success(
+          context, l10n.listReminderSaved(_formatReminder(picked)));
     } catch (_) {
       if (!mounted) return;
       AppToast.error(context, l10n.listReminderCouldNotSave);

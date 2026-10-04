@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Home screen widgets, quick add and the Quick Settings tile (plans/047).
+     Keep values-de, values-fr and values-es in step. -->
+<resources>
+    <!-- Widget picker -->
+    <string name="widget_shopping_list_name">Shopping list</string>
+    <string name="widget_shopping_list_description">Tick items off and add new ones</string>
+    <string name="widget_chores_name">Chores today</string>
+    <string name="widget_chores_description">Due chores with a Done button</string>
+    <string name="widget_household_today_name">Household today</string>
+    <string name="widget_household_today_description">Chores, shopping, tonight\'s meal and your balance</string>
+    <string name="widget_balance_name">Balance</string>
+    <string name="widget_balance_description">Who owes whom in your household</string>
+    <string name="widget_quick_add_name">Quick add</string>
+    <string name="widget_quick_add_description">Add to your list by typing or speaking</string>
+
+    <!-- Shared states -->
+    <string name="widget_open_app">Open mitlist</string>
+    <string name="widget_open_app_to_sync">Open mitlist to sync</string>
+    <string name="widget_updated_ago">Updated %1$s</string>
+    <string name="widget_loading">Loading your household…</string>
+    <string name="widget_signed_out">Sign in to mitlist to use this widget</string>
+    <string name="widget_no_lists">No lists yet</string>
+    <string name="widget_no_household">No household yet</string>
+    <string name="widget_refresh">Refresh</string>
+    <string name="widget_syncing">Syncing widgets</string>
+    <string name="widget_sync_channel">Widget sync</string>
+
+    <!-- Shopping list -->
+    <plurals name="widget_items_left">
+        <item quantity="one">%1$d item left</item>
+        <item quantity="other">%1$d items left</item>
+    </plurals>
+    <string name="widget_add_item_to">Add an item to %1$s</string>
+    <string name="widget_list_empty">All done, nothing left</string>
+    <string name="widget_list_empty_action">Tap to add an item</string>
+    <string name="widget_more_items">+%1$d more</string>
+    <string name="widget_tick_off">Tick off %1$s</string>
+    <string name="widget_item_waiting">%1$s, waiting to sync</string>
+    <string name="widget_waiting_to_sync">Waiting to sync</string>
+    <string name="widget_added_by">%1$s added</string>
+
+    <!-- Chores -->
+    <string name="widget_chores_title">Chores</string>
+    <string name="widget_chores_nothing_due_short">Nothing due</string>
+    <plurals name="widget_chores_due">
+        <item quantity="one">%1$d chore due</item>
+        <item quantity="other">%1$d chores due</item>
+    </plurals>
+    <plurals name="widget_chores_mine">
+        <item quantity="one">%1$d is yours</item>
+        <item quantity="other">%1$d are yours</item>
+    </plurals>
+    <string name="widget_chores_empty">Nothing due</string>
+    <string name="widget_chores_empty_action">Tap to add a chore</string>
+    <string name="widget_chore_done">Done</string>
+    <string name="widget_chore_done_cd">Mark %1$s done</string>
+    <string name="widget_chore_next">Next: %1$s</string>
+    <string name="widget_chore_you">You</string>
+    <string name="widget_due_overdue">Overdue</string>
+    <string name="widget_due_today">Today</string>
+    <string name="widget_due_tomorrow">Tomorrow</string>
+    <string name="widget_due_soon">Soon</string>
+
+    <!-- Household today and balance -->
+    <string name="widget_today">Today</string>
+    <string name="widget_tonight">Tonight: %1$s</string>
+    <string name="widget_tonight_nothing">Nothing planned for tonight</string>
+    <string name="widget_balance_settled">All settled</string>
+    <string name="widget_balance_you_owe">You owe %1$s %2$s</string>
+    <string name="widget_balance_owes_you">%1$s owes you %2$s</string>
+    <string name="widget_balance_net_owe">You owe %1$s</string>
+    <string name="widget_balance_net_owed">You are owed %1$s</string>
+
+    <!-- Quick add -->
+    <string name="widget_add_to">Add to %1$s</string>
+    <string name="quick_add_title">Add to list</string>
+    <string name="quick_add_tile">Add to list</string>
+    <string name="quick_add_hint">Add an item</string>
+    <string name="quick_add_button">Add</string>
+    <string name="quick_add_voice">Speak an item</string>
+    <string name="quick_add_voice_prompt">What should go on the list?</string>
+    <string name="quick_add_voice_unavailable">Voice input is not available on this device</string>
+    <string name="quick_add_target">%1$s · %2$s</string>
+    <string name="quick_add_choose_list">Choose a list</string>
+    <string name="quick_add_choose_list_cd">List: %1$s. Tap to choose another</string>
+    <string name="quick_add_empty">Type an item first</string>
+    <string name="quick_add_added">Added to %1$s</string>
+    <string name="quick_add_setup">Open mitlist once to set up quick add.</string>
+
+    <!-- Widget settings -->
+    <string name="widget_config_choose_list">Choose a list</string>
+    <string name="widget_config_choose_household">Choose a household</string>
+    <string name="widget_config_default_list">My default list</string>
+    <string name="widget_config_default_household">My default household</string>
+    <string name="widget_config_no_data">Open mitlist once to load your households. Until then the widget uses your defaults.</string>
+    <string name="widget_config_save">Save</string>
+
+    <!-- Picker preview sample data -->
+    <string name="widget_sample_household">Flat 3B</string>
+    <string name="widget_sample_list">Groceries</string>
+    <string name="widget_sample_item_1">Oat milk</string>
+    <string name="widget_sample_item_2">Bread</string>
+    <string name="widget_sample_item_3">Coffee beans</string>
+    <string name="widget_sample_item_4">Eggs</string>
+    <string name="widget_sample_chore_1">Bins out</string>
+    <string name="widget_sample_chore_2">Clean bathroom</string>
+    <string name="widget_sample_meal">Lasagne</string>
+    <string name="widget_sample_person_1">Sam</string>
+    <string name="widget_sample_person_2">Alex</string>
+</resources>

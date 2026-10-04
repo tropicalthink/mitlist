@@ -4,4 +4,15 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <application android:networkSecurityConfig="@xml/network_security_config_debug">
+        <!-- Debug-only QA hook for the home screen widgets: pin a widget, load
+             a snapshot file, set a test credential, run a sync. See
+             WidgetDebugActivity. Never in release builds. -->
+        <activity
+            android:name="me.mitlist.widgets.WidgetDebugActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+    </application>
 </manifest>
