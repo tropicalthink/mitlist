@@ -6058,6 +6058,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get featureBoardSortNew => 'New';
 
   @override
+  String get featureBoardAllShippedTitle => 'Everything here has shipped';
+
+  @override
+  String get featureBoardAllShippedBody =>
+      'Nothing is open right now. Show what\'s already live, or suggest something new.';
+
+  @override
+  String get featureBoardShowShipped => 'Show shipped';
+
+  @override
   String get featureBoardKindLabel => 'What is it?';
 
   @override
@@ -6823,6 +6833,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get outboxOpMovePinwallPost => 'Move pinwall post';
 
   @override
+  String get outboxOpSetLanguage => 'Update email language';
+
+  @override
   String get outboxOpCheckItem => 'Check off';
 
   @override
@@ -6843,4 +6856,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String offlineBannerQueueAttempt(int count) {
     return 'attempt $count';
   }
+
+  @override
+  String get shortcutAddItem => 'Add item';
+
+  @override
+  String get shortcutScan => 'Scan';
+
+  @override
+  String get shortcutLogExpense => 'Log expense';
+
+  @override
+  String get shortcutChoresToday => 'Chores today';
 }

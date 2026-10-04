@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_shopping_list_name">Lista de la compra</string>
+    <string name="widget_shopping_list_description">Marca artículos y añade otros nuevos</string>
+    <string name="widget_chores_name">Tareas de hoy</string>
+    <string name="widget_chores_description">Tareas pendientes con un botón Hecho</string>
+    <string name="widget_household_today_name">El hogar hoy</string>
+    <string name="widget_household_today_description">Tareas, compra, la cena y tu saldo</string>
+    <string name="widget_balance_name">Saldo</string>
+    <string name="widget_balance_description">Quién debe qué a quién en el hogar</string>
+    <string name="widget_quick_add_name">Añadir rápido</string>
+    <string name="widget_quick_add_description">Añade a tu lista escribiendo o hablando</string>
+
+    <string name="widget_open_app">Abrir mitlist</string>
+    <string name="widget_open_app_to_sync">Abre mitlist para sincronizar</string>
+    <string name="widget_updated_ago">Actualizado %1$s</string>
+    <string name="widget_loading">Cargando tu hogar…</string>
+    <string name="widget_signed_out">Inicia sesión en mitlist para usar este widget</string>
+    <string name="widget_no_lists">Aún no hay listas</string>
+    <string name="widget_no_household">Aún no hay hogar</string>
+    <string name="widget_refresh">Actualizar</string>
+    <string name="widget_syncing">Sincronizando widgets</string>
+    <string name="widget_sync_channel">Sincronización de widgets</string>
+
+    <plurals name="widget_items_left">
+        <item quantity="one">Queda %1$d artículo</item>
+        <item quantity="many">Quedan %1$d artículos</item>
+        <item quantity="other">Quedan %1$d artículos</item>
+    </plurals>
+    <string name="widget_add_item_to">Añadir un artículo a %1$s</string>
+    <string name="widget_list_empty">Todo hecho, no queda nada</string>
+    <string name="widget_list_empty_action">Toca para añadir un artículo</string>
+    <string name="widget_more_items">+%1$d más</string>
+    <string name="widget_tick_off">Marcar %1$s</string>
+    <string name="widget_item_waiting">%1$s, pendiente de sincronizar</string>
+    <string name="widget_waiting_to_sync">Pendiente de sincronizar</string>
+    <string name="widget_added_by">añadido por %1$s</string>
+
+    <string name="widget_chores_title">Tareas</string>
+    <string name="widget_chores_nothing_due_short">Nada pendiente</string>
+    <plurals name="widget_chores_due">
+        <item quantity="one">%1$d tarea pendiente</item>
+        <item quantity="many">%1$d tareas pendientes</item>
+        <item quantity="other">%1$d tareas pendientes</item>
+    </plurals>
+    <plurals name="widget_chores_mine">
+        <item quantity="one">%1$d es tuya</item>
+        <item quantity="many">%1$d son tuyas</item>
+        <item quantity="other">%1$d son tuyas</item>
+    </plurals>
+    <string name="widget_chores_empty">Nada pendiente</string>
+    <string name="widget_chores_empty_action">Toca para añadir una tarea</string>
+    <string name="widget_chore_done">Hecho</string>
+    <string name="widget_chore_done_cd">Marcar %1$s como hecha</string>
+    <string name="widget_chore_next">Después: %1$s</string>
+    <string name="widget_chore_you">Tú</string>
+    <string name="widget_due_overdue">Atrasada</string>
+    <string name="widget_due_today">Hoy</string>
+    <string name="widget_due_tomorrow">Mañana</string>
+    <string name="widget_due_soon">Pronto</string>
+
+    <string name="widget_today">Hoy</string>
+    <string name="widget_tonight">Esta noche: %1$s</string>
+    <string name="widget_tonight_nothing">Nada planeado para esta noche</string>
+    <string name="widget_balance_settled">Todo saldado</string>
+    <string name="widget_balance_you_owe">Debes %2$s a %1$s</string>
+    <string name="widget_balance_owes_you">%1$s te debe %2$s</string>
+    <string name="widget_balance_net_owe">Debes %1$s</string>
+    <string name="widget_balance_net_owed">Te deben %1$s</string>
+
+    <string name="widget_add_to">Añadir a %1$s</string>
+    <string name="quick_add_title">Añadir a la lista</string>
+    <string name="quick_add_tile">Añadir a la lista</string>
+    <string name="quick_add_hint">Añadir un artículo</string>
+    <string name="quick_add_button">Añadir</string>
+    <string name="quick_add_voice">Dictar un artículo</string>
+    <string name="quick_add_voice_prompt">¿Qué añadimos a la lista?</string>
+    <string name="quick_add_voice_unavailable">La entrada de voz no está disponible en este dispositivo</string>
+    <string name="quick_add_target">%1$s · %2$s</string>
+    <string name="quick_add_choose_list">Elegir una lista</string>
+    <string name="quick_add_choose_list_cd">Lista: %1$s. Toca para elegir otra</string>
+    <string name="quick_add_empty">Escribe primero un artículo</string>
+    <string name="quick_add_added">Añadido a %1$s</string>
+    <string name="quick_add_setup">Abre mitlist una vez para configurar Añadir rápido.</string>
+
+    <string name="widget_config_choose_list">Elegir una lista</string>
+    <string name="widget_config_choose_household">Elegir un hogar</string>
+    <string name="widget_config_default_list">Mi lista predeterminada</string>
+    <string name="widget_config_default_household">Mi hogar predeterminado</string>
+    <string name="widget_config_no_data">Abre mitlist una vez para cargar tus hogares. Mientras tanto, el widget usa tus valores predeterminados.</string>
+    <string name="widget_config_save">Guardar</string>
+
+    <string name="widget_sample_household">Piso 3B</string>
+    <string name="widget_sample_list">Compra</string>
+    <string name="widget_sample_item_1">Bebida de avena</string>
+    <string name="widget_sample_item_2">Pan</string>
+    <string name="widget_sample_item_3">Café en grano</string>
+    <string name="widget_sample_item_4">Huevos</string>
+    <string name="widget_sample_chore_1">Sacar la basura</string>
+    <string name="widget_sample_chore_2">Limpiar el baño</string>
+    <string name="widget_sample_meal">Lasaña</string>
+</resources>

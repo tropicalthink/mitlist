@@ -81,6 +81,16 @@ type Config struct {
 	FirebaseAppCheckAllowedAppIDs string `env:"FIREBASE_APP_CHECK_ALLOWED_APP_IDS"`
 	FirebaseServiceAccount        string `env:"FIREBASE_SERVICE_ACCOUNT_JSON"`
 
+	// APNs token auth, for iOS 26 WidgetKit pushes to home screen widgets
+	// (FCM cannot send that push type). All three of key, key id and team
+	// id turn it on; without them widgets still refresh through FCM.
+	// APNS_KEY_P8 is the contents of the AuthKey_<id>.p8 file.
+	APNSKeyP8    string `env:"APNS_KEY_P8"`
+	APNSKeyID    string `env:"APNS_KEY_ID"`
+	APNSTeamID   string `env:"APNS_TEAM_ID"`
+	APNSBundleID string `env:"APNS_BUNDLE_ID" default:"me.mitlist"`
+	APNSSandbox  bool   `env:"APNS_SANDBOX" default:"false"`
+
 	// Cloudflare Turnstile guards guest creation from the web, where App
 	// Check's attestation providers (Play Integrity, App Attest) do not apply.
 	// Web builds no longer ship an App Check provider at all; mobile still does,
@@ -119,6 +129,10 @@ type Config struct {
 	// working unsubscribe link and that link points at this API.
 	OnboardingEmailsEnabled bool   `env:"ONBOARDING_EMAILS_ENABLED" default:"true"`
 	PublicAPIURL            string `env:"PUBLIC_API_URL"`
+	// Re-engagement check-in: one feedback request to accounts that have not
+	// opened the app for a week. Same opt-out and PUBLIC_API_URL requirement
+	// as the tips.
+	ReengagementEmailsEnabled bool `env:"REENGAGEMENT_EMAILS_ENABLED" default:"true"`
 
 	// Sentry / GlitchTip error tracking
 	SentryDSN              string  `env:"SENTRY_DSN"`

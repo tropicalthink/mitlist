@@ -123,6 +123,10 @@ func AuthWithCredentials(jwt *jwtservice.Service, userSvc *services.UserService,
 					api.WriteError(w, fmt.Errorf("invalid integration credential: %w", api.ErrUnauthorized))
 					return
 				}
+				if identity.Kind == services.CredentialKindWidget && !widgetCredentialAllowsRoute(r.Method, r.URL.Path) {
+					api.WriteError(w, fmt.Errorf("widget credentials only reach widget actions: %w", api.ErrPermissionDenied))
+					return
+				}
 				requiredScope := services.IntegrationScopeRead
 				if r.Method != http.MethodGet && r.Method != http.MethodHead && r.Method != http.MethodOptions {
 					requiredScope = services.IntegrationScopeWrite
@@ -235,7 +239,7 @@ func integrationDomain(path string) string {
 	parts := strings.Split(path, "/")
 	for _, part := range parts {
 		switch part {
-		case "lists", "chores", "calendar", "recipes", "expenses", "finance", "pinwall", "notifications", "grocery", "groceries", "activity", "attachments", "groups":
+		case "lists", "chores", "calendar", "recipes", "expenses", "finance", "pinwall", "notifications", "grocery", "groceries", "activity", "attachments", "groups", "widget":
 			if part == "expenses" {
 				return "finance"
 			}
@@ -256,6 +260,31 @@ func integrationDomain(path string) string {
 		}
 	}
 	return ""
+}
+
+// widgetCredentialAllowsRoute is the whole surface a home screen widget may
+// reach: its snapshot and WidgetKit push token, adding and updating list
+// items, and completing a chore. Scopes alone would also allow deleting
+// lists or editing chores.
+// Paths are matched from the end, so the API prefix does not matter.
+func widgetCredentialAllowsRoute(method, path string) bool {
+	parts := strings.Split(strings.Trim(path, "/"), "/")
+	n := len(parts)
+	isID := func(s string) bool { _, err := uuid.Parse(s); return err == nil }
+	switch method {
+	case http.MethodGet:
+		return n >= 2 && parts[n-2] == "widget" && parts[n-1] == "snapshot"
+	case http.MethodPost:
+		if n >= 3 && parts[n-3] == "lists" && isID(parts[n-2]) && parts[n-1] == "items" {
+			return true
+		}
+		return n >= 3 && parts[n-3] == "chores" && isID(parts[n-2]) && parts[n-1] == "complete"
+	case http.MethodPatch:
+		return n >= 4 && parts[n-4] == "lists" && isID(parts[n-3]) && parts[n-2] == "items" && isID(parts[n-1])
+	case http.MethodPut:
+		return n >= 2 && parts[n-2] == "widget" && parts[n-1] == "push-token"
+	}
+	return false
 }
 
 func integrationGroupID(r *http.Request) (uuid.UUID, bool) {

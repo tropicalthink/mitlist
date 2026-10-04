@@ -81,6 +81,8 @@ func main() {
 	}
 
 	cnt := container.New(cfg, pool, log)
+	// Home screen widgets refresh when the household changes (plans/047).
+	cnt.SSEHub().OnPublish(cnt.WidgetRefreshNotifier().Observe)
 
 	runner := jobs.NewRunnerWithDispatcher(pool, cnt.NotificationService(), log)
 	runner.EnableSentryMonitoring(sentryOn)
@@ -104,6 +106,11 @@ func main() {
 		runner.RegisterOnboardingTips(jobs.NewOnboardingTips(pool, cnt.Mail(), cfg.SecretKey, cfg.FrontendURL, cfg.PublicAPIURL, cfg.APIPrefix, log))
 	} else {
 		log.Info().Bool("enabled", cfg.OnboardingEmailsEnabled).Bool("public_api_url_set", cfg.PublicAPIURL != "").Msg("onboarding tips disabled")
+	}
+	if cfg.ReengagementEmailsEnabled && cfg.PublicAPIURL != "" {
+		runner.RegisterReengagement(jobs.NewReengagement(pool, cnt.Mail(), cfg.SecretKey, cfg.FrontendURL, cfg.PublicAPIURL, cfg.APIPrefix, log))
+	} else {
+		log.Info().Bool("enabled", cfg.ReengagementEmailsEnabled).Bool("public_api_url_set", cfg.PublicAPIURL != "").Msg("reengagement emails disabled")
 	}
 	runner.Start()
 
@@ -233,6 +240,11 @@ func main() {
 			// Initial Home payload (group, activity, pinwall, and today's meals)
 			homeHandler := handlers.NewHomeHandler(cnt.HomeService())
 			homeHandler.RegisterRoutes(r)
+
+			// Home screen widgets (snapshot; their writes use the list and
+			// chore routes below, narrowed by the auth middleware)
+			widgetHandler := handlers.NewWidgetHandler(cnt.WidgetService(), cnt.WidgetDeviceRepo())
+			widgetHandler.RegisterRoutes(r)
 
 			// Weekly summary
 			weeklySummaryHandler := handlers.NewWeeklySummaryHandler(cnt.WeeklySummaryService())

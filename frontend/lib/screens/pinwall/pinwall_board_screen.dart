@@ -457,12 +457,10 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
         pos.dx,
         pos.dy,
       );
-      // Sync now, the way creates and deletes already do. Nothing else arms a
-      // drain after an enqueue — the coordinator only schedules a retry once a
-      // drain has already run and found work left over — so without this the
-      // move sits in the outbox, and on the sync banner, until connectivity
-      // flips or the app is resumed.
-      unawaited(repo.drainOutboxOnce().catchError((_) {}));
+      // Hand the move to the sync session, the way creates and deletes do.
+      // Nothing inside the write arms a sync, so without this the move would
+      // sit in the outbox until connectivity flips or the app is resumed.
+      repo.noteLocalWrite();
       if (mounted && _positionGenerations[postId] == generation) {
         _persistedPositions[postId] = pos;
       }

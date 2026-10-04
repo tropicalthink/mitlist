@@ -6049,6 +6049,9 @@
   "featureBoardFilterBugs": "Bugs",
   "featureBoardSortTop": "Top",
   "featureBoardSortNew": "Nieuw",
+  "featureBoardAllShippedTitle": "Alles hier is uitgebracht",
+  "featureBoardAllShippedBody": "Er staat nu niets open. Bekijk wat al live is of stel iets nieuws voor.",
+  "featureBoardShowShipped": "Uitgebrachte tonen",
   "featureBoardKindLabel": "Wat is het?",
   "featureBoardKindFeature": "Functieverzoek",
   "featureBoardKindBug": "Bugmelding",
@@ -6317,10 +6320,15 @@
   "outboxOpCreateChore": "Taak toevoegen",
   "outboxOpCreateSettlement": "Verrekening vastleggen",
   "outboxOpMovePinwallPost": "Prikbordnotitie verplaatsen",
+  "outboxOpSetLanguage": "E-mailtaal bijwerken",
   "outboxOpCheckItem": "Afvinken",
   "outboxOpUncheckItem": "Vinkje weghalen",
   "offlineBannerQueueHeading": "Wacht op synchronisatie",
   "offlineBannerQueueEmpty": "Niets in de wachtrij",
   "offlineBannerQueueMore": "en nog {count}",
-  "offlineBannerQueueAttempt": "poging {count}"
+  "offlineBannerQueueAttempt": "poging {count}",
+  "shortcutAddItem": "Artikel toevoegen",
+  "shortcutScan": "Scannen",
+  "shortcutLogExpense": "Uitgave toevoegen",
+  "shortcutChoresToday": "Taken vandaag"
 }

@@ -52,6 +52,24 @@ class _Banner extends ConsumerWidget {
 
   const _Banner({required this.state});
 
+  /// Whether a sheet opened from the banner is still up. The banner sits
+  /// above the Navigator, so a modal barrier never covers it and every extra
+  /// tap while a sheet is open would stack another one on top. One banner
+  /// exists per app, so a class-level flag is enough to serialise them.
+  static bool _sheetOpen = false;
+
+  /// Runs [open] unless a banner sheet is already showing, and clears the
+  /// guard once that sheet has been dismissed.
+  static Future<void> _openOnce(Future<void> Function() open) async {
+    if (_sheetOpen) return;
+    _sheetOpen = true;
+    try {
+      await open();
+    } finally {
+      _sheetOpen = false;
+    }
+  }
+
   /// Tapping the banner is an explicit "check again" gesture, so honour it with
   /// a fresh probe instead of letting the cached verdict stand until its TTL
   /// expires. Fire-and-forget: the banner repaints when the re-run state lands.
@@ -64,10 +82,10 @@ class _Banner extends ConsumerWidget {
     );
   }
 
-  void _showDetails(BuildContext context) {
+  Future<void> _showDetails(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
-    showAppBottomSheet(
+    return showAppBottomSheet<void>(
       context: context,
       title: l10n.offlineBannerTitle,
       body: Padding(
@@ -188,12 +206,13 @@ class _Banner extends ConsumerWidget {
           final sheetContext = rootNavigatorKey.currentContext;
           if (sheetContext == null) return;
           if (state.hasConflicts) {
-            showConflictResolutionSheet(sheetContext);
+            unawaited(
+                _openOnce(() => showConflictResolutionSheet(sheetContext)));
           } else if (state.hasErrors) {
-            showFailedChangesSheet(sheetContext);
+            unawaited(_openOnce(() => showFailedChangesSheet(sheetContext)));
           } else {
             if (state.isOffline) _recheck(ref);
-            _showDetails(sheetContext);
+            unawaited(_openOnce(() => _showDetails(sheetContext)));
           }
         },
         child: Padding(

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Static widget picker previews (Android 12–14) and the native dialogs. -->
+<resources>
+    <color name="widget_preview_background">#FFFFFCF7</color>
+    <color name="widget_preview_text">#FF1A1714</color>
+    <color name="widget_preview_secondary">#FF5A5147</color>
+    <color name="widget_preview_outline">#FF26211D</color>
+    <color name="widget_accent">#FFF97316</color>
+</resources>

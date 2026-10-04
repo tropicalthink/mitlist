@@ -28,10 +28,17 @@ class AppRedirectResult {
   const AppRedirectResult({
     this.redirect,
     this.clearPendingAuth = false,
+    this.resumeAfterAuth,
   });
 
   final String? redirect;
   final bool clearPendingAuth;
+
+  /// Where a signed-out visitor was headed when they were bounced to
+  /// /welcome: a link from an email (the feedback board, a list) that should
+  /// still open once they have signed in. The router parks it as the pending
+  /// post-auth destination unless something more specific is already there.
+  final String? resumeAfterAuth;
 }
 
 const sessionBootstrapPath = '/_session';
@@ -66,6 +73,22 @@ bool isSessionBootstrapPath(String location) =>
     location.startsWith(sessionBootstrapPath);
 
 bool isPlausibleInviteCode(String code) => _inviteCodePattern.hasMatch(code);
+
+/// The bounce to /welcome for a signed-out visitor on a private route,
+/// remembering [target] so sign-in can resume it. Home is where sign-in lands
+/// anyway, so it is not worth remembering.
+AppRedirectResult _welcomeResuming(String target) {
+  final path = Uri.tryParse(target)?.path ?? target;
+  final worthResuming = target.startsWith('/') &&
+      !target.startsWith('//') &&
+      path != '/' &&
+      path != '/home' &&
+      !isSessionBootstrapPath(path);
+  return AppRedirectResult(
+    redirect: '/welcome',
+    resumeAfterAuth: worthResuming ? target : null,
+  );
+}
 
 /// A signed-out visitor holding an invite link is sent to /welcome with the
 /// code pinned to the query, so it survives sign-in and lands them on the
@@ -126,6 +149,7 @@ AppRedirectResult resolveAppRedirect(AppRedirectInput input) {
     if (continueTarget != null) {
       final welcome = welcomeWithInviteFor(continueTarget);
       if (welcome != null) return AppRedirectResult(redirect: welcome);
+      return _welcomeResuming(continueTarget);
     }
     return const AppRedirectResult(redirect: '/welcome');
   }
@@ -136,7 +160,7 @@ AppRedirectResult resolveAppRedirect(AppRedirectInput input) {
     }
     final welcome = welcomeWithInviteFor(location);
     if (welcome != null) return AppRedirectResult(redirect: welcome);
-    return const AppRedirectResult(redirect: '/welcome');
+    return _welcomeResuming(input.requestedPathWithQuery ?? location);
   }
 
   if (input.authState &&

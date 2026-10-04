@@ -55,6 +55,19 @@ type Hub struct {
 	watchCancel context.CancelFunc
 	seenMu      sync.Mutex
 	seen        map[string]struct{}
+	observersMu sync.RWMutex
+	observers   []func(Event)
+}
+
+// OnPublish registers fn to be called with every event this process
+// publishes, after it has been stored and fanned out. Events relayed from
+// other processes are not observed, so each event is seen exactly once
+// across a deployment. fn runs on the publisher's goroutine and must not
+// block.
+func (h *Hub) OnPublish(fn func(Event)) {
+	h.observersMu.Lock()
+	h.observers = append(h.observers, fn)
+	h.observersMu.Unlock()
 }
 
 // These limits are deliberately small: an SSE stream is a long-lived
@@ -237,6 +250,12 @@ func (h *Hub) Publish(groupID string, event Event) {
 		}
 	}
 	h.deliver(event)
+	h.observersMu.RLock()
+	observers := h.observers
+	h.observersMu.RUnlock()
+	for _, fn := range observers {
+		fn(event)
+	}
 }
 
 // deliver fans an already persisted event to local subscribers. IDs are

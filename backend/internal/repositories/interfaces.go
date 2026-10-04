@@ -18,6 +18,8 @@ type UserRepo interface {
 	Update(ctx context.Context, user *models.User) error
 	SoftDelete(ctx context.Context, id uuid.UUID) error
 	TouchGuestActivity(ctx context.Context, id uuid.UUID) error
+	TouchActivity(ctx context.Context, id uuid.UUID) error
+	SetLanguage(ctx context.Context, id uuid.UUID, language *string) error
 	ReactivateGuest(ctx context.Context, id uuid.UUID) error
 	List(ctx context.Context, limit, offset int) ([]models.User, error)
 }
@@ -57,6 +59,8 @@ type IntegrationCredentialRepo interface {
 	TouchLastUsed(ctx context.Context, id uuid.UUID, ip, userAgent string) error
 	Revoke(ctx context.Context, userID, id uuid.UUID) error
 	GetByID(ctx context.Context, userID, id uuid.UUID) (*models.IntegrationCredential, error)
+	ReplaceWidgetCredential(ctx context.Context, credential *models.IntegrationCredential, tokenHash string) error
+	RevokeWidgetCredential(ctx context.Context, userID uuid.UUID, deviceID string) error
 }
 
 // BillingRepo is the interface for premium subscription operations.

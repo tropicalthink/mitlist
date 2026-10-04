@@ -10539,6 +10539,24 @@ abstract class AppLocalizations {
   /// **'New'**
   String get featureBoardSortNew;
 
+  /// Board empty state title when every listed request has shipped and shipped ones are hidden
+  ///
+  /// In en, this message translates to:
+  /// **'Everything here has shipped'**
+  String get featureBoardAllShippedTitle;
+
+  /// Board empty state body when only shipped requests exist and they are hidden
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is open right now. Show what\'s already live, or suggest something new.'**
+  String get featureBoardAllShippedBody;
+
+  /// Board button that reveals shipped requests
+  ///
+  /// In en, this message translates to:
+  /// **'Show shipped'**
+  String get featureBoardShowShipped;
+
   /// Label above the feature/bug selector when creating a request
   ///
   /// In en, this message translates to:
@@ -11715,6 +11733,12 @@ abstract class AppLocalizations {
   /// **'Move pinwall post'**
   String get outboxOpMovePinwallPost;
 
+  /// Outbox op label: report the app language to the server so emails use it
+  ///
+  /// In en, this message translates to:
+  /// **'Update email language'**
+  String get outboxOpSetLanguage;
+
   /// Outbox op label: mark a list item as checked
   ///
   /// In en, this message translates to:
@@ -11750,6 +11774,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'attempt {count}'**
   String offlineBannerQueueAttempt(int count);
+
+  /// App icon long-press shortcut: open the default shopping list with the item composer focused.
+  ///
+  /// In en, this message translates to:
+  /// **'Add item'**
+  String get shortcutAddItem;
+
+  /// App icon long-press shortcut: open the scanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan'**
+  String get shortcutScan;
+
+  /// App icon long-press shortcut: open the new expense sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Log expense'**
+  String get shortcutLogExpense;
+
+  /// App icon long-press shortcut: open the chores tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Chores today'**
+  String get shortcutChoresToday;
 }
 
 class _AppLocalizationsDelegate

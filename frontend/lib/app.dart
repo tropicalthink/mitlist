@@ -10,6 +10,9 @@ import 'providers/list_provider.dart'
 import 'providers/outbox_provider.dart';
 import 'services/api_client.dart' show dioProvider;
 import 'services/canonical_display.dart' show setGroceryDisplayLang;
+import 'services/server_language_sync.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'providers/account_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/text_settings_provider.dart';
 import 'providers/locale_provider.dart';
@@ -23,6 +26,7 @@ import 'services/push_prompt_gate.dart';
 import 'widgets/push_permission_sheet.dart';
 import 'providers/billing_provider.dart' show iapServiceProvider;
 import 'providers/initial_sync_provider.dart';
+import 'providers/home_widgets_provider.dart';
 import 'services/iap_service.dart';
 import 'widgets/offline_banner.dart';
 
@@ -44,6 +48,7 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
   StreamSubscription? _fcmTapSub;
   PushPromptGate? _pushPromptGate;
   bool _deferredInitDone = false;
+  Future<void> _languageReport = Future.value();
 
   @override
   void initState() {
@@ -86,6 +91,61 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
     }
     _initPushSubscriptions();
     _startPushPromptGate();
+    _queueLanguageReport();
+    _startHomeWidgets();
+  }
+
+  /// Home screen widgets, Siri, Controls, the Android quick add and app icon
+  /// shortcuts (plans/047): hand native code a credential and a snapshot,
+  /// and take over what it queued.
+  void _startHomeWidgets() {
+    unawaited(ref.read(appShortcutsProvider).initialize((location) {
+      ref.read(routerProvider).go(location);
+    }));
+    unawaited(ref
+        .read(homeWidgetsControllerProvider.future)
+        .then((controller) => controller.start())
+        .catchError((Object _) {}));
+  }
+
+  /// Keeps the server's copy of the UI language current, so email arrives in
+  /// the language the app shows. Runs after sign-in, on a language change
+  /// under You, and when the device language changes; runs one at a time so a
+  /// start-up burst queues at most one outbox op.
+  void _queueLanguageReport() {
+    _languageReport = _languageReport.then((_) => _reportLanguage());
+  }
+
+  Future<void> _reportLanguage() async {
+    try {
+      await ref.read(localeProvider.notifier).ready;
+      if (!mounted || !ref.read(authStateProvider)) return;
+      final language = effectiveLanguageCode(
+        ref.read(localeProvider),
+        WidgetsBinding.instance.platformDispatcher.locales,
+      );
+      final authService = await ref.read(authServiceProviderAsync.future);
+      final prefs = await SharedPreferences.getInstance();
+      final marker = languageToQueueMarker(
+        language: language,
+        me: authService.cachedMe,
+        lastQueued: prefs.getString(kQueuedServerLanguageKey),
+      );
+      if (marker == null) return;
+      // Queued, not sent: the outbox delivers it with the next sync, so a
+      // change made offline still reaches the server.
+      final accounts = await ref.read(accountRepositoryProvider.future);
+      await accounts.queueLanguage(language);
+      await prefs.setString(kQueuedServerLanguageKey, marker);
+    } catch (_) {
+      // Signed out mid-flight or storage unavailable: the next launch or
+      // language change tries again.
+    }
+  }
+
+  @override
+  void didChangeLocales(List<Locale>? locales) {
+    if (ref.read(authStateProvider)) _queueLanguageReport();
   }
 
   /// Offers push notifications after the user's first change inside a
@@ -132,6 +192,8 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
       if (!ready || !mounted) return;
 
       _fcmSub = FcmService.onForegroundMessage.listen((message) {
+        // Silent widget refreshes are for native code (plans/047, C6).
+        if (message.data['type'] == 'widget_refresh') return;
         ref.invalidate(unreadNotificationCountProvider);
         final title = message.notification?.title;
         final body = message.notification?.body;
@@ -240,6 +302,13 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
             .read(notificationServiceProviderAsync.future)
             .then((service) => service.flushAllDigests()),
       );
+      // Same for queued writes: the sync session ends with the visit, so push
+      // them now while the OS still lets us use the network.
+      final coordinator = ref.read(outboxCoordinatorProvider).valueOrNull;
+      if (coordinator != null) {
+        unawaited(coordinator.flushSession(reason: 'app paused'));
+      }
+      ref.read(homeWidgetsControllerProvider).valueOrNull?.onPaused();
     }
     if (state == AppLifecycleState.resumed) {
       // Whatever the connectivity service believes right now was learned before
@@ -247,7 +316,17 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
       // down. Clear it first so the drain below decides on a fresh probe.
       ref.read(connectivityServiceProvider).reset();
       final coordinator = ref.read(outboxCoordinatorProvider).valueOrNull;
-      coordinator?.drain();
+      final widgets = ref.read(homeWidgetsControllerProvider).valueOrNull;
+      if (widgets != null && ref.read(authStateProvider)) {
+        // Taps on home screen widgets made while away join the outbox before
+        // it drains.
+        unawaited(widgets.importOps().whenComplete(() {
+          coordinator?.drain();
+          unawaited(widgets.onResumed());
+        }));
+      } else {
+        coordinator?.drain();
+      }
       // Force-reconnect SSE — the OS may have silently killed the connection
       // while the app was backgrounded.
       ref.read(sseServiceProvider).reconnect();
@@ -276,6 +355,8 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
         unawaited(_fcmTapSub?.cancel());
         _fcmSub = null;
         _fcmTapSub = null;
+        unawaited(ref.read(appShortcutsProvider).clear());
+        ref.invalidate(homeWidgetsControllerProvider);
       } else if (previous == false) {
         _ensureDeferredInit();
       }
@@ -284,6 +365,11 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
       next.whenData((authenticated) {
         if (authenticated) _ensureDeferredInit();
       });
+    });
+    ref.listen<Locale?>(localeProvider, (previous, next) {
+      if (previous != next && ref.read(authStateProvider)) {
+        _queueLanguageReport();
+      }
     });
     if (ref.read(authStateProvider)) {
       _ensureDeferredInit();

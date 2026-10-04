@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_shopping_list_name">Einkaufsliste</string>
+    <string name="widget_shopping_list_description">Einträge abhaken und neue hinzufügen</string>
+    <string name="widget_chores_name">Aufgaben heute</string>
+    <string name="widget_chores_description">Fällige Aufgaben mit Erledigt-Knopf</string>
+    <string name="widget_household_today_name">Haushalt heute</string>
+    <string name="widget_household_today_description">Aufgaben, Einkauf, Abendessen und dein Saldo</string>
+    <string name="widget_balance_name">Saldo</string>
+    <string name="widget_balance_description">Wer wem im Haushalt etwas schuldet</string>
+    <string name="widget_quick_add_name">Schnell hinzufügen</string>
+    <string name="widget_quick_add_description">Per Tippen oder Sprache zur Liste hinzufügen</string>
+
+    <string name="widget_open_app">mitlist öffnen</string>
+    <string name="widget_open_app_to_sync">mitlist öffnen, um zu synchronisieren</string>
+    <string name="widget_updated_ago">Aktualisiert %1$s</string>
+    <string name="widget_loading">Haushalt wird geladen…</string>
+    <string name="widget_signed_out">Melde dich bei mitlist an, um dieses Widget zu nutzen</string>
+    <string name="widget_no_lists">Noch keine Listen</string>
+    <string name="widget_no_household">Noch kein Haushalt</string>
+    <string name="widget_refresh">Aktualisieren</string>
+    <string name="widget_syncing">Widgets werden synchronisiert</string>
+    <string name="widget_sync_channel">Widget-Synchronisierung</string>
+
+    <plurals name="widget_items_left">
+        <item quantity="one">%1$d Eintrag offen</item>
+        <item quantity="other">%1$d Einträge offen</item>
+    </plurals>
+    <string name="widget_add_item_to">Eintrag zu %1$s hinzufügen</string>
+    <string name="widget_list_empty">Alles erledigt, nichts mehr offen</string>
+    <string name="widget_list_empty_action">Tippen, um etwas hinzuzufügen</string>
+    <string name="widget_more_items">+%1$d weitere</string>
+    <string name="widget_tick_off">%1$s abhaken</string>
+    <string name="widget_item_waiting">%1$s, wartet auf Synchronisierung</string>
+    <string name="widget_waiting_to_sync">Wartet auf Synchronisierung</string>
+    <string name="widget_added_by">von %1$s</string>
+
+    <string name="widget_chores_title">Aufgaben</string>
+    <string name="widget_chores_nothing_due_short">Nichts fällig</string>
+    <plurals name="widget_chores_due">
+        <item quantity="one">%1$d Aufgabe fällig</item>
+        <item quantity="other">%1$d Aufgaben fällig</item>
+    </plurals>
+    <plurals name="widget_chores_mine">
+        <item quantity="one">%1$d davon deine</item>
+        <item quantity="other">%1$d davon deine</item>
+    </plurals>
+    <string name="widget_chores_empty">Nichts fällig</string>
+    <string name="widget_chores_empty_action">Tippen, um eine Aufgabe anzulegen</string>
+    <string name="widget_chore_done">Erledigt</string>
+    <string name="widget_chore_done_cd">%1$s als erledigt markieren</string>
+    <string name="widget_chore_next">Als Nächstes: %1$s</string>
+    <string name="widget_chore_you">Du</string>
+    <string name="widget_due_overdue">Überfällig</string>
+    <string name="widget_due_today">Heute</string>
+    <string name="widget_due_tomorrow">Morgen</string>
+    <string name="widget_due_soon">Bald</string>
+
+    <string name="widget_today">Heute</string>
+    <string name="widget_tonight">Heute Abend: %1$s</string>
+    <string name="widget_tonight_nothing">Für heute Abend ist nichts geplant</string>
+    <string name="widget_balance_settled">Alles ausgeglichen</string>
+    <string name="widget_balance_you_owe">Du schuldest %1$s %2$s</string>
+    <string name="widget_balance_owes_you">%1$s schuldet dir %2$s</string>
+    <string name="widget_balance_net_owe">Du schuldest %1$s</string>
+    <string name="widget_balance_net_owed">Du bekommst %1$s</string>
+
+    <string name="widget_add_to">Zu %1$s hinzufügen</string>
+    <string name="quick_add_title">Zur Liste hinzufügen</string>
+    <string name="quick_add_tile">Zur Liste hinzufügen</string>
+    <string name="quick_add_hint">Eintrag hinzufügen</string>
+    <string name="quick_add_button">Hinzufügen</string>
+    <string name="quick_add_voice">Eintrag sprechen</string>
+    <string name="quick_add_voice_prompt">Was soll auf die Liste?</string>
+    <string name="quick_add_voice_unavailable">Spracheingabe ist auf diesem Gerät nicht verfügbar</string>
+    <string name="quick_add_target">%1$s · %2$s</string>
+    <string name="quick_add_choose_list">Liste wählen</string>
+    <string name="quick_add_choose_list_cd">Liste: %1$s. Tippen, um eine andere zu wählen</string>
+    <string name="quick_add_empty">Gib zuerst einen Eintrag ein</string>
+    <string name="quick_add_added">Zu %1$s hinzugefügt</string>
+    <string name="quick_add_setup">Öffne mitlist einmal, um Schnell hinzufügen einzurichten.</string>
+
+    <string name="widget_config_choose_list">Liste wählen</string>
+    <string name="widget_config_choose_household">Haushalt wählen</string>
+    <string name="widget_config_default_list">Meine Standardliste</string>
+    <string name="widget_config_default_household">Mein Standardhaushalt</string>
+    <string name="widget_config_no_data">Öffne mitlist einmal, um deine Haushalte zu laden. Bis dahin nutzt das Widget deine Standardwerte.</string>
+    <string name="widget_config_save">Speichern</string>
+
+    <string name="widget_sample_household">WG 3B</string>
+    <string name="widget_sample_list">Einkauf</string>
+    <string name="widget_sample_item_1">Haferdrink</string>
+    <string name="widget_sample_item_2">Brot</string>
+    <string name="widget_sample_item_3">Kaffeebohnen</string>
+    <string name="widget_sample_item_4">Eier</string>
+    <string name="widget_sample_chore_1">Müll rausbringen</string>
+    <string name="widget_sample_chore_2">Bad putzen</string>
+    <string name="widget_sample_meal">Lasagne</string>
+</resources>

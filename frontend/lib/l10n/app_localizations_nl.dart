@@ -6123,6 +6123,16 @@ class AppLocalizationsNl extends AppLocalizations {
   String get featureBoardSortNew => 'Nieuw';
 
   @override
+  String get featureBoardAllShippedTitle => 'Alles hier is uitgebracht';
+
+  @override
+  String get featureBoardAllShippedBody =>
+      'Er staat nu niets open. Bekijk wat al live is of stel iets nieuws voor.';
+
+  @override
+  String get featureBoardShowShipped => 'Uitgebrachte tonen';
+
+  @override
   String get featureBoardKindLabel => 'Wat is het?';
 
   @override
@@ -6891,6 +6901,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get outboxOpMovePinwallPost => 'Prikbordnotitie verplaatsen';
 
   @override
+  String get outboxOpSetLanguage => 'E-mailtaal bijwerken';
+
+  @override
   String get outboxOpCheckItem => 'Afvinken';
 
   @override
@@ -6911,4 +6924,16 @@ class AppLocalizationsNl extends AppLocalizations {
   String offlineBannerQueueAttempt(int count) {
     return 'poging $count';
   }
+
+  @override
+  String get shortcutAddItem => 'Artikel toevoegen';
+
+  @override
+  String get shortcutScan => 'Scannen';
+
+  @override
+  String get shortcutLogExpense => 'Uitgave toevoegen';
+
+  @override
+  String get shortcutChoresToday => 'Taken vandaag';
 }

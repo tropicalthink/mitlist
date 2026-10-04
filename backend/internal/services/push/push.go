@@ -266,11 +266,13 @@ type fcmNotification struct {
 }
 
 type fcmAndroidConfig struct {
-	CollapseKey string `json:"collapse_key"`
+	CollapseKey string `json:"collapse_key,omitempty"`
+	Priority    string `json:"priority,omitempty"`
 }
 
 type fcmAPNSConfig struct {
 	Headers map[string]string `json:"headers"`
+	Payload map[string]any    `json:"payload,omitempty"`
 }
 
 func notificationCollapseKey(data map[string]string) string {
@@ -313,16 +315,6 @@ func (e *permanentFCMError) Error() string {
 }
 
 func (s *Service) sendFCM(ctx context.Context, deviceToken, rawPayload string) error {
-	creds, err := s.fcmTokenSource(ctx)
-	if err != nil {
-		return fmt.Errorf("FCM credentials: %w", err)
-	}
-
-	tok, err := creds.TokenSource.Token()
-	if err != nil {
-		return fmt.Errorf("FCM token: %w", err)
-	}
-
 	// Parse the notification payload to extract title/body.
 	var parsed struct {
 		Title string          `json:"title"`
@@ -367,6 +359,21 @@ func (s *Service) sendFCM(ctx context.Context, deviceToken, rawPayload string) e
 		}}
 	}
 	msg.Message.Data["payload"] = rawPayload
+	return s.postFCM(ctx, msg)
+}
+
+// postFCM sends one prepared message through the FCM v1 API and classifies
+// failures as permanent (unregistered token) or transient.
+func (s *Service) postFCM(ctx context.Context, msg fcmMessage) error {
+	creds, err := s.fcmTokenSource(ctx)
+	if err != nil {
+		return fmt.Errorf("FCM credentials: %w", err)
+	}
+
+	tok, err := creds.TokenSource.Token()
+	if err != nil {
+		return fmt.Errorf("FCM token: %w", err)
+	}
 
 	body, err := json.Marshal(msg)
 	if err != nil {

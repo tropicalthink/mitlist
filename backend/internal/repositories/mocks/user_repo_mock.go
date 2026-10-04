@@ -66,6 +66,16 @@ func (m *MockUserRepo) TouchGuestActivity(ctx context.Context, id uuid.UUID) err
 	return args.Error(0)
 }
 
+func (m *MockUserRepo) SetLanguage(ctx context.Context, id uuid.UUID, language *string) error {
+	args := m.Called(ctx, id, language)
+	return args.Error(0)
+}
+
+func (m *MockUserRepo) TouchActivity(ctx context.Context, id uuid.UUID) error {
+	args := m.Called(ctx, id)
+	return args.Error(0)
+}
+
 func (m *MockUserRepo) ReactivateGuest(ctx context.Context, id uuid.UUID) error {
 	args := m.Called(ctx, id)
 	return args.Error(0)

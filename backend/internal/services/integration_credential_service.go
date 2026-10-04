@@ -22,7 +22,26 @@ const (
 	IntegrationTokenPrefix = "ml_int_"
 	IntegrationScopeRead   = "read"
 	IntegrationScopeWrite  = "write"
+
+	CredentialKindIntegration = repositories.CredentialKindIntegration
+	CredentialKindWidget      = repositories.CredentialKindWidget
+
+	// WidgetCredentialLifetime bounds a widget credential the app stopped
+	// renewing (uninstalled, or signed out while offline). The app renews it
+	// long before this while it is in use.
+	WidgetCredentialLifetime = 90 * 24 * time.Hour
+
+	widgetCredentialName      = "Home screen widgets"
+	maxWidgetCredentialGroups = 100
+	minWidgetDeviceIDLength   = 8
+	maxWidgetDeviceIDLength   = 128
 )
+
+// widgetCredentialScopes is what a home screen widget needs: read its
+// snapshot and register its WidgetKit push token (widget:write covers
+// both), tick list items, add items and complete chores. The middleware
+// narrows widget credentials further to exactly those routes.
+var widgetCredentialScopes = []string{"widget:write", "lists:write", "chores:write"}
 
 var integrationDomainScopes = map[string]struct{}{
 	"lists:read": {}, "lists:write": {}, "chores:read": {}, "chores:write": {},
@@ -44,6 +63,7 @@ var integrationScopeDomains = map[string]struct{}{
 type CredentialIdentity struct {
 	CredentialID uuid.UUID
 	UserID       uuid.UUID
+	Kind         string
 	GroupIDs     []uuid.UUID
 	Scopes       []string
 }
@@ -133,8 +153,68 @@ func (s *IntegrationCredentialService) Authenticate(ctx context.Context, rawToke
 		// Authentication remains available if telemetry storage is temporarily
 		// unavailable. The next request retries the update.
 	}
-	return &CredentialIdentity{CredentialID: credential.ID, UserID: credential.UserID,
+	return &CredentialIdentity{CredentialID: credential.ID, UserID: credential.UserID, Kind: credential.Kind,
 		GroupIDs: append([]uuid.UUID(nil), credential.GroupIDs...), Scopes: append([]string(nil), credential.Scopes...)}, nil
+}
+
+// IssueWidgetCredential gives one device's home screen widgets a credential
+// of their own, replacing any the device held before. It covers every
+// household the user currently belongs to, so the app re-issues it when that
+// set changes. The raw token is returned once; only its digest is stored.
+func (s *IntegrationCredentialService) IssueWidgetCredential(ctx context.Context, userID uuid.UUID, deviceID string) (*models.IntegrationCredential, string, error) {
+	deviceID, err := normalizeWidgetDeviceID(deviceID)
+	if err != nil {
+		return nil, "", err
+	}
+	groups, err := s.groups.ListGroupsByUser(ctx, userID, maxWidgetCredentialGroups, 0)
+	if err != nil {
+		return nil, "", err
+	}
+	groupIDs := make([]uuid.UUID, 0, len(groups))
+	for _, group := range groups {
+		groupIDs = append(groupIDs, group.ID)
+	}
+	rawSecret, err := randomIntegrationSecret()
+	if err != nil {
+		return nil, "", err
+	}
+	rawToken := IntegrationTokenPrefix + rawSecret
+	expiresAt := time.Now().UTC().Add(WidgetCredentialLifetime)
+	credential := &models.IntegrationCredential{
+		UserID: userID, Name: widgetCredentialName, Kind: CredentialKindWidget,
+		TokenPrefix: tokenDisplayPrefix(rawToken), GroupIDs: groupIDs,
+		Scopes: append([]string(nil), widgetCredentialScopes...), DeviceID: deviceID, ExpiresAt: &expiresAt,
+	}
+	if err := s.repo.ReplaceWidgetCredential(ctx, credential, HashIntegrationToken(rawToken)); err != nil {
+		return nil, "", err
+	}
+	return credential, rawToken, nil
+}
+
+// RevokeWidgetCredential ends the widget credential of one device, for
+// example when the app signs out. A device without one is not an error.
+func (s *IntegrationCredentialService) RevokeWidgetCredential(ctx context.Context, userID uuid.UUID, deviceID string) error {
+	deviceID, err := normalizeWidgetDeviceID(deviceID)
+	if err != nil {
+		return err
+	}
+	return s.repo.RevokeWidgetCredential(ctx, userID, deviceID)
+}
+
+// normalizeWidgetDeviceID accepts the app's install id: an opaque string of
+// letters, digits and "-_.:", long enough not to collide by accident.
+func normalizeWidgetDeviceID(deviceID string) (string, error) {
+	deviceID = strings.TrimSpace(deviceID)
+	if len(deviceID) < minWidgetDeviceIDLength || len(deviceID) > maxWidgetDeviceIDLength {
+		return "", &api.ValidationError{Field: "device_id", Message: "device_id must be 8 to 128 characters"}
+	}
+	for _, r := range deviceID {
+		isAlnum := (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9')
+		if !isAlnum && r != '-' && r != '_' && r != '.' && r != ':' {
+			return "", &api.ValidationError{Field: "device_id", Message: "device_id contains unsupported characters"}
+		}
+	}
+	return deviceID, nil
 }
 
 func (s *IntegrationCredentialService) Validate(ctx context.Context, rawToken, ip, userAgent string) (*CredentialIdentity, error) {

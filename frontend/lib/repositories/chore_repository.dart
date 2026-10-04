@@ -26,6 +26,15 @@ class ChoreRepository {
   final ChoreService _remote;
   final Uuid _uuid;
 
+  /// Production hook for the sync session: told when a write queued an op,
+  /// instead of draining right away. See [_afterLocalWrite].
+  final void Function()? _onLocalWrite;
+
+  /// Groups whose chores were written during the current sync session. The
+  /// session's drain refreshes them afterwards, as [_drainAndRefresh] does for
+  /// an immediate sync, so server-owned state (rotation, due status) catches up.
+  final Set<String> _refreshAfterDrain = {};
+
   SseService? _sseService;
   StreamSubscription<SseEvent>? _sseSub;
   String? _sseGroupId;
@@ -34,9 +43,11 @@ class ChoreRepository {
     required AppDatabase db,
     required ChoreService remote,
     Uuid? uuid,
+    void Function()? onLocalWrite,
   })  : _db = db,
         _remote = remote,
-        _uuid = uuid ?? const Uuid();
+        _uuid = uuid ?? const Uuid(),
+        _onLocalWrite = onLocalWrite;
 
   Stream<List<CurrentChore>> watchCurrentChores(String groupId) {
     return _db
@@ -132,7 +143,7 @@ class ChoreRepository {
 
     final local = _localChore(localId, req).chore;
     if (syncWindow == Duration.zero) {
-      unawaited(_drainAndRefresh(req.groupId));
+      _afterLocalWrite(req.groupId);
       return ChoreCreateResult(chore: local, synced: false);
     }
 
@@ -263,7 +274,7 @@ class ChoreRepository {
           entityId: choreId,
         );
       });
-      unawaited(_drainAndRefresh(groupId));
+      _afterLocalWrite(groupId);
     } else {
       await _db.enqueueOutbox(
         id: _uuid.v4(),
@@ -275,6 +286,12 @@ class ChoreRepository {
       );
     }
   }
+
+  /// Shows a chore completed outside the app (a home screen widget,
+  /// plans/047) in the cache. The completion request is queued separately,
+  /// so nothing is enqueued here.
+  Future<void> applyExternalCompletion(String groupId, String choreId) =>
+      _patchCachedAssignmentStatus(groupId, choreId, 'completed');
 
   Future<void> skipOfflineFirst(String choreId,
       {String? reason, String? groupId}) async {
@@ -292,7 +309,7 @@ class ChoreRepository {
           entityId: choreId,
         );
       });
-      unawaited(_drainAndRefresh(groupId));
+      _afterLocalWrite(groupId);
     } else {
       await _db.enqueueOutbox(
         id: _uuid.v4(),
@@ -325,7 +342,7 @@ class ChoreRepository {
           entityId: choreId,
         );
       });
-      unawaited(_drainAndRefresh(groupId));
+      _afterLocalWrite(groupId);
     } else {
       await _db.enqueueOutbox(
         id: _uuid.v4(),
@@ -354,7 +371,7 @@ class ChoreRepository {
           entityId: choreId,
         );
       });
-      unawaited(_drainAndRefresh(groupId));
+      _afterLocalWrite(groupId);
     } else {
       await _db.enqueueOutbox(
         id: _uuid.v4(),
@@ -457,6 +474,20 @@ class ChoreRepository {
     return 'later';
   }
 
+  /// Called after a write has queued an op (always after its transaction).
+  /// Production passes [_onLocalWrite], which only opens the sync session and
+  /// remembers [groupId] for a post-drain refresh; without it (tests, direct
+  /// constructions) the op drains and refreshes right away.
+  void _afterLocalWrite(String groupId) {
+    final onLocalWrite = _onLocalWrite;
+    if (onLocalWrite == null) {
+      unawaited(_drainAndRefresh(groupId));
+      return;
+    }
+    _refreshAfterDrain.add(groupId);
+    onLocalWrite();
+  }
+
   /// Best-effort immediate sync: push queued ops, then pull server state.
   /// Failures are swallowed; the cache keeps the optimistic patch offline.
   Future<void> _drainAndRefresh(String groupId) async {
@@ -535,6 +566,16 @@ class ChoreRepository {
         },
       },
     );
+    if (_refreshAfterDrain.isEmpty) return;
+    final groups = _refreshAfterDrain.toList();
+    _refreshAfterDrain.clear();
+    for (final groupId in groups) {
+      try {
+        await refreshCurrentChores(groupId);
+      } catch (_) {
+        // Best-effort; SSE or the next screen open reconciles.
+      }
+    }
   }
 
   // ---------------------------------------------------------------------------

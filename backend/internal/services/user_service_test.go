@@ -275,11 +275,38 @@ func TestUserService_GetMeForAccessToken(t *testing.T) {
 		user := &models.User{ID: userID, IsActive: true, IsVerified: true}
 		userRepo.On("GetByAccessToken", ctx, userID, "access-jti", issuedAt).
 			Return(user, true, nil)
+		userRepo.On("TouchActivity", ctx, userID).Return(nil)
 
 		got, err := svc.GetMeForAccessToken(ctx, userID, "access-jti", issuedAt)
 		require.NoError(t, err)
 		assert.Same(t, user, got)
 		userRepo.AssertExpectations(t)
+	})
+
+	t.Run("recent activity skips the write", func(t *testing.T) {
+		userRepo := new(mocks.MockUserRepo)
+		svc := NewUserService(userRepo, nil, nil, nil, nil)
+		recent := time.Now().Add(-10 * time.Minute)
+		user := &models.User{ID: userID, IsActive: true, IsVerified: true, LastActiveAt: &recent}
+		userRepo.On("GetByAccessToken", ctx, userID, "access-jti", issuedAt).
+			Return(user, true, nil)
+
+		_, err := svc.GetMeForAccessToken(ctx, userID, "access-jti", issuedAt)
+		require.NoError(t, err)
+		userRepo.AssertNotCalled(t, "TouchActivity", ctx, userID)
+	})
+
+	t.Run("failed activity touch does not fail the request", func(t *testing.T) {
+		userRepo := new(mocks.MockUserRepo)
+		svc := NewUserService(userRepo, nil, nil, nil, nil)
+		user := &models.User{ID: userID, IsActive: true, IsVerified: true}
+		userRepo.On("GetByAccessToken", ctx, userID, "access-jti", issuedAt).
+			Return(user, true, nil)
+		userRepo.On("TouchActivity", ctx, userID).Return(errors.New("write failed"))
+
+		got, err := svc.GetMeForAccessToken(ctx, userID, "access-jti", issuedAt)
+		require.NoError(t, err)
+		assert.Same(t, user, got)
 	})
 
 	t.Run("revoked access is rejected", func(t *testing.T) {
@@ -320,6 +347,54 @@ func TestUserService_UpdateMe(t *testing.T) {
 		u, err := svc.UpdateMe(ctx, userID, UpdateMeInput{FirstName: &name})
 		require.NoError(t, err)
 		assert.Equal(t, "Updated", u.FirstName)
+		userRepo.AssertNotCalled(t, "SetLanguage", mock.Anything, mock.Anything, mock.Anything)
+	})
+
+	t.Run("stores a supported language", func(t *testing.T) {
+		userRepo := new(mocks.MockUserRepo)
+		svc := NewUserService(userRepo, nil, nil, nil, nil)
+		user := &models.User{ID: userID, IsActive: true, IsVerified: true}
+		lang := "nl"
+		userRepo.On("GetByID", ctx, userID).Return(user, nil)
+		userRepo.On("Update", ctx, user).Return(nil)
+		userRepo.On("SetLanguage", ctx, userID, &lang).Return(nil)
+
+		u, err := svc.UpdateMe(ctx, userID, UpdateMeInput{Language: &lang})
+		require.NoError(t, err)
+		require.NotNil(t, u.Language)
+		assert.Equal(t, "nl", *u.Language)
+		userRepo.AssertExpectations(t)
+	})
+
+	t.Run("an empty language clears it", func(t *testing.T) {
+		userRepo := new(mocks.MockUserRepo)
+		svc := NewUserService(userRepo, nil, nil, nil, nil)
+		old := "de"
+		user := &models.User{ID: userID, IsActive: true, IsVerified: true, Language: &old}
+		empty := ""
+		userRepo.On("GetByID", ctx, userID).Return(user, nil)
+		userRepo.On("Update", ctx, user).Return(nil)
+		userRepo.On("SetLanguage", ctx, userID, (*string)(nil)).Return(nil)
+
+		u, err := svc.UpdateMe(ctx, userID, UpdateMeInput{Language: &empty})
+		require.NoError(t, err)
+		assert.Nil(t, u.Language)
+		userRepo.AssertExpectations(t)
+	})
+
+	t.Run("rejects an unsupported language before writing", func(t *testing.T) {
+		userRepo := new(mocks.MockUserRepo)
+		svc := NewUserService(userRepo, nil, nil, nil, nil)
+		user := &models.User{ID: userID, IsActive: true, IsVerified: true}
+		lang := "it"
+		userRepo.On("GetByID", ctx, userID).Return(user, nil)
+
+		_, err := svc.UpdateMe(ctx, userID, UpdateMeInput{Language: &lang})
+		var verr *api.ValidationError
+		require.ErrorAs(t, err, &verr)
+		assert.Equal(t, "language", verr.Field)
+		userRepo.AssertNotCalled(t, "Update", mock.Anything, mock.Anything)
+		userRepo.AssertNotCalled(t, "SetLanguage", mock.Anything, mock.Anything, mock.Anything)
 	})
 }
 

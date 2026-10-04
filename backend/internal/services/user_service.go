@@ -300,7 +300,19 @@ func (s *UserService) GetMeForAccessToken(
 	if !accessActive {
 		return nil, ErrAccessRevoked
 	}
-	return s.validateCurrentUser(ctx, user)
+	user, err = s.validateCurrentUser(ctx, user)
+	if err != nil {
+		return nil, err
+	}
+	// Only a person's own access token counts as using the app; integration
+	// credentials (Home Assistant) resolve through GetMe and would otherwise
+	// keep a lapsed account looking active forever. The row already says when
+	// the last touch was, so most requests skip the write. A failed touch is
+	// bookkeeping for the re-engagement email and never fails the request.
+	if !user.IsGuest && (user.LastActiveAt == nil || time.Since(*user.LastActiveAt) > time.Hour) {
+		_ = s.userRepo.TouchActivity(ctx, user.ID)
+	}
+	return user, nil
 }
 
 func (s *UserService) validateCurrentUser(ctx context.Context, user *models.User) (*models.User, error) {
@@ -352,6 +364,8 @@ type UpdateMeInput struct {
 	LastName          *string
 	AvatarURL         *string
 	TipsEmailsEnabled *bool
+	// Language is the app's UI language; an empty string clears it.
+	Language *string
 }
 
 // UpdateMe updates the authenticated user's profile fields.
@@ -391,9 +405,22 @@ func (s *UserService) UpdateMe(ctx context.Context, userID uuid.UUID, input Upda
 	if input.TipsEmailsEnabled != nil {
 		user.TipsEmailsEnabled = *input.TipsEmailsEnabled
 	}
+	var language *string
+	if input.Language != nil && *input.Language != "" {
+		if err := validation.Language(*input.Language, "language"); err != nil {
+			return nil, &api.ValidationError{Field: "language", Message: err.Error()}
+		}
+		language = input.Language
+	}
 
 	if err := s.userRepo.Update(ctx, user); err != nil {
 		return nil, err
+	}
+	if input.Language != nil {
+		if err := s.userRepo.SetLanguage(ctx, user.ID, language); err != nil {
+			return nil, err
+		}
+		user.Language = language
 	}
 	return user, nil
 }

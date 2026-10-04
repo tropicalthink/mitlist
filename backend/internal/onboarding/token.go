@@ -1,6 +1,7 @@
 // Package onboarding is the post-sign-up tips series: which emails go out,
 // when, what they say, and the unsubscribe token that lets a person stop them
-// from the email itself, signed in or not.
+// from the email itself, signed in or not. The re-engagement check-in for
+// lapsed accounts lives here too and shares that opt-out.
 package onboarding
 
 import (

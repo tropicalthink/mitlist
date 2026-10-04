@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 11 and older. Everything else is backed up as before; the widget
+     credential is device-bound (its Keystore key never leaves the device)
+     and the widget files are rebuilt from the server. -->
+<full-backup-content>
+    <exclude domain="sharedpref" path="mitlist_widget_credential.xml" />
+    <exclude domain="sharedpref" path="mitlist_widget_state.xml" />
+    <exclude domain="file" path="widgets/" />
+</full-backup-content>

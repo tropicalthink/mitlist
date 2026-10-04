@@ -2125,6 +2125,9 @@
   "featureBoardFilterBugs": "Fehler",
   "featureBoardSortTop": "Top",
   "featureBoardSortNew": "Neu",
+  "featureBoardAllShippedTitle": "Alles hier ist veröffentlicht",
+  "featureBoardAllShippedBody": "Gerade ist nichts offen. Sieh dir an, was schon live ist, oder schlag etwas Neues vor.",
+  "featureBoardShowShipped": "Veröffentlichte anzeigen",
   "featureBoardKindLabel": "Worum geht es?",
   "featureBoardKindFeature": "Funktionswunsch",
   "featureBoardKindBug": "Fehlerbericht",
@@ -2366,10 +2369,15 @@
   "outboxOpCreateChore": "Aufgabe hinzufügen",
   "outboxOpCreateSettlement": "Ausgleich erfassen",
   "outboxOpMovePinwallPost": "Pinnwand-Notiz verschieben",
+  "outboxOpSetLanguage": "E-Mail-Sprache aktualisieren",
   "outboxOpCheckItem": "Abhaken",
   "outboxOpUncheckItem": "Haken entfernen",
   "offlineBannerQueueHeading": "Wartet auf Synchronisierung",
   "offlineBannerQueueEmpty": "Nichts ausstehend",
   "offlineBannerQueueMore": "und {count} weitere",
-  "offlineBannerQueueAttempt": "Versuch {count}"
+  "offlineBannerQueueAttempt": "Versuch {count}",
+  "shortcutAddItem": "Artikel hinzufügen",
+  "shortcutScan": "Scannen",
+  "shortcutLogExpense": "Ausgabe erfassen",
+  "shortcutChoresToday": "Aufgaben heute"
 }

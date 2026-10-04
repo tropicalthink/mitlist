@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/auth_service.dart';
 import '../exceptions.dart';
 import 'list_provider.dart' show appDatabaseProvider;
+import '../services/widgets/widget_bridge.dart';
 
 /// Provider for the AuthService instance.
 final authServiceProvider = Provider<AuthService>((ref) {
@@ -17,6 +20,10 @@ final authServiceProviderAsync = FutureProvider<AuthService>((ref) async {
       // that still contains queued writes; the account screen additionally
       // blocks logout and asks the user to sync first.
       wipeLocalData: () async {
+        // Widgets on this device must not keep showing the household once
+        // signed out. Their queue goes too: the app imports it on every
+        // resume, so anything left is from a session that is over.
+        await WidgetBridge.instance.clearAll();
         if (await db.outboxCount() != 0) return;
         await db.clearAllUserData();
       });
@@ -53,6 +60,9 @@ final authBootstrapListenerProvider = Provider<void>((ref) {
         } catch (_) {}
       } else {
         ref.read(isGuestProvider.notifier).state = false;
+        // No session on this start (signed out, or one that was not to be
+        // remembered): widgets must not keep showing the household.
+        unawaited(WidgetBridge.instance.clearAll());
       }
     });
   });

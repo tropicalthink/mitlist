@@ -54,7 +54,8 @@ docker compose up -d        # Start postgres
 - **Sheets**: `frontend/lib/sheets/` — bottom sheet creation/detail forms
   - **Sheet vs. Page threshold**: If a form has >3 distinct sections or >6 interactive fields, push a full-page route instead of a bottom sheet. Bottom sheets are for focused, single-purpose actions. Complex creation/edit flows (recipe creation, household settings) should be full screens.
 - **Services**: `frontend/lib/services/` — API clients (Dio)
-- **Offline outbox**: `frontend/lib/repositories/outbox_drainer.dart` + `services/outbox_coordinator.dart`. Never start a drain (`drainOutboxOnce()`) or other fire-and-forget DB work from inside a `_db.transaction(...)` callback: Drift binds every query in that async chain to the transaction, which has committed by the time the network call returns, and the local bookkeeping then fails with "transaction was used after being closed" while the server has already applied the write (`test/repositories/list_repository_checkoff_drain_test.dart`).
+- **Offline outbox**: `frontend/lib/repositories/outbox_drainer.dart` + `services/outbox_coordinator.dart`. Never start a drain (`drainOutboxOnce()`) or other fire-and-forget DB work from inside a `_db.transaction(...)` callback: Drift binds every query in that async chain to the transaction, which has committed by the time the network call returns, and the local bookkeeping then fails with "transaction was used after being closed" while the server has already applied the write (`test/repositories/list_repository_checkoff_drain_test.dart`). Local writes do not drain on their own: repositories call their injected `onLocalWrite` hook (production wires it through `SyncScheduler` to `OutboxCoordinator.noteLocalWrite()`; with no hook and `autoSync` on they still drain immediately, which the repository tests rely on), and the coordinator flushes that *sync session* once per screen visit, on a route change, app pause, connectivity restore or retry, or after `kSyncSessionIdleWindow` (20 s) without a new write. The banner shows "Syncing" only while a drain is actually running; queued-but-deferred ops only appear in the sync-status sheet.
+- **Home screen widgets** (plans/047): the widget UI is native (Jetpack Glance under `android/app/src/main/kotlin/me/mitlist/widgets/`; WidgetKit in the `MitlistWidgets` extension plus `ios/WidgetShared/`, compiled into both iOS targets). The app talks to it over the `me.mitlist/widgets` method channel through `lib/services/widgets/`: it issues the device's widget credential, writes the server snapshot (`GET /widget/snapshot`), and imports ops widgets queued (`repositories/widget_ops_repository.dart`, replayed as `widgetRequest` outbox ops with the widget's exact bytes). Formats and golden fixtures: `contracts/widgets/`.
 - **Models**: `frontend/lib/models/` — data classes with `fromJson`/`toJson`
 - **Providers**: `frontend/lib/providers/` — Riverpod async providers for services
 - **Error Handling**: `frontend/lib/services/error_reporter.dart` — GlitchTip/Sentry-compatible error reporter
@@ -261,8 +262,11 @@ showAppDialog<bool>(
 | 000070–000072 | Calendar range-query indexes for expenses, recurring expenses, and pinwall reminders |
 | 000073 | List reminders |
 | 000074 | `invited_at` on `testing_signups` (store invitation email) |
+| 000075 | `users.last_active_at`, `users.language` (app UI language, reported by the app) + `reengagement_email_sends` (feedback check-in after 7 days away) |
+| 000076 | `integration_credentials.kind` (`integration` / `widget`), `device_id`, `expires_at`: device-bound home screen widget credentials (plans/047) |
+| 000077 | `integration_credentials.push_token`: iOS 26 WidgetKit push token of a device's widgets (plans/047) |
 
-Latest migration: `000074_add_testing_signup_invited_at`.
+Latest migration: `000077_add_widget_push_token`.
 
 ## Key API Endpoints Added
 
@@ -272,3 +276,6 @@ Latest migration: `000074_add_testing_signup_invited_at`.
 | `GET` | (via calendar) `ListExpensesByDateRange` | Calendar density — one-time expenses in calendar |
 | `GET` | (via pinwall) `ListPostsByGroupAndRemindAtRange` | Pinwall reminders in calendar |
 | `POST` | `/testing/signups` (Staffroom/reqtrack, not this API) | Public Turnstile-attested mobile-beta signups; see the staffroom repo's `apps/api` |
+| `POST`/`DELETE` | `/auth/widget-credential` | Home screen widgets — issue/revoke this install's widget credential (session auth only) |
+| `GET` | `/widget/snapshot` | Home screen widgets — households, open list items, due chores, tonight's meal, balance (plans/047) |
+| `PUT` | `/widget/push-token` | Home screen widgets — an iOS widget extension registers its WidgetKit push token (widget credential only) |

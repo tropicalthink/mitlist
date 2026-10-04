@@ -67,7 +67,7 @@ func (r *UserRepository) Create(ctx context.Context, user *models.User) error {
 // GetByID retrieves a user by ID, excluding soft-deleted records.
 func (r *UserRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.User, error) {
 	query := `
-		SELECT id, email, password_hash, first_name, last_name, avatar_url, is_active, is_verified, is_guest, tips_emails_enabled, created_at, updated_at
+		SELECT id, email, password_hash, first_name, last_name, avatar_url, is_active, is_verified, is_guest, tips_emails_enabled, language, created_at, updated_at
 		FROM users
 		WHERE id = $1 AND deleted_at IS NULL
 	`
@@ -83,6 +83,7 @@ func (r *UserRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.Use
 		&user.IsVerified,
 		&user.IsGuest,
 		&user.TipsEmailsEnabled,
+		&user.Language,
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	)
@@ -105,7 +106,8 @@ func (r *UserRepository) GetByAccessToken(
 ) (*models.User, bool, error) {
 	query := `
 		SELECT id, email, password_hash, first_name, last_name, avatar_url,
-			is_active, is_verified, is_guest, tips_emails_enabled, created_at, updated_at,
+			is_active, is_verified, is_guest, tips_emails_enabled, language, created_at, updated_at,
+			last_active_at,
 			deleted_at IS NULL
 			AND is_active
 			AND auth_valid_after <= $3
@@ -129,8 +131,10 @@ func (r *UserRepository) GetByAccessToken(
 		&user.IsVerified,
 		&user.IsGuest,
 		&user.TipsEmailsEnabled,
+		&user.Language,
 		&user.CreatedAt,
 		&user.UpdatedAt,
+		&user.LastActiveAt,
 		&accessActive,
 	)
 	if err != nil {
@@ -317,6 +321,36 @@ func (r *UserRepository) TouchGuestActivity(ctx context.Context, id uuid.UUID) e
 		SET guest_last_seen_at = NOW()
 		WHERE id = $1 AND is_guest AND is_active AND deleted_at IS NULL
 		  AND (guest_last_seen_at IS NULL OR guest_last_seen_at < NOW() - INTERVAL '1 hour')
+	`, id)
+	return err
+}
+
+// SetLanguage stores the app's UI language for a user; nil clears it. Kept
+// out of Update, which rewrites every column from whatever the caller loaded
+// and would otherwise erase the language on paths that never read it.
+func (r *UserRepository) SetLanguage(ctx context.Context, id uuid.UUID, language *string) error {
+	cmd, err := r.db.Exec(ctx, `
+		UPDATE users SET language = $2, updated_at = NOW()
+		WHERE id = $1 AND deleted_at IS NULL
+	`, id, language)
+	if err != nil {
+		return err
+	}
+	if cmd.RowsAffected() == 0 {
+		return fmt.Errorf("user not found")
+	}
+	return nil
+}
+
+// TouchActivity records that a full account used the app, at most once per
+// hour, for the re-engagement check-in. Guests keep their own
+// guest_last_seen_at and are skipped here.
+func (r *UserRepository) TouchActivity(ctx context.Context, id uuid.UUID) error {
+	_, err := r.db.Exec(ctx, `
+		UPDATE users
+		SET last_active_at = NOW()
+		WHERE id = $1 AND NOT is_guest AND deleted_at IS NULL
+		  AND (last_active_at IS NULL OR last_active_at < NOW() - INTERVAL '1 hour')
 	`, id)
 	return err
 }

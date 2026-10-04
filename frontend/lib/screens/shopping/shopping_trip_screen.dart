@@ -10,6 +10,8 @@ import 'package:go_router/go_router.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/list_models.dart';
 import '../../providers/grocery_provider.dart';
+import '../../providers/home_widgets_provider.dart';
+import '../../services/widgets/widget_bridge.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/list_provider.dart';
 import '../../providers/store_provider.dart';
@@ -66,6 +68,14 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
   final LatestRequestGuard _loadGuard = LatestRequestGuard();
   final LatestRequestGuard _aisleGuard = LatestRequestGuard();
 
+  /// The Lock Screen / Dynamic Island companion of this trip (iOS 16.2+,
+  /// plans/047 stage 7). A no-op elsewhere.
+  late final WidgetBridge _liveActivity = ref.read(widgetBridgeProvider);
+  bool _liveActivityRunning = false;
+  bool _liveActivityEnded = false;
+  String _householdName = '';
+  String _currency = 'EUR';
+
   /// Resolved aisle per item id for the selected store. Empty when no store is
   /// chosen (the trip then groups by list). Recomputed when items or store
   /// change.
@@ -83,7 +93,53 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
   void dispose() {
     _loadGuard.dispose();
     _aisleGuard.dispose();
+    // Leaving without finishing takes the Live Activity down with the trip.
+    if (_liveActivityRunning && !_liveActivityEnded) {
+      unawaited(_liveActivity.endShoppingTrip(
+          totalCents: 0, currency: _currency, addExpenseUrl: ''));
+    }
     super.dispose();
+  }
+
+  /// Starts the Live Activity once the trip has items, then keeps it on the
+  /// basket: items left and the running total of priced items.
+  void _syncLiveActivity() {
+    if (_liveActivityEnded) return;
+    final total = _totalItems;
+    final left = total - _checkedCount;
+    if (!_liveActivityRunning) {
+      if (total == 0) return;
+      _liveActivityRunning = true;
+      unawaited(_liveActivity.startShoppingTrip(
+        householdName: _householdName,
+        itemsLeft: left,
+        itemsTotal: total,
+        totalCents: _checkedTotalCents,
+        currency: _currency,
+      ));
+      return;
+    }
+    unawaited(_liveActivity.updateShoppingTrip(
+      itemsLeft: left,
+      itemsTotal: total,
+      totalCents: _checkedTotalCents,
+    ));
+  }
+
+  /// The trip is done: the activity ends on "Add expense" when there is a
+  /// priced total to log, and goes away otherwise.
+  void _endLiveActivity(int totalCents) {
+    if (!_liveActivityRunning || _liveActivityEnded) return;
+    _liveActivityEnded = true;
+    final group = _groupId;
+    final url = totalCents > 0 && group != null
+        ? 'mitlist:///money?group=$group&add=1&amount_cents=$totalCents'
+        : '';
+    unawaited(_liveActivity.endShoppingTrip(
+      totalCents: url.isEmpty ? 0 : totalCents,
+      currency: _currency,
+      addExpenseUrl: url,
+    ));
   }
 
   Future<void> _load() async {
@@ -107,6 +163,13 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
         return;
       }
       _groupId = groupId;
+      final groups = await ref.read(cachedGroupsProvider.future);
+      for (final g in groups) {
+        if (g.id == groupId) {
+          _householdName = g.name;
+          _currency = g.currency;
+        }
+      }
 
       final listSvc = await ref.read(listServiceProviderAsync.future);
       final lists = await listSvc.listLists(groupId, limit: 100);
@@ -170,6 +233,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
         ),
       );
       unawaited(_recomputeAisles());
+      _syncLiveActivity();
     } catch (e) {
       if (!mounted || !_loadGuard.isCurrent(request)) return;
       final message = friendlyErrorMessage(e, AppLocalizations.of(context)!);
@@ -326,6 +390,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
         _checkedItemIds.add(itemId);
       }
     });
+    _syncLiveActivity();
   }
 
   Future<void> _completeChecked() async {
@@ -352,6 +417,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
       // The trip is done: a heavy stamp and the matching thwack.
       unawaited(HapticFeedback.heavyImpact());
       _showDoneStamp(completedCount, totalCents);
+      _endLiveActivity(totalCents);
 
       setState(() => _checkedItemIds.clear());
       await _load();

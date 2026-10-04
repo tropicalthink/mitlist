@@ -21,11 +21,19 @@ type User struct {
 	// by default; the emails carry an unsubscribe link and the account screen
 	// has a switch.
 	TipsEmailsEnabled bool `json:"tips_emails_enabled"`
+	// Language is the app's UI language as the app last reported it (see
+	// validation.SupportedLanguages); server-sent email uses it. Nil until
+	// the app reports one.
+	Language *string `json:"language,omitempty"`
 	// Guest lifecycle timestamps are maintained server-side. They are omitted
 	// from the public user JSON; guests are locked after inactivity and retained
 	// for a recovery grace period before cleanup.
 	GuestLastSeenAt *time.Time `json:"-"`
 	GuestLockedAt   *time.Time `json:"-"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UpdatedAt       time.Time  `json:"updated_at"`
+	// LastActiveAt is when a full account last used the app with its own
+	// session, recorded at most hourly. It drives the re-engagement check-in
+	// email and is never exposed in the user JSON.
+	LastActiveAt *time.Time `json:"-"`
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
 }

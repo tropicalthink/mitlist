@@ -6156,6 +6156,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get featureBoardSortNew => 'Neu';
 
   @override
+  String get featureBoardAllShippedTitle => 'Alles hier ist veröffentlicht';
+
+  @override
+  String get featureBoardAllShippedBody =>
+      'Gerade ist nichts offen. Sieh dir an, was schon live ist, oder schlag etwas Neues vor.';
+
+  @override
+  String get featureBoardShowShipped => 'Veröffentlichte anzeigen';
+
+  @override
   String get featureBoardKindLabel => 'Worum geht es?';
 
   @override
@@ -6926,6 +6936,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get outboxOpMovePinwallPost => 'Pinnwand-Notiz verschieben';
 
   @override
+  String get outboxOpSetLanguage => 'E-Mail-Sprache aktualisieren';
+
+  @override
   String get outboxOpCheckItem => 'Abhaken';
 
   @override
@@ -6946,4 +6959,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String offlineBannerQueueAttempt(int count) {
     return 'Versuch $count';
   }
+
+  @override
+  String get shortcutAddItem => 'Artikel hinzufügen';
+
+  @override
+  String get shortcutScan => 'Scannen';
+
+  @override
+  String get shortcutLogExpense => 'Ausgabe erfassen';
+
+  @override
+  String get shortcutChoresToday => 'Aufgaben heute';
 }

@@ -6049,6 +6049,9 @@
   "featureBoardFilterBugs": "Bugs",
   "featureBoardSortTop": "Top",
   "featureBoardSortNew": "Nouveau",
+  "featureBoardAllShippedTitle": "Tout ici a été publié",
+  "featureBoardAllShippedBody": "Rien n'est ouvert pour le moment. Voyez ce qui est déjà disponible ou proposez quelque chose de nouveau.",
+  "featureBoardShowShipped": "Afficher les publiés",
   "featureBoardKindLabel": "De quoi s'agit-il ?",
   "featureBoardKindFeature": "Demande de fonctionnalité",
   "featureBoardKindBug": "Rapport de bug",
@@ -6317,10 +6320,15 @@
   "outboxOpCreateChore": "Ajouter une tâche",
   "outboxOpCreateSettlement": "Enregistrer un remboursement",
   "outboxOpMovePinwallPost": "Déplacer la note du mur",
+  "outboxOpSetLanguage": "Mettre à jour la langue des e-mails",
   "outboxOpCheckItem": "Cocher",
   "outboxOpUncheckItem": "Décocher",
   "offlineBannerQueueHeading": "En attente de synchronisation",
   "offlineBannerQueueEmpty": "Rien en attente",
   "offlineBannerQueueMore": "et {count} de plus",
-  "offlineBannerQueueAttempt": "tentative {count}"
+  "offlineBannerQueueAttempt": "tentative {count}",
+  "shortcutAddItem": "Ajouter un article",
+  "shortcutScan": "Scanner",
+  "shortcutLogExpense": "Ajouter une dépense",
+  "shortcutChoresToday": "Tâches du jour"
 }

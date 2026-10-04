@@ -2245,6 +2245,9 @@ class FakeChoreRepository implements ChoreRepository {
   }
 
   @override
+  Future<void> applyExternalCompletion(String groupId, String choreId) async {}
+
+  @override
   Future<void> completeOfflineFirst(String choreId, {String? groupId}) async {
     await _service.completeChore(choreId, notes: null);
   }
@@ -2341,6 +2344,19 @@ class FakeListRepository implements ListRepository {
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
+
+  @override
+  Future<void> applyExternalCheck(String listId, String itemId) async {}
+
+  @override
+  Future<void> applyExternalAdd(String listId,
+      {required String tempId, required String name}) async {}
+
+  @override
+  Future<void> applyServerItem(ListItem server, {String? tempId}) async {}
+
+  @override
+  Future<void> discardExternalAdd(String listId, String tempId) async {}
 
   @override
   Future<ListItem> updateItemOfflineFirst(
@@ -2603,6 +2619,9 @@ class FakePinwallRepository implements PinwallRepository {
     required String color,
     required String size,
   }) async {}
+
+  @override
+  void noteLocalWrite() {}
 
   @override
   Future<void> drainOutboxOnce() async {}

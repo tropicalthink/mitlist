@@ -104,7 +104,7 @@ class _PinwallNoteEditorBodyState
         // explicit choice" rather than pinning the note to medium forever.
         size: _size == 'medium' ? '' : _size,
       );
-      unawaited(repo.drainOutboxOnce().catchError((_) {}));
+      repo.noteLocalWrite();
       if (mounted) Navigator.of(context).pop();
     } catch (_) {
       if (mounted) {

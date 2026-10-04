@@ -22,6 +22,10 @@ class ListRepository {
   final Uuid _uuid;
   final bool _autoSync;
 
+  /// Production hook for the sync session: told when a write queued an op,
+  /// instead of draining right away. See [_afterLocalWrite].
+  final void Function()? _onLocalWrite;
+
   /// Promotes repeatedly-checked-off words the resolver couldn't map into
   /// household-local canonical items. Defaults to a db-backed instance so
   /// direct constructions (tests) still learn; production injects the same.
@@ -57,12 +61,14 @@ class ListRepository {
     required ListService remote,
     Uuid? uuid,
     bool autoSync = true,
+    void Function()? onLocalWrite,
     LocalItemPromotionService? promotionService,
     GroceryRepository? groceryRepo,
   })  : _db = db,
         _remote = remote,
         _uuid = uuid ?? const Uuid(),
         _autoSync = autoSync,
+        _onLocalWrite = onLocalWrite,
         _promotionService = promotionService ?? LocalItemPromotionService(db),
         _groceryRepo = groceryRepo;
 
@@ -312,7 +318,7 @@ class ListRepository {
     });
 
     // Best-effort immediate sync.
-    if (_autoSync && !deferImmediateSync) unawaited(drainOutboxOnce());
+    if (!deferImmediateSync) _afterLocalWrite();
     return local;
   }
 
@@ -409,7 +415,7 @@ class ListRepository {
       );
     });
 
-    if (_autoSync && !deferImmediateSync) unawaited(drainOutboxOnce());
+    if (!deferImmediateSync) _afterLocalWrite();
     return local;
   }
 
@@ -441,7 +447,7 @@ class ListRepository {
   /// Restarts best-effort sync after a caller briefly deferred it to enrich a
   /// durable optimistic row.
   void triggerAutoSync() {
-    if (_autoSync) unawaited(drainOutboxOnce());
+    _afterLocalWrite();
   }
 
   Future<ListItem> updateItemOfflineFirst(
@@ -513,8 +519,95 @@ class ListRepository {
       await _recordPurchaseSignal(listId, itemId, existingRow);
     }
 
-    if (_autoSync) unawaited(drainOutboxOnce());
+    _afterLocalWrite();
     return patched;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Changes made outside the app: home screen widgets, Siri, quick add
+  // (plans/047). The native side already queued the request, and the app
+  // replays it as a `widgetRequest` outbox op, so these only touch the cache.
+  // ---------------------------------------------------------------------------
+
+  /// Shows [itemId] as checked in the local cache. No-op when it is not
+  /// cached (a household the app has not opened yet).
+  Future<void> applyExternalCheck(String listId, String itemId) async {
+    final rows = await _db.getItemsByListOnce(listId);
+    final row = rows.firstWhereOrNull((r) => r.id == itemId);
+    if (row == null || row.checked) return;
+    final item = _toListItem(row);
+    await _db.upsertListItemsRows([
+      _toListItemsRow(ListItem(
+        id: item.id,
+        listId: item.listId,
+        name: item.name,
+        quantity: item.quantity,
+        unit: item.unit,
+        note: item.note,
+        checked: true,
+        position: item.position,
+        priceCents: item.priceCents,
+        canonicalItemId: item.canonicalItemId,
+        claimedBy: item.claimedBy,
+        addedBy: item.addedBy,
+        createdAt: item.createdAt,
+        updatedAt: DateTime.now(),
+      )),
+    ]);
+    await _patchListPreviewFromLocalItems(listId);
+  }
+
+  /// Shows an item added outside the app under [tempId] (the native op id)
+  /// until its request syncs and [applyServerItem] swaps in the server row.
+  /// No-op when the list is not cached.
+  Future<void> applyExternalAdd(
+    String listId, {
+    required String tempId,
+    required String name,
+  }) async {
+    if (await _db.getListGroupId(listId) == null) return;
+    final rows = await _db.getItemsByListOnce(listId);
+    if (rows.any((r) => r.id == tempId)) return;
+    var maxPos = -1;
+    for (final r in rows) {
+      if (r.position > maxPos) maxPos = r.position;
+    }
+    final now = DateTime.now();
+    await _db.upsertListItemsRows([
+      _toListItemsRow(ListItem(
+        id: tempId,
+        listId: listId,
+        name: name,
+        quantity: 1,
+        unit: '',
+        note: '',
+        checked: false,
+        position: maxPos + 1,
+        createdAt: now,
+        updatedAt: now,
+      )),
+    ]);
+    await _patchListPreviewFromLocalItems(listId);
+  }
+
+  /// Stores an item as the server returned it. With [tempId], replaces that
+  /// optimistic row and points queued ops at the server id.
+  Future<void> applyServerItem(ListItem server, {String? tempId}) async {
+    if (tempId != null && tempId != server.id) {
+      await _db.transaction(() async {
+        await _db.replaceTempItemId(tempId: tempId, server: server);
+        await _db.rewriteOutboxPayloadIds(oldId: tempId, newId: server.id);
+      });
+    } else {
+      await _db.upsertListItemsRows([_toListItemsRow(server)]);
+    }
+    await _patchListPreviewFromLocalItems(server.listId);
+  }
+
+  /// Drops the optimistic row of an outside add the server refused.
+  Future<void> discardExternalAdd(String listId, String tempId) async {
+    await _db.deleteListItemsByIds([tempId]);
+    await _patchListPreviewFromLocalItems(listId);
   }
 
   Future<void> deleteListLocal(String listId) async {
@@ -549,6 +642,7 @@ class ListRepository {
             priceCents: existing.priceCents,
             canonicalItemId: existing.canonicalItemId,
             claimedBy: existing.claimedBy,
+            addedBy: existing.addedBy,
             createdAt: existing.createdAt,
             updatedAt: DateTime.now(),
           ),
@@ -570,7 +664,7 @@ class ListRepository {
       );
     });
 
-    if (_autoSync) unawaited(drainOutboxOnce());
+    _afterLocalWrite();
   }
 
   Future<void> deleteItemOfflineFirst(String listId, String itemId) async {
@@ -589,7 +683,7 @@ class ListRepository {
       );
     });
 
-    if (_autoSync) unawaited(drainOutboxOnce());
+    _afterLocalWrite();
   }
 
   /// Offline-first bulk check / uncheck. Flips every row whose `checked`
@@ -655,7 +749,7 @@ class ListRepository {
       );
     }
 
-    if (_autoSync) unawaited(drainOutboxOnce());
+    _afterLocalWrite();
   }
 
   /// Offline-first clear. Deletes the matching rows locally in one write (one
@@ -683,7 +777,20 @@ class ListRepository {
       entityId: listId,
     );
 
-    if (_autoSync) unawaited(drainOutboxOnce());
+    _afterLocalWrite();
+  }
+
+  /// Called after a write has queued an op (always after its transaction).
+  /// Production passes [_onLocalWrite], which only opens the sync session;
+  /// without it (tests, direct constructions) the op drains right away.
+  void _afterLocalWrite() {
+    if (!_autoSync) return;
+    final onLocalWrite = _onLocalWrite;
+    if (onLocalWrite != null) {
+      onLocalWrite();
+    } else {
+      unawaited(drainOutboxOnce());
+    }
   }
 
   Future<void> drainOutboxOnce() async {
@@ -948,7 +1055,7 @@ class ListRepository {
       // Best-effort; the conflict is cleared regardless so it doesn't linger.
     }
     await _db.resolveConflict(conflict.id);
-    if (_autoSync) unawaited(drainOutboxOnce());
+    _afterLocalWrite();
   }
 
   // ---------------------------------------------------------------------------
@@ -1151,6 +1258,7 @@ class ListRepository {
       checked: item.checked,
       position: item.position,
       claimedBy: item.claimedBy,
+      addedBy: item.addedBy,
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,
     );

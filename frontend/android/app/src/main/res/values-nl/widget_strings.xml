@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_shopping_list_name">Boodschappenlijst</string>
+    <string name="widget_shopping_list_description">Vink items af en voeg nieuwe toe</string>
+    <string name="widget_chores_name">Klusjes vandaag</string>
+    <string name="widget_chores_description">Klusjes die aan de beurt zijn, met een Klaar-knop</string>
+    <string name="widget_household_today_name">Huishouden vandaag</string>
+    <string name="widget_household_today_description">Klusjes, boodschappen, het avondeten en je saldo</string>
+    <string name="widget_balance_name">Saldo</string>
+    <string name="widget_balance_description">Wie wie iets schuldig is in je huishouden</string>
+    <string name="widget_quick_add_name">Snel toevoegen</string>
+    <string name="widget_quick_add_description">Voeg toe aan je lijst door te typen of te spreken</string>
+
+    <string name="widget_open_app">mitlist openen</string>
+    <string name="widget_open_app_to_sync">Open mitlist om te synchroniseren</string>
+    <string name="widget_updated_ago">Bijgewerkt %1$s</string>
+    <string name="widget_loading">Je huishouden wordt geladen…</string>
+    <string name="widget_signed_out">Log in bij mitlist om deze widget te gebruiken</string>
+    <string name="widget_no_lists">Nog geen lijsten</string>
+    <string name="widget_no_household">Nog geen huishouden</string>
+    <string name="widget_refresh">Vernieuwen</string>
+    <string name="widget_syncing">Widgets synchroniseren</string>
+    <string name="widget_sync_channel">Widgetsynchronisatie</string>
+
+    <plurals name="widget_items_left">
+        <item quantity="one">Nog %1$d item</item>
+        <item quantity="other">Nog %1$d items</item>
+    </plurals>
+    <string name="widget_add_item_to">Item toevoegen aan %1$s</string>
+    <string name="widget_list_empty">Alles gedaan, niets meer over</string>
+    <string name="widget_list_empty_action">Tik om een item toe te voegen</string>
+    <string name="widget_more_items">+%1$d meer</string>
+    <string name="widget_tick_off">%1$s afvinken</string>
+    <string name="widget_item_waiting">%1$s, wacht op synchronisatie</string>
+    <string name="widget_waiting_to_sync">Wacht op synchronisatie</string>
+    <string name="widget_added_by">toegevoegd door %1$s</string>
+
+    <string name="widget_chores_title">Klusjes</string>
+    <string name="widget_chores_nothing_due_short">Niets te doen</string>
+    <plurals name="widget_chores_due">
+        <item quantity="one">%1$d klusje te doen</item>
+        <item quantity="other">%1$d klusjes te doen</item>
+    </plurals>
+    <plurals name="widget_chores_mine">
+        <item quantity="one">%1$d daarvan voor jou</item>
+        <item quantity="other">%1$d daarvan voor jou</item>
+    </plurals>
+    <string name="widget_chores_empty">Niets te doen</string>
+    <string name="widget_chores_empty_action">Tik om een klusje toe te voegen</string>
+    <string name="widget_chore_done">Klaar</string>
+    <string name="widget_chore_done_cd">%1$s als klaar markeren</string>
+    <string name="widget_chore_next">Hierna: %1$s</string>
+    <string name="widget_chore_you">Jij</string>
+    <string name="widget_due_overdue">Te laat</string>
+    <string name="widget_due_today">Vandaag</string>
+    <string name="widget_due_tomorrow">Morgen</string>
+    <string name="widget_due_soon">Binnenkort</string>
+
+    <string name="widget_today">Vandaag</string>
+    <string name="widget_tonight">Vanavond: %1$s</string>
+    <string name="widget_tonight_nothing">Niets gepland voor vanavond</string>
+    <string name="widget_balance_settled">Alles verrekend</string>
+    <string name="widget_balance_you_owe">Je bent %1$s %2$s schuldig</string>
+    <string name="widget_balance_owes_you">%1$s is je %2$s schuldig</string>
+    <string name="widget_balance_net_owe">Je bent %1$s schuldig</string>
+    <string name="widget_balance_net_owed">Je krijgt %1$s</string>
+
+    <string name="widget_add_to">Toevoegen aan %1$s</string>
+    <string name="quick_add_title">Toevoegen aan lijst</string>
+    <string name="quick_add_tile">Toevoegen aan lijst</string>
+    <string name="quick_add_hint">Item toevoegen</string>
+    <string name="quick_add_button">Toevoegen</string>
+    <string name="quick_add_voice">Item inspreken</string>
+    <string name="quick_add_voice_prompt">Wat moet er op de lijst?</string>
+    <string name="quick_add_voice_unavailable">Spraakinvoer is niet beschikbaar op dit apparaat</string>
+    <string name="quick_add_target">%1$s · %2$s</string>
+    <string name="quick_add_choose_list">Kies een lijst</string>
+    <string name="quick_add_choose_list_cd">Lijst: %1$s. Tik om een andere te kiezen</string>
+    <string name="quick_add_empty">Typ eerst een item</string>
+    <string name="quick_add_added">Toegevoegd aan %1$s</string>
+    <string name="quick_add_setup">Open mitlist één keer om Snel toevoegen in te stellen.</string>
+
+    <string name="widget_config_choose_list">Kies een lijst</string>
+    <string name="widget_config_choose_household">Kies een huishouden</string>
+    <string name="widget_config_default_list">Mijn standaardlijst</string>
+    <string name="widget_config_default_household">Mijn standaardhuishouden</string>
+    <string name="widget_config_no_data">Open mitlist één keer om je huishoudens te laden. Tot die tijd gebruikt de widget je standaardinstellingen.</string>
+    <string name="widget_config_save">Opslaan</string>
+
+    <string name="widget_sample_household">Huis 3B</string>
+    <string name="widget_sample_list">Boodschappen</string>
+    <string name="widget_sample_item_1">Haverdrank</string>
+    <string name="widget_sample_item_2">Brood</string>
+    <string name="widget_sample_item_3">Koffiebonen</string>
+    <string name="widget_sample_item_4">Eieren</string>
+    <string name="widget_sample_chore_1">Vuilnis buiten zetten</string>
+    <string name="widget_sample_chore_2">Badkamer schoonmaken</string>
+    <string name="widget_sample_meal">Lasagne</string>
+</resources>

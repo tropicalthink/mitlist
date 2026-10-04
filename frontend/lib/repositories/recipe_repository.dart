@@ -16,6 +16,10 @@ class RecipeRepository {
   final Uuid _uuid;
   final bool _autoSync;
 
+  /// Production hook for the sync session: told when a write queued an op,
+  /// instead of draining right away. See [_afterLocalWrite].
+  final void Function()? _onLocalWrite;
+
   bool _isDraining = false;
 
   RecipeRepository({
@@ -23,10 +27,12 @@ class RecipeRepository {
     required RecipeService remote,
     Uuid? uuid,
     bool autoSync = true,
+    void Function()? onLocalWrite,
   })  : _db = db,
         _remote = remote,
         _uuid = uuid ?? const Uuid(),
-        _autoSync = autoSync;
+        _autoSync = autoSync,
+        _onLocalWrite = onLocalWrite;
 
   Stream<List<api.Recipe>> watchRecipes() {
     return _db.watchRecipes().map((rows) => rows.map(_toRecipe).toList());
@@ -85,7 +91,7 @@ class RecipeRepository {
       );
     });
 
-    if (_autoSync) unawaited(drainOutboxOnce());
+    _afterLocalWrite();
     return local;
   }
 
@@ -141,7 +147,7 @@ class RecipeRepository {
       );
     }
 
-    if (_autoSync) unawaited(drainOutboxOnce());
+    _afterLocalWrite();
 
     final row = await (_db.select(_db.recipesTable)
           ..where((t) => t.id.equals(recipeId)))
@@ -165,7 +171,20 @@ class RecipeRepository {
       );
     });
 
-    if (_autoSync) unawaited(drainOutboxOnce());
+    _afterLocalWrite();
+  }
+
+  /// Called after a write has queued an op (always after its transaction).
+  /// Production passes [_onLocalWrite], which only opens the sync session;
+  /// without it (tests, direct constructions) the op drains right away.
+  void _afterLocalWrite() {
+    if (!_autoSync) return;
+    final onLocalWrite = _onLocalWrite;
+    if (onLocalWrite != null) {
+      onLocalWrite();
+    } else {
+      unawaited(drainOutboxOnce());
+    }
   }
 
   Future<void> drainOutboxOnce() async {

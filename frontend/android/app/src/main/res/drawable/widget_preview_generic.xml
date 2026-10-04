@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Picker preview for launchers older than Android 12, which show an image
+     instead of previewLayout: a mitlist-orange card with list rows. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="160dp"
+    android:height="160dp"
+    android:viewportWidth="160"
+    android:viewportHeight="160">
+    <path android:fillColor="#FFFFFCF7" android:pathData="M0,0h160v160h-160z" />
+    <path android:fillColor="#FFF97316" android:pathData="M0,0h160v36h-160z" />
+    <path android:fillColor="#FF26211D" android:pathData="M16,52h16v16h-16zM19,55v10h10v-10z" />
+    <path android:fillColor="#FF26211D" android:pathData="M40,57h96v6h-96z" />
+    <path android:fillColor="#FF26211D" android:pathData="M16,84h16v16h-16zM19,87v10h10v-10z" />
+    <path android:fillColor="#FF26211D" android:pathData="M40,89h72v6h-72z" />
+    <path android:fillColor="#FF26211D" android:pathData="M16,116h16v16h-16zM19,119v10h10v-10z" />
+    <path android:fillColor="#FF26211D" android:pathData="M40,121h84v6h-84z" />
+</vector>

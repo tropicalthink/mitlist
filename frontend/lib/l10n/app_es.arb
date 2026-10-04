@@ -6049,6 +6049,9 @@
   "featureBoardFilterBugs": "Errores",
   "featureBoardSortTop": "Top",
   "featureBoardSortNew": "Nuevo",
+  "featureBoardAllShippedTitle": "Todo lo de aquí ya está publicado",
+  "featureBoardAllShippedBody": "Ahora mismo no hay nada abierto. Mira lo que ya está disponible o sugiere algo nuevo.",
+  "featureBoardShowShipped": "Mostrar publicados",
   "featureBoardKindLabel": "¿Qué es?",
   "featureBoardKindFeature": "Petición de función",
   "featureBoardKindBug": "Informe de error",
@@ -6317,10 +6320,15 @@
   "outboxOpCreateChore": "Añadir tarea",
   "outboxOpCreateSettlement": "Registrar liquidación",
   "outboxOpMovePinwallPost": "Mover nota del tablón",
+  "outboxOpSetLanguage": "Actualizar idioma de los correos",
   "outboxOpCheckItem": "Marcar",
   "outboxOpUncheckItem": "Desmarcar",
   "offlineBannerQueueHeading": "Pendiente de sincronizar",
   "offlineBannerQueueEmpty": "Nada pendiente",
   "offlineBannerQueueMore": "y {count} más",
-  "offlineBannerQueueAttempt": "intento {count}"
+  "offlineBannerQueueAttempt": "intento {count}",
+  "shortcutAddItem": "Añadir artículo",
+  "shortcutScan": "Escanear",
+  "shortcutLogExpense": "Registrar gasto",
+  "shortcutChoresToday": "Tareas de hoy"
 }

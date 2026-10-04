@@ -4,14 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'providers/app_link_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/group_provider.dart' show cachedGroupsProvider;
 import 'widgets/mitlist_bottom_nav.dart';
 import 'widgets/shell_branch_switcher.dart';
 import 'providers/nav_badge_provider.dart';
+import 'providers/outbox_provider.dart' show outboxCoordinatorProvider;
 import 'providers/grocery_provider.dart' show groceryGraphSyncProvider;
 import 'theme/animations.dart';
 import 'utils/active_group_context.dart';
+import 'utils/app_link_intent.dart';
 import 'utils/route_history.dart';
 import 'utils/shell_tab_load.dart';
 
@@ -95,6 +98,24 @@ class CurrentGroupIdNotifier extends StateNotifier<String?> {
       await prefs.remove(_key);
     }
     state = groupId;
+  }
+}
+
+/// Acts on what a link from outside the app asked for besides its route: a
+/// widget's household, an expense sheet to open. Runs from the redirect, so
+/// state changes are deferred to after this navigation.
+void _applyAppLinkIntent(Ref ref, AppLinkIntent intent) {
+  final groupId = intent.groupId;
+  if (groupId != null && groupId != ref.read(currentGroupIdProvider)) {
+    final known = ref.read(cachedGroupsProvider).valueOrNull;
+    if (known == null || known.any((g) => g.id == groupId)) {
+      unawaited(ref.read(currentGroupIdProvider.notifier).set(groupId));
+    }
+  }
+  if (intent.openExpenseSheet) {
+    Future.microtask(() => ref
+        .read(pendingExpenseDraftProvider.notifier)
+        .state = PendingExpenseDraft(initialAmount: intent.initialAmount));
   }
 }
 
@@ -191,6 +212,19 @@ final routerProvider = Provider<GoRouter>((ref) {
       );
       if (result.clearPendingAuth) {
         ref.read(pendingAuthNavigationProvider.notifier).state = null;
+      }
+      // An invite or other destination parked by a screen is more specific
+      // than the route the visitor was bounced from; keep it.
+      final resume = result.resumeAfterAuth;
+      if (resume != null && ref.read(pendingAuthNavigationProvider) == null) {
+        ref.read(pendingAuthNavigationProvider.notifier).state = resume;
+      }
+      if (result.redirect == null && authState) {
+        final intent = AppLinkIntent.parse(state.uri);
+        if (intent != null) {
+          _applyAppLinkIntent(ref, intent);
+          return intent.location;
+        }
       }
       return result.redirect;
     },
@@ -456,7 +490,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                         listId: listId,
                         initialListName: args?.listName,
                         autoFocusTitle: args?.autoFocusTitle ?? false,
-                        autoFocusComposer: args?.autoFocusComposer ?? false,
+                        // `?add=1` is how widgets, Controls and app icon
+                        // shortcuts ask for the composer (plans/047, C5).
+                        autoFocusComposer: args?.autoFocusComposer ??
+                            state.uri.queryParameters['add'] == '1',
                       );
                     },
                   ),
@@ -559,8 +596,15 @@ final routerProvider = Provider<GoRouter>((ref) {
   // Feed the feedback sheet's page attribution: record every location change
   // so submissions can report the screen the user was on (and came from).
   router.routerDelegate.addListener(() {
-    RouteHistory.record(
-        router.routerDelegate.currentConfiguration.uri.toString());
+    final location = router.routerDelegate.currentConfiguration.uri.toString();
+    RouteHistory.record(location);
+    // Leaving a screen ends its sync session. Read lazily so building the
+    // router never waits on (or depends on) the outbox coordinator; it only
+    // flushes when the location really changed and writes are queued.
+    ref
+        .read(outboxCoordinatorProvider)
+        .valueOrNull
+        ?.onLocationChanged(location);
   });
 
   return router;
