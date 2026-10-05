@@ -3,18 +3,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mitlist/l10n/app_localizations.dart';
+import 'package:mitlist/models/auth_models.dart';
 import 'package:mitlist/providers/auth_provider.dart';
 import 'package:mitlist/providers/oauth_provider.dart';
 import 'package:mitlist/screens/auth/signup_screen.dart';
+import 'package:mitlist/services/auth_service.dart';
 
-/// Covers the registration password rules: the confirmation field, the
-/// complexity policy, and the fact that neither is reachable past the form.
+/// Covers the registration password rules (the complexity policy, and that
+/// it is not reachable past the form), the single password field with its
+/// show/hide button (plans/048 stage 6), and that a successful registration
+/// asks for the emailed code on the same screen.
 ///
-/// The auth service override throws deliberately — every case here must be
-/// rejected by client-side validation before any network call is attempted.
-/// If one of these tests ever fails with `UnimplementedError`, the form let a
-/// bad password through to the API.
-Future<void> _pumpSignup(WidgetTester tester) async {
+/// The default auth service override throws deliberately — every password
+/// case here must be rejected by client-side validation before any network
+/// call is attempted. If one of them ever fails with `UnimplementedError`,
+/// the form let a bad password through to the API.
+Future<void> _pumpSignup(
+  WidgetTester tester, {
+  AuthService? authService,
+}) async {
   await tester.binding.setSurfaceSize(const Size(1200, 2000));
   addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -39,7 +46,9 @@ Future<void> _pumpSignup(WidgetTester tester) async {
     ProviderScope(
       overrides: [
         authServiceProviderAsync.overrideWith(
-          (ref) async => throw UnimplementedError('network must not be used'),
+          (ref) async =>
+              authService ??
+              (throw UnimplementedError('network must not be used')),
         ),
         // Password-only: no provider buttons, so the form is unfolded from
         // the first frame and these cases reach it without a tap.
@@ -58,16 +67,11 @@ Future<void> _pumpSignup(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
-Future<void> _fillForm(
-  WidgetTester tester, {
-  required String password,
-  required String confirmPassword,
-}) async {
+Future<void> _fillForm(WidgetTester tester, {required String password}) async {
   final fields = find.byType(TextField);
   await tester.enterText(fields.at(0), 'Ada Lovelace');
   await tester.enterText(fields.at(1), 'ada@example.com');
   await tester.enterText(fields.at(2), password);
-  await tester.enterText(fields.at(3), confirmPassword);
   await tester.pump();
 }
 
@@ -78,13 +82,48 @@ Future<void> _submit(WidgetTester tester) async {
   await tester.pump(const Duration(milliseconds: 300));
 }
 
+class _FakeAuthService implements AuthService {
+  RegisterRequest? registered;
+  bool loginCalled = false;
+
+  @override
+  Future<RegistrationResult> register(
+    RegisterRequest request, {
+    bool rememberMe = true,
+  }) async {
+    registered = request;
+    return const RegistrationResult(verificationRequired: true);
+  }
+
+  /// The account cannot sign in before its email is confirmed, so sign-up
+  /// must never try.
+  @override
+  Future<TokenPair> login(
+    LoginRequest request, {
+    bool rememberMe = true,
+  }) {
+    loginCalled = true;
+    throw StateError('sign-up must not sign in before the code step');
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
 void main() {
-  testWidgets('signup form has a password confirmation field', (tester) async {
+  testWidgets('one password field, with a show/hide button instead of a '
+      'confirmation field', (tester) async {
     await _pumpSignup(tester);
-    expect(find.text('CONFIRM PASSWORD'),
-        findsOneWidget); // AppInput uppercases labels
-    // name, email, password, confirm password
-    expect(find.byType(TextField), findsNWidgets(4));
+    expect(find.text('CONFIRM PASSWORD'), findsNothing);
+    // name, email, password
+    expect(find.byType(TextField), findsNWidgets(3));
+
+    final password = find.byType(TextField).at(2);
+    expect(tester.widget<TextField>(password).obscureText, isTrue);
+    await tester.tap(find.byTooltip('Show password'));
+    await tester.pump();
+    expect(tester.widget<TextField>(password).obscureText, isFalse);
+    expect(find.byTooltip('Hide password'), findsOneWidget);
   });
 
   testWidgets('renders the requirement checklist', (tester) async {
@@ -95,26 +134,9 @@ void main() {
     expect(find.text('One special character'), findsOneWidget);
   });
 
-  testWidgets('blocks submission when the two passwords differ',
-      (tester) async {
-    await _pumpSignup(tester);
-    await _fillForm(
-      tester,
-      password: 'Passw0rd!',
-      confirmPassword: 'Passw0rd!different',
-    );
-    await _submit(tester);
-
-    expect(find.text('Passwords do not match.'), findsOneWidget);
-  });
-
   testWidgets('blocks a password missing an uppercase letter', (tester) async {
     await _pumpSignup(tester);
-    await _fillForm(
-      tester,
-      password: 'passw0rd!',
-      confirmPassword: 'passw0rd!',
-    );
+    await _fillForm(tester, password: 'passw0rd!');
     await _submit(tester);
 
     expect(find.text('Password does not meet the requirements below.'),
@@ -123,11 +145,7 @@ void main() {
 
   testWidgets('blocks a password missing a number', (tester) async {
     await _pumpSignup(tester);
-    await _fillForm(
-      tester,
-      password: 'Password!',
-      confirmPassword: 'Password!',
-    );
+    await _fillForm(tester, password: 'Password!');
     await _submit(tester);
 
     expect(find.text('Password does not meet the requirements below.'),
@@ -136,11 +154,7 @@ void main() {
 
   testWidgets('blocks a password missing a special character', (tester) async {
     await _pumpSignup(tester);
-    await _fillForm(
-      tester,
-      password: 'Passw0rdd',
-      confirmPassword: 'Passw0rdd',
-    );
+    await _fillForm(tester, password: 'Passw0rdd');
     await _submit(tester);
 
     expect(find.text('Password does not meet the requirements below.'),
@@ -150,19 +164,25 @@ void main() {
   testWidgets('a short password reports length, not the generic policy error',
       (tester) async {
     await _pumpSignup(tester);
-    await _fillForm(tester, password: 'Pa0!', confirmPassword: 'Pa0!');
+    await _fillForm(tester, password: 'Pa0!');
     await _submit(tester);
 
     expect(
         find.text('Password must be at least 8 characters.'), findsOneWidget);
   });
 
-  testWidgets('requires the confirmation field to be filled in',
-      (tester) async {
-    await _pumpSignup(tester);
-    await _fillForm(tester, password: 'Passw0rd!', confirmPassword: '');
+  testWidgets('a valid registration asks for the emailed code on the same '
+      'screen', (tester) async {
+    final auth = _FakeAuthService();
+    await _pumpSignup(tester, authService: auth);
+    await _fillForm(tester, password: 'Passw0rd!');
     await _submit(tester);
+    await tester.pump(const Duration(seconds: 1));
 
-    expect(find.text('Please confirm your password.'), findsOneWidget);
+    expect(auth.registered?.email, 'ada@example.com');
+    expect(auth.registered?.password, 'Passw0rd!');
+    expect(find.text('Enter the code we emailed to ada@example.com.'),
+        findsOneWidget);
+    expect(auth.loginCalled, isFalse);
   });
 }

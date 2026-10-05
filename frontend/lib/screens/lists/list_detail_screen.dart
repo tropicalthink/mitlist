@@ -1548,7 +1548,9 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       item: item,
       photoUrl: thumbUrl,
       currencySymbol: currencySymbol(_controller.groupCurrency),
-      claimedLabel: item.claimedBy != null ? '· claimed' : null,
+      claimedLabel: item.claimedBy != null
+          ? '· ${AppLocalizations.of(context)!.listItemClaimed}'
+          : null,
       addedByName: _addedByName(item),
       onToggle: (val) => _toggleItem(item, val),
       onTap: () => _toggleItem(item, !item.checked),

@@ -128,6 +128,10 @@ func (r *Runner) RegisterAll() {
 	// activity and retained for a 180-day recovery grace period before cleanup.
 	gc := NewGuestCleanup(r.db, r.log)
 	r.register("guest-cleanup", "15 3 * * *", gc.Run, true)
+
+	// Weekly household activation number (plans/048 stage 8) — Monday 08:00.
+	ar := NewActivationReport(r.db, r.log)
+	r.register("activation-report", "0 8 * * 1", ar.Run, true)
 }
 
 // RegisterOnboardingTips adds the post-sign-up email series, hourly at :20.

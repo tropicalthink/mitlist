@@ -439,7 +439,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     } catch (_) {}
     unawaited(ref.read(currentGroupIdProvider.notifier).set(null));
     ref.invalidate(cachedGroupsProvider);
-    ref.invalidate(hubQuickStartDismissedProvider);
+    ref.invalidate(hubQuickStartPrefsProvider);
     if (mounted) context.goNamed('welcome');
     _isSaving = false;
   }
@@ -491,7 +491,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       ref.read(authStateProvider.notifier).state = false;
       unawaited(ref.read(currentGroupIdProvider.notifier).set(null));
       ref.invalidate(cachedGroupsProvider);
-      ref.invalidate(hubQuickStartDismissedProvider);
+      ref.invalidate(hubQuickStartPrefsProvider);
       if (!mounted) return;
       context.goNamed('welcome');
     } catch (e) {
@@ -822,30 +822,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
               },
             ),
           ),
-          // Recovery for a quick start dismissed too early. Only offered while
-          // it is actually dismissed; the strip still retires itself once the
-          // household is going, so restoring is always safe.
-          if (ref.watch(hubQuickStartDismissedProvider).valueOrNull ??
-              false) ...[
-            Divider(color: Theme.of(context).colorScheme.outlineVariant),
-            _MenuRow(
-              icon: const AppIcon(name: 'pushPinOutline'),
-              label: l10n.accountShowQuickStart,
-              onTap: _restoreQuickStart,
-            ),
-          ],
         ],
       ),
-    );
-  }
-
-  Future<void> _restoreQuickStart() async {
-    await restoreHubQuickStart();
-    ref.invalidate(hubQuickStartDismissedProvider);
-    if (!mounted) return;
-    AppToast.success(
-      context,
-      AppLocalizations.of(context)!.accountQuickStartRestored,
     );
   }
 

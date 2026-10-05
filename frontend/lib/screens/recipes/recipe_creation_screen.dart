@@ -38,10 +38,14 @@ class RecipeCreationScreen extends ConsumerStatefulWidget {
 
   const RecipeCreationScreen({
     super.key,
+    this.startManual = false,
     this.initialTitle,
     this.initialIngredients,
     this.initialSteps,
   });
+
+  /// Open on "write it yourself" instead of "import from a link".
+  final bool startManual;
 
   @override
   ConsumerState<RecipeCreationScreen> createState() =>
@@ -67,11 +71,15 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
 
   /// Whether to share the new recipe with the active household. Backed by a
   /// real group id at save time — the old flag set a server-wide public bit
-  /// while this switch promised household-only sharing.
-  bool _shareWithHousehold = false;
+  /// while this switch promised household-only sharing. On by default: the
+  /// kitchen is a shared space, and a first recipe nobody else could see read
+  /// as broken. Without a household it has nobody to share with and saves
+  /// private.
+  bool _shareWithHousehold = true;
   bool _isSaving = false;
   bool _isScraping = false;
-  _RecipeEntryMode _mode = _RecipeEntryMode.url;
+  late _RecipeEntryMode _mode =
+      widget.startManual ? _RecipeEntryMode.manual : _RecipeEntryMode.url;
   List<Group> _groups = [];
 
   @override
@@ -271,6 +279,7 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
           ? _titleFromUrl(url, l10n)
           : _titleController.text.trim();
       final ingredients = await _buildEnrichedIngredients();
+      final shareGroupId = _shareWithHousehold ? _activeGroupId() : null;
 
       await recipeService.createRecipe(
         CreateRecipeRequest(
@@ -298,10 +307,10 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
                   .where((t) => t.isNotEmpty)
                   .toList()
               : const [],
-          visibility: _shareWithHousehold
+          visibility: shareGroupId != null
               ? RecipeVisibility.household
               : RecipeVisibility.private,
-          groupId: _shareWithHousehold ? _activeGroupId() : null,
+          groupId: shareGroupId,
           ingredients: ingredients,
           steps: _buildSteps(),
         ),
@@ -991,7 +1000,7 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
               : (_shareWithHousehold
                   ? l10n.recipeCreationSharedWithHousehold(_activeGroup()!.name)
                   : l10n.recipeCreationSaveForHouseholdPrivate),
-          value: _shareWithHousehold,
+          value: _shareWithHousehold && _activeGroup() != null,
           onChanged: _isSaving || _activeGroup() == null
               ? null
               : (value) => setState(() => _shareWithHousehold = value),

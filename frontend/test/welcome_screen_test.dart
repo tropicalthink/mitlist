@@ -4,9 +4,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mitlist/l10n/app_localizations.dart';
 import 'package:mitlist/models/auth_models.dart';
+import 'package:mitlist/models/group_models.dart';
 import 'package:mitlist/providers/auth_provider.dart';
+import 'package:mitlist/providers/group_provider.dart';
 import 'package:mitlist/screens/auth/welcome_screen.dart';
 import 'package:mitlist/services/auth_service.dart';
+import 'package:mitlist/services/group_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _GuestAuthService implements AuthService {
@@ -27,6 +30,58 @@ class _GuestAuthService implements AuthService {
 
   @override
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+/// Answers the signed-out invite lookup; a null [result] fails it the way
+/// an unknown code (404) or a dropped connection does.
+class _PreviewGroupService implements GroupService {
+  _PreviewGroupService(this.result);
+
+  final PublicInvitePreview? result;
+  final List<String> calls = [];
+
+  @override
+  Future<PublicInvitePreview> previewInvitePublic(String code) async {
+    calls.add(code);
+    final preview = result;
+    if (preview == null) throw Exception('invite not found');
+    return preview;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+/// The welcome screen opened from an invite link, with [service] behind the
+/// preview lookup.
+Future<void> _pumpInviteWelcome(
+  WidgetTester tester,
+  _PreviewGroupService service, {
+  String code = 'sunny-taco',
+}) async {
+  final router = GoRouter(
+    initialLocation: '/welcome?invite=$code',
+    routes: [
+      GoRoute(
+        path: '/welcome',
+        name: 'welcome',
+        builder: (context, state) => const WelcomeScreen(),
+      ),
+    ],
+  );
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        groupServiceProviderAsync.overrideWith((ref) async => service),
+      ],
+      child: MaterialApp.router(
+        routerConfig: router,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
 }
 
 void main() {
@@ -121,6 +176,10 @@ void main() {
       expect(find.text('signup:SUNNY-TACO'), findsOneWidget);
     });
 
+    // The long-deferred "guest continue with invite" case (plans/048 stage
+    // 7): re-deferred. An invitee is offered an account or sign-in, never a
+    // guest door; whether a guest may join through an invite stays a product
+    // question, and this pins today's answer.
     testWidgets('invite landing does not offer guest continue', (tester) async {
       final authService = _GuestAuthService(user: guestUser);
       final router = GoRouter(
@@ -234,6 +293,73 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('login'), findsOneWidget);
+    });
+  });
+
+  group('WelcomeScreen invite preview', () {
+    testWidgets('names who sent the invite and where it leads',
+        (tester) async {
+      final service = _PreviewGroupService(const PublicInvitePreview(
+        householdName: 'Flat 3B',
+        inviterName: 'Sam',
+        memberCount: 3,
+        status: InviteStatus.valid,
+      ));
+      await _pumpInviteWelcome(tester, service);
+
+      expect(service.calls, ['SUNNY-TACO']);
+      expect(find.text('SAM INVITED YOU'), findsOneWidget);
+      expect(find.text('to Flat 3B \u00b7 3 people'), findsOneWidget);
+      expect(find.text("YOU'RE INVITED"), findsNothing);
+      // The code and the two doors stay.
+      expect(find.text('SUNNY'), findsOneWidget);
+      expect(find.text('TACO'), findsOneWidget);
+      expect(find.text('CREATE ACCOUNT TO JOIN'), findsOneWidget);
+      expect(find.text('SIGN IN TO JOIN'), findsOneWidget);
+    });
+
+    testWidgets('without an inviter it still names the household',
+        (tester) async {
+      await _pumpInviteWelcome(
+        tester,
+        _PreviewGroupService(const PublicInvitePreview(
+          householdName: 'Flat 3B',
+          memberCount: 1,
+          status: InviteStatus.valid,
+        )),
+      );
+
+      expect(find.text("YOU'RE INVITED"), findsOneWidget);
+      expect(find.text('Join Flat 3B to share lists, chores and money.'),
+          findsOneWidget);
+    });
+
+    testWidgets('an expired invite says so', (tester) async {
+      await _pumpInviteWelcome(
+        tester,
+        _PreviewGroupService(const PublicInvitePreview(
+          householdName: 'Flat 3B',
+          inviterName: 'Sam',
+          memberCount: 3,
+          status: InviteStatus.expired,
+        )),
+      );
+
+      expect(find.text('THIS INVITE HAS EXPIRED'), findsOneWidget);
+      expect(find.text('Ask whoever sent it for a new link.'), findsOneWidget);
+      expect(find.text('SAM INVITED YOU'), findsNothing);
+      expect(find.text('CREATE ACCOUNT TO JOIN'), findsOneWidget);
+    });
+
+    testWidgets('a failed lookup keeps the generic invite', (tester) async {
+      await _pumpInviteWelcome(tester, _PreviewGroupService(null));
+
+      expect(find.text("YOU'RE INVITED"), findsOneWidget);
+      expect(
+        find.text('Join the household to share lists, chores, and money.'),
+        findsOneWidget,
+      );
+      expect(find.text('CREATE ACCOUNT TO JOIN'), findsOneWidget);
     });
   });
 }

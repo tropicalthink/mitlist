@@ -107,8 +107,9 @@ void main() {
   }
 
   group('TourScreen', () {
-    testWidgets('walks six pages on one shared sample household',
-        (tester) async {
+    testWidgets(
+        'walks three pages on one sample household, ending on the '
+        'account choice', (tester) async {
       tester.view.physicalSize = const Size(1080, 2400);
       tester.view.devicePixelRatio = 2.0;
       addTearDown(tester.view.reset);
@@ -117,22 +118,14 @@ void main() {
       final container =
           await pumpTour(tester, authService: authService, guest: true);
 
-      // 1 — why
-      expect(find.text('Who bought milk, who owes what, whose turn is it?'),
-          findsOneWidget);
-      expect(find.text('Weekend groceries · 4 to buy'), findsOneWidget);
-      expect(find.text('Overall, you are owed \$8.00'), findsOneWidget);
-      expect(find.text('Take out bins is overdue'), findsOneWidget);
-      await next(tester, 'SHOW ME');
-
-      // 2 — lists: ticking an item changes the count seen later.
+      // 1 — lists.
       expect(find.text('One list. Everyone adds. Whoever is at the shop buys.'),
           findsOneWidget);
       await tester.tap(find.text('Coffee beans'));
       await tester.pumpAndSettle();
       await next(tester, 'NEXT');
 
-      // 3 — money: leaving Ines out moves the balance.
+      // 2 — money: leaving Ines out moves the balance.
       expect(find.text('Overall, you are owed \$8.00'), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('tour-split-ines')));
       await tester.pumpAndSettle();
@@ -140,29 +133,18 @@ void main() {
       expect(find.text('Overall, you are owed \$1.00'), findsOneWidget);
       await next(tester, 'NEXT');
 
-      // 4 — chores: ticking mine shows who gets it next.
+      // 3 — chores: ticking mine shows who gets it next.
       await tester.tap(find.text('Clean bathroom'));
       await tester.pumpAndSettle();
       expect(find.text('Next: Sam, in 7 days'), findsOneWidget);
-      await next(tester, 'NEXT');
 
-      // 5 — recipes: ingredients land on the list from page 2.
-      expect(find.text('Weekend groceries · 3 to buy'), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('tour-add-ingredients')));
-      await tester.pumpAndSettle();
-      expect(
-          find.byKey(const ValueKey('tour-ingredients-added')), findsOneWidget);
-      expect(find.text('Weekend groceries · 6 to buy'), findsOneWidget);
-      // Let the toast run out so no timer is left pending.
-      await tester.pump(const Duration(seconds: 6));
-      await tester.pumpAndSettle();
-      await next(tester, 'NEXT');
-
-      // 6 — account choice, with the guest door (the server opted in).
+      // The account choice sits under the chores; no page of its own, no
+      // Next and no Skip left.
       expect(find.text('Now do it with the people you actually live with.'),
           findsOneWidget);
       expect(find.text('NEXT'), findsNothing);
       expect(find.text('Skip'), findsNothing);
+      await tester.ensureVisible(find.text('Continue as guest'));
       await tester.tap(find.text('Continue as guest'));
       await tester.pumpAndSettle();
 
@@ -180,19 +162,23 @@ void main() {
 
       final authService = _GuestAuthService(user: guestUser);
       await pumpTour(tester, authService: authService);
+      await next(tester, 'NEXT');
+      await next(tester, 'NEXT');
 
-      await tester.tap(find.text('Skip'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Now do it with the people you actually live with.'),
-          findsOneWidget);
       expect(find.text('CONTINUE WITH GOOGLE'), findsOneWidget);
+      expect(find.text('CONTINUE WITH APPLE'), findsNothing);
       expect(find.text('Continue with email'), findsOneWidget);
       expect(find.text('Continue as guest'), findsNothing);
       expect(authService.guestCreated, isFalse);
+
+      // Ghost buttons keep their case; only the provider buttons shout.
+      await tester.ensureVisible(find.text('Continue with email'));
+      await tester.tap(find.text('Continue with email'));
+      await tester.pumpAndSettle();
+      expect(find.text('signup'), findsOneWidget);
     });
 
-    testWidgets('skip jumps to the account page and email goes to signup',
+    testWidgets('skip on the first page goes straight to sign-up',
         (tester) async {
       tester.view.physicalSize = const Size(1080, 2400);
       tester.view.devicePixelRatio = 2.0;
@@ -202,15 +188,6 @@ void main() {
       await pumpTour(tester, authService: authService);
 
       await tester.tap(find.text('Skip'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Now do it with the people you actually live with.'),
-          findsOneWidget);
-      expect(find.text('CONTINUE WITH GOOGLE'), findsOneWidget);
-      expect(find.text('CONTINUE WITH APPLE'), findsNothing);
-
-      // Ghost buttons keep their case; only the provider buttons shout.
-      await tester.tap(find.text('Continue with email'));
       await tester.pumpAndSettle();
 
       expect(find.text('signup'), findsOneWidget);

@@ -2284,7 +2284,7 @@
   "@listEmptyCustomDesc": {
     "description": "Description for custom empty state"
   },
-  "listEmptyAllDesc": "Voeg regels toe in een lijst; de eerste paar verschijnen als voorbeeld op de kaart.",
+  "listEmptyAllDesc": "Eén plek voor boodschappen en to-do's, waar iedereen in huis aan kan toevoegen en afvinken.",
   "@listEmptyAllDesc": {
     "description": "Description for general empty state"
   },
@@ -3975,7 +3975,6 @@
   "@expenseCreationExpenseAdded": {
     "description": "Snackbar when expense is created"
   },
-  "pinwallSnapshot": "In één oogopslag",
   "pinwallBoardLabel": "Prikbord",
   "@pinwallBoardLabel": {
     "description": "Board chip label for pinwall"
@@ -4578,17 +4577,8 @@
   "authOnboardingInviteTitle": "Haal je huisgenoten erbij",
   "authOnboardingInviteBody": "Deel deze code. Wie hem invoert, komt bij je huishouden.",
   "authOnboardingGoToBoard": "Verder",
-  "authOnboardingReadyTitle": "Je huishouden is klaar",
-  "authOnboardingReadyBody": "Drie dingen om te weten. Dat is de hele kaart.",
-  "authOnboardingOrientationHome": "Home laat zien wat aandacht nodig heeft",
-  "authOnboardingOrientationTabs": "Tabs geven elk deel van het huishouden een vaste plek",
-  "authOnboardingOrientationAdd": "Met de knop + voeg je overal iets toe",
-  "authOnboardingEnterHousehold": "{name} openen",
   "authOnboardingResolving": "Je prikbord wordt geopend…",
   "hubQuickStartNextSemantic": "Volgende stap: {label}",
-  "hubQuickStartDismissedToast": "Snelstart opgeborgen. Je haalt hem altijd terug via Account.",
-  "accountShowQuickStart": "Snelstart op het prikbord tonen",
-  "accountQuickStartRestored": "De snelstart staat weer op je prikbord.",
   "hubChecklistTitle": "Breng het huis op gang",
   "hubChecklistDone": "Klaar",
   "hubChecklistProgress": "{done} van {total} klaar",
@@ -4598,14 +4588,6 @@
   "authOnboardingJoinDesc": "Al een uitnodiging? Voer de code in en ga meteen aan de slag.",
   "@authOnboardingJoinDesc": {
     "description": "Description for join household card"
-  },
-  "authOnboardingJoinInvite": "Deelnemen met uitnodigingscode",
-  "@authOnboardingJoinInvite": {
-    "description": "Secondary CTA on onboarding"
-  },
-  "authOnboardingJoinSemantic": "Deelnemen aan een huishouden met uitnodigingscode",
-  "@authOnboardingJoinSemantic": {
-    "description": "Semantic label for join card"
   },
   "authOnboardingSetupHome": "Richt je thuis in",
   "@authOnboardingSetupHome": {
@@ -5195,10 +5177,6 @@
   "@hubOnboardingDescription": {
     "description": "Onboarding card description"
   },
-  "hubOnboardingDismiss": "Snelstart sluiten",
-  "@hubOnboardingDismiss": {
-    "description": "Dismiss quick start tooltip"
-  },
   "hubOnboardingDone": "Alles klaar",
   "@hubOnboardingDone": {
     "description": "Onboarding card: done tile"
@@ -5210,10 +5188,6 @@
   "hubOnboardingGetStarted": "Aan de slag",
   "@hubOnboardingGetStarted": {
     "description": "Onboarding card header"
-  },
-  "hubOnboardingInvite": "Huisgenoten uitnodigen",
-  "@hubOnboardingInvite": {
-    "description": "Invite flatmates action"
   },
   "hubOnboardingSettle": "Verrekenen",
   "@hubOnboardingSettle": {
@@ -5263,18 +5237,6 @@
   "@hubQuickAddToList": {
     "description": "Quick add: add to list option"
   },
-  "hubStatsActiveList": "actieve lijst",
-  "@hubStatsActiveList": {
-    "description": "Stats grid: singular active list"
-  },
-  "hubStatsActiveLists": "actieve lijsten",
-  "@hubStatsActiveLists": {
-    "description": "Stats grid: plural active lists"
-  },
-  "hubStatsAllDone": "alles klaar",
-  "@hubStatsAllDone": {
-    "description": "Stats grid: all done label"
-  },
   "hubStatsBalance": "Saldo",
   "@hubStatsBalance": {
     "description": "Stats grid: balance label"
@@ -5294,14 +5256,6 @@
   "hubStatsMeals": "Maaltijden",
   "@hubStatsMeals": {
     "description": "Stats grid: meals planned label"
-  },
-  "hubStatsOpen": "open",
-  "@hubStatsOpen": {
-    "description": "Stats grid: open balance label"
-  },
-  "hubStatsOverdue": "te laat",
-  "@hubStatsOverdue": {
-    "description": "Stats grid: overdue label"
   },
   "hubStatsPinwallReminder": "prikbordherinnering",
   "@hubStatsPinwallReminder": {
@@ -6153,10 +6107,6 @@
   "openInAppButton": "Openen in Mitlist",
   "recipeShareSubject": "{title} op Mitlist",
   "accountExportCalendar": "Agenda exporteren (.ics)",
-  "authSignupConfirmPassword": "Wachtwoord bevestigen",
-  "authSignupConfirmPasswordHint": "Voer je wachtwoord opnieuw in",
-  "authSignupConfirmPasswordRequired": "Bevestig je wachtwoord.",
-  "authSignupPasswordMismatch": "De wachtwoorden komen niet overeen.",
   "authSignupPasswordRequirementsNotMet": "Het wachtwoord voldoet niet aan de onderstaande eisen.",
   "billingAutoRenewDisclosure": "De betaling wordt via je store-account afgerekend. Het abonnement wordt automatisch verlengd, tenzij je het minstens 24 uur voor het einde van de lopende periode opzegt. Beheer of annuleer het in je App Store- of Google Play-account.",
   "billingProcessing": "Je aankoop wordt verwerkt...",
@@ -6228,16 +6178,9 @@
   "welcomeHaveAccount": "Ik heb al een account",
   "tourSkip": "Overslaan",
   "tourNext": "Volgende",
-  "tourShowMe": "Laat zien",
   "tourBack": "Terug",
   "tourStepOf": "Stap {step} van {total}",
   "tourSampleTag": "Voorbeeld",
-  "tourWhyEyebrow": "Jouw huishouden",
-  "tourWhyHeadline": "Wie kocht de melk, wie is wat schuldig, wie is aan de beurt?",
-  "tourWhyBody": "mitlist is het gedeelde notitieboek voor de mensen met wie je woont. Hier is een voorbeeldhuis om mee te spelen.",
-  "tourWhyNote": "Huisbaas komt donderdag 10 uur",
-  "tourWhyToBuy": "{count, plural, =1{1 te kopen} other{{count} te kopen}}",
-  "tourWhyOverdue": "{title} is te laat",
   "tourListsEyebrow": "Lijsten",
   "tourListsHeadline": "Eén lijst. Iedereen vult aan. Wie in de winkel staat, koopt.",
   "tourListsBody": "Vink af wat gedaan is en voeg toe wat ontbreekt. Het hele huis ziet het meteen.",
@@ -6266,16 +6209,6 @@
   "tourChoresYourTurn": "Jouw beurt",
   "tourChoresTurnOf": "{name} is aan de beurt",
   "tourChoresNext": "Daarna: {name}, over {days} dagen",
-  "tourRecipesEyebrow": "Recepten",
-  "tourRecipesHeadline": "Donderdag is het shakshuka. De eieren staan al op de lijst.",
-  "tourRecipesBody": "Plan een maaltijd en stuur de ingrediënten rechtstreeks naar de boodschappenlijst.",
-  "tourRecipesTitle": "Shakshuka",
-  "tourRecipesServings": "4 porties · 30 min",
-  "tourRecipesPlanned": "Gepland voor donderdag",
-  "tourRecipesAddIngredients": "Op de lijst zetten",
-  "tourRecipesAddedButton": "Op de lijst",
-  "tourRecipesAddedToast": "{count} items toegevoegd aan {list}",
-  "tourFinishEyebrow": "Jouw huishouden",
   "tourFinishHeadline": "Doe het nu met de mensen met wie je echt woont.",
   "tourFinishBody": "Maak een account om je huishouden op te zetten en ze uit te nodigen. Gratis voor huishoudens tot 4 personen.",
   "tourFinishEmail": "Doorgaan met e-mail",
@@ -6330,5 +6263,94 @@
   "shortcutAddItem": "Artikel toevoegen",
   "shortcutScan": "Scannen",
   "shortcutLogExpense": "Uitgave toevoegen",
-  "shortcutChoresToday": "Taken vandaag"
+  "shortcutChoresToday": "Taken vandaag",
+  "hubStatsOverdueCount": "{count} te laat",
+  "hubStatsNothingOnYou": "Niets voor jou",
+  "hubBalanceYouOwe": "Je bent {amount} schuldig",
+  "hubBalanceSettledUp": "Alles verrekend",
+  "hubBalanceNoExpenses": "Nog geen uitgaven",
+  "hubBalanceYouOweLabel": "Je bent schuldig",
+  "hubBalanceOwedToYouLabel": "Je krijgt",
+  "hubStatsItemsLeft": "{count, plural, =1{Nog 1 item} other{Nog {count} items}}",
+  "hubStatsItemsLeftLabel": "{count, plural, =1{item open} other{items open}}",
+  "hubStatsListsEmpty": "Lijsten zijn leeg",
+  "settlementAlreadySettled": "{name} heeft al verrekend",
+  "settlementYouWillPay": "Je betaalt {name} {amount}",
+  "settlementWillPayYou": "{name} betaalt jou {amount}",
+  "settlementPays": "{payer} betaalt {payee} {amount}",
+  "settlementConfirming": "Bevestigen…",
+  "listItemClaimed": "geclaimd",
+  "hubQuickAddScan": "Bon of lijst scannen",
+  "shoppingTripCreateList": "Boodschappenlijst maken",
+  "mealPlanAddRecipe": "Recept toevoegen",
+  "mealPlanImportRecipe": "Importeren via een link",
+  "calendarLongPressHint": "Houd in de maandweergave een dag ingedrukt om er iets aan toe te voegen.",
+  "emptyStateSuggestionsTitle": "Of begin met een van deze",
+  "choreSuggestionBins": "Vuilnis buiten zetten",
+  "choreSuggestionBathroom": "Badkamer schoonmaken",
+  "choreSuggestionVacuum": "Stofzuigen",
+  "choreSuggestionKitchen": "Aanrecht schoonmaken",
+  "choreSuggestionPlants": "Planten water geven",
+  "choreSuggestionDishwasher": "Vaatwasser uitruimen",
+  "listSuggestionGroceries": "Boodschappen",
+  "listSuggestionSupplies": "Huishoudspullen",
+  "listSuggestionTodo": "To-do",
+  "needsYouTitle": "Voor jou",
+  "needsYouKindChore": "Klusje",
+  "needsYouKindMoney": "Geld",
+  "needsYouKindList": "Lijst",
+  "needsYouKindReminder": "Herinnering",
+  "needsYouDueToday": "Vandaag",
+  "needsYouOverdueDays": "{days, plural, =1{1 dag te laat} other{{days} dagen te laat}}",
+  "needsYouReminderAt": "Vandaag om {time}",
+  "needsYouSettle": "Verrekenen",
+  "needsYouOpen": "Openen",
+  "needsYouAllCaughtUp": "Alles bijgewerkt",
+  "needsYouAllCaughtUpDesc": "Er ligt nu niets bij jou.",
+  "needsYouNotSetUp": "Nog niet ingericht",
+  "needsYouNotSetUpDesc": "Voeg een lijst, een klusje of een uitgave toe, en alles wat bij jou ligt verschijnt hier.",
+  "needsYouLoadError": "Kon niet laden wat bij jou ligt.",
+  "hubChecklistHouseholdCreated": "Huishouden aangemaakt",
+  "hubChecklistHouseholdCreatedSub": "{name} is klaar",
+  "hubChecklistInvite": "Iemand uitnodigen",
+  "hubChecklistInviteSub": "Deel een link of code met de mensen met wie je woont",
+  "hubChecklistListSub": "Boodschappen, to-do's, alles om af te vinken",
+  "hubChecklistChoreSub": "Iedereen is om de beurt aan de beurt",
+  "hubChecklistExpenseSub": "Verdeel het en zie wie wat schuldig is",
+  "hubChecklistCollapsedBar": "Snelstart · {done} van {total}",
+  "hubChecklistCollapse": "Snelstart inklappen",
+  "hubChecklistExpand": "Snelstart openen",
+  "hubSoloTitle": "Je bent hier de enige",
+  "hubSoloBody": "Lijsten, klusjes en kosten werken het best met het hele huis erbij. Nodig je huisgenoten uit.",
+  "hubSoloShare": "Uitnodigingslink delen",
+  "hubSoloShowCode": "Code tonen",
+  "authOnboardingCurrency": "Valuta: {code}",
+  "authOnboardingCurrencyChange": "Wijzigen",
+  "authOnboardingInviteLater": "Later",
+  "authOnboardingIntentTitle": "Wat wil je als eerste regelen?",
+  "authOnboardingIntentBody": "Het komt als eerste op je checklist op Home.",
+  "authOnboardingIntentLists": "Boodschappenlijsten",
+  "authOnboardingIntentMoney": "Kosten verdelen",
+  "authOnboardingIntentChores": "Klusjes",
+  "authOnboardingIntentJustLooking": "Ik kijk alleen even",
+  "authShowPassword": "Wachtwoord tonen",
+  "authHidePassword": "Wachtwoord verbergen",
+  "hubChecklistJoined": "Lid van {name}",
+  "hubChecklistJoinedSub": "Je hoort nu bij het huishouden",
+  "hubChecklistTick": "Vink iets af op een lijst",
+  "hubChecklistTickSub": "Gekocht of gedaan? Vink het af zodat iedereen het weet",
+  "hubChecklistDoChore": "Neem of doe een klusje",
+  "hubChecklistDoChoreSub": "Vink de jouwe af als je aan de beurt bent",
+  "hubChecklistBalance": "Bekijk je saldo",
+  "hubChecklistBalanceSub": "Zie bij Geld wie wat schuldig is",
+  "needsYouNothingYet": "Nog niets voor jou",
+  "needsYouNothingYetDesc": "Hier werkt het huis aan.",
+  "needsYouNotYourTurn": "Niet jouw beurt",
+  "joinLandingOpen": "{name} openen",
+  "welcomeInviteFrom": "{name} heeft je uitgenodigd",
+  "welcomeInviteTo": "{count, plural, =1{bij {household} · 1 persoon} other{bij {household} · {count} mensen}}",
+  "welcomeInviteJoin": "Word lid van {household} om lijsten, klusjes en geld te delen.",
+  "welcomeInviteExpiredTitle": "Deze uitnodiging is verlopen",
+  "welcomeInviteExpiredBody": "Vraag degene die hem stuurde om een nieuwe link.",
+  "activityMemberJoined": "{name} is lid geworden · {when}"
 }

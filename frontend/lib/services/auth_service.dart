@@ -599,7 +599,11 @@ class AuthService {
     await _prefs.remove(ApiConfig.userDataKey);
     await _prefs.remove(ApiConfig.persistSessionKey);
     await _prefs.remove(ApiConfig.pendingOAuthRememberMeKey);
-    await _prefs.remove('hub_quick_start_dismissed');
+    // The quick start's per-household state and the old global dismiss
+    // (`kHubQuickStartPrefsPrefix` in providers/onboarding_provider.dart).
+    for (final key in _prefs.getKeys()) {
+      if (key.startsWith('hub_quick_start_')) await _prefs.remove(key);
+    }
     await _prefs.remove('chores_filter_me');
     await _prefs.remove('calendar_view_mode');
   }

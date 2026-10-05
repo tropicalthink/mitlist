@@ -373,6 +373,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                     builder: (context, state) {
                       final extra = state.extra as Map<String, String?>?;
                       return RecipeCreationScreen(
+                        startManual: extra?['entryMode'] == 'manual',
                         initialTitle: extra?['initialTitle'],
                         initialIngredients: extra?['initialIngredients'],
                         initialSteps: extra?['initialSteps'],

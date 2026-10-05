@@ -20,6 +20,7 @@ import '../theme/spacing.dart';
 import '../utils/active_group_context.dart';
 import '../utils/expense_categories.dart';
 import '../utils/format_currency.dart';
+import '../services/product_events.dart';
 import '../utils/haptics.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
@@ -694,6 +695,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
           splits: _splitMode == 'equal' ? const [] : splitRequests,
         ),
       );
+      unawaited(ProductEvents.instance.noteItemAdded(groupId, 'expense'));
 
       final receipt = widget.receiptImage;
       if (receipt != null) {

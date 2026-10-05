@@ -11,6 +11,7 @@ import '../../../widgets/app_icon.dart';
 import '../../../widgets/empty_state.dart';
 import '../expense_format.dart';
 import '../expenses_controller.dart';
+import 'expense_timeline_body.dart';
 
 /// The Settlements tab: settlements awaiting the user's confirmation,
 /// suggested payments to close open balances, the user's own pending
@@ -22,10 +23,15 @@ class ExpenseSettlementsBody extends StatelessWidget {
   final List<SettlementDisplay> recentSettlements;
   final List<BalanceDisplayEntry> balances;
   final String currency;
+
+  /// False while the household has recorded no expense or settlement; the
+  /// tab then shows "No expenses yet" instead of "All settled up!".
+  final bool hasMoneyActivity;
   final bool isSettling;
   final bool isResponding;
   final ConfettiController confettiController;
   final Future<void> Function() onRefresh;
+  final VoidCallback onAddExpense;
   final ValueChanged<SettlementSuggestionDisplay> onRecordSettlement;
   final void Function(SettlementDisplay settlement, bool approve)
       onRespondSettlement;
@@ -39,10 +45,12 @@ class ExpenseSettlementsBody extends StatelessWidget {
     required this.recentSettlements,
     required this.balances,
     required this.currency,
+    required this.hasMoneyActivity,
     required this.isSettling,
     required this.isResponding,
     required this.confettiController,
     required this.onRefresh,
+    required this.onAddExpense,
     required this.onRecordSettlement,
     required this.onRespondSettlement,
     required this.onCancelSettlement,
@@ -51,6 +59,12 @@ class ExpenseSettlementsBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    if (!hasMoneyActivity) {
+      return ExpenseNoExpensesBody(
+        onRefresh: onRefresh,
+        onAddExpense: onAddExpense,
+      );
+    }
     return RefreshIndicator(
       color: Theme.of(context).colorScheme.primary,
       onRefresh: onRefresh,

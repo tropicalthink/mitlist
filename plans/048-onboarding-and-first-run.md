@@ -57,14 +57,14 @@
 
 | Stage | Title | Effort | Depends on | Status |
 |-------|-------|--------|------------|--------|
-| 1 | Backend: chore rotations include members who join later | S | — | TODO |
-| 2 | Home summary bugs: balance is the caller's, counts are the caller's, `$`/`€` hardcodes | S | — | TODO |
-| 3 | Quick add adds; dead ends get a way out | S–M | — | TODO |
-| 4 | Home opens with a "Needs you" block | M–L | 2 | TODO |
-| 5 | Quick start becomes a plain checklist; solo invite card stays | M | 4 | TODO |
-| 6 | Shorter first run: 3-page tour, join+create on one screen, intent question replaces the recap | M–L | 5 | TODO |
-| 7 | Invited members get a first run of their own | M | 1, 4, 5 | TODO |
-| 8 | Measurement: activation event, funnel events, usability script | S | — (ship with or before 4) | TODO |
+| 1 | Backend: chore rotations include members who join later | S | — | DONE (2026-10-05; prod backfill not run yet) |
+| 2 | Home summary bugs: balance is the caller's, counts are the caller's, `$`/`€` hardcodes | S | — | DONE (2026-10-05) |
+| 3 | Quick add adds; dead ends get a way out | S–M | — | DONE (2026-10-05; manual device pass pending) |
+| 4 | Home opens with a "Needs you" block | M–L | 2 | DONE (2026-10-05; device screenshot pending) |
+| 5 | Quick start becomes a plain checklist; solo invite card stays | M | 4 | DONE (2026-10-05) |
+| 6 | Shorter first run: 3-page tour, join+create on one screen, intent question replaces the recap | M–L | 5 | DONE (2026-10-05; step 6, non-blocking email, REJECTED by the founder: built, then reverted) |
+| 7 | Invited members get a first run of their own | M | 1, 4, 5 | DONE (2026-10-05; migration 000079 to apply by hand) |
+| 8 | Measurement: activation event, funnel events, usability script | S | — (ship with or before 4) | DONE (2026-10-05; sending off until the privacy policy is updated) |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (reason) | REJECTED (reason).
 
@@ -221,6 +221,8 @@ without a founder note.
    actions that need a verified address (inviting by email, billing). STOP if
    the backend requires verification for group creation — report instead of
    loosening server checks without a founder note.
+   **REJECTED 2026-10-05** by the founder (open question 2): verification
+   stays blocking. Stage 6 step 6 was built, then reverted.
 9. **Names**: the tab is "Kitchen" everywhere (tour copy changes to match),
    the account tab is "You" everywhere, and the Kitchen icon becomes a
    food/cooking glyph. "Pinwall" is introduced once, on its own empty state.
@@ -545,7 +547,469 @@ activation query exists and runs; the script file exists.
 
 ## Implementation record
 
-(empty — executors append per stage: what was built, verified, deviations)
+### Stages 1–3 — 2026-10-05 (uncommitted on `new-main-fr`, on top of `1fa5167`)
+
+Drift check at start: nothing changed since `08357fc` in the watched paths.
+de/es/fr/nl strings are machine-translated: **TODO translate** review before
+release.
+
+**Stage 1 (backend rotations): DONE.**
+- `GroupService` has an optional `memberOrderSyncer` (`SetMemberOrderSyncer`,
+  mirrors `SetHub`), wired to `ChoreService` in
+  `internal/container/container.go`. It runs after `JoinGroup`,
+  `ApproveClaim`, `LeaveGroup` and `RemoveMember` under
+  `context.WithoutCancel`. A failure is logged at warn level and never fails
+  the membership change.
+- Step 3: the old `RebuildMemberOrdersForGroup` **reset** each rotation to
+  all members sorted by user id and ignored `assignment_config`, so it would
+  have added people to chores limited to named members. It now appends
+  eligible newcomers, drops members who left, and keeps everyone else's
+  relative order. Chores limited to named members only admit those members.
+  No API lets anyone reorder `member_order` by hand; `assignment_config` is
+  the only deliberate shape. `current_index` keeps the same person due next
+  (or the next remaining member if that person left); in a rotation of one
+  the newcomer goes next. Pending assignments are never touched. Chores are
+  read in pages of 500 (the old `(0,0)` call stopped at 50).
+- `BulkUpdateRotationStates` could never have worked on Postgres: a ragged
+  `uuid[][]` cannot be unnested one array per row, and pgxmock hid it. It is
+  now one UPDATE per row inside a transaction.
+- STOP check: `member_order` only lists rotation participants, and nothing
+  else references members by position. Not hit.
+- Backfill: `backend/cmd/rebuild-chore-rotations` (idempotent, `-dry-run`,
+  same reconcile code). **Deploy steps** (after the API image with this
+  change is live; nothing has been run against prod):
+  1. `cd backend && GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o rebuild-chore-rotations ./cmd/rebuild-chore-rotations` (match `ssh anansi uname -m`).
+  2. `scp rebuild-chore-rotations anansi:/tmp/ && ssh anansi 'chmod 755 /tmp/rebuild-chore-rotations && docker cp /tmp/rebuild-chore-rotations <api-container>:/tmp/'`
+  3. Dry run and read the `rotation rebuilt` lines: `ssh anansi 'docker exec <api-container> /tmp/rebuild-chore-rotations -dry-run'`
+  4. Apply: `ssh anansi 'docker exec <api-container> /tmp/rebuild-chore-rotations'`. Expect `households_failed=0`; a second run reports `rotations_changed=0`.
+  5. Clean up: `ssh anansi 'docker exec -u 0 <api-container> rm /tmp/rebuild-chore-rotations; rm /tmp/rebuild-chore-rotations'`
+- Verified: `go build ./... && go vet ./... && go test ./...` clean. There is
+  no real Postgres on the dev machine; repository tests use pgxmock.
+- Follow-ups not done: a chore completion racing a join can write back the
+  old `member_order` (millisecond window; the next membership change repairs
+  it). A member who leaves keeps their pending assignment. `UpdateChore` does
+  not rebuild when `assignment_config` changes. Account deletion does not end
+  memberships. For stage 7: `GroupService.PreviewInvite` already exists.
+
+**Stage 2 (Home summary bugs): DONE.**
+- Balance row: the caller's own `BalanceEntry.total`, in the household
+  currency through the Money screen's `formatExpenseCurrency`, cents kept.
+  Copy: "You owe €12.50" / "You're owed €8.00" / "Settled up" / "No expenses
+  yet" (an empty summary means nothing has been recorded).
+  `PinwallFinanceStatRow` takes `currentUserId`; the hub and the board pass
+  `me?.id`. No backend change: the summary already has per-member entries.
+- Chores row counts only `assignedToMe`: "1 due · 1 overdue" / "Nothing on
+  you". This also fixes a double count (a chore due yesterday counted as both
+  due and overdue). The board's index card uses the same counts.
+- Lists row: unchecked items across all active lists, from
+  `listItemCountsProvider` (the Lists tab's own "N left" source). Real list
+  types are shopping/todo/custom; `general` is legacy. **Deviation**: copy is
+  "5 items left" / "All done" / "Lists are empty" rather than "14 to buy",
+  because to-do lists count too and this matches the list cards.
+  **Limitation for stage 4**: a list never opened on this device only
+  contributes its cached preview rows. The widget snapshot's server-side
+  `OpenCount` fixes that.
+- "At a glance" starts expanded; the toggle stays.
+- Hardcodes removed: `€` x3 in the shopping trip (now the household currency
+  via `formatCurrency`), `$` in the stat rows. The settlement dialog compared
+  display labels with the English word "You", which broke in every other
+  language; it now takes `payerIsMe`/`payeeIsMe` by user id, and its
+  sentences and "Confirming…" are localised. "· claimed" on list rows is
+  localised.
+- Open board no longer force-unwraps `posts.value!`: it opens on an empty
+  board that fills in from the same provider.
+- Settlements tab with no money activity: no confetti and no "All settled
+  up!". It shows the timeline's "No expenses yet" body (extracted as
+  `ExpenseNoExpensesBody`) with its single "Add first expense" button, and
+  the Money FAB is hidden while that state shows (Decision 3).
+- Not changed: `navBadgeCountsProvider` still counts the household's due
+  chores, not the caller's. Stage 4 should decide whether the Chores badge
+  follows "Needs you".
+- Tests: `test/widgets/pinwall/pinwall_stat_rows_test.dart` (two members
+  where the caller owes → "You owe €12.50"; owed; settled vs nothing
+  recorded; a flatmate's chore; due + overdue; lists),
+  `test/screens/money/expenses_screen_test.dart` (zero expenses on both
+  tabs), board test updated.
+
+**Stage 3 (Quick add adds; dead ends): DONE except the manual device pass.**
+- New `widgets/hub/hub_create_actions.dart` holds the launch code the
+  checklist had (`createListAndOpen`, `addExpenseAndNotify`) plus
+  `addToAList`: the only list → straight in with the composer focused;
+  several → a picker; none → the create sheet. `onboarding_card.dart` uses
+  these helpers.
+- `PinwallComposer.show()` opens the composer in a focused sheet; the
+  board's "Add a note" uses it too.
+- Quick add: Add expense → `ExpenseCreationSheet`; Add to a list →
+  `addToAList`; Add chore → `ChoreCreationSheet`; Pin a note → composer
+  sheet; Scan a receipt or list → `/scanner` (hidden on web).
+- Step 2 decision: "Start shopping trip" is **hidden** while the household
+  has no lists. The trip's own no-lists state also gets "Create a shopping
+  list" for the other entry points: create sheet → into the new list → back
+  to a reloaded trip.
+- Meal plan picker with no recipes: "Add a recipe" opens recipe creation in
+  manual mode (new `entryMode` route extra / `startManual`), "Import from a
+  link" opens it in URL mode. The picker reloads on return, so the new recipe
+  can be picked straight away.
+- Calendar week and agenda empty states: an "Add chore" button and a one-line
+  hint. The hint says "In Month view" because long-press only exists there.
+  The agenda's old "Chores" navigation button is replaced.
+- Recipe creation: "Save for household" now defaults on for every recipe,
+  not only the first. With no household the recipe saves private and the
+  switch shows off.
+- Chores / Lists / Kitchen / Money hide the FAB while an empty state with its
+  own button is showing, including the no-household states.
+  `frontend_flows_test.dart` creation tests now go through the empty-state
+  button and assert the FAB is gone.
+- Suggestion chips (`widgets/empty_state_suggestions.dart`): the six chores
+  prefill `ChoreCreationSheet`. Groceries / Household supplies (shopping) and
+  To do (todo) prefill `CreateListSheet`, then open the new list. List chips
+  only show while the household has no lists at all. Nothing is created until
+  the person confirms the sheet (Decision 2).
+- Copy: `listEmptyAllDesc` described card snippets and now says what the
+  person gets. The other empty-state copy already did.
+- Tests: `test/widgets/hub/quick_add_sheet_test.dart` (each option opens its
+  sheet or route; the list picker; the trip hidden with no lists).
+- **Not done**: the manual pass on a fresh household (an expense, a chore and
+  a list item from Home in ≤2 taps each) needs a device run.
+
+### Stage 4 — 2026-10-05 (uncommitted, on top of stages 1–3)
+
+**Data source (step 1): composed on the device from the cached streams; no
+new endpoint.** Home already had what it needs locally: chores
+(`cachedCurrentChoresByGroupProvider`), the finance summary, settlements
+(new `cachedSettlementsByGroupProvider`), lists and their item counts, the
+pinwall posts and today's meals (the last two are already filled by the
+existing `GET /groups/{id}/home` aggregate). Reading those instead of a
+`/home/snapshot` request means the card paints offline, and every local
+write updates it at once: ticking a chore off here or on the Chores tab
+removes the row in the same frame, with no second source of truth to keep
+in step. The one gap was list counts: a list nobody opened on this device
+only had its preview lines cached. `ListRepository.fetchUnsyncedItems`
+fills it: Home calls it behind the cached paint, it fetches each list not
+fully fetched this session once, and the Lists tab's "N left" gets the same
+fix.
+
+**Built**
+- `utils/home_summary.dart`: `choresOnMe`, `myBalance`, `largestDebt`,
+  `openListItems`, `remindersLaterToday`. Needs you, its tiles, the board's
+  index card and the Chores nav badge all count through these.
+- `widgets/hub/needs_you_section.dart`: an `AppCard` "Needs you" with up to
+  five rows (at most three chores, oldest overdue first), then the three
+  count tiles. Rows and actions:
+  - your overdue/due chore → **Done** (`ChoreRepository.completeOfflineFirst`,
+    the Chores tab's outbox path, with the same Undo toast);
+  - the largest payment you owe → **Settle** (the Money tab's confirmation
+    dialog, then `recordSettlementOfflineFirst`). A pair that already has a
+    pending settlement is skipped, as on the Money tab;
+  - a pinwall reminder later today → **Open** (the board);
+  - the list with the most open items ("3 items left") → **Open**;
+  - tonight's meal (dinner first, as the old "Tonight" line chose) → **Open**.
+  Tapping a row opens its tab. Zero states: **All caught up** (the house has
+  chores, expenses or list items, but nothing is on you; the house's list and
+  meal rows still show under it) and **Not set up yet** (nothing recorded).
+  Skeleton while the caches answer; a load error offers Retry.
+- Count tiles: `PinwallStatRowStyle.inline` became `tile` (value + caption,
+  the same pair the board's index card shows): chores on you / your balance
+  / items left.
+- `PinwallSection` lost its collapsed "At a glance" summary and the
+  "Tonight" row (both now in Needs you).
+- Home order: Needs you → `HubQuickStart` → `PinwallSection` →
+  `ActivityWall`. The scroll view ends with FAB height + `lg` of clearance
+  (`_kFabClearance`).
+- Chores nav badge now counts only the caller's due and overdue chores (the
+  same number as Needs you), not every due chore in the household.
+- Strings: 15 added; 8 orphaned ones removed (`pinwallSnapshot`,
+  `hubStatsActiveList(s)`, `hubStatsOpen`, `hubStatsAllDone`,
+  `hubStatsOverdue`, and stage 2's `hubStatsDueCount`,
+  `hubBalanceYouAreOwed`). de/es/fr/nl machine-translated: **TODO
+  translate**.
+
+**Deviations**
+- No **Swap** action: mitlist has no chore swap or trade anywhere (no
+  endpoint, no UI). Chore rows offer Done; skip and the rest stay on the
+  Chores tab, one tap away.
+- No row for "someone says they paid you, confirm it" (pending settlements
+  awaiting the caller). It belongs in Needs you, but the Money tab cannot
+  yet be opened on its Settlements tab; follow-up.
+- The Money nav badge still counts every suggested payment in the household.
+
+**Verified**
+- Tests: `test/widgets/hub/needs_you_section_test.dart` (populated rows and
+  tiles; the 5-row and 3-chore caps; All caught up; Not set up yet; a pending
+  settlement hides the money row; Done → `completeOfflineFirst`; Settle →
+  dialog → `recordSettlementOfflineFirst`; on 360×800 the overdue chore, the
+  balance tile and items left sit above the fold), `test/utils/
+  home_summary_test.dart`, `test/repositories/
+  list_repository_unsynced_items_test.dart`, the hub flow test in
+  `frontend_flows_test.dart` (Needs you above the pinwall, no "At a glance").
+- **Not done**: the PR screenshot of a populated Home at 360×800 needs a
+  device or emulator run against a real household.
+
+### Stage 5 — 2026-10-05 (uncommitted)
+
+**Built**
+- `widgets/hub/onboarding_card.dart` rewritten; the public name
+  `HubQuickStart` stays. An `AppCard` "Get the house going" with a segmented
+  progress bar and "N of 5 done". Rows: circle check, imperative title, one
+  line on what it gets you, chevron. Hierarchy by fill only (done = filled
+  primary, next = outlined primary, rest = neutral outline); no rotation, no
+  low alpha. Steps: Household created (pre-ticked) · Invite someone · Create
+  a list · Add a chore · Track an expense, each launching the real action
+  through `hub_create_actions.dart`.
+- The intent answer (stage 6) moves its step to the first open position;
+  done steps keep their place.
+- The header chevron folds the card into a one-line "Quick start · 2 of 5"
+  bar; no permanent dismiss; the card hides itself at 5/5.
+- State is per household in SharedPreferences
+  (`hub_quick_start_{collapsed,invited,intent}:<groupId>`,
+  `hubQuickStartPrefsProvider`). No server-side member preference store
+  exists (STOP condition not hit). Sign-out clears every
+  `hub_quick_start_` key. The global `hub_quick_start_dismissed`, its
+  provider, the You-screen restore row and their strings are gone.
+- "Invite someone" ticks when a second member exists **or** the person
+  opened the invite flow from the checklist: whether anyone joins is out of
+  their hands. The solo card keeps asking until someone does.
+- `HubSoloInviteCard`: while the household has exactly one member (hidden
+  when the count is unknown), "You're the only one here", the seats (empty
+  ones dashed; `InviteSeats` gained `emptyColor` for dark mode), **Share
+  invite link** (new `InviteHouseholdSheet.shareLink`: mints a code and
+  opens the system share sheet, same premium gate as the sheet) and **Show
+  code** (the invite sheet). Independent of checklist progress.
+- Home order: Needs you → checklist → solo card → Pinwall → Activity.
+- Strings: 14 added, 5 orphaned removed (`hubQuickStartDismissedToast`,
+  `accountShowQuickStart`, `accountQuickStartRestored`,
+  `hubOnboardingDismiss`, `hubOnboardingInvite`). **TODO translate.**
+- Not done here: the joiner variant of the checklist is stage 7.
+
+**Verified**: `test/hub_quick_start_test.dart` rewritten (1 of 5 for a new
+household, ticking, the invited flag, intent order, fold and unfold stored
+per household, another household's fold not leaking, retiring at 5/5,
+waiting for caches; solo card with a finished checklist, gone at two
+members, quiet with an unknown count). Hub, account and flow tests green.
+
+### Stage 8 — 2026-10-05 (uncommitted; built, **sending off until the privacy policy says so**)
+
+- **Privacy blocker found**: `PRIVACY.md:27` and `landing/src/pages/privacy.astro:33`
+  promise "no analytics … no usage profiles" (the binding German
+  `datenschutz.astro` very likely too). So the client only sends when built
+  with `--dart-define=MITLIST_PRODUCT_EVENTS=true`; no build sets it. Before
+  turning it on: update all three legal pages (draft wording below), decide
+  the TDDDG §25 question (the install id and the first-item marker are
+  stored on the device: opt-in toggle, or keep the id in memory only), and
+  add a retention job if the policy promises a period.
+  - Draft principles bullet: "The apps and the web app carry no advertising
+    trackers and no third-party analytics. To see where new households get
+    stuck, the app sends a small set of usage events to our own servers (for
+    example 'tour skipped on page 2', 'household created', 'chore marked done
+    from Home')."
+  - Draft table row: "Usage events | Event name from a fixed list, time, a
+    random app-install id created on the device, once signed in your account
+    id and household, and short codes such as a page number | Sent only to
+    our servers, never to third parties; no IP address, device details or
+    household content; used in aggregate to improve onboarding; deleted with
+    your account; kept up to 12 months". Basis: Art. 6(1)(f) GDPR.
+- Backend: migration `000078_add_product_events` (no IP, user agent or free
+  text; user_id or install_id required); `POST /v1/events` (public, optional
+  session via new `OptionalAuth` middleware, ≤20 events, name allowlist,
+  props ≤6 short identifiers, per-sender burst limit on top of the global
+  limit, `group_id` kept only for members, role creator/invitee); account
+  deletion deletes the user's events.
+- Activation (weekly `activation-report` job, Mondays 08:00 UTC, log line
+  "weekly household activation"): households created 14–7 days ago where
+  ≥2 distinct members each, within 7 days, completed a chore, added a list
+  item (check-offs record no actor), added an expense or recorded a
+  settlement. Precursor: the creator did ≥3 of those in the first hour.
+  Computed from existing tables, not the new events.
+- App: `lib/services/product_events.dart` (never throws or blocks, batches,
+  queues up to 60, install id in SharedPreferences, inert when disabled).
+  Emitted: `welcome_shown`, `tour_started/skipped/completed`,
+  `signup_completed` (once the emailed code is accepted), `household_created/joined`,
+  `first_item_added` (first list item, chore or expense added on this
+  install in a household created or joined on this install),
+  `home_needs_you_action`, `intent_answered` (stage 6). Not yet:
+  `checklist_step_done`, and Google/Apple sign-ups emit no
+  `signup_completed`.
+- `plans/048-usability-script.md`: the five paired sessions as a moderator
+  script.
+- **Deploy**: apply `000078` by hand (prod does not migrate on start), deploy
+  the API (the endpoint is harmless unused), update the legal pages, then
+  and only then build with the define.
+
+### Stage 6 — 2026-10-05 (uncommitted)
+
+**Email verification (Decision 8): REJECTED by the founder, 2026-10-05**
+- Step 6 was first built to the founder's 30-day rule: an unconfirmed email
+  account could sign in and use the app for 30 days after it was created,
+  Home showed a "Confirm your email" banner with the code field inline, and
+  past the window the app held the person on `/verify`. The founder then
+  cancelled the grace the same day and it was reverted on both sides: the
+  server's grace window and `verify_by`, the banner, the
+  `EmailConfirmationInterceptor` and its provider, the `/verify` hold, the
+  store-purchase guard, their 7 strings and their tests are gone. Email
+  verification blocks as it did before stage 6: the server refuses
+  unverified accounts.
+- What remains from step 6: sign-up has no confirm-password field;
+  `AppInput`'s eye toggle has a tooltip and a screen-reader label ("Show
+  password" / "Hide password"); notification emails go only to confirmed
+  addresses (the backend filter in `ListMemberEmailsByGroup` is kept).
+- Sign-up registers, then asks for the emailed code on the same screen;
+  `signup_completed` is sent once the code is accepted.
+
+**First run**
+- Tour: 3 pages (Lists, Money, Chores); Why and Recipes are gone, the
+  account choice (`tour_account_choice.dart`, was `tour_finish_page.dart`)
+  sits under the sample chores on page 3, and Skip on any earlier page goes
+  straight to sign-up (login when the server has no passwords).
+- Join and create on one screen: the invite-code field is on the first beat
+  (paste-aware, Paste and Scan buttons), "Create a household" second.
+  Joining with a code goes straight Home.
+- Currency is guessed from the device and shown as "Currency: EUR" with a
+  "Change" link; no separate question.
+- Invite beat: "Later" skips it; copying or sharing the link turns it into
+  "Continue" and ticks the checklist's "Invite someone".
+- The "three things to know" recap is replaced by "What do you want to sort
+  out first?" (Shopping lists / Splitting costs / Chores / Just looking),
+  stored per household for the checklist and sent as `intent_answered`.
+- Sign-up: no confirm-password field; `AppInput`'s built-in eye toggle now
+  has a tooltip and screen-reader label ("Show password"/"Hide password").
+  Google/Apple stay first (the email form is folded behind a button when a
+  provider is on offer).
+- Screen count for a creator who skips the tour: welcome → tour page 1 →
+  sign-up → join/create → name → invite (or Later) → intent → Home, i.e.
+  **7 screens before Home** (6 without the tour's first page), down from
+  about 13. With Google/Apple the sign-up form is one tap. The emailed code
+  is asked for on the sign-up screen itself (the form gives way to the code
+  field), so the count holds with verification blocking again.
+- 50 strings added across stages 6 and 6b, 29 orphaned ones removed; the
+  revert removed the grace's 7 (`verifyBanner*`, `verifyRequiredBody`,
+  `errorConfirmEmailFirst`). **TODO translate.**
+
+**Verified**: `onboarding_screen_test` (join/create on one screen, pasted
+link → join → Home, create → currency line → Later → intent stored,
+copy → Continue + invited, Just looking stores nothing),
+`signup_password_test` (one password field with the eye toggle, policy
+cases, a valid registration shows the code step on the same screen and
+never tries to sign in), `tour_screen_test` (three pages, account choice
+on page 3, Skip → sign-up). The grace's own tests went with it. Backend
+`go test ./...` green after the revert.
+
+**Known holes**: the email-squatting and past-the-window holes listed here
+while the grace existed lapsed with its revert: an unconfirmed account
+cannot sign in at all, as before stage 6.
+
+### Stage 7 — 2026-10-05 (uncommitted)
+
+**Backend**
+- Migration `000079_add_invite_created_by`: `group_invites.created_by`
+  (nullable, `ON DELETE SET NULL`). New codes record who minted them;
+  older codes have no inviter.
+- `GET /api/v1/invites/{code}/preview`, public: `household_name`,
+  `inviter_name` (first name, omitted when unknown or no longer in the
+  household), `member_count`, `status` (`valid` / `expired`). No ids,
+  emails or the code in the body; `Cache-Control: no-store`; 20 requests a
+  minute per IP on top of the global limiter; unknown or malformed codes
+  are a 404. Household and inviter names on a signed-out page were
+  accepted by the founder (open question 3).
+- Activity feed: `member_joined` entries come from `group_memberships`
+  (title = first name, `entity_type: member`); the creator's founding
+  membership is left out. `member:joined` was already published on SSE.
+
+**App**
+- Welcome (`/welcome?invite=CODE`): once the public preview answers, the
+  pinned note reads "Sam invited you" / "to Flat 3B · 3 people"
+  (`GroupService.previewInvitePublic`, `publicInvitePreviewProvider`, null
+  on any failure). Without an inviter: "You're invited" / "Join Flat 3B to
+  share lists, chores and money."; expired: "This invite has expired" /
+  "Ask whoever sent it for a new link."; while loading or after a failure,
+  the old generic copy. The code chips and the two buttons stay (Create
+  account to join / Sign in to join; Google and Apple are on the screens
+  they lead to).
+- After sign-up (code accepted), sign-in or Google/Apple, the invite is
+  the pending destination, so the invitee lands on `/join/CODE` and never
+  sees `/onboarding`.
+- Join landing success: the household name, its members as initials
+  circles (up to five, then "+N"; former members skipped; best effort via
+  `listMembers`) and **Open {household}**, which resets the shell's
+  remembered tab and goes to Home. All three join paths (link, code on the
+  first-run screen, the join sheet) mark the household as joined.
+- Joiner checklist (`onboarding_card.dart`): ✓ Joined {household} · Tick
+  something off a list · Take or complete a chore · Check your balance,
+  when the person joined and the household already has lists, chores or
+  expenses; joining an empty household shows the creator's steps. Steps
+  tick from markers recorded where the thing happens: ticking a list item
+  (list detail), completing a chore (Chores tab, Needs you), opening Money.
+  **Deviation**: the plan's "`member_count > 1` at join time" became
+  "joined on this device and the household has data", which needs no
+  extra state and covers the same case.
+- Needs you for a joiner with nothing on them, in a household in use:
+  "Nothing on you yet" / "Here's what the house is working on." with up to
+  two housemates' due or overdue chores, read-only ("· Not your turn"),
+  then the house's list and meal rows. A joiner into an empty household
+  sees "Not set up yet", like its creator.
+- Home listens on the SSE stream for `member:joined`, `member:left` and
+  `member:removed` in the current household: it refreshes the household
+  cache (the member count behind the solo invite card and the checklist's
+  invite step) and the activity feed in place through the
+  `HubRepository`'s watch, without the skeleton. The pinwall section holds
+  the stream's connection; Home only listens.
+- Activity wall: `member_joined` reads "{name} joined · {when}", the same
+  shape as the other activity lines.
+- 18 strings added. **TODO translate.**
+- Step 6: the Chores tab's "Nothing on you right now" is computed from the
+  caller's own assignments, so it only shows when true. That a weekly
+  chore created before the join takes the joiner into its rotation is
+  covered by stage 1's service tests; not run against a real Postgres
+  (there is none on the dev machine).
+
+**Verified**
+- `test/join_landing_screen_test.dart`: members as initials (former member
+  skipped, every name read out), five faces and "+2", a failed roster
+  still lets them in, **Open My House** → Home with the remembered tab
+  reset and the joined marker stored.
+- `test/welcome_screen_test.dart`: preview with an inviter, without one,
+  expired, failed lookup.
+- `test/hub_quick_start_test.dart`: joined + data → the four joiner steps,
+  the markers ticking them to 3 of 4 and then retiring the card; joined +
+  empty household → creator steps; another household's join does not
+  leak.
+- `test/widgets/hub/needs_you_section_test.dart`: the fresh joiner state
+  (two housemates' chores, most overdue first, no actions); once something
+  is on them, the usual rows; an empty household → "Not set up yet".
+- `test/frontend_flows_test.dart`: an integration walk with mocked
+  services and the app's own redirect rules: `/join/sunny-taco` signed out
+  → welcome "Sam invited you" → Create account to join → sign-up → code →
+  join landing (never `/onboarding`) → Accept → members → Open Flat 3B →
+  Home with "Nothing on you yet" and the joiner checklist at 1 of 4. A
+  second test: a `member:joined` event refreshes the member count (the
+  solo card goes) and the feed ("Sam joined · today") without the
+  skeleton; another household's event is ignored.
+- The long-deferred "guest continue with invite" case in
+  `welcome_screen_test.dart` is **re-deferred**: since 2026-07 it asserts
+  that the invite landing offers no guest door, and it passes. Whether an
+  invitee may join as a guest is still a product question; the test pins
+  today's answer.
+- Full `flutter test --no-pub`: PASSED passed, SKIPPED skipped, 0 failed.
+  `cached_groups_provider_test` now uses an in-memory database: it opened
+  the app's on-disk drift database, and its test process exited uncleanly
+  about half the time (also seen in the earlier stages' runs).
+  `dart analyze lib/`: only the known info in `storage/app_database.dart`
+  (`test/` has 7 infos, all in files no stage touched). Backend
+  `go build ./... && go vet ./... && go test ./...` green.
+
+### Deploy steps (stages 1, 7 and 8)
+
+Prod does not run migrations on start. In this order:
+1. Apply `000078_add_product_events` (stage 8) and
+   `000079_add_invite_created_by` (stage 7) by hand, **before** deploying
+   the API image: the new API reads and writes `group_invites.created_by`,
+   so an image ahead of `000079` breaks inviting and joining.
+2. Deploy the API image.
+3. Once it is live, run the stage-1 backfill
+   `backend/cmd/rebuild-chore-rotations`, dry run first (steps under
+   stage 1 above).
+4. Product events stay off (no build sets `MITLIST_PRODUCT_EVENTS`) until
+   the privacy policy is updated and the TDDDG question is decided
+   (stage 8).
 
 ## Open questions for the founder
 
@@ -555,8 +1019,19 @@ activation query exists and runs; the script file exists.
    copy in stages 4–6.
 2. Decision 8 (non-blocking email verification): confirm, since it touches
    abuse protection for guests/invites.
+   **Answered 2026-10-05: no; verification stays blocking.** The founder
+   first chose a 30-day grace (an unconfirmed email account could sign in
+   and use the app for 30 days after it was created, then be blocked until
+   it confirmed), and stage 6 built it; the founder cancelled it later the
+   same day, and it was reverted. Decision 8 is rejected. The finding
+   stands: the server refuses unverified accounts everywhere (`Login`,
+   `validateCurrentUser`, and `requireActiveVerifiedUser` in the list,
+   chore, pinwall, attachment and template services), so a non-blocking
+   email step would be a server policy change, not app work alone.
 3. Stage 7 preview endpoint exposing household + inviter name to anyone with
    the code: acceptable?
+   **Answered 2026-10-05: yes.** The preview may show the household name and
+   the inviter's name (stage 7).
 4. Is dropping "Why" and "Recipes" from the tour acceptable given the
    2026-09-03 direction of 3–6 screens? (Plan keeps 3.)
 

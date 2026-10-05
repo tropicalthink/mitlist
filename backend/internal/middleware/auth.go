@@ -317,6 +317,46 @@ func requiresIntegrationGroup(domain string) bool {
 	}
 }
 
+// OptionalAuth attributes a request to the signed-in user when it carries a
+// valid session and lets it through anonymously otherwise, never rejecting
+// it. It exists for endpoints that also serve people who have not signed up
+// yet (product events); never put it in front of household data.
+// Integration credentials are not sessions and are ignored.
+func OptionalAuth(jwt *jwtservice.Service, userSvc *services.UserService) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			token := ExtractToken(r)
+			if token == "" || strings.HasPrefix(token, services.IntegrationTokenPrefix) {
+				next.ServeHTTP(w, r)
+				return
+			}
+			claims, err := jwt.ValidateAccessTokenClaims(token)
+			if err != nil {
+				next.ServeHTTP(w, r)
+				return
+			}
+			userID, err := uuid.Parse(claims.Subject)
+			if err != nil {
+				next.ServeHTTP(w, r)
+				return
+			}
+			issuedAt, err := claims.GetIssuedAt()
+			if err != nil || issuedAt == nil {
+				next.ServeHTTP(w, r)
+				return
+			}
+			user, err := userSvc.GetMeForAccessToken(r.Context(), userID, claims.ID, issuedAt.Time)
+			if err != nil {
+				next.ServeHTTP(w, r)
+				return
+			}
+			ctx := WithUserID(r.Context(), claims.Subject)
+			ctx = api.WithUser(ctx, user)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
+}
+
 func ExtractToken(r *http.Request) string {
 	if cookie, err := r.Cookie("access_token"); err == nil && cookie.Value != "" {
 		return cookie.Value

@@ -174,6 +174,63 @@ void main() {
     expect(find.text('Groceries'), findsOneWidget);
     expect(find.text('ADD EXPENSE'), findsOneWidget);
   });
+
+  testWidgets(
+      'no expenses: Settlements says so instead of "All settled up!", '
+      'and the empty state is the only add action', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 1800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final db = AppDatabase(
+      drift.DatabaseConnection(
+        NativeDatabase.memory(),
+        closeStreamsSynchronously: true,
+      ),
+    );
+    addTearDown(() => db.close());
+
+    final financeService = FakeFinanceService(expenses: []);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authStateProvider.overrideWith((ref) => true),
+          groupServiceProviderAsync.overrideWith((ref) async =>
+              FakeGroupService(groups: [group], groupDetail: group)),
+          authServiceProviderAsync
+              .overrideWith((ref) async => FakeAuthService(currentUser: user)),
+          financeServiceProviderAsync
+              .overrideWith((ref) async => financeService),
+          financeRepositoryProvider.overrideWith(
+              (ref) async => FakeFinanceRepository(financeService)),
+          appDatabaseProvider.overrideWithValue(db),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const ExpensesScreen(),
+        ),
+      ),
+    );
+
+    for (var i = 0; i < 6; i++) {
+      await tester.pump(const Duration(milliseconds: 200));
+    }
+
+    expect(find.text('No expenses yet'), findsOneWidget);
+    expect(find.text('ADD FIRST EXPENSE'), findsOneWidget);
+    expect(find.text('ADD EXPENSE'), findsNothing);
+
+    await tester.tap(find.text('Settlements'));
+    for (var i = 0; i < 6; i++) {
+      await tester.pump(const Duration(milliseconds: 200));
+    }
+
+    expect(find.text('All settled up!'), findsNothing);
+    expect(find.text('No expenses yet'), findsOneWidget);
+    expect(find.text('ADD FIRST EXPENSE'), findsOneWidget);
+    expect(find.text('ADD EXPENSE'), findsNothing);
+  });
 }
 
 // ---------------------------------------------------------------------------

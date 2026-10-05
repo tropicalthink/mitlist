@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,13 +13,15 @@ import 'package:share_plus/share_plus.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/group_models.dart';
 import '../../providers/group_provider.dart';
+import '../../providers/onboarding_provider.dart';
 import '../../router.dart' show currentGroupIdProvider, resetLastShellTab;
-import '../../sheets/join_household_sheet.dart';
+import '../../screens/scanner/invite_qr_scan_screen.dart';
 import '../../theme/animations.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../utils/friendly_error.dart';
+import '../../services/product_events.dart';
 import '../../utils/haptics.dart';
 import '../../utils/invite_link.dart';
 import '../../widgets/alert.dart';
@@ -26,21 +29,26 @@ import '../../widgets/app_button.dart';
 import '../../widgets/app_currency_dropdown.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/app_input.dart';
+import '../../widgets/app_toast.dart';
 import '../../widgets/board/cork_board.dart';
 
 /// First run, staged as the app's own metaphor: one cork board, four beats.
 ///
-/// 1. Choose — a fresh sticky note ("create") and a torn paper slip ("join")
-///    drop onto the board and settle with a spring wobble.
+/// 1. Choose — a torn paper slip with the invite-code field (join right
+///    here, paste-aware) and a fresh sticky note ("create") drop onto the
+///    board and settle with a spring wobble. Joining goes straight home.
 /// 2. Name — the household name is written directly on the sticky note and
-///    pinned to the board. No detour through a generic form sheet.
+///    pinned to the board. The currency is guessed from the device and only
+///    asked for behind "Change".
 /// 3. Invite — a slip with the invite code (and its QR) is torn off for the
-///    rest of the house.
-/// 4. Ready — three navigation rules bridge into the real household hub
-///    without turning first run into a feature tour.
+///    rest of the house. "Later" skips it; Home's checklist asks again.
+/// 4. Intent — "What do you want to sort out first?" puts that step first
+///    on Home's checklist (plans/048 stage 6). "Just looking" changes nothing.
+///    It replaces the old "three things to know" recap: Home itself now shows
+///    what needs you.
 ///
 /// Under reduced motion every beat is simply already in place.
-enum _Stage { choose, name, invite, ready }
+enum _Stage { choose, name, invite, intent }
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -77,9 +85,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
 
   _Stage _stage = _Stage.choose;
 
+  // Choose beat: joining with a code.
+  final _codeController = TextEditingController();
+  bool _isJoining = false;
+  String? _joinError;
+
   // Name beat.
   final _nameController = TextEditingController();
   String? _currency;
+  bool _showCurrencyPicker = false;
   bool _isCreating = false;
   String? _createError;
 
@@ -89,6 +103,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
   bool _inviteLoading = false;
   String? _inviteError;
   bool _copied = false;
+  bool _shared = false;
   Timer? _copiedTimer;
 
   @override
@@ -203,6 +218,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
   void dispose() {
     _resolveHintTimer?.cancel();
     _copiedTimer?.cancel();
+    _codeController.dispose();
     _nameController.dispose();
     _controller.dispose();
     super.dispose();
@@ -223,13 +239,91 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     _toStage(_Stage.name);
   }
 
-  Future<void> _onJoinHousehold() async {
+  bool get _canJoin => _codeController.text.trim().length >= 4 && !_isJoining;
+
+  /// The field takes whatever people were sent: a pasted link becomes its
+  /// code.
+  void _onCodeChanged(String value) {
+    final code = value.contains('/') ? extractInviteCode(value) : null;
+    if (code != null) {
+      _codeController.value = TextEditingValue(
+        text: code,
+        selection: TextSelection.collapsed(offset: code.length),
+      );
+    }
+    setState(() => _joinError = null);
+  }
+
+  Future<void> _pasteCode() async {
+    final l10n = AppLocalizations.of(context)!;
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    if (!mounted) return;
+    final code = data?.text == null ? null : extractInviteCode(data!.text!);
+    if (code == null) {
+      unawaited(Haptics.failure());
+      AppToast.info(context, l10n.joinPasteNoCode);
+      return;
+    }
+    _codeController.value = TextEditingValue(
+      text: code,
+      selection: TextSelection.collapsed(offset: code.length),
+    );
     unawaited(Haptics.light());
-    final group = await JoinHouseholdSheet.show(context);
-    if (group != null && mounted) {
+    setState(() => _joinError = null);
+  }
+
+  /// The in-app QR scanner only exists on the mobile platforms.
+  bool get _canScan =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.android);
+
+  Future<void> _scanCode() async {
+    final code = await InviteQrScanScreen.show(context);
+    if (!mounted || code == null) return;
+    _codeController.value = TextEditingValue(
+      text: code,
+      selection: TextSelection.collapsed(offset: code.length),
+    );
+    await _joinHousehold();
+  }
+
+  /// Joining with a code lands in the household: it already has its people
+  /// and its things, so there is nothing to name, invite or choose.
+  Future<void> _joinHousehold() async {
+    if (!_canJoin) return;
+    final l10n = AppLocalizations.of(context)!;
+    setState(() {
+      _isJoining = true;
+      _joinError = null;
+    });
+    try {
+      final svc = await ref.read(groupServiceProviderAsync.future);
+      final group = await svc.joinGroup(
+        JoinGroupRequest(code: _codeController.text.trim().toUpperCase()),
+      );
+      ProductEvents.instance.householdStarted(
+        ProductEventName.householdJoined,
+        group.id,
+        source: 'onboarding',
+      );
+      // Seed the cache first so Home never lands on "no household" for one
+      // that demonstrably exists (see _pinHousehold).
+      await refreshCachedGroups(ref, ensure: group);
+      // Joined, not created: Home gives them the joiner checklist once the
+      // household has things in it (plans/048 stage 7).
+      await markHubQuickStartJoined(group.id);
+      if (!mounted) return;
       unawaited(ref.read(currentGroupIdProvider.notifier).set(group.id));
-      setState(() => _createdGroup = group);
-      _toStage(_Stage.ready);
+      unawaited(Haptics.success());
+      await _goToBoard();
+    } catch (e) {
+      if (!mounted) return;
+      unawaited(Haptics.failure());
+      setState(() {
+        _isJoining = false;
+        _joinError = friendlyErrorMessage(e, l10n);
+      });
     }
   }
 
@@ -282,6 +376,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
       // refetch fails — no screen should land on "no household" for one that
       // demonstrably exists.
       await refreshCachedGroups(ref, ensure: group);
+      ProductEvents.instance.householdStarted(
+        ProductEventName.householdCreated,
+        group.id,
+        source: 'onboarding',
+      );
       if (!mounted) return;
       unawaited(ref.read(currentGroupIdProvider.notifier).set(group.id));
       unawaited(Haptics.success());
@@ -338,6 +437,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
       return; // Clipboard unavailable; silently ignore.
     }
     if (!mounted) return;
+    _markInvited();
     setState(() => _copied = true);
     _copiedTimer?.cancel();
     _copiedTimer = Timer(const Duration(milliseconds: 1800), () {
@@ -357,9 +457,34 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     context.goNamed('home');
   }
 
-  void _showReady() {
+  /// Copying or sharing the code is asking someone in: tick "Invite someone"
+  /// on Home's checklist, and say "Continue" rather than "Later".
+  void _markInvited() {
+    final group = _createdGroup;
+    if (group == null) return;
+    setState(() => _shared = true);
+    unawaited(markHubQuickStartInvited(group.id));
+  }
+
+  void _showIntent() {
     unawaited(Haptics.light());
-    _toStage(_Stage.ready);
+    _toStage(_Stage.intent);
+  }
+
+  Future<void> _answerIntent(HubQuickStartIntent? intent, String answer) async {
+    final group = _createdGroup;
+    if (group != null) {
+      if (intent != null) {
+        await setHubQuickStartIntent(group.id, intent);
+        ref.invalidate(hubQuickStartPrefsProvider(group.id));
+      }
+      ProductEvents.instance.track(
+        ProductEventName.intentAnswered,
+        groupId: group.id,
+        props: {'intent': answer},
+      );
+    }
+    await _goToBoard();
   }
 
   // ── Build ──────────────────────────────────────────────────────────────────
@@ -461,7 +586,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                                   _Stage.name => _nameStage(l10n, noteWidth),
                                   _Stage.invite =>
                                     _inviteStage(l10n, noteWidth),
-                                  _Stage.ready => _readyStage(l10n, noteWidth),
+                                  _Stage.intent =>
+                                    _intentStage(l10n, noteWidth),
                                 },
                               ),
                             ),
@@ -495,9 +621,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
           l10n.authOnboardingInviteTitle,
           l10n.authOnboardingInviteBody,
         ),
-      _Stage.ready => (
-          l10n.authOnboardingReadyTitle,
-          l10n.authOnboardingReadyBody,
+      _Stage.intent => (
+          l10n.authOnboardingIntentTitle,
+          l10n.authOnboardingIntentBody,
         ),
     };
 
@@ -540,6 +666,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
   // ── Beat 1: choose ─────────────────────────────────────────────────────────
 
   Widget _chooseStage(AppLocalizations l10n, double noteWidth) {
+    // Join first (an invite code is the one thing that cannot be typed
+    // later), create second: the Life360 / Notion shape.
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -547,16 +675,47 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
         Align(
           alignment: Alignment.centerLeft,
           child: SizedBox(
-            width: noteWidth,
+            width: math.max(noteWidth, 320.0),
             child: BoardDrop(
               t: _createT,
-              tilt: -0.040,
-              child: BoardPressable(
-                semanticLabel: l10n.authOnboardingCreateHousehold,
-                onTap: _onCreateHousehold,
-                child: _ChoiceNote(
-                  title: l10n.authOnboardingCreateHousehold,
-                  body: l10n.authOnboardingCreateDesc,
+              tilt: 0.022,
+              child: _JoinSlip(
+                title: l10n.authOnboardingHaveCode,
+                body: l10n.authOnboardingJoinDesc,
+                field: AppInput(
+                  hint: l10n.sheetJoinCodeExample,
+                  controller: _codeController,
+                  textInputAction: TextInputAction.go,
+                  enabled: !_isJoining,
+                  onChanged: _onCodeChanged,
+                  onSubmitted: (_) => _joinHousehold(),
+                ),
+                error: _joinError,
+                actions: [
+                  if (_canScan)
+                    AppButton(
+                      variant: AppButtonVariant.ghost,
+                      color: AppButtonColor.neutral,
+                      size: AppButtonSize.sm,
+                      text: l10n.joinScanButton,
+                      icon: const Icon(Icons.qr_code_scanner_rounded, size: 16),
+                      onPressed: _isJoining ? null : _scanCode,
+                    ),
+                  AppButton(
+                    variant: AppButtonVariant.ghost,
+                    color: AppButtonColor.neutral,
+                    size: AppButtonSize.sm,
+                    text: l10n.joinPasteButton,
+                    icon: const Icon(Icons.content_paste_rounded, size: 16),
+                    onPressed: _isJoining ? null : _pasteCode,
+                  ),
+                ],
+                join: AppButton(
+                  variant: AppButtonVariant.solid,
+                  color: AppButtonColor.primary,
+                  text: _isJoining ? l10n.authJoinJoining : l10n.sheetJoinJoin,
+                  isLoading: _isJoining,
+                  onPressed: _canJoin ? _joinHousehold : null,
                 ),
               ),
             ),
@@ -569,13 +728,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
             width: noteWidth,
             child: BoardDrop(
               t: _joinT,
-              tilt: 0.032,
+              tilt: -0.032,
               child: BoardPressable(
-                semanticLabel: l10n.authOnboardingJoinSemantic,
-                onTap: _onJoinHousehold,
-                child: _JoinSlip(
-                  title: l10n.authOnboardingJoinInvite,
-                  body: l10n.authOnboardingJoinDesc,
+                semanticLabel: l10n.authOnboardingCreateHousehold,
+                onTap: _isJoining ? () {} : _onCreateHousehold,
+                child: _ChoiceNote(
+                  title: l10n.authOnboardingCreateHousehold,
+                  body: l10n.authOnboardingCreateDesc,
                 ),
               ),
             ),
@@ -618,14 +777,41 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                       onSubmitted: (_) => _pinHousehold(),
                     ),
                     const SizedBox(height: MitlistSpacing.space3),
-                    AppCurrencyDropdown(
-                      value: _currency ?? 'USD',
-                      onChanged: _isCreating
-                          ? null
-                          : (v) {
-                              if (v != null) setState(() => _currency = v);
-                            },
-                    ),
+                    if (_showCurrencyPicker)
+                      AppCurrencyDropdown(
+                        value: _currency ?? 'USD',
+                        onChanged: _isCreating
+                            ? null
+                            : (v) {
+                                if (v != null) setState(() => _currency = v);
+                              },
+                      )
+                    else
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              l10n.authOnboardingCurrency(_currency ?? 'USD'),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(color: ink),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          AppButton(
+                            variant: AppButtonVariant.ghost,
+                            color: AppButtonColor.neutral,
+                            size: AppButtonSize.sm,
+                            text: l10n.authOnboardingCurrencyChange,
+                            onPressed: _isCreating
+                                ? null
+                                : () =>
+                                    setState(() => _showCurrencyPicker = true),
+                          ),
+                        ],
+                      ),
                     const SizedBox(height: MitlistSpacing.space4),
                     if (_createError != null) ...[
                       AppAlert(
@@ -801,11 +987,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                           size: AppButtonSize.lg,
                           text: l10n.sheetInviteShare,
                           icon: const AppIcon(name: 'share', size: 18),
-                          onPressed: () => SharePlus.instance.share(
-                            ShareParams(
-                              text: inviteShareText(code, l10n),
-                            ),
-                          ),
+                          onPressed: () {
+                            _markInvited();
+                            unawaited(SharePlus.instance.share(
+                              ShareParams(
+                                text: inviteShareText(code, l10n),
+                              ),
+                            ));
+                          },
                         ),
                       ],
                     ],
@@ -824,20 +1013,23 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
           variant: AppButtonVariant.outline,
           color: AppButtonColor.neutral,
           size: AppButtonSize.lg,
-          text: l10n.authOnboardingGoToBoard,
-          onPressed: _showReady,
+          text: _shared
+              ? l10n.authOnboardingGoToBoard
+              : l10n.authOnboardingInviteLater,
+          onPressed: _showIntent,
         ),
       ],
     );
   }
 
-  // ── Final beat: the map ───────────────────────────────────────────────────
+  // ── Final beat: what first ─────────────────────────────────────────────────
 
-  /// A ten-second handoff into the real shell. This is deliberately not a
-  /// feature tour: it names the three navigation rules and asks for no task.
-  Widget _readyStage(AppLocalizations l10n, double noteWidth) {
-    final groupName = _createdGroup?.name ?? l10n.hubAppBarTitle;
-
+  Widget _intentStage(AppLocalizations l10n, double noteWidth) {
+    final options = [
+      (HubQuickStartIntent.lists, l10n.authOnboardingIntentLists, 'lists'),
+      (HubQuickStartIntent.money, l10n.authOnboardingIntentMoney, 'money'),
+      (HubQuickStartIntent.chores, l10n.authOnboardingIntentChores, 'chores'),
+    ];
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -847,116 +1039,43 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
             width: math.max(noteWidth, 320.0),
             child: Transform.rotate(
               angle: -0.012,
-              child: TornSlip(
+              child: StickyNoteSurface(
                 padding: const EdgeInsets.fromLTRB(
                   MitlistSpacing.lg,
                   MitlistSpacing.space6,
                   MitlistSpacing.lg,
-                  MitlistSpacing.space5,
+                  MitlistSpacing.lg,
                 ),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _OrientationRow(
-                      icon: 'home',
-                      label: l10n.authOnboardingOrientationHome,
-                    ),
-                    const _OrientationRule(),
-                    _OrientationRow(
-                      icon: 'squares2x2',
-                      label: l10n.authOnboardingOrientationTabs,
-                    ),
-                    const _OrientationRule(),
-                    _OrientationRow(
-                      icon: 'plus',
-                      label: l10n.authOnboardingOrientationAdd,
-                      accent: true,
-                    ),
+                    for (final (i, (intent, label, answer)) in options.indexed)
+                      Padding(
+                        padding: EdgeInsets.only(
+                          top: i == 0 ? 0 : MitlistSpacing.space3,
+                        ),
+                        child: AppButton(
+                          variant: AppButtonVariant.outline,
+                          color: AppButtonColor.neutral,
+                          size: AppButtonSize.lg,
+                          text: label,
+                          onPressed: () => _answerIntent(intent, answer),
+                        ),
+                      ),
                   ],
                 ),
               ),
             ),
           ),
         ),
-        const SizedBox(height: MitlistSpacing.space6),
+        const SizedBox(height: MitlistSpacing.space4),
         AppButton(
-          variant: AppButtonVariant.solid,
-          color: AppButtonColor.primary,
-          size: AppButtonSize.lg,
-          text: l10n.authOnboardingEnterHousehold(groupName),
-          icon: const AppIcon(name: 'arrowRight', size: 18),
-          onPressed: _goToBoard,
+          variant: AppButtonVariant.ghost,
+          color: AppButtonColor.neutral,
+          text: l10n.authOnboardingIntentJustLooking,
+          onPressed: () => _answerIntent(null, 'just_looking'),
         ),
       ],
-    );
-  }
-}
-
-class _OrientationRow extends StatelessWidget {
-  const _OrientationRow({
-    required this.icon,
-    required this.label,
-    this.accent = false,
-  });
-
-  final String icon;
-  final String label;
-  final bool accent;
-
-  @override
-  Widget build(BuildContext context) {
-    final iconBackground =
-        accent ? MitlistColors.primary500 : MitlistColors.surfaceSecondary;
-    final iconColor = accent ? Colors.white : MitlistColors.textPrimary;
-
-    return Semantics(
-      label: label,
-      child: ExcludeSemantics(
-        child: Row(
-          children: [
-            Container(
-              width: MitlistSpacing.space12,
-              height: MitlistSpacing.space12,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: iconBackground,
-                border: Border.all(
-                  color: MitlistColors.borderPrimary,
-                  width: 2,
-                ),
-              ),
-              child: AppIcon(name: icon, size: 22, color: iconColor),
-            ),
-            const SizedBox(width: MitlistSpacing.space4),
-            Expanded(
-              child: Text(
-                label,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: MitlistColors.textPrimary,
-                      fontWeight: FontWeight.w700,
-                      height: 1.25,
-                    ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _OrientationRule extends StatelessWidget {
-  const _OrientationRule();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.space3),
-      child: Container(
-        height: 2,
-        color: MitlistColors.borderPrimary.withValues(alpha: 0.18),
-      ),
     );
   }
 }
@@ -1024,13 +1143,24 @@ class _ChoiceNote extends StatelessWidget {
   }
 }
 
-/// "Join with invite": a slip of paper torn off a note, pinned at one corner,
-/// with a blank code field waiting to be filled.
+/// "Have an invite code?": a slip of paper torn off a note, pinned at one
+/// corner, with the code field right on it.
 class _JoinSlip extends StatelessWidget {
-  const _JoinSlip({required this.title, required this.body});
+  const _JoinSlip({
+    required this.title,
+    required this.body,
+    required this.field,
+    required this.actions,
+    required this.join,
+    this.error,
+  });
 
   final String title;
   final String body;
+  final Widget field;
+  final List<Widget> actions;
+  final Widget join;
+  final String? error;
 
   @override
   Widget build(BuildContext context) {
@@ -1045,7 +1175,7 @@ class _JoinSlip extends StatelessWidget {
         MitlistSpacing.lg,
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
             title,
@@ -1064,30 +1194,14 @@ class _JoinSlip extends StatelessWidget {
                 ),
           ),
           const SizedBox(height: MitlistSpacing.space4),
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: MitlistSpacing.space3,
-                  vertical: MitlistSpacing.space2,
-                ),
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: ink.withValues(alpha: 0.45),
-                    width: 2,
-                  ),
-                ),
-                child: Text(
-                  '····-····',
-                  style: MitlistTypography.monoBody(
-                    color: ink.withValues(alpha: 0.55),
-                  ),
-                ),
-              ),
-              const Spacer(),
-              const Icon(Icons.arrow_forward, size: 20, color: ink),
-            ],
-          ),
+          if (error != null) ...[
+            AppAlert(type: AppAlertType.error, message: error!),
+            const SizedBox(height: MitlistSpacing.space3),
+          ],
+          field,
+          Wrap(alignment: WrapAlignment.end, children: actions),
+          const SizedBox(height: MitlistSpacing.space2),
+          join,
         ],
       ),
     );

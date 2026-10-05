@@ -300,6 +300,8 @@ func (r *UserRepository) SoftDelete(ctx context.Context, id uuid.UUID) error {
 		`DELETE FROM push_subscriptions WHERE user_id = $1`,
 		`DELETE FROM device_tokens WHERE user_id = $1`,
 		`DELETE FROM oauth_accounts WHERE user_id = $1`,
+		// Product usage events are the person's, not the household's.
+		`DELETE FROM product_events WHERE user_id = $1`,
 	} {
 		if _, err := tx.Exec(ctx, query, id); err != nil {
 			return err

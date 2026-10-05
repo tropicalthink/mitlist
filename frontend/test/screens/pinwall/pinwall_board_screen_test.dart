@@ -188,7 +188,9 @@ void main() {
     expect(find.text('Chores'), findsOneWidget);
     expect(find.text('Balance'), findsOneWidget);
     expect(find.text('Lists'), findsOneWidget);
-    expect(find.text('+\$25'), findsOneWidget);
+    // The caller's own position, in the household currency (USD default).
+    expect(find.text('\$25.00'), findsOneWidget);
+    expect(find.text('Owed to you'), findsOneWidget);
 
     await tester.pump(const Duration(seconds: 3));
   });

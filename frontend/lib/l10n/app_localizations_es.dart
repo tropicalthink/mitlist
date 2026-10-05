@@ -2057,7 +2057,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get listEmptyAllDesc =>
-      'Añade líneas dentro de una lista; las primeras aparecen como resumen en su tarjeta.';
+      'Un solo sitio para la compra y las tareas, donde todos en casa pueden añadir y tachar.';
 
   @override
   String get listCreateShopping => 'Crear una lista de compras';
@@ -3504,9 +3504,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get pinwallBoardLabel => 'Pinwall';
 
   @override
-  String get pinwallSnapshot => 'De un vistazo';
-
-  @override
   String get pinwallDragHint =>
       'Arrastra las notas para moverlas  ·  Pellizca para hacer zoom';
 
@@ -4257,19 +4254,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get authSignupPasswordRequired => 'La contraseña es obligatoria.';
 
   @override
-  String get authSignupConfirmPassword => 'Confirmar contraseña';
-
-  @override
-  String get authSignupConfirmPasswordHint =>
-      'Vuelve a introducir tu contraseña';
-
-  @override
-  String get authSignupConfirmPasswordRequired => 'Confirma tu contraseña.';
-
-  @override
-  String get authSignupPasswordMismatch => 'Las contraseñas no coinciden.';
-
-  @override
   String get authSignupPasswordRequirementsNotMet =>
       'La contraseña no cumple los requisitos indicados abajo.';
 
@@ -4426,9 +4410,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get authOnboardingCreateHousehold => 'Crear un hogar';
 
   @override
-  String get authOnboardingJoinInvite => 'Unirse con código de invitación';
-
-  @override
   String get authOnboardingHaveCode => '¿Tienes un código de invitación?';
 
   @override
@@ -4438,10 +4419,6 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get authOnboardingJoinDesc =>
       '¿Ya tienes una invitación? Introduce el código y entra directamente.';
-
-  @override
-  String get authOnboardingJoinSemantic =>
-      'Unirse a un hogar con código de invitación';
 
   @override
   String get authOnboardingHomeIconSemantic => 'Icono de inicio del hogar';
@@ -4471,30 +4448,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get authOnboardingGoToBoard => 'Continuar';
 
   @override
-  String get authOnboardingReadyTitle => 'Tu hogar está listo';
-
-  @override
-  String get authOnboardingReadyBody =>
-      'Tres cosas que debes saber. Ese es todo el mapa.';
-
-  @override
-  String get authOnboardingOrientationHome =>
-      'Inicio muestra lo que necesita atención';
-
-  @override
-  String get authOnboardingOrientationTabs =>
-      'Las pestañas mantienen cada parte del hogar en su sitio';
-
-  @override
-  String get authOnboardingOrientationAdd =>
-      'El botón + añade algo desde cualquier lugar';
-
-  @override
-  String authOnboardingEnterHousehold(String name) {
-    return 'Abrir $name';
-  }
-
-  @override
   String get authOnboardingResolving => 'Abriendo tu tablero…';
 
   @override
@@ -4521,25 +4474,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get hubStatsPlanned => 'planificadas';
 
   @override
-  String get hubStatsOverdue => 'vencidas';
-
-  @override
-  String get hubStatsAllDone => 'todo hecho';
-
-  @override
   String get hubStatsBalance => 'Saldo';
 
   @override
-  String get hubStatsOpen => 'abiertas';
-
-  @override
   String get hubStatsLists => 'Listas';
-
-  @override
-  String get hubStatsActiveList => 'lista activa';
-
-  @override
-  String get hubStatsActiveLists => 'listas activas';
 
   @override
   String get hubStatsReminders => 'Recordatorios';
@@ -4638,14 +4576,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get hubOnboardingGetStarted => 'Empezar';
 
   @override
-  String get hubOnboardingDismiss => 'Cerrar inicio rápido';
-
-  @override
   String get hubOnboardingDescription =>
       'Todo empieza aquí. Elige lo que más importa.';
-
-  @override
-  String get hubOnboardingInvite => 'Invitar compañeros';
 
   @override
   String get hubOnboardingCreateList => 'Crear una lista';
@@ -4660,17 +4592,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String hubQuickStartNextSemantic(String label) {
     return 'Siguiente paso: $label';
   }
-
-  @override
-  String get hubQuickStartDismissedToast =>
-      'Inicio rápido guardado. Recupéralo cuando quieras desde Cuenta.';
-
-  @override
-  String get accountShowQuickStart => 'Mostrar el inicio rápido en el tablero';
-
-  @override
-  String get accountQuickStartRestored =>
-      'El inicio rápido vuelve a estar en tu tablero.';
 
   @override
   String get appBottomSheetDiscardTitle => '¿Descartar cambios?';
@@ -6551,9 +6472,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tourNext => 'Siguiente';
 
   @override
-  String get tourShowMe => 'Enséñame';
-
-  @override
   String get tourBack => 'Atrás';
 
   @override
@@ -6563,36 +6481,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tourSampleTag => 'Ejemplo';
-
-  @override
-  String get tourWhyEyebrow => 'Tu hogar';
-
-  @override
-  String get tourWhyHeadline =>
-      '¿Quién compró la leche, quién debe qué, a quién le toca?';
-
-  @override
-  String get tourWhyBody =>
-      'mitlist es el cuaderno compartido de la gente con la que vives. Aquí tienes un piso de ejemplo para trastear.';
-
-  @override
-  String get tourWhyNote => 'El casero viene el jueves a las 10';
-
-  @override
-  String tourWhyToBuy(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count por comprar',
-      one: '1 por comprar',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String tourWhyOverdue(String title) {
-    return '$title está atrasada';
-  }
 
   @override
   String get tourListsEyebrow => 'Listas';
@@ -6705,40 +6593,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String tourChoresNext(String name, int days) {
     return 'Siguiente: $name, en $days días';
   }
-
-  @override
-  String get tourRecipesEyebrow => 'Recetas';
-
-  @override
-  String get tourRecipesHeadline =>
-      'El jueves toca shakshuka. Los huevos ya están en la lista.';
-
-  @override
-  String get tourRecipesBody =>
-      'Planifica una comida y manda sus ingredientes directos a la lista de la compra.';
-
-  @override
-  String get tourRecipesTitle => 'Shakshuka';
-
-  @override
-  String get tourRecipesServings => '4 raciones · 30 min';
-
-  @override
-  String get tourRecipesPlanned => 'Planificada para el jueves';
-
-  @override
-  String get tourRecipesAddIngredients => 'Añadir a la lista';
-
-  @override
-  String get tourRecipesAddedButton => 'En la lista';
-
-  @override
-  String tourRecipesAddedToast(int count, String list) {
-    return '$count artículos añadidos a $list';
-  }
-
-  @override
-  String get tourFinishEyebrow => 'Tu hogar';
 
   @override
   String get tourFinishHeadline =>
@@ -6923,4 +6777,340 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get shortcutChoresToday => 'Tareas de hoy';
+
+  @override
+  String hubStatsOverdueCount(int count) {
+    return '$count atrasadas';
+  }
+
+  @override
+  String get hubStatsNothingOnYou => 'Nada para ti';
+
+  @override
+  String hubBalanceYouOwe(String amount) {
+    return 'Debes $amount';
+  }
+
+  @override
+  String get hubBalanceSettledUp => 'Todo saldado';
+
+  @override
+  String get hubBalanceNoExpenses => 'Aún no hay gastos';
+
+  @override
+  String get hubBalanceYouOweLabel => 'Debes';
+
+  @override
+  String get hubBalanceOwedToYouLabel => 'Te deben';
+
+  @override
+  String hubStatsItemsLeft(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Quedan $count artículos',
+      one: 'Queda 1 artículo',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hubStatsItemsLeftLabel(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'artículos pendientes',
+      one: 'artículo pendiente',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get hubStatsListsEmpty => 'Las listas están vacías';
+
+  @override
+  String settlementAlreadySettled(String name) {
+    return '$name ya saldó';
+  }
+
+  @override
+  String settlementYouWillPay(String name, String amount) {
+    return 'Pagarás $amount a $name';
+  }
+
+  @override
+  String settlementWillPayYou(String name, String amount) {
+    return '$name te pagará $amount';
+  }
+
+  @override
+  String settlementPays(String payer, String payee, String amount) {
+    return '$payer paga $amount a $payee';
+  }
+
+  @override
+  String get settlementConfirming => 'Confirmando…';
+
+  @override
+  String get listItemClaimed => 'reservado';
+
+  @override
+  String get hubQuickAddScan => 'Escanear un ticket o una lista';
+
+  @override
+  String get shoppingTripCreateList => 'Crear una lista de la compra';
+
+  @override
+  String get mealPlanAddRecipe => 'Añadir una receta';
+
+  @override
+  String get mealPlanImportRecipe => 'Importar desde un enlace';
+
+  @override
+  String get calendarLongPressHint =>
+      'En la vista Mes, mantén pulsado un día para añadir algo en él.';
+
+  @override
+  String get emptyStateSuggestionsTitle => 'O empieza con una de estas';
+
+  @override
+  String get choreSuggestionBins => 'Sacar la basura';
+
+  @override
+  String get choreSuggestionBathroom => 'Limpiar el baño';
+
+  @override
+  String get choreSuggestionVacuum => 'Pasar la aspiradora';
+
+  @override
+  String get choreSuggestionKitchen => 'Limpiar la encimera';
+
+  @override
+  String get choreSuggestionPlants => 'Regar las plantas';
+
+  @override
+  String get choreSuggestionDishwasher => 'Vaciar el lavavajillas';
+
+  @override
+  String get listSuggestionGroceries => 'Compra';
+
+  @override
+  String get listSuggestionSupplies => 'Artículos del hogar';
+
+  @override
+  String get listSuggestionTodo => 'Pendientes';
+
+  @override
+  String get needsYouTitle => 'Te toca';
+
+  @override
+  String get needsYouKindChore => 'Tarea';
+
+  @override
+  String get needsYouKindMoney => 'Dinero';
+
+  @override
+  String get needsYouKindList => 'Lista';
+
+  @override
+  String get needsYouKindReminder => 'Recordatorio';
+
+  @override
+  String get needsYouDueToday => 'Para hoy';
+
+  @override
+  String needsYouOverdueDays(num days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days días de retraso',
+      one: '1 día de retraso',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String needsYouReminderAt(String time) {
+    return 'Hoy a las $time';
+  }
+
+  @override
+  String get needsYouSettle => 'Saldar';
+
+  @override
+  String get needsYouOpen => 'Abrir';
+
+  @override
+  String get needsYouAllCaughtUp => 'Todo al día';
+
+  @override
+  String get needsYouAllCaughtUpDesc => 'Ahora mismo no tienes nada pendiente.';
+
+  @override
+  String get needsYouNotSetUp => 'Aún sin configurar';
+
+  @override
+  String get needsYouNotSetUpDesc =>
+      'Añade una lista, una tarea o un gasto, y aquí aparecerá lo que te toque.';
+
+  @override
+  String get needsYouLoadError => 'No se pudo cargar lo que te toca.';
+
+  @override
+  String get hubChecklistHouseholdCreated => 'Hogar creado';
+
+  @override
+  String hubChecklistHouseholdCreatedSub(String name) {
+    return '$name está listo';
+  }
+
+  @override
+  String get hubChecklistInvite => 'Invitar a alguien';
+
+  @override
+  String get hubChecklistInviteSub =>
+      'Comparte un enlace o un código con quienes viven contigo';
+
+  @override
+  String get hubChecklistListSub =>
+      'La compra, tareas, cualquier cosa que tachar';
+
+  @override
+  String get hubChecklistChoreSub => 'Se turna entre todos';
+
+  @override
+  String get hubChecklistExpenseSub => 'Divídelo y mira quién debe qué';
+
+  @override
+  String hubChecklistCollapsedBar(int done, int total) {
+    return 'Inicio rápido · $done de $total';
+  }
+
+  @override
+  String get hubChecklistCollapse => 'Plegar el inicio rápido';
+
+  @override
+  String get hubChecklistExpand => 'Abrir el inicio rápido';
+
+  @override
+  String get hubSoloTitle => 'Eres la única persona aquí';
+
+  @override
+  String get hubSoloBody =>
+      'Las listas, las tareas y los gastos funcionan mejor con toda la casa dentro. Invita a quienes viven contigo.';
+
+  @override
+  String get hubSoloShare => 'Compartir enlace de invitación';
+
+  @override
+  String get hubSoloShowCode => 'Mostrar código';
+
+  @override
+  String authOnboardingCurrency(String code) {
+    return 'Moneda: $code';
+  }
+
+  @override
+  String get authOnboardingCurrencyChange => 'Cambiar';
+
+  @override
+  String get authOnboardingInviteLater => 'Más tarde';
+
+  @override
+  String get authOnboardingIntentTitle => '¿Qué quieres organizar primero?';
+
+  @override
+  String get authOnboardingIntentBody => 'Irá primero en tu lista de Inicio.';
+
+  @override
+  String get authOnboardingIntentLists => 'Listas de la compra';
+
+  @override
+  String get authOnboardingIntentMoney => 'Dividir gastos';
+
+  @override
+  String get authOnboardingIntentChores => 'Tareas de casa';
+
+  @override
+  String get authOnboardingIntentJustLooking => 'Solo estoy mirando';
+
+  @override
+  String get authShowPassword => 'Mostrar contraseña';
+
+  @override
+  String get authHidePassword => 'Ocultar contraseña';
+
+  @override
+  String hubChecklistJoined(String name) {
+    return 'Te uniste a $name';
+  }
+
+  @override
+  String get hubChecklistJoinedSub => 'Ya formas parte del hogar';
+
+  @override
+  String get hubChecklistTick => 'Tacha algo de una lista';
+
+  @override
+  String get hubChecklistTickSub =>
+      '¿Comprado o hecho? Táchalo para que todos lo sepan';
+
+  @override
+  String get hubChecklistDoChore => 'Asume o completa una tarea';
+
+  @override
+  String get hubChecklistDoChoreSub => 'Táchala cuando te toque';
+
+  @override
+  String get hubChecklistBalance => 'Mira tu saldo';
+
+  @override
+  String get hubChecklistBalanceSub => 'Mira en Dinero quién debe qué';
+
+  @override
+  String get needsYouNothingYet => 'Aún no tienes nada pendiente';
+
+  @override
+  String get needsYouNothingYetDesc => 'Esto es en lo que está la casa.';
+
+  @override
+  String get needsYouNotYourTurn => 'No es tu turno';
+
+  @override
+  String joinLandingOpen(String name) {
+    return 'Abrir $name';
+  }
+
+  @override
+  String welcomeInviteFrom(String name) {
+    return '$name te ha invitado';
+  }
+
+  @override
+  String welcomeInviteTo(String household, num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'a $household · $count personas',
+      one: 'a $household · 1 persona',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String welcomeInviteJoin(String household) {
+    return 'Únete a $household para compartir listas, tareas y dinero.';
+  }
+
+  @override
+  String get welcomeInviteExpiredTitle => 'Esta invitación ha caducado';
+
+  @override
+  String get welcomeInviteExpiredBody =>
+      'Pide a quien te la envió un enlace nuevo.';
+
+  @override
+  String activityMemberJoined(String name, String when) {
+    return '$name se unió · $when';
+  }
 }

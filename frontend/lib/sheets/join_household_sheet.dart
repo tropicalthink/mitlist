@@ -12,9 +12,11 @@ import 'package:lottie/lottie.dart';
 import '../models/group_models.dart';
 import '../screens/scanner/invite_qr_scan_screen.dart';
 import '../providers/group_provider.dart';
+import '../providers/onboarding_provider.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
 import '../utils/friendly_error.dart';
+import '../services/product_events.dart';
 import '../utils/haptics.dart';
 import '../utils/invite_link.dart';
 import '../widgets/alert.dart';
@@ -119,6 +121,11 @@ class _JoinHouseholdSheetState extends ConsumerState<JoinHouseholdSheet>
       final group = await svc.joinGroup(
         JoinGroupRequest(code: _codeController.text.trim().toUpperCase()),
       );
+      ProductEvents.instance.householdStarted(
+        ProductEventName.householdJoined,
+        group.id,
+        source: 'code',
+      );
       // The cached household list must be refetched before any screen
       // resolves its active group against it — without this the joined group
       // is missing from the cache and the home screen lands on "no household"
@@ -128,6 +135,9 @@ class _JoinHouseholdSheetState extends ConsumerState<JoinHouseholdSheet>
       // refetch fails — no screen should land on "no household" for one that
       // demonstrably exists.
       await refreshCachedGroups(ref, ensure: group);
+      // Joined, not created: Home gives them the joiner checklist once the
+      // household has things in it (plans/048 stage 7).
+      await markHubQuickStartJoined(group.id);
       if (!mounted) return;
 
       setState(() {

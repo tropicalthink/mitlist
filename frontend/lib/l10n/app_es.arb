@@ -2284,7 +2284,7 @@
   "@listEmptyCustomDesc": {
     "description": "Description for custom empty state"
   },
-  "listEmptyAllDesc": "Añade líneas dentro de una lista; las primeras aparecen como resumen en su tarjeta.",
+  "listEmptyAllDesc": "Un solo sitio para la compra y las tareas, donde todos en casa pueden añadir y tachar.",
   "@listEmptyAllDesc": {
     "description": "Description for general empty state"
   },
@@ -3975,7 +3975,6 @@
   "@expenseCreationExpenseAdded": {
     "description": "Snackbar when expense is created"
   },
-  "pinwallSnapshot": "De un vistazo",
   "pinwallBoardLabel": "Pinwall",
   "@pinwallBoardLabel": {
     "description": "Board chip label for pinwall"
@@ -4578,17 +4577,8 @@
   "authOnboardingInviteTitle": "Trae a tus compañeros",
   "authOnboardingInviteBody": "Comparte este código. Quien lo introduzca se unirá a tu hogar.",
   "authOnboardingGoToBoard": "Continuar",
-  "authOnboardingReadyTitle": "Tu hogar está listo",
-  "authOnboardingReadyBody": "Tres cosas que debes saber. Ese es todo el mapa.",
-  "authOnboardingOrientationHome": "Inicio muestra lo que necesita atención",
-  "authOnboardingOrientationTabs": "Las pestañas mantienen cada parte del hogar en su sitio",
-  "authOnboardingOrientationAdd": "El botón + añade algo desde cualquier lugar",
-  "authOnboardingEnterHousehold": "Abrir {name}",
   "authOnboardingResolving": "Abriendo tu tablero…",
   "hubQuickStartNextSemantic": "Siguiente paso: {label}",
-  "hubQuickStartDismissedToast": "Inicio rápido guardado. Recupéralo cuando quieras desde Cuenta.",
-  "accountShowQuickStart": "Mostrar el inicio rápido en el tablero",
-  "accountQuickStartRestored": "El inicio rápido vuelve a estar en tu tablero.",
   "hubChecklistTitle": "Pon la casa en marcha",
   "hubChecklistDone": "Hecho",
   "hubChecklistProgress": "{done} de {total} hechos",
@@ -4598,14 +4588,6 @@
   "authOnboardingJoinDesc": "¿Ya tienes una invitación? Introduce el código y entra directamente.",
   "@authOnboardingJoinDesc": {
     "description": "Description for join household card"
-  },
-  "authOnboardingJoinInvite": "Unirse con código de invitación",
-  "@authOnboardingJoinInvite": {
-    "description": "Secondary CTA on onboarding"
-  },
-  "authOnboardingJoinSemantic": "Unirse a un hogar con código de invitación",
-  "@authOnboardingJoinSemantic": {
-    "description": "Semantic label for join card"
   },
   "authOnboardingSetupHome": "Configura tu hogar",
   "@authOnboardingSetupHome": {
@@ -5195,10 +5177,6 @@
   "@hubOnboardingDescription": {
     "description": "Onboarding card description"
   },
-  "hubOnboardingDismiss": "Cerrar inicio rápido",
-  "@hubOnboardingDismiss": {
-    "description": "Dismiss quick start tooltip"
-  },
   "hubOnboardingDone": "Todo listo",
   "@hubOnboardingDone": {
     "description": "Onboarding card: done tile"
@@ -5210,10 +5188,6 @@
   "hubOnboardingGetStarted": "Empezar",
   "@hubOnboardingGetStarted": {
     "description": "Onboarding card header"
-  },
-  "hubOnboardingInvite": "Invitar compañeros",
-  "@hubOnboardingInvite": {
-    "description": "Invite flatmates action"
   },
   "hubOnboardingSettle": "Saldar",
   "@hubOnboardingSettle": {
@@ -5263,18 +5237,6 @@
   "@hubQuickAddToList": {
     "description": "Quick add: add to list option"
   },
-  "hubStatsActiveList": "lista activa",
-  "@hubStatsActiveList": {
-    "description": "Stats grid: singular active list"
-  },
-  "hubStatsActiveLists": "listas activas",
-  "@hubStatsActiveLists": {
-    "description": "Stats grid: plural active lists"
-  },
-  "hubStatsAllDone": "todo hecho",
-  "@hubStatsAllDone": {
-    "description": "Stats grid: all done label"
-  },
   "hubStatsBalance": "Saldo",
   "@hubStatsBalance": {
     "description": "Stats grid: balance label"
@@ -5294,14 +5256,6 @@
   "hubStatsMeals": "Comidas",
   "@hubStatsMeals": {
     "description": "Stats grid: meals planned label"
-  },
-  "hubStatsOpen": "abiertas",
-  "@hubStatsOpen": {
-    "description": "Stats grid: open balance label"
-  },
-  "hubStatsOverdue": "vencidas",
-  "@hubStatsOverdue": {
-    "description": "Stats grid: overdue label"
   },
   "hubStatsPinwallReminder": "recordatorio del pinwall",
   "@hubStatsPinwallReminder": {
@@ -6153,10 +6107,6 @@
   "openInAppButton": "Abrir en Mitlist",
   "recipeShareSubject": "{title} en Mitlist",
   "accountExportCalendar": "Exportar calendario (.ics)",
-  "authSignupConfirmPassword": "Confirmar contraseña",
-  "authSignupConfirmPasswordHint": "Vuelve a introducir tu contraseña",
-  "authSignupConfirmPasswordRequired": "Confirma tu contraseña.",
-  "authSignupPasswordMismatch": "Las contraseñas no coinciden.",
   "authSignupPasswordRequirementsNotMet": "La contraseña no cumple los requisitos indicados abajo.",
   "billingAutoRenewDisclosure": "El pago se carga a tu cuenta de la tienda. La suscripción se renueva automáticamente salvo que se cancele al menos 24 horas antes de que termine el periodo actual. Gestiónala o cancélala en tu cuenta de App Store o Google Play.",
   "billingProcessing": "Procesando tu compra...",
@@ -6228,16 +6178,9 @@
   "welcomeHaveAccount": "Ya tengo una cuenta",
   "tourSkip": "Saltar",
   "tourNext": "Siguiente",
-  "tourShowMe": "Enséñame",
   "tourBack": "Atrás",
   "tourStepOf": "Paso {step} de {total}",
   "tourSampleTag": "Ejemplo",
-  "tourWhyEyebrow": "Tu hogar",
-  "tourWhyHeadline": "¿Quién compró la leche, quién debe qué, a quién le toca?",
-  "tourWhyBody": "mitlist es el cuaderno compartido de la gente con la que vives. Aquí tienes un piso de ejemplo para trastear.",
-  "tourWhyNote": "El casero viene el jueves a las 10",
-  "tourWhyToBuy": "{count, plural, =1{1 por comprar} other{{count} por comprar}}",
-  "tourWhyOverdue": "{title} está atrasada",
   "tourListsEyebrow": "Listas",
   "tourListsHeadline": "Una lista. Todos añaden. Quien esté en la tienda compra.",
   "tourListsBody": "Marca lo que ya está y añade lo que falta. Todo el piso lo ve al momento.",
@@ -6266,16 +6209,6 @@
   "tourChoresYourTurn": "Te toca",
   "tourChoresTurnOf": "Le toca a {name}",
   "tourChoresNext": "Siguiente: {name}, en {days} días",
-  "tourRecipesEyebrow": "Recetas",
-  "tourRecipesHeadline": "El jueves toca shakshuka. Los huevos ya están en la lista.",
-  "tourRecipesBody": "Planifica una comida y manda sus ingredientes directos a la lista de la compra.",
-  "tourRecipesTitle": "Shakshuka",
-  "tourRecipesServings": "4 raciones · 30 min",
-  "tourRecipesPlanned": "Planificada para el jueves",
-  "tourRecipesAddIngredients": "Añadir a la lista",
-  "tourRecipesAddedButton": "En la lista",
-  "tourRecipesAddedToast": "{count} artículos añadidos a {list}",
-  "tourFinishEyebrow": "Tu hogar",
   "tourFinishHeadline": "Ahora hazlo con la gente con la que vives de verdad.",
   "tourFinishBody": "Crea una cuenta para montar tu hogar e invitarlos. Gratis para hogares de hasta 4 personas.",
   "tourFinishEmail": "Continuar con correo",
@@ -6330,5 +6263,94 @@
   "shortcutAddItem": "Añadir artículo",
   "shortcutScan": "Escanear",
   "shortcutLogExpense": "Registrar gasto",
-  "shortcutChoresToday": "Tareas de hoy"
+  "shortcutChoresToday": "Tareas de hoy",
+  "hubStatsOverdueCount": "{count} atrasadas",
+  "hubStatsNothingOnYou": "Nada para ti",
+  "hubBalanceYouOwe": "Debes {amount}",
+  "hubBalanceSettledUp": "Todo saldado",
+  "hubBalanceNoExpenses": "Aún no hay gastos",
+  "hubBalanceYouOweLabel": "Debes",
+  "hubBalanceOwedToYouLabel": "Te deben",
+  "hubStatsItemsLeft": "{count, plural, =1{Queda 1 artículo} other{Quedan {count} artículos}}",
+  "hubStatsItemsLeftLabel": "{count, plural, =1{artículo pendiente} other{artículos pendientes}}",
+  "hubStatsListsEmpty": "Las listas están vacías",
+  "settlementAlreadySettled": "{name} ya saldó",
+  "settlementYouWillPay": "Pagarás {amount} a {name}",
+  "settlementWillPayYou": "{name} te pagará {amount}",
+  "settlementPays": "{payer} paga {amount} a {payee}",
+  "settlementConfirming": "Confirmando…",
+  "listItemClaimed": "reservado",
+  "hubQuickAddScan": "Escanear un ticket o una lista",
+  "shoppingTripCreateList": "Crear una lista de la compra",
+  "mealPlanAddRecipe": "Añadir una receta",
+  "mealPlanImportRecipe": "Importar desde un enlace",
+  "calendarLongPressHint": "En la vista Mes, mantén pulsado un día para añadir algo en él.",
+  "emptyStateSuggestionsTitle": "O empieza con una de estas",
+  "choreSuggestionBins": "Sacar la basura",
+  "choreSuggestionBathroom": "Limpiar el baño",
+  "choreSuggestionVacuum": "Pasar la aspiradora",
+  "choreSuggestionKitchen": "Limpiar la encimera",
+  "choreSuggestionPlants": "Regar las plantas",
+  "choreSuggestionDishwasher": "Vaciar el lavavajillas",
+  "listSuggestionGroceries": "Compra",
+  "listSuggestionSupplies": "Artículos del hogar",
+  "listSuggestionTodo": "Pendientes",
+  "needsYouTitle": "Te toca",
+  "needsYouKindChore": "Tarea",
+  "needsYouKindMoney": "Dinero",
+  "needsYouKindList": "Lista",
+  "needsYouKindReminder": "Recordatorio",
+  "needsYouDueToday": "Para hoy",
+  "needsYouOverdueDays": "{days, plural, =1{1 día de retraso} other{{days} días de retraso}}",
+  "needsYouReminderAt": "Hoy a las {time}",
+  "needsYouSettle": "Saldar",
+  "needsYouOpen": "Abrir",
+  "needsYouAllCaughtUp": "Todo al día",
+  "needsYouAllCaughtUpDesc": "Ahora mismo no tienes nada pendiente.",
+  "needsYouNotSetUp": "Aún sin configurar",
+  "needsYouNotSetUpDesc": "Añade una lista, una tarea o un gasto, y aquí aparecerá lo que te toque.",
+  "needsYouLoadError": "No se pudo cargar lo que te toca.",
+  "hubChecklistHouseholdCreated": "Hogar creado",
+  "hubChecklistHouseholdCreatedSub": "{name} está listo",
+  "hubChecklistInvite": "Invitar a alguien",
+  "hubChecklistInviteSub": "Comparte un enlace o un código con quienes viven contigo",
+  "hubChecklistListSub": "La compra, tareas, cualquier cosa que tachar",
+  "hubChecklistChoreSub": "Se turna entre todos",
+  "hubChecklistExpenseSub": "Divídelo y mira quién debe qué",
+  "hubChecklistCollapsedBar": "Inicio rápido · {done} de {total}",
+  "hubChecklistCollapse": "Plegar el inicio rápido",
+  "hubChecklistExpand": "Abrir el inicio rápido",
+  "hubSoloTitle": "Eres la única persona aquí",
+  "hubSoloBody": "Las listas, las tareas y los gastos funcionan mejor con toda la casa dentro. Invita a quienes viven contigo.",
+  "hubSoloShare": "Compartir enlace de invitación",
+  "hubSoloShowCode": "Mostrar código",
+  "authOnboardingCurrency": "Moneda: {code}",
+  "authOnboardingCurrencyChange": "Cambiar",
+  "authOnboardingInviteLater": "Más tarde",
+  "authOnboardingIntentTitle": "¿Qué quieres organizar primero?",
+  "authOnboardingIntentBody": "Irá primero en tu lista de Inicio.",
+  "authOnboardingIntentLists": "Listas de la compra",
+  "authOnboardingIntentMoney": "Dividir gastos",
+  "authOnboardingIntentChores": "Tareas de casa",
+  "authOnboardingIntentJustLooking": "Solo estoy mirando",
+  "authShowPassword": "Mostrar contraseña",
+  "authHidePassword": "Ocultar contraseña",
+  "hubChecklistJoined": "Te uniste a {name}",
+  "hubChecklistJoinedSub": "Ya formas parte del hogar",
+  "hubChecklistTick": "Tacha algo de una lista",
+  "hubChecklistTickSub": "¿Comprado o hecho? Táchalo para que todos lo sepan",
+  "hubChecklistDoChore": "Asume o completa una tarea",
+  "hubChecklistDoChoreSub": "Táchala cuando te toque",
+  "hubChecklistBalance": "Mira tu saldo",
+  "hubChecklistBalanceSub": "Mira en Dinero quién debe qué",
+  "needsYouNothingYet": "Aún no tienes nada pendiente",
+  "needsYouNothingYetDesc": "Esto es en lo que está la casa.",
+  "needsYouNotYourTurn": "No es tu turno",
+  "joinLandingOpen": "Abrir {name}",
+  "welcomeInviteFrom": "{name} te ha invitado",
+  "welcomeInviteTo": "{count, plural, =1{a {household} · 1 persona} other{a {household} · {count} personas}}",
+  "welcomeInviteJoin": "Únete a {household} para compartir listas, tareas y dinero.",
+  "welcomeInviteExpiredTitle": "Esta invitación ha caducado",
+  "welcomeInviteExpiredBody": "Pide a quien te la envió un enlace nuevo.",
+  "activityMemberJoined": "{name} se unió · {when}"
 }

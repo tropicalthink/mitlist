@@ -21,12 +21,14 @@ import '../../theme/shadows.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../utils/active_group_context.dart';
+import '../../utils/format_currency.dart';
 import '../../utils/friendly_error.dart';
 import '../../utils/latest_request_guard.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/hub/hub_create_actions.dart';
 import '../../widgets/mitlist_app_bar.dart';
 import '../../widgets/odometer.dart';
 import '../../widgets/skeleton.dart';
@@ -425,10 +427,10 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
 
       if (totalCents > 0) {
         final l10n = AppLocalizations.of(context)!;
-        final totalStr = (totalCents / 100).toStringAsFixed(2);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(l10n.shoppingTripItemsWorthDone('€$totalStr')),
+            content: Text(l10n.shoppingTripItemsWorthDone(
+                formatCurrency(totalCents, _currency))),
             action: SnackBarAction(
               label: l10n.shoppingTripAddExpense,
               onPressed: () => context.pushNamed('money'),
@@ -449,6 +451,14 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
     }
   }
 
+  /// The trip's empty state: make a shopping list, put something on it, and
+  /// come back to a trip that has items to shop for.
+  Future<void> _createList() async {
+    unawaited(HapticFeedback.lightImpact());
+    await createListAndOpen(context, initialType: 'shopping');
+    if (mounted) await _load();
+  }
+
   void _showDoneStamp(int count, int totalCents) {
     final overlay = Overlay.of(context);
     late OverlayEntry entry;
@@ -456,6 +466,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
       builder: (_) => _DoneStamp(
         count: count,
         totalCents: totalCents,
+        currency: _currency,
         onComplete: () => entry.remove(),
       ),
     );
@@ -526,6 +537,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
               checkedCount: _checkedCount,
               totalCount: _totalItems,
               totalCents: _checkedTotalCents,
+              currency: _currency,
               isSubmitting: _isSubmitting,
               onDone:
                   _checkedCount > 0 && !_isSubmitting ? _completeChecked : null,
@@ -579,6 +591,13 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
           icon: const AppIcon(name: 'shoppingBagOutline'),
           title: l10n.shoppingTripNoLists,
           description: l10n.shoppingTripNoListsDesc,
+          actions: [
+            AppButton(
+              text: l10n.shoppingTripCreateList,
+              icon: const AppIcon(name: 'plus'),
+              onPressed: _createList,
+            ),
+          ],
         ),
       );
     }
@@ -754,6 +773,7 @@ class _BasketBar extends StatelessWidget {
     required this.checkedCount,
     required this.totalCount,
     required this.totalCents,
+    required this.currency,
     required this.isSubmitting,
     required this.onDone,
   });
@@ -761,6 +781,7 @@ class _BasketBar extends StatelessWidget {
   final int checkedCount;
   final int totalCount;
   final int totalCents;
+  final String currency;
   final bool isSubmitting;
   final VoidCallback? onDone;
 
@@ -786,7 +807,7 @@ class _BasketBar extends StatelessWidget {
     );
 
     final priceSuffix =
-        totalCents > 0 ? '  ·  €${(totalCents / 100).toStringAsFixed(2)}' : '';
+        totalCents > 0 ? '  ·  ${formatCurrency(totalCents, currency)}' : '';
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -1016,11 +1037,13 @@ class _DoneStamp extends StatefulWidget {
   const _DoneStamp({
     required this.count,
     required this.totalCents,
+    required this.currency,
     required this.onComplete,
   });
 
   final int count;
   final int totalCents;
+  final String currency;
   final VoidCallback onComplete;
 
   @override
@@ -1064,7 +1087,7 @@ class _DoneStampState extends State<_DoneStamp>
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final priceStr = widget.totalCents > 0
-        ? '€${(widget.totalCents / 100).toStringAsFixed(2)}'
+        ? formatCurrency(widget.totalCents, widget.currency)
         : null;
 
     return IgnorePointer(

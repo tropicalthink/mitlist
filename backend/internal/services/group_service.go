@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/rs/zerolog/log"
 
 	"github.com/mitlist-app/mitlist/internal/api"
 	"github.com/mitlist-app/mitlist/internal/models"
@@ -25,16 +26,42 @@ type memberGate interface {
 	EnsureCanAddMember(ctx context.Context, groupID uuid.UUID) error
 }
 
+// memberOrderSyncer brings a household's chore rotations in line with its
+// members. Implemented by ChoreService; left nil, rotations keep the members
+// they had when each chore was created.
+type memberOrderSyncer interface {
+	SyncMemberOrderForGroup(ctx context.Context, groupID uuid.UUID) error
+}
+
 // GroupService provides business logic for group and membership management.
 type GroupService struct {
-	groupRepo repositories.GroupRepo
-	userRepo  repositories.UserRepo
-	billing   memberGate
-	hub       *sse.Hub
+	groupRepo    repositories.GroupRepo
+	userRepo     repositories.UserRepo
+	billing      memberGate
+	hub          *sse.Hub
+	memberOrders memberOrderSyncer
 }
 
 // SetHub injects the household event hub for group and membership changes.
 func (s *GroupService) SetHub(h *sse.Hub) { s.hub = h }
+
+// SetMemberOrderSyncer installs the chore rotation rebuild run after someone
+// joins or leaves a household.
+func (s *GroupService) SetMemberOrderSyncer(syncer memberOrderSyncer) { s.memberOrders = syncer }
+
+// syncMemberOrders rebuilds the household's chore rotations after a
+// membership change. The change has already been saved, so a failure is
+// logged, not returned: the person is in (or out of) the household either way,
+// and the next membership change repairs the rotation. The rebuild outlives
+// a cancelled request for the same reason.
+func (s *GroupService) syncMemberOrders(ctx context.Context, groupID uuid.UUID) {
+	if s.memberOrders == nil {
+		return
+	}
+	if err := s.memberOrders.SyncMemberOrderForGroup(context.WithoutCancel(ctx), groupID); err != nil {
+		log.Warn().Err(err).Str("group_id", groupID.String()).Msg("chore rotation rebuild after membership change failed")
+	}
+}
 
 // NewGroupService creates a new GroupService.
 func NewGroupService(groupRepo repositories.GroupRepo, userRepo repositories.UserRepo) *GroupService {
@@ -253,10 +280,12 @@ func (s *GroupService) InviteMember(ctx context.Context, userID, groupID uuid.UU
 			return nil, err
 		}
 
+		inviter := userID
 		invite := &models.GroupInvite{
 			GroupID:   groupID,
 			Code:      code,
 			ExpiresAt: time.Now().UTC().Add(7 * 24 * time.Hour),
+			CreatedBy: &inviter,
 		}
 
 		if err := s.groupRepo.CreateInvite(ctx, invite); err != nil {
@@ -321,6 +350,76 @@ func (s *GroupService) PreviewInvite(ctx context.Context, userID uuid.UUID, code
 	}, nil
 }
 
+// PreviewInvitePublic is the signed-out preview of an invite code: the
+// household's name, its size, whether the code still works, and the first
+// name of the member who sent it (plans/048 stage 7; the founder approved
+// showing both names to anyone holding the code). Unknown codes and codes
+// whose household is gone are a plain 404.
+func (s *GroupService) PreviewInvitePublic(ctx context.Context, code string) (*models.PublicInvitePreview, error) {
+	code = strings.ToUpper(strings.TrimSpace(code))
+
+	invite, err := s.groupRepo.GetInviteByCode(ctx, code)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) || isNotFound(err) {
+			return nil, &api.NotFoundError{Resource: "invite"}
+		}
+		return nil, err
+	}
+
+	group, err := s.groupRepo.GetGroupByID(ctx, invite.GroupID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) || isNotFound(err) {
+			return nil, &api.NotFoundError{Resource: "invite"}
+		}
+		return nil, err
+	}
+
+	members, err := s.groupRepo.ListMembershipsByGroup(ctx, invite.GroupID)
+	if err != nil {
+		return nil, err
+	}
+
+	status := models.InviteStatusValid
+	if time.Now().UTC().After(invite.ExpiresAt) {
+		status = models.InviteStatusExpired
+	}
+
+	return &models.PublicInvitePreview{
+		HouseholdName: group.Name,
+		InviterName:   s.inviterFirstName(ctx, invite, members),
+		MemberCount:   len(members),
+		Status:        status,
+	}, nil
+}
+
+// inviterFirstName names who sent the code, but only while they are still in
+// the household: a former member's or a deleted account's name has no
+// business on someone else's invitation. Best-effort; nil hides the name.
+func (s *GroupService) inviterFirstName(ctx context.Context, invite *models.GroupInvite, members []models.GroupMembership) *string {
+	if invite.CreatedBy == nil || s.userRepo == nil {
+		return nil
+	}
+	stillHere := false
+	for _, m := range members {
+		if m.UserID == *invite.CreatedBy {
+			stillHere = true
+			break
+		}
+	}
+	if !stillHere {
+		return nil
+	}
+	user, err := s.userRepo.GetByID(ctx, *invite.CreatedBy)
+	if err != nil || user == nil || !user.IsActive {
+		return nil
+	}
+	name := strings.TrimSpace(user.FirstName)
+	if name == "" {
+		return nil
+	}
+	return &name
+}
+
 // JoinGroup allows a user to join a group using an invite code. The code is
 // reusable until it expires, so joining only checks the deadline and adds
 // the membership.
@@ -356,6 +455,7 @@ func (s *GroupService) JoinGroup(ctx context.Context, userID uuid.UUID, code str
 	if err := s.groupRepo.CreateMembership(ctx, membership); err != nil {
 		return nil, err
 	}
+	s.syncMemberOrders(ctx, invite.GroupID)
 
 	publishDomainEvent(s.hub, "member:joined", invite.GroupID, map[string]string{"user_id": userID.String()})
 	return s.groupRepo.GetGroupByID(ctx, invite.GroupID)
@@ -386,6 +486,7 @@ func (s *GroupService) LeaveGroup(ctx context.Context, userID, groupID uuid.UUID
 		return repo.EndMembership(ctx, membership.ID)
 	})
 	if err == nil {
+		s.syncMemberOrders(ctx, groupID)
 		publishDomainEvent(s.hub, "member:left", groupID, map[string]string{"user_id": userID.String()})
 	}
 	return err
@@ -460,6 +561,7 @@ func (s *GroupService) RemoveMember(ctx context.Context, userID, groupID, target
 		return repo.EndMembership(ctx, membership.ID)
 	})
 	if err == nil {
+		s.syncMemberOrders(ctx, groupID)
 		publishDomainEvent(s.hub, "member:removed", groupID, map[string]string{"user_id": targetUserID.String()})
 	}
 	return err
@@ -511,6 +613,7 @@ func (s *GroupService) ApproveClaim(ctx context.Context, userID, groupID, claimI
 	if err := s.groupRepo.CreateMembership(ctx, membership); err != nil {
 		return err
 	}
+	s.syncMemberOrders(ctx, groupID)
 	publishDomainEvent(s.hub, "member:joined", groupID, map[string]string{"user_id": claim.ClaimedBy.String()})
 
 	return s.groupRepo.DeletePendingClaim(ctx, claimID)

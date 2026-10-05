@@ -15,6 +15,10 @@ const (
 	ActivityTypeChoreCompleted  ActivityType = "chore_completed"
 	ActivityTypeMealPlanCreated ActivityType = "meal_plan_created"
 	ActivityTypeRecipeAdded     ActivityType = "recipe_added"
+	// ActivityTypeMemberJoined is someone joining the household (plans/048
+	// stage 7). Title is the joiner's first name, EntityType "member" and
+	// EntityId their user id.
+	ActivityTypeMemberJoined ActivityType = "member_joined"
 )
 
 // ActivityEvent is a recent household event for the pinwall strip.

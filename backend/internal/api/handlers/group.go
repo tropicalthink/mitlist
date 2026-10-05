@@ -40,6 +40,47 @@ func (h *GroupHandler) RegisterRoutes(r chi.Router) {
 	r.Post("/groups/{id}/pending-claims/{claim_id}/reject", h.RejectClaim)
 }
 
+// RegisterPublicRoutes mounts the group routes a signed-out visitor may call.
+func (h *GroupHandler) RegisterPublicRoutes(r chi.Router) {
+	r.Get("/invites/{code}/preview", h.PreviewInvitePublic)
+}
+
+// The public invite preview is unauthenticated and keyed by a guessable-ish
+// code, so it gets its own per-IP budget on top of the global limiter.
+const (
+	invitePreviewBurst  = 20
+	invitePreviewRefill = 20.0 / 60.0 // per second: 20 a minute
+)
+
+// PreviewInvitePublic handles GET /api/v1/invites/{code}/preview for someone
+// who opened an invite link before having an account (plans/048 stage 7):
+// household name, size, whether the code still works, and the inviter's
+// first name. A malformed code gets the same 404 as an unknown one.
+func (h *GroupHandler) PreviewInvitePublic(w http.ResponseWriter, r *http.Request) {
+	if !middleware.CheckLimit(
+		"ratelimit:invite-preview:ip:"+middleware.ExtractIP(r),
+		invitePreviewBurst, invitePreviewRefill,
+	) {
+		api.RespondJSON(w, http.StatusTooManyRequests, map[string]string{"error": "rate limit exceeded"})
+		return
+	}
+
+	code := strings.TrimSpace(chi.URLParam(r, "code"))
+	if len(code) < 4 || len(code) > 64 {
+		api.RespondError(w, &api.NotFoundError{Resource: "invite"})
+		return
+	}
+
+	preview, err := h.service.PreviewInvitePublic(r.Context(), code)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	// The code is a capability; never let a shared proxy cache what it opens.
+	w.Header().Set("Cache-Control", "no-store")
+	api.RespondJSON(w, http.StatusOK, preview)
+}
+
 // CreateGroup handles POST /api/v1/groups.
 func (h *GroupHandler) CreateGroup(w http.ResponseWriter, r *http.Request) {
 	user, ok := api.UserFromContext(r.Context())

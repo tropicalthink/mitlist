@@ -40,36 +40,9 @@ class ExpenseTimelineBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     if (groups.isEmpty) {
-      return RefreshIndicator(
-        color: Theme.of(context).colorScheme.primary,
+      return ExpenseNoExpensesBody(
         onRefresh: onRefresh,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(MitlistSpacing.md),
-                  child: AppEmptyState(
-                    lottieAsset: 'assets/animations/lottie/wallet.lottie',
-                    icon: AppIcon(name: 'receiptPercent', size: 56),
-                    title: l10n.expenseNoExpensesTitle,
-                    description: l10n.expenseNoExpensesDesc,
-                    actions: [
-                      AppButton(
-                        text: l10n.expenseAddFirstExpense,
-                        onPressed: onAddExpense,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
+        onAddExpense: onAddExpense,
       );
     }
 
@@ -292,6 +265,56 @@ class _ExpenseCard extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// "No expenses yet" with the single add-expense action. Shared by both Money
+/// tabs: a household that has recorded nothing has nothing to settle either,
+/// and should not be congratulated for being settled up.
+class ExpenseNoExpensesBody extends StatelessWidget {
+  const ExpenseNoExpensesBody({
+    super.key,
+    required this.onRefresh,
+    required this.onAddExpense,
+  });
+
+  final Future<void> Function() onRefresh;
+  final VoidCallback onAddExpense;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return RefreshIndicator(
+      color: Theme.of(context).colorScheme.primary,
+      onRefresh: onRefresh,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: constraints.maxHeight,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(MitlistSpacing.md),
+                child: AppEmptyState(
+                  lottieAsset: 'assets/animations/lottie/wallet.lottie',
+                  icon: AppIcon(name: 'receiptPercent', size: 56),
+                  title: l10n.expenseNoExpensesTitle,
+                  description: l10n.expenseNoExpensesDesc,
+                  actions: [
+                    AppButton(
+                      text: l10n.expenseAddFirstExpense,
+                      onPressed: onAddExpense,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

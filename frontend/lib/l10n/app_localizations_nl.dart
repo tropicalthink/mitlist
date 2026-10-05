@@ -2067,7 +2067,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get listEmptyAllDesc =>
-      'Voeg regels toe in een lijst; de eerste paar verschijnen als voorbeeld op de kaart.';
+      'Eén plek voor boodschappen en to-do\'s, waar iedereen in huis aan kan toevoegen en afvinken.';
 
   @override
   String get listCreateShopping => 'Maak een boodschappenlijst';
@@ -3515,9 +3515,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get pinwallBoardLabel => 'Prikbord';
 
   @override
-  String get pinwallSnapshot => 'In één oogopslag';
-
-  @override
   String get pinwallDragHint =>
       'Sleep notities om te verplaatsen  ·  Knijp om te zoomen';
 
@@ -4268,19 +4265,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get authSignupPasswordRequired => 'Wachtwoord is verplicht.';
 
   @override
-  String get authSignupConfirmPassword => 'Wachtwoord bevestigen';
-
-  @override
-  String get authSignupConfirmPasswordHint => 'Voer je wachtwoord opnieuw in';
-
-  @override
-  String get authSignupConfirmPasswordRequired => 'Bevestig je wachtwoord.';
-
-  @override
-  String get authSignupPasswordMismatch =>
-      'De wachtwoorden komen niet overeen.';
-
-  @override
   String get authSignupPasswordRequirementsNotMet =>
       'Het wachtwoord voldoet niet aan de onderstaande eisen.';
 
@@ -4439,9 +4423,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get authOnboardingCreateHousehold => 'Huishouden aanmaken';
 
   @override
-  String get authOnboardingJoinInvite => 'Deelnemen met uitnodigingscode';
-
-  @override
   String get authOnboardingHaveCode => 'Heb je een uitnodigingscode?';
 
   @override
@@ -4451,10 +4432,6 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get authOnboardingJoinDesc =>
       'Al een uitnodiging? Voer de code in en ga meteen aan de slag.';
-
-  @override
-  String get authOnboardingJoinSemantic =>
-      'Deelnemen aan een huishouden met uitnodigingscode';
 
   @override
   String get authOnboardingHomeIconSemantic => 'Huishouden-startpictogram';
@@ -4484,30 +4461,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get authOnboardingGoToBoard => 'Verder';
 
   @override
-  String get authOnboardingReadyTitle => 'Je huishouden is klaar';
-
-  @override
-  String get authOnboardingReadyBody =>
-      'Drie dingen om te weten. Dat is de hele kaart.';
-
-  @override
-  String get authOnboardingOrientationHome =>
-      'Home laat zien wat aandacht nodig heeft';
-
-  @override
-  String get authOnboardingOrientationTabs =>
-      'Tabs geven elk deel van het huishouden een vaste plek';
-
-  @override
-  String get authOnboardingOrientationAdd =>
-      'Met de knop + voeg je overal iets toe';
-
-  @override
-  String authOnboardingEnterHousehold(String name) {
-    return '$name openen';
-  }
-
-  @override
   String get authOnboardingResolving => 'Je prikbord wordt geopend…';
 
   @override
@@ -4534,25 +4487,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get hubStatsPlanned => 'gepland';
 
   @override
-  String get hubStatsOverdue => 'te laat';
-
-  @override
-  String get hubStatsAllDone => 'alles klaar';
-
-  @override
   String get hubStatsBalance => 'Saldo';
 
   @override
-  String get hubStatsOpen => 'open';
-
-  @override
   String get hubStatsLists => 'Lijsten';
-
-  @override
-  String get hubStatsActiveList => 'actieve lijst';
-
-  @override
-  String get hubStatsActiveLists => 'actieve lijsten';
 
   @override
   String get hubStatsReminders => 'Herinneringen';
@@ -4652,14 +4590,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get hubOnboardingGetStarted => 'Aan de slag';
 
   @override
-  String get hubOnboardingDismiss => 'Snelstart sluiten';
-
-  @override
   String get hubOnboardingDescription =>
       'Alles begint hier. Kies wat het belangrijkst is.';
-
-  @override
-  String get hubOnboardingInvite => 'Huisgenoten uitnodigen';
 
   @override
   String get hubOnboardingCreateList => 'Lijst aanmaken';
@@ -4674,17 +4606,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String hubQuickStartNextSemantic(String label) {
     return 'Volgende stap: $label';
   }
-
-  @override
-  String get hubQuickStartDismissedToast =>
-      'Snelstart opgeborgen. Je haalt hem altijd terug via Account.';
-
-  @override
-  String get accountShowQuickStart => 'Snelstart op het prikbord tonen';
-
-  @override
-  String get accountQuickStartRestored =>
-      'De snelstart staat weer op je prikbord.';
 
   @override
   String get appBottomSheetDiscardTitle => 'Wijzigingen negeren?';
@@ -6565,9 +6486,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get tourNext => 'Volgende';
 
   @override
-  String get tourShowMe => 'Laat zien';
-
-  @override
   String get tourBack => 'Terug';
 
   @override
@@ -6577,36 +6495,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get tourSampleTag => 'Voorbeeld';
-
-  @override
-  String get tourWhyEyebrow => 'Jouw huishouden';
-
-  @override
-  String get tourWhyHeadline =>
-      'Wie kocht de melk, wie is wat schuldig, wie is aan de beurt?';
-
-  @override
-  String get tourWhyBody =>
-      'mitlist is het gedeelde notitieboek voor de mensen met wie je woont. Hier is een voorbeeldhuis om mee te spelen.';
-
-  @override
-  String get tourWhyNote => 'Huisbaas komt donderdag 10 uur';
-
-  @override
-  String tourWhyToBuy(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count te kopen',
-      one: '1 te kopen',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String tourWhyOverdue(String title) {
-    return '$title is te laat';
-  }
 
   @override
   String get tourListsEyebrow => 'Lijsten';
@@ -6718,40 +6606,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String tourChoresNext(String name, int days) {
     return 'Daarna: $name, over $days dagen';
   }
-
-  @override
-  String get tourRecipesEyebrow => 'Recepten';
-
-  @override
-  String get tourRecipesHeadline =>
-      'Donderdag is het shakshuka. De eieren staan al op de lijst.';
-
-  @override
-  String get tourRecipesBody =>
-      'Plan een maaltijd en stuur de ingrediënten rechtstreeks naar de boodschappenlijst.';
-
-  @override
-  String get tourRecipesTitle => 'Shakshuka';
-
-  @override
-  String get tourRecipesServings => '4 porties · 30 min';
-
-  @override
-  String get tourRecipesPlanned => 'Gepland voor donderdag';
-
-  @override
-  String get tourRecipesAddIngredients => 'Op de lijst zetten';
-
-  @override
-  String get tourRecipesAddedButton => 'Op de lijst';
-
-  @override
-  String tourRecipesAddedToast(int count, String list) {
-    return '$count items toegevoegd aan $list';
-  }
-
-  @override
-  String get tourFinishEyebrow => 'Jouw huishouden';
 
   @override
   String get tourFinishHeadline =>
@@ -6936,4 +6790,342 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get shortcutChoresToday => 'Taken vandaag';
+
+  @override
+  String hubStatsOverdueCount(int count) {
+    return '$count te laat';
+  }
+
+  @override
+  String get hubStatsNothingOnYou => 'Niets voor jou';
+
+  @override
+  String hubBalanceYouOwe(String amount) {
+    return 'Je bent $amount schuldig';
+  }
+
+  @override
+  String get hubBalanceSettledUp => 'Alles verrekend';
+
+  @override
+  String get hubBalanceNoExpenses => 'Nog geen uitgaven';
+
+  @override
+  String get hubBalanceYouOweLabel => 'Je bent schuldig';
+
+  @override
+  String get hubBalanceOwedToYouLabel => 'Je krijgt';
+
+  @override
+  String hubStatsItemsLeft(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Nog $count items',
+      one: 'Nog 1 item',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hubStatsItemsLeftLabel(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'items open',
+      one: 'item open',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get hubStatsListsEmpty => 'Lijsten zijn leeg';
+
+  @override
+  String settlementAlreadySettled(String name) {
+    return '$name heeft al verrekend';
+  }
+
+  @override
+  String settlementYouWillPay(String name, String amount) {
+    return 'Je betaalt $name $amount';
+  }
+
+  @override
+  String settlementWillPayYou(String name, String amount) {
+    return '$name betaalt jou $amount';
+  }
+
+  @override
+  String settlementPays(String payer, String payee, String amount) {
+    return '$payer betaalt $payee $amount';
+  }
+
+  @override
+  String get settlementConfirming => 'Bevestigen…';
+
+  @override
+  String get listItemClaimed => 'geclaimd';
+
+  @override
+  String get hubQuickAddScan => 'Bon of lijst scannen';
+
+  @override
+  String get shoppingTripCreateList => 'Boodschappenlijst maken';
+
+  @override
+  String get mealPlanAddRecipe => 'Recept toevoegen';
+
+  @override
+  String get mealPlanImportRecipe => 'Importeren via een link';
+
+  @override
+  String get calendarLongPressHint =>
+      'Houd in de maandweergave een dag ingedrukt om er iets aan toe te voegen.';
+
+  @override
+  String get emptyStateSuggestionsTitle => 'Of begin met een van deze';
+
+  @override
+  String get choreSuggestionBins => 'Vuilnis buiten zetten';
+
+  @override
+  String get choreSuggestionBathroom => 'Badkamer schoonmaken';
+
+  @override
+  String get choreSuggestionVacuum => 'Stofzuigen';
+
+  @override
+  String get choreSuggestionKitchen => 'Aanrecht schoonmaken';
+
+  @override
+  String get choreSuggestionPlants => 'Planten water geven';
+
+  @override
+  String get choreSuggestionDishwasher => 'Vaatwasser uitruimen';
+
+  @override
+  String get listSuggestionGroceries => 'Boodschappen';
+
+  @override
+  String get listSuggestionSupplies => 'Huishoudspullen';
+
+  @override
+  String get listSuggestionTodo => 'To-do';
+
+  @override
+  String get needsYouTitle => 'Voor jou';
+
+  @override
+  String get needsYouKindChore => 'Klusje';
+
+  @override
+  String get needsYouKindMoney => 'Geld';
+
+  @override
+  String get needsYouKindList => 'Lijst';
+
+  @override
+  String get needsYouKindReminder => 'Herinnering';
+
+  @override
+  String get needsYouDueToday => 'Vandaag';
+
+  @override
+  String needsYouOverdueDays(num days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days dagen te laat',
+      one: '1 dag te laat',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String needsYouReminderAt(String time) {
+    return 'Vandaag om $time';
+  }
+
+  @override
+  String get needsYouSettle => 'Verrekenen';
+
+  @override
+  String get needsYouOpen => 'Openen';
+
+  @override
+  String get needsYouAllCaughtUp => 'Alles bijgewerkt';
+
+  @override
+  String get needsYouAllCaughtUpDesc => 'Er ligt nu niets bij jou.';
+
+  @override
+  String get needsYouNotSetUp => 'Nog niet ingericht';
+
+  @override
+  String get needsYouNotSetUpDesc =>
+      'Voeg een lijst, een klusje of een uitgave toe, en alles wat bij jou ligt verschijnt hier.';
+
+  @override
+  String get needsYouLoadError => 'Kon niet laden wat bij jou ligt.';
+
+  @override
+  String get hubChecklistHouseholdCreated => 'Huishouden aangemaakt';
+
+  @override
+  String hubChecklistHouseholdCreatedSub(String name) {
+    return '$name is klaar';
+  }
+
+  @override
+  String get hubChecklistInvite => 'Iemand uitnodigen';
+
+  @override
+  String get hubChecklistInviteSub =>
+      'Deel een link of code met de mensen met wie je woont';
+
+  @override
+  String get hubChecklistListSub =>
+      'Boodschappen, to-do\'s, alles om af te vinken';
+
+  @override
+  String get hubChecklistChoreSub => 'Iedereen is om de beurt aan de beurt';
+
+  @override
+  String get hubChecklistExpenseSub => 'Verdeel het en zie wie wat schuldig is';
+
+  @override
+  String hubChecklistCollapsedBar(int done, int total) {
+    return 'Snelstart · $done van $total';
+  }
+
+  @override
+  String get hubChecklistCollapse => 'Snelstart inklappen';
+
+  @override
+  String get hubChecklistExpand => 'Snelstart openen';
+
+  @override
+  String get hubSoloTitle => 'Je bent hier de enige';
+
+  @override
+  String get hubSoloBody =>
+      'Lijsten, klusjes en kosten werken het best met het hele huis erbij. Nodig je huisgenoten uit.';
+
+  @override
+  String get hubSoloShare => 'Uitnodigingslink delen';
+
+  @override
+  String get hubSoloShowCode => 'Code tonen';
+
+  @override
+  String authOnboardingCurrency(String code) {
+    return 'Valuta: $code';
+  }
+
+  @override
+  String get authOnboardingCurrencyChange => 'Wijzigen';
+
+  @override
+  String get authOnboardingInviteLater => 'Later';
+
+  @override
+  String get authOnboardingIntentTitle => 'Wat wil je als eerste regelen?';
+
+  @override
+  String get authOnboardingIntentBody =>
+      'Het komt als eerste op je checklist op Home.';
+
+  @override
+  String get authOnboardingIntentLists => 'Boodschappenlijsten';
+
+  @override
+  String get authOnboardingIntentMoney => 'Kosten verdelen';
+
+  @override
+  String get authOnboardingIntentChores => 'Klusjes';
+
+  @override
+  String get authOnboardingIntentJustLooking => 'Ik kijk alleen even';
+
+  @override
+  String get authShowPassword => 'Wachtwoord tonen';
+
+  @override
+  String get authHidePassword => 'Wachtwoord verbergen';
+
+  @override
+  String hubChecklistJoined(String name) {
+    return 'Lid van $name';
+  }
+
+  @override
+  String get hubChecklistJoinedSub => 'Je hoort nu bij het huishouden';
+
+  @override
+  String get hubChecklistTick => 'Vink iets af op een lijst';
+
+  @override
+  String get hubChecklistTickSub =>
+      'Gekocht of gedaan? Vink het af zodat iedereen het weet';
+
+  @override
+  String get hubChecklistDoChore => 'Neem of doe een klusje';
+
+  @override
+  String get hubChecklistDoChoreSub =>
+      'Vink de jouwe af als je aan de beurt bent';
+
+  @override
+  String get hubChecklistBalance => 'Bekijk je saldo';
+
+  @override
+  String get hubChecklistBalanceSub => 'Zie bij Geld wie wat schuldig is';
+
+  @override
+  String get needsYouNothingYet => 'Nog niets voor jou';
+
+  @override
+  String get needsYouNothingYetDesc => 'Hier werkt het huis aan.';
+
+  @override
+  String get needsYouNotYourTurn => 'Niet jouw beurt';
+
+  @override
+  String joinLandingOpen(String name) {
+    return '$name openen';
+  }
+
+  @override
+  String welcomeInviteFrom(String name) {
+    return '$name heeft je uitgenodigd';
+  }
+
+  @override
+  String welcomeInviteTo(String household, num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'bij $household · $count mensen',
+      one: 'bij $household · 1 persoon',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String welcomeInviteJoin(String household) {
+    return 'Word lid van $household om lijsten, klusjes en geld te delen.';
+  }
+
+  @override
+  String get welcomeInviteExpiredTitle => 'Deze uitnodiging is verlopen';
+
+  @override
+  String get welcomeInviteExpiredBody =>
+      'Vraag degene die hem stuurde om een nieuwe link.';
+
+  @override
+  String activityMemberJoined(String name, String when) {
+    return '$name is lid geworden · $when';
+  }
 }

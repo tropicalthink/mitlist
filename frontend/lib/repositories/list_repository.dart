@@ -11,6 +11,7 @@ import '../utils/uuid_validation.dart';
 import '../services/list_service.dart';
 import '../services/error_reporter.dart';
 import '../services/scan/local_item_promotion_service.dart';
+import '../services/product_events.dart';
 import '../services/sse_service.dart';
 import '../storage/app_database.dart';
 import 'grocery_repository.dart';
@@ -53,6 +54,11 @@ class ListRepository {
   /// and events arriving while a fetch is in flight queue exactly one more.
   static const _sseRefreshCoalesce = Duration(milliseconds: 250);
   final Map<String, Timer> _sseRefreshTimers = {};
+
+  /// Lists whose whole item set has been fetched since this repository was
+  /// created (opened, or refreshed by a live event). Others may only hold the
+  /// preview lines `_hydrateMissingListPreviews` cached.
+  final Set<String> _itemsFetched = {};
   final Set<String> _sseRefreshInFlight = {};
   final Set<String> _sseRefreshDirty = {};
 
@@ -137,11 +143,29 @@ class ListRepository {
         await _remote.listItems(listId, limit: limit, offset: offset);
     if (offset == 0) {
       await _reconcileListItems(listId, remote);
+      if (remote.length < limit) _itemsFetched.add(listId);
     } else {
       await _db.upsertListItemsRows(remote.map(_toListItemsRow));
     }
     await _patchListPreviewFromLocalItems(listId);
     return remote.length;
+  }
+
+  /// Fetches the items of every active list in [groupId] whose whole item set
+  /// has not been fetched this session, so counts summed across lists (Home's
+  /// "items left") are not limited to the preview lines a list nobody opened
+  /// on this device has cached. Once per list per session; a failure is left
+  /// for the next call.
+  Future<void> fetchUnsyncedItems(String groupId) async {
+    final lists = await getListsByGroupOnce(groupId);
+    for (final list in lists) {
+      if (list.isArchived || _itemsFetched.contains(list.id)) continue;
+      try {
+        await refreshItems(list.id);
+      } catch (_) {
+        // Offline or a transient failure: the cached preview stands.
+      }
+    }
   }
 
   Future<void> refreshListDetail(String listId) async {
@@ -319,7 +343,18 @@ class ListRepository {
 
     // Best-effort immediate sync.
     if (!deferImmediateSync) _afterLocalWrite();
+    unawaited(_noteFirstItem(listId));
     return local;
+  }
+
+  /// Product events (plans/048 stage 8): the first item added in a household
+  /// created or joined on this install. Runs after the write's transaction.
+  Future<void> _noteFirstItem(String listId) async {
+    final events = ProductEvents.instance;
+    if (!events.isEnabled) return;
+    try {
+      await events.noteItemAdded(await _db.getListGroupId(listId), 'list_item');
+    } catch (_) {}
   }
 
   /// Offline-first equivalent of [ListService.addItemAmount]: the optimistic

@@ -812,6 +812,17 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
     }
   }
 
+  /// Recipe creation opens above this sheet; coming back, the new recipe is
+  /// in the cache and ready to pick for the slot.
+  Future<void> _createRecipe({required bool manual}) async {
+    unawaited(Haptics.light());
+    final created = await context.pushNamed<bool>(
+      'recipeCreate',
+      extra: <String, String?>{'entryMode': manual ? 'manual' : 'url'},
+    );
+    if (created == true && mounted) await _load();
+  }
+
   List<Recipe> get _filteredRecipes {
     if (_searchQuery.isEmpty) return _recipes;
     return _recipes.where((r) {
@@ -854,6 +865,18 @@ class _RecipePickerSheetState extends ConsumerState<_RecipePickerSheet> {
         icon: const AppIcon(name: 'restaurantOutline'),
         title: l10n.mealPlanNoRecipes,
         description: l10n.mealPlanAddRecipesDesc,
+        actions: [
+          AppButton(
+            text: l10n.mealPlanAddRecipe,
+            icon: const AppIcon(name: 'plus'),
+            onPressed: () => _createRecipe(manual: true),
+          ),
+          AppButton(
+            text: l10n.mealPlanImportRecipe,
+            variant: AppButtonVariant.outline,
+            onPressed: () => _createRecipe(manual: false),
+          ),
+        ],
       );
     }
     return Column(

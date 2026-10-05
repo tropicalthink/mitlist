@@ -3642,7 +3642,7 @@ abstract class AppLocalizations {
   /// Description for general empty state
   ///
   /// In en, this message translates to:
-  /// **'Add lines inside a list; the first few appear as a snippet on its card.'**
+  /// **'Shopping and to-dos in one place that everyone in the house can add to and tick off.'**
   String get listEmptyAllDesc;
 
   /// CTA to create first shopping list
@@ -6153,12 +6153,6 @@ abstract class AppLocalizations {
   /// **'Pinwall'**
   String get pinwallBoardLabel;
 
-  /// Header for the collapsible household stats summary under the composer
-  ///
-  /// In en, this message translates to:
-  /// **'At a glance'**
-  String get pinwallSnapshot;
-
   /// Hint text for pinwall interactions
   ///
   /// In en, this message translates to:
@@ -7503,30 +7497,6 @@ abstract class AppLocalizations {
   /// **'Password is required.'**
   String get authSignupPasswordRequired;
 
-  /// Confirm password input label on signup
-  ///
-  /// In en, this message translates to:
-  /// **'Confirm password'**
-  String get authSignupConfirmPassword;
-
-  /// Confirm password hint text
-  ///
-  /// In en, this message translates to:
-  /// **'Re-enter your password'**
-  String get authSignupConfirmPasswordHint;
-
-  /// Validation: confirm password empty
-  ///
-  /// In en, this message translates to:
-  /// **'Please confirm your password.'**
-  String get authSignupConfirmPasswordRequired;
-
-  /// Validation: password and confirmation differ
-  ///
-  /// In en, this message translates to:
-  /// **'Passwords do not match.'**
-  String get authSignupPasswordMismatch;
-
   /// Validation: password fails the complexity policy
   ///
   /// In en, this message translates to:
@@ -7785,12 +7755,6 @@ abstract class AppLocalizations {
   /// **'Create a household'**
   String get authOnboardingCreateHousehold;
 
-  /// Secondary CTA on onboarding
-  ///
-  /// In en, this message translates to:
-  /// **'Join with invite code'**
-  String get authOnboardingJoinInvite;
-
   /// Invite code prompt
   ///
   /// In en, this message translates to:
@@ -7808,12 +7772,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Already got an invite? Enter the code to jump right in.'**
   String get authOnboardingJoinDesc;
-
-  /// Semantic label for join card
-  ///
-  /// In en, this message translates to:
-  /// **'Join a household with invite code'**
-  String get authOnboardingJoinSemantic;
 
   /// Semantic label for home icon
   ///
@@ -7863,42 +7821,6 @@ abstract class AppLocalizations {
   /// **'Continue'**
   String get authOnboardingGoToBoard;
 
-  /// Final onboarding orientation title
-  ///
-  /// In en, this message translates to:
-  /// **'Your household is ready'**
-  String get authOnboardingReadyTitle;
-
-  /// Final onboarding orientation description
-  ///
-  /// In en, this message translates to:
-  /// **'Three things to know. That’s the whole map.'**
-  String get authOnboardingReadyBody;
-
-  /// Explains the Home destination during final onboarding
-  ///
-  /// In en, this message translates to:
-  /// **'Home shows what needs attention'**
-  String get authOnboardingOrientationHome;
-
-  /// Explains feature tabs during final onboarding
-  ///
-  /// In en, this message translates to:
-  /// **'Tabs keep each part of the household in its place'**
-  String get authOnboardingOrientationTabs;
-
-  /// Explains the global add action during final onboarding
-  ///
-  /// In en, this message translates to:
-  /// **'The + button adds something from anywhere'**
-  String get authOnboardingOrientationAdd;
-
-  /// CTA entering the household after orientation
-  ///
-  /// In en, this message translates to:
-  /// **'Open {name}'**
-  String authOnboardingEnterHousehold(String name);
-
   /// Hint shown while onboarding checks whether the account already belongs to a household
   ///
   /// In en, this message translates to:
@@ -7947,47 +7869,17 @@ abstract class AppLocalizations {
   /// **'planned'**
   String get hubStatsPlanned;
 
-  /// Stats grid: overdue label
-  ///
-  /// In en, this message translates to:
-  /// **'overdue'**
-  String get hubStatsOverdue;
-
-  /// Stats grid: all done label
-  ///
-  /// In en, this message translates to:
-  /// **'all done'**
-  String get hubStatsAllDone;
-
   /// Stats grid: balance label
   ///
   /// In en, this message translates to:
   /// **'Balance'**
   String get hubStatsBalance;
 
-  /// Stats grid: open balance label
-  ///
-  /// In en, this message translates to:
-  /// **'open'**
-  String get hubStatsOpen;
-
   /// Stats grid: lists label
   ///
   /// In en, this message translates to:
   /// **'Lists'**
   String get hubStatsLists;
-
-  /// Stats grid: singular active list
-  ///
-  /// In en, this message translates to:
-  /// **'active list'**
-  String get hubStatsActiveList;
-
-  /// Stats grid: plural active lists
-  ///
-  /// In en, this message translates to:
-  /// **'active lists'**
-  String get hubStatsActiveLists;
 
   /// Stats grid: reminders label
   ///
@@ -8169,23 +8061,11 @@ abstract class AppLocalizations {
   /// **'Get started'**
   String get hubOnboardingGetStarted;
 
-  /// Dismiss quick start tooltip
-  ///
-  /// In en, this message translates to:
-  /// **'Dismiss quick start'**
-  String get hubOnboardingDismiss;
-
   /// Onboarding card description
   ///
   /// In en, this message translates to:
   /// **'Everything starts here. Pick what matters most.'**
   String get hubOnboardingDescription;
-
-  /// Invite flatmates action
-  ///
-  /// In en, this message translates to:
-  /// **'Invite flatmates'**
-  String get hubOnboardingInvite;
 
   /// Create a list action
   ///
@@ -8210,24 +8090,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Next step: {label}'**
   String hubQuickStartNextSemantic(String label);
-
-  /// Toast after dismissing the hub quick start, pointing at the recovery path
-  ///
-  /// In en, this message translates to:
-  /// **'Quick start put away. Bring it back anytime from Account.'**
-  String get hubQuickStartDismissedToast;
-
-  /// Account row that restores the dismissed hub quick start
-  ///
-  /// In en, this message translates to:
-  /// **'Show quick start on the hub'**
-  String get accountShowQuickStart;
-
-  /// Toast after restoring the hub quick start from the account screen
-  ///
-  /// In en, this message translates to:
-  /// **'Quick start is back on your board.'**
-  String get accountQuickStartRestored;
 
   /// Discard changes dialog title
   ///
@@ -11181,12 +11043,6 @@ abstract class AppLocalizations {
   /// **'Next'**
   String get tourNext;
 
-  /// Bottom button on the first tour page
-  ///
-  /// In en, this message translates to:
-  /// **'Show me'**
-  String get tourShowMe;
-
   /// Semantic label of the back chevron on tour pages
   ///
   /// In en, this message translates to:
@@ -11204,42 +11060,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sample'**
   String get tourSampleTag;
-
-  /// Eyebrow label above the first tour headline
-  ///
-  /// In en, this message translates to:
-  /// **'Your household'**
-  String get tourWhyEyebrow;
-
-  /// Headline of the first tour page
-  ///
-  /// In en, this message translates to:
-  /// **'Who bought milk, who owes what, whose turn is it?'**
-  String get tourWhyHeadline;
-
-  /// Body text of the first tour page
-  ///
-  /// In en, this message translates to:
-  /// **'mitlist is the shared notebook for the people you live with. Here is a sample flat to poke at.'**
-  String get tourWhyBody;
-
-  /// Sample sticky note pinned on the first tour page
-  ///
-  /// In en, this message translates to:
-  /// **'Landlord coming Thursday 10am'**
-  String get tourWhyNote;
-
-  /// Unchecked item count on the sample list
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 to buy} other{{count} to buy}}'**
-  String tourWhyToBuy(int count);
-
-  /// The overdue chore on the first tour page
-  ///
-  /// In en, this message translates to:
-  /// **'{title} is overdue'**
-  String tourWhyOverdue(String title);
 
   /// Eyebrow label on the lists tour page
   ///
@@ -11408,66 +11228,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Next: {name}, in {days} days'**
   String tourChoresNext(String name, int days);
-
-  /// Eyebrow label on the recipes tour page
-  ///
-  /// In en, this message translates to:
-  /// **'Recipes'**
-  String get tourRecipesEyebrow;
-
-  /// Headline of the recipes tour page
-  ///
-  /// In en, this message translates to:
-  /// **'Thursday is shakshuka. The eggs are already on the list.'**
-  String get tourRecipesHeadline;
-
-  /// Body text of the recipes tour page
-  ///
-  /// In en, this message translates to:
-  /// **'Plan a meal and send its ingredients straight to the shopping list.'**
-  String get tourRecipesBody;
-
-  /// Title of the sample recipe
-  ///
-  /// In en, this message translates to:
-  /// **'Shakshuka'**
-  String get tourRecipesTitle;
-
-  /// Meta line of the sample recipe
-  ///
-  /// In en, this message translates to:
-  /// **'4 servings · 30 min'**
-  String get tourRecipesServings;
-
-  /// Meal plan line on the sample recipe
-  ///
-  /// In en, this message translates to:
-  /// **'Planned for Thursday'**
-  String get tourRecipesPlanned;
-
-  /// Button on the sample recipe that pushes ingredients to the sample list
-  ///
-  /// In en, this message translates to:
-  /// **'Add to the list'**
-  String get tourRecipesAddIngredients;
-
-  /// Button label once ingredients were added
-  ///
-  /// In en, this message translates to:
-  /// **'On the list'**
-  String get tourRecipesAddedButton;
-
-  /// Toast after ingredients were added
-  ///
-  /// In en, this message translates to:
-  /// **'{count} items added to {list}'**
-  String tourRecipesAddedToast(int count, String list);
-
-  /// Eyebrow label on the last tour page
-  ///
-  /// In en, this message translates to:
-  /// **'Your household'**
-  String get tourFinishEyebrow;
 
   /// Headline of the last tour page
   ///
@@ -11798,6 +11558,540 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Chores today'**
   String get shortcutChoresToday;
+
+  /// Home at-a-glance chores row: how many of the caller's chores are overdue
+  ///
+  /// In en, this message translates to:
+  /// **'{count} overdue'**
+  String hubStatsOverdueCount(int count);
+
+  /// Home at-a-glance chores row: the caller has no chore due today or overdue
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing on you'**
+  String get hubStatsNothingOnYou;
+
+  /// Home at-a-glance balance row: the caller's net position is negative. amount is formatted in the household currency
+  ///
+  /// In en, this message translates to:
+  /// **'You owe {amount}'**
+  String hubBalanceYouOwe(String amount);
+
+  /// Home at-a-glance balance row: the household has expenses and the caller's net position is zero
+  ///
+  /// In en, this message translates to:
+  /// **'Settled up'**
+  String get hubBalanceSettledUp;
+
+  /// Home at-a-glance balance row: the household has not recorded any expense
+  ///
+  /// In en, this message translates to:
+  /// **'No expenses yet'**
+  String get hubBalanceNoExpenses;
+
+  /// Pinwall board index card: caption under the amount the caller owes
+  ///
+  /// In en, this message translates to:
+  /// **'You owe'**
+  String get hubBalanceYouOweLabel;
+
+  /// Pinwall board index card: caption under the amount owed to the caller
+  ///
+  /// In en, this message translates to:
+  /// **'Owed to you'**
+  String get hubBalanceOwedToYouLabel;
+
+  /// Home at-a-glance lists row: unchecked items across the household's lists
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item left} other{{count} items left}}'**
+  String hubStatsItemsLeft(num count);
+
+  /// Pinwall board index card: caption under the unchecked item count
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{item left} other{items left}}'**
+  String hubStatsItemsLeftLabel(num count);
+
+  /// Home at-a-glance lists row: the household's lists have no items at all
+  ///
+  /// In en, this message translates to:
+  /// **'Lists are empty'**
+  String get hubStatsListsEmpty;
+
+  /// Record-settlement dialog: payer and payee are the same person
+  ///
+  /// In en, this message translates to:
+  /// **'{name} already settled'**
+  String settlementAlreadySettled(String name);
+
+  /// Record-settlement dialog: the caller pays someone
+  ///
+  /// In en, this message translates to:
+  /// **'You’ll pay {name} {amount}'**
+  String settlementYouWillPay(String name, String amount);
+
+  /// Record-settlement dialog: someone pays the caller
+  ///
+  /// In en, this message translates to:
+  /// **'{name} will pay you {amount}'**
+  String settlementWillPayYou(String name, String amount);
+
+  /// Record-settlement dialog: a payment between two other members
+  ///
+  /// In en, this message translates to:
+  /// **'{payer} pays {payee} {amount}'**
+  String settlementPays(String payer, String payee, String amount);
+
+  /// Record-settlement dialog: confirm button while the settlement is being recorded
+  ///
+  /// In en, this message translates to:
+  /// **'Confirming…'**
+  String get settlementConfirming;
+
+  /// List item row: someone has said they will get this item (shown after a dot separator)
+  ///
+  /// In en, this message translates to:
+  /// **'claimed'**
+  String get listItemClaimed;
+
+  /// Quick add on Home: open the camera scanner (mobile only)
+  ///
+  /// In en, this message translates to:
+  /// **'Scan a receipt or list'**
+  String get hubQuickAddScan;
+
+  /// Shopping trip with no lists: button that opens the create-list sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Create a shopping list'**
+  String get shoppingTripCreateList;
+
+  /// Meal plan recipe picker with no recipes: primary button, write a recipe by hand
+  ///
+  /// In en, this message translates to:
+  /// **'Add a recipe'**
+  String get mealPlanAddRecipe;
+
+  /// Meal plan recipe picker with no recipes: secondary button, import a recipe from a web link
+  ///
+  /// In en, this message translates to:
+  /// **'Import from a link'**
+  String get mealPlanImportRecipe;
+
+  /// Calendar empty state: hint that long-pressing a day in the month view adds an item on that day
+  ///
+  /// In en, this message translates to:
+  /// **'In Month view, long-press a day to add something on it.'**
+  String get calendarLongPressHint;
+
+  /// Empty state: caption above tappable suggestion chips (common chores, common lists)
+  ///
+  /// In en, this message translates to:
+  /// **'Or start with one of these'**
+  String get emptyStateSuggestionsTitle;
+
+  /// Chores empty state suggestion chip; opens the new-chore sheet with this title
+  ///
+  /// In en, this message translates to:
+  /// **'Take out bins'**
+  String get choreSuggestionBins;
+
+  /// Chores empty state suggestion chip; opens the new-chore sheet with this title
+  ///
+  /// In en, this message translates to:
+  /// **'Clean bathroom'**
+  String get choreSuggestionBathroom;
+
+  /// Chores empty state suggestion chip; opens the new-chore sheet with this title
+  ///
+  /// In en, this message translates to:
+  /// **'Vacuum'**
+  String get choreSuggestionVacuum;
+
+  /// Chores empty state suggestion chip; opens the new-chore sheet with this title
+  ///
+  /// In en, this message translates to:
+  /// **'Kitchen surfaces'**
+  String get choreSuggestionKitchen;
+
+  /// Chores empty state suggestion chip; opens the new-chore sheet with this title
+  ///
+  /// In en, this message translates to:
+  /// **'Water plants'**
+  String get choreSuggestionPlants;
+
+  /// Chores empty state suggestion chip; opens the new-chore sheet with this title
+  ///
+  /// In en, this message translates to:
+  /// **'Empty dishwasher'**
+  String get choreSuggestionDishwasher;
+
+  /// Lists empty state suggestion chip; opens the new-list sheet with this name (shopping list)
+  ///
+  /// In en, this message translates to:
+  /// **'Groceries'**
+  String get listSuggestionGroceries;
+
+  /// Lists empty state suggestion chip; opens the new-list sheet with this name (shopping list)
+  ///
+  /// In en, this message translates to:
+  /// **'Household supplies'**
+  String get listSuggestionSupplies;
+
+  /// Lists empty state suggestion chip; opens the new-list sheet with this name (to-do list)
+  ///
+  /// In en, this message translates to:
+  /// **'To do'**
+  String get listSuggestionTodo;
+
+  /// Home: title of the card at the top listing what needs the signed-in member (their chores, what they owe, today's reminders, open lists, tonight's meal)
+  ///
+  /// In en, this message translates to:
+  /// **'Needs you'**
+  String get needsYouTitle;
+
+  /// Needs you card: small feature label above a chore row
+  ///
+  /// In en, this message translates to:
+  /// **'Chore'**
+  String get needsYouKindChore;
+
+  /// Needs you card: small feature label above a payment row
+  ///
+  /// In en, this message translates to:
+  /// **'Money'**
+  String get needsYouKindMoney;
+
+  /// Needs you card: small feature label above a shopping/to-do list row
+  ///
+  /// In en, this message translates to:
+  /// **'List'**
+  String get needsYouKindList;
+
+  /// Needs you card: small feature label above a pinwall reminder row
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder'**
+  String get needsYouKindReminder;
+
+  /// Needs you card: a chore of the caller's that is due today
+  ///
+  /// In en, this message translates to:
+  /// **'Due today'**
+  String get needsYouDueToday;
+
+  /// Needs you card: how many days a chore of the caller's is overdue
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, =1{1 day overdue} other{{days} days overdue}}'**
+  String needsYouOverdueDays(num days);
+
+  /// Needs you card: when a pinwall reminder goes off later today. time is a localised clock time
+  ///
+  /// In en, this message translates to:
+  /// **'Today at {time}'**
+  String needsYouReminderAt(String time);
+
+  /// Needs you card: button on a 'you owe' row that records paying the person back
+  ///
+  /// In en, this message translates to:
+  /// **'Settle'**
+  String get needsYouSettle;
+
+  /// Needs you card: button that opens the list, the meal plan or the pinwall note the row is about
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get needsYouOpen;
+
+  /// Needs you card: the household is in use but nothing is on the caller right now
+  ///
+  /// In en, this message translates to:
+  /// **'All caught up'**
+  String get needsYouAllCaughtUp;
+
+  /// Needs you card: line under 'All caught up'
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is on you right now.'**
+  String get needsYouAllCaughtUpDesc;
+
+  /// Needs you card: the household has no chores, expenses or list items yet
+  ///
+  /// In en, this message translates to:
+  /// **'Not set up yet'**
+  String get needsYouNotSetUp;
+
+  /// Needs you card: line under 'Not set up yet'
+  ///
+  /// In en, this message translates to:
+  /// **'Add a list, a chore or an expense, and whatever needs you will show up here.'**
+  String get needsYouNotSetUpDesc;
+
+  /// Needs you card: the household data could not be read
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load what needs you.'**
+  String get needsYouLoadError;
+
+  /// Quick-start checklist: the first step, already ticked when the checklist appears
+  ///
+  /// In en, this message translates to:
+  /// **'Household created'**
+  String get hubChecklistHouseholdCreated;
+
+  /// Quick-start checklist: line under 'Household created'. name is the household's name
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is set up'**
+  String hubChecklistHouseholdCreatedSub(String name);
+
+  /// Quick-start checklist step: invite a housemate
+  ///
+  /// In en, this message translates to:
+  /// **'Invite someone'**
+  String get hubChecklistInvite;
+
+  /// Quick-start checklist: line under 'Invite someone'
+  ///
+  /// In en, this message translates to:
+  /// **'Share a link or a code with the people you live with'**
+  String get hubChecklistInviteSub;
+
+  /// Quick-start checklist: line under 'Create a list'
+  ///
+  /// In en, this message translates to:
+  /// **'Groceries, to-dos, anything to tick off'**
+  String get hubChecklistListSub;
+
+  /// Quick-start checklist: line under 'Add a chore'
+  ///
+  /// In en, this message translates to:
+  /// **'It takes turns between everyone'**
+  String get hubChecklistChoreSub;
+
+  /// Quick-start checklist: line under 'Track an expense'
+  ///
+  /// In en, this message translates to:
+  /// **'Split it and see who owes what'**
+  String get hubChecklistExpenseSub;
+
+  /// Quick-start checklist folded into a one-line bar
+  ///
+  /// In en, this message translates to:
+  /// **'Quick start · {done} of {total}'**
+  String hubChecklistCollapsedBar(int done, int total);
+
+  /// Tooltip on the quick-start checklist's header chevron that folds it into a bar
+  ///
+  /// In en, this message translates to:
+  /// **'Fold quick start'**
+  String get hubChecklistCollapse;
+
+  /// Tooltip/label on the folded quick-start bar that opens the checklist again
+  ///
+  /// In en, this message translates to:
+  /// **'Open quick start'**
+  String get hubChecklistExpand;
+
+  /// Home: card shown while the household has a single member
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re the only one here'**
+  String get hubSoloTitle;
+
+  /// Home: body of the card shown while the household has a single member
+  ///
+  /// In en, this message translates to:
+  /// **'Lists, chores and costs work best with the whole house in. Invite the people you live with.'**
+  String get hubSoloBody;
+
+  /// Home solo card: button that opens the system share sheet with an invite link
+  ///
+  /// In en, this message translates to:
+  /// **'Share invite link'**
+  String get hubSoloShare;
+
+  /// Home solo card: button that opens the invite sheet with the code and QR
+  ///
+  /// In en, this message translates to:
+  /// **'Show code'**
+  String get hubSoloShowCode;
+
+  /// First run, naming the household: the currency guessed from the device, e.g. 'Currency: EUR'
+  ///
+  /// In en, this message translates to:
+  /// **'Currency: {code}'**
+  String authOnboardingCurrency(String code);
+
+  /// First run, naming the household: button that reveals the currency picker
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get authOnboardingCurrencyChange;
+
+  /// First run, invite step: skip inviting for now (Home's checklist asks again)
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get authOnboardingInviteLater;
+
+  /// First run, last step: question whose answer goes first on Home's checklist
+  ///
+  /// In en, this message translates to:
+  /// **'What do you want to sort out first?'**
+  String get authOnboardingIntentTitle;
+
+  /// First run, last step: line under the question
+  ///
+  /// In en, this message translates to:
+  /// **'It goes first on your checklist on Home.'**
+  String get authOnboardingIntentBody;
+
+  /// First run, last step: answer
+  ///
+  /// In en, this message translates to:
+  /// **'Shopping lists'**
+  String get authOnboardingIntentLists;
+
+  /// First run, last step: answer
+  ///
+  /// In en, this message translates to:
+  /// **'Splitting costs'**
+  String get authOnboardingIntentMoney;
+
+  /// First run, last step: answer
+  ///
+  /// In en, this message translates to:
+  /// **'Chores'**
+  String get authOnboardingIntentChores;
+
+  /// First run, last step: answer that changes nothing and opens Home
+  ///
+  /// In en, this message translates to:
+  /// **'Just looking'**
+  String get authOnboardingIntentJustLooking;
+
+  /// Tooltip on the eye button of a password field
+  ///
+  /// In en, this message translates to:
+  /// **'Show password'**
+  String get authShowPassword;
+
+  /// Tooltip on the eye button of a password field while the password is shown
+  ///
+  /// In en, this message translates to:
+  /// **'Hide password'**
+  String get authHidePassword;
+
+  /// Joiner checklist on Home: first step, already ticked. name is the household
+  ///
+  /// In en, this message translates to:
+  /// **'Joined {name}'**
+  String hubChecklistJoined(String name);
+
+  /// Joiner checklist: line under 'Joined {name}'
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re part of the household now'**
+  String get hubChecklistJoinedSub;
+
+  /// Joiner checklist step
+  ///
+  /// In en, this message translates to:
+  /// **'Tick something off a list'**
+  String get hubChecklistTick;
+
+  /// Joiner checklist: line under 'Tick something off a list'
+  ///
+  /// In en, this message translates to:
+  /// **'Bought it or done it? Tick it so everyone knows'**
+  String get hubChecklistTickSub;
+
+  /// Joiner checklist step
+  ///
+  /// In en, this message translates to:
+  /// **'Take or complete a chore'**
+  String get hubChecklistDoChore;
+
+  /// Joiner checklist: line under 'Take or complete a chore'
+  ///
+  /// In en, this message translates to:
+  /// **'Tick yours off when it\'s your turn'**
+  String get hubChecklistDoChoreSub;
+
+  /// Joiner checklist step
+  ///
+  /// In en, this message translates to:
+  /// **'Check your balance'**
+  String get hubChecklistBalance;
+
+  /// Joiner checklist: line under 'Check your balance'
+  ///
+  /// In en, this message translates to:
+  /// **'See who owes what in Money'**
+  String get hubChecklistBalanceSub;
+
+  /// Needs you card for someone who just joined a household and has nothing assigned
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing on you yet'**
+  String get needsYouNothingYet;
+
+  /// Needs you card: line under 'Nothing on you yet', above the household's open things
+  ///
+  /// In en, this message translates to:
+  /// **'Here\'s what the house is working on.'**
+  String get needsYouNothingYetDesc;
+
+  /// Needs you card: a household chore shown for information, on someone else's turn
+  ///
+  /// In en, this message translates to:
+  /// **'Not your turn'**
+  String get needsYouNotYourTurn;
+
+  /// Invite landing after joining: button that opens the household. name is the household
+  ///
+  /// In en, this message translates to:
+  /// **'Open {name}'**
+  String joinLandingOpen(String name);
+
+  /// Welcome screen opened from an invite link: who sent it (first name)
+  ///
+  /// In en, this message translates to:
+  /// **'{name} invited you'**
+  String welcomeInviteFrom(String name);
+
+  /// Welcome screen from an invite link: the household and how many live in it
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{to {household} · 1 person} other{to {household} · {count} people}}'**
+  String welcomeInviteTo(String household, num count);
+
+  /// Welcome screen from an invite link when the sender is unknown
+  ///
+  /// In en, this message translates to:
+  /// **'Join {household} to share lists, chores and money.'**
+  String welcomeInviteJoin(String household);
+
+  /// Welcome screen from an invite link whose code has expired
+  ///
+  /// In en, this message translates to:
+  /// **'This invite has expired'**
+  String get welcomeInviteExpiredTitle;
+
+  /// Welcome screen from an expired invite link
+  ///
+  /// In en, this message translates to:
+  /// **'Ask whoever sent it for a new link.'**
+  String get welcomeInviteExpiredBody;
+
+  /// Activity feed on Home: a member joined the household. name is their first name; when is a relative day such as 'today'
+  ///
+  /// In en, this message translates to:
+  /// **'{name} joined · {when}'**
+  String activityMemberJoined(String name, String when);
 }
 
 class _AppLocalizationsDelegate

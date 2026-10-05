@@ -19,6 +19,7 @@ import '../utils/invite_link.dart';
 import '../widgets/alert.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
+import '../widgets/app_toast.dart';
 import '../l10n/app_localizations.dart';
 import '../widgets/app_icon.dart';
 
@@ -52,6 +53,43 @@ class InviteHouseholdSheet extends ConsumerStatefulWidget {
       title: l10n.sheetInviteTitle,
       body: InviteHouseholdSheet(groupId: groupId),
     );
+  }
+
+  /// Mints a code and hands the invite link straight to the system share
+  /// sheet, for "Share invite link" outside this sheet (Home's solo card).
+  /// Same gate as [show]: a full household goes to the premium flow.
+  static Future<void> shareLink(
+    BuildContext context, {
+    required String groupId,
+  }) async {
+    final container = ProviderScope.containerOf(context);
+    final entitlement =
+        container.read(householdEntitlementProvider(groupId)).valueOrNull;
+    if (entitlement != null && !entitlement.canAddMember) {
+      await context.pushNamed('premium', pathParameters: {'groupId': groupId});
+      return;
+    }
+    final l10n = AppLocalizations.of(context)!;
+    final router = GoRouter.of(context);
+    try {
+      final svc = await container.read(groupServiceProviderAsync.future);
+      final invite = await svc.inviteMember(
+        groupId,
+        const InviteMemberRequest(role: 'member'),
+      );
+      await SharePlus.instance.share(
+        ShareParams(text: inviteShareText(invite.code, l10n)),
+      );
+    } catch (e) {
+      if (e is ApiException && e.isPaymentRequired) {
+        container.invalidate(householdEntitlementProvider(groupId));
+        await router.pushNamed('premium', pathParameters: {'groupId': groupId});
+        return;
+      }
+      if (context.mounted) {
+        AppToast.error(context, friendlyErrorMessage(e, l10n));
+      }
+    }
   }
 
   @override

@@ -8,15 +8,18 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/group_models.dart';
 import '../../providers/group_provider.dart';
-import '../../router.dart' show currentGroupIdProvider;
+import '../../providers/onboarding_provider.dart';
+import '../../router.dart' show currentGroupIdProvider, resetLastShellTab;
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../utils/friendly_error.dart';
+import '../../utils/hub_helpers.dart' show avatarInitials;
 import '../../utils/open_in_app.dart';
 import '../../widgets/alert.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/mitlist_app_bar.dart';
+import '../../services/product_events.dart';
 
 enum _Phase { loading, idle, joining, success }
 
@@ -25,7 +28,8 @@ enum _Phase { loading, idle, joining, success }
 ///
 /// Looks the code up first so the recipient sees *which* household they are
 /// being asked into and how big it is, then lets them accept or decline. On
-/// success the joined group becomes the current group before heading home.
+/// success the joined group becomes the current group, the page shows who is
+/// already there, and "Open {household}" heads home.
 class JoinLandingScreen extends ConsumerStatefulWidget {
   const JoinLandingScreen({super.key, required this.code});
 
@@ -41,6 +45,10 @@ class _JoinLandingScreenState extends ConsumerState<JoinLandingScreen> {
   String? _previewError;
   String? _joinError;
   Group? _joinedGroup;
+
+  /// The household's current members, shown once joined. Empty until the
+  /// roster answers, and for good if it does not.
+  List<GroupMemberProfile> _members = const [];
 
   AppLocalizations get l10n => AppLocalizations.of(context)!;
 
@@ -83,6 +91,11 @@ class _JoinLandingScreenState extends ConsumerState<JoinLandingScreen> {
     try {
       final svc = await ref.read(groupServiceProviderAsync.future);
       final group = await svc.joinGroup(JoinGroupRequest(code: _code));
+      ProductEvents.instance.householdStarted(
+        ProductEventName.householdJoined,
+        group.id,
+        source: 'link',
+      );
       if (!mounted) return;
       // Seed the household cache before anyone reads it. The hub decides
       // "no household, go to setup" from that cache, so without this a new
@@ -91,12 +104,17 @@ class _JoinLandingScreenState extends ConsumerState<JoinLandingScreen> {
       try {
         await refreshCachedGroups(ref, ensure: group);
       } catch (_) {}
+      // Joined, not created: Home gives them the joiner checklist once the
+      // household has things in it (plans/048 stage 7).
+      await markHubQuickStartJoined(group.id);
       if (!mounted) return;
+      ref.invalidate(hubQuickStartPrefsProvider(group.id));
       unawaited(ref.read(currentGroupIdProvider.notifier).set(group.id));
       setState(() {
         _phase = _Phase.success;
         _joinedGroup = group;
       });
+      unawaited(_loadMembers(group.id));
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -104,6 +122,28 @@ class _JoinLandingScreenState extends ConsumerState<JoinLandingScreen> {
         _joinError = friendlyErrorMessage(e, l10n);
       });
     }
+  }
+
+  /// Who is already in the household, for the welcome once joined. Best
+  /// effort: the page reads fine without it.
+  Future<void> _loadMembers(String groupId) async {
+    try {
+      final svc = await ref.read(groupServiceProviderAsync.future);
+      final members = await svc.listMembers(groupId);
+      if (!mounted) return;
+      setState(() => _members = [
+            for (final m in members)
+              if (m.isActive) m,
+          ]);
+    } catch (_) {}
+  }
+
+  /// Into the household, on Home: the shell otherwise reopens whichever tab
+  /// the last session ended on, and the new member's checklist is on Home.
+  Future<void> _openHousehold() async {
+    await resetLastShellTab();
+    if (!mounted) return;
+    context.goNamed('home');
   }
 
   void _decline() => context.goNamed('home');
@@ -325,12 +365,16 @@ class _JoinLandingScreenState extends ConsumerState<JoinLandingScreen> {
             ),
             textAlign: TextAlign.center,
           ),
+          if (_members.isNotEmpty) ...[
+            const SizedBox(height: MitlistSpacing.lg),
+            _MemberCircles(members: _members),
+          ],
           const SizedBox(height: MitlistSpacing.xl),
           AppButton(
             variant: AppButtonVariant.solid,
             size: AppButtonSize.lg,
-            text: l10n.authJoinGoToHousehold,
-            onPressed: () => context.goNamed('home'),
+            text: l10n.joinLandingOpen(group.name),
+            onPressed: _openHousehold,
           ),
         ],
       ),
@@ -389,6 +433,64 @@ class _HouseholdCard extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// The people already in the household, as initials: up to five, then "+N".
+/// Screen readers hear every name.
+class _MemberCircles extends StatelessWidget {
+  const _MemberCircles({required this.members});
+
+  final List<GroupMemberProfile> members;
+
+  static const int _maxShown = 5;
+  static const double _size = MitlistSpacing.xl + MitlistSpacing.sm;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final shown = members.take(_maxShown).toList();
+    final extra = members.length - shown.length;
+
+    Widget circle(String label, {bool more = false}) => Container(
+          width: _size,
+          height: _size,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: more
+                ? colorScheme.surfaceContainerHigh
+                : colorScheme.primaryContainer,
+            border: Border.all(color: colorScheme.outline, width: 2),
+          ),
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.clip,
+            style: textTheme.labelMedium?.copyWith(
+              color: more
+                  ? colorScheme.onSurfaceVariant
+                  : colorScheme.onPrimaryContainer,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        );
+
+    return Semantics(
+      label: members.map((m) => m.displayName).join(', '),
+      child: ExcludeSemantics(
+        child: Wrap(
+          alignment: WrapAlignment.center,
+          spacing: MitlistSpacing.sm,
+          runSpacing: MitlistSpacing.sm,
+          children: [
+            for (final m in shown) circle(avatarInitials(m.displayName)),
+            if (extra > 0) circle('+$extra', more: true),
+          ],
+        ),
       ),
     );
   }

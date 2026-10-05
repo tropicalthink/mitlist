@@ -12,6 +12,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/grocery_provider.dart';
 import '../../providers/list_provider.dart';
+import '../../providers/onboarding_provider.dart';
 import '../../repositories/grocery_repository.dart';
 import '../../repositories/list_repository.dart';
 import '../../services/list_service.dart';
@@ -583,6 +584,8 @@ class ListDetailController extends ChangeNotifier {
         item.id,
         UpdateListItemRequest(checked: value),
       );
+      final groupId = _groupId;
+      if (value && groupId != null) _markStep(groupId, HubQuickStartStep.tick);
       if (_disposed) return;
       _dirty = true;
     } catch (e) {
@@ -590,6 +593,13 @@ class ListDetailController extends ChangeNotifier {
       _cancelSettle(item.id);
       rethrow;
     }
+  }
+
+  /// Ticks the joiner checklist's step on Home (plans/048 stage 7).
+  void _markStep(String groupId, HubQuickStartStep step) {
+    unawaited(markHubQuickStartStep(groupId, step).then(
+      (_) => ref.invalidate(hubQuickStartPrefsProvider(groupId)),
+    ));
   }
 
   Future<void> completeAll() async {

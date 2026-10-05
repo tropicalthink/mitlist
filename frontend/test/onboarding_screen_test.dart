@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:drift/drift.dart' as drift;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -15,13 +16,16 @@ import 'package:mitlist/screens/auth/onboarding_screen.dart';
 import 'package:mitlist/services/group_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+const _newGroupId = '33333333-3333-3333-3333-333333333333';
+
 class _FakeGroupService implements GroupService {
   Group? created;
+  String? joinedWith;
 
   @override
   Future<Group> createGroup(CreateGroupRequest request) async {
     created = Group(
-      id: '33333333-3333-3333-3333-333333333333',
+      id: _newGroupId,
       name: request.name,
       isPersonal: false,
       memberCount: 1,
@@ -29,6 +33,19 @@ class _FakeGroupService implements GroupService {
       updatedAt: DateTime.utc(2026, 1, 1),
     );
     return created!;
+  }
+
+  @override
+  Future<Group> joinGroup(JoinGroupRequest request) async {
+    joinedWith = request.code;
+    return Group(
+      id: '44444444-4444-4444-4444-444444444444',
+      name: 'Flat 3B',
+      isPersonal: false,
+      memberCount: 3,
+      createdAt: DateTime.utc(2026, 1, 1),
+      updatedAt: DateTime.utc(2026, 1, 1),
+    );
   }
 
   @override
@@ -57,6 +74,66 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
+  /// The screen under a router with a Home marker, a fake group service and
+  /// an in-memory database (creating or joining seeds the household cache).
+  Future<_FakeGroupService> pumpOnboarding(WidgetTester tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 1800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final service = _FakeGroupService();
+    final db = AppDatabase(drift.DatabaseConnection(
+      NativeDatabase.memory(),
+      closeStreamsSynchronously: true,
+    ));
+    addTearDown(db.close);
+    final router = GoRouter(
+      initialLocation: '/onboarding',
+      routes: [
+        GoRoute(
+          path: '/onboarding',
+          builder: (context, state) => const OnboardingScreen(),
+        ),
+        GoRoute(
+          path: '/home',
+          name: 'home',
+          builder: (context, state) => const Scaffold(body: Text('HOME')),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          cachedGroupsProvider.overrideWith((ref) async => const []),
+          groupServiceProviderAsync.overrideWith((ref) async => service),
+          appDatabaseProvider.overrideWithValue(db),
+        ],
+        child: MaterialApp.router(
+          routerConfig: router,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    return service;
+  }
+
+  Future<void> tap(WidgetTester tester, String text) async {
+    await tester.ensureVisible(find.text(text));
+    await tester.tap(find.text(text));
+    await tester.pumpAndSettle();
+  }
+
+  /// Create → name → pin, leaving the invite beat on screen.
+  Future<_FakeGroupService> createHousehold(WidgetTester tester) async {
+    final service = await pumpOnboarding(tester);
+    await tap(tester, 'Create a household');
+    await tester.enterText(find.byType(TextField).first, 'Flat 4B');
+    await tester.pumpAndSettle();
+    await tap(tester, 'PIN IT TO THE BOARD');
+    return service;
+  }
+
   group('OnboardingScreen', () {
     testWidgets('holds the board until membership resolves, then shows choose',
         (tester) async {
@@ -84,7 +161,7 @@ void main() {
       // Membership unknown: the bare board holds, no create/join flash that
       // would have to be yanked away from an existing account.
       expect(find.text('Create a household'), findsNothing);
-      expect(find.text('Join with invite code'), findsNothing);
+      expect(find.text('Have an invite code?'), findsNothing);
 
       // Slow check: the hint paper appears rather than dead cork.
       await tester.pump(const Duration(milliseconds: 750));
@@ -94,8 +171,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Opening your board…'), findsNothing);
+      // Join and create on one screen, the code field right there.
+      expect(find.text('Have an invite code?'), findsOneWidget);
+      expect(find.byType(TextField), findsOneWidget);
       expect(find.text('Create a household'), findsOneWidget);
-      expect(find.text('Join with invite code'), findsOneWidget);
     });
 
     testWidgets('redirects to home when user already has a household',
@@ -148,71 +227,89 @@ void main() {
       expect(find.text('Create a household'), findsNothing);
     });
 
-    testWidgets('create flow ends with a concise map into the real app',
+    testWidgets('joining with a pasted link goes straight home',
         (tester) async {
-      final service = _FakeGroupService();
+      final service = await pumpOnboarding(tester);
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            cachedGroupsProvider.overrideWith((ref) async => const []),
-            groupServiceProviderAsync.overrideWith((ref) async => service),
-            // Creating a household now seeds the Drift household cache, so
-            // this screen needs a database. In-memory keeps it hermetic.
-            appDatabaseProvider.overrideWithValue(
-              AppDatabase(drift.DatabaseConnection(
-                NativeDatabase.memory(),
-                closeStreamsSynchronously: true,
-              )),
-            ),
-          ],
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: const OnboardingScreen(),
-          ),
-        ),
+      // Whatever people were sent works: the link turns into its code.
+      await tester.enterText(
+        find.byType(TextField),
+        'https://app.mitlist.me/join/sunny-taco',
       );
       await tester.pumpAndSettle();
+      await tap(tester, 'JOIN');
 
-      // Beat 1 → tapping the sticky note opens the inline name stage,
-      // not a bottom sheet.
-      await tester.tap(find.text('Create a household'));
-      await tester.pumpAndSettle();
+      expect(service.joinedWith, 'SUNNY-TACO');
+      expect(find.text('HOME'), findsOneWidget);
+    });
+
+    testWidgets('create flow: name, invite or later, then what first',
+        (tester) async {
+      final service = await pumpOnboarding(tester);
+
+      await tap(tester, 'Create a household');
       expect(find.text('Name your household'), findsOneWidget);
-      expect(find.text('HOUSEHOLD NAME'), findsOneWidget);
-      expect(find.text('PIN IT TO THE BOARD'), findsOneWidget);
+      // The currency is a guess shown in a line, not a question.
+      expect(find.text('Currency: USD'), findsOneWidget);
+      await tap(tester, 'Change');
+      expect(find.text('Currency: USD'), findsNothing);
 
-      // Beat 2 → writing the name on the note and pinning it creates the
-      // household and tears off the invite slip.
       await tester.enterText(find.byType(TextField).first, 'Flat 4B');
       await tester.pumpAndSettle();
-      await tester.tap(find.text('PIN IT TO THE BOARD'));
-      await tester.pumpAndSettle();
+      await tap(tester, 'PIN IT TO THE BOARD');
 
       expect(service.created?.name, 'Flat 4B');
       expect(find.text('Bring in your flatmates'), findsOneWidget);
       expect(find.text('SUNNY'), findsOneWidget);
       expect(find.text('TACO'), findsOneWidget);
+
+      // Inviting can wait: Home's checklist asks again.
+      await tap(tester, 'LATER');
+
+      // The old "three things to know" recap is gone; one question instead.
+      expect(find.text('Your household is ready'), findsNothing);
+      expect(find.text('What do you want to sort out first?'), findsOneWidget);
+      expect(find.text('SHOPPING LISTS'), findsOneWidget);
+      expect(find.text('CHORES'), findsOneWidget);
+      expect(find.text('Just looking'), findsOneWidget);
+
+      await tap(tester, 'SPLITTING COSTS');
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('hub_quick_start_intent:$_newGroupId'), 'money');
+      expect(prefs.getBool('hub_quick_start_invited:$_newGroupId'), isNull);
+      expect(find.text('HOME'), findsOneWidget);
+    });
+
+    testWidgets('copying the link counts as inviting and says Continue',
+        (tester) async {
+      // A clipboard that accepts the copy.
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async => null,
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, null),
+      );
+      await createHousehold(tester);
+      expect(find.text('LATER'), findsOneWidget);
+
+      await tap(tester, 'Copy link');
+
       expect(find.text('CONTINUE'), findsOneWidget);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getBool('hub_quick_start_invited:$_newGroupId'), isTrue);
+    });
 
-      // The handoff names the shell's three rules without asking the user to
-      // complete a tutorial task or step through every feature.
-      await tester.ensureVisible(find.text('CONTINUE'));
-      await tester.tap(find.text('CONTINUE'));
-      await tester.pumpAndSettle();
+    testWidgets('"Just looking" stores no intent', (tester) async {
+      await createHousehold(tester);
+      await tap(tester, 'LATER');
+      await tap(tester, 'Just looking');
 
-      expect(find.text('Your household is ready'), findsOneWidget);
-      expect(find.text('Home shows what needs attention'), findsOneWidget);
-      expect(
-        find.text('Tabs keep each part of the household in its place'),
-        findsOneWidget,
-      );
-      expect(
-        find.text('The + button adds something from anywhere'),
-        findsOneWidget,
-      );
-      expect(find.text('OPEN FLAT 4B'), findsOneWidget);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('hub_quick_start_intent:$_newGroupId'), isNull);
+      expect(find.text('HOME'), findsOneWidget);
     });
   });
 }

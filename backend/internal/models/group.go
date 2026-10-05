@@ -52,6 +52,9 @@ type GroupInvite struct {
 	GroupID   uuid.UUID `json:"group_id"`
 	Code      string    `json:"code"`
 	ExpiresAt time.Time `json:"expires_at"`
+	// CreatedBy is the member who minted the code; nil for codes made before
+	// it was recorded (migration 000079) or whose inviter was deleted.
+	CreatedBy *uuid.UUID `json:"created_by,omitempty"`
 }
 
 // Invite preview statuses. A preview tells the recipient what accepting
@@ -71,6 +74,19 @@ type InvitePreview struct {
 	MemberCount int       `json:"member_count"`
 	ExpiresAt   time.Time `json:"expires_at"`
 	Status      string    `json:"status"`
+}
+
+// PublicInvitePreview is what anyone holding an invite code sees before they
+// have an account: "Sam invited you to Flat 3B" (plans/048 stage 7). The code
+// is the capability, so it carries only what the welcome screen shows: no
+// ids, no emails, not even the code. InviterName is a first name, omitted
+// when the inviter is unknown or no longer in the household. Status is valid
+// or expired (a signed-out visitor cannot already be a member).
+type PublicInvitePreview struct {
+	HouseholdName string  `json:"household_name"`
+	InviterName   *string `json:"inviter_name,omitempty"`
+	MemberCount   int     `json:"member_count"`
+	Status        string  `json:"status"`
 }
 
 // PendingClaim stores a claim code that can be used to join a group.
