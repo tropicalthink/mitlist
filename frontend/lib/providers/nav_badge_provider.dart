@@ -4,6 +4,7 @@ import '../models/chore_models.dart';
 import '../router.dart' show currentGroupIdProvider;
 import '../services/group_id_validator.dart';
 import '../utils/active_group_context.dart';
+import '../utils/home_summary.dart';
 import 'chore_provider.dart';
 import 'finance_provider.dart';
 import 'group_provider.dart';
@@ -40,15 +41,10 @@ final navBadgeCountsProvider = Provider<NavBadgeCounts>((ref) {
   final summary =
       ref.watch(cachedFinanceSummaryByGroupProvider(gid)).valueOrNull;
 
-  final now = DateTime.now();
-  final today = DateTime(now.year, now.month, now.day);
-
-  final choreCount = chores.where((c) {
-    final due = c.pendingAssignment?.dueDate;
-    return due != null &&
-        due.isBefore(today.add(const Duration(days: 1))) &&
-        c.pendingAssignment?.status != 'completed';
-  }).length;
+  // The caller's due and overdue chores, the same count Home's Needs you
+  // shows: a flatmate's turn is not something this badge should nag about.
+  final mine = choresOnMe(chores, DateTime.now());
+  final choreCount = mine.overdue.length + mine.dueToday.length;
 
   final settlementCount = summary?.reimbursements.length ?? 0;
 

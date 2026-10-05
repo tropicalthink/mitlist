@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"slices"
 	"time"
 
 	"github.com/google/uuid"
@@ -142,13 +143,7 @@ func (s *ChoreService) CreateChore(ctx context.Context, user *models.User, chore
 		return fmt.Errorf("failed to list group members: %w", err)
 	}
 
-	memberOrder := make([]uuid.UUID, 0, len(members))
-	allowedMembers := chore.AssignmentConfig
-	for _, m := range members {
-		if len(allowedMembers) == 0 || containsUUID(allowedMembers, m.UserID) {
-			memberOrder = append(memberOrder, m.UserID)
-		}
-	}
+	memberOrder := rotationMembers(members, chore.AssignmentConfig)
 
 	state := &models.ChoreRotationState{
 		ChoreID:      chore.ID,
@@ -913,22 +908,36 @@ func (s *ChoreService) createAssignmentForCurrentIndex(ctx context.Context, chor
 	return s.choreRepo.CreateAssignment(ctx, assignment)
 }
 
-// RebuildMemberOrdersForGroup rebuilds member_order for all chores in a group.
-// This should be called by the group service whenever membership changes.
+// rebuildChorePageSize is the repository's largest page, so even a household
+// with hundreds of chores is rebuilt in a few reads.
+const rebuildChorePageSize = 500
+
+// RebuildMemberOrdersForGroup brings every chore rotation in a group in line
+// with its current members. The group service calls it whenever someone joins
+// or leaves, so a chore created before a member joined still reaches them.
+// Members who stay keep their place, newcomers join the end of the order, and
+// members who left drop out; the person due next stays due next (see
+// reconcileMemberOrder). A chore limited to named members only ever admits
+// those members, as at creation.
 func (s *ChoreService) RebuildMemberOrdersForGroup(ctx context.Context, groupID uuid.UUID) error {
 	members, err := s.groupRepo.ListMembershipsByGroup(ctx, groupID)
 	if err != nil {
 		return fmt.Errorf("failed to list group members: %w", err)
 	}
 
-	memberOrder := make([]uuid.UUID, 0, len(members))
-	for _, m := range members {
-		memberOrder = append(memberOrder, m.UserID)
+	var chores []models.Chore
+	for offset := 0; ; offset += rebuildChorePageSize {
+		page, err := s.choreRepo.ListChoresByGroup(ctx, groupID, rebuildChorePageSize, offset)
+		if err != nil {
+			return fmt.Errorf("failed to list chores: %w", err)
+		}
+		chores = append(chores, page...)
+		if len(page) < rebuildChorePageSize {
+			break
+		}
 	}
-
-	chores, err := s.choreRepo.ListChoresByGroup(ctx, groupID, 0, 0)
-	if err != nil {
-		return fmt.Errorf("failed to list chores: %w", err)
+	if len(chores) == 0 {
+		return nil
 	}
 
 	choreIDs := make([]uuid.UUID, 0, len(chores))
@@ -951,10 +960,12 @@ func (s *ChoreService) RebuildMemberOrdersForGroup(ctx context.Context, groupID 
 			continue
 		}
 
-		state.MemberOrder = memberOrder
-		if state.CurrentIndex >= len(state.MemberOrder) {
-			state.CurrentIndex = 0
+		order, index := reconcileMemberOrder(state.MemberOrder, state.CurrentIndex, rotationMembers(members, chore.AssignmentConfig))
+		if slices.Equal(order, state.MemberOrder) && index == state.CurrentIndex {
+			continue
 		}
+		state.MemberOrder = order
+		state.CurrentIndex = index
 		updatedStates = append(updatedStates, state)
 	}
 
@@ -966,9 +977,69 @@ func (s *ChoreService) RebuildMemberOrdersForGroup(ctx context.Context, groupID 
 	return nil
 }
 
-// SyncMemberOrderForGroup is an alias for RebuildMemberOrdersForGroup for external callers.
+// SyncMemberOrderForGroup is an alias for RebuildMemberOrdersForGroup; it is
+// the hook GroupService runs after a membership change (SetMemberOrderSyncer).
 func (s *ChoreService) SyncMemberOrderForGroup(ctx context.Context, groupID uuid.UUID) error {
 	return s.RebuildMemberOrdersForGroup(ctx, groupID)
+}
+
+// rotationMembers lists the active members a chore rotates through: everyone,
+// or only the members named in its assignment config when it has one.
+func rotationMembers(members []models.GroupMembership, allowed []uuid.UUID) []uuid.UUID {
+	order := make([]uuid.UUID, 0, len(members))
+	for _, m := range members {
+		if len(allowed) == 0 || containsUUID(allowed, m.UserID) {
+			order = append(order, m.UserID)
+		}
+	}
+	return order
+}
+
+// reconcileMemberOrder updates a rotation for a new set of eligible members
+// without reshuffling it. Members who stay keep their relative order, eligible
+// members not yet in it are appended, and members no longer eligible are
+// dropped. currentIndex points at the person due next (one past the pending
+// assignee); the returned index points at the same person, or, if they left,
+// at the first remaining member after them. Pending assignments are never
+// touched, so whoever holds this turn keeps it.
+func reconcileMemberOrder(order []uuid.UUID, currentIndex int, eligible []uuid.UUID) ([]uuid.UUID, int) {
+	isEligible := make(map[uuid.UUID]bool, len(eligible))
+	for _, id := range eligible {
+		isEligible[id] = true
+	}
+	next := make([]uuid.UUID, 0, len(eligible))
+	placed := make(map[uuid.UUID]bool, len(eligible))
+	for _, id := range order {
+		if isEligible[id] && !placed[id] {
+			next = append(next, id)
+			placed[id] = true
+		}
+	}
+	for _, id := range eligible {
+		if !placed[id] {
+			next = append(next, id)
+			placed[id] = true
+		}
+	}
+
+	if len(next) == 0 || len(order) == 0 {
+		return next, 0
+	}
+	if currentIndex < 0 || currentIndex >= len(order) {
+		currentIndex = 0
+	}
+	// A rotation of one hands every turn to the same person, so the turn just
+	// given out was theirs and whoever joined goes next.
+	if len(order) == 1 && isEligible[order[0]] {
+		return next, (indexOfUUID(next, order[0]) + 1) % len(next)
+	}
+	for step := range order {
+		candidate := order[(currentIndex+step)%len(order)]
+		if isEligible[candidate] {
+			return next, indexOfUUID(next, candidate)
+		}
+	}
+	return next, 0
 }
 
 func dueStatus(assignment *models.ChoreAssignment, now time.Time, dueSoonDays int) string {

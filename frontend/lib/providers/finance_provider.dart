@@ -33,6 +33,15 @@ final cachedFinanceSummaryByGroupProvider =
   yield* repo.watchSummaryByGroup(groupId);
 });
 
+/// The household's settlements, including ones still queued offline, so a
+/// surface can tell which payments are already waiting for confirmation.
+final cachedSettlementsByGroupProvider =
+    StreamProvider.family<List<Settlement>, String>((ref, groupId) async* {
+  ref.keepAlive();
+  final repo = await ref.watch(financeRepositoryProvider.future);
+  yield* repo.watchSettlements(groupId);
+});
+
 final expensesByGroupProvider =
     FutureProvider.family<List<Expense>, String>((ref, groupId) async {
   final service = await ref.read(financeServiceProviderAsync.future);

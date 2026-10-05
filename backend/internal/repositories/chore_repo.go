@@ -401,31 +401,31 @@ func (r *ChoreRepository) UpdateRotationState(ctx context.Context, state *models
 	return nil
 }
 
-// BulkUpdateRotationStates updates member_order and current_index for multiple rotation states in a single batch.
+// BulkUpdateRotationStates updates member_order and current_index for multiple
+// rotation states in one transaction. Each row is its own UPDATE: member
+// orders differ in length, and Postgres cannot unnest a ragged uuid[][] into
+// one array per row (unnest flattens a multidimensional array to elements).
 func (r *ChoreRepository) BulkUpdateRotationStates(ctx context.Context, states []models.ChoreRotationState) error {
 	if len(states) == 0 {
 		return nil
 	}
-	ids := make([]uuid.UUID, len(states))
-	memberOrders := make([][]uuid.UUID, len(states))
-	currentIndices := make([]int32, len(states))
-	for i, s := range states {
-		ids[i] = s.ID
-		memberOrders[i] = s.MemberOrder
-		currentIndices[i] = int32(s.CurrentIndex)
-	}
-	_, err := r.pool.Exec(ctx, `
-		UPDATE chore_rotation_states AS crs
-		SET member_order = v.member_order, current_index = v.current_index
-		FROM (
-			SELECT unnest($1::uuid[]) AS id,
-			       unnest($2::uuid[][]) AS member_order,
-			       unnest($3::int[]) AS current_index
-		) AS v
-		WHERE crs.id = v.id
-	`, ids, memberOrders, currentIndices)
+	tx, err := r.pool.Begin(ctx)
 	if err != nil {
-		return fmt.Errorf("bulk update rotation states: %w", err)
+		return fmt.Errorf("bulk update rotation states: begin: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	for _, s := range states {
+		if _, err := tx.Exec(ctx, `
+			UPDATE chore_rotation_states
+			SET member_order = $1, current_index = $2
+			WHERE id = $3
+		`, s.MemberOrder, s.CurrentIndex, s.ID); err != nil {
+			return fmt.Errorf("bulk update rotation states: %w", err)
+		}
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("bulk update rotation states: commit: %w", err)
 	}
 	return nil
 }

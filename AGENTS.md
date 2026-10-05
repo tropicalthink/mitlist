@@ -49,7 +49,7 @@ docker compose up -d        # Start postgres
 - **Local DB**: Drift (SQLite) — caching layer
 - **Theme**: `frontend/lib/theme/` — design tokens (`colors.dart`, `spacing.dart`, `typography.dart`, `theme.dart`)
 - **Widgets**: `frontend/lib/widgets/` — design system components
-- **Hub Widgets**: `frontend/lib/widgets/hub/` — `pinwall_section`, `activity_wall`, `stats_grid`, `hub_skeleton`, `quick_add_sheet`
+- **Hub Widgets**: `frontend/lib/widgets/hub/` — `pinwall_section`, `activity_wall`, `stats_grid`, `hub_skeleton`, `quick_add_sheet`, `hub_create_actions` (shared "create a list / add to a list / add an expense" launchers: use these from Home, checklists and empty states instead of re-implementing them)
 - **Screens**: `frontend/lib/screens/` — one subfolder per feature area
 - **Sheets**: `frontend/lib/sheets/` — bottom sheet creation/detail forms
   - **Sheet vs. Page threshold**: If a form has >3 distinct sections or >6 interactive fields, push a full-page route instead of a bottom sheet. Bottom sheets are for focused, single-purpose actions. Complex creation/edit flows (recipe creation, household settings) should be full screens.
@@ -265,8 +265,10 @@ showAppDialog<bool>(
 | 000075 | `users.last_active_at`, `users.language` (app UI language, reported by the app) + `reengagement_email_sends` (feedback check-in after 7 days away) |
 | 000076 | `integration_credentials.kind` (`integration` / `widget`), `device_id`, `expires_at`: device-bound home screen widget credentials (plans/047) |
 | 000077 | `integration_credentials.push_token`: iOS 26 WidgetKit push token of a device's widgets (plans/047) |
+| 000078 | `product_events`: first-party onboarding-funnel and Home events (plans/048 stage 8); no IP, user agent or free text |
+| 000079 | `group_invites.created_by`: who minted an invite code, for the signed-out preview (plans/048 stage 7) |
 
-Latest migration: `000077_add_widget_push_token`.
+Latest migration: `000079_add_invite_created_by`.
 
 ## Key API Endpoints Added
 
@@ -279,3 +281,5 @@ Latest migration: `000077_add_widget_push_token`.
 | `POST`/`DELETE` | `/auth/widget-credential` | Home screen widgets — issue/revoke this install's widget credential (session auth only) |
 | `GET` | `/widget/snapshot` | Home screen widgets — households, open list items, due chores, tonight's meal, balance (plans/047) |
 | `PUT` | `/widget/push-token` | Home screen widgets — an iOS widget extension registers its WidgetKit push token (widget credential only) |
+| `GET` | `/invites/{code}/preview` | Signed-out invite preview (plans/048 stage 7): `household_name`, `inviter_name` (first name, omitted if unknown or gone), `member_count`, `status`; no ids or emails; public, 20/min per IP |
+| `POST` | `/events` | First-party product events (plans/048 stage 8): public, optional session; app client `lib/services/product_events.dart` sends only when built with `--dart-define=MITLIST_PRODUCT_EVENTS=true` (off until the privacy policy covers it) |

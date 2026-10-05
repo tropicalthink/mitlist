@@ -154,6 +154,9 @@ type Container struct {
 	widgetDeviceRepoOnce sync.Once
 	widgetDeviceRepo     *repositories.WidgetDeviceRepository
 
+	productEventServiceOnce sync.Once
+	productEventService     *services.ProductEventService
+
 	widgetRefreshOnce sync.Once
 	widgetRefresh     *services.WidgetRefreshNotifier
 
@@ -425,6 +428,9 @@ func (c *Container) GroupService() *services.GroupService {
 	c.groupServiceOnce.Do(func() {
 		c.groupService = services.NewGroupService(c.GroupRepo(), c.UserRepo())
 		c.groupService.SetHub(c.SSEHub())
+		// Chore rotations follow membership, so a chore created before
+		// someone joined still reaches them (plans/048 stage 1).
+		c.groupService.SetMemberOrderSyncer(c.ChoreService())
 		// Only gate household growth when billing is actually configured; a
 		// self-hosted instance without it keeps unlimited households.
 		if c.BillingService().Enabled() {
@@ -663,6 +669,18 @@ func (c *Container) WidgetService() *services.WidgetService {
 			WithHouseholdToday(c.MealPlanService(), c.RecipeRepo(), c.FinanceService())
 	})
 	return c.widgetService
+}
+
+// ProductEventService returns the singleton product event service
+// (plans/048 stage 8).
+func (c *Container) ProductEventService() *services.ProductEventService {
+	c.productEventServiceOnce.Do(func() {
+		c.productEventService = services.NewProductEventService(
+			repositories.NewProductEventRepository(c.db),
+			c.GroupRepo(),
+		)
+	})
+	return c.productEventService
 }
 
 // WidgetDeviceRepo returns the singleton widget device repository.

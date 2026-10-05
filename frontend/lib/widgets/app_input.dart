@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import '../theme/animations.dart';
 import '../theme/shadows.dart';
 import '../theme/spacing.dart';
@@ -267,9 +268,13 @@ class _AppInputState extends State<AppInput>
     }
 
     if (widget.obscureText) {
+      final l10n = AppLocalizations.of(context);
       suffixes.add(
         _SuffixAction(
           onTap: _toggleObscure,
+          tooltip: l10n == null
+              ? null
+              : (_obscure ? l10n.authShowPassword : l10n.authHidePassword),
           child: Icon(
             _obscure ? Icons.visibility_off : Icons.visibility,
             size: _iconSize,
@@ -563,12 +568,13 @@ class _AppInputState extends State<AppInput>
 class _SuffixAction extends StatelessWidget {
   final Widget child;
   final VoidCallback? onTap;
+  final String? tooltip;
 
-  const _SuffixAction({required this.child, this.onTap});
+  const _SuffixAction({required this.child, this.onTap, this.tooltip});
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    final action = InkWell(
       onTap: onTap,
       child: SizedBox(
         width: 44,
@@ -576,5 +582,6 @@ class _SuffixAction extends StatelessWidget {
         child: Center(child: child),
       ),
     );
+    return tooltip == null ? action : Tooltip(message: tooltip, child: action);
   }
 }

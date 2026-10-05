@@ -21,7 +21,6 @@ import '../../l10n/app_localizations.dart';
 import '../../utils/haptics.dart';
 import '../../utils/hub_helpers.dart';
 import '../../sheets/pinwall_note_editor_sheet.dart';
-import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/pinwall/pinwall_composer.dart';
 import '../../widgets/hub/pinned_memo_card.dart';
@@ -480,23 +479,14 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
   }
 
   /// Compose a note right from the board: a sheet hosts the same full
-  /// composer as the hub (text, reminder, entity link, photos). Plain notes
-  /// take the offline-first path and pin on via the live stream a frame or
-  /// two later; media/linked posts land after the server confirms.
+  /// composer as the hub (text, reminder, entity link, photos), and closes
+  /// itself leaving the board open underneath.
   Future<void> _composeNote() async {
     unawaited(Haptics.light());
-    final l10n = AppLocalizations.of(context)!;
-    await showAppBottomSheet<void>(
-      context: context,
-      title: l10n.pinwallAddNote,
-      body: PinwallComposer(
-        groupId: widget.groupId,
-        me: widget.me,
-        autofocus: true,
-        // The sheet is the navigator's top route while the composer is up, so
-        // this closes just the sheet and leaves the board open underneath.
-        onPosted: () => Navigator.of(context).pop(),
-      ),
+    await PinwallComposer.show(
+      context,
+      groupId: widget.groupId,
+      me: widget.me,
     );
   }
 
@@ -514,7 +504,11 @@ class _PinwallBoardScreenState extends ConsumerState<PinwallBoardScreen>
           onLift: () => _lift(_statsId),
           onDrop: _drop,
           onDrag: _onStatsDrag,
-          child: _BoardStatsCard(groupId: widget.groupId, dark: dark),
+          child: _BoardStatsCard(
+            groupId: widget.groupId,
+            currentUserId: widget.me?.id,
+            dark: dark,
+          ),
         ),
       ),
       (
@@ -1276,9 +1270,14 @@ List<BoxShadow> _boardArtifactShadow(bool dark) => [
 /// ruled filing card with a red margin rule and a row of folder tabs, each
 /// line a tappable stat that jumps to its tab.
 class _BoardStatsCard extends ConsumerWidget {
-  const _BoardStatsCard({required this.groupId, required this.dark});
+  const _BoardStatsCard({
+    required this.groupId,
+    required this.currentUserId,
+    required this.dark,
+  });
 
   final String groupId;
+  final String? currentUserId;
   final bool dark;
 
   @override
@@ -1372,6 +1371,7 @@ class _BoardStatsCard extends ConsumerWidget {
                       ),
                       PinwallFinanceStatRow(
                         groupId: groupId,
+                        currentUserId: currentUserId,
                         style: PinwallStatRowStyle.indexCard,
                         ink: ink,
                         muted: muted,

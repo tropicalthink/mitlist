@@ -43,6 +43,8 @@ import 'package:mitlist/screens/auth/oauth_callback_screen.dart';
 import 'package:mitlist/screens/auth/reset_password_screen.dart';
 import 'package:mitlist/screens/auth/signup_screen.dart';
 import 'package:mitlist/screens/auth/verify_email_screen.dart';
+import 'package:mitlist/screens/auth/join_landing_screen.dart';
+import 'package:mitlist/screens/auth/welcome_screen.dart';
 import 'package:mitlist/screens/chores/chores_screen.dart';
 import 'package:mitlist/screens/home/groups_list_screen.dart';
 import 'package:mitlist/screens/home/household_hub_screen.dart';
@@ -52,6 +54,7 @@ import 'package:mitlist/screens/recipes/recipe_detail_screen.dart';
 import 'package:mitlist/screens/recipes/recipes_screen.dart';
 import 'package:mitlist/screens/you/account_screen.dart';
 import 'package:mitlist/router.dart';
+import 'package:mitlist/router_redirect.dart';
 import 'package:mitlist/l10n/app_localizations.dart';
 import 'package:mitlist/services/activity_service.dart';
 import 'package:mitlist/services/auth_service.dart';
@@ -62,9 +65,11 @@ import 'package:mitlist/services/home_service.dart';
 import 'package:mitlist/services/list_service.dart';
 import 'package:mitlist/services/notification_service.dart';
 import 'package:mitlist/services/recipe_service.dart';
+import 'package:mitlist/services/sse_service.dart';
 import 'package:mitlist/services/token_store.dart';
 import 'package:mitlist/storage/app_database.dart' hide FinanceSummary;
 import 'package:mitlist/widgets/app_button.dart';
+import 'package:mitlist/widgets/hub/hub_skeleton.dart';
 import 'package:mitlist/widgets/mitlist_bottom_nav.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -122,7 +127,10 @@ void main() {
 
     await _pumpUi(tester);
 
-    await tester.tap(find.byTooltip('Add chore'));
+    // An empty chores tab has one way in: its empty state's button, not the
+    // FAB (plans/048, one primary action per screen).
+    expect(find.byTooltip('Add chore'), findsNothing);
+    await tester.tap(find.text('ADD A CHORE'));
     await _pumpAfter(tester);
     await tester.enterText(find.byType(TextField).first, 'Vacuum living room');
     await tester.pump();
@@ -1238,7 +1246,8 @@ void main() {
     expect(find.byType(TextField), findsNothing);
     await tester.tap(find.text('Sign up with email'));
     await _pumpAfter(tester);
-    expect(find.byType(TextField), findsNWidgets(4));
+    // Name, email, password: no confirm-password field (plans/048).
+    expect(find.byType(TextField), findsNWidgets(3));
     expect(find.text('CREATE ACCOUNT'), findsOneWidget);
   });
 
@@ -1403,7 +1412,7 @@ void main() {
       ],
     );
 
-    await tester.tap(find.byTooltip('Add chore'));
+    await tester.tap(find.text('ADD A CHORE'));
     await _pumpAfter(tester);
 
     final createButtons = find.widgetWithText(
@@ -1430,7 +1439,9 @@ void main() {
       ],
     );
 
-    await tester.tap(find.byTooltip('New list'));
+    // No lists yet: the empty state's button replaces the FAB.
+    expect(find.byTooltip('New list'), findsNothing);
+    await tester.tap(find.text('CREATE YOUR FIRST LIST'));
     await _pumpAfter(tester);
 
     final createButton = find.widgetWithText(
@@ -1471,6 +1482,299 @@ void main() {
 
     expect(find.text('Pinwall'), findsOneWidget);
     expect(find.text('Activity'), findsOneWidget);
+    // Home opens with what needs you; the pinwall comes after it.
+    expect(find.text('Needs you'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.text('Needs you')).dy,
+      lessThan(tester.getTopLeft(find.text('Pinwall')).dy),
+    );
+    // The board no longer carries its own "At a glance" summary.
+    expect(find.text('At a glance'), findsNothing);
+  });
+
+  testWidgets(
+      'Home refreshes members and activity when someone joins, '
+      'without the skeleton', (tester) async {
+    await _setLargeSurface(tester);
+    SharedPreferences.setMockInitialValues({});
+    addTearDown(() => SharedPreferences.setMockInitialValues(
+        {'current_group_id': groupId}));
+
+    Group household(int members) => Group(
+          id: groupId,
+          name: 'Test Household',
+          memberCount: members,
+          createdAt: DateTime.utc(2026, 1, 1),
+          updatedAt: DateTime.utc(2026, 1, 1),
+        );
+    final groups = [household(1)];
+    final groupService = FakeGroupService(groups: groups);
+    final home = _LiveHomeService(household(1));
+    final sse = _FakeSse();
+
+    await _pumpScreen(
+      tester,
+      child: HouseholdHubScreen(groupId: groupId),
+      overrides: [
+        groupServiceProviderAsync.overrideWith((ref) async => groupService),
+        activityServiceProviderAsync
+            .overrideWith((ref) async => FakeActivityService()),
+        homeServiceProviderAsync.overrideWith((ref) async => home),
+        authServiceProviderAsync
+            .overrideWith((ref) async => FakeAuthService(currentUser: user)),
+        pinwallServiceProviderAsync
+            .overrideWith((ref) async => FakePinwallService()),
+        pinwallRepositoryProvider.overrideWith(
+            (ref) async => FakePinwallRepository(FakePinwallService())),
+        choreRepositoryProvider.overrideWith(
+            (ref) async => FakeChoreRepository(FakeChoreService())),
+        listRepositoryProvider.overrideWith(
+            (ref) async => FakeListRepository(FakeListService(lists: []))),
+        financeRepositoryProvider.overrideWith(
+            (ref) async => FakeFinanceRepository(FakeFinanceService())),
+        sseServiceProvider.overrideWithValue(sse),
+      ],
+    );
+
+    expect(find.text("You're the only one here"), findsOneWidget);
+    final snapshotsBefore = home.calls;
+
+    // Another household's news is not this one's.
+    sse.emit(const SseEvent(
+      type: 'member:joined',
+      groupId: 'ffffffff-ffff-ffff-ffff-ffffffffffff',
+      payload: {},
+    ));
+    await tester.pump();
+    expect(home.calls, snapshotsBefore);
+
+    // Sam accepts the invite on their phone.
+    groups[0] = household(2);
+    home.current = household(2);
+    home.activities = [
+      ActivityLogModel(
+        id: 'membership-1',
+        groupId: groupId,
+        userId: '99999999-9999-9999-9999-999999999999',
+        userName: 'Sam Rivera',
+        action: 'member_joined',
+        entityType: 'member',
+        entityId: '99999999-9999-9999-9999-999999999999',
+        title: 'Sam',
+        createdAt: DateTime.now(),
+      ),
+    ];
+    sse.emit(SseEvent(
+      type: 'member:joined',
+      groupId: groupId,
+      payload: const {'user_id': '99999999-9999-9999-9999-999999999999'},
+    ));
+    await tester.pump();
+    expect(find.byType(HubSkeleton), findsNothing);
+    await _pumpAfter(tester);
+
+    expect(home.calls, greaterThan(snapshotsBefore));
+    expect(find.byType(HubSkeleton), findsNothing);
+    expect(find.text("You're the only one here"), findsNothing);
+    expect(find.text('Sam joined \u00b7 today'), findsOneWidget);
+  });
+
+  testWidgets(
+      'an invite link walks a new member through sign-up and joining to '
+      'Home with the joiner checklist', (tester) async {
+    await _setLargeSurface(tester);
+    // A fresh install.
+    SharedPreferences.setMockInitialValues({});
+    addTearDown(() => SharedPreferences.setMockInitialValues(
+        {'current_group_id': groupId}));
+
+    const flatId = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee';
+    final flat = Group(
+      id: flatId,
+      name: 'Flat 3B',
+      memberCount: 3,
+      createdAt: DateTime.utc(2026, 1, 1),
+      updatedAt: DateTime.utc(2026, 1, 1),
+    );
+    final groceries = ItemList(
+      id: '77777777-7777-7777-7777-777777777777',
+      groupId: flatId,
+      name: 'Groceries',
+      type: 'shopping',
+      createdAt: DateTime.utc(2026, 1, 1),
+      updatedAt: DateTime.utc(2026, 1, 1),
+    );
+    final ada = User(
+      id: '88888888-8888-8888-8888-888888888888',
+      email: 'ada@example.com',
+      firstName: 'Ada',
+      lastName: 'Lovelace',
+      isActive: true,
+      isVerified: true,
+      isGuest: false,
+      createdAt: DateTime.utc(2026, 1, 1),
+      updatedAt: DateTime.utc(2026, 1, 1),
+    );
+    final groupService = _InviteFlowGroupService(flat);
+    final authService = _SignupAuthService(currentUser: ada);
+    final db = AppDatabase(drift.DatabaseConnection(
+      NativeDatabase.memory(),
+      closeStreamsSynchronously: true,
+    ));
+    addTearDown(db.close);
+
+    // The app's own redirect rules, re-run when the sign-in state flips.
+    final authChanged = ValueNotifier<int>(0);
+    addTearDown(authChanged.dispose);
+    final router = GoRouter(
+      initialLocation: '/join/sunny-taco',
+      refreshListenable: authChanged,
+      redirect: (context, state) {
+        final container = ProviderScope.containerOf(context, listen: false);
+        final result = resolveAppRedirect(AppRedirectInput(
+          location: state.uri.path,
+          queryParameters: state.uri.queryParameters,
+          authBootstrapLoading: false,
+          authState: container.read(authStateProvider),
+          pendingAuthNavigation: container.read(pendingAuthNavigationProvider),
+          requestedPathWithQuery: state.uri.toString(),
+        ));
+        if (result.clearPendingAuth) {
+          container.read(pendingAuthNavigationProvider.notifier).state = null;
+        }
+        return result.redirect;
+      },
+      routes: [
+        GoRoute(
+          path: '/welcome',
+          name: 'welcome',
+          builder: (context, state) => const WelcomeScreen(),
+        ),
+        GoRoute(
+          path: '/signup',
+          name: 'signup',
+          builder: (context, state) => const SignupScreen(),
+        ),
+        GoRoute(
+          path: '/login',
+          name: 'login',
+          builder: (context, state) => const Scaffold(body: Text('LOGIN')),
+        ),
+        GoRoute(
+          path: '/join/:code',
+          name: 'joinLanding',
+          builder: (context, state) =>
+              JoinLandingScreen(code: state.pathParameters['code']!),
+        ),
+        GoRoute(
+          path: '/home',
+          name: 'home',
+          builder: (context, state) => const HouseholdHubScreen(),
+        ),
+        GoRoute(
+          path: '/onboarding',
+          name: 'onboarding',
+          builder: (context, state) =>
+              const Scaffold(body: Text('ONBOARDING')),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          appDatabaseProvider.overrideWithValue(db),
+          authServiceProviderAsync.overrideWith((ref) async => authService),
+          oauthProvidersProvider.overrideWith(
+            (ref) async =>
+                (google: false, apple: false, password: true, guest: false),
+          ),
+          groupServiceProviderAsync.overrideWith((ref) async => groupService),
+          activityServiceProviderAsync
+              .overrideWith((ref) async => FakeActivityService()),
+          homeServiceProviderAsync
+              .overrideWith((ref) async => FakeHomeService(flat)),
+          pinwallServiceProviderAsync
+              .overrideWith((ref) async => FakePinwallService()),
+          pinwallRepositoryProvider.overrideWith(
+              (ref) async => FakePinwallRepository(FakePinwallService())),
+          choreRepositoryProvider.overrideWith(
+              (ref) async => FakeChoreRepository(FakeChoreService())),
+          listRepositoryProvider.overrideWith((ref) async =>
+              FakeListRepository(FakeListService(lists: [groceries]))),
+          financeRepositoryProvider.overrideWith(
+              (ref) async => FakeFinanceRepository(FakeFinanceService())),
+          sseServiceProvider.overrideWithValue(_FakeSse()),
+          // The household is already in use: a list with things on it, no
+          // chores or money yet.
+          cachedListsByGroupProvider
+              .overrideWith((ref, id) => Stream.value([groceries])),
+          listItemCountsProvider.overrideWith((ref, id) => Stream.value({
+                groceries.id: (open: 3, total: 4),
+              })),
+          cachedCurrentChoresByGroupProvider.overrideWith(
+              (ref, id) => Stream.value(const <CurrentChore>[])),
+          cachedExpensesByGroupProvider
+              .overrideWith((ref, id) => Stream.value(const <Expense>[])),
+          cachedFinanceSummaryByGroupProvider.overrideWith((ref, id) =>
+              Stream.value(
+                  const FinanceSummary(balances: [], reimbursements: []))),
+        ],
+        child: Consumer(
+          builder: (context, ref, _) {
+            ref.listen<bool>(authStateProvider, (_, __) => authChanged.value++);
+            return _testMaterialAppRouter(router);
+          },
+        ),
+      ),
+    );
+    await _pumpUi(tester);
+
+    // 1. The link, signed out: who invited them, and where to.
+    expect(find.text('SAM INVITED YOU'), findsOneWidget);
+    expect(find.text('to Flat 3B \u00b7 3 people'), findsOneWidget);
+    await tester.tap(find.text('CREATE ACCOUNT TO JOIN'));
+    await _pumpUi(tester);
+
+    // 2. Sign-up, then the emailed code on the same screen.
+    final fields = find.byType(TextField);
+    await tester.enterText(fields.at(0), 'Ada Lovelace');
+    await tester.enterText(fields.at(1), 'ada@example.com');
+    await tester.enterText(fields.at(2), 'Passw0rd!');
+    await tester.tap(find.text('CREATE ACCOUNT'));
+    await _pumpUi(tester);
+    expect(authService.registered?.email, 'ada@example.com');
+    expect(find.text('Enter the code we emailed to ada@example.com.'),
+        findsOneWidget);
+    await tester.enterText(find.byType(TextField).first, 'ABCD2345');
+    await tester.tap(find.text('VERIFY'));
+    await _pumpUi(tester);
+    expect(authService.lastVerifyToken, 'ABCD2345');
+
+    // 3. Straight to the invite, never household setup.
+    expect(find.text('ONBOARDING'), findsNothing);
+    expect(find.text('Flat 3B'), findsOneWidget);
+    await tester.tap(find.text('ACCEPT INVITE'));
+    await _pumpUi(tester);
+    expect(groupService.lastJoinRequest?.code, 'SUNNY-TACO');
+    expect(find.text("You're in."), findsOneWidget);
+    expect(find.text('SR'), findsOneWidget);
+    expect(find.text('IO'), findsOneWidget);
+    expect(find.text('AL'), findsOneWidget);
+
+    // 4. Into the household: Home with the joiner's own checklist.
+    await tester.tap(find.text('OPEN FLAT 3B'));
+    await _pumpUi(tester);
+    expect(find.text('ONBOARDING'), findsNothing);
+    expect(find.text('Needs you'), findsOneWidget);
+    expect(find.text('Nothing on you yet'), findsOneWidget);
+    expect(find.text('Joined Flat 3B'), findsOneWidget);
+    expect(find.text('Tick something off a list'), findsOneWidget);
+    expect(find.text('Take or complete a chore'), findsOneWidget);
+    expect(find.text('Check your balance'), findsOneWidget);
+    expect(find.text('1 of 4 done'), findsOneWidget);
+    expect(find.text('Household created'), findsNothing);
   });
 
   test('logout wipes expenses and lists tables from local database', () async {
@@ -1664,6 +1968,110 @@ class FakeGroupService implements GroupService {
 
   @override
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+/// The group service behind the invite walk-through: the signed-out preview,
+/// the signed-in one, the join, and the roster.
+class _InviteFlowGroupService extends FakeGroupService {
+  _InviteFlowGroupService(this.household) : super(groups: []);
+
+  final Group household;
+
+  @override
+  Future<PublicInvitePreview> previewInvitePublic(String code) async =>
+      PublicInvitePreview(
+        householdName: household.name,
+        inviterName: 'Sam',
+        memberCount: household.memberCount ?? 0,
+        status: InviteStatus.valid,
+      );
+
+  @override
+  Future<InvitePreview> previewInvite(String code) async => InvitePreview(
+        code: code,
+        groupId: household.id,
+        groupName: household.name,
+        memberCount: household.memberCount ?? 0,
+        expiresAt: DateTime.utc(2030, 1, 1),
+        status: InviteStatus.valid,
+      );
+
+  @override
+  Future<Group> joinGroup(JoinGroupRequest request) async {
+    lastJoinRequest = request;
+    groups.add(household);
+    return household;
+  }
+
+  @override
+  Future<List<GroupMemberProfile>> listMembers(String groupId) async => const [
+        GroupMemberProfile(
+            userId: 'u-sam', displayName: 'Sam Rivera', role: 'owner'),
+        GroupMemberProfile(
+            userId: 'u-ines', displayName: 'Ines Ortiz', role: 'member'),
+        GroupMemberProfile(
+            userId: 'u-ada', displayName: 'Ada Lovelace', role: 'member'),
+      ];
+}
+
+/// Sign-up registers, then the emailed code signs the person in.
+class _SignupAuthService extends FakeAuthService {
+  _SignupAuthService({required super.currentUser});
+
+  RegisterRequest? registered;
+
+  @override
+  Future<RegistrationResult> register(
+    RegisterRequest request, {
+    bool rememberMe = true,
+  }) async {
+    registered = request;
+    return const RegistrationResult(verificationRequired: true);
+  }
+}
+
+/// A home aggregate whose answer the test changes between refreshes.
+class _LiveHomeService extends FakeHomeService {
+  _LiveHomeService(super.group) : current = group;
+
+  Group current;
+  List<ActivityLogModel> activities = const [];
+  int calls = 0;
+
+  @override
+  Future<HomeSnapshot> getSnapshot(
+    String groupId, {
+    required String date,
+  }) async {
+    calls++;
+    return HomeSnapshot(
+      group: current,
+      activities: activities,
+      activityError: false,
+      pinwallPosts: const [],
+      pinwallError: false,
+      todayMeals: const [],
+      todayMealError: false,
+    );
+  }
+}
+
+/// No connection; the test pushes events by hand.
+class _FakeSse extends SseService {
+  final _events = StreamController<SseEvent>.broadcast();
+
+  @override
+  Future<void> connect(String groupId) async {}
+
+  @override
+  Stream<SseEvent> get events => _events.stream;
+
+  void emit(SseEvent event) => _events.add(event);
+
+  @override
+  void dispose() {
+    _events.close();
+  }
 }
 
 class FakeChoreService implements ChoreService {
@@ -2347,6 +2755,9 @@ class FakeListRepository implements ListRepository {
 
   @override
   Future<void> applyExternalCheck(String listId, String itemId) async {}
+
+  @override
+  Future<void> fetchUnsyncedItems(String groupId) async {}
 
   @override
   Future<void> applyExternalAdd(String listId,

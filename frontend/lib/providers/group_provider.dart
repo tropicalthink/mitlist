@@ -17,6 +17,20 @@ final groupRepositoryProvider = FutureProvider<GroupRepository>((ref) async {
   return GroupRepository(db: db, groups: service);
 });
 
+/// The welcome screen's look at an invite code before the person has an
+/// account (plans/048 stage 7). Null whenever the lookup fails (offline, an
+/// unknown code, an older server, the rate limit): the screen then keeps its
+/// generic invite copy, and joining stays the authoritative check.
+final publicInvitePreviewProvider = FutureProvider.autoDispose
+    .family<PublicInvitePreview?, String>((ref, code) async {
+  try {
+    final service = await ref.read(groupServiceProviderAsync.future);
+    return await service.previewInvitePublic(code);
+  } catch (_) {
+    return null;
+  }
+});
+
 /// Cached household list shared across screens.
 ///
 /// Resolves from the Drift cache **without waiting on the network** and

@@ -100,6 +100,23 @@ class GroupService {
     }
   }
 
+  /// The signed-out version of [previewInvite], for the welcome screen an
+  /// invite link opens before the person has an account: household name,
+  /// size, the inviter's first name and whether the code still works. Public
+  /// and rate-limited on the server; unknown codes are a 404.
+  Future<PublicInvitePreview> previewInvitePublic(String code) async {
+    try {
+      final response = await _dio.get(
+        '/invites/${Uri.encodeComponent(code.trim().toUpperCase())}/preview',
+      );
+      return PublicInvitePreview.fromJson(
+          (response.data as Map).cast<String, dynamic>());
+    } on DioException catch (e) {
+      _logger.e('Public invite preview failed: ${e.response?.statusCode}');
+      throw apiException(e);
+    }
+  }
+
   /// Joins a group with an invite code.
   Future<Group> joinGroup(JoinGroupRequest request) async {
     try {

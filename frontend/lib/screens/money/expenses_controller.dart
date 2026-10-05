@@ -199,6 +199,13 @@ class ExpensesController extends ChangeNotifier {
   double get balance => _balance;
   int get openBalanceCount => _openBalanceCount;
   String? get groupId => _groupId;
+  String? get currentUserId => _currentUserId;
+
+  /// False until the household records its first expense or settlement (the
+  /// summary only has entries for members with money activity). "Nothing to
+  /// settle" and "nothing recorded yet" are different empty states.
+  bool get hasMoneyActivity =>
+      _balances.isNotEmpty || _timelineGroups.isNotEmpty;
   String get groupCurrency => _groupCurrency;
   Map<String, String> get userLabels => _userLabels;
   List<ExpenseGroupDisplay> get timelineGroups => _timelineGroups;

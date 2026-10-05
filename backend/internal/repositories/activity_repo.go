@@ -6,22 +6,23 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/mitlist-app/mitlist/internal/models"
 )
 
 // ActivityRepository aggregates recent events from multiple tables.
 type ActivityRepository struct {
-	pool *pgxpool.Pool
+	pool DBTX
 }
 
 // NewActivityRepository creates a new ActivityRepository.
-func NewActivityRepository(pool *pgxpool.Pool) *ActivityRepository {
+func NewActivityRepository(pool DBTX) *ActivityRepository {
 	return &ActivityRepository{pool: pool}
 }
 
-// ListRecentActivity returns the most recent household events across lists, expenses, chores, meal plans, and recipes.
+// ListRecentActivity returns the most recent household events across lists,
+// expenses, chores, meal plans, recipes, and members joining. The creator's
+// own membership from the moment the household was made is not a "joined".
 func (r *ActivityRepository) ListRecentActivity(ctx context.Context, groupID uuid.UUID, limit int) ([]models.ActivityEvent, error) {
 	if limit <= 0 {
 		limit = 10
@@ -55,6 +56,13 @@ func (r *ActivityRepository) ListRecentActivity(ctx context.Context, groupID uui
 			FROM recipes rcp
 			JOIN group_memberships gm ON gm.user_id = rcp.user_id
 			WHERE gm.group_id = $1 AND (gm.left_at IS NULL OR rcp.created_at < gm.left_at)
+			UNION ALL
+			SELECT jm.id::text, 'member_joined', COALESCE(NULLIF(TRIM(ju.first_name), ''), ''), jm.joined_at, jm.user_id, jm.group_id, 'member', jm.user_id::text, NULL::text
+			FROM group_memberships jm
+			JOIN groups jg ON jg.id = jm.group_id
+			JOIN users ju ON ju.id = jm.user_id
+			WHERE jm.group_id = $1
+			  AND NOT (jm.user_id = jg.created_by AND jm.joined_at <= jg.created_at + INTERVAL '1 minute')
 		) events
 		LEFT JOIN users u ON u.id = events.user_id
 		ORDER BY events.created_at DESC

@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 
 import '../models/chore_models.dart';
 import '../services/chore_service.dart';
+import '../services/product_events.dart';
 import '../services/sse_service.dart';
 import '../storage/app_database.dart';
 import 'outbox_drainer.dart';
@@ -140,6 +141,10 @@ class ChoreRepository {
       );
       await _spliceLocalChore(req.groupId, localId, req);
     });
+
+    // Product events (plans/048 stage 8): the first thing added in a
+    // household created or joined on this install.
+    unawaited(ProductEvents.instance.noteItemAdded(req.groupId, 'chore'));
 
     final local = _localChore(localId, req).chore;
     if (syncWindow == Duration.zero) {

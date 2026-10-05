@@ -269,14 +269,16 @@ func TestGroupRepository_CreateInvite(t *testing.T) {
 	mock := newMockDB(t)
 	repo := NewGroupRepository(mock)
 
+	inviter := uuid.New()
 	invite := &models.GroupInvite{
 		GroupID:   fixedUUID(),
 		Code:      "code123",
 		ExpiresAt: fixedTime(),
+		CreatedBy: &inviter,
 	}
 
 	mock.ExpectExec("INSERT INTO group_invites").
-		WithArgs(pgxmock.AnyArg(), invite.GroupID, invite.Code, invite.ExpiresAt).
+		WithArgs(pgxmock.AnyArg(), invite.GroupID, invite.Code, invite.ExpiresAt, &inviter).
 		WillReturnResult(pgxmock.NewResult("INSERT", 1))
 
 	err := repo.CreateInvite(context.Background(), invite)
@@ -289,8 +291,9 @@ func TestGroupRepository_GetInviteByCode(t *testing.T) {
 	repo := NewGroupRepository(mock)
 
 	id := fixedUUID()
-	rows := pgxmock.NewRows([]string{"id", "group_id", "code", "expires_at"}).
-		AddRow(id, fixedUUID(), "code123", fixedTime())
+	inviter := uuid.New()
+	rows := pgxmock.NewRows([]string{"id", "group_id", "code", "expires_at", "created_by"}).
+		AddRow(id, fixedUUID(), "code123", fixedTime(), &inviter)
 
 	mock.ExpectQuery("SELECT .* FROM group_invites WHERE code = .*").
 		WithArgs("code123").
@@ -299,6 +302,26 @@ func TestGroupRepository_GetInviteByCode(t *testing.T) {
 	invite, err := repo.GetInviteByCode(context.Background(), "code123")
 	require.NoError(t, err)
 	assert.Equal(t, "code123", invite.Code)
+	require.NotNil(t, invite.CreatedBy)
+	assert.Equal(t, inviter, *invite.CreatedBy)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+// Codes minted before migration 000079 have no recorded inviter.
+func TestGroupRepository_GetInviteByCode_NoInviter(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewGroupRepository(mock)
+
+	rows := pgxmock.NewRows([]string{"id", "group_id", "code", "expires_at", "created_by"}).
+		AddRow(fixedUUID(), fixedUUID(), "OLD-CODE", fixedTime(), (*uuid.UUID)(nil))
+
+	mock.ExpectQuery("SELECT .* FROM group_invites WHERE code = .*").
+		WithArgs("OLD-CODE").
+		WillReturnRows(rows)
+
+	invite, err := repo.GetInviteByCode(context.Background(), "OLD-CODE")
+	require.NoError(t, err)
+	assert.Nil(t, invite.CreatedBy)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
@@ -433,5 +456,24 @@ func TestGroupRepository_GetPendingClaimByID(t *testing.T) {
 	claim, err := repo.GetPendingClaimByID(context.Background(), id)
 	require.NoError(t, err)
 	assert.Equal(t, id, claim.ID)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+// Notification emails only go to confirmed addresses: an account may use the
+// app for a while before confirming, but nothing other than the verification
+// code is mailed to an address nobody has proven.
+func TestGroupRepository_ListMemberEmailsByGroup_ConfirmedOnly(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewGroupRepository(mock)
+	groupID := fixedUUID()
+	memberID := uuid.New()
+
+	mock.ExpectQuery(`(?s)FROM group_memberships gm.*AND u\.is_verified`).
+		WithArgs(groupID).
+		WillReturnRows(pgxmock.NewRows([]string{"user_id", "email"}).AddRow(memberID, "member@example.com"))
+
+	emails, err := repo.ListMemberEmailsByGroup(context.Background(), groupID)
+	require.NoError(t, err)
+	assert.Equal(t, map[uuid.UUID]string{memberID: "member@example.com"}, emails)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }

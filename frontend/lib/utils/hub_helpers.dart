@@ -37,6 +37,14 @@ String formatActivityLine(ActivityLogModel a, AppLocalizations l10n) {
       return name != null
           ? l10n.activityPlannedMeal(name, when)
           : l10n.activityUpdatedMealPlan(when);
+    case 'member_joined':
+      // The server sends the newcomer's first name as the title (empty when
+      // they never gave one) and the full name as the user name.
+      final who = [a.title, a.userName].firstWhere(
+        (n) => n != null && n.trim().isNotEmpty,
+        orElse: () => null,
+      );
+      return l10n.activityMemberJoined(who?.trim() ?? l10n.activityMember, when);
     default:
       return '${a.action} \u00b7 $when';
   }

@@ -245,11 +245,11 @@ func (r *GroupRepository) CreateInvite(ctx context.Context, invite *models.Group
 	}
 
 	query := `
-		INSERT INTO group_invites (id, group_id, code, expires_at)
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO group_invites (id, group_id, code, expires_at, created_by)
+		VALUES ($1, $2, $3, $4, $5)
 	`
 	_, err := r.pool.Exec(ctx, query,
-		invite.ID, invite.GroupID, invite.Code, invite.ExpiresAt,
+		invite.ID, invite.GroupID, invite.Code, invite.ExpiresAt, invite.CreatedBy,
 	)
 	return err
 }
@@ -257,14 +257,14 @@ func (r *GroupRepository) CreateInvite(ctx context.Context, invite *models.Group
 // GetInviteByCode retrieves an invite by its code.
 func (r *GroupRepository) GetInviteByCode(ctx context.Context, code string) (*models.GroupInvite, error) {
 	query := `
-		SELECT id, group_id, code, expires_at
+		SELECT id, group_id, code, expires_at, created_by
 		FROM group_invites
 		WHERE code = $1
 	`
 	row := r.pool.QueryRow(ctx, query, code)
 
 	var i models.GroupInvite
-	err := row.Scan(&i.ID, &i.GroupID, &i.Code, &i.ExpiresAt)
+	err := row.Scan(&i.ID, &i.GroupID, &i.Code, &i.ExpiresAt, &i.CreatedBy)
 	if err != nil {
 		return nil, err
 	}
@@ -423,7 +423,8 @@ func (r *GroupRepository) ListPendingClaimsByGroup(ctx context.Context, groupID 
 // ListMemberEmailsByGroup returns a map of userID → email for all active members
 // of a group. Used by the email notification channel to look up recipient addresses
 // without loading full user records. Soft-deleted users (deleted_at IS NOT NULL) are
-// excluded.
+// excluded, and so are unconfirmed addresses: nothing other than the
+// verification code is mailed to an address nobody has proven.
 func (r *GroupRepository) ListMemberEmailsByGroup(ctx context.Context, groupID uuid.UUID) (map[uuid.UUID]string, error) {
 	query := `
 		SELECT gm.user_id, u.email
@@ -432,6 +433,7 @@ func (r *GroupRepository) ListMemberEmailsByGroup(ctx context.Context, groupID u
 		WHERE gm.group_id = $1
 		  AND gm.left_at IS NULL
 		  AND u.deleted_at IS NULL
+		  AND u.is_verified
 	`
 	rows, err := r.pool.Query(ctx, query, groupID)
 	if err != nil {

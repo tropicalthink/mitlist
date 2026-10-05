@@ -13,6 +13,7 @@ import '../../utils/haptics.dart';
 import '../../providers/app_link_provider.dart';
 import '../../utils/app_link_intent.dart';
 import '../../providers/finance_provider.dart' show financeServiceProviderAsync;
+import '../../providers/onboarding_provider.dart';
 import '../../services/finance_service.dart';
 import '../../sheets/expense_creation_sheet.dart';
 import '../../sheets/expense_detail_sheet.dart';
@@ -98,7 +99,13 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       return;
     }
     _tabLoadStarted = true;
-    _controller.load(AppLocalizations.of(context)!);
+    unawaited(_controller.load(AppLocalizations.of(context)!).then((_) {
+      final groupId = _controller.groupId;
+      if (groupId == null) return;
+      // Seeing the balance is the joiner checklist's last step (plans/048).
+      unawaited(markHubQuickStartStep(groupId, HubQuickStartStep.balance)
+          .then((_) => ref.invalidate(hubQuickStartPrefsProvider(groupId))));
+    }));
   }
 
   @override
@@ -229,6 +236,8 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
           currency: _controller.groupCurrency),
       payer: suggestion.fromLabel,
       payee: suggestion.toLabel,
+      payerIsMe: suggestion.from == _controller.currentUserId,
+      payeeIsMe: suggestion.to == _controller.currentUserId,
     );
     if (confirmed != true || !mounted) return;
 
@@ -278,6 +287,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   void _maybePlayConfetti() {
     if (_selectedTab == 1 &&
         _controller.hasHousehold &&
+        _controller.hasMoneyActivity &&
         _controller.suggestions.isEmpty &&
         !_controller.isLoading &&
         _controller.errorMessage == null &&
@@ -388,12 +398,14 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                                     _controller.recentSettlements,
                                 balances: _controller.balances,
                                 currency: _controller.groupCurrency,
+                                hasMoneyActivity: _controller.hasMoneyActivity,
                                 isSettling: _controller.isSettling,
                                 isResponding:
                                     _controller.isRespondingToSettlement,
                                 confettiController: _confettiController,
                                 onRefresh: () => _controller
                                     .load(AppLocalizations.of(context)!),
+                                onAddExpense: _openCreateExpense,
                                 onRecordSettlement: _recordSettlement,
                                 onRespondSettlement: _respondToSettlement,
                                 onCancelSettlement: _cancelSettlement,
@@ -401,7 +413,12 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
           ),
         ],
       ),
-      floatingActionButton: !_controller.hasHousehold
+      // The "No expenses yet" state carries its own add button; one primary
+      // action per screen, so the FAB waits for the first expense.
+      floatingActionButton: !_controller.hasHousehold ||
+              (!_controller.isLoading &&
+                  _controller.errorMessage == null &&
+                  !_controller.hasMoneyActivity)
           ? null
           : AppButton(
               size: AppButtonSize.lg,

@@ -430,7 +430,12 @@ class RecipeScrap extends StatelessWidget {
 /// circles for the empty chairs. Empty chairs ask to be filled — no sentence
 /// required.
 class InviteSeats extends StatelessWidget {
-  const InviteSeats({super.key, required this.members, this.seats = 3});
+  const InviteSeats({
+    super.key,
+    required this.members,
+    this.seats = 3,
+    this.emptyColor,
+  });
 
   /// How many people are actually in the household.
   final int members;
@@ -438,6 +443,10 @@ class InviteSeats extends StatelessWidget {
   /// Total chairs drawn; clamped so at least one empty chair shows while the
   /// household is short of it.
   final int seats;
+
+  /// Outline of the empty chairs. Defaults to ink on paper; a card on the
+  /// app surface passes a theme colour so the chairs show in dark mode.
+  final Color? emptyColor;
 
   @override
   Widget build(BuildContext context) {
@@ -466,7 +475,7 @@ class InviteSeats extends StatelessWidget {
           else
             _DashedBox(
               size: size,
-              color: ink.withValues(alpha: 0.40),
+              color: emptyColor ?? ink.withValues(alpha: 0.40),
               circle: true,
             ),
         ],

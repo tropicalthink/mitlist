@@ -66,15 +66,5 @@ void main() {
       expect(bins.done, true);
       expect(bins.overdue, false);
     });
-
-    test('recipe ingredients land on the list once', () {
-      final sandbox = TourSandbox();
-      final before = sandbox.state.items.length;
-      sandbox.addRecipeIngredients();
-      expect(sandbox.state.items.length, before + tourRecipeIngredients.length);
-      expect(sandbox.state.items.last.name, tourRecipeIngredients.last);
-      sandbox.addRecipeIngredients();
-      expect(sandbox.state.items.length, before + tourRecipeIngredients.length);
-    });
   });
 }

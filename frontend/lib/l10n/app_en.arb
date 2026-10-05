@@ -2749,7 +2749,7 @@
   "@listEmptyCustomDesc": {
     "description": "Description for custom empty state"
   },
-  "listEmptyAllDesc": "Add lines inside a list; the first few appear as a snippet on its card.",
+  "listEmptyAllDesc": "Shopping and to-dos in one place that everyone in the house can add to and tick off.",
   "@listEmptyAllDesc": {
     "description": "Description for general empty state"
   },
@@ -4670,10 +4670,6 @@
   "@pinwallBoardLabel": {
     "description": "Board chip label for pinwall"
   },
-  "pinwallSnapshot": "At a glance",
-  "@pinwallSnapshot": {
-    "description": "Header for the collapsible household stats summary under the composer"
-  },
   "pinwallDragHint": "Drag notes to move  ·  Pinch to zoom",
   "@pinwallDragHint": {
     "description": "Hint text for pinwall interactions"
@@ -5686,22 +5682,6 @@
   "@authSignupPasswordRequired": {
     "description": "Validation: password required"
   },
-  "authSignupConfirmPassword": "Confirm password",
-  "@authSignupConfirmPassword": {
-    "description": "Confirm password input label on signup"
-  },
-  "authSignupConfirmPasswordHint": "Re-enter your password",
-  "@authSignupConfirmPasswordHint": {
-    "description": "Confirm password hint text"
-  },
-  "authSignupConfirmPasswordRequired": "Please confirm your password.",
-  "@authSignupConfirmPasswordRequired": {
-    "description": "Validation: confirm password empty"
-  },
-  "authSignupPasswordMismatch": "Passwords do not match.",
-  "@authSignupPasswordMismatch": {
-    "description": "Validation: password and confirmation differ"
-  },
   "authSignupPasswordRequirementsNotMet": "Password does not meet the requirements below.",
   "@authSignupPasswordRequirementsNotMet": {
     "description": "Validation: password fails the complexity policy"
@@ -5899,10 +5879,6 @@
   "@authOnboardingCreateHousehold": {
     "description": "Primary CTA on onboarding"
   },
-  "authOnboardingJoinInvite": "Join with invite code",
-  "@authOnboardingJoinInvite": {
-    "description": "Secondary CTA on onboarding"
-  },
   "authOnboardingHaveCode": "Have an invite code?",
   "@authOnboardingHaveCode": {
     "description": "Invite code prompt"
@@ -5914,10 +5890,6 @@
   "authOnboardingJoinDesc": "Already got an invite? Enter the code to jump right in.",
   "@authOnboardingJoinDesc": {
     "description": "Description for join household card"
-  },
-  "authOnboardingJoinSemantic": "Join a household with invite code",
-  "@authOnboardingJoinSemantic": {
-    "description": "Semantic label for join card"
   },
   "authOnboardingHomeIconSemantic": "Household home icon",
   "@authOnboardingHomeIconSemantic": {
@@ -5950,35 +5922,6 @@
   "authOnboardingGoToBoard": "Continue",
   "@authOnboardingGoToBoard": {
     "description": "CTA from the invite stage to the final orientation"
-  },
-  "authOnboardingReadyTitle": "Your household is ready",
-  "@authOnboardingReadyTitle": {
-    "description": "Final onboarding orientation title"
-  },
-  "authOnboardingReadyBody": "Three things to know. That’s the whole map.",
-  "@authOnboardingReadyBody": {
-    "description": "Final onboarding orientation description"
-  },
-  "authOnboardingOrientationHome": "Home shows what needs attention",
-  "@authOnboardingOrientationHome": {
-    "description": "Explains the Home destination during final onboarding"
-  },
-  "authOnboardingOrientationTabs": "Tabs keep each part of the household in its place",
-  "@authOnboardingOrientationTabs": {
-    "description": "Explains feature tabs during final onboarding"
-  },
-  "authOnboardingOrientationAdd": "The + button adds something from anywhere",
-  "@authOnboardingOrientationAdd": {
-    "description": "Explains the global add action during final onboarding"
-  },
-  "authOnboardingEnterHousehold": "Open {name}",
-  "@authOnboardingEnterHousehold": {
-    "description": "CTA entering the household after orientation",
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
   },
   "authOnboardingResolving": "Opening your board…",
   "@authOnboardingResolving": {
@@ -6020,33 +5963,13 @@
   "@hubStatsPlanned": {
     "description": "Stats grid: planned this week"
   },
-  "hubStatsOverdue": "overdue",
-  "@hubStatsOverdue": {
-    "description": "Stats grid: overdue label"
-  },
-  "hubStatsAllDone": "all done",
-  "@hubStatsAllDone": {
-    "description": "Stats grid: all done label"
-  },
   "hubStatsBalance": "Balance",
   "@hubStatsBalance": {
     "description": "Stats grid: balance label"
   },
-  "hubStatsOpen": "open",
-  "@hubStatsOpen": {
-    "description": "Stats grid: open balance label"
-  },
   "hubStatsLists": "Lists",
   "@hubStatsLists": {
     "description": "Stats grid: lists label"
-  },
-  "hubStatsActiveList": "active list",
-  "@hubStatsActiveList": {
-    "description": "Stats grid: singular active list"
-  },
-  "hubStatsActiveLists": "active lists",
-  "@hubStatsActiveLists": {
-    "description": "Stats grid: plural active lists"
   },
   "hubStatsReminders": "Reminders",
   "@hubStatsReminders": {
@@ -6168,17 +6091,9 @@
   "@hubOnboardingGetStarted": {
     "description": "Onboarding card header"
   },
-  "hubOnboardingDismiss": "Dismiss quick start",
-  "@hubOnboardingDismiss": {
-    "description": "Dismiss quick start tooltip"
-  },
   "hubOnboardingDescription": "Everything starts here. Pick what matters most.",
   "@hubOnboardingDescription": {
     "description": "Onboarding card description"
-  },
-  "hubOnboardingInvite": "Invite flatmates",
-  "@hubOnboardingInvite": {
-    "description": "Invite flatmates action"
   },
   "hubOnboardingCreateList": "Create a list",
   "@hubOnboardingCreateList": {
@@ -6200,18 +6115,6 @@
         "type": "String"
       }
     }
-  },
-  "hubQuickStartDismissedToast": "Quick start put away. Bring it back anytime from Account.",
-  "@hubQuickStartDismissedToast": {
-    "description": "Toast after dismissing the hub quick start, pointing at the recovery path"
-  },
-  "accountShowQuickStart": "Show quick start on the hub",
-  "@accountShowQuickStart": {
-    "description": "Account row that restores the dismissed hub quick start"
-  },
-  "accountQuickStartRestored": "Quick start is back on your board.",
-  "@accountQuickStartRestored": {
-    "description": "Toast after restoring the hub quick start from the account screen"
   },
   "appBottomSheetDiscardTitle": "Discard changes?",
   "@appBottomSheetDiscardTitle": {
@@ -8777,10 +8680,6 @@
   "@tourNext": {
     "description": "Bottom button on tour pages that advances one page"
   },
-  "tourShowMe": "Show me",
-  "@tourShowMe": {
-    "description": "Bottom button on the first tour page"
-  },
   "tourBack": "Back",
   "@tourBack": {
     "description": "Semantic label of the back chevron on tour pages"
@@ -8800,40 +8699,6 @@
   "tourSampleTag": "Sample",
   "@tourSampleTag": {
     "description": "Small tag on tour cards saying the content is a sample household"
-  },
-  "tourWhyEyebrow": "Your household",
-  "@tourWhyEyebrow": {
-    "description": "Eyebrow label above the first tour headline"
-  },
-  "tourWhyHeadline": "Who bought milk, who owes what, whose turn is it?",
-  "@tourWhyHeadline": {
-    "description": "Headline of the first tour page"
-  },
-  "tourWhyBody": "mitlist is the shared notebook for the people you live with. Here is a sample flat to poke at.",
-  "@tourWhyBody": {
-    "description": "Body text of the first tour page"
-  },
-  "tourWhyNote": "Landlord coming Thursday 10am",
-  "@tourWhyNote": {
-    "description": "Sample sticky note pinned on the first tour page"
-  },
-  "tourWhyToBuy": "{count, plural, =1{1 to buy} other{{count} to buy}}",
-  "@tourWhyToBuy": {
-    "description": "Unchecked item count on the sample list",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "tourWhyOverdue": "{title} is overdue",
-  "@tourWhyOverdue": {
-    "description": "The overdue chore on the first tour page",
-    "placeholders": {
-      "title": {
-        "type": "String"
-      }
-    }
   },
   "tourListsEyebrow": "Lists",
   "@tourListsEyebrow": {
@@ -8992,54 +8857,6 @@
         "type": "int"
       }
     }
-  },
-  "tourRecipesEyebrow": "Recipes",
-  "@tourRecipesEyebrow": {
-    "description": "Eyebrow label on the recipes tour page"
-  },
-  "tourRecipesHeadline": "Thursday is shakshuka. The eggs are already on the list.",
-  "@tourRecipesHeadline": {
-    "description": "Headline of the recipes tour page"
-  },
-  "tourRecipesBody": "Plan a meal and send its ingredients straight to the shopping list.",
-  "@tourRecipesBody": {
-    "description": "Body text of the recipes tour page"
-  },
-  "tourRecipesTitle": "Shakshuka",
-  "@tourRecipesTitle": {
-    "description": "Title of the sample recipe"
-  },
-  "tourRecipesServings": "4 servings · 30 min",
-  "@tourRecipesServings": {
-    "description": "Meta line of the sample recipe"
-  },
-  "tourRecipesPlanned": "Planned for Thursday",
-  "@tourRecipesPlanned": {
-    "description": "Meal plan line on the sample recipe"
-  },
-  "tourRecipesAddIngredients": "Add to the list",
-  "@tourRecipesAddIngredients": {
-    "description": "Button on the sample recipe that pushes ingredients to the sample list"
-  },
-  "tourRecipesAddedButton": "On the list",
-  "@tourRecipesAddedButton": {
-    "description": "Button label once ingredients were added"
-  },
-  "tourRecipesAddedToast": "{count} items added to {list}",
-  "@tourRecipesAddedToast": {
-    "description": "Toast after ingredients were added",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      },
-      "list": {
-        "type": "String"
-      }
-    }
-  },
-  "tourFinishEyebrow": "Your household",
-  "@tourFinishEyebrow": {
-    "description": "Eyebrow label on the last tour page"
   },
   "tourFinishHeadline": "Now do it with the people you actually live with.",
   "@tourFinishHeadline": {
@@ -9281,5 +9098,477 @@
   "shortcutChoresToday": "Chores today",
   "@shortcutChoresToday": {
     "description": "App icon long-press shortcut: open the chores tab."
+  },
+  "hubStatsOverdueCount": "{count} overdue",
+  "@hubStatsOverdueCount": {
+    "description": "Home at-a-glance chores row: how many of the caller's chores are overdue",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "hubStatsNothingOnYou": "Nothing on you",
+  "@hubStatsNothingOnYou": {
+    "description": "Home at-a-glance chores row: the caller has no chore due today or overdue"
+  },
+  "hubBalanceYouOwe": "You owe {amount}",
+  "@hubBalanceYouOwe": {
+    "description": "Home at-a-glance balance row: the caller's net position is negative. amount is formatted in the household currency",
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "hubBalanceSettledUp": "Settled up",
+  "@hubBalanceSettledUp": {
+    "description": "Home at-a-glance balance row: the household has expenses and the caller's net position is zero"
+  },
+  "hubBalanceNoExpenses": "No expenses yet",
+  "@hubBalanceNoExpenses": {
+    "description": "Home at-a-glance balance row: the household has not recorded any expense"
+  },
+  "hubBalanceYouOweLabel": "You owe",
+  "@hubBalanceYouOweLabel": {
+    "description": "Pinwall board index card: caption under the amount the caller owes"
+  },
+  "hubBalanceOwedToYouLabel": "Owed to you",
+  "@hubBalanceOwedToYouLabel": {
+    "description": "Pinwall board index card: caption under the amount owed to the caller"
+  },
+  "hubStatsItemsLeft": "{count, plural, =1{1 item left} other{{count} items left}}",
+  "@hubStatsItemsLeft": {
+    "description": "Home at-a-glance lists row: unchecked items across the household's lists",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "hubStatsItemsLeftLabel": "{count, plural, =1{item left} other{items left}}",
+  "@hubStatsItemsLeftLabel": {
+    "description": "Pinwall board index card: caption under the unchecked item count",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "hubStatsListsEmpty": "Lists are empty",
+  "@hubStatsListsEmpty": {
+    "description": "Home at-a-glance lists row: the household's lists have no items at all"
+  },
+  "settlementAlreadySettled": "{name} already settled",
+  "@settlementAlreadySettled": {
+    "description": "Record-settlement dialog: payer and payee are the same person",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "settlementYouWillPay": "You’ll pay {name} {amount}",
+  "@settlementYouWillPay": {
+    "description": "Record-settlement dialog: the caller pays someone",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "settlementWillPayYou": "{name} will pay you {amount}",
+  "@settlementWillPayYou": {
+    "description": "Record-settlement dialog: someone pays the caller",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "settlementPays": "{payer} pays {payee} {amount}",
+  "@settlementPays": {
+    "description": "Record-settlement dialog: a payment between two other members",
+    "placeholders": {
+      "payer": {
+        "type": "String"
+      },
+      "payee": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "settlementConfirming": "Confirming…",
+  "@settlementConfirming": {
+    "description": "Record-settlement dialog: confirm button while the settlement is being recorded"
+  },
+  "listItemClaimed": "claimed",
+  "@listItemClaimed": {
+    "description": "List item row: someone has said they will get this item (shown after a dot separator)"
+  },
+  "hubQuickAddScan": "Scan a receipt or list",
+  "@hubQuickAddScan": {
+    "description": "Quick add on Home: open the camera scanner (mobile only)"
+  },
+  "shoppingTripCreateList": "Create a shopping list",
+  "@shoppingTripCreateList": {
+    "description": "Shopping trip with no lists: button that opens the create-list sheet"
+  },
+  "mealPlanAddRecipe": "Add a recipe",
+  "@mealPlanAddRecipe": {
+    "description": "Meal plan recipe picker with no recipes: primary button, write a recipe by hand"
+  },
+  "mealPlanImportRecipe": "Import from a link",
+  "@mealPlanImportRecipe": {
+    "description": "Meal plan recipe picker with no recipes: secondary button, import a recipe from a web link"
+  },
+  "calendarLongPressHint": "In Month view, long-press a day to add something on it.",
+  "@calendarLongPressHint": {
+    "description": "Calendar empty state: hint that long-pressing a day in the month view adds an item on that day"
+  },
+  "emptyStateSuggestionsTitle": "Or start with one of these",
+  "@emptyStateSuggestionsTitle": {
+    "description": "Empty state: caption above tappable suggestion chips (common chores, common lists)"
+  },
+  "choreSuggestionBins": "Take out bins",
+  "@choreSuggestionBins": {
+    "description": "Chores empty state suggestion chip; opens the new-chore sheet with this title"
+  },
+  "choreSuggestionBathroom": "Clean bathroom",
+  "@choreSuggestionBathroom": {
+    "description": "Chores empty state suggestion chip; opens the new-chore sheet with this title"
+  },
+  "choreSuggestionVacuum": "Vacuum",
+  "@choreSuggestionVacuum": {
+    "description": "Chores empty state suggestion chip; opens the new-chore sheet with this title"
+  },
+  "choreSuggestionKitchen": "Kitchen surfaces",
+  "@choreSuggestionKitchen": {
+    "description": "Chores empty state suggestion chip; opens the new-chore sheet with this title"
+  },
+  "choreSuggestionPlants": "Water plants",
+  "@choreSuggestionPlants": {
+    "description": "Chores empty state suggestion chip; opens the new-chore sheet with this title"
+  },
+  "choreSuggestionDishwasher": "Empty dishwasher",
+  "@choreSuggestionDishwasher": {
+    "description": "Chores empty state suggestion chip; opens the new-chore sheet with this title"
+  },
+  "listSuggestionGroceries": "Groceries",
+  "@listSuggestionGroceries": {
+    "description": "Lists empty state suggestion chip; opens the new-list sheet with this name (shopping list)"
+  },
+  "listSuggestionSupplies": "Household supplies",
+  "@listSuggestionSupplies": {
+    "description": "Lists empty state suggestion chip; opens the new-list sheet with this name (shopping list)"
+  },
+  "listSuggestionTodo": "To do",
+  "@listSuggestionTodo": {
+    "description": "Lists empty state suggestion chip; opens the new-list sheet with this name (to-do list)"
+  },
+  "needsYouTitle": "Needs you",
+  "@needsYouTitle": {
+    "description": "Home: title of the card at the top listing what needs the signed-in member (their chores, what they owe, today's reminders, open lists, tonight's meal)"
+  },
+  "needsYouKindChore": "Chore",
+  "@needsYouKindChore": {
+    "description": "Needs you card: small feature label above a chore row"
+  },
+  "needsYouKindMoney": "Money",
+  "@needsYouKindMoney": {
+    "description": "Needs you card: small feature label above a payment row"
+  },
+  "needsYouKindList": "List",
+  "@needsYouKindList": {
+    "description": "Needs you card: small feature label above a shopping/to-do list row"
+  },
+  "needsYouKindReminder": "Reminder",
+  "@needsYouKindReminder": {
+    "description": "Needs you card: small feature label above a pinwall reminder row"
+  },
+  "needsYouDueToday": "Due today",
+  "@needsYouDueToday": {
+    "description": "Needs you card: a chore of the caller's that is due today"
+  },
+  "needsYouOverdueDays": "{days, plural, =1{1 day overdue} other{{days} days overdue}}",
+  "@needsYouOverdueDays": {
+    "description": "Needs you card: how many days a chore of the caller's is overdue",
+    "placeholders": {
+      "days": {
+        "type": "num"
+      }
+    }
+  },
+  "needsYouReminderAt": "Today at {time}",
+  "@needsYouReminderAt": {
+    "description": "Needs you card: when a pinwall reminder goes off later today. time is a localised clock time",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "needsYouSettle": "Settle",
+  "@needsYouSettle": {
+    "description": "Needs you card: button on a 'you owe' row that records paying the person back"
+  },
+  "needsYouOpen": "Open",
+  "@needsYouOpen": {
+    "description": "Needs you card: button that opens the list, the meal plan or the pinwall note the row is about"
+  },
+  "needsYouAllCaughtUp": "All caught up",
+  "@needsYouAllCaughtUp": {
+    "description": "Needs you card: the household is in use but nothing is on the caller right now"
+  },
+  "needsYouAllCaughtUpDesc": "Nothing is on you right now.",
+  "@needsYouAllCaughtUpDesc": {
+    "description": "Needs you card: line under 'All caught up'"
+  },
+  "needsYouNotSetUp": "Not set up yet",
+  "@needsYouNotSetUp": {
+    "description": "Needs you card: the household has no chores, expenses or list items yet"
+  },
+  "needsYouNotSetUpDesc": "Add a list, a chore or an expense, and whatever needs you will show up here.",
+  "@needsYouNotSetUpDesc": {
+    "description": "Needs you card: line under 'Not set up yet'"
+  },
+  "needsYouLoadError": "Couldn't load what needs you.",
+  "@needsYouLoadError": {
+    "description": "Needs you card: the household data could not be read"
+  },
+  "hubChecklistHouseholdCreated": "Household created",
+  "@hubChecklistHouseholdCreated": {
+    "description": "Quick-start checklist: the first step, already ticked when the checklist appears"
+  },
+  "hubChecklistHouseholdCreatedSub": "{name} is set up",
+  "@hubChecklistHouseholdCreatedSub": {
+    "description": "Quick-start checklist: line under 'Household created'. name is the household's name",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "hubChecklistInvite": "Invite someone",
+  "@hubChecklistInvite": {
+    "description": "Quick-start checklist step: invite a housemate"
+  },
+  "hubChecklistInviteSub": "Share a link or a code with the people you live with",
+  "@hubChecklistInviteSub": {
+    "description": "Quick-start checklist: line under 'Invite someone'"
+  },
+  "hubChecklistListSub": "Groceries, to-dos, anything to tick off",
+  "@hubChecklistListSub": {
+    "description": "Quick-start checklist: line under 'Create a list'"
+  },
+  "hubChecklistChoreSub": "It takes turns between everyone",
+  "@hubChecklistChoreSub": {
+    "description": "Quick-start checklist: line under 'Add a chore'"
+  },
+  "hubChecklistExpenseSub": "Split it and see who owes what",
+  "@hubChecklistExpenseSub": {
+    "description": "Quick-start checklist: line under 'Track an expense'"
+  },
+  "hubChecklistCollapsedBar": "Quick start · {done} of {total}",
+  "@hubChecklistCollapsedBar": {
+    "description": "Quick-start checklist folded into a one-line bar",
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "hubChecklistCollapse": "Fold quick start",
+  "@hubChecklistCollapse": {
+    "description": "Tooltip on the quick-start checklist's header chevron that folds it into a bar"
+  },
+  "hubChecklistExpand": "Open quick start",
+  "@hubChecklistExpand": {
+    "description": "Tooltip/label on the folded quick-start bar that opens the checklist again"
+  },
+  "hubSoloTitle": "You're the only one here",
+  "@hubSoloTitle": {
+    "description": "Home: card shown while the household has a single member"
+  },
+  "hubSoloBody": "Lists, chores and costs work best with the whole house in. Invite the people you live with.",
+  "@hubSoloBody": {
+    "description": "Home: body of the card shown while the household has a single member"
+  },
+  "hubSoloShare": "Share invite link",
+  "@hubSoloShare": {
+    "description": "Home solo card: button that opens the system share sheet with an invite link"
+  },
+  "hubSoloShowCode": "Show code",
+  "@hubSoloShowCode": {
+    "description": "Home solo card: button that opens the invite sheet with the code and QR"
+  },
+  "authOnboardingCurrency": "Currency: {code}",
+  "@authOnboardingCurrency": {
+    "description": "First run, naming the household: the currency guessed from the device, e.g. 'Currency: EUR'",
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "authOnboardingCurrencyChange": "Change",
+  "@authOnboardingCurrencyChange": {
+    "description": "First run, naming the household: button that reveals the currency picker"
+  },
+  "authOnboardingInviteLater": "Later",
+  "@authOnboardingInviteLater": {
+    "description": "First run, invite step: skip inviting for now (Home's checklist asks again)"
+  },
+  "authOnboardingIntentTitle": "What do you want to sort out first?",
+  "@authOnboardingIntentTitle": {
+    "description": "First run, last step: question whose answer goes first on Home's checklist"
+  },
+  "authOnboardingIntentBody": "It goes first on your checklist on Home.",
+  "@authOnboardingIntentBody": {
+    "description": "First run, last step: line under the question"
+  },
+  "authOnboardingIntentLists": "Shopping lists",
+  "@authOnboardingIntentLists": {
+    "description": "First run, last step: answer"
+  },
+  "authOnboardingIntentMoney": "Splitting costs",
+  "@authOnboardingIntentMoney": {
+    "description": "First run, last step: answer"
+  },
+  "authOnboardingIntentChores": "Chores",
+  "@authOnboardingIntentChores": {
+    "description": "First run, last step: answer"
+  },
+  "authOnboardingIntentJustLooking": "Just looking",
+  "@authOnboardingIntentJustLooking": {
+    "description": "First run, last step: answer that changes nothing and opens Home"
+  },
+  "authShowPassword": "Show password",
+  "@authShowPassword": {
+    "description": "Tooltip on the eye button of a password field"
+  },
+  "authHidePassword": "Hide password",
+  "@authHidePassword": {
+    "description": "Tooltip on the eye button of a password field while the password is shown"
+  },
+  "hubChecklistJoined": "Joined {name}",
+  "@hubChecklistJoined": {
+    "description": "Joiner checklist on Home: first step, already ticked. name is the household",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "hubChecklistJoinedSub": "You're part of the household now",
+  "@hubChecklistJoinedSub": {
+    "description": "Joiner checklist: line under 'Joined {name}'"
+  },
+  "hubChecklistTick": "Tick something off a list",
+  "@hubChecklistTick": {
+    "description": "Joiner checklist step"
+  },
+  "hubChecklistTickSub": "Bought it or done it? Tick it so everyone knows",
+  "@hubChecklistTickSub": {
+    "description": "Joiner checklist: line under 'Tick something off a list'"
+  },
+  "hubChecklistDoChore": "Take or complete a chore",
+  "@hubChecklistDoChore": {
+    "description": "Joiner checklist step"
+  },
+  "hubChecklistDoChoreSub": "Tick yours off when it's your turn",
+  "@hubChecklistDoChoreSub": {
+    "description": "Joiner checklist: line under 'Take or complete a chore'"
+  },
+  "hubChecklistBalance": "Check your balance",
+  "@hubChecklistBalance": {
+    "description": "Joiner checklist step"
+  },
+  "hubChecklistBalanceSub": "See who owes what in Money",
+  "@hubChecklistBalanceSub": {
+    "description": "Joiner checklist: line under 'Check your balance'"
+  },
+  "needsYouNothingYet": "Nothing on you yet",
+  "@needsYouNothingYet": {
+    "description": "Needs you card for someone who just joined a household and has nothing assigned"
+  },
+  "needsYouNothingYetDesc": "Here's what the house is working on.",
+  "@needsYouNothingYetDesc": {
+    "description": "Needs you card: line under 'Nothing on you yet', above the household's open things"
+  },
+  "needsYouNotYourTurn": "Not your turn",
+  "@needsYouNotYourTurn": {
+    "description": "Needs you card: a household chore shown for information, on someone else's turn"
+  },
+  "joinLandingOpen": "Open {name}",
+  "@joinLandingOpen": {
+    "description": "Invite landing after joining: button that opens the household. name is the household",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "welcomeInviteFrom": "{name} invited you",
+  "@welcomeInviteFrom": {
+    "description": "Welcome screen opened from an invite link: who sent it (first name)",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "welcomeInviteTo": "{count, plural, =1{to {household} · 1 person} other{to {household} · {count} people}}",
+  "@welcomeInviteTo": {
+    "description": "Welcome screen from an invite link: the household and how many live in it",
+    "placeholders": {
+      "household": {
+        "type": "String"
+      },
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "welcomeInviteJoin": "Join {household} to share lists, chores and money.",
+  "@welcomeInviteJoin": {
+    "description": "Welcome screen from an invite link when the sender is unknown",
+    "placeholders": {
+      "household": {
+        "type": "String"
+      }
+    }
+  },
+  "welcomeInviteExpiredTitle": "This invite has expired",
+  "@welcomeInviteExpiredTitle": {
+    "description": "Welcome screen from an invite link whose code has expired"
+  },
+  "welcomeInviteExpiredBody": "Ask whoever sent it for a new link.",
+  "@welcomeInviteExpiredBody": {
+    "description": "Welcome screen from an expired invite link"
+  },
+  "activityMemberJoined": "{name} joined · {when}",
+  "@activityMemberJoined": {
+    "description": "Activity feed on Home: a member joined the household. name is their first name; when is a relative day such as 'today'",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "when": {
+        "type": "String"
+      }
+    }
   }
 }

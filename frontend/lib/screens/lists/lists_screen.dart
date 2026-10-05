@@ -29,6 +29,8 @@ import '../../widgets/app_icon.dart';
 import '../../widgets/app_input.dart';
 import '../../widgets/chip.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/empty_state_suggestions.dart';
+import '../../widgets/hub/hub_create_actions.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/list_entrance.dart';
 import '../../widgets/masonry_flow.dart';
@@ -365,6 +367,27 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
         _FilterOption.all => null,
       };
 
+  /// Mirrors [_buildBody]: true while it shows the no-household state or the
+  /// no-lists state, both of which carry their own button.
+  bool get _showsEmptyState {
+    if (_lists.isEmpty && (_isLoading || _error != null)) return false;
+    if (!_hasHousehold) return true;
+    return _searchQuery.isEmpty && _filteredLists.isEmpty;
+  }
+
+  /// A suggestion chip: the create sheet prefilled, then straight into the new
+  /// list with the composer focused.
+  Future<void> _createSuggestedList(String name, String type) async {
+    unawaited(Haptics.light());
+    await createListAndOpen(
+      context,
+      initialGroupId: widget.groupId,
+      initialName: name,
+      initialType: type,
+    );
+    if (mounted) await _loadLists();
+  }
+
   Future<void> _showCreateSheet() async {
     unawaited(Haptics.light());
     final created = await CreateListSheet.show(
@@ -554,15 +577,19 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
         ],
       ),
       body: _buildBody(),
-      floatingActionButton: AppButton(
-        size: AppButtonSize.lg,
-        onPressed: _hasHousehold
-            ? _showCreateSheet
-            : () => context.goNamed('groupsList'),
-        icon: const AppIcon(name: 'plus'),
-        text: l10n.listNewList,
-        tooltip: l10n.listNewList,
-      ),
+      // An empty state with its own create button takes the FAB's place: one
+      // primary action per screen.
+      floatingActionButton: _showsEmptyState
+          ? null
+          : AppButton(
+              size: AppButtonSize.lg,
+              onPressed: _hasHousehold
+                  ? _showCreateSheet
+                  : () => context.goNamed('groupsList'),
+              icon: const AppIcon(name: 'plus'),
+              text: l10n.listNewList,
+              tooltip: l10n.listNewList,
+            ),
     );
   }
 
@@ -866,6 +893,31 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
                             icon: const AppIcon(name: 'plus'),
                             onPressed: _showCreateSheet,
                           ),
+                          if (_lists.isEmpty)
+                            SizedBox(
+                              width: double.infinity,
+                              child: EmptyStateSuggestions(
+                                suggestions: [
+                                  (
+                                    label: l10n.listSuggestionGroceries,
+                                    onTap: () => _createSuggestedList(
+                                        l10n.listSuggestionGroceries,
+                                        'shopping'),
+                                  ),
+                                  (
+                                    label: l10n.listSuggestionSupplies,
+                                    onTap: () => _createSuggestedList(
+                                        l10n.listSuggestionSupplies,
+                                        'shopping'),
+                                  ),
+                                  (
+                                    label: l10n.listSuggestionTodo,
+                                    onTap: () => _createSuggestedList(
+                                        l10n.listSuggestionTodo, 'todo'),
+                                  ),
+                                ],
+                              ),
+                            ),
                         ],
                       ),
               ),

@@ -47,6 +47,31 @@ class PinwallComposer extends ConsumerStatefulWidget {
   /// on the server with all media uploaded. The board sheet closes on it.
   final VoidCallback? onPosted;
 
+  /// The composer in a sheet with the text field focused: the board's "Add a
+  /// note" and the hub's Quick add. The sheet closes once the note is
+  /// accepted. Plain notes take the offline-first path and pin on via the
+  /// live stream a frame or two later; media/linked posts land after the
+  /// server confirms.
+  static Future<void> show(
+    BuildContext context, {
+    required String groupId,
+    required User? me,
+  }) {
+    final l10n = AppLocalizations.of(context)!;
+    return showAppBottomSheet<void>(
+      context: context,
+      title: l10n.pinwallAddNote,
+      body: Builder(
+        builder: (sheetContext) => PinwallComposer(
+          groupId: groupId,
+          me: me,
+          autofocus: true,
+          onPosted: () => Navigator.of(sheetContext).pop(),
+        ),
+      ),
+    );
+  }
+
   @override
   ConsumerState<PinwallComposer> createState() => _PinwallComposerState();
 }

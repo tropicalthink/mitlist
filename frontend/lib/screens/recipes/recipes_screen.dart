@@ -515,13 +515,17 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
         ),
       ),
       body: _buildBody(),
-      floatingActionButton: AppButton(
-        size: AppButtonSize.lg,
-        icon: const AppIcon(name: 'plus'),
-        text: l10n.recipeAddRecipe,
-        onPressed: _onAddRecipe,
-        tooltip: l10n.recipeAddRecipe,
-      ),
+      // The no-household and empty-kitchen states carry their own button; one
+      // primary action per screen.
+      floatingActionButton: !_hasHousehold || _viewState == _ViewState.empty
+          ? null
+          : AppButton(
+              size: AppButtonSize.lg,
+              icon: const AppIcon(name: 'plus'),
+              text: l10n.recipeAddRecipe,
+              onPressed: _onAddRecipe,
+              tooltip: l10n.recipeAddRecipe,
+            ),
     );
   }
 

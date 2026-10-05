@@ -20,6 +20,7 @@ import '../../l10n/app_localizations.dart';
 import '../../repositories/hub_repository.dart';
 import '../../router.dart' show currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
+import '../../services/sse_service.dart';
 import '../../utils/active_group_context.dart';
 import '../../theme/spacing.dart';
 import '../../theme/theme.dart';
@@ -30,11 +31,11 @@ import '../../widgets/dismiss_keyboard_on_tap.dart';
 import '../../widgets/app_bottom_sheet.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_icon.dart';
-import '../../providers/onboarding_provider.dart';
 import '../../widgets/hub/activity_wall.dart';
 import '../../widgets/hub/hub_skeleton.dart';
 import '../../widgets/hub/onboarding_card.dart';
 import '../../widgets/hub/pinwall_section.dart';
+import '../../widgets/hub/needs_you_section.dart';
 import '../../widgets/hub/quick_add_sheet.dart';
 import '../../providers/meal_plan_provider.dart';
 import '../../widgets/shell_trailing_actions.dart';
@@ -62,6 +63,17 @@ class HouseholdHubScreen extends ConsumerStatefulWidget {
   ConsumerState<HouseholdHubScreen> createState() => _HouseholdHubScreenState();
 }
 
+/// Space under the last Home section: the Quick add FAB's height plus a
+/// gap, so the FAB never covers the last activity row.
+const double _kFabClearance = MitlistSpacing.xxl + MitlistSpacing.lg;
+
+/// Live events that change who is in the household.
+const Set<String> _kMembershipEvents = {
+  'member:joined',
+  'member:left',
+  'member:removed',
+};
+
 class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
   bool _isLoading = true;
   Object? _error;
@@ -71,11 +83,19 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
   User? _me;
   StreamSubscription<Group?>? _groupSub;
   StreamSubscription<(List<ActivityLogModel>, bool)>? _activitySub;
+  StreamSubscription<SseEvent>? _liveSub;
   String? _resolvedGroupId;
+
+  /// The repository behind the current household's feed, kept so a live
+  /// event can refresh it in place (its watch repaints the feed).
+  HubRepository? _hubRepo;
 
   @override
   void initState() {
     super.initState();
+    // The pinwall section below connects the stream for this household;
+    // Home only listens.
+    _liveSub = ref.read(sseServiceProvider).events.listen(_onLiveEvent);
     Future.microtask(_resolveAndLoad);
   }
 
@@ -83,7 +103,22 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
   void dispose() {
     _groupSub?.cancel();
     _activitySub?.cancel();
+    _liveSub?.cancel();
     super.dispose();
+  }
+
+  /// Someone joined or left this household (plans/048 stage 7): the member
+  /// count behind the solo invite card and the checklist's invite step is
+  /// stale, and the feed has a new "Sam joined". Refreshes both without
+  /// putting the skeleton back up.
+  void _onLiveEvent(SseEvent event) {
+    final groupId = _resolvedGroupId;
+    if (!mounted || groupId == null || event.groupId != groupId) return;
+    if (!_kMembershipEvents.contains(event.type)) return;
+    unawaited(refreshCachedGroups(ref).catchError((_) {}));
+    unawaited(
+      _hubRepo?.refresh(groupId, activityLimit: 10).catchError((_) {}),
+    );
   }
 
   @override
@@ -245,6 +280,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
         home: homeService,
         recipes: recipeRepository,
       );
+      _hubRepo = repo;
 
       final cachedGroup = await repo.getGroupOnce(_resolvedGroupId!);
       final cachedActivities = await repo.getActivitiesOnce(_resolvedGroupId!);
@@ -262,6 +298,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
       });
       unawaited(
           ref.read(currentGroupIdProvider.notifier).set(_resolvedGroupId!));
+      unawaited(_fetchUnsyncedListItems(_resolvedGroupId!));
 
       await _groupSub?.cancel();
       _groupSub = repo.watchGroup(_resolvedGroupId!).listen((g) {
@@ -302,6 +339,18 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
         _error = e;
         _isLoading = false;
       });
+    }
+  }
+
+  /// Needs you counts unchecked items across lists from the local cache; a
+  /// list nobody opened on this device only has its preview lines there.
+  /// Fetch the rest once per session, behind the cached paint.
+  Future<void> _fetchUnsyncedListItems(String groupId) async {
+    try {
+      final repo = await ref.read(listRepositoryProvider.future);
+      await repo.fetchUnsyncedItems(groupId);
+    } catch (_) {
+      // Best effort: counts stay as cached until the next visit.
     }
   }
 
@@ -667,7 +716,11 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
               ? null
               : AppButton(
                   size: AppButtonSize.lg,
-                  onPressed: () => showQuickAddSheet(context),
+                  onPressed: () {
+                    final groupId = _resolvedGroupId;
+                    if (groupId == null) return;
+                    showQuickAddSheet(context, ref, groupId: groupId, me: _me);
+                  },
                   icon: const AppIcon(name: 'plus'),
                   text: l10n.hubQuickAdd,
                   tooltip: l10n.hubQuickAdd,
@@ -763,17 +816,17 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                               padding: const EdgeInsets.all(MitlistSpacing.md),
                               sliver: SliverList(
                                 delegate: SliverChildListDelegate([
-                                  if (!(ref
-                                          .watch(hubQuickStartDismissedProvider)
-                                          .valueOrNull ??
-                                      true)) ...[
-                                    HubQuickStart(
-                                      groupId: _resolvedGroupId!,
-                                      onDismiss: () => ref.invalidate(
-                                          hubQuickStartDismissedProvider),
-                                    ),
-                                    const SizedBox(height: MitlistSpacing.lg),
-                                  ],
+                                  NeedsYouSection(
+                                    groupId: _resolvedGroupId!,
+                                    me: _me,
+                                  ),
+                                  const SizedBox(height: MitlistSpacing.lg),
+                                  // Both bring their own bottom gap and
+                                  // vanish once there is nothing to ask.
+                                  HubQuickStart(groupId: _resolvedGroupId!),
+                                  HubSoloInviteCard(
+                                    groupId: _resolvedGroupId!,
+                                  ),
                                   PinwallSection(
                                       groupId: _resolvedGroupId!, me: _me),
                                   const SizedBox(height: MitlistSpacing.lg),
@@ -782,7 +835,11 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                                     activityError: _snapshot!.activityError,
                                     currentUserId: _me?.id,
                                   ),
-                                  const SizedBox(height: MitlistSpacing.xl),
+                                  // Clear the Quick add FAB so it never sits
+                                  // on the last activity row.
+                                  const SizedBox(
+                                    height: _kFabClearance,
+                                  ),
                                 ]),
                               ),
                             ),

@@ -1,6 +1,3 @@
-import 'dart:async';
-
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,7 +7,6 @@ import '../../models/auth_models.dart';
 import '../../models/pinwall_models.dart';
 import '../../providers/pinwall_provider.dart';
 import '../../providers/list_provider.dart';
-import '../../providers/meal_plan_provider.dart';
 import '../../repositories/pinwall_repository.dart';
 import '../../screens/pinwall/pinwall_board_screen.dart';
 import '../../sheets/pinwall_note_editor_sheet.dart';
@@ -21,7 +17,6 @@ import '../../utils/haptics.dart';
 import '../app_button.dart';
 import '../pinwall/pinwall_composer.dart';
 import '../pinwall/pinwall_note_card.dart';
-import '../pinwall/pinwall_stat_rows.dart';
 
 /// Column count and card width for the hub pinwall at [availableWidth].
 ///
@@ -159,8 +154,6 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
               children: [
                 const SizedBox(height: MitlistSpacing.sm),
                 PinwallComposer(groupId: widget.groupId, me: widget.me),
-                const SizedBox(height: MitlistSpacing.sm),
-                _PinwallQuickStats(groupId: widget.groupId),
                 const SizedBox(height: MitlistSpacing.lg),
                 RepaintBoundary(
                   child: _PinwallPostsList(
@@ -211,7 +204,9 @@ class _PinwallOpenBoardButton extends ConsumerWidget {
             context,
             groupId: groupId,
             me: me,
-            posts: posts.value!,
+            // Still loading (or failed): open on an empty board; it follows
+            // the same provider and fills in when the posts arrive.
+            posts: posts.valueOrNull ?? const [],
           );
         },
         child: Container(
@@ -367,200 +362,6 @@ class _PinwallPostsList extends ConsumerWidget {
           },
         );
       },
-    );
-  }
-}
-
-/// Compact, inline "torn paper" list of household stats that sits directly
-/// under the composer note — Chores / Balance / Lists / Tonight, each a
-/// tappable row that jumps to its tab.
-///
-/// Collapsed by default so the pinned notes surface sooner; tapping the header
-/// expands the detail rows.
-class _PinwallQuickStats extends StatefulWidget {
-  const _PinwallQuickStats({required this.groupId});
-
-  final String groupId;
-
-  @override
-  State<_PinwallQuickStats> createState() => _PinwallQuickStatsState();
-}
-
-class _PinwallQuickStatsState extends State<_PinwallQuickStats> {
-  bool _expanded = false;
-
-  void _toggle() {
-    unawaited(Haptics.light());
-    setState(() => _expanded = !_expanded);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final textTheme = Theme.of(context).textTheme;
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final bg =
-        dark ? MitlistColors.composerBgDark : MitlistColors.composerBgLight;
-    final border = dark
-        ? MitlistColors.composerBorderDark
-        : MitlistColors.composerBorderLight;
-    final textColor = dark
-        ? MitlistColors.surfaceSoft.withValues(alpha: 0.9)
-        : MitlistColors.pinwallNoteTextLight;
-    final mutedColor = textColor.withValues(alpha: 0.6);
-
-    return Container(
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(MitlistTheme.radiusMd),
-        border: Border.all(color: border, width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color:
-                MitlistColors.neutral950.withValues(alpha: dark ? 0.42 : 0.16),
-            blurRadius: 0,
-            offset: const Offset(4, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Semantics(
-            button: true,
-            expanded: _expanded,
-            label: l10n.pinwallSnapshot,
-            child: InkWell(
-              onTap: _toggle,
-              borderRadius: BorderRadius.circular(MitlistTheme.radiusMd),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: MitlistSpacing.md,
-                  vertical: MitlistSpacing.sm + 2,
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.insights_outlined, size: 18, color: mutedColor),
-                    const SizedBox(width: MitlistSpacing.sm),
-                    Text(
-                      l10n.pinwallSnapshot,
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: textColor,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const Spacer(),
-                    AnimatedRotation(
-                      turns: _expanded ? 0.5 : 0,
-                      duration: const Duration(milliseconds: 200),
-                      child:
-                          Icon(Icons.expand_more, size: 20, color: mutedColor),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          AnimatedSize(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOut,
-            alignment: Alignment.topCenter,
-            child: _expanded
-                ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _StatRowDivider(color: border),
-                      PinwallChoresStatRow(
-                        groupId: widget.groupId,
-                        style: PinwallStatRowStyle.inline,
-                        ink: textColor,
-                        muted: mutedColor,
-                      ),
-                      _StatRowDivider(color: border),
-                      PinwallFinanceStatRow(
-                        groupId: widget.groupId,
-                        style: PinwallStatRowStyle.inline,
-                        ink: textColor,
-                        muted: mutedColor,
-                      ),
-                      _StatRowDivider(color: border),
-                      PinwallListsStatRow(
-                        groupId: widget.groupId,
-                        style: PinwallStatRowStyle.inline,
-                        ink: textColor,
-                        muted: mutedColor,
-                      ),
-                      _StatRowDivider(color: border),
-                      _TonightStatRow(groupId: widget.groupId),
-                    ],
-                  )
-                : const SizedBox(width: double.infinity),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatRowDivider extends StatelessWidget {
-  const _StatRowDivider({required this.color});
-
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Divider(
-      height: 1,
-      thickness: 1,
-      indent: MitlistSpacing.md,
-      endIndent: MitlistSpacing.md,
-      color: color.withValues(alpha: 0.5),
-    );
-  }
-}
-
-class _TonightStatRow extends ConsumerWidget {
-  const _TonightStatRow({required this.groupId});
-
-  final String groupId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
-    final async = ref.watch(todayMealPlansProvider(groupId));
-    final theme = Theme.of(context).colorScheme;
-
-    final meals = async.valueOrNull;
-    String value;
-    if (meals == null || meals.isEmpty) {
-      value = l10n.tonightNothingPlanned;
-    } else {
-      TodayMeal? selected;
-      for (final slot in const ['dinner', 'breakfast', 'lunch']) {
-        selected = meals.firstWhereOrNull((m) => m.plan.slot == slot);
-        if (selected != null) {
-          break;
-        }
-      }
-      selected ??= meals.first;
-      value = selected.recipe?.title ?? l10n.tonightRecipe;
-    }
-
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final ink = dark
-        ? MitlistColors.surfaceSoft.withValues(alpha: 0.9)
-        : MitlistColors.pinwallNoteTextLight;
-    final muted = ink.withValues(alpha: 0.6);
-
-    return PinwallStatRow(
-      style: PinwallStatRowStyle.inline,
-      icon: Icons.restaurant_outlined,
-      label: l10n.tonightHeader,
-      value: value,
-      accent: theme.tertiary,
-      ink: ink,
-      muted: muted,
-      onTap: () => context.pushNamed('mealPlan'),
     );
   }
 }

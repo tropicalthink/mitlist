@@ -9,8 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/calendar_models.dart';
 import '../../providers/calendar_provider.dart';
 import '../../providers/chore_provider.dart';
-import '../../providers/finance_provider.dart'
-    show financeServiceProviderAsync;
+import '../../providers/finance_provider.dart' show financeServiceProviderAsync;
 import '../../providers/group_provider.dart';
 import '../../router.dart' show currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
@@ -533,6 +532,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 _EmptyRange(
                   title: l10n.calendarNothingAhead,
                   description: l10n.calendarNothingAheadDesc,
+                  onAddChore: _addChore,
                 ),
               ],
             ),
@@ -783,11 +783,17 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         case 'add_chore':
           // Don't stuff the date into the chore's title. (Pre-filling the due
           // date is a follow-up once the sheet exposes it.)
-          ChoreCreationSheet.show(context);
+          _addChore();
         case 'add_expense':
           unawaited(_addExpense());
       }
     });
+  }
+
+  /// The empty calendar's one action: chores are the most common dated item.
+  void _addChore() {
+    unawaited(Haptics.light());
+    ChoreCreationSheet.show(context);
   }
 
   /// One expense added from the calendar is a complete entry session: release
@@ -795,9 +801,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   Future<void> _addExpense() async {
     final created = await ExpenseCreationSheet.show(context);
     if (created != true || !mounted) return;
-    final groupId =
-        resolveActiveGroupId(ref.read(cachedGroupsProvider).valueOrNull ?? const [],
-            ref.read(currentGroupIdProvider));
+    final groupId = resolveActiveGroupId(
+        ref.read(cachedGroupsProvider).valueOrNull ?? const [],
+        ref.read(currentGroupIdProvider));
     if (groupId == null) return;
     final service = await ref.read(financeServiceProviderAsync.future);
     unawaited(service.flushExpenseNotifications(groupId));
@@ -817,12 +823,13 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               lottieAsset: 'assets/animations/lottie/Calendar.lottie',
               icon: AppIcon(name: 'eventNote', size: 56),
               title: l10n.calendarNothingAhead,
-              description: l10n.calendarNothingAheadDesc,
+              description: '${l10n.calendarNothingAheadDesc}\n'
+                  '${l10n.calendarLongPressHint}',
               actions: [
                 AppButton(
-                  text: l10n.choreAppBarTitle,
-                  variant: AppButtonVariant.outline,
-                  onPressed: () => context.pushNamed('chores'),
+                  text: l10n.calendarAddChore,
+                  icon: const AppIcon(name: 'plus'),
+                  onPressed: _addChore,
                 ),
               ],
             ),
@@ -1063,17 +1070,30 @@ class _MonthDots extends StatelessWidget {
 class _EmptyRange extends StatelessWidget {
   final String title;
   final String description;
+  final VoidCallback onAddChore;
 
-  const _EmptyRange({required this.title, required this.description});
+  const _EmptyRange({
+    required this.title,
+    required this.description,
+    required this.onAddChore,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Center(
       child: AppEmptyState(
         lottieAsset: 'assets/animations/lottie/Calendar.lottie',
         icon: AppIcon(name: 'eventNote', size: 56),
         title: title,
-        description: description,
+        description: '$description\n${l10n.calendarLongPressHint}',
+        actions: [
+          AppButton(
+            text: l10n.calendarAddChore,
+            icon: const AppIcon(name: 'plus'),
+            onPressed: onAddChore,
+          ),
+        ],
       ),
     );
   }

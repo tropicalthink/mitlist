@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/app_localizations.dart';
-import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../widgets/animated_check_toggle.dart';
@@ -11,9 +10,6 @@ import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/app_input.dart';
-import '../../widgets/app_toast.dart';
-import '../../widgets/board/artifact_scraps.dart';
-import '../../widgets/board/cork_board.dart';
 import '../../widgets/chip.dart';
 import '../money/expense_format.dart';
 import 'tour_screen.dart';
@@ -23,129 +19,15 @@ import 'tour_state.dart';
 /// its own currency when it is created.
 String _money(int cents) => formatExpenseCurrency(cents / 100, currency: 'USD');
 
-// ---------------------------------------------------------------------------
-// Page 1 — why
-// ---------------------------------------------------------------------------
-
-/// The sample household as a pinwall: name, seats, a note, and the three
-/// facts the next pages will each open up.
-class TourWhyPage extends ConsumerWidget {
-  const TourWhyPage({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
-    final state = ref.watch(tourSandboxProvider);
-    final textTheme = Theme.of(context).textTheme;
-    final toBuy = state.items.where((i) => !i.checked).length;
-    final overdue = state.chores.where((c) => c.overdue).toList();
-
-    return TourPageSheet(
-      eyebrow: l10n.tourWhyEyebrow,
-      headline: l10n.tourWhyHeadline,
-      body: l10n.tourWhyBody,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  state.householdName,
-                  style: textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-              InviteSeats(members: state.members.length, seats: 3),
-            ],
-          ),
-          const SizedBox(height: MitlistSpacing.space4),
-          Transform.rotate(
-            angle: -0.02,
-            child: StickyNoteSurface(
-              padding: const EdgeInsets.fromLTRB(
-                MitlistSpacing.md,
-                MitlistSpacing.space5,
-                MitlistSpacing.md,
-                MitlistSpacing.md,
-              ),
-              child: Text(
-                l10n.tourWhyNote,
-                style: textTheme.titleSmall?.copyWith(
-                  color: stickyNoteInk(context),
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: MitlistSpacing.space5),
-          TourStatRow(
-            icon: 'shoppingCart',
-            text: '${state.listName} · ${l10n.tourWhyToBuy(toBuy)}',
-          ),
-          const SizedBox(height: MitlistSpacing.space2),
-          TourStatRow(
-            icon: 'banknotes',
-            text: _overallLine(l10n, state.netBalanceCents),
-          ),
-          if (overdue.isNotEmpty) ...[
-            const SizedBox(height: MitlistSpacing.space2),
-            TourStatRow(
-              icon: 'clipboardDocumentList',
-              text: l10n.tourWhyOverdue(overdue.first.title),
-              emphasis: true,
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
+/// The money page's bottom line: what the person is owed or owes overall.
 String _overallLine(AppLocalizations l10n, int netCents) {
   if (netCents > 0) return l10n.tourMoneyOverallOwed(_money(netCents));
   if (netCents < 0) return l10n.tourMoneyOverallOwe(_money(-netCents));
   return l10n.tourMoneyOverallSquare;
 }
 
-/// One fact about the household with an icon in front of it.
-class TourStatRow extends StatelessWidget {
-  const TourStatRow({
-    super.key,
-    required this.icon,
-    required this.text,
-    this.emphasis = false,
-  });
-
-  final String icon;
-  final String text;
-  final bool emphasis;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final color = emphasis ? colorScheme.error : colorScheme.onSurface;
-    return Row(
-      children: [
-        AppIcon(name: icon, size: 18, color: color),
-        const SizedBox(width: MitlistSpacing.space2),
-        Expanded(
-          child: Text(
-            text,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: color,
-                  fontWeight: emphasis ? FontWeight.w700 : FontWeight.w500,
-                ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 // ---------------------------------------------------------------------------
-// Page 2 — lists
+// Page 1 — lists
 // ---------------------------------------------------------------------------
 
 class TourListsPage extends ConsumerStatefulWidget {
@@ -336,7 +218,7 @@ class TourSampleTag extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Page 3 — money
+// Page 2 — money
 // ---------------------------------------------------------------------------
 
 class TourMoneyPage extends ConsumerWidget {
@@ -504,11 +386,15 @@ class _ExpenseHeader extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Page 4 — chores
+// Page 3 — chores, and the account choice under it
 // ---------------------------------------------------------------------------
 
 class TourChoresPage extends ConsumerWidget {
-  const TourChoresPage({super.key});
+  const TourChoresPage({super.key, this.footer});
+
+  /// Shown under the sample chores: the tour's account choice lives on its
+  /// last page instead of a page of its own.
+  final Widget? footer;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -533,6 +419,10 @@ class TourChoresPage extends ConsumerWidget {
               onToggle: () => sandbox.toggleChore(chore.id),
             ),
             const SizedBox(height: MitlistSpacing.space2),
+          ],
+          if (footer != null) ...[
+            const SizedBox(height: MitlistSpacing.lg),
+            footer!,
           ],
         ],
       ),
@@ -718,132 +608,6 @@ class _Meta extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Page 5 — recipes
-// ---------------------------------------------------------------------------
-
-class TourRecipesPage extends ConsumerWidget {
-  const TourRecipesPage({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
-    final state = ref.watch(tourSandboxProvider);
-    final sandbox = ref.read(tourSandboxProvider.notifier);
-    final textTheme = Theme.of(context).textTheme;
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final ink = stickyNoteInk(context);
-    final toBuy = state.items.where((i) => !i.checked).length;
-
-    void addIngredients() {
-      sandbox.addRecipeIngredients();
-      AppToast.success(
-        context,
-        l10n.tourRecipesAddedToast(
-          tourRecipeIngredients.length,
-          state.listName,
-        ),
-      );
-    }
-
-    return TourPageSheet(
-      eyebrow: l10n.tourRecipesEyebrow,
-      headline: l10n.tourRecipesHeadline,
-      body: l10n.tourRecipesBody,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          StickyNoteSurface(
-            color: dark ? MitlistColors.noteSkyDark : MitlistColors.noteSky,
-            padding: const EdgeInsets.fromLTRB(
-              MitlistSpacing.md,
-              MitlistSpacing.space6,
-              MitlistSpacing.md,
-              MitlistSpacing.md,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.tourRecipesTitle,
-                  style: textTheme.titleLarge?.copyWith(
-                    color: ink,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                Text(
-                  l10n.tourRecipesServings,
-                  style: textTheme.bodySmall?.copyWith(
-                    color: ink.withValues(alpha: 0.75),
-                  ),
-                ),
-                const SizedBox(height: MitlistSpacing.space3),
-                for (final ingredient in tourRecipeIngredients)
-                  Padding(
-                    padding:
-                        const EdgeInsets.only(bottom: MitlistSpacing.space1),
-                    child: Row(
-                      children: [
-                        Container(width: 6, height: 6, color: ink),
-                        const SizedBox(width: MitlistSpacing.space2),
-                        Text(
-                          ingredient,
-                          style: textTheme.bodyMedium?.copyWith(color: ink),
-                        ),
-                      ],
-                    ),
-                  ),
-                const SizedBox(height: MitlistSpacing.space3),
-                Row(
-                  children: [
-                    AppIcon(name: 'calendarDays', size: 16, color: ink),
-                    const SizedBox(width: MitlistSpacing.space2),
-                    Text(
-                      l10n.tourRecipesPlanned,
-                      style: textTheme.bodySmall?.copyWith(
-                        color: ink,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: MitlistSpacing.space4),
-                SizedBox(
-                  width: double.infinity,
-                  child: state.ingredientsAdded
-                      ? AppButton(
-                          key: const ValueKey('tour-ingredients-added'),
-                          text: l10n.tourRecipesAddedButton,
-                          icon: const AppIcon(name: 'check', size: 18),
-                          variant: AppButtonVariant.outline,
-                          color: AppButtonColor.neutral,
-                          size: AppButtonSize.md,
-                          onPressed: null,
-                        )
-                      : AppButton(
-                          key: const ValueKey('tour-add-ingredients'),
-                          text: l10n.tourRecipesAddIngredients,
-                          icon: const AppIcon(name: 'plus', size: 18),
-                          variant: AppButtonVariant.solid,
-                          color: AppButtonColor.primary,
-                          size: AppButtonSize.md,
-                          onPressed: addIngredients,
-                        ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: MitlistSpacing.space4),
-          TourStatRow(
-            icon: 'shoppingCart',
-            text: '${state.listName} · ${l10n.tourWhyToBuy(toBuy)}',
-          ),
-        ],
-      ),
     );
   }
 }

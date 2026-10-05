@@ -12,6 +12,7 @@ import '../l10n/app_localizations.dart';
 import '../widgets/app_input.dart';
 
 import '../widgets/app_toast.dart';
+import '../services/product_events.dart';
 
 class CreateHouseholdSheet extends ConsumerStatefulWidget {
   const CreateHouseholdSheet({super.key});
@@ -52,6 +53,11 @@ class _CreateHouseholdSheetState extends ConsumerState<CreateHouseholdSheet> {
             : _descriptionController.text.trim(),
         currency: _currency,
       ));
+      ProductEvents.instance.householdStarted(
+        ProductEventName.householdCreated,
+        group.id,
+        source: 'sheet',
+      );
       // The cached household list must be refetched before any screen
       // resolves its active group against it — without this the new group is
       // missing from the cache and the home screen lands on "no household"

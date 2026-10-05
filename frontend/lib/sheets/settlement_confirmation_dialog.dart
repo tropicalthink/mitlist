@@ -13,17 +13,26 @@ class SettlementConfirmationDialog extends StatefulWidget {
     required this.amount,
     required this.payer,
     required this.payee,
+    this.payerIsMe = false,
+    this.payeeIsMe = false,
   });
 
   final String amount;
   final String payer;
   final String payee;
 
+  /// Whether the caller is the payer or payee. Decided by user id, not by
+  /// comparing a display label with "You", which is translated.
+  final bool payerIsMe;
+  final bool payeeIsMe;
+
   static Future<bool?> show({
     required BuildContext context,
     required String amount,
     required String payer,
     required String payee,
+    bool payerIsMe = false,
+    bool payeeIsMe = false,
   }) async {
     final l10n = AppLocalizations.of(context)!;
     return showAppDialog<bool>(
@@ -33,6 +42,8 @@ class SettlementConfirmationDialog extends StatefulWidget {
         amount: amount,
         payer: payer,
         payee: payee,
+        payerIsMe: payerIsMe,
+        payeeIsMe: payeeIsMe,
       ),
     );
   }
@@ -53,15 +64,15 @@ class _SettlementConfirmationDialogState
     final payer = widget.payer;
     final payee = widget.payee;
 
-    String description;
+    final String description;
     if (payer == payee) {
-      description = '$payer already settled';
-    } else if (payer == 'You') {
-      description = 'You\u2019ll pay $payee $amount';
-    } else if (payee == 'You') {
-      description = '$payer will pay you $amount';
+      description = l10n.settlementAlreadySettled(payer);
+    } else if (widget.payerIsMe) {
+      description = l10n.settlementYouWillPay(payee, amount);
+    } else if (widget.payeeIsMe) {
+      description = l10n.settlementWillPayYou(payer, amount);
     } else {
-      description = '$payer pays $payee $amount';
+      description = l10n.settlementPays(payer, payee, amount);
     }
 
     return Column(
@@ -121,7 +132,9 @@ class _SettlementConfirmationDialogState
                 variant: AppButtonVariant.solid,
                 color: AppButtonColor.success,
                 size: AppButtonSize.lg,
-                text: _isConfirming ? 'Confirming...' : l10n.commonConfirm,
+                text: _isConfirming
+                    ? l10n.settlementConfirming
+                    : l10n.commonConfirm,
                 isLoading: _isConfirming,
                 onPressed: _isConfirming || payer == payee
                     ? null

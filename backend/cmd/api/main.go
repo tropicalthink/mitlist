@@ -208,6 +208,11 @@ func main() {
 		handlers.ShareLinkBaseURL = cfg.FrontendURL
 		r.Get("/shared-recipes/{token}", handlers.NewRecipeHandler(cnt.RecipeService(), nil).GetSharedRecipe)
 
+		// Invite previews for signed-out recipients ("Sam invited you to Flat
+		// 3B", plans/048 stage 7): the code is the credential. Rate-limited
+		// per IP inside the handler.
+		handlers.NewGroupHandler(cnt.GroupService()).RegisterPublicRoutes(r)
+
 		// OAuth (public initiation + callback)
 		oauthHandler := handlers.NewOAuthHandler(cfg, cnt.OAuthService())
 		r.Get("/oauth/providers", oauthHandler.GetProviders)
@@ -218,6 +223,14 @@ func main() {
 		r.Get("/oauth/apple/callback", oauthHandler.GetAppleCallback)
 		r.Post("/oauth/apple/callback", oauthHandler.PostAppleCallback)
 		r.Post("/oauth/handoff/exchange", oauthHandler.ExchangeHandoff)
+
+		// First-party product events (plans/048 stage 8). Public: pre-signup
+		// events carry only the app's install id; a session, when present,
+		// attributes them to the user. The handler rate-limits per sender.
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.OptionalAuth(cnt.JWT(), cnt.UserService()))
+			handlers.NewProductEventHandler(cnt.ProductEventService()).RegisterRoutes(r)
+		})
 
 		// SSE (Server-Sent Events) — auth handled inside the handler to skip UserRateLimit
 		sseHandler := handlers.NewSSEHandler(cnt.SSEHub(), cnt.JWT(), cnt.UserService(), cnt.GroupRepo(), cnt.IntegrationCredentialService())

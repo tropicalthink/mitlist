@@ -21,6 +21,7 @@ import '../../widgets/password_requirements.dart';
 import '../../widgets/password_strength_bar.dart';
 import '../../utils/oauth_flow.dart';
 import '../../utils/password_policy.dart';
+import '../../services/product_events.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
@@ -34,12 +35,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
   final _verificationController = TextEditingController();
   final _nameFocus = FocusNode();
   final _emailFocus = FocusNode();
   final _passwordFocus = FocusNode();
-  final _confirmPasswordFocus = FocusNode();
   final _verificationFocus = FocusNode();
 
   bool _isLoading = false;
@@ -55,7 +54,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
   String? _nameError;
   String? _emailError;
   String? _passwordError;
-  String? _confirmPasswordError;
 
   AppLocalizations get l10n => AppLocalizations.of(context)!;
 
@@ -85,7 +83,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
   void initState() {
     super.initState();
     _passwordController.addListener(_onPasswordChanged);
-    _confirmPasswordController.addListener(_onPasswordChanged);
   }
 
   void _onPasswordChanged() => setState(() {});
@@ -93,16 +90,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
   @override
   void dispose() {
     _passwordController.removeListener(_onPasswordChanged);
-    _confirmPasswordController.removeListener(_onPasswordChanged);
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
-    _confirmPasswordController.dispose();
     _verificationController.dispose();
     _nameFocus.dispose();
     _emailFocus.dispose();
     _passwordFocus.dispose();
-    _confirmPasswordFocus.dispose();
     _verificationFocus.dispose();
     super.dispose();
   }
@@ -117,7 +111,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
       _nameError = null;
       _emailError = null;
       _passwordError = null;
-      _confirmPasswordError = null;
     });
 
     final name = _nameController.text.trim();
@@ -126,26 +119,20 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
     // characters, and silently stripping them here would store something
     // different from what the user typed.
     final password = _passwordController.text;
-    final confirmPassword = _confirmPasswordController.text;
 
-    if (name.isEmpty ||
-        email.isEmpty ||
-        password.isEmpty ||
-        confirmPassword.isEmpty) {
+    if (name.isEmpty || email.isEmpty || password.isEmpty) {
       setState(() {
         _errorMessage = l10n.authSignupFillAllFields;
         if (name.isEmpty) _nameError = l10n.authSignupNameRequired;
         if (email.isEmpty) _emailError = l10n.authSignupEmailRequired;
         if (password.isEmpty) _passwordError = l10n.authSignupPasswordRequired;
-        if (confirmPassword.isEmpty) {
-          _confirmPasswordError = l10n.authSignupConfirmPasswordRequired;
-        }
       });
       return;
     }
 
-    // Complexity is checked before the match: telling someone their passwords
-    // match when neither is acceptable just costs them a second attempt.
+    // No "confirm password" field (plans/048 stage 6): the field's eye
+    // button shows what was typed, which catches the same typos without a
+    // second field.
     if (!PasswordPolicy.isSatisfied(password)) {
       setState(() {
         _passwordError = PasswordPolicy.hasMinLength(password)
@@ -153,12 +140,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
             : l10n.authSignupPasswordMinLength;
       });
       _passwordFocus.requestFocus();
-      return;
-    }
-
-    if (password != confirmPassword) {
-      setState(() => _confirmPasswordError = l10n.authSignupPasswordMismatch);
-      _confirmPasswordFocus.requestFocus();
       return;
     }
 
@@ -213,19 +194,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
     try {
       final authService = await ref.read(authServiceProviderAsync.future);
       await authService.verifyEmail(code);
+      _trackSignupCompleted();
       if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-        _isSuccess = true;
-      });
-      await Future.delayed(const Duration(milliseconds: 650));
-      if (!mounted) return;
-      final invite = inviteCode;
-      ref.read(pendingAuthNavigationProvider.notifier).state =
-          (invite != null && invite.isNotEmpty)
-              ? '/join/${Uri.encodeComponent(invite)}'
-              : '/onboarding';
-      ref.read(authStateProvider.notifier).state = true;
+      await _completeSignup();
     } catch (_) {
       if (mounted) {
         setState(() => _errorMessage = l10n.authVerifyInvalid);
@@ -233,6 +204,31 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
     } finally {
       if (mounted && !_isSuccess) setState(() => _isLoading = false);
     }
+  }
+
+  void _trackSignupCompleted() {
+    final invited = inviteCode != null && inviteCode!.isNotEmpty;
+    ProductEvents.instance.track(
+      ProductEventName.signupCompleted,
+      props: {'method': 'email', 'path': invited ? 'invite' : 'direct'},
+    );
+  }
+
+  /// Verified and signed in: show the checkmark, then hand over to
+  /// household setup (or the invite that brought them here).
+  Future<void> _completeSignup() async {
+    setState(() {
+      _isLoading = false;
+      _isSuccess = true;
+    });
+    await Future.delayed(const Duration(milliseconds: 650));
+    if (!mounted) return;
+    final invite = inviteCode;
+    ref.read(pendingAuthNavigationProvider.notifier).state =
+        (invite != null && invite.isNotEmpty)
+            ? '/join/${Uri.encodeComponent(invite)}'
+            : '/onboarding';
+    ref.read(authStateProvider.notifier).state = true;
   }
 
   Future<void> _resendVerification() async {
@@ -445,9 +441,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
               controller: _passwordController,
               focusNode: _passwordFocus,
               obscureText: true,
-              textInputAction: TextInputAction.next,
+              textInputAction: TextInputAction.done,
               autofillHints: const [AutofillHints.newPassword],
-              onSubmitted: (_) => _confirmPasswordFocus.requestFocus(),
+              onSubmitted: (_) => _submit(),
               errorText: _passwordError,
             ),
             const SizedBox(height: MitlistSpacing.space2),
@@ -457,18 +453,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
             const SizedBox(height: MitlistSpacing.space2),
             PasswordRequirements(
               password: _passwordController.text,
-            ),
-            const SizedBox(height: MitlistSpacing.space3),
-            AppInput(
-              label: l10n.authSignupConfirmPassword,
-              hint: l10n.authSignupConfirmPasswordHint,
-              controller: _confirmPasswordController,
-              focusNode: _confirmPasswordFocus,
-              obscureText: true,
-              textInputAction: TextInputAction.done,
-              autofillHints: const [AutofillHints.newPassword],
-              onSubmitted: (_) => _submit(),
-              errorText: _confirmPasswordError,
             ),
             const SizedBox(height: MitlistSpacing.space3),
           ],

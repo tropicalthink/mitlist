@@ -2046,7 +2046,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get listEmptyAllDesc =>
-      'Add lines inside a list; the first few appear as a snippet on its card.';
+      'Shopping and to-dos in one place that everyone in the house can add to and tick off.';
 
   @override
   String get listCreateShopping => 'Create a shopping list';
@@ -3483,9 +3483,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pinwallBoardLabel => 'Pinwall';
 
   @override
-  String get pinwallSnapshot => 'At a glance';
-
-  @override
   String get pinwallDragHint => 'Drag notes to move  ·  Pinch to zoom';
 
   @override
@@ -4231,19 +4228,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authSignupPasswordRequired => 'Password is required.';
 
   @override
-  String get authSignupConfirmPassword => 'Confirm password';
-
-  @override
-  String get authSignupConfirmPasswordHint => 'Re-enter your password';
-
-  @override
-  String get authSignupConfirmPasswordRequired =>
-      'Please confirm your password.';
-
-  @override
-  String get authSignupPasswordMismatch => 'Passwords do not match.';
-
-  @override
   String get authSignupPasswordRequirementsNotMet =>
       'Password does not meet the requirements below.';
 
@@ -4399,9 +4383,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authOnboardingCreateHousehold => 'Create a household';
 
   @override
-  String get authOnboardingJoinInvite => 'Join with invite code';
-
-  @override
   String get authOnboardingHaveCode => 'Have an invite code?';
 
   @override
@@ -4411,9 +4392,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get authOnboardingJoinDesc =>
       'Already got an invite? Enter the code to jump right in.';
-
-  @override
-  String get authOnboardingJoinSemantic => 'Join a household with invite code';
 
   @override
   String get authOnboardingHomeIconSemantic => 'Household home icon';
@@ -4443,29 +4421,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authOnboardingGoToBoard => 'Continue';
 
   @override
-  String get authOnboardingReadyTitle => 'Your household is ready';
-
-  @override
-  String get authOnboardingReadyBody =>
-      'Three things to know. That’s the whole map.';
-
-  @override
-  String get authOnboardingOrientationHome => 'Home shows what needs attention';
-
-  @override
-  String get authOnboardingOrientationTabs =>
-      'Tabs keep each part of the household in its place';
-
-  @override
-  String get authOnboardingOrientationAdd =>
-      'The + button adds something from anywhere';
-
-  @override
-  String authOnboardingEnterHousehold(String name) {
-    return 'Open $name';
-  }
-
-  @override
   String get authOnboardingResolving => 'Opening your board…';
 
   @override
@@ -4492,25 +4447,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hubStatsPlanned => 'planned';
 
   @override
-  String get hubStatsOverdue => 'overdue';
-
-  @override
-  String get hubStatsAllDone => 'all done';
-
-  @override
   String get hubStatsBalance => 'Balance';
 
   @override
-  String get hubStatsOpen => 'open';
-
-  @override
   String get hubStatsLists => 'Lists';
-
-  @override
-  String get hubStatsActiveList => 'active list';
-
-  @override
-  String get hubStatsActiveLists => 'active lists';
 
   @override
   String get hubStatsReminders => 'Reminders';
@@ -4609,14 +4549,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hubOnboardingGetStarted => 'Get started';
 
   @override
-  String get hubOnboardingDismiss => 'Dismiss quick start';
-
-  @override
   String get hubOnboardingDescription =>
       'Everything starts here. Pick what matters most.';
-
-  @override
-  String get hubOnboardingInvite => 'Invite flatmates';
 
   @override
   String get hubOnboardingCreateList => 'Create a list';
@@ -4631,16 +4565,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String hubQuickStartNextSemantic(String label) {
     return 'Next step: $label';
   }
-
-  @override
-  String get hubQuickStartDismissedToast =>
-      'Quick start put away. Bring it back anytime from Account.';
-
-  @override
-  String get accountShowQuickStart => 'Show quick start on the hub';
-
-  @override
-  String get accountQuickStartRestored => 'Quick start is back on your board.';
 
   @override
   String get appBottomSheetDiscardTitle => 'Discard changes?';
@@ -6497,9 +6421,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tourNext => 'Next';
 
   @override
-  String get tourShowMe => 'Show me';
-
-  @override
   String get tourBack => 'Back';
 
   @override
@@ -6509,36 +6430,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tourSampleTag => 'Sample';
-
-  @override
-  String get tourWhyEyebrow => 'Your household';
-
-  @override
-  String get tourWhyHeadline =>
-      'Who bought milk, who owes what, whose turn is it?';
-
-  @override
-  String get tourWhyBody =>
-      'mitlist is the shared notebook for the people you live with. Here is a sample flat to poke at.';
-
-  @override
-  String get tourWhyNote => 'Landlord coming Thursday 10am';
-
-  @override
-  String tourWhyToBuy(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count to buy',
-      one: '1 to buy',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String tourWhyOverdue(String title) {
-    return '$title is overdue';
-  }
 
   @override
   String get tourListsEyebrow => 'Lists';
@@ -6650,40 +6541,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String tourChoresNext(String name, int days) {
     return 'Next: $name, in $days days';
   }
-
-  @override
-  String get tourRecipesEyebrow => 'Recipes';
-
-  @override
-  String get tourRecipesHeadline =>
-      'Thursday is shakshuka. The eggs are already on the list.';
-
-  @override
-  String get tourRecipesBody =>
-      'Plan a meal and send its ingredients straight to the shopping list.';
-
-  @override
-  String get tourRecipesTitle => 'Shakshuka';
-
-  @override
-  String get tourRecipesServings => '4 servings · 30 min';
-
-  @override
-  String get tourRecipesPlanned => 'Planned for Thursday';
-
-  @override
-  String get tourRecipesAddIngredients => 'Add to the list';
-
-  @override
-  String get tourRecipesAddedButton => 'On the list';
-
-  @override
-  String tourRecipesAddedToast(int count, String list) {
-    return '$count items added to $list';
-  }
-
-  @override
-  String get tourFinishEyebrow => 'Your household';
 
   @override
   String get tourFinishHeadline =>
@@ -6868,4 +6725,339 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shortcutChoresToday => 'Chores today';
+
+  @override
+  String hubStatsOverdueCount(int count) {
+    return '$count overdue';
+  }
+
+  @override
+  String get hubStatsNothingOnYou => 'Nothing on you';
+
+  @override
+  String hubBalanceYouOwe(String amount) {
+    return 'You owe $amount';
+  }
+
+  @override
+  String get hubBalanceSettledUp => 'Settled up';
+
+  @override
+  String get hubBalanceNoExpenses => 'No expenses yet';
+
+  @override
+  String get hubBalanceYouOweLabel => 'You owe';
+
+  @override
+  String get hubBalanceOwedToYouLabel => 'Owed to you';
+
+  @override
+  String hubStatsItemsLeft(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items left',
+      one: '1 item left',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hubStatsItemsLeftLabel(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'items left',
+      one: 'item left',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get hubStatsListsEmpty => 'Lists are empty';
+
+  @override
+  String settlementAlreadySettled(String name) {
+    return '$name already settled';
+  }
+
+  @override
+  String settlementYouWillPay(String name, String amount) {
+    return 'You’ll pay $name $amount';
+  }
+
+  @override
+  String settlementWillPayYou(String name, String amount) {
+    return '$name will pay you $amount';
+  }
+
+  @override
+  String settlementPays(String payer, String payee, String amount) {
+    return '$payer pays $payee $amount';
+  }
+
+  @override
+  String get settlementConfirming => 'Confirming…';
+
+  @override
+  String get listItemClaimed => 'claimed';
+
+  @override
+  String get hubQuickAddScan => 'Scan a receipt or list';
+
+  @override
+  String get shoppingTripCreateList => 'Create a shopping list';
+
+  @override
+  String get mealPlanAddRecipe => 'Add a recipe';
+
+  @override
+  String get mealPlanImportRecipe => 'Import from a link';
+
+  @override
+  String get calendarLongPressHint =>
+      'In Month view, long-press a day to add something on it.';
+
+  @override
+  String get emptyStateSuggestionsTitle => 'Or start with one of these';
+
+  @override
+  String get choreSuggestionBins => 'Take out bins';
+
+  @override
+  String get choreSuggestionBathroom => 'Clean bathroom';
+
+  @override
+  String get choreSuggestionVacuum => 'Vacuum';
+
+  @override
+  String get choreSuggestionKitchen => 'Kitchen surfaces';
+
+  @override
+  String get choreSuggestionPlants => 'Water plants';
+
+  @override
+  String get choreSuggestionDishwasher => 'Empty dishwasher';
+
+  @override
+  String get listSuggestionGroceries => 'Groceries';
+
+  @override
+  String get listSuggestionSupplies => 'Household supplies';
+
+  @override
+  String get listSuggestionTodo => 'To do';
+
+  @override
+  String get needsYouTitle => 'Needs you';
+
+  @override
+  String get needsYouKindChore => 'Chore';
+
+  @override
+  String get needsYouKindMoney => 'Money';
+
+  @override
+  String get needsYouKindList => 'List';
+
+  @override
+  String get needsYouKindReminder => 'Reminder';
+
+  @override
+  String get needsYouDueToday => 'Due today';
+
+  @override
+  String needsYouOverdueDays(num days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days overdue',
+      one: '1 day overdue',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String needsYouReminderAt(String time) {
+    return 'Today at $time';
+  }
+
+  @override
+  String get needsYouSettle => 'Settle';
+
+  @override
+  String get needsYouOpen => 'Open';
+
+  @override
+  String get needsYouAllCaughtUp => 'All caught up';
+
+  @override
+  String get needsYouAllCaughtUpDesc => 'Nothing is on you right now.';
+
+  @override
+  String get needsYouNotSetUp => 'Not set up yet';
+
+  @override
+  String get needsYouNotSetUpDesc =>
+      'Add a list, a chore or an expense, and whatever needs you will show up here.';
+
+  @override
+  String get needsYouLoadError => 'Couldn\'t load what needs you.';
+
+  @override
+  String get hubChecklistHouseholdCreated => 'Household created';
+
+  @override
+  String hubChecklistHouseholdCreatedSub(String name) {
+    return '$name is set up';
+  }
+
+  @override
+  String get hubChecklistInvite => 'Invite someone';
+
+  @override
+  String get hubChecklistInviteSub =>
+      'Share a link or a code with the people you live with';
+
+  @override
+  String get hubChecklistListSub => 'Groceries, to-dos, anything to tick off';
+
+  @override
+  String get hubChecklistChoreSub => 'It takes turns between everyone';
+
+  @override
+  String get hubChecklistExpenseSub => 'Split it and see who owes what';
+
+  @override
+  String hubChecklistCollapsedBar(int done, int total) {
+    return 'Quick start · $done of $total';
+  }
+
+  @override
+  String get hubChecklistCollapse => 'Fold quick start';
+
+  @override
+  String get hubChecklistExpand => 'Open quick start';
+
+  @override
+  String get hubSoloTitle => 'You\'re the only one here';
+
+  @override
+  String get hubSoloBody =>
+      'Lists, chores and costs work best with the whole house in. Invite the people you live with.';
+
+  @override
+  String get hubSoloShare => 'Share invite link';
+
+  @override
+  String get hubSoloShowCode => 'Show code';
+
+  @override
+  String authOnboardingCurrency(String code) {
+    return 'Currency: $code';
+  }
+
+  @override
+  String get authOnboardingCurrencyChange => 'Change';
+
+  @override
+  String get authOnboardingInviteLater => 'Later';
+
+  @override
+  String get authOnboardingIntentTitle => 'What do you want to sort out first?';
+
+  @override
+  String get authOnboardingIntentBody =>
+      'It goes first on your checklist on Home.';
+
+  @override
+  String get authOnboardingIntentLists => 'Shopping lists';
+
+  @override
+  String get authOnboardingIntentMoney => 'Splitting costs';
+
+  @override
+  String get authOnboardingIntentChores => 'Chores';
+
+  @override
+  String get authOnboardingIntentJustLooking => 'Just looking';
+
+  @override
+  String get authShowPassword => 'Show password';
+
+  @override
+  String get authHidePassword => 'Hide password';
+
+  @override
+  String hubChecklistJoined(String name) {
+    return 'Joined $name';
+  }
+
+  @override
+  String get hubChecklistJoinedSub => 'You\'re part of the household now';
+
+  @override
+  String get hubChecklistTick => 'Tick something off a list';
+
+  @override
+  String get hubChecklistTickSub =>
+      'Bought it or done it? Tick it so everyone knows';
+
+  @override
+  String get hubChecklistDoChore => 'Take or complete a chore';
+
+  @override
+  String get hubChecklistDoChoreSub => 'Tick yours off when it\'s your turn';
+
+  @override
+  String get hubChecklistBalance => 'Check your balance';
+
+  @override
+  String get hubChecklistBalanceSub => 'See who owes what in Money';
+
+  @override
+  String get needsYouNothingYet => 'Nothing on you yet';
+
+  @override
+  String get needsYouNothingYetDesc => 'Here\'s what the house is working on.';
+
+  @override
+  String get needsYouNotYourTurn => 'Not your turn';
+
+  @override
+  String joinLandingOpen(String name) {
+    return 'Open $name';
+  }
+
+  @override
+  String welcomeInviteFrom(String name) {
+    return '$name invited you';
+  }
+
+  @override
+  String welcomeInviteTo(String household, num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'to $household · $count people',
+      one: 'to $household · 1 person',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String welcomeInviteJoin(String household) {
+    return 'Join $household to share lists, chores and money.';
+  }
+
+  @override
+  String get welcomeInviteExpiredTitle => 'This invite has expired';
+
+  @override
+  String get welcomeInviteExpiredBody => 'Ask whoever sent it for a new link.';
+
+  @override
+  String activityMemberJoined(String name, String when) {
+    return '$name joined · $when';
+  }
 }

@@ -2,28 +2,33 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../providers/oauth_provider.dart';
 import '../../theme/animations.dart';
 import '../../theme/spacing.dart';
+import '../../services/product_events.dart';
 import '../../utils/haptics.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/board/board_page_sheet.dart';
 import '../../widgets/board/cork_board.dart';
-import 'tour_finish_page.dart';
+import 'tour_account_choice.dart';
 import 'tour_pages.dart';
 
-/// The feature tour behind "Get started": six pages on the cork board, each
-/// showing one thing mitlist does with a real, tappable widget on a sample
-/// household — not a picture of one. The last page is the account choice.
+/// The feature tour behind "Get started": three pages on the cork board
+/// (lists, money, chores), each showing one thing mitlist does with a real,
+/// tappable widget on a sample household — not a picture of one. The account
+/// choice sits under the chores on the last page (plans/048 stage 6: short,
+/// and skippable from the first page straight to sign-up).
 ///
 /// Shape borrowed from the onboarding flows that do this well: a thin
 /// progress bar, one headline per page, one full-width button, Skip in the
-/// corner, and an account screen at the end with a guest door.
+/// corner.
 class TourScreen extends ConsumerStatefulWidget {
   const TourScreen({super.key});
 
-  static const int pageCount = 6;
+  static const int pageCount = 3;
 
   @override
   ConsumerState<TourScreen> createState() => _TourScreenState();
@@ -32,6 +37,32 @@ class TourScreen extends ConsumerStatefulWidget {
 class _TourScreenState extends ConsumerState<TourScreen> {
   final _controller = PageController();
   int _page = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    ProductEvents.instance.track(ProductEventName.tourStarted);
+  }
+
+  /// Straight to creating an account. Without passwords a new account is
+  /// made with Google or Apple on the login screen, so that is where it goes.
+  void _skip() {
+    ProductEvents.instance.track(
+      ProductEventName.tourSkipped,
+      props: {'page': '${_page + 1}'},
+    );
+    unawaited(Haptics.light());
+    final passwordAuth =
+        ref.read(oauthProvidersProvider).valueOrNull?.password ?? true;
+    context.goNamed(passwordAuth ? 'signup' : 'login');
+  }
+
+  void _onPageChanged(int i) {
+    setState(() => _page = i);
+    if (i == TourScreen.pageCount - 1) {
+      ProductEvents.instance.track(ProductEventName.tourCompleted);
+    }
+  }
 
   bool get _isLast => _page == TourScreen.pageCount - 1;
 
@@ -80,20 +111,16 @@ class _TourScreenState extends ConsumerState<TourScreen> {
                   page: _page,
                   total: TourScreen.pageCount,
                   onBack: _back,
-                  onSkip:
-                      _isLast ? null : () => _goTo(TourScreen.pageCount - 1),
+                  onSkip: _isLast ? null : _skip,
                 ),
                 Expanded(
                   child: PageView(
                     controller: _controller,
-                    onPageChanged: (i) => setState(() => _page = i),
+                    onPageChanged: _onPageChanged,
                     children: const [
-                      TourWhyPage(),
                       TourListsPage(),
                       TourMoneyPage(),
-                      TourChoresPage(),
-                      TourRecipesPage(),
-                      TourFinishPage(),
+                      TourChoresPage(footer: TourAccountChoice()),
                     ],
                   ),
                 ),
@@ -111,7 +138,7 @@ class _TourScreenState extends ConsumerState<TourScreen> {
                         child: SizedBox(
                           width: double.infinity,
                           child: AppButton(
-                            text: _page == 0 ? l10n.tourShowMe : l10n.tourNext,
+                            text: l10n.tourNext,
                             variant: AppButtonVariant.solid,
                             color: AppButtonColor.primary,
                             size: AppButtonSize.lg,

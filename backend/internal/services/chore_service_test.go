@@ -559,14 +559,17 @@ func TestChoreService_RebuildMemberOrdersForGroup(t *testing.T) {
 		groupRepo.On("ListMembershipsByGroup", ctx, groupID).Return([]models.GroupMembership{
 			{UserID: member1}, {UserID: member2},
 		}, nil)
-		choreRepo.On("ListChoresByGroup", ctx, groupID, 0, 0).Return([]models.Chore{{ID: choreID}, {ID: uuid.New()}}, nil)
+		choreRepo.On("ListChoresByGroup", ctx, groupID, rebuildChorePageSize, 0).Return([]models.Chore{{ID: choreID}, {ID: uuid.New()}}, nil)
 		choreRepo.On("GetRotationStatesByChoreIDs", ctx, mock.MatchedBy(func(ids []uuid.UUID) bool {
 			return len(ids) == 2 && ids[0] == choreID
 		})).Return([]models.ChoreRotationState{{
 			ID: uuid.New(), ChoreID: choreID, MemberOrder: []uuid.UUID{member1}, CurrentIndex: 0,
 		}}, nil).Once()
 		choreRepo.On("BulkUpdateRotationStates", ctx, mock.MatchedBy(func(states []models.ChoreRotationState) bool {
-			return len(states) == 1 && states[0].ChoreID == choreID && len(states[0].MemberOrder) == 2
+			// member1 held the only turn, so the newcomer is next.
+			return len(states) == 1 && states[0].ChoreID == choreID &&
+				assert.ObjectsAreEqual([]uuid.UUID{member1, member2}, states[0].MemberOrder) &&
+				states[0].CurrentIndex == 1
 		})).Return(nil)
 
 		err := svc.RebuildMemberOrdersForGroup(ctx, groupID)
@@ -581,12 +584,157 @@ func TestChoreService_RebuildMemberOrdersForGroup(t *testing.T) {
 		svc := NewChoreService(choreRepo, groupRepo, nil)
 
 		groupRepo.On("ListMembershipsByGroup", ctx, groupID).Return([]models.GroupMembership{{UserID: member1}}, nil)
-		choreRepo.On("ListChoresByGroup", ctx, groupID, 0, 0).Return([]models.Chore{{ID: choreID}}, nil)
+		choreRepo.On("ListChoresByGroup", ctx, groupID, rebuildChorePageSize, 0).Return([]models.Chore{{ID: choreID}}, nil)
 		choreRepo.On("GetRotationStatesByChoreIDs", ctx, []uuid.UUID{choreID}).Return([]models.ChoreRotationState{}, nil)
 
 		err := svc.RebuildMemberOrdersForGroup(ctx, groupID)
 		require.NoError(t, err)
+		choreRepo.AssertNotCalled(t, "BulkUpdateRotationStates", mock.Anything, mock.Anything)
 	})
+
+	t.Run("unchanged rotations are not rewritten", func(t *testing.T) {
+		choreRepo := new(mocks.MockChoreRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewChoreService(choreRepo, groupRepo, nil)
+
+		groupRepo.On("ListMembershipsByGroup", ctx, groupID).Return([]models.GroupMembership{
+			{UserID: member1}, {UserID: member2},
+		}, nil)
+		choreRepo.On("ListChoresByGroup", ctx, groupID, rebuildChorePageSize, 0).Return([]models.Chore{{ID: choreID}}, nil)
+		choreRepo.On("GetRotationStatesByChoreIDs", ctx, []uuid.UUID{choreID}).Return([]models.ChoreRotationState{{
+			ID: uuid.New(), ChoreID: choreID, MemberOrder: []uuid.UUID{member2, member1}, CurrentIndex: 1,
+		}}, nil)
+
+		err := svc.RebuildMemberOrdersForGroup(ctx, groupID)
+		require.NoError(t, err)
+		choreRepo.AssertNotCalled(t, "BulkUpdateRotationStates", mock.Anything, mock.Anything)
+	})
+
+	t.Run("chore limited to named members does not admit newcomers", func(t *testing.T) {
+		choreRepo := new(mocks.MockChoreRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewChoreService(choreRepo, groupRepo, nil)
+		newcomer := uuid.New()
+		limitedID := uuid.New()
+
+		groupRepo.On("ListMembershipsByGroup", ctx, groupID).Return([]models.GroupMembership{
+			{UserID: member1}, {UserID: member2}, {UserID: newcomer},
+		}, nil)
+		choreRepo.On("ListChoresByGroup", ctx, groupID, rebuildChorePageSize, 0).Return([]models.Chore{
+			{ID: choreID},
+			{ID: limitedID, AssignmentConfig: []uuid.UUID{member1, member2}},
+		}, nil)
+		choreRepo.On("GetRotationStatesByChoreIDs", ctx, []uuid.UUID{choreID, limitedID}).Return([]models.ChoreRotationState{
+			{ID: uuid.New(), ChoreID: choreID, MemberOrder: []uuid.UUID{member1, member2}, CurrentIndex: 1},
+			{ID: uuid.New(), ChoreID: limitedID, MemberOrder: []uuid.UUID{member1, member2}, CurrentIndex: 1},
+		}, nil)
+		choreRepo.On("BulkUpdateRotationStates", ctx, mock.MatchedBy(func(states []models.ChoreRotationState) bool {
+			return len(states) == 1 && states[0].ChoreID == choreID &&
+				assert.ObjectsAreEqual([]uuid.UUID{member1, member2, newcomer}, states[0].MemberOrder) &&
+				states[0].CurrentIndex == 1
+		})).Return(nil)
+
+		err := svc.RebuildMemberOrdersForGroup(ctx, groupID)
+		require.NoError(t, err)
+		choreRepo.AssertExpectations(t)
+	})
+
+	t.Run("reads every page of chores", func(t *testing.T) {
+		choreRepo := new(mocks.MockChoreRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewChoreService(choreRepo, groupRepo, nil)
+
+		fullPage := make([]models.Chore, rebuildChorePageSize)
+		for i := range fullPage {
+			fullPage[i] = models.Chore{ID: uuid.New()}
+		}
+		groupRepo.On("ListMembershipsByGroup", ctx, groupID).Return([]models.GroupMembership{{UserID: member1}}, nil)
+		choreRepo.On("ListChoresByGroup", ctx, groupID, rebuildChorePageSize, 0).Return(fullPage, nil)
+		choreRepo.On("ListChoresByGroup", ctx, groupID, rebuildChorePageSize, rebuildChorePageSize).Return([]models.Chore{{ID: choreID}}, nil)
+		choreRepo.On("GetRotationStatesByChoreIDs", ctx, mock.MatchedBy(func(ids []uuid.UUID) bool {
+			return len(ids) == rebuildChorePageSize+1 && ids[rebuildChorePageSize] == choreID
+		})).Return([]models.ChoreRotationState{}, nil)
+
+		err := svc.RebuildMemberOrdersForGroup(ctx, groupID)
+		require.NoError(t, err)
+		choreRepo.AssertExpectations(t)
+	})
+}
+
+func TestReconcileMemberOrder(t *testing.T) {
+	a, b, c, d := uuid.New(), uuid.New(), uuid.New(), uuid.New()
+
+	tests := []struct {
+		name         string
+		order        []uuid.UUID
+		currentIndex int
+		eligible     []uuid.UUID
+		wantOrder    []uuid.UUID
+		wantIndex    int
+	}{
+		{
+			name:  "newcomer joins the end and whoever was next stays next",
+			order: []uuid.UUID{a, b}, currentIndex: 0, eligible: []uuid.UUID{a, b, c},
+			wantOrder: []uuid.UUID{a, b, c}, wantIndex: 0,
+		},
+		{
+			name:  "newcomer slots in after the person due next",
+			order: []uuid.UUID{a, b}, currentIndex: 1, eligible: []uuid.UUID{c, b, a},
+			wantOrder: []uuid.UUID{a, b, c}, wantIndex: 1,
+		},
+		{
+			name:  "rotation of one hands the next turn to the newcomer",
+			order: []uuid.UUID{a}, currentIndex: 0, eligible: []uuid.UUID{a, b},
+			wantOrder: []uuid.UUID{a, b}, wantIndex: 1,
+		},
+		{
+			name:  "hand-ordered rotation keeps its order",
+			order: []uuid.UUID{c, a, b}, currentIndex: 2, eligible: []uuid.UUID{a, b, c, d},
+			wantOrder: []uuid.UUID{c, a, b, d}, wantIndex: 2,
+		},
+		{
+			name:  "member who left drops out and the next person keeps their turn",
+			order: []uuid.UUID{a, b, c}, currentIndex: 2, eligible: []uuid.UUID{b, c},
+			wantOrder: []uuid.UUID{b, c}, wantIndex: 1,
+		},
+		{
+			name:  "when the person due next left, the turn passes to whoever followed them",
+			order: []uuid.UUID{a, b, c}, currentIndex: 1, eligible: []uuid.UUID{a, c},
+			wantOrder: []uuid.UUID{a, c}, wantIndex: 1,
+		},
+		{
+			name:  "turn wraps to the start when the last member left",
+			order: []uuid.UUID{a, b, c}, currentIndex: 2, eligible: []uuid.UUID{a, b},
+			wantOrder: []uuid.UUID{a, b}, wantIndex: 0,
+		},
+		{
+			name:  "everyone left",
+			order: []uuid.UUID{a, b}, currentIndex: 1, eligible: nil,
+			wantOrder: []uuid.UUID{}, wantIndex: 0,
+		},
+		{
+			name:  "empty rotation fills from the eligible members",
+			order: []uuid.UUID{}, currentIndex: 0, eligible: []uuid.UUID{a, b},
+			wantOrder: []uuid.UUID{a, b}, wantIndex: 0,
+		},
+		{
+			name:  "out-of-range index is repaired",
+			order: []uuid.UUID{a, b}, currentIndex: 7, eligible: []uuid.UUID{a, b},
+			wantOrder: []uuid.UUID{a, b}, wantIndex: 0,
+		},
+		{
+			name:  "duplicate entries collapse",
+			order: []uuid.UUID{a, b, a}, currentIndex: 2, eligible: []uuid.UUID{a, b},
+			wantOrder: []uuid.UUID{a, b}, wantIndex: 0,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			order, index := reconcileMemberOrder(tt.order, tt.currentIndex, tt.eligible)
+			assert.Equal(t, tt.wantOrder, order)
+			assert.Equal(t, tt.wantIndex, index)
+		})
+	}
 }
 
 func ptrTime(t time.Time) *time.Time {

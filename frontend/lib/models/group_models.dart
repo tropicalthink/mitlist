@@ -167,6 +167,36 @@ class InvitePreview {
       );
 }
 
+/// What an invite link shows someone who has no account yet
+/// (`GET /invites/{code}/preview`, plans/048 stage 7): "Sam invited you to
+/// Flat 3B". The code is the credential, so the server sends no ids, emails
+/// or the code itself. [inviterName] is a first name, null when the inviter
+/// is unknown or has left; [status] is [InviteStatus.valid] or
+/// [InviteStatus.expired].
+class PublicInvitePreview {
+  final String householdName;
+  final String? inviterName;
+  final int memberCount;
+  final InviteStatus status;
+
+  const PublicInvitePreview({
+    required this.householdName,
+    this.inviterName,
+    required this.memberCount,
+    required this.status,
+  });
+
+  factory PublicInvitePreview.fromJson(Map<String, dynamic> json) {
+    final inviter = (json['inviter_name'] as String?)?.trim();
+    return PublicInvitePreview(
+      householdName: json['household_name'] as String? ?? '',
+      inviterName: inviter == null || inviter.isEmpty ? null : inviter,
+      memberCount: (json['member_count'] as num?)?.toInt() ?? 0,
+      status: InviteStatus.fromWire(json['status'] as String?),
+    );
+  }
+}
+
 /// Whether an invite can still be accepted. Mirrors the backend's
 /// `InviteStatus*` constants.
 enum InviteStatus {

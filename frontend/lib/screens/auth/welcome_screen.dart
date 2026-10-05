@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../l10n/app_localizations.dart';
+import '../../models/group_models.dart';
+import '../../providers/group_provider.dart';
 import '../../providers/oauth_provider.dart';
 import '../../theme/animations.dart';
 import '../../theme/colors.dart';
@@ -16,6 +18,7 @@ import '../../utils/open_in_app.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/board/artifact_scraps.dart';
 import '../../widgets/board/cork_board.dart';
+import '../../services/product_events.dart';
 
 /// The first thing a new user sees: the cork board itself, with the app's name
 /// taped to it and four pinned scraps — a shopping list, a receipt, a chore
@@ -66,6 +69,13 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || _didStart) return;
       _didStart = true;
+      final invite = _inviteCode;
+      ProductEvents.instance.track(
+        ProductEventName.welcomeShown,
+        props: {
+          'path': invite != null && invite.isNotEmpty ? 'invite' : 'direct'
+        },
+      );
       if (MediaQuery.of(context).disableAnimations) {
         _landed = true;
         _controller.value = 1.0;
@@ -373,7 +383,12 @@ class _PillarCollage extends StatelessWidget {
 /// The invite "moment": the invitation arrives as a sticky note pinned to the
 /// board, in mitlist's own pinwall idiom. It drops in and settles into a
 /// slight tilt; under reduced-motion it simply appears, already tilted.
-class _InvitePinnedNote extends StatelessWidget {
+///
+/// Once the public preview answers it says who sent it and where it leads
+/// ("Sam invited you" / "to Flat 3B · 3 people", plans/048 stage 7), or that
+/// the link has expired. Until then, or when the lookup fails, it keeps the
+/// generic invite copy.
+class _InvitePinnedNote extends ConsumerWidget {
   const _InvitePinnedNote({required this.code});
 
   final String code;
@@ -381,8 +396,28 @@ class _InvitePinnedNote extends StatelessWidget {
   static const double _tilt = -0.045; // ~ -2.6°, like a note tacked to a board
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
+    final preview = ref
+        .watch(publicInvitePreviewProvider(code.trim().toUpperCase()))
+        .valueOrNull;
+    final (headline, subtitle) = switch (preview) {
+      null => (l10n.welcomeInviteHeadline, l10n.welcomeInviteSubtitle),
+      PublicInvitePreview(status: InviteStatus.expired) => (
+          l10n.welcomeInviteExpiredTitle,
+          l10n.welcomeInviteExpiredBody,
+        ),
+      PublicInvitePreview(
+        inviterName: final inviter?,
+        householdName: final household,
+        memberCount: final count,
+      ) =>
+        (l10n.welcomeInviteFrom(inviter), l10n.welcomeInviteTo(household, count)),
+      PublicInvitePreview(householdName: final household) => (
+          l10n.welcomeInviteHeadline,
+          l10n.welcomeInviteJoin(household),
+        ),
+    };
     final reduce = MediaQuery.of(context).disableAnimations;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final noteColor =
@@ -406,7 +441,9 @@ class _InvitePinnedNote extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                l10n.welcomeInviteHeadline.toUpperCase(),
+                headline.toUpperCase(),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       color: ink,
                       fontWeight: FontWeight.w800,
@@ -416,7 +453,9 @@ class _InvitePinnedNote extends StatelessWidget {
               ),
               const SizedBox(height: MitlistSpacing.space3),
               Text(
-                l10n.welcomeInviteSubtitle,
+                subtitle,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: ink,
                       height: 1.35,

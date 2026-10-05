@@ -413,17 +413,45 @@ func TestChoreRepository_ListDueAssignmentsByGroup_IncludesChoreName(t *testing.
 func TestChoreRepository_BulkUpdateRotationStates(t *testing.T) {
 	mock := newMockDB(t)
 	repo := NewChoreRepository(mock)
-	stateID := fixedUUID()
-	memberID := fixedUUID()
+	firstID := uuid.New()
+	secondID := uuid.New()
+	memberA := uuid.New()
+	memberB := uuid.New()
 
-	mock.ExpectExec("UPDATE chore_rotation_states AS crs").
-		WithArgs([]uuid.UUID{stateID}, [][]uuid.UUID{{memberID}}, []int32{0}).
+	// Orders of different lengths: the case a single unnest($2::uuid[][])
+	// statement could not express.
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE chore_rotation_states").
+		WithArgs([]uuid.UUID{memberA}, 0, firstID).
 		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
+	mock.ExpectExec("UPDATE chore_rotation_states").
+		WithArgs([]uuid.UUID{memberA, memberB}, 1, secondID).
+		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
+	mock.ExpectCommit()
 
-	err := repo.BulkUpdateRotationStates(context.Background(), []models.ChoreRotationState{{
-		ID: stateID, MemberOrder: []uuid.UUID{memberID}, CurrentIndex: 0,
-	}})
+	err := repo.BulkUpdateRotationStates(context.Background(), []models.ChoreRotationState{
+		{ID: firstID, MemberOrder: []uuid.UUID{memberA}, CurrentIndex: 0},
+		{ID: secondID, MemberOrder: []uuid.UUID{memberA, memberB}, CurrentIndex: 1},
+	})
 	require.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestChoreRepository_BulkUpdateRotationStates_RollsBackOnError(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewChoreRepository(mock)
+	stateID := uuid.New()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE chore_rotation_states").
+		WithArgs([]uuid.UUID{}, 0, stateID).
+		WillReturnError(assert.AnError)
+	mock.ExpectRollback()
+
+	err := repo.BulkUpdateRotationStates(context.Background(), []models.ChoreRotationState{
+		{ID: stateID, MemberOrder: []uuid.UUID{}, CurrentIndex: 0},
+	})
+	require.Error(t, err)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 

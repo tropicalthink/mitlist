@@ -12,6 +12,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/chore_provider.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/list_provider.dart';
+import '../../providers/onboarding_provider.dart';
 import '../../router.dart' show BottomNavScaffold, currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
 import '../../services/sse_service.dart' show SseEvent;
@@ -35,6 +36,7 @@ import '../../widgets/app_icon.dart';
 import '../../widgets/chip.dart';
 import '../../widgets/animated_strikethrough.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/empty_state_suggestions.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/list/list_settle_collapse.dart';
 import '../../widgets/list_entrance.dart';
@@ -314,9 +316,10 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
 
   Future<void> _onRefresh() => _loadChores();
 
-  Future<void> _addChore() async {
+  Future<void> _addChore({String? initialTitle}) async {
     unawaited(Haptics.light());
-    final created = await ChoreCreationSheet.show(context);
+    final created =
+        await ChoreCreationSheet.show(context, initialTitle: initialTitle);
     if (created != true || !mounted) return;
 
     // A queued or household-assigned chore may not be "Mine" yet, so a filtered
@@ -571,6 +574,12 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
 
       final repo = await ref.read(choreRepositoryProvider.future);
       await repo.completeOfflineFirst(id, groupId: _groupId);
+      final groupId = _groupId;
+      if (groupId != null) {
+        unawaited(markHubQuickStartStep(groupId, HubQuickStartStep.chore).then(
+          (_) => ref.invalidate(hubQuickStartPrefsProvider(groupId)),
+        ));
+      }
       if (!mounted) return;
       final isRecurring =
           chore.frequency != 'none' && chore.frequency != 'adaptive';
@@ -927,6 +936,10 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     final hasAny = _chores.isNotEmpty || _recentlyDone.isNotEmpty;
 
     final showHeader = _hasHousehold && !_isLoading && !_hasError && hasAny;
+    // The no-household and no-chores states carry their own button; one
+    // primary action per screen, so the FAB waits until there is a list.
+    final showsEmptyState =
+        !_isLoading && !_hasError && (!_hasHousehold || !hasAny);
 
     // Size the pinned section header against the user's actual text scale so
     // larger accessibility font settings don't clip the label.
@@ -965,16 +978,21 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
             ),
         ],
       ),
-      floatingActionButton: AppButton(
-        size: AppButtonSize.lg,
-        onPressed:
-            _hasHousehold ? _addChore : () => context.goNamed('groupsList'),
-        icon: AppIcon(
-          name: _hasHousehold ? 'plus' : 'userGroup',
-        ),
-        text: _hasHousehold ? l10n.choreAddChore : l10n.choreAddHouseholds,
-        tooltip: _hasHousehold ? l10n.choreAddChore : l10n.choreAddHouseholds,
-      ),
+      floatingActionButton: showsEmptyState
+          ? null
+          : AppButton(
+              size: AppButtonSize.lg,
+              onPressed: _hasHousehold
+                  ? _addChore
+                  : () => context.goNamed('groupsList'),
+              icon: AppIcon(
+                name: _hasHousehold ? 'plus' : 'userGroup',
+              ),
+              text:
+                  _hasHousehold ? l10n.choreAddChore : l10n.choreAddHouseholds,
+              tooltip:
+                  _hasHousehold ? l10n.choreAddChore : l10n.choreAddHouseholds,
+            ),
       body: RefreshIndicator(
         color: Theme.of(context).colorScheme.primary,
         onRefresh: _onRefresh,
@@ -1067,6 +1085,25 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
                             color: Theme.of(context).colorScheme.onPrimary,
                           ),
                           onPressed: _addChore,
+                        ),
+                        SizedBox(
+                          width: double.infinity,
+                          child: EmptyStateSuggestions(
+                            suggestions: [
+                              for (final title in [
+                                l10n.choreSuggestionBins,
+                                l10n.choreSuggestionBathroom,
+                                l10n.choreSuggestionVacuum,
+                                l10n.choreSuggestionKitchen,
+                                l10n.choreSuggestionPlants,
+                                l10n.choreSuggestionDishwasher,
+                              ])
+                                (
+                                  label: title,
+                                  onTap: () => _addChore(initialTitle: title),
+                                ),
+                            ],
+                          ),
                         ),
                       ],
                     ),

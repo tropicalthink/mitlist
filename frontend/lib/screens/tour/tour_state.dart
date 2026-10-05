@@ -81,7 +81,6 @@ class TourState {
     required this.pizzaSplit,
     required this.repairCents,
     required this.chores,
-    required this.ingredientsAdded,
   });
 
   final String householdName;
@@ -102,9 +101,6 @@ class TourState {
   final int repairCents;
 
   final List<TourChore> chores;
-
-  /// Whether the recipe's ingredients have been pushed onto the list.
-  final bool ingredientsAdded;
 
   TourMember get me => members.first;
 
@@ -141,7 +137,6 @@ class TourState {
     List<TourListItem>? items,
     Set<String>? pizzaSplit,
     List<TourChore>? chores,
-    bool? ingredientsAdded,
   }) =>
       TourState(
         householdName: householdName,
@@ -152,7 +147,6 @@ class TourState {
         pizzaSplit: pizzaSplit ?? this.pizzaSplit,
         repairCents: repairCents,
         chores: chores ?? this.chores,
-        ingredientsAdded: ingredientsAdded ?? this.ingredientsAdded,
       );
 }
 
@@ -164,9 +158,6 @@ const tourInesId = 'ines';
 const tourChoreBinsId = 'bins';
 const tourChoreBathroomId = 'bathroom';
 const tourChorePlantsId = 'plants';
-
-/// Ingredients the recipe page pushes onto the list, in order.
-const tourRecipeIngredients = ['Eggs', 'Tinned tomatoes', 'Feta'];
 
 TourState seedTourState() => const TourState(
       householdName: 'Flat 3B',
@@ -212,7 +203,6 @@ TourState seedTourState() => const TourState(
           everyDays: 7,
         ),
       ],
-      ingredientsAdded: false,
     );
 
 class TourSandbox extends StateNotifier<TourState> {
@@ -255,19 +245,6 @@ class TourSandbox extends StateNotifier<TourState> {
       chores: [
         for (final chore in state.chores)
           if (chore.id == id) chore.copyWith(done: !chore.done) else chore,
-      ],
-    );
-  }
-
-  /// Pushes the recipe's ingredients onto the list once.
-  void addRecipeIngredients() {
-    if (state.ingredientsAdded) return;
-    state = state.copyWith(
-      ingredientsAdded: true,
-      items: [
-        ...state.items,
-        for (final name in tourRecipeIngredients)
-          TourListItem(id: 'r${_nextItem++}', name: name, checked: false),
       ],
     );
   }
