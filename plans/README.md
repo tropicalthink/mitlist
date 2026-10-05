@@ -102,6 +102,7 @@ traceability.
 | 045 | SPIKE: household dashboard as primary landing surface | P3 | L | — | DONE ✓v |
 | 046 | Rank grocery suggestions with one shared household prior | P2 | M–L | — | DONE |
 | 047 | Home screen widgets and quick actions (staged; per-stage table in the plan) | P2 | XL | — | IN PROGRESS (all stages built 2026-10-03; device, push and APNs checks open) |
+| 048 | First run and Home — stop new users feeling lost (staged; stages 1–3 and 8 parallel, 4→5→6→7 in order) | P1 | XL | — | TODO (planned 2026-10-05) |
 
 ## Reconcile log — 2026-07-04 (HEAD `eca86757`, Batch-2 work uncommitted in working tree)
 
