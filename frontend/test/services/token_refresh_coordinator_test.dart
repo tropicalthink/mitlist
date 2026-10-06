@@ -112,6 +112,30 @@ void main() {
       expect(store.refreshToken, 'old-refresh');
     });
 
+    for (final status in [429, 500, 502, 503]) {
+      test('$status keeps the session: transportError, tokens untouched',
+          () async {
+        // A deploy restarting the API, a gateway error or a rate limit says
+        // nothing about the token; treating it as rejected signed people out.
+        final store = _MemoryTokenStore(refreshToken: 'old-refresh');
+        final dio = _dioWithRefresh((options, handler) async {
+          handler.reject(DioException(
+            requestOptions: options,
+            response: Response(requestOptions: options, statusCode: status),
+            type: DioExceptionType.badResponse,
+          ));
+        });
+
+        final outcome =
+            await TokenRefreshCoordinator(store, dio).refreshDetailed();
+
+        expect(outcome.type, TokenRefreshOutcomeType.transportError);
+        expect(store.saveCount, 0);
+        expect(store.clearCount, 0);
+        expect(store.refreshToken, 'old-refresh');
+      });
+    }
+
     test('missing refresh token returns authRejected', () async {
       final store = _MemoryTokenStore();
       final dio = _dioWithRefresh((options, handler) async {

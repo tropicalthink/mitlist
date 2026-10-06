@@ -7,6 +7,7 @@ import '../services/connectivity_service.dart';
 import '../services/outbox_coordinator.dart';
 import '../storage/app_database.dart';
 import 'account_provider.dart';
+import 'auth_provider.dart';
 import 'chore_provider.dart';
 import 'home_widgets_provider.dart';
 import 'finance_provider.dart';
@@ -42,6 +43,7 @@ final outboxCoordinatorProvider =
     pinwallRepo: pinwallRepo,
     accountRepo: accountRepo,
     widgetOpsRepo: widgetOpsRepo,
+    isSignedIn: () => ref.read(authStateProvider),
   );
 
   coordinator.start();

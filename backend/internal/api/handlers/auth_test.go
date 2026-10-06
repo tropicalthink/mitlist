@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -9,7 +10,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/mitlist-app/mitlist/internal/api"
 	appcheckservice "github.com/mitlist-app/mitlist/internal/services/appcheck"
+	jwtservice "github.com/mitlist-app/mitlist/internal/services/jwt"
 	turnstileservice "github.com/mitlist-app/mitlist/internal/services/turnstile"
 )
 
@@ -444,6 +447,29 @@ func TestAuth_Refresh_RotatesToken(t *testing.T) {
 	// Old refresh token should now be revoked
 	rec = execRequest(t, router, "POST", "/api/v1/auth/token/refresh", body, "")
 	requireStatus(t, rec, http.StatusUnauthorized)
+}
+
+// The app signs the person out on a refresh 401, so only a dead session may
+// answer one: a failing session store is a 5xx the app retries later.
+func TestRespondRefreshError_OnlyDeadSessionsAre401(t *testing.T) {
+	cases := []struct {
+		name string
+		err  error
+		want int
+	}{
+		{"invalid token", fmt.Errorf("%w: expired", jwtservice.ErrInvalidToken), http.StatusUnauthorized},
+		{"revoked token", jwtservice.ErrRevokedToken, http.StatusUnauthorized},
+		{"account gone", api.ErrUnauthorized, http.StatusUnauthorized},
+		{"account inactive", &api.ValidationError{Message: "account is inactive"}, http.StatusUnauthorized},
+		{"session store down", fmt.Errorf("check refresh session: %w", context.DeadlineExceeded), http.StatusInternalServerError},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			rec := httptest.NewRecorder()
+			respondRefreshError(rec, tc.err)
+			assert.Equal(t, tc.want, rec.Code)
+		})
+	}
 }
 
 func TestAuth_Logout(t *testing.T) {

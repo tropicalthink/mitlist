@@ -71,7 +71,12 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
   void _ensureDeferredInit() {
     if (_deferredInitDone || !ref.read(authStateProvider)) return;
     _deferredInitDone = true;
-    ref.read(outboxCoordinatorProvider);
+    // Drains are skipped while signed out; send whatever waited for this
+    // sign-in.
+    unawaited(ref
+        .read(outboxCoordinatorProvider.future)
+        .then((coordinator) => coordinator.drain())
+        .catchError((Object _) {}));
     // Cold-start pull of the active household, so screens never sit on stale
     // cache without at least attempting (and surfacing) a refresh.
     unawaited(ref.read(initialSyncProvider.notifier).start());

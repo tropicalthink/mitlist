@@ -124,6 +124,16 @@ class TokenRefreshInterceptor extends Interceptor {
       return;
     }
 
+    // Sent without a session (signed out, or before sign-in finished): there
+    // is nothing to refresh, and treating it as a dead session would wipe a
+    // session saved since, e.g. by a sign-in racing a leftover outbox op.
+    // The web keeps its refresh token in a cookie, so it may still refresh.
+    if (!kIsWeb &&
+        err.requestOptions.headers[ApiConfig.authorizationHeader] == null) {
+      handler.next(err);
+      return;
+    }
+
     // Snapshot the token we're refreshing against so we can tell, on failure,
     // whether someone else rotated it underneath us.
     final attemptedRefreshToken = await _tokenStore.getRefreshToken();
@@ -170,14 +180,11 @@ class TokenRefreshInterceptor extends Interceptor {
   }
 
   Future<void> _onRefreshFailure(String? attemptedRefreshToken) async {
-    // Defensive: if the stored refresh token changed since we started, another
-    // path successfully rotated it — don't wipe a freshly-valid session.
+    // Only the session that was refused may be cleared. If the stored refresh
+    // token changed since we started (another path rotated it, or the person
+    // signed in again), that newer session is not ours to wipe.
     final current = await _tokenStore.getRefreshToken();
-    if (attemptedRefreshToken != null &&
-        current != null &&
-        current != attemptedRefreshToken) {
-      return;
-    }
+    if (current != attemptedRefreshToken) return;
     if (_ref != null) {
       final authService = await _ref.read(authServiceProviderAsync.future);
       await authService.clearLocalSession();
