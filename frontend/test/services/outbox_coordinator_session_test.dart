@@ -82,7 +82,7 @@ void main() {
   late _SpyListRepository listRepo;
   late OutboxCoordinator coordinator;
 
-  void build() {
+  void build({bool Function()? isSignedIn}) {
     db = AppDatabase(
       drift.DatabaseConnection(
         NativeDatabase.memory(),
@@ -99,6 +99,7 @@ void main() {
       recipeRepo: _QuietRecipeRepository(db),
       choreRepo: _QuietChoreRepository(db),
       pinwallRepo: _QuietPinwallRepository(db),
+      isSignedIn: isSignedIn,
       sessionIdleWindow: _window,
     );
   }
@@ -108,6 +109,22 @@ void main() {
     connectivity.dispose();
     await db.close();
   }
+
+  testWidgets('nothing drains while signed out', (tester) async {
+    // Ops left over at sign-out used to go out without a session; each 401
+    // then ran the refresh-failure path, which could wipe a new sign-in.
+    var signedIn = false;
+    build(isSignedIn: () => signedIn);
+
+    await coordinator.drain();
+    await coordinator.flushSession(reason: 'route change');
+    expect(listRepo.drainCalls, 0);
+
+    signedIn = true;
+    await coordinator.drain();
+    expect(listRepo.drainCalls, 1);
+    await tearDownAll(tester);
+  });
 
   testWidgets('noteLocalWrite does not drain immediately', (tester) async {
     build();

@@ -23,6 +23,7 @@ import '../../providers/theme_provider.dart';
 import '../../providers/text_settings_provider.dart';
 import '../../providers/locale_provider.dart';
 import '../../providers/list_provider.dart' show appDatabaseProvider;
+import '../../repositories/account_repository.dart';
 import '../../providers/finance_provider.dart';
 import '../../providers/calendar_provider.dart';
 import '../../router.dart' show currentGroupIdProvider;
@@ -412,7 +413,11 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     if (_isSaving) return;
     _isSaving = true;
     try {
-      final pending = await ref.read(appDatabaseProvider).outboxCount();
+      final db = ref.read(appDatabaseProvider);
+      // A queued UI language is not the person's data and must not hold
+      // sign-out hostage; the app reports it again with the next session.
+      await AccountRepository.discardQueued(db);
+      final pending = await db.outboxCount();
       if (pending > 0) {
         if (mounted) {
           AppToast.error(

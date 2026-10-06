@@ -401,23 +401,40 @@ func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	credential := refreshCredential(r, req.RefreshToken)
 	claims, err := h.jwtService.ValidateRefreshToken(credential)
 	if err != nil {
-		api.RespondError(w, api.ErrUnauthorized)
+		respondRefreshError(w, err)
 		return
 	}
 	// A locked guest may return only by presenting a still-valid refresh
 	// session. Normal inactive accounts are not reactivated here.
 	if userID, parseErr := uuid.Parse(claims.Subject); parseErr == nil {
 		if err := h.userService.ReactivateGuestForRefresh(r.Context(), userID); err != nil {
-			api.RespondError(w, api.ErrUnauthorized)
+			respondRefreshError(w, err)
 			return
 		}
 	}
 	access, refresh, err := h.jwtService.RotateRefreshToken(credential)
 	if err != nil {
-		api.RespondError(w, api.ErrUnauthorized)
+		respondRefreshError(w, err)
 		return
 	}
 	tokenResponse(w, r, http.StatusOK, nil, access, refresh)
+}
+
+// respondRefreshError answers 401 only when the session itself is over: the
+// token is invalid or revoked, or the account is gone or inactive. Apps sign
+// the person out on that 401, so a database hiccup must not look like one;
+// it gets a 5xx and the app keeps its session and retries later.
+func respondRefreshError(w http.ResponseWriter, err error) {
+	var validationErr *api.ValidationError
+	if errors.Is(err, jwtservice.ErrInvalidToken) ||
+		errors.Is(err, jwtservice.ErrRevokedToken) ||
+		errors.Is(err, api.ErrUnauthorized) ||
+		errors.As(err, &validationErr) {
+		api.RespondError(w, api.ErrUnauthorized)
+		return
+	}
+	log.Error().Err(err).Msg("token refresh failed")
+	api.RespondError(w, err)
 }
 
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {

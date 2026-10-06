@@ -1,8 +1,10 @@
 import 'dart:async';
 
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/auth_models.dart';
+import '../services/server_language_sync.dart' show kQueuedServerLanguageKey;
 import '../storage/app_database.dart';
 import 'outbox_drainer.dart';
 
@@ -24,8 +26,20 @@ class AccountRepository {
   static const setLanguageOp = 'setLanguage';
 
   /// Account ops target the one signed-in account, so they share a fixed
-  /// entity id; sign-out wipes the outbox, so it never outlives the account.
+  /// entity id; sign-out discards them ([discardQueued]), so they never
+  /// outlive the account.
   static const _accountEntityId = 'me';
+
+  /// Sign-out: drops queued account ops. They belong to the account being
+  /// signed out and cannot be sent without its session; left behind, they
+  /// would also keep the outbox non-empty, which stops the local data wipe.
+  /// Also forgets that the language was queued, so it is reported again
+  /// with the next session.
+  static Future<void> discardQueued(AppDatabase db) async {
+    await db.deleteOutboxOpsByTypeAndEntity(setLanguageOp, _accountEntityId);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(kQueuedServerLanguageKey);
+  }
 
   AccountRepository({
     required AppDatabase db,

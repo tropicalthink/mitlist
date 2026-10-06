@@ -159,7 +159,7 @@ class TokenRefreshCoordinator {
       if (kDebugMode) {
         _logger.e('Token refresh failed (status: ${e.response?.statusCode})');
       }
-      if (_isTransportError(e)) {
+      if (_isTransportError(e) || !_isAuthRejection(e)) {
         return const TokenRefreshOutcome.transportError();
       }
       return const TokenRefreshOutcome.authRejected();
@@ -169,6 +169,15 @@ class TokenRefreshCoordinator {
       }
     }
     return const TokenRefreshOutcome.authRejected();
+  }
+
+  /// Only the server refusing the token ends the session. A 5xx while the
+  /// API restarts for a deploy, a gateway error or a 429 says nothing about
+  /// the token: callers keep the session and try again later, instead of
+  /// signing the person out.
+  bool _isAuthRejection(DioException e) {
+    final status = e.response?.statusCode;
+    return status == 400 || status == 401 || status == 403;
   }
 
   bool _isTransportError(DioException e) {

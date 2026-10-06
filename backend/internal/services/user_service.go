@@ -344,6 +344,9 @@ func (s *UserService) validateCurrentUser(ctx context.Context, user *models.User
 func (s *UserService) ReactivateGuestForRefresh(ctx context.Context, userID uuid.UUID) error {
 	user, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
+		if isNotFound(err) {
+			return api.ErrUnauthorized
+		}
 		return err
 	}
 	if !user.IsGuest {

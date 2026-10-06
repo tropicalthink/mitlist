@@ -46,15 +46,17 @@ Do not proceed if any job is red.
    git commit -m "chore(release): bump to vX.Y.Z"
    ```
 
-### 3. Tag the release
+### 3. Tag the release (automatic)
 
-```bash
-git tag -a vX.Y.Z -m "vX.Y.Z"
-git push origin vX.Y.Z
-```
+Pushing the version bump to `new-main-fr` runs
+`.forgejo/workflows/release-tag.yml`, which creates the annotated tag `vX.Y.Z`
+on the commit that set the version and pushes it (and mirrors it to GitHub).
+An existing tag is never moved, so a build-number-only bump keeps the tag on
+the first build of that version. To backfill a missed tag, run the workflow
+by hand (workflow_dispatch); it tags the current version.
 
-Tags are lightweight version markers — they do **not** trigger a deploy on
-their own (see Step 5).
+Tags are version markers only — they do **not** trigger a deploy on their own
+(see Step 5).
 
 ### 4. Create a Gitea Release
 

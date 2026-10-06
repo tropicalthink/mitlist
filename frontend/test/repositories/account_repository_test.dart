@@ -4,9 +4,11 @@ import 'package:dio/dio.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:mitlist/models/auth_models.dart';
 import 'package:mitlist/repositories/account_repository.dart';
+import 'package:mitlist/services/server_language_sync.dart';
 import 'package:mitlist/storage/app_database.dart';
 
 AppDatabase _memoryDb() => AppDatabase(
@@ -49,6 +51,29 @@ void main() {
     expect(ops, hasLength(1));
     expect(jsonDecode(ops.single.payloadJson), {'language': 'de'});
     expect(ops.single.entityType, 'account');
+  });
+
+  test('sign-out discards the queued language and its marker', () async {
+    SharedPreferences.setMockInitialValues(
+        {kQueuedServerLanguageKey: 'user-1:de'});
+    await build().queueLanguage('de');
+    await db.enqueueOutbox(
+      id: 'other',
+      type: 'createListItem',
+      payload: const {},
+      idempotencyKey: 'other',
+      entityType: 'list_item',
+      entityId: 'item-1',
+    );
+
+    await AccountRepository.discardQueued(db);
+
+    expect(await db.getOutboxOpsByType(AccountRepository.setLanguageOp),
+        isEmpty);
+    expect(await db.outboxCount(), 1, reason: "the person's data stays");
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString(kQueuedServerLanguageKey), isNull,
+        reason: 'the next session reports the language again');
   });
 
   test('only the newest queued language survives', () async {

@@ -44,6 +44,11 @@ class OutboxCoordinator {
   /// Requests replayed from home screen widgets and other native surfaces
   /// (plans/047). Optional for the same reason.
   final WidgetOpsRepository? _widgetOpsRepo;
+
+  /// Whether a session is signed in. Ops left in the outbox at sign-out stay
+  /// put until the next sign-in instead of being sent without a session.
+  /// Optional; null means always.
+  final bool Function()? _isSignedIn;
   final Logger _logger = Logger();
 
   /// Fallback flush delay for an open sync session; see [noteLocalWrite].
@@ -65,10 +70,12 @@ class OutboxCoordinator {
     required PinwallRepository pinwallRepo,
     AccountRepository? accountRepo,
     WidgetOpsRepository? widgetOpsRepo,
+    bool Function()? isSignedIn,
     this.sessionIdleWindow = kSyncSessionIdleWindow,
   })  : _db = db,
         _accountRepo = accountRepo,
         _widgetOpsRepo = widgetOpsRepo,
+        _isSignedIn = isSignedIn,
         _connectivity = connectivity,
         _listRepo = listRepo,
         _financeRepo = financeRepo,
@@ -145,6 +152,10 @@ class OutboxCoordinator {
   /// Safe to call multiple times; internally guarded by [_isDraining].
   Future<void> drain({bool force = false}) async {
     if (_isDraining) return;
+    if (_isSignedIn?.call() == false) {
+      _logger.i('Signed out; skipping outbox drain');
+      return;
+    }
     // Set the flag BEFORE the first await so concurrent synchronous callers
     // are blocked even while isOnline() is still resolving.
     _isDraining = true;

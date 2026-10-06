@@ -1,0 +1,63 @@
+# Tag every release. A release is the commit that changes `version:` in
+# frontend/pubspec.yaml ("chore(release): version X.Y.Z (build N)"); this
+# workflow gives it the annotated tag vX.Y.Z that RELEASING.md step 3 used to
+# ask for by hand, and that was easy to forget (v1.0.4 went out untagged).
+#
+# - Idempotent: an existing tag is never moved. A build-only bump
+#   (1.0.4+15 -> 1.0.4+16) keeps the tag on the first build of that version.
+# - The tag goes on the commit that set the version, not on the pushed head,
+#   so a push carrying the bump plus later commits still tags the bump.
+# - Tags pushed with the job token do not trigger other workflows, so the
+#   GitHub mirror is updated here too (when MIRROR_GITHUB_TOKEN is set).
+# - workflow_dispatch tags the current version, to backfill a missed one.
+name: release-tag
+
+on:
+  push:
+    branches: [new-main-fr]
+    paths: [frontend/pubspec.yaml]
+  workflow_dispatch:
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Tag the release
+        env:
+          MIRROR_GITHUB_TOKEN: ${{ secrets.MIRROR_GITHUB_TOKEN }}
+        run: |
+          set -eu
+          full=$(sed -n 's/^version:[[:space:]]*\([^[:space:]]*\).*/\1/p' frontend/pubspec.yaml)
+          test -n "$full"
+          version=${full%%+*}
+          build=${full#*+}
+          [ "$build" = "$full" ] && build=""
+          tag="v$version"
+
+          git fetch -q --tags origin
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            echo "$tag already exists at $(git rev-list -n1 "$tag"); nothing to do"
+            exit 0
+          fi
+
+          # The oldest commit whose pubspec carries this version: the release.
+          version_re=$(printf '%s' "$version" | sed 's/\./\\./g')
+          commit=$(git log -E --reverse --format=%H \
+            -G"^version:[[:space:]]*$version_re([+[:space:]]|\$)" \
+            -- frontend/pubspec.yaml | head -n1)
+          test -n "$commit"
+
+          git config user.name "mitlist release bot"
+          git config user.email "release-bot@mitlist.me"
+          git tag -a "$tag" "$commit" -m "$tag${build:+ (build $build)}"
+          git push origin "refs/tags/$tag"
+          echo "tagged $tag at $commit"
+
+          if [ -n "${MIRROR_GITHUB_TOKEN:-}" ]; then
+            git push "https://x-access-token:${MIRROR_GITHUB_TOKEN}@github.com/tropicalthink/mitlist.git" \
+              "refs/tags/$tag"
+          fi

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../repositories/account_repository.dart';
 import '../services/auth_service.dart';
 import '../exceptions.dart';
 import 'list_provider.dart' show appDatabaseProvider;
@@ -24,6 +25,9 @@ final authServiceProviderAsync = FutureProvider<AuthService>((ref) async {
         // signed out. Their queue goes too: the app imports it on every
         // resume, so anything left is from a session that is over.
         await WidgetBridge.instance.clearAll();
+        // The UI language is queued per account; the next sign-in reports
+        // it again.
+        await AccountRepository.discardQueued(db);
         if (await db.outboxCount() != 0) return;
         await db.clearAllUserData();
       });
