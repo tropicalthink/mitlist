@@ -47,7 +47,7 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/tflite_flutter/ios"
 
 SPEC CHECKSUMS:
-  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+  Flutter: 71a624a5bc0c04062bf19101d501e466baf2fb47
   onnxruntime: bba8c0e76806c81d26f12846cc5323f5a252e393
   onnxruntime-c: 07cfff40dda7e1c54a4350bb2ad226c63150fce3
   TensorFlowLiteC: 20785a69299185a379ba9852b6625f00afd7984a
