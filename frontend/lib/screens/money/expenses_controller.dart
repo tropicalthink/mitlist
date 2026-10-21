@@ -182,7 +182,11 @@ class ExpensesController extends ChangeNotifier {
   List<Settlement> _settlements = [];
   bool _isRespondingToSettlement = false;
 
-  bool _listenersSetUp = false;
+  /// The household the cache listeners below are bound to, and their
+  /// subscriptions. Rebound on a household switch so a stale group's stream
+  /// can never repaint the screen with another household's money.
+  String? _listeningGroupId;
+  final List<ProviderSubscription<Object?>> _subscriptions = [];
   String? _currentUserId;
   AppLocalizations? _l10n;
 
@@ -267,7 +271,16 @@ class ExpensesController extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _closeSubscriptions();
     super.dispose();
+  }
+
+  void _closeSubscriptions() {
+    for (final sub in _subscriptions) {
+      sub.close();
+    }
+    _subscriptions.clear();
+    _listeningGroupId = null;
   }
 
   void _notify() {
@@ -319,13 +332,12 @@ class ExpensesController extends ChangeNotifier {
           ? null
           : await repo.watchSummaryByGroup(validGroupId).first;
 
-      if (validGroupId != null) {
-        // Cache-backed: refreshes from the network, falls back to the stored
-        // list offline, and keeps still-queued local settlements spliced in.
-        _settlements = await repo.loadSettlements(validGroupId);
-      } else {
-        _settlements = [];
-      }
+      // Cache first (queued local settlements included); the network
+      // refresh runs below with the other background work, so an offline
+      // launch never waits on it.
+      _settlements = validGroupId == null
+          ? []
+          : await repo.getSettlementsOnce(validGroupId);
 
       if (_disposed) return;
 
@@ -349,28 +361,40 @@ class ExpensesController extends ChangeNotifier {
       if (validGroupId != null) {
         unawaited(_loadHouseholdContext(repo, validGroupId, l10n));
         unawaited(_refreshExpensesPage(repo, validGroupId));
-        if (!_listenersSetUp) {
-          _listenersSetUp = true;
-          ref.listenManual(cachedExpensesByGroupProvider(validGroupId),
-              (prev, next) {
+        unawaited(_refreshSettlements(repo, validGroupId));
+        if (_listeningGroupId != validGroupId) {
+          _closeSubscriptions();
+          _listeningGroupId = validGroupId;
+          _subscriptions.add(ref.listenManual<AsyncValue<List<Expense>>>(
+              cachedExpensesByGroupProvider(validGroupId), (prev, next) {
             next.whenData((data) {
-              if (_disposed) return;
+              if (_disposed || _groupId != validGroupId) return;
               // refreshGroup clears local rows before upserting; ignore the
               // transient empty emission so the empty state does not flash.
               if (data.isEmpty && _isRefreshing) return;
               _applyTimelineExpenses(data);
             });
-          });
-          ref.listenManual(cachedFinanceSummaryByGroupProvider(validGroupId),
-              (prev, next) {
+          }));
+          _subscriptions.add(ref.listenManual<AsyncValue<FinanceSummary?>>(
+              cachedFinanceSummaryByGroupProvider(validGroupId), (prev, next) {
             next.whenData((s) {
-              if (_disposed) return;
+              if (_disposed || _groupId != validGroupId) return;
               final currentL10n = _l10n;
               if (currentL10n == null) return;
               _applyFinanceSummary(s, _currentUserId, currentL10n);
               _notify();
             });
-          });
+          }));
+          // A queued settlement draining (local row → server row) or a
+          // refresh rewriting the blob repaints the Settlements tab.
+          _subscriptions.add(ref.listenManual<AsyncValue<List<Settlement>>>(
+              cachedSettlementsByGroupProvider(validGroupId), (prev, next) {
+            next.whenData((data) {
+              if (_disposed || _groupId != validGroupId) return;
+              _settlements = data;
+              _notify();
+            });
+          }));
         }
       } else {
         if (_disposed) return;
@@ -458,6 +482,29 @@ class ExpensesController extends ChangeNotifier {
       _isLoading = false;
       _notify();
     }
+  }
+
+  /// Network refresh of the settlements blob. Offline the repository answers
+  /// with the cache, so this never surfaces an error.
+  Future<void> _refreshSettlements(
+      FinanceRepository repo, String groupId) async {
+    try {
+      final fresh = await repo.loadSettlements(groupId);
+      if (_disposed || _groupId != groupId) return;
+      _settlements = fresh;
+      _notify();
+    } catch (e) {
+      _logger.w('Background settlements refresh failed', error: e);
+    }
+  }
+
+  /// Repaints the settlements from the local cache after a local write.
+  Future<void> _reloadSettlementsFromCache(
+      FinanceRepository repo, String groupId) async {
+    final cached = await repo.getSettlementsOnce(groupId);
+    if (_disposed || _groupId != groupId) return;
+    _settlements = cached;
+    _notify();
   }
 
   void _applyTimelineExpenses(List<Expense> expenses) {
@@ -640,7 +687,7 @@ class ExpensesController extends ChangeNotifier {
         ),
         createdBy: _currentUserId ?? '',
       );
-      await load(l10n);
+      await _reloadSettlementsFromCache(repo, groupId);
     } finally {
       if (!_disposed) {
         _isSettling = false;
@@ -649,10 +696,15 @@ class ExpensesController extends ChangeNotifier {
     }
   }
 
+  /// Offline-first: the row leaves the timeline now and the `DELETE` queues
+  /// (or, for an expense that never synced, its queued create is dropped).
   Future<void> deleteExpense(String expenseId, AppLocalizations l10n) async {
-    final service = await ref.read(financeServiceProviderAsync.future);
-    await service.deleteExpense(expenseId);
-    await load(l10n);
+    final groupId = _groupId;
+    final repo = await ref.read(financeRepositoryProvider.future);
+    await repo.deleteExpenseOfflineFirst(expenseId);
+    if (_disposed || groupId == null || _groupId != groupId) return;
+    _l10n = l10n;
+    _applyTimelineExpenses(await repo.getExpensesByGroupOnce(groupId));
   }
 
   /// Confirms or declines a settlement awaiting the current user's response.
@@ -686,21 +738,21 @@ class ExpensesController extends ChangeNotifier {
     }
   }
 
-  /// Cancels the current user's own pending settlement.
+  /// Cancels the current user's own pending settlement. Offline-first: the
+  /// row disappears now and the `DELETE` queues. Cancelling one that never
+  /// synced just drops its queued create — there is nothing on the server to
+  /// delete, and sending a local id would 404.
   Future<void> cancelSettlement(
       String settlementId, AppLocalizations l10n) async {
     final groupId = _groupId;
-    // Cancelling one that never synced just drops the queued op — there is
-    // nothing on the server to delete, and POSTing a local id would 404.
-    if (isLocalSettlement(settlementId) && groupId != null) {
-      final repo = await ref.read(financeRepositoryProvider.future);
+    if (groupId == null) return;
+    final repo = await ref.read(financeRepositoryProvider.future);
+    if (isLocalSettlement(settlementId)) {
       await repo.cancelLocalSettlement(groupId, settlementId);
-      await load(l10n);
-      return;
+    } else {
+      await repo.cancelSettlementOfflineFirst(groupId, settlementId);
     }
-    final service = await ref.read(financeServiceProviderAsync.future);
-    await service.cancelSettlement(settlementId);
-    await load(l10n);
+    await _reloadSettlementsFromCache(repo, groupId);
   }
 
   /// Whether [settlementId] exists only in the local outbox. Actions that need

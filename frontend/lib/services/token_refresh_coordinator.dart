@@ -168,7 +168,11 @@ class TokenRefreshCoordinator {
         _logger.e('Token refresh failed (${e.runtimeType})');
       }
     }
-    return const TokenRefreshOutcome.authRejected();
+    // Neither a pair nor a refusal: a 200 that is not our JSON (a captive
+    // portal's login page on hotel wifi), or a local failure storing the
+    // pair. The server never said the token is bad, so the session stays and
+    // the next request tries again; only [_isAuthRejection] ends it.
+    return const TokenRefreshOutcome.transportError();
   }
 
   /// Only the server refusing the token ends the session. A 5xx while the

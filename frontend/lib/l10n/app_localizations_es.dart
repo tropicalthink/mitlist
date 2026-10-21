@@ -6751,6 +6751,97 @@ class AppLocalizationsEs extends AppLocalizations {
   String get outboxOpUncheckItem => 'Desmarcar';
 
   @override
+  String get outboxOpCreateList => 'Crear lista';
+
+  @override
+  String get outboxOpUpdateList => 'Editar lista';
+
+  @override
+  String get outboxOpArchiveList => 'Archivar lista';
+
+  @override
+  String get outboxOpDeleteList => 'Eliminar lista';
+
+  @override
+  String get outboxOpSetListReminder => 'Fijar recordatorio de lista';
+
+  @override
+  String get outboxOpAddProduct => 'Añadir producto';
+
+  @override
+  String get outboxOpAddShoppingLocation => 'Añadir tienda';
+
+  @override
+  String get outboxOpUpdateChore => 'Editar tarea';
+
+  @override
+  String get outboxOpDeleteChore => 'Eliminar tarea';
+
+  @override
+  String get outboxOpAddSubtask => 'Añadir subtarea';
+
+  @override
+  String get outboxOpUpdateSubtask => 'Actualizar subtarea';
+
+  @override
+  String get outboxOpDeleteSubtask => 'Eliminar subtarea';
+
+  @override
+  String get outboxOpCreateRecurringExpense => 'Añadir gasto recurrente';
+
+  @override
+  String get outboxOpUpdateRecurringExpense => 'Actualizar gasto recurrente';
+
+  @override
+  String get outboxOpDeleteRecurringExpense => 'Eliminar gasto recurrente';
+
+  @override
+  String get outboxOpCancelSettlement => 'Cancelar liquidación';
+
+  @override
+  String get outboxOpAddMeal => 'Planificar comida';
+
+  @override
+  String get outboxOpUpdateMeal => 'Actualizar comida';
+
+  @override
+  String get outboxOpRemoveMeal => 'Quitar comida';
+
+  @override
+  String get outboxOpCreateCookbook => 'Crear recetario';
+
+  @override
+  String get outboxOpUpdateCookbook => 'Editar recetario';
+
+  @override
+  String get outboxOpDeleteCookbook => 'Eliminar recetario';
+
+  @override
+  String get outboxOpAddToCookbook => 'Añadir al recetario';
+
+  @override
+  String get outboxOpRemoveFromCookbook => 'Quitar del recetario';
+
+  @override
+  String get outboxOpUpdateHousehold => 'Actualizar hogar';
+
+  @override
+  String get outboxOpUpdateProfile => 'Actualizar perfil';
+
+  @override
+  String get outboxOpMarkNotificationRead => 'Marcar notificación como leída';
+
+  @override
+  String get outboxOpMarkAllNotificationsRead => 'Marcar todas como leídas';
+
+  @override
+  String get outboxOpDeleteNotification => 'Eliminar notificación';
+
+  @override
+  String get outboxOpUpdateNotificationPreference =>
+      'Actualizar ajuste de notificaciones';
+
+  @override
   String get offlineBannerQueueHeading => 'Pendiente de sincronizar';
 
   @override

@@ -7,10 +7,15 @@ import 'package:image_picker/image_picker.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/spacing.dart';
 import '../utils/haptics.dart';
+import '../models/list_models.dart';
+import '../models/recipe_models.dart';
 import '../providers/attachment_provider.dart';
+import '../providers/auth_provider.dart';
+import '../providers/list_provider.dart';
+import '../providers/recipe_provider.dart';
+import '../repositories/outbox_error_classifier.dart';
 import '../providers/group_provider.dart';
 import '../providers/pinwall_provider.dart';
-import '../providers/share_target_provider.dart';
 import '../widgets/app_bottom_sheet.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_card.dart';
@@ -136,9 +141,6 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
     });
 
     try {
-      final shareService =
-          await ref.read(shareTargetServiceProviderAsync.future);
-
       if (_selectedDestination == 'lists') {
         final groupId = await _pickGroupId();
         if (groupId == null) {
@@ -148,7 +150,7 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
           });
           return;
         }
-        await shareService.createListFromShare(groupId: groupId, text: text);
+        await _saveAsList(groupId, text);
       } else if (_selectedDestination == 'pinwall') {
         final groupId = await _pickGroupId();
         if (groupId == null) {
@@ -159,13 +161,24 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
           return;
         }
 
-        final pinwallSvc = await ref.read(pinwallServiceProviderAsync.future);
-        final post = await pinwallSvc.createPost(
-          groupId,
-          content: text.isEmpty ? ' ' : text,
-        );
-
-        if (_pendingMedia.isNotEmpty) {
+        if (_pendingMedia.isEmpty) {
+          // Text only: queued like a note written on the pinboard, so it
+          // saves offline too.
+          final repo = await ref.read(pinwallRepositoryProvider.future);
+          await repo.createPostOfflineFirst(
+            groupId,
+            content: text,
+            userId: await _currentUserId(),
+          );
+          repo.noteLocalWrite();
+        } else {
+          // Media has to be uploaded, which needs a connection.
+          final pinwallSvc =
+              await ref.read(pinwallServiceProviderAsync.future);
+          final post = await pinwallSvc.createPost(
+            groupId,
+            content: text.isEmpty ? ' ' : text,
+          );
           final attachmentRepo =
               await ref.read(attachmentRepositoryProvider.future);
           for (final f in List<XFile>.from(_pendingMedia)) {
@@ -185,7 +198,19 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
           }
         }
       } else {
-        await shareService.createRecipeFromShare(text: text);
+        // Same shape the server's share endpoint gave a recipe (the first
+        // line as title, the whole text as description), queued so it saves
+        // offline.
+        final shared = SharedText.parse(text);
+        final repo = await ref.read(recipeRepositoryProvider.future);
+        await repo.createRecipeOfflineFirst(CreateRecipeRequest(
+          title: _clip(shared.title, 200),
+          description: _clip(
+            shared.url != null ? '$text\n\nSource: ${shared.url}' : text,
+            2000,
+          ),
+          sourceUrl: shared.url ?? '',
+        ));
       }
 
       if (!mounted) return;
@@ -195,10 +220,61 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = l10n.shareTargetFailedSave;
+        // Only the media upload still needs the network; say so offline.
+        _error = classifyOutboxError(e) == OutboxErrorDisposition.unreachable
+            ? l10n.commonCheckConnection
+            : l10n.shareTargetFailedSave;
         _isSaving = false;
       });
     }
+  }
+
+  /// Files shared text as a new shopping list: the first line names it, every
+  /// other line becomes an item (what the server's share endpoint did). Built
+  /// from the offline-first list and item writes, so sharing into the app
+  /// works without a connection.
+  Future<void> _saveAsList(String groupId, String text) async {
+    final shared = SharedText.parse(text);
+    final repo = await ref.read(listRepositoryProvider.future);
+    final list = await repo.createListOfflineFirst(CreateListRequest(
+      groupId: groupId,
+      name: _clip(shared.title, 100),
+    ));
+    final userId = await _currentUserIdOrNull();
+    for (final line in shared.lines) {
+      await repo.createItemOfflineFirst(
+        list.id,
+        CreateListItemRequest(name: _clip(line, 200)),
+        deferImmediateSync: true,
+        addedBy: userId,
+      );
+    }
+    repo.triggerAutoSync();
+  }
+
+  Future<String?> _currentUserIdOrNull() async {
+    try {
+      return await _currentUserId();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// The signed-in user's id, from the session's cached profile when there
+  /// is one (offline), else fetched.
+  Future<String> _currentUserId() async {
+    final auth = ref.read(authServiceProvider);
+    final cached = auth.cachedMe;
+    if (cached != null) return cached.id;
+    return (await auth.getMe()).id;
+  }
+
+  /// [value] cut to the server's [max] characters (it counts code points).
+  static String _clip(String value, int max) {
+    final runes = value.runes;
+    return runes.length <= max
+        ? value
+        : String.fromCharCodes(runes.take(max)).trimRight();
   }
 
   @override
@@ -370,6 +446,38 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Shared text split the way the server's share endpoint splits it: the first
+/// non-empty line that is not the link is the title, the rest are lines, and
+/// the first URL is kept apart.
+class SharedText {
+  final String title;
+  final List<String> lines;
+  final String? url;
+
+  const SharedText({required this.title, required this.lines, this.url});
+
+  static final RegExp _url = RegExp(r'https?://[^\s]+');
+
+  factory SharedText.parse(String text) {
+    final url = _url.firstMatch(text)?.group(0);
+    final lines = [
+      for (final raw in text.split('\n'))
+        if (raw.trim().isNotEmpty && raw.trim() != url) raw.trim(),
+    ];
+    if (lines.isNotEmpty) {
+      return SharedText(title: lines.first, lines: lines.sublist(1), url: url);
+    }
+    final host = url == null ? null : Uri.tryParse(url)?.host;
+    return SharedText(
+      title: host != null && host.isNotEmpty
+          ? host
+          : (url != null ? 'Shared link' : 'Shared items'),
+      lines: const [],
+      url: url,
     );
   }
 }

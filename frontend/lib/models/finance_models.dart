@@ -514,6 +514,27 @@ class RecurringExpense {
                 .toList() ??
             const [],
       );
+
+  /// Inverse of [fromJson], for the offline recurring-expenses cache and the
+  /// optimistic rows queued creates carry in their outbox payload.
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'group_id': groupId,
+        'payer_id': payerId,
+        'amount': amount,
+        'description': description,
+        'category': category,
+        'currency': currency,
+        'frequency': frequency,
+        'next_due': nextDue.toUtc().toIso8601String(),
+        'is_active': isActive,
+        'created_at': createdAt.toUtc().toIso8601String(),
+        'split_mode': splitMode,
+        'split_inputs': splitInputs.map((e) => e.toJson()).toList(),
+      };
+
+  /// True while this rule exists only in the local outbox.
+  bool get isLocal => id.startsWith('local-');
 }
 
 class CreateRecurringExpenseRequest {

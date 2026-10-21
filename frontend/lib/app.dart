@@ -46,6 +46,7 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
   final _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
   StreamSubscription? _fcmSub;
   StreamSubscription? _fcmTapSub;
+  StreamSubscription<bool>? _connectivitySub;
   PushPromptGate? _pushPromptGate;
   bool _deferredInitDone = false;
   Future<void> _languageReport = Future.value();
@@ -60,6 +61,12 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
       environment: const String.fromEnvironment('ENVIRONMENT',
           defaultValue: 'development'),
     );
+    // The live-update stream backs off up to a minute while the network is
+    // gone; reconnect as soon as it is back rather than at the next tick.
+    _connectivitySub =
+        ref.read(connectivityServiceProvider).onStatusChange.listen((online) {
+      if (online) ref.read(sseServiceProvider).wake();
+    });
     if (IapService.isSupported) {
       // The store can redeliver unfinished transactions before authentication
       // finishes. Subscribe immediately; failed delivery is retained and
@@ -193,7 +200,10 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
   void _initPushSubscriptions() {
     // Listeners only; the token is registered when permission is already
     // granted and otherwise after [_offerPushNotifications] succeeds.
-    FcmService.init(ref.read(dioProvider)).then((ready) {
+    FcmService.init(ref.read(dioProvider)).catchError((Object _) {
+      // Push is optional; nothing in the app may depend on it starting.
+      return false;
+    }).then((ready) {
       if (!ready || !mounted) return;
 
       _fcmSub = FcmService.onForegroundMessage.listen((message) {
@@ -278,11 +288,12 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
 
   Future<void> _markPushNotificationRead(String notificationId) async {
     try {
-      final service = await ref.read(notificationServiceProviderAsync.future);
-      await service.markAsRead(notificationId);
+      // Queued like an inbox tap, so a push opened offline still ends up read.
+      final accounts = await ref.read(accountRepositoryProvider.future);
+      await accounts.markNotificationRead(notificationId);
       ref.invalidate(unreadNotificationCountProvider);
     } catch (_) {
-      // Navigation should still succeed offline; the inbox remains canonical.
+      // Navigation should still succeed if the queue write fails.
     }
   }
 
@@ -290,6 +301,7 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
   void dispose() {
     _fcmSub?.cancel();
     _fcmTapSub?.cancel();
+    _connectivitySub?.cancel();
     _pushPromptGate?.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();

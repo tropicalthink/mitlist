@@ -11,6 +11,7 @@ import '../../models/pinwall_media_models.dart';
 import '../../models/pinwall_models.dart';
 import '../../providers/attachment_provider.dart';
 import '../../providers/pinwall_provider.dart';
+import '../../repositories/outbox_error_classifier.dart';
 import '../../theme/colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/theme.dart';
@@ -81,6 +82,13 @@ class PinwallNoteCard extends ConsumerWidget {
   final void Function(BuildContext context) onOpenLinkedEntity;
 
   bool get _isHub => variant == PinwallNoteCardVariant.hub;
+
+  /// Photos need the server (they are uploaded, not queued): say so when the
+  /// device is offline instead of a bare "could not".
+  String _photoError(Object error, AppLocalizations l10n, String fallback) =>
+      classifyOutboxError(error) == OutboxErrorDisposition.unreachable
+          ? l10n.commonCheckConnection
+          : fallback;
 
   void _showErrorSnack(BuildContext context, String message) {
     AppToast.error(context, message);
@@ -184,9 +192,10 @@ class PinwallNoteCard extends ConsumerWidget {
         ref.invalidate(
           pinwallMediaByPostProvider((groupId: groupId, postId: post.id)),
         );
-      } catch (_) {
+      } catch (e) {
         if (context.mounted) {
-          _showErrorSnack(context, l10n.pinwallCouldNotRemovePhoto);
+          _showErrorSnack(
+              context, _photoError(e, l10n, l10n.pinwallCouldNotRemovePhoto));
         }
       }
     }
@@ -195,6 +204,12 @@ class PinwallNoteCard extends ConsumerWidget {
   Future<void> _addMediaToPost(BuildContext context, WidgetRef ref) async {
     unawaited(Haptics.light());
     final l10n = AppLocalizations.of(context)!;
+    // A note pinned offline has no server row to attach to until it syncs,
+    // which in practice means until the device is back online.
+    if (post.id.startsWith('local-')) {
+      _showErrorSnack(context, l10n.commonCheckConnection);
+      return;
+    }
     final picker = ImagePicker();
     final files = await picker.pickMultiImage();
     if (files.isEmpty) return;
@@ -223,9 +238,10 @@ class PinwallNoteCard extends ConsumerWidget {
       ref.invalidate(
         pinwallMediaByPostProvider((groupId: groupId, postId: post.id)),
       );
-    } catch (_) {
+    } catch (e) {
       if (context.mounted) {
-        _showErrorSnack(context, l10n.pinwallCouldNotAddPhoto);
+        _showErrorSnack(
+            context, _photoError(e, l10n, l10n.pinwallCouldNotAddPhoto));
       }
     }
   }

@@ -7,6 +7,7 @@ import '../models/pinwall_models.dart';
 import 'api_client.dart';
 import 'group_id_validator.dart';
 import 'outbox_request.dart';
+import 'response_cache_interceptor.dart';
 
 class PinwallService {
   final Dio _dio;
@@ -33,6 +34,11 @@ class PinwallService {
           'limit': limit,
           'offset': offset
         },
+        // The pinwall keeps its own Drift cache with queued writes laid on
+        // top. A stale offline copy of this response would overwrite it with
+        // an older board (notes synced since missing, deletions undone), so
+        // offline this fails and callers keep showing the cache instead.
+        options: Options(extra: {ResponseCacheInterceptor.liveOnlyExtra: true}),
       );
       final data = r.data;
       if (data is! List) return [];

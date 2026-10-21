@@ -310,6 +310,12 @@ class _FakeListRepository implements ListRepository {
     return _service.lists.length;
   }
 
+  /// Stands in for the offline-first create with the fake server's, so the
+  /// test still sees which list the items were filed into.
+  @override
+  Future<ItemList> createListOfflineFirst(CreateListRequest req) =>
+      _service.createList(req);
+
   @override
   Future<ListItem> createItemOfflineFirst(
     String listId,
@@ -364,7 +370,8 @@ class _FakeListService implements ListService {
   }
 
   @override
-  Future<ItemList> createList(CreateListRequest req) async {
+  Future<ItemList> createList(CreateListRequest req,
+      {String? idempotencyKey}) async {
     createdLists.add(req);
     final now = DateTime.utc(2026, 1, 1);
     final list = ItemList(

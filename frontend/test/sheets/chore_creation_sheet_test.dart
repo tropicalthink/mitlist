@@ -226,6 +226,14 @@ class _FakeChoreRepository implements ChoreRepository {
     );
   }
 
+  /// Edits are saved through the repository (offline-first) too; forward to
+  /// the fake service so the edit test reads the request from one place.
+  @override
+  Future<void> updateOfflineFirst(
+      Chore existing, UpdateChoreRequest req) async {
+    await _chores.updateChore(existing.id, req);
+  }
+
   @override
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }

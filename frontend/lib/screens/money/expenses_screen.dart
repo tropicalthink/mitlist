@@ -14,6 +14,7 @@ import '../../providers/app_link_provider.dart';
 import '../../utils/app_link_intent.dart';
 import '../../providers/finance_provider.dart' show financeServiceProviderAsync;
 import '../../providers/onboarding_provider.dart';
+import '../../repositories/outbox_error_classifier.dart';
 import '../../services/finance_service.dart';
 import '../../sheets/expense_creation_sheet.dart';
 import '../../sheets/expense_detail_sheet.dart';
@@ -268,7 +269,15 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     } catch (e) {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
-      AppToast.error(context, l10n.expenseSettlementResponseFailed);
+      // Confirming or declining stays online on purpose (see the controller),
+      // so offline it says why instead of a generic failure.
+      final offline =
+          classifyOutboxError(e) == OutboxErrorDisposition.unreachable;
+      AppToast.error(
+          context,
+          offline
+              ? l10n.commonCheckConnection
+              : l10n.expenseSettlementResponseFailed);
     }
   }
 

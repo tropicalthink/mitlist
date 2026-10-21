@@ -5,6 +5,7 @@ import '../../l10n/app_localizations.dart';
 import '../../models/list_models.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/list_provider.dart';
+import '../../repositories/outbox_error_classifier.dart';
 import '../../router.dart' show currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
 import '../../theme/spacing.dart';
@@ -70,12 +71,24 @@ class _ShoppingLocationsScreenState
         });
         return;
       }
-      final service = await ref.read(listServiceProviderAsync.future);
-      final items = await service.listShoppingLocations(groupId!);
+      // Locations added here but not synced yet sit in the outbox; they are
+      // shown after the server's (offline: the last cached) ones.
+      final repo = await ref.read(listRepositoryProvider.future);
+      final queued = await repo.queuedShoppingLocations(groupId!);
+      var items = const <ShoppingLocation>[];
+      try {
+        final service = await ref.read(listServiceProviderAsync.future);
+        items = await service.listShoppingLocations(groupId);
+      } catch (e) {
+        final offline =
+            classifyOutboxError(e) == OutboxErrorDisposition.unreachable;
+        if (!offline || queued.isEmpty) rethrow;
+      }
       if (!mounted || !_loadGuard.isCurrent(request)) return;
       setState(() {
         _items.clear();
         _items.addAll(items);
+        _items.addAll(queued);
         _hasHousehold = true;
         _isLoading = false;
       });
@@ -226,8 +239,9 @@ class _ShoppingLocationsScreenState
     if (result == null) return;
 
     try {
-      final service = await ref.read(listServiceProviderAsync.future);
-      await service.createShoppingLocation(
+      // Queued, so it works offline; it shows from the outbox until it syncs.
+      final repo = await ref.read(listRepositoryProvider.future);
+      await repo.createShoppingLocationOfflineFirst(
         CreateShoppingLocationRequest(
           groupId: result.groupId,
           name: result.name,

@@ -11,7 +11,9 @@ import 'auth_provider.dart';
 import 'chore_provider.dart';
 import 'home_widgets_provider.dart';
 import 'finance_provider.dart';
+import 'group_provider.dart';
 import 'list_provider.dart';
+import 'meal_plan_provider.dart';
 import 'pinwall_provider.dart';
 import 'recipe_provider.dart';
 
@@ -32,6 +34,8 @@ final outboxCoordinatorProvider =
   final pinwallRepo = await ref.watch(pinwallRepositoryProvider.future);
   final accountRepo = await ref.watch(accountRepositoryProvider.future);
   final widgetOpsRepo = await ref.watch(widgetOpsRepositoryProvider.future);
+  final groupRepo = await ref.watch(groupRepositoryProvider.future);
+  final mealPlanRepo = await ref.watch(mealPlanRepositoryProvider.future);
 
   final coordinator = OutboxCoordinator(
     db: db,
@@ -43,6 +47,8 @@ final outboxCoordinatorProvider =
     pinwallRepo: pinwallRepo,
     accountRepo: accountRepo,
     widgetOpsRepo: widgetOpsRepo,
+    groupRepo: groupRepo,
+    mealPlanRepo: mealPlanRepo,
     isSignedIn: () => ref.read(authStateProvider),
   );
 

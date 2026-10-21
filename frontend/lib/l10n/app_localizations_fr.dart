@@ -6783,6 +6783,99 @@ class AppLocalizationsFr extends AppLocalizations {
   String get outboxOpUncheckItem => 'Décocher';
 
   @override
+  String get outboxOpCreateList => 'Créer une liste';
+
+  @override
+  String get outboxOpUpdateList => 'Modifier la liste';
+
+  @override
+  String get outboxOpArchiveList => 'Archiver la liste';
+
+  @override
+  String get outboxOpDeleteList => 'Supprimer la liste';
+
+  @override
+  String get outboxOpSetListReminder => 'Définir un rappel de liste';
+
+  @override
+  String get outboxOpAddProduct => 'Ajouter un produit';
+
+  @override
+  String get outboxOpAddShoppingLocation => 'Ajouter un magasin';
+
+  @override
+  String get outboxOpUpdateChore => 'Modifier la tâche';
+
+  @override
+  String get outboxOpDeleteChore => 'Supprimer la tâche';
+
+  @override
+  String get outboxOpAddSubtask => 'Ajouter une sous-tâche';
+
+  @override
+  String get outboxOpUpdateSubtask => 'Modifier la sous-tâche';
+
+  @override
+  String get outboxOpDeleteSubtask => 'Supprimer la sous-tâche';
+
+  @override
+  String get outboxOpCreateRecurringExpense => 'Ajouter une dépense récurrente';
+
+  @override
+  String get outboxOpUpdateRecurringExpense => 'Modifier la dépense récurrente';
+
+  @override
+  String get outboxOpDeleteRecurringExpense =>
+      'Supprimer la dépense récurrente';
+
+  @override
+  String get outboxOpCancelSettlement => 'Annuler le remboursement';
+
+  @override
+  String get outboxOpAddMeal => 'Planifier un repas';
+
+  @override
+  String get outboxOpUpdateMeal => 'Modifier le repas';
+
+  @override
+  String get outboxOpRemoveMeal => 'Retirer le repas';
+
+  @override
+  String get outboxOpCreateCookbook => 'Créer un livre de recettes';
+
+  @override
+  String get outboxOpUpdateCookbook => 'Modifier le livre de recettes';
+
+  @override
+  String get outboxOpDeleteCookbook => 'Supprimer le livre de recettes';
+
+  @override
+  String get outboxOpAddToCookbook => 'Ajouter au livre de recettes';
+
+  @override
+  String get outboxOpRemoveFromCookbook => 'Retirer du livre de recettes';
+
+  @override
+  String get outboxOpUpdateHousehold => 'Modifier le foyer';
+
+  @override
+  String get outboxOpUpdateProfile => 'Modifier le profil';
+
+  @override
+  String get outboxOpMarkNotificationRead =>
+      'Marquer la notification comme lue';
+
+  @override
+  String get outboxOpMarkAllNotificationsRead => 'Tout marquer comme lu';
+
+  @override
+  String get outboxOpDeleteNotification => 'Supprimer la notification';
+
+  @override
+  String get outboxOpUpdateNotificationPreference =>
+      'Modifier un réglage de notification';
+
+  @override
   String get offlineBannerQueueHeading => 'En attente de synchronisation';
 
   @override

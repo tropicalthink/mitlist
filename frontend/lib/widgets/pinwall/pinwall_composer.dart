@@ -186,15 +186,22 @@ class _PinwallComposerState extends ConsumerState<PinwallComposer> {
       return;
     }
 
-    // Fetch entities of the selected type and show a picker.
+    // Offer the household's chores/lists/expenses from the local caches, so
+    // linking works offline and includes things created offline (their temp
+    // ids are retargeted when they sync, before the note's own create does).
+    // Only a cache that has never been filled asks the server.
     try {
       final groupId = widget.groupId;
 
       List<_EntityOption> options;
       switch (typeAction) {
         case 'chore':
-          final svc = await ref.read(choreServiceProviderAsync.future);
-          final chores = await svc.listCurrentChores(groupId);
+          var chores = await ref
+              .read(cachedCurrentChoresByGroupProvider(groupId).future);
+          if (chores.isEmpty) {
+            final svc = await ref.read(choreServiceProviderAsync.future);
+            chores = await svc.listCurrentChores(groupId);
+          }
           options = chores
               .take(50)
               .map((c) => _EntityOption(
@@ -203,18 +210,29 @@ class _PinwallComposerState extends ConsumerState<PinwallComposer> {
                   ))
               .toList();
         case 'list':
-          final svc = await ref.read(listServiceProviderAsync.future);
-          final lists = await svc.listLists(groupId, limit: 50);
+          var lists =
+              await ref.read(cachedListsByGroupProvider(groupId).future);
+          if (lists.isEmpty) {
+            final svc = await ref.read(listServiceProviderAsync.future);
+            lists = await svc.listLists(groupId, limit: 50);
+          }
           options = lists
+              .where((l) => !l.isArchived)
+              .take(50)
               .map((l) => _EntityOption(
                     id: l.id,
                     label: l.name,
                   ))
               .toList();
         case 'expense':
-          final svc = await ref.read(financeServiceProviderAsync.future);
-          final expenses = await svc.listExpenses(groupId, limit: 50);
+          var expenses =
+              await ref.read(cachedExpensesByGroupProvider(groupId).future);
+          if (expenses.isEmpty) {
+            final svc = await ref.read(financeServiceProviderAsync.future);
+            expenses = await svc.listExpenses(groupId, limit: 50);
+          }
           options = expenses
+              .take(50)
               .map((e) => _EntityOption(
                     id: e.id,
                     label: e.description,
@@ -269,6 +287,7 @@ class _PinwallComposerState extends ConsumerState<PinwallComposer> {
 
   /// The offline-first pin, done optimistically: the composer empties on the
   /// tap and the note arrives from the local DB stream a frame or two later.
+  /// Text, reminder and linked entity all queue, so this works offline.
   /// Flipping [_isPosting] here used to flash a spinner in the post button for
   /// the few milliseconds of local writes — a loading state for work that is
   /// never actually pending. If the enqueue itself fails, the text and the
@@ -277,18 +296,27 @@ class _PinwallComposerState extends ConsumerState<PinwallComposer> {
     final l10n = AppLocalizations.of(context)!;
     final restoreText = _controller.text;
     final restoreRemindAt = _remindAt;
+    final restoreLink = (
+      type: _linkedEntityType,
+      id: _linkedEntityId,
+      label: _linkedEntityLabel,
+    );
 
     _controller.clear();
     _clearReminder();
+    _clearLink();
     unawaited(Haptics.light());
 
     try {
       final repo = await ref.read(pinwallRepositoryProvider.future);
+      final hasLink = restoreLink.id?.isNotEmpty ?? false;
       await repo.createPostOfflineFirst(
         widget.groupId,
         content: content.isEmpty ? ' ' : content,
         userId: widget.me?.id ?? '',
         remindAt: restoreRemindAt,
+        linkedEntityType: hasLink ? restoreLink.type : null,
+        linkedEntityId: hasLink ? restoreLink.id : null,
       );
       // Queued for the sync session; offline leaves the queued + synthetic
       // post in place until connectivity returns.
@@ -302,6 +330,9 @@ class _PinwallComposerState extends ConsumerState<PinwallComposer> {
           offset: restoreText.length,
         );
         _remindAt = restoreRemindAt;
+        _linkedEntityType = restoreLink.type;
+        _linkedEntityId = restoreLink.id;
+        _linkedEntityLabel = restoreLink.label;
       });
       unawaited(Haptics.failure());
       AppToast.error(context, friendlyErrorMessage(e, l10n));
@@ -312,12 +343,10 @@ class _PinwallComposerState extends ConsumerState<PinwallComposer> {
     final content = _controller.text.trim();
     if ((content.isEmpty && _pendingMedia.isEmpty) || _isPosting) return;
 
-    // Plain-text posts (no media, no linked entity) go through the
+    // Posts without photos (text, reminder, linked entity) go through the
     // offline-first path so they pin immediately and work without a
-    // connection. Media/linked posts still require the server.
-    final canQueueOffline =
-        _pendingMedia.isEmpty && (_linkedEntityId?.isEmpty ?? true);
-    if (canQueueOffline) {
+    // connection. Photos need the server: the upload is not queued.
+    if (_pendingMedia.isEmpty) {
       await _postOptimistically(content);
       return;
     }
@@ -385,9 +414,24 @@ class _PinwallComposerState extends ConsumerState<PinwallComposer> {
       unawaited(Haptics.light());
       AppToast.success(context, l10n.pinwallPinned);
       widget.onPosted?.call();
+    } catch (e) {
+      // Only the note itself can fail here (photo failures are handled
+      // above): typically offline. Everything typed stays in the composer.
+      if (!mounted) return;
+      unawaited(Haptics.failure());
+      AppToast.error(context, friendlyErrorMessage(e, l10n));
     } finally {
       if (mounted) setState(() => _isPosting = false);
     }
+  }
+
+  void _clearLink() {
+    if (_linkedEntityType == null && _linkedEntityId == null) return;
+    setState(() {
+      _linkedEntityType = null;
+      _linkedEntityId = null;
+      _linkedEntityLabel = null;
+    });
   }
 
   @override

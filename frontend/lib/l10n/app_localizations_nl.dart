@@ -6764,6 +6764,99 @@ class AppLocalizationsNl extends AppLocalizations {
   String get outboxOpUncheckItem => 'Vinkje weghalen';
 
   @override
+  String get outboxOpCreateList => 'Lijst maken';
+
+  @override
+  String get outboxOpUpdateList => 'Lijst bewerken';
+
+  @override
+  String get outboxOpArchiveList => 'Lijst archiveren';
+
+  @override
+  String get outboxOpDeleteList => 'Lijst verwijderen';
+
+  @override
+  String get outboxOpSetListReminder => 'Lijstherinnering instellen';
+
+  @override
+  String get outboxOpAddProduct => 'Product toevoegen';
+
+  @override
+  String get outboxOpAddShoppingLocation => 'Winkel toevoegen';
+
+  @override
+  String get outboxOpUpdateChore => 'Taak bewerken';
+
+  @override
+  String get outboxOpDeleteChore => 'Taak verwijderen';
+
+  @override
+  String get outboxOpAddSubtask => 'Subtaak toevoegen';
+
+  @override
+  String get outboxOpUpdateSubtask => 'Subtaak bijwerken';
+
+  @override
+  String get outboxOpDeleteSubtask => 'Subtaak verwijderen';
+
+  @override
+  String get outboxOpCreateRecurringExpense => 'Terugkerende uitgave toevoegen';
+
+  @override
+  String get outboxOpUpdateRecurringExpense => 'Terugkerende uitgave bijwerken';
+
+  @override
+  String get outboxOpDeleteRecurringExpense =>
+      'Terugkerende uitgave verwijderen';
+
+  @override
+  String get outboxOpCancelSettlement => 'Verrekening annuleren';
+
+  @override
+  String get outboxOpAddMeal => 'Maaltijd plannen';
+
+  @override
+  String get outboxOpUpdateMeal => 'Maaltijd bijwerken';
+
+  @override
+  String get outboxOpRemoveMeal => 'Maaltijd verwijderen';
+
+  @override
+  String get outboxOpCreateCookbook => 'Kookboek maken';
+
+  @override
+  String get outboxOpUpdateCookbook => 'Kookboek bewerken';
+
+  @override
+  String get outboxOpDeleteCookbook => 'Kookboek verwijderen';
+
+  @override
+  String get outboxOpAddToCookbook => 'Aan kookboek toevoegen';
+
+  @override
+  String get outboxOpRemoveFromCookbook => 'Uit kookboek verwijderen';
+
+  @override
+  String get outboxOpUpdateHousehold => 'Huishouden bijwerken';
+
+  @override
+  String get outboxOpUpdateProfile => 'Profiel bijwerken';
+
+  @override
+  String get outboxOpMarkNotificationRead => 'Melding als gelezen markeren';
+
+  @override
+  String get outboxOpMarkAllNotificationsRead =>
+      'Alle meldingen als gelezen markeren';
+
+  @override
+  String get outboxOpDeleteNotification => 'Melding verwijderen';
+
+  @override
+  String get outboxOpUpdateNotificationPreference =>
+      'Meldingsinstelling bijwerken';
+
+  @override
   String get offlineBannerQueueHeading => 'Wacht op synchronisatie';
 
   @override

@@ -59,6 +59,12 @@ final authBootstrapListenerProvider = Provider<void>((ref) {
       if (authenticated) {
         try {
           final authService = await ref.read(authServiceProviderAsync.future);
+          // The saved profile first, so an offline launch still knows a guest
+          // is a guest (the upgrade prompts depend on it); then the server.
+          final cached = authService.cachedMe;
+          if (cached != null) {
+            ref.read(isGuestProvider.notifier).state = cached.isGuest;
+          }
           final user = await authService.getMe();
           ref.read(isGuestProvider.notifier).state = user.isGuest;
         } catch (_) {}

@@ -427,4 +427,9 @@ class FakeFinanceRepository implements FinanceRepository {
 
   @override
   Future<void> drainOutboxOnce() async {}
+
+  // Offline-first paths these flows don't reach (recurring rules, cancels,
+  // splits of unsynced expenses) are covered in finance_repository_test.
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

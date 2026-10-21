@@ -5,7 +5,8 @@ import '../models/recipe_models.dart';
 import '../providers/recipe_provider.dart';
 import '../repositories/meal_plan_repository.dart';
 import '../services/meal_plan_service.dart';
-import 'list_provider.dart' show appDatabaseProvider;
+import '../services/response_cache_interceptor.dart';
+import 'list_provider.dart' show appDatabaseProvider, syncSchedulerProvider;
 
 final mealPlanServiceProviderAsync =
     FutureProvider<MealPlanService>((ref) async {
@@ -22,7 +23,11 @@ final mealPlanRepositoryProvider =
     FutureProvider<MealPlanRepository>((ref) async {
   final db = ref.watch(appDatabaseProvider);
   final service = await ref.read(mealPlanServiceProviderAsync.future);
-  return MealPlanRepository(db: db, remote: service);
+  return MealPlanRepository(
+    db: db,
+    remote: service,
+    onLocalWrite: ref.watch(syncSchedulerProvider).noteLocalWrite,
+  );
 });
 
 final todayMealPlansProvider =
@@ -43,7 +48,9 @@ final todayMealPlansProvider =
       final cached = await recipeRepo.getRecipeOnce(plan.recipeId);
       if (cached != null) return cached;
       try {
-        final recipe = await recipeSvc.getRecipe(plan.recipeId);
+        // Live only: it is cached below, and must not be a stale copy.
+        final recipe = await ResponseCacheInterceptor.liveOnly(
+            () => recipeSvc.getRecipe(plan.recipeId));
         await recipeRepo.cacheRecipes([recipe]);
         return recipe;
       } catch (_) {

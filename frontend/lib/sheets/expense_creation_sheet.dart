@@ -7,6 +7,7 @@ import '../../l10n/app_localizations.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/auth_models.dart';
 import '../models/finance_models.dart';
 import '../models/group_models.dart';
 import '../providers/attachment_provider.dart';
@@ -15,6 +16,7 @@ import '../providers/finance_provider.dart';
 import '../providers/group_provider.dart';
 import '../providers/grocery_provider.dart';
 import '../providers/list_provider.dart' show grocerySeedProvider;
+import '../repositories/finance_repository.dart';
 import '../router.dart' show currentGroupIdProvider;
 import '../theme/spacing.dart';
 import '../utils/active_group_context.dart';
@@ -263,11 +265,36 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
         setState(() => _membersLoading = false);
         return;
       }
-      final me = await authService.getMe();
-      final group = await groupService.getGroup(groupId);
-      final members = await groupService.listMembers(groupId);
+      // Offline-first: each lookup falls back to what the device already
+      // knows (the user saved at sign-in, the cached household), and they run
+      // side by side so an offline open never waits out three timeouts.
+      final cachedGroup = groups.where((g) => g.id == groupId).firstOrNull;
+      final lookups = await Future.wait<Object?>([
+        authService
+            .getMe()
+            .then<Object?>((u) => u)
+            .catchError((Object _) => authService.cachedMe),
+        groupService
+            .getGroup(groupId)
+            .then<Object?>((g) => g)
+            .catchError((Object _) => cachedGroup),
+        groupService
+            .listMembers(groupId)
+            .then<Object?>((m) => m)
+            .catchError((Object _) => null),
+      ]);
+      final me = lookups[0] as User?;
+      final group = lookups[1] as Group?;
+      if (me == null || group == null) throw StateError('no household context');
+      final fetchedMembers = lookups[2] as List<GroupMemberProfile>?;
+      // Never fetched online: fall back to everyone the cached balances know.
+      // The split editor opens so the participants are visible, never a
+      // silent split among a possibly partial roster.
+      final rosterFromCache = fetchedMembers == null;
+      final members = fetchedMembers ?? await _membersFromCache(groupId, me);
       if (!mounted) return;
       setState(() {
+        if (rosterFromCache) _showSplitEditor = true;
         _groupId = groupId;
         _groupCurrency = group.currency;
         _currency = group.currency;
@@ -304,6 +331,28 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
         _membersFailed = true;
       });
     }
+  }
+
+  /// Members the device can name without the server: everyone in the cached
+  /// balances plus the current user. Only used when the member list itself
+  /// was never loaded online.
+  Future<List<GroupMemberProfile>> _membersFromCache(
+      String groupId, User me) async {
+    final byId = <String, GroupMemberProfile>{};
+    try {
+      final repo = await ref.read(financeRepositoryProvider.future);
+      final summary = await repo.getSummaryOnce(groupId);
+      for (final b in summary?.balances ?? const <BalanceEntry>[]) {
+        byId[b.userId] = GroupMemberProfile(
+            userId: b.userId, displayName: b.displayName, role: 'member');
+      }
+    } catch (_) {}
+    byId.putIfAbsent(
+      me.id,
+      () => GroupMemberProfile(
+          userId: me.id, displayName: me.fullName.trim(), role: 'member'),
+    );
+    return byId.values.toList();
   }
 
   void _retryLoad() {
@@ -557,8 +606,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
     setState(() => _isSaving = true);
 
     try {
-      final authService = await ref.read(authServiceProviderAsync.future);
-      final financeService = await ref.read(financeServiceProviderAsync.future);
+      final financeRepo = await ref.read(financeRepositoryProvider.future);
       final groups = await ref.read(cachedGroupsProvider.future);
 
       if (!mounted) return;
@@ -572,13 +620,15 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
         return;
       }
 
-      final me = await authService.getMe();
+      // Offline-first: the rule is queued and shows in the list at once.
+      final payerId = await _resolvePayerId();
       final existing = widget.initialRecurring;
       if (existing != null) {
-        await financeService.updateRecurringExpense(
+        await financeRepo.updateRecurringExpenseOfflineFirst(
+          groupId,
           existing.id,
           UpdateRecurringExpenseRequest(
-            payerId: _payerId ?? me.id,
+            payerId: payerId,
             amount: amount,
             description: _descriptionController.text.trim(),
             category: _category,
@@ -590,10 +640,10 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
           ),
         );
       } else {
-        await financeService.createRecurringExpense(
+        await financeRepo.createRecurringExpenseOfflineFirst(
           CreateRecurringExpenseRequest(
             groupId: groupId,
-            payerId: _payerId ?? me.id,
+            payerId: payerId,
             amount: amount,
             description: _descriptionController.text.trim(),
             category: _category,
@@ -660,8 +710,7 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
     setState(() => _isSaving = true);
 
     try {
-      final authService = await ref.read(authServiceProviderAsync.future);
-      final financeService = await ref.read(financeServiceProviderAsync.future);
+      final financeRepo = await ref.read(financeRepositoryProvider.future);
       final groups = await ref.read(cachedGroupsProvider.future);
 
       if (!mounted) return;
@@ -675,13 +724,15 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
         return;
       }
 
-      final me = await authService.getMe();
+      final payerId = await _resolvePayerId();
       final splitUserIds = _selectedMemberIds.toList();
       final splitRequests = _buildSplitRequests();
-      final expense = await financeService.createExpense(
+      // Offline-first: the row lands in the local cache (which every money
+      // surface watches) and the POST queues for the sync session.
+      final expense = await financeRepo.createExpenseOfflineFirst(
         CreateExpenseRequest(
           groupId: groupId,
-          payerId: _payerId ?? me.id,
+          payerId: payerId,
           amount: amount,
           baseAmount: baseAmount,
           fxRate: _isForeignCurrency ? _fxRate : 1.0,
@@ -699,48 +750,74 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
 
       final receipt = widget.receiptImage;
       if (receipt != null) {
-        try {
-          final bytes = await receipt.readAsBytes();
-          final attachmentRepo =
-              await ref.read(attachmentRepositoryProvider.future);
-          final attachment = await attachmentRepo.uploadAttachment(
-            groupId: groupId,
-            purpose: 'expense_receipt',
-            filename: receipt.path.split('/').last,
-            contentType: 'image/jpeg',
-            bytes: Uint8List.fromList(bytes),
-          );
-          await financeService.attachExpenseReceipt(
-            groupId: groupId,
-            expenseId: expense.id,
-            attachmentId: attachment.id,
-          );
-        } catch (e) {
-          if (mounted) {
-            AppToast.error(context, l10n.expenseCreationReceiptUploadFailed);
-          }
+        final attached =
+            await _attachReceipt(financeRepo, groupId, expense.id, receipt);
+        if (!attached && mounted) {
+          AppToast.error(context, l10n.expenseCreationReceiptUploadFailed);
         }
       }
-
-      // Grabbed before the pop: after it this State is disposed and `ref` can
-      // no longer be read.
-      final financeRepo = await ref.read(financeRepositoryProvider.future);
 
       if (!mounted) return;
       widget.dirtyNotifier?.value = false;
       Navigator.of(context).pop(true);
       AppToast.success(context, l10n.expenseCreationExpenseAdded);
       unawaited(Haptics.success());
-      // Land the expense in the local cache. Screens — and the hub quick start
-      // — watch the DB rather than the service, so without this the expense
-      // exists on the server but nothing on device knows until some other
-      // action forces a refresh.
-      unawaited(financeRepo.refreshGroup(groupId).catchError((_) => 0));
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSaving = false);
       AppToast.error(
           context, friendlyErrorMessage(e, AppLocalizations.of(context)!));
+    }
+  }
+
+  /// The chosen payer, defaulting to the current user — from the household
+  /// load, else the user saved at sign-in, so saving never needs `/auth/me`.
+  Future<String> _resolvePayerId() async {
+    final known = _payerId ?? _myId;
+    if (known != null) return known;
+    final authService = await ref.read(authServiceProviderAsync.future);
+    final cached = authService.cachedMe;
+    if (cached != null) return cached.id;
+    return (await authService.getMe()).id;
+  }
+
+  /// Uploads the scanned receipt and attaches it. Online-only by design: the
+  /// image is not queued, so offline (or if the expense cannot sync right
+  /// now) this returns false and the expense itself stays saved and queued.
+  Future<bool> _attachReceipt(
+    FinanceRepository financeRepo,
+    String groupId,
+    String expenseId,
+    File receipt,
+  ) async {
+    try {
+      var knownOffline = false;
+      try {
+        knownOffline = ref.read(connectivityServiceProvider).isKnownOffline;
+      } catch (_) {}
+      if (knownOffline) return false;
+      // Attaching needs the server id, so push the queued create now.
+      final serverId = await financeRepo.syncExpenseNow(expenseId);
+      if (serverId == null) return false;
+      final bytes = await receipt.readAsBytes();
+      final attachmentRepo =
+          await ref.read(attachmentRepositoryProvider.future);
+      final attachment = await attachmentRepo.uploadAttachment(
+        groupId: groupId,
+        purpose: 'expense_receipt',
+        filename: receipt.path.split('/').last,
+        contentType: 'image/jpeg',
+        bytes: Uint8List.fromList(bytes),
+      );
+      final financeService = await ref.read(financeServiceProviderAsync.future);
+      await financeService.attachExpenseReceipt(
+        groupId: groupId,
+        expenseId: serverId,
+        attachmentId: attachment.id,
+      );
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 

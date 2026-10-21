@@ -125,11 +125,20 @@ class FcmService {
       _tapController.add(message);
     });
 
-    final settings = await messaging.getNotificationSettings();
-    if (_isGranted(settings.authorizationStatus)) {
-      await _registerCurrentToken(dio, messaging);
-    } else {
-      _log.i('Push permission not granted yet; token registration deferred');
+    // Registration is best-effort. Offline, `getToken()` itself throws
+    // (SERVICE_NOT_AVAILABLE, or no APNs token yet), and letting that escape
+    // reported init as failed: the caller then never attached the foreground
+    // and tap listeners, so notification taps did nothing for the whole
+    // session. The token is registered again on the next launch.
+    try {
+      final settings = await messaging.getNotificationSettings();
+      if (_isGranted(settings.authorizationStatus)) {
+        await _registerCurrentToken(dio, messaging);
+      } else {
+        _log.i('Push permission not granted yet; token registration deferred');
+      }
+    } catch (e) {
+      _log.w('FCM token registration deferred (${e.runtimeType})');
     }
     return true;
   }
@@ -150,7 +159,13 @@ class FcmService {
       sound: true,
     );
     if (_isGranted(settings.authorizationStatus)) {
-      await _registerCurrentToken(dio, messaging);
+      // Permission is the answer the caller needs; a token that cannot be
+      // fetched offline is registered on the next launch.
+      try {
+        await _registerCurrentToken(dio, messaging);
+      } catch (e) {
+        _log.w('FCM token registration deferred (${e.runtimeType})');
+      }
     } else {
       _log.i('Push permission denied');
     }

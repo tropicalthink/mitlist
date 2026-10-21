@@ -60,6 +60,13 @@ OutboxErrorDisposition classifyOutboxError(Object error) {
         ? OutboxErrorDisposition.transient
         : OutboxErrorDisposition.permanent;
   }
+  // A 401 that reaches the drainer is about the session, never the op: the
+  // refresh interceptor already tried to renew it and either could not reach
+  // the server (an expired access token on reconnect, the API mid-deploy) or
+  // was refused, in which case the session is cleared and draining stops
+  // until the next sign-in. Dead-lettering here turned every change made
+  // offline into a "Failed to save" because a token expired meanwhile.
+  if (status == 401) return OutboxErrorDisposition.unreachable;
   if (status == 408 || status == 429) return OutboxErrorDisposition.transient;
   if (status >= 500) return OutboxErrorDisposition.transient;
   if (status >= 400) return OutboxErrorDisposition.permanent;

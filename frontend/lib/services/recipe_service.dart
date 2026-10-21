@@ -17,9 +17,17 @@ class RecipeService {
 
   Future<Recipe> createRecipe(CreateRecipeRequest req,
       {String? idempotencyKey}) async {
+    return createRecipeRaw(req.toJson(), idempotencyKey: idempotencyKey);
+  }
+
+  /// Posts an already-encoded create body. The outbox replays the exact JSON
+  /// it queued, so a recipe created offline keeps its ingredients, steps and
+  /// clipped metadata instead of being rebuilt from a lossy subset.
+  Future<Recipe> createRecipeRaw(Map<String, dynamic> body,
+      {String? idempotencyKey}) async {
     try {
       final r = await _dio.post('/recipes',
-          data: req.toJson(), options: outboxOptions(idempotencyKey));
+          data: body, options: outboxOptions(idempotencyKey));
       return Recipe.fromJson(r.data);
     } on DioException catch (e) {
       _logger.e('Create recipe failed: ${e.response?.data}');
@@ -203,6 +211,69 @@ class RecipeService {
       String collectionId, String recipeId) async {
     try {
       await _dio.delete('/collections/$collectionId/recipes/$recipeId');
+    } on DioException catch (e) {
+      _logger.e('Remove recipe from collection failed: ${e.response?.data}');
+      throw apiException(e);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Outbox replays. Same endpoints as above, but with the queued op's stable
+  // Idempotency-Key and its stored request body, so a retry after a lost
+  // response cannot create a second cookbook or re-apply a change.
+  // ---------------------------------------------------------------------------
+
+  Future<RecipeCollection> createCollectionRaw(Map<String, dynamic> body,
+      {String? idempotencyKey}) async {
+    try {
+      final r = await _dio.post('/collections',
+          data: body, options: outboxOptions(idempotencyKey));
+      return RecipeCollection.fromJson((r.data as Map).cast<String, dynamic>());
+    } on DioException catch (e) {
+      _logger.e('Create collection failed: ${e.response?.data}');
+      throw apiException(e);
+    }
+  }
+
+  Future<void> updateCollectionRaw(String id, Map<String, dynamic> body,
+      {String? idempotencyKey}) async {
+    try {
+      await _dio.patch('/collections/$id',
+          data: body, options: outboxOptions(idempotencyKey));
+    } on DioException catch (e) {
+      _logger.e('Update collection failed: ${e.response?.data}');
+      throw apiException(e);
+    }
+  }
+
+  Future<void> deleteCollectionRaw(String id, {String? idempotencyKey}) async {
+    try {
+      await _dio.delete('/collections/$id',
+          options: outboxOptions(idempotencyKey));
+    } on DioException catch (e) {
+      _logger.e('Delete collection failed: ${e.response?.data}');
+      throw apiException(e);
+    }
+  }
+
+  Future<void> addRecipeToCollectionRaw(String collectionId, String recipeId,
+      {String? idempotencyKey}) async {
+    try {
+      await _dio.post('/collections/$collectionId/recipes',
+          data: AddRecipeToCollectionRequest(recipeId: recipeId).toJson(),
+          options: outboxOptions(idempotencyKey));
+    } on DioException catch (e) {
+      _logger.e('Add recipe to collection failed: ${e.response?.data}');
+      throw apiException(e);
+    }
+  }
+
+  Future<void> removeRecipeFromCollectionRaw(
+      String collectionId, String recipeId,
+      {String? idempotencyKey}) async {
+    try {
+      await _dio.delete('/collections/$collectionId/recipes/$recipeId',
+          options: outboxOptions(idempotencyKey));
     } on DioException catch (e) {
       _logger.e('Remove recipe from collection failed: ${e.response?.data}');
       throw apiException(e);

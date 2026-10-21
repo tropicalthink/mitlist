@@ -21,11 +21,21 @@ void main() {
       }
     });
     test('4xx (non-409/429) are permanent', () {
-      for (final code in [400, 401, 403, 404, 422]) {
+      for (final code in [400, 403, 404, 422]) {
         expect(classifyOutboxError(fakeDioException(statusCode: code)),
             equals(OutboxErrorDisposition.permanent),
             reason: 'status $code should be permanent');
       }
+    });
+
+    test('401 is about the session, so it spends no attempt', () {
+      // Reaches the drainer only when the token refresh could not renew the
+      // session; the op itself was never judged by the server.
+      expect(classifyOutboxError(fakeDioException(statusCode: 401)),
+          equals(OutboxErrorDisposition.unreachable));
+      expect(
+          classifyOutboxError(apiException(fakeDioException(statusCode: 401))),
+          equals(OutboxErrorDisposition.unreachable));
     });
 
     test('409 carrying the server row is a conflict (resolution UI)', () {

@@ -11,6 +11,7 @@ import '../../providers/list_provider.dart'
 import '../../providers/store_provider.dart';
 import '../../screens/scanner/scan_review_screen.dart';
 import '../../screens/scanner/smart_capture_launcher.dart';
+import '../../services/scan/scan_models.dart' show GroceryScanResult;
 import '../../theme/spacing.dart';
 import '../app_bottom_sheet.dart';
 import '../app_icon.dart';
@@ -79,6 +80,7 @@ Future<int?> launchListScan(
     },
   ));
 
+  final GroceryScanResult result;
   try {
     await ref.read(grocerySeedProvider.future);
     final pipeline = await ref.read(scanPipelineProvider.future);
@@ -88,10 +90,12 @@ Future<int?> launchListScan(
         .whereType<String>()
         .toSet()
         .toList(growable: false);
-    final connectivity = ref.read(connectivityServiceProvider);
-    final isOnline = await connectivity.isOnline();
+    // The cached reachability verdict, not a fresh probe: scanning is fully
+    // on-device, and a probe with no real connection stalled the scan for
+    // seconds before it even started.
+    final isOnline = !ref.read(connectivityServiceProvider).isKnownOffline;
 
-    final result = await pipeline.run(
+    result = await pipeline.run(
       // Feed the original color capture. PP-OCRv6 performs its own exact
       // normalization; processedBytes is preview-only.
       imageBytes: capture.originalBytes,
@@ -102,20 +106,6 @@ Future<int?> launchListScan(
       cropHint: capture.cropHint,
     );
 
-    if (!context.mounted) return null;
-    Navigator.of(context).pop(); // dismiss loading
-
-    return Navigator.of(context).push<int>(
-      MaterialPageRoute(
-        builder: (_) => ScanReviewScreen(
-          scanResult: result,
-          groupId: groupId,
-          userId: userId,
-          targetListId: listId,
-          targetListName: listName,
-        ),
-      ),
-    );
   } catch (e, stack) {
     // Keep the user-facing copy generic, but never lose the real cause.
     debugPrint('list scan failed: $e\n$stack');
@@ -124,6 +114,23 @@ Future<int?> launchListScan(
     AppToast.error(context, l10n.scanCouldNotProcess);
     return null;
   }
+
+  if (!context.mounted) return null;
+  Navigator.of(context).pop(); // dismiss loading
+
+  // Outside the try: the loading route is gone by now, so a failure from the
+  // review must not run the handler above, which pops a route of its own.
+  return Navigator.of(context).push<int>(
+    MaterialPageRoute(
+      builder: (_) => ScanReviewScreen(
+        scanResult: result,
+        groupId: groupId,
+        userId: userId,
+        targetListId: listId,
+        targetListName: listName,
+      ),
+    ),
+  );
 }
 
 Future<ImageSource?> _pickImageSource(BuildContext context) {

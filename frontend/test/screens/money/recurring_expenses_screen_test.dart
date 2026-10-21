@@ -3,6 +3,8 @@
 // fold is worth — a rule now carries the split config the job needs, instead of
 // silently landing entirely on the payer.
 
+import 'package:drift/drift.dart' as drift;
+import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -17,11 +19,13 @@ import 'package:mitlist/providers/finance_provider.dart';
 import 'package:mitlist/providers/group_provider.dart';
 import 'package:mitlist/providers/grocery_provider.dart';
 import 'package:mitlist/providers/list_provider.dart' show grocerySeedProvider;
+import 'package:mitlist/repositories/finance_repository.dart';
 import 'package:mitlist/screens/money/recurring_expenses_screen.dart';
 import 'package:mitlist/services/auth_service.dart';
 import 'package:mitlist/services/finance_service.dart';
 import 'package:mitlist/services/grocery_expense_category_service.dart';
 import 'package:mitlist/services/group_service.dart';
+import 'package:mitlist/storage/app_database.dart' hide FinanceSummary;
 import 'package:mitlist/widgets/chip.dart';
 
 void main() {
@@ -70,6 +74,16 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(800, 1600));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
+    // The real offline-first repository over an in-memory database: writes
+    // queue and (with no sync scheduler) drain straight into the fake service.
+    final db = AppDatabase(
+      drift.DatabaseConnection(
+        NativeDatabase.memory(),
+        closeStreamsSynchronously: true,
+      ),
+    );
+    addTearDown(db.close);
+
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -81,6 +95,8 @@ void main() {
           authServiceProviderAsync
               .overrideWith((ref) async => FakeAuthService(currentUser: user)),
           financeServiceProviderAsync.overrideWith((ref) async => finance),
+          financeRepositoryProvider.overrideWith(
+              (ref) async => FinanceRepository(db: db, remote: finance)),
           grocerySeedProvider.overrideWith((ref) async {}),
           groceryExpenseCategoryServiceProvider.overrideWithValue(
             GroceryExpenseCategoryService.withResolver(
@@ -280,8 +296,9 @@ class _FakeRecurringFinanceService implements FinanceService {
 
   @override
   Future<RecurringExpense> createRecurringExpense(
-    CreateRecurringExpenseRequest req,
-  ) async {
+    CreateRecurringExpenseRequest req, {
+    String? idempotencyKey,
+  }) async {
     lastCreate = req;
     return RecurringExpense(
       id: '33333333-3333-3333-3333-333333333333',
@@ -303,8 +320,9 @@ class _FakeRecurringFinanceService implements FinanceService {
   @override
   Future<RecurringExpense> updateRecurringExpense(
     String id,
-    UpdateRecurringExpenseRequest req,
-  ) async {
+    UpdateRecurringExpenseRequest req, {
+    String? idempotencyKey,
+  }) async {
     lastUpdateId = id;
     lastUpdate = req;
     return items.first;

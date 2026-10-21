@@ -17,9 +17,11 @@ class ListService {
     return ListService._(dio);
   }
 
-  Future<ItemList> createList(CreateListRequest req) async {
+  Future<ItemList> createList(CreateListRequest req,
+      {String? idempotencyKey}) async {
     try {
-      final r = await _dio.post('/lists', data: req.toJson());
+      final r = await _dio.post('/lists',
+          data: req.toJson(), options: outboxOptions(idempotencyKey));
       return ItemList.fromJson(r.data);
     } on DioException catch (e) {
       _logger.e('Create list failed: ${e.response?.data}');
@@ -46,10 +48,12 @@ class ListService {
   }
 
   Future<ShoppingLocation> createShoppingLocation(
-    CreateShoppingLocationRequest req,
-  ) async {
+    CreateShoppingLocationRequest req, {
+    String? idempotencyKey,
+  }) async {
     try {
-      final r = await _dio.post('/shopping-locations', data: req.toJson());
+      final r = await _dio.post('/shopping-locations',
+          data: req.toJson(), options: outboxOptions(idempotencyKey));
       return ShoppingLocation.fromJson(r.data);
     } on DioException catch (e) {
       _logger.e('Create shopping location failed: ${e.response?.data}');
@@ -76,9 +80,11 @@ class ListService {
     }
   }
 
-  Future<Product> createProduct(CreateProductRequest req) async {
+  Future<Product> createProduct(CreateProductRequest req,
+      {String? idempotencyKey}) async {
     try {
-      final r = await _dio.post('/products', data: req.toJson());
+      final r = await _dio.post('/products',
+          data: req.toJson(), options: outboxOptions(idempotencyKey));
       return Product.fromJson(r.data);
     } on DioException catch (e) {
       _logger.e('Create product failed: ${e.response?.data}');
@@ -131,18 +137,19 @@ class ListService {
     }
   }
 
-  Future<void> deleteList(String id) async {
+  Future<void> deleteList(String id, {String? idempotencyKey}) async {
     try {
-      await _dio.delete('/lists/$id');
+      await _dio.delete('/lists/$id', options: outboxOptions(idempotencyKey));
     } on DioException catch (e) {
       _logger.e('Delete list failed: ${e.response?.data}');
       throw apiException(e);
     }
   }
 
-  Future<void> archiveList(String id) async {
+  Future<void> archiveList(String id, {String? idempotencyKey}) async {
     try {
-      await _dio.post('/lists/$id/archive');
+      await _dio.post('/lists/$id/archive',
+          options: outboxOptions(idempotencyKey));
     } on DioException catch (e) {
       _logger.e('Archive list failed: ${e.response?.data}');
       throw apiException(e);
@@ -158,9 +165,11 @@ class ListService {
     }
   }
 
-  Future<ItemList> updateList(String id, UpdateListRequest req) async {
+  Future<ItemList> updateList(String id, UpdateListRequest req,
+      {String? idempotencyKey}) async {
     try {
-      final r = await _dio.patch('/lists/$id', data: req.toJson());
+      final r = await _dio.patch('/lists/$id',
+          data: req.toJson(), options: outboxOptions(idempotencyKey));
       return ItemList.fromJson(r.data);
     } on DioException catch (e) {
       _logger.e('Update list failed: ${e.response?.data}');
@@ -170,11 +179,14 @@ class ListService {
 
   /// Schedules (or clears, with null) the list's one-time household reminder.
   /// Returns the updated list.
-  Future<ItemList> setListReminder(String id, DateTime? remindAt) async {
+  Future<ItemList> setListReminder(String id, DateTime? remindAt,
+      {String? idempotencyKey}) async {
     try {
-      final r = await _dio.put('/lists/$id/reminder', data: {
-        'remind_at': remindAt?.toUtc().toIso8601String(),
-      });
+      final r = await _dio.put(
+        '/lists/$id/reminder',
+        data: {'remind_at': remindAt?.toUtc().toIso8601String()},
+        options: outboxOptions(idempotencyKey),
+      );
       return ItemList.fromJson(r.data);
     } on DioException catch (e) {
       _logger.e('Set list reminder failed: ${e.response?.data}');

@@ -81,8 +81,8 @@ class _RecipeAddToCookbookSheetState
       } catch (_) {
         _groupId = null;
       }
-      final svc = await ref.read(recipeServiceProviderAsync.future);
-      final items = await svc.listCollections(limit: 100, groupId: _groupId);
+      final repo = await ref.read(recipeRepositoryProvider.future);
+      final items = await repo.loadCollections(limit: 100, groupId: _groupId);
       if (!mounted) return;
       setState(() {
         _cookbooks
@@ -104,11 +104,9 @@ class _RecipeAddToCookbookSheetState
     final l10n = AppLocalizations.of(context)!;
     setState(() => _busyId = c.id);
     try {
-      final svc = await ref.read(recipeServiceProviderAsync.future);
-      await svc.addRecipeToCollection(
-        c.id,
-        AddRecipeToCollectionRequest(recipeId: widget.recipeId),
-      );
+      // Queued: works offline and syncs with everything else.
+      final repo = await ref.read(recipeRepositoryProvider.future);
+      await repo.addRecipeToCollectionOfflineFirst(c.id, widget.recipeId);
       if (!mounted) return;
       unawaited(Haptics.success());
       Navigator.of(context).pop();
@@ -126,16 +124,15 @@ class _RecipeAddToCookbookSheetState
     final l10n = AppLocalizations.of(context)!;
     setState(() => _busyId = 'create');
     try {
-      final svc = await ref.read(recipeServiceProviderAsync.future);
+      final repo = await ref.read(recipeRepositoryProvider.future);
       // Inline creation makes a personal cookbook; sharing it with the
-      // household is an edit on the cookbooks screen.
-      final created = await svc.createCollection(
+      // household is an edit on the cookbooks screen. Both steps queue, so
+      // this works offline: the filing names the new cookbook's local id,
+      // which its create's sync rewrites before the filing replays.
+      final created = await repo.createCollectionOfflineFirst(
         CreateCollectionRequest(name: name),
       );
-      await svc.addRecipeToCollection(
-        created.id,
-        AddRecipeToCollectionRequest(recipeId: widget.recipeId),
-      );
+      await repo.addRecipeToCollectionOfflineFirst(created.id, widget.recipeId);
       if (!mounted) return;
       unawaited(Haptics.success());
       Navigator.of(context).pop();

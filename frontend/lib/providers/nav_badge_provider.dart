@@ -43,7 +43,13 @@ final navBadgeCountsProvider = Provider<NavBadgeCounts>((ref) {
 
   // The caller's due and overdue chores, the same count Home's Needs you
   // shows: a flatmate's turn is not something this badge should nag about.
-  final mine = choresOnMe(chores, DateTime.now());
+  // A skip still waiting to sync (offline) leaves the turn in the cache
+  // marked skipped until the server rotates it; it is dealt with, so it must
+  // not keep the badge up.
+  final mine = choresOnMe(
+    chores.where((c) => c.pendingAssignment?.status != 'skipped'),
+    DateTime.now(),
+  );
   final choreCount = mine.overdue.length + mine.dueToday.length;
 
   final settlementCount = summary?.reimbursements.length ?? 0;

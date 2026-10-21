@@ -58,16 +58,18 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
 
     try {
       // The global scanner route does not carry a user id. Resolve it from the
-      // authenticated session only when a scan is actually launched.
-      final userId = widget.userId ??
-          (await (await ref.read(authServiceProviderAsync.future)).getMe()).id;
+      // authenticated session only when a scan is actually launched, from the
+      // saved profile first: scanning is on-device and must not need the
+      // network just to learn who is signed in.
+      final userId = widget.userId ?? await _currentUserId();
       // Resolution reads the Drift seed. Await it here rather than merely
       // triggering it at screen construction, otherwise a fast first scan can
       // race the one-time seed and silently produce no canonical matches.
       await ref.read(grocerySeedProvider.future);
       final pipeline = await ref.read(scanPipelineProvider.future);
-      final connectivity = ref.read(connectivityServiceProvider);
-      final isOnline = await connectivity.isOnline();
+      // The last verdict, not a fresh probe: a probe on a dead uplink holds
+      // the scan behind its timeout, and the pipeline runs offline anyway.
+      final isOnline = !ref.read(connectivityServiceProvider).isKnownOffline;
 
       final result = await pipeline.run(
         // Original capture, not the preview-binarized bytes — the pipeline
@@ -100,6 +102,11 @@ class _ScannerScreenState extends ConsumerState<ScannerScreen> {
         _isAnalyzing = false;
       });
     }
+  }
+
+  Future<String> _currentUserId() async {
+    final auth = await ref.read(authServiceProviderAsync.future);
+    return auth.cachedMe?.id ?? (await auth.getMe()).id;
   }
 
   void _showSourcePicker() {

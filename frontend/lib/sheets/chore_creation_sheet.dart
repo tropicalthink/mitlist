@@ -215,9 +215,11 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
   }
 
   /// Zones are the household's, not the chore's, so editing them writes
-  /// straight through to the group. They're editable from here because the
-  /// moment you need a new zone is the moment you're filing a chore under one
-  /// — sending people to household settings mid-create loses the chore.
+  /// through to the group. They're editable from here because the moment you
+  /// need a new zone is the moment you're filing a chore under one — sending
+  /// people to household settings mid-create loses the chore. Offline the
+  /// edit is queued and the cached household patched, so the new zone can be
+  /// picked right away.
   Future<bool> _persistZones(List<String> zones) async {
     final l10n = AppLocalizations.of(context)!;
     final groups = ref.read(cachedGroupsProvider).valueOrNull ?? const [];
@@ -225,9 +227,12 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
         resolveActiveGroupId(groups, ref.read(currentGroupIdProvider));
     if (groupId == null) return false;
     try {
-      final svc = await ref.read(groupServiceProviderAsync.future);
-      await svc.updateGroup(groupId, UpdateGroupRequest(choreZones: zones));
-      await refreshCachedGroups(ref);
+      final repo = await ref.read(groupRepositoryProvider.future);
+      await repo.updateGroupOfflineFirst(
+          groupId, UpdateGroupRequest(choreZones: zones));
+      // The repository already cached the result (server or patched copy).
+      ref.invalidate(cachedGroupsProvider);
+      await ref.read(cachedGroupsProvider.future);
       return true;
     } catch (e) {
       if (!mounted) return false;
@@ -424,11 +429,14 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
   /// than merging, so the full chore is sent back — including fields this
   /// sheet doesn't edit (rotation type, start date), which are echoed
   /// unchanged so they survive the round trip.
+  ///
+  /// Saved locally and queued, so editing works offline; the repository syncs
+  /// it and refreshes the queue afterwards.
   Future<void> _onSaveEdit(Chore existing) async {
     try {
-      final choreService = await ref.read(choreServiceProviderAsync.future);
-      await choreService.updateChore(
-        existing.id,
+      final choreRepo = await ref.read(choreRepositoryProvider.future);
+      await choreRepo.updateOfflineFirst(
+        existing,
         UpdateChoreRequest(
           name: _nameController.text.trim(),
           description: _descriptionController.text.trim().isEmpty
@@ -448,14 +456,6 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
           category: _category,
         ),
       );
-
-      // The direct PATCH bypasses the offline cache, so pull the queue fresh
-      // before callers repaint from it. Best-effort: the server already has
-      // the edit, and the caller refreshes again on the `true` result.
-      try {
-        final choreRepo = await ref.read(choreRepositoryProvider.future);
-        await choreRepo.refreshCurrentChores(existing.groupId);
-      } catch (_) {}
 
       if (!mounted) return;
       widget.dirtyNotifier?.value = false;

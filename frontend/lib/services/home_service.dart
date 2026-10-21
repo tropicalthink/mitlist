@@ -6,6 +6,7 @@ import '../models/home_models.dart';
 import 'api_client.dart';
 import 'api_error_mapper.dart';
 import 'group_id_validator.dart';
+import 'response_cache_interceptor.dart';
 
 class HomeService {
   final Dio _dio;
@@ -26,6 +27,11 @@ class HomeService {
       final response = await _dio.get(
         '/groups/$groupId/home',
         queryParameters: {'date': date},
+        // Home writes this aggregate into the hub, pinwall and meal-plan
+        // Drift caches. A stale offline copy would overwrite them with older
+        // data than they already hold, so offline this fails and Home keeps
+        // painting from those caches instead.
+        options: Options(extra: {ResponseCacheInterceptor.liveOnlyExtra: true}),
       );
       return HomeSnapshot.fromJson(
         (response.data as Map).cast<String, dynamic>(),

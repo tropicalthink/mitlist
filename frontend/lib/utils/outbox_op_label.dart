@@ -15,21 +15,45 @@ OutboxOpDomain outboxOpDomain(OutboxOp op) {
     case 'reorderItems':
     case 'addItemAmount':
     case 'clearItems':
+    case 'createList':
+    case 'updateList':
+    case 'archiveList':
+    case 'deleteList':
+    case 'setListReminder':
+    case 'createProduct':
+    case 'createShoppingLocation':
       return OutboxOpDomain.list;
     case 'createExpense':
     case 'updateExpense':
     case 'deleteExpense':
     case 'createSettlement':
+    case 'cancelSettlement':
+    case 'createRecurringExpense':
+    case 'updateRecurringExpense':
+    case 'deleteRecurringExpense':
       return OutboxOpDomain.money;
     case 'createChore':
     case 'completeChore':
     case 'skipChore':
     case 'rescheduleChore':
     case 'undoChore':
+    case 'updateChore':
+    case 'deleteChore':
+    case 'createChoreSubtask':
+    case 'updateChoreSubtask':
+    case 'deleteChoreSubtask':
       return OutboxOpDomain.chores;
     case 'createRecipe':
     case 'updateRecipe':
     case 'deleteRecipe':
+    case 'createMealPlan':
+    case 'updateMealPlan':
+    case 'deleteMealPlan':
+    case 'createCollection':
+    case 'updateCollection':
+    case 'deleteCollection':
+    case 'addRecipeToCollection':
+    case 'removeRecipeFromCollection':
       return OutboxOpDomain.recipes;
     case 'createPinwallPost':
     case 'updatePinwallPost':
@@ -40,10 +64,14 @@ OutboxOpDomain outboxOpDomain(OutboxOp op) {
       return OutboxOpDomain.telemetry;
   }
   return switch (op.entityType) {
-    'listItem' || 'list' => OutboxOpDomain.list,
-    'expense' || 'settlement' => OutboxOpDomain.money,
-    'chore' => OutboxOpDomain.chores,
-    'recipe' => OutboxOpDomain.recipes,
+    'listItem' ||
+    'list' ||
+    'product' ||
+    'shoppingLocation' =>
+      OutboxOpDomain.list,
+    'expense' || 'settlement' || 'recurringExpense' => OutboxOpDomain.money,
+    'chore' || 'choreSubtask' => OutboxOpDomain.chores,
+    'recipe' || 'mealPlan' || 'cookbook' => OutboxOpDomain.recipes,
     'pinwallPost' => OutboxOpDomain.pinboard,
     'groceryPurchase' => OutboxOpDomain.telemetry,
     _ => OutboxOpDomain.other,
@@ -89,23 +117,53 @@ String outboxOpLabel(
         ? l10n.outboxOpClearCheckedItems
         : l10n.outboxOpClearItems,
     'recordPurchase' => l10n.outboxOpRecordPurchase,
+    'createList' => l10n.outboxOpCreateList,
+    'updateList' => l10n.outboxOpUpdateList,
+    'archiveList' => l10n.outboxOpArchiveList,
+    'deleteList' => l10n.outboxOpDeleteList,
+    'setListReminder' => l10n.outboxOpSetListReminder,
+    'createProduct' => l10n.outboxOpAddProduct,
+    'createShoppingLocation' => l10n.outboxOpAddShoppingLocation,
     'createExpense' => l10n.sheetFailedChangesOpCreateExpense,
     'updateExpense' => l10n.sheetFailedChangesOpUpdateExpense,
     'deleteExpense' => l10n.sheetFailedChangesOpDeleteExpense,
     'createSettlement' => l10n.outboxOpCreateSettlement,
+    'cancelSettlement' => l10n.outboxOpCancelSettlement,
+    'createRecurringExpense' => l10n.outboxOpCreateRecurringExpense,
+    'updateRecurringExpense' => l10n.outboxOpUpdateRecurringExpense,
+    'deleteRecurringExpense' => l10n.outboxOpDeleteRecurringExpense,
     'createRecipe' => l10n.sheetFailedChangesOpCreateRecipe,
     'updateRecipe' => l10n.sheetFailedChangesOpUpdateRecipe,
     'deleteRecipe' => l10n.sheetFailedChangesOpDeleteRecipe,
+    'createMealPlan' => l10n.outboxOpAddMeal,
+    'updateMealPlan' => l10n.outboxOpUpdateMeal,
+    'deleteMealPlan' => l10n.outboxOpRemoveMeal,
+    'createCollection' => l10n.outboxOpCreateCookbook,
+    'updateCollection' => l10n.outboxOpUpdateCookbook,
+    'deleteCollection' => l10n.outboxOpDeleteCookbook,
+    'addRecipeToCollection' => l10n.outboxOpAddToCookbook,
+    'removeRecipeFromCollection' => l10n.outboxOpRemoveFromCookbook,
     'createChore' => l10n.outboxOpCreateChore,
     'completeChore' => l10n.sheetFailedChangesOpCompleteChore,
     'skipChore' => l10n.sheetFailedChangesOpSkipChore,
     'rescheduleChore' => l10n.sheetFailedChangesOpRescheduleChore,
     'undoChore' => l10n.sheetFailedChangesOpUndoChore,
+    'updateChore' => l10n.outboxOpUpdateChore,
+    'deleteChore' => l10n.outboxOpDeleteChore,
+    'createChoreSubtask' => l10n.outboxOpAddSubtask,
+    'updateChoreSubtask' => l10n.outboxOpUpdateSubtask,
+    'deleteChoreSubtask' => l10n.outboxOpDeleteSubtask,
     'createPinwallPost' => l10n.sheetFailedChangesOpCreatePinwallPost,
     'deletePinwallPost' => l10n.sheetFailedChangesOpDeletePinwallPost,
     'updatePinwallPost' => l10n.sheetFailedChangesOpUpdatePinwallPost,
     'updatePinwallPostPosition' => l10n.outboxOpMovePinwallPost,
     'setLanguage' => l10n.outboxOpSetLanguage,
+    'updateGroup' => l10n.outboxOpUpdateHousehold,
+    'updateProfile' => l10n.outboxOpUpdateProfile,
+    'markNotificationRead' => l10n.outboxOpMarkNotificationRead,
+    'markAllNotificationsRead' => l10n.outboxOpMarkAllNotificationsRead,
+    'deleteNotification' => l10n.outboxOpDeleteNotification,
+    'updateNotificationPreference' => l10n.outboxOpUpdateNotificationPreference,
     // Replayed from a home screen widget, Siri or the quick add (plans/047).
     'widgetRequest' => switch (payload?['type']) {
         'list_item.check' => l10n.outboxOpCheckItem,

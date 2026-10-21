@@ -7,9 +7,13 @@ import '../models/group_models.dart';
 import '../models/home_models.dart';
 import '../models/recipe_models.dart';
 import '../repositories/recipe_repository.dart';
+import 'group_repository.dart';
+import 'outbox_error_classifier.dart';
+import 'pinwall_repository.dart';
 import '../services/activity_service.dart';
 import '../services/group_service.dart';
 import '../services/home_service.dart';
+import '../services/response_cache_interceptor.dart';
 import '../storage/app_database.dart';
 
 class HubRepository {
@@ -60,10 +64,19 @@ class HubRepository {
   Future<void> refresh(String groupId, {int activityLimit = 10}) async {
     try {
       final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-      final snapshot = await _home.getSnapshot(groupId, date: today);
+      // Live only (the service also marks the request): this aggregate is
+      // written into Drift, and a stale offline body would roll it back.
+      final snapshot = await ResponseCacheInterceptor.liveOnly(
+          () => _home.getSnapshot(groupId, date: today));
       await _cacheSnapshot(groupId, today, snapshot);
       return;
-    } catch (_) {
+    } catch (e) {
+      // Offline: the fallback pair would fail the same way, or worse, be
+      // answered from the response cache with data older than what Home
+      // already holds. Let the caller keep painting its caches.
+      if (classifyOutboxError(e) == OutboxErrorDisposition.unreachable) {
+        rethrow;
+      }
       // Older/self-hosted servers may not expose the aggregate yet. Keep the
       // established pair of requests as a compatibility fallback.
     }
@@ -78,7 +91,8 @@ class HubRepository {
         return <ActivityLogModel>[];
       }),
     ]);
-    final group = results[0] as Group;
+    final group =
+        await GroupRepository.withPendingEdits(_db, results[0] as Group);
     final activities = results[1] as List<ActivityLogModel>;
     await _db.upsertHubGroup(
         groupId: groupId, groupJson: jsonEncode(group.toJson()));
@@ -109,9 +123,13 @@ class HubRepository {
     HomeSnapshot snapshot,
   ) async {
     await _db.transaction(() async {
+      // Writes still queued offline (a household rename, notes pinned or
+      // moved) go back on top of the server's answer; see
+      // [PinwallRepository.withPendingWrites].
+      final group = await GroupRepository.withPendingEdits(_db, snapshot.group);
       await _db.upsertHubGroup(
         groupId: groupId,
-        groupJson: jsonEncode(snapshot.group.toJson()),
+        groupJson: jsonEncode(group.toJson()),
       );
       await _db.upsertHubActivities(
         groupId: groupId,
@@ -122,8 +140,11 @@ class HubRepository {
       if (!snapshot.pinwallError) {
         await _db.upsertPinwallPosts(
           groupId: groupId,
-          postsJson: jsonEncode(
-              snapshot.pinwallPosts.map((post) => post.toJson()).toList()),
+          postsJson: jsonEncode(await PinwallRepository.withPendingWrites(
+            _db,
+            groupId,
+            [for (final post in snapshot.pinwallPosts) post.toJson()],
+          )),
         );
       }
       if (!snapshot.todayMealError) {

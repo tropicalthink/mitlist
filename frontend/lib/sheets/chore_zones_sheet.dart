@@ -1,8 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/group_models.dart';
 import '../providers/group_provider.dart';
+import '../providers/list_provider.dart' show appDatabaseProvider;
+import '../repositories/group_repository.dart';
+import '../services/response_cache_interceptor.dart';
 import '../theme/spacing.dart';
 import '../utils/friendly_error.dart';
 import '../widgets/alert.dart';
@@ -62,20 +67,47 @@ class _ChoreZonesSheetState extends ConsumerState<ChoreZonesSheet> {
       _error = null;
     });
     try {
-      final svc = await ref.read(groupServiceProviderAsync.future);
-      final group = await svc.getGroup(widget.groupId);
+      // The cached household (zone edits still queued offline included)
+      // answers at once and offline; the server is only asked when this
+      // household is not cached.
+      final repo = await ref.read(groupRepositoryProvider.future);
+      final cached = (await repo.getGroupsOnce())
+          .where((g) => g.id == widget.groupId)
+          .firstOrNull;
+      final group = cached ??
+          await (await ref.read(groupServiceProviderAsync.future))
+              .getGroup(widget.groupId);
       if (!mounted) return;
       setState(() {
         _zones = List<String>.from(group.choreZones);
         _isLoading = false;
         _zonesChanged = false;
       });
+      if (cached != null) unawaited(_refreshFromServer());
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _error = friendlyErrorMessage(e, AppLocalizations.of(context)!);
         _isLoading = false;
       });
+    }
+  }
+
+  /// Zones are saved as a whole list, so editing a stale copy would drop a
+  /// zone another member added since. Online, swap in the server's list
+  /// (with this device's queued edits on top) unless the user started
+  /// editing already.
+  Future<void> _refreshFromServer() async {
+    try {
+      final svc = await ref.read(groupServiceProviderAsync.future);
+      final fresh = await ResponseCacheInterceptor.liveOnly(
+          () => svc.getGroup(widget.groupId));
+      final group = await GroupRepository.withPendingEdits(
+          ref.read(appDatabaseProvider), fresh);
+      if (!mounted || _zonesChanged || _isSaving) return;
+      setState(() => _zones = List<String>.from(group.choreZones));
+    } catch (_) {
+      // Offline: the cached list stands.
     }
   }
 
@@ -104,16 +136,18 @@ class _ChoreZonesSheetState extends ConsumerState<ChoreZonesSheet> {
     if (_isSaving) return;
     setState(() => _isSaving = true);
     try {
-      final svc = await ref.read(groupServiceProviderAsync.future);
-      final updated = await svc.updateGroup(
+      // Online the server answers first; offline the edit is queued and the
+      // cached household patched, so the chores screen's zone chips update
+      // either way.
+      final repo = await ref.read(groupRepositoryProvider.future);
+      final result = await repo.updateGroupOfflineFirst(
         widget.groupId,
         UpdateGroupRequest(choreZones: _zones),
       );
       if (!mounted) return;
-      await refreshCachedGroups(ref);
-      if (!mounted) return;
+      ref.invalidate(cachedGroupsProvider);
       setState(() {
-        _zones = List<String>.from(updated.choreZones);
+        _zones = List<String>.from(result.group?.choreZones ?? _zones);
         _isSaving = false;
         _zonesChanged = false;
       });

@@ -8,9 +8,12 @@ import 'package:intl/intl.dart';
 import '../../models/meal_plan_models.dart';
 import '../../models/recipe_models.dart';
 import '../../providers/group_provider.dart';
+import '../../providers/list_provider.dart' show listRepositoryProvider;
 import '../../providers/meal_plan_provider.dart';
+import '../../providers/outbox_provider.dart';
 import '../../providers/recipe_provider.dart';
-import '../../services/meal_plan_service.dart';
+import '../../repositories/meal_plan_repository.dart';
+import '../../repositories/outbox_error_classifier.dart';
 import '../../router.dart' show currentGroupIdProvider;
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
@@ -46,10 +49,11 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
   final Set<String> _activeOperations = {};
   final LatestRequestGuard _loadGuard = LatestRequestGuard();
   String? _resolvedGroupId;
-  // Set once an edit succeeds so leaving the screen can release the
-  // household's batched notification. The service is remembered because
-  // providers must not be read once the widget is disposed.
-  MealPlanService? _editedWith;
+  // Set once an edit is made so leaving the screen can release the
+  // household's batched notification. The repository is remembered because
+  // providers must not be read once the widget is disposed; it holds the
+  // release back until queued edits have synced.
+  MealPlanRepository? _editedWith;
 
   @override
   void initState() {
@@ -79,7 +83,7 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
       // Leaving the planner ends the editing session: release the
       // notification digest now. Best-effort; the server's idle window
       // still delivers if this never arrives.
-      unawaited(editedWith.flushMealPlanNotifications(groupId));
+      unawaited(editedWith.releaseNotifications(groupId).catchError((_) {}));
     }
     _loadGuard.dispose();
     super.dispose();
@@ -151,8 +155,16 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
     } catch (e) {
       if (!mounted || !_loadGuard.isCurrent(request)) return;
       final message = friendlyErrorMessage(e, AppLocalizations.of(context)!);
-      if (hadContent) {
-        setState(() => _isLoading = false);
+      // A week never opened online has no cache. Offline, still show its
+      // empty days, with the connection note, so meals can be planned for it
+      // now and synced later, rather than a dead-end error page.
+      final offline =
+          classifyOutboxError(e) == OutboxErrorDisposition.unreachable;
+      if (hadContent || offline) {
+        setState(() {
+          if (offline && !hadContent) _plans.clear();
+          _isLoading = false;
+        });
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(message)));
       } else {
@@ -164,22 +176,33 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
     }
   }
 
+  /// Titles for the planned meals. Per recipe and best effort: the local
+  /// cache answers first (it also holds recipes created offline, which the
+  /// server cannot), and one recipe that cannot be loaded leaves only its own
+  /// slot on the generic label instead of every slot after it.
   Future<void> _preloadRecipes(List<MealPlan> plans, int request) async {
-    final recipeIds = plans.map((p) => p.recipeId).toSet();
+    final recipeIds = plans
+        .map((p) => p.recipeId)
+        .where((id) => !_recipeCache.containsKey(id))
+        .toSet();
     if (recipeIds.isEmpty) return;
-    try {
-      final svc = await ref.read(recipeServiceProviderAsync.future);
-      final loaded = <String, Recipe>{};
-      for (final id in recipeIds) {
-        if (_recipeCache.containsKey(id)) continue;
-        loaded[id] = await svc.getRecipe(id);
-        if (!mounted || !_loadGuard.isCurrent(request)) return;
+    final repo = await ref.read(recipeRepositoryProvider.future);
+    final loaded = <String, Recipe>{};
+    for (final id in recipeIds) {
+      try {
+        final recipe =
+            await repo.loadRecipeLocal(id) ?? await repo.loadRecipe(id);
+        loaded[id] = recipe;
+        // Warm the ingredients too, so "Generate shopping list" can work
+        // from this device later even without a connection.
+        unawaited(repo.loadIngredients(id).then((_) {}, onError: (_) {}));
+      } catch (_) {
+        // best effort
       }
-      if (loaded.isNotEmpty && mounted && _loadGuard.isCurrent(request)) {
-        setState(() => _recipeCache.addAll(loaded));
-      }
-    } catch (_) {
-      // best effort
+      if (!mounted || !_loadGuard.isCurrent(request)) return;
+    }
+    if (loaded.isNotEmpty && mounted && _loadGuard.isCurrent(request)) {
+      setState(() => _recipeCache.addAll(loaded));
     }
   }
 
@@ -217,16 +240,25 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
           defaultServings: recipe.servings);
       if (servings == null || !mounted) return;
 
-      final svc = await ref.read(mealPlanServiceProviderAsync.future);
-      await svc.createMealPlan(CreateMealPlanRequest(
-        groupId: _resolvedGroupId!,
-        date: _formatDate(date),
-        slot: slot,
-        recipeId: recipe.id,
-        servings: servings,
-      ));
-      _editedWith = svc;
-      await _load();
+      // Queued and shown at once; the outbox sends it when it can.
+      final repo = await ref.read(mealPlanRepositoryProvider.future);
+      final plan = await repo.createOfflineFirst(
+        CreateMealPlanRequest(
+          groupId: _resolvedGroupId!,
+          date: _formatDate(date),
+          slot: slot,
+          recipeId: recipe.id,
+          servings: servings,
+        ),
+        recipeTitle: recipe.title,
+      );
+      _editedWith = repo;
+      if (!mounted) return;
+      setState(() {
+        _recipeCache[recipe.id] = recipe;
+        _plans.add(plan);
+      });
+      unawaited(Haptics.success());
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -243,10 +275,15 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
     final operation = 'plan:$planId';
     if (!_beginOperation(operation)) return;
     try {
-      final svc = await ref.read(mealPlanServiceProviderAsync.future);
-      await svc.deleteMealPlan(planId);
-      _editedWith = svc;
-      await _load();
+      final plan = _plans.firstWhere(
+        (p) => p.id == planId,
+        orElse: () => throw const NotFoundException('Meal plan not found'),
+      );
+      final repo = await ref.read(mealPlanRepositoryProvider.future);
+      await repo.deleteOfflineFirst(plan);
+      _editedWith = repo;
+      if (!mounted) return;
+      setState(() => _plans.removeWhere((p) => p.id == planId));
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -276,15 +313,19 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
           defaultServings: recipe.servings);
       if (servings == null || !mounted) return;
 
-      final svc = await ref.read(mealPlanServiceProviderAsync.future);
-      await svc.updateMealPlan(
-          planId,
-          UpdateMealPlanRequest(
-            recipeId: recipe.id,
-            servings: servings,
-          ));
-      _editedWith = svc;
-      await _load();
+      final repo = await ref.read(mealPlanRepositoryProvider.future);
+      final updated = await repo.updateOfflineFirst(
+        plan,
+        UpdateMealPlanRequest(recipeId: recipe.id, servings: servings),
+        recipeTitle: recipe.title,
+      );
+      _editedWith = repo;
+      if (!mounted) return;
+      setState(() {
+        _recipeCache[recipe.id] = recipe;
+        final i = _plans.indexWhere((p) => p.id == planId);
+        if (i >= 0) _plans[i] = updated;
+      });
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -303,16 +344,10 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
     if (!_beginOperation(operation)) return;
     unawaited(Haptics.light());
     try {
-      final svc = await ref.read(mealPlanServiceProviderAsync.future);
       final from = _formatDate(_weekStart);
       final to = _formatDate(_weekStart.add(const Duration(days: 6)));
-      final result = await svc.generateShoppingList(
-        _resolvedGroupId!,
-        from: from,
-        to: to,
-      );
-      final listId = result['list_id'] as String?;
-      final itemCount = (result['item_count'] as int?) ?? 0;
+      final (:listId, :itemCount) =
+          await _generate(_resolvedGroupId!, from: from, to: to);
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -329,6 +364,18 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
               .pushNamed('listDetail', pathParameters: {'listId': listId}));
         }
       }
+    } on MealPlanShoppingListException catch (e) {
+      if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
+      final message = switch (e.reason) {
+        MealPlanShoppingListFailure.noPlans => l10n.mealPlanAddRecipesDesc,
+        MealPlanShoppingListFailure.noIngredients =>
+          l10n.recipeAddToListNoIngredients,
+        MealPlanShoppingListFailure.ingredientsUnavailable =>
+          l10n.commonCheckConnection,
+      };
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -340,6 +387,64 @@ class _MealPlanScreenState extends ConsumerState<MealPlanScreen> {
     } finally {
       _finishOperation(operation);
     }
+  }
+
+  /// The server generates the list when it can: one request, and its
+  /// canonical grocery matching. It cannot when the device is offline, or when
+  /// meals planned here are still queued (the server would build the list
+  /// without them), so then the list is built on this device from cached
+  /// recipes and queued through the list outbox like any other new list.
+  Future<({String? listId, int itemCount})> _generate(
+    String groupId, {
+    required String from,
+    required String to,
+  }) async {
+    final mealRepo = await ref.read(mealPlanRepositoryProvider.future);
+    final online = await ref.read(connectivityServiceProvider).isOnline();
+    if (online) {
+      // Push this visit's edits first so the server sees the whole week.
+      try {
+        final coordinator = await ref.read(outboxCoordinatorProvider.future);
+        await coordinator.flushSession(reason: 'generate shopping list');
+      } catch (_) {
+        // Still queued; the local path below covers it.
+      }
+      if (!await mealRepo.hasPendingChanges(groupId)) {
+        try {
+          final svc = await ref.read(mealPlanServiceProviderAsync.future);
+          final result = await svc.generateShoppingList(
+            groupId,
+            from: from,
+            to: to,
+          );
+          return (
+            listId: result['list_id'] as String?,
+            itemCount: (result['item_count'] as int?) ?? 0,
+          );
+        } catch (e) {
+          // Only a request that never reached the server falls back: any
+          // answer from it (including "nothing planned") is the real one.
+          if (classifyOutboxError(e) != OutboxErrorDisposition.unreachable) {
+            rethrow;
+          }
+        }
+      }
+    }
+
+    final recipeRepo = await ref.read(recipeRepositoryProvider.future);
+    final listRepo = await ref.read(listRepositoryProvider.future);
+    final result = await mealRepo.generateShoppingListOfflineFirst(
+      groupId: groupId,
+      from: from,
+      to: to,
+      recipeOf: (id) async =>
+          await recipeRepo.loadRecipeLocal(id) ??
+          await recipeRepo.loadRecipe(id),
+      ingredientsOf: recipeRepo.loadIngredients,
+      createList: listRepo.createListOfflineFirst,
+      createItem: (listId, req) => listRepo.createItemOfflineFirst(listId, req),
+    );
+    return (listId: result.listId, itemCount: result.itemCount);
   }
 
   List<MealPlan> _plansFor(DateTime date) {

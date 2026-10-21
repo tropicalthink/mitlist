@@ -409,13 +409,13 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
     );
     if (name == null || name.trim().isEmpty || !mounted) return null;
 
-    final service = await ref.read(listServiceProviderAsync.future);
-    final created = await service.createList(
+    // Local first, like every other list create: scanning works offline, so
+    // filing the scan into a new list must too. The items below are queued
+    // against the temporary id, which the outbox swaps for the server's.
+    final repo = await ref.read(listRepositoryProvider.future);
+    final created = await repo.createListOfflineFirst(
       CreateListRequest(groupId: widget.groupId, name: name.trim()),
     );
-
-    final repo = await ref.read(listRepositoryProvider.future);
-    await repo.refreshLists(widget.groupId);
     return created.id;
   }
 

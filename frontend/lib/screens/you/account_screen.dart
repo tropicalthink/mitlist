@@ -23,6 +23,7 @@ import '../../providers/theme_provider.dart';
 import '../../providers/text_settings_provider.dart';
 import '../../providers/locale_provider.dart';
 import '../../providers/list_provider.dart' show appDatabaseProvider;
+import '../../providers/account_provider.dart';
 import '../../repositories/account_repository.dart';
 import '../../providers/finance_provider.dart';
 import '../../providers/calendar_provider.dart';
@@ -213,6 +214,10 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     User fresh;
     try {
       fresh = await authService.getMe();
+      // A rename or tips toggle still queued offline is newer than any
+      // answer the server (or its offline copy) can give.
+      final account = await ref.read(accountRepositoryProvider.future);
+      fresh = await account.withPendingProfile(fresh);
     } catch (_) {
       return;
     }
@@ -252,13 +257,15 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     }
     final l10n2 = AppLocalizations.of(context)!;
     try {
-      final authService = await ref.read(authServiceProviderAsync.future);
-      await authService.updateMe(UpdateUserRequest(
+      // Queued offline-first: the new name shows at once (and in the saved
+      // profile other screens paint from), and the outbox delivers it.
+      final account = await ref.read(accountRepositoryProvider.future);
+      await account.queueProfileUpdate(
           firstName: newName.split(' ')[0],
           lastName: newName.contains(' ')
               ? newName.split(' ').sublist(1).join(' ')
-              : ''));
-      setState(() => _name = newName);
+              : '');
+      if (mounted) setState(() => _name = newName);
     } catch (e) {
       if (mounted) setState(() => _error = l10n2.accountFailedSaveName);
     } finally {
@@ -1172,10 +1179,9 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
       _tipsEmailsEnabled = enabled;
     });
     try {
-      final authService = await ref.read(authServiceProviderAsync.future);
-      final user = await authService
-          .updateMe(UpdateUserRequest(tipsEmailsEnabled: enabled));
-      if (mounted) setState(() => _tipsEmailsEnabled = user.tipsEmailsEnabled);
+      // Queued offline-first, like the name.
+      final account = await ref.read(accountRepositoryProvider.future);
+      await account.queueProfileUpdate(tipsEmailsEnabled: enabled);
     } catch (e) {
       if (!mounted) return;
       setState(() => _tipsEmailsEnabled = previous);

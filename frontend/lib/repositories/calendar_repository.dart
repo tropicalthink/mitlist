@@ -2,7 +2,9 @@ import 'dart:convert';
 
 import '../models/calendar_models.dart';
 import '../services/calendar_service.dart';
+import '../services/response_cache_interceptor.dart';
 import '../storage/app_database.dart';
+import 'meal_plan_repository.dart';
 
 /// Read-through cache for the household calendar.
 ///
@@ -12,7 +14,10 @@ import '../storage/app_database.dart';
 ///
 /// Read-only by design: the calendar is a projection of chores, meal plans and
 /// expenses, all of which have their own write paths. Caching it makes the
-/// screen render offline; it does not make the calendar itself editable.
+/// screen render offline; it does not make the calendar itself editable. Meals
+/// planned, moved or removed offline are laid over every read (see
+/// [MealPlanRepository.applyPendingToCalendar]) so the calendar agrees with
+/// the planner before the server has seen the change.
 class CalendarRepository {
   final AppDatabase _db;
   final CalendarService _remote;
@@ -45,13 +50,17 @@ class CalendarRepository {
   ) async {
     final key = rangeKey(from, to);
     try {
-      final raw = await _remote.getCalendarRaw(groupId, from, to);
+      // Live only: the answer is persisted below, and a stale HTTP body
+      // served offline would overwrite a newer cached window.
+      final raw = await ResponseCacheInterceptor.liveOnly(
+          () => _remote.getCalendarRaw(groupId, from, to));
       await _db.upsertCalendarRange(
         groupId: groupId,
         rangeKey: key,
         eventsJson: jsonEncode(raw),
       );
-      return CalendarService.parseCalendarEvents(raw);
+      return await _withPendingMeals(
+          CalendarService.parseCalendarEvents(raw), groupId, from, to);
     } catch (_) {
       final cached = await getCached(groupId, from, to);
       if (cached != null) return cached;
@@ -73,9 +82,42 @@ class CalendarRepository {
     try {
       final decoded = jsonDecode(row.eventsJson);
       if (decoded is! List) return null;
-      return CalendarService.parseCalendarEvents(decoded);
+      return await _withPendingMeals(
+          CalendarService.parseCalendarEvents(decoded), groupId, from, to);
     } catch (_) {
       return null;
     }
+  }
+
+  Future<List<CalendarEvent>> _withPendingMeals(
+    List<CalendarEvent> events,
+    String groupId,
+    DateTime from,
+    DateTime to,
+  ) async {
+    final withMeals = MealPlanRepository.applyPendingToCalendar(
+      events,
+      await MealPlanRepository.pendingChanges(_db),
+      groupId: groupId,
+      from: from,
+      to: to,
+    );
+    // A chore deleted here (calendar or chores tab) is gone for the user even
+    // while its delete waits in the outbox; the server would still list it.
+    final deletedChores = <String>{};
+    for (final op in await _db.getOutboxOpsByType('deleteChore')) {
+      try {
+        final payload = jsonDecode(op.payloadJson);
+        final id = payload is Map ? payload['choreId'] : null;
+        if (id is String) deletedChores.add(id);
+      } catch (_) {
+        // Malformed ops are the drainer's problem.
+      }
+    }
+    if (deletedChores.isEmpty) return withMeals;
+    return withMeals
+        .where((e) => !(e.type == CalendarEventType.chore &&
+            deletedChores.contains(e.chore?.choreId)))
+        .toList();
   }
 }

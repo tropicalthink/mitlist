@@ -9,8 +9,10 @@ import 'package:intl/intl.dart';
 
 import '../../models/group_models.dart';
 import '../../models/notification_models.dart';
+import '../../providers/account_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../providers/list_provider.dart' show sseServiceProvider;
+import '../../repositories/outbox_error_classifier.dart';
 import '../../router.dart' show currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
 import '../../services/sse_service.dart';
@@ -135,8 +137,11 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
       }
       _ensureLiveUpdates(groups);
       final service = await ref.read(notificationServiceProviderAsync.future);
-      final data =
+      // Offline this is the last page the server gave (the response cache);
+      // reads and deletes still queued go back on top of it.
+      final fetched =
           await service.listNotifications(limit: _pageLimit, offset: 0);
+      final data = await _withPendingWrites(fetched);
       if (!mounted || !_loadGuard.isCurrent(request)) return;
       setState(() {
         _hasHousehold = true;
@@ -151,9 +156,13 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
       if (!mounted || !_loadGuard.isCurrent(request)) return;
       if (hadContent) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.notificationsFailedLoad)),
-        );
+        // Offline, the inbox on screen is all there is; a refresh that could
+        // not reach the server is not news.
+        if (classifyOutboxError(e) != OutboxErrorDisposition.unreachable) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.notificationsFailedLoad)),
+          );
+        }
       } else {
         setState(() {
           _error = l10n.notificationsFailedLoad;
@@ -175,11 +184,11 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
 
     try {
       final service = await ref.read(notificationServiceProviderAsync.future);
-      final data = await service.listNotifications(
+      final data = await _withPendingWrites(await service.listNotifications(
         limit: _pageLimit,
         beforeCreatedAt: cursor.createdAt,
         beforeId: cursor.id,
-      );
+      ));
       if (!mounted || !_pageGuard.isCurrent(request)) return;
       setState(() {
         final existingIds = _items.map((item) => item.id).toSet();
@@ -209,12 +218,26 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         createdAt: n.createdAt,
       );
 
+  /// [items] with reads and deletes still queued offline applied.
+  Future<List<NotificationModel>> _withPendingWrites(
+    List<NotificationModel> items,
+  ) async {
+    try {
+      final account = await ref.read(accountRepositoryProvider.future);
+      return await account.withPendingNotificationWrites(items);
+    } catch (_) {
+      return items;
+    }
+  }
+
+  /// Inbox writes are queued (offline-first): the screen changes at once and
+  /// the outbox delivers them, so a tap never fails for want of a network.
   Future<void> _markAllRead() async {
     if (_isMutating) return;
     _isMutating = true;
     final l10n = AppLocalizations.of(context)!;
     unawaited(Haptics.light());
-    // Optimistic: dots clear immediately; a failed call reloads the truth.
+    // Optimistic: dots clear immediately; a failed enqueue restores them.
     final before = List<NotificationModel>.from(_items);
     setState(() {
       for (var i = 0; i < _items.length; i++) {
@@ -222,8 +245,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
       }
     });
     try {
-      final service = await ref.read(notificationServiceProviderAsync.future);
-      await service.markAllAsRead();
+      final account = await ref.read(accountRepositoryProvider.future);
+      await account.markAllNotificationsRead();
       ref.invalidate(unreadNotificationCountProvider);
     } catch (_) {
       if (!mounted) return;
@@ -242,8 +265,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     if (n.isRead) return;
     final l10n = AppLocalizations.of(context)!;
     try {
-      final service = await ref.read(notificationServiceProviderAsync.future);
-      await service.markAsRead(n.id);
+      final account = await ref.read(accountRepositoryProvider.future);
+      await account.markNotificationRead(n.id);
+      if (!mounted) return;
       setState(() {
         final idx = _items.indexWhere((x) => x.id == n.id);
         if (idx >= 0) _items[idx] = _asRead(n);
@@ -263,8 +287,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     unawaited(Haptics.medium());
     setState(() => _items.removeAt(idx));
     try {
-      final service = await ref.read(notificationServiceProviderAsync.future);
-      await service.deleteNotification(n.id);
+      final account = await ref.read(accountRepositoryProvider.future);
+      await account.deleteNotification(n.id, wasUnread: !n.isRead);
       if (!n.isRead) ref.invalidate(unreadNotificationCountProvider);
     } catch (e) {
       if (!mounted) return;

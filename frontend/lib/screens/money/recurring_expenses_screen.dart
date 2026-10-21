@@ -40,6 +40,7 @@ class _RecurringExpensesScreenState
   final List<RecurringExpense> _items = [];
   Map<String, String> _userLabels = {};
   String? _submittingId;
+  String? _groupId;
   final LatestRequestGuard _loadGuard = LatestRequestGuard();
 
   @override
@@ -54,6 +55,10 @@ class _RecurringExpensesScreenState
     super.dispose();
   }
 
+  /// Offline-first: the stored list (with queued local changes laid over
+  /// it) paints at once, then the network refresh replaces it. Offline the
+  /// repository answers from that same cache, so the only error page left is
+  /// "never loaded and nothing to show".
   Future<void> _load() async {
     final request = _loadGuard.begin();
     final hadContent = _items.isNotEmpty;
@@ -76,44 +81,88 @@ class _RecurringExpensesScreenState
         });
         return;
       }
-      final financeService = await ref.read(financeServiceProviderAsync.future);
-      final items = await financeService.listRecurringExpenses(groupId!);
-      final summary = await financeService.getFinanceSummary(groupId);
+      _groupId = groupId;
+      final repo = await ref.read(financeRepositoryProvider.future);
+      final labels = await _payerLabels(groupId!);
       if (!mounted || !_loadGuard.isCurrent(request)) return;
-      setState(() {
-        _items.clear();
-        _items.addAll(items);
-        _userLabels = {
-          for (final e in summary.balances) e.userId: e.displayName,
-        };
-        _hasHousehold = true;
-        _isLoading = false;
-      });
+      setState(() => _userLabels = labels);
+
+      final cached = await repo.getRecurringExpensesOnce(groupId);
+      if (cached != null && mounted && _loadGuard.isCurrent(request)) {
+        _show(cached);
+      }
+
+      final items = await repo.loadRecurringExpenses(groupId);
+      if (!mounted || !_loadGuard.isCurrent(request)) return;
+      _show(items);
     } catch (e) {
       if (!mounted || !_loadGuard.isCurrent(request)) return;
-      final message = friendlyErrorMessage(e, AppLocalizations.of(context)!);
-      if (hadContent) {
+      if (_items.isNotEmpty) {
+        // Something is on screen already; a failed refresh keeps it quietly.
         setState(() => _isLoading = false);
-        AppToast.error(context, message);
         return;
       }
       setState(() {
-        _error = message;
+        _error = friendlyErrorMessage(e, AppLocalizations.of(context)!);
         _isLoading = false;
       });
     }
   }
 
+  void _show(List<RecurringExpense> items) {
+    setState(() {
+      _items
+        ..clear()
+        ..addAll(items);
+      _hasHousehold = true;
+      _isLoading = false;
+      _error = null;
+    });
+  }
+
+  /// Display names from the cached balances (the money screen keeps them
+  /// fresh); only when nothing is cached yet does it ask the server, and a
+  /// failure there just leaves ids unresolved.
+  Future<Map<String, String>> _payerLabels(String groupId) async {
+    FinanceSummary? summary;
+    try {
+      final repo = await ref.read(financeRepositoryProvider.future);
+      summary = await repo.getSummaryOnce(groupId);
+      if (summary == null) {
+        final service = await ref.read(financeServiceProviderAsync.future);
+        summary = await service.getFinanceSummary(groupId);
+      }
+    } catch (_) {}
+    return {
+      for (final e in summary?.balances ?? const <BalanceEntry>[])
+        e.userId: e.displayName,
+    };
+  }
+
+  /// Repaints from the local cache after a queued write, without waiting on
+  /// the network.
+  Future<void> _reloadFromCache() async {
+    final groupId = _groupId;
+    if (groupId == null) return;
+    final repo = await ref.read(financeRepositoryProvider.future);
+    final items = await repo.getRecurringExpensesOnce(groupId);
+    if (!mounted || items == null) return;
+    _show(items);
+  }
+
   Future<void> _toggleActive(RecurringExpense item) async {
     final l10n = AppLocalizations.of(context)!;
+    final groupId = _groupId;
+    if (groupId == null) return;
     setState(() => _submittingId = item.id);
     try {
-      final service = await ref.read(financeServiceProviderAsync.future);
-      await service.updateRecurringExpense(
+      final repo = await ref.read(financeRepositoryProvider.future);
+      await repo.updateRecurringExpenseOfflineFirst(
+        groupId,
         item.id,
         UpdateRecurringExpenseRequest(isActive: !item.isActive),
       );
-      await _load();
+      await _reloadFromCache();
     } catch (e) {
       if (!mounted) return;
       AppToast.error(context, l10n.recurringCouldNotUpdate);
@@ -124,11 +173,13 @@ class _RecurringExpensesScreenState
 
   Future<void> _deleteItem(String id) async {
     final l10n = AppLocalizations.of(context)!;
+    final groupId = _groupId;
+    if (groupId == null) return;
     setState(() => _submittingId = id);
     try {
-      final service = await ref.read(financeServiceProviderAsync.future);
-      await service.deleteRecurringExpense(id);
-      await _load();
+      final repo = await ref.read(financeRepositoryProvider.future);
+      await repo.deleteRecurringExpenseOfflineFirst(groupId, id);
+      await _reloadFromCache();
     } catch (e) {
       if (!mounted) return;
       AppToast.error(context, l10n.recurringCouldNotDelete);
@@ -281,7 +332,10 @@ class _RecurringExpensesScreenState
       context,
       existing: existing,
     );
-    if (saved == true && mounted) await _load();
+    if (saved != true || !mounted) return;
+    // The sheet queued the change; show it now, then refresh when reachable.
+    await _reloadFromCache();
+    if (mounted) await _load();
   }
 }
 

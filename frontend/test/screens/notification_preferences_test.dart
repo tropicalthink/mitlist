@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
+import 'package:drift/drift.dart' as drift;
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:mitlist/l10n/app_localizations.dart';
 import 'package:mitlist/models/group_models.dart';
 import 'package:mitlist/models/notification_models.dart';
+import 'package:mitlist/providers/account_provider.dart';
 import 'package:mitlist/providers/group_provider.dart';
 import 'package:mitlist/providers/notification_provider.dart';
 import 'package:mitlist/screens/notifications/notification_preferences_screen.dart';
+import 'package:mitlist/repositories/account_repository.dart';
 import 'package:mitlist/services/notification_service.dart';
+import 'package:mitlist/storage/app_database.dart';
 
 class _PreferenceService implements NotificationService {
   _PreferenceService(this.preferences, {this.failUpdate = false});
@@ -23,13 +29,38 @@ class _PreferenceService implements NotificationService {
 
   @override
   Future<void> updatePreference(NotificationPreferenceModel pref) async {
-    if (failUpdate) throw Exception('offline');
+    if (failUpdate) {
+      throw DioException(
+        requestOptions: RequestOptions(path: '/notifications/preferences'),
+        type: DioExceptionType.connectionError,
+      );
+    }
     lastUpdated = pref;
   }
 
   @override
   dynamic noSuchMethod(Invocation invocation) =>
       throw UnimplementedError('${invocation.memberName}');
+}
+
+/// Toggles are queued through the account repository; give it an in-memory
+/// database. With no sync-session hook it drains right away, like tests of
+/// the other repositories.
+(Override, AppDatabase) _accountRepo(NotificationService notifications) {
+  final db = AppDatabase(
+    drift.DatabaseConnection(
+      NativeDatabase.memory(),
+      closeStreamsSynchronously: true,
+    ),
+  );
+  return (
+    accountRepositoryProvider.overrideWith((ref) async => AccountRepository(
+          db: db,
+          updateMe: (_) async {},
+          notifications: notifications,
+        )),
+    db,
+  );
 }
 
 void main() {
@@ -66,11 +97,15 @@ void main() {
       ),
     ]);
 
+    final (accountOverride, db) = _accountRepo(service);
+    addTearDown(db.close);
+
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           cachedGroupsProvider.overrideWith((ref) async => groups),
           notificationServiceProviderAsync.overrideWith((ref) async => service),
+          accountOverride,
         ],
         child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -88,12 +123,16 @@ void main() {
     // Each card has nine toggles; index nine is the first toggle in house two.
     await tester.tap(find.byType(Switch).at(9));
     await tester.pumpAndSettle();
+    // The queued write drains on real (Drift) futures.
+    await tester.runAsync(() => Future<void>.delayed(
+          const Duration(milliseconds: 50),
+        ));
 
     expect(service.lastUpdated?.groupId, secondGroupId);
     expect(service.lastUpdated?.choreDue, isFalse);
   });
 
-  testWidgets('failed saves explain the problem and keep the previous value',
+  testWidgets('offline toggles are queued and keep the new value',
       (tester) async {
     await tester.binding.setSurfaceSize(const Size(1200, 1800));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -108,6 +147,9 @@ void main() {
       ),
     ], failUpdate: true);
 
+    final (accountOverride, db) = _accountRepo(service);
+    addTearDown(db.close);
+
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -116,6 +158,7 @@ void main() {
                     id: groupId, name: 'Home', createdAt: now, updatedAt: now),
               ]),
           notificationServiceProviderAsync.overrideWith((ref) async => service),
+          accountOverride,
         ],
         child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -131,11 +174,19 @@ void main() {
     await tester.tap(find.byType(Switch).first);
     await tester.pumpAndSettle();
 
+    await tester.runAsync(() => Future<void>.delayed(
+          const Duration(milliseconds: 50),
+        ));
+
     expect(
       find.text(
           'Couldn’t save that preference. Check your connection and try again.'),
-      findsOneWidget,
+      findsNothing,
     );
-    expect(tester.widget<Switch>(find.byType(Switch).first).value, isTrue);
+    expect(tester.widget<Switch>(find.byType(Switch).first).value, isFalse);
+    // Still queued for when the connection is back.
+    final queued = await tester.runAsync(() => db
+        .getOutboxOpsByType(AccountRepository.updateNotificationPreferenceOp));
+    expect(queued, hasLength(1));
   });
 }

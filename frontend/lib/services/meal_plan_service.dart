@@ -4,6 +4,7 @@ import '../models/meal_plan_models.dart';
 import 'api_client.dart';
 import 'api_error_mapper.dart';
 import 'group_id_validator.dart';
+import 'outbox_request.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class MealPlanService {
@@ -102,6 +103,45 @@ class MealPlanService {
   Future<void> deleteMealPlan(String id) async {
     try {
       await _dio.delete('/meal-plans/$id');
+    } on DioException catch (e) {
+      _logger.e('Delete meal plan failed: ${e.response?.data}');
+      throw apiException(e);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Outbox replays: the queued request body, sent with the op's stable
+  // Idempotency-Key so a retry after a lost response is not applied twice.
+  // ---------------------------------------------------------------------------
+
+  Future<MealPlan> createMealPlanRaw(Map<String, dynamic> body,
+      {String? idempotencyKey}) async {
+    try {
+      final r = await _dio.post('/meal-plans',
+          data: body, options: outboxOptions(idempotencyKey));
+      return MealPlan.fromJson((r.data as Map).cast<String, dynamic>());
+    } on DioException catch (e) {
+      _logger.e('Create meal plan failed: ${e.response?.data}');
+      throw apiException(e);
+    }
+  }
+
+  Future<MealPlan> updateMealPlanRaw(String id, Map<String, dynamic> body,
+      {String? idempotencyKey}) async {
+    try {
+      final r = await _dio.patch('/meal-plans/$id',
+          data: body, options: outboxOptions(idempotencyKey));
+      return MealPlan.fromJson((r.data as Map).cast<String, dynamic>());
+    } on DioException catch (e) {
+      _logger.e('Update meal plan failed: ${e.response?.data}');
+      throw apiException(e);
+    }
+  }
+
+  Future<void> deleteMealPlanRaw(String id, {String? idempotencyKey}) async {
+    try {
+      await _dio.delete('/meal-plans/$id',
+          options: outboxOptions(idempotencyKey));
     } on DioException catch (e) {
       _logger.e('Delete meal plan failed: ${e.response?.data}');
       throw apiException(e);
