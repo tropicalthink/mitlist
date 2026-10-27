@@ -26,6 +26,9 @@ final pinwallRepositoryProvider =
 final pinwallMediaByPostProvider = FutureProvider.family<List<PinwallMediaItem>,
     ({String groupId, String postId})>(
   (ref, args) async {
+    // A note pinned offline has no server row yet, so no photos either; asking
+    // the server about its temp id would only earn an error per card.
+    if (args.postId.startsWith('local-')) return const [];
     final svc = await ref.read(pinwallServiceProviderAsync.future);
     return svc.listPostAttachments(groupId: args.groupId, postId: args.postId);
   },

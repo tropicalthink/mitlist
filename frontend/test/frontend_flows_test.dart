@@ -2455,7 +2455,8 @@ class FakeListService implements ListService {
       lists.skip(offset).take(limit).toList();
 
   @override
-  Future<ItemList> createList(CreateListRequest req) async {
+  Future<ItemList> createList(CreateListRequest req,
+      {String? idempotencyKey}) async {
     lastCreateRequest = req;
     final list = ItemList(
       id: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
@@ -2672,6 +2673,48 @@ class FakeChoreRepository implements ChoreRepository {
   Future<void> undoOfflineFirst(String choreId, {String? groupId}) async {}
 
   @override
+  Future<void> updateOfflineFirst(
+      Chore existing, UpdateChoreRequest req) async {}
+
+  @override
+  Future<void> deleteOfflineFirst(String choreId,
+      {required String groupId, String? name}) async {}
+
+  @override
+  Future<CurrentChore?> getCachedChore(String groupId, String choreId) async {
+    final chores = await getCurrentChoresOnce(groupId);
+    return chores.where((c) => c.chore.id == choreId).firstOrNull;
+  }
+
+  @override
+  Future<List<ChoreSubtask>> getCachedSubtasks(String choreId) async =>
+      const [];
+
+  @override
+  Future<List<ChoreSubtask>> loadSubtasks(String choreId) async => const [];
+
+  @override
+  Future<ChoreSubtask> addSubtaskOfflineFirst(
+      String choreId, String title) async {
+    final now = DateTime.now();
+    return ChoreSubtask(
+      id: 'local-subtask',
+      choreId: choreId,
+      title: title,
+      createdAt: now,
+      updatedAt: now,
+    );
+  }
+
+  @override
+  Future<void> toggleSubtaskOfflineFirst(
+      String choreId, String subtaskId, bool completed) async {}
+
+  @override
+  Future<void> deleteSubtaskOfflineFirst(
+      String choreId, String subtaskId) async {}
+
+  @override
   Future<void> drainOutboxOnce() async {}
 
   @override
@@ -2702,6 +2745,21 @@ class FakeListRepository implements ListRepository {
     _controller.add(await _service.listLists(req.groupId));
     return created;
   }
+
+  @override
+  Future<ItemList> createListOfflineFirst(CreateListRequest req) =>
+      createList(req);
+
+  @override
+  String resolveListId(String listId) => listId;
+
+  @override
+  Stream<ListIdChange> get listIdChanges => const Stream.empty();
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError(
+        '${invocation.memberName} not implemented on FakeListRepository',
+      );
 
   @override
   Future<int> refreshLists(String groupId,
@@ -2977,6 +3035,11 @@ class FakeFinanceRepository implements FinanceRepository {
 
   @override
   Future<void> drainOutboxOnce() async {}
+
+  // Offline-first paths these flows don't reach (recurring rules, cancels,
+  // splits of unsynced expenses) are covered in finance_repository_test.
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class FakePinwallRepository implements PinwallRepository {
@@ -3012,7 +3075,9 @@ class FakePinwallRepository implements PinwallRepository {
   Future<String> createPostOfflineFirst(String groupId,
           {required String content,
           required String userId,
-          DateTime? remindAt}) async =>
+          DateTime? remindAt,
+          String? linkedEntityType,
+          String? linkedEntityId}) async =>
       '';
 
   @override

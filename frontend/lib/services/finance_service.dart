@@ -297,9 +297,11 @@ class FinanceService {
 
   /// Cancels (deletes) a settlement — the creator's own pending one,
   /// or any settlement when called by a group admin.
-  Future<void> cancelSettlement(String settlementId) async {
+  Future<void> cancelSettlement(String settlementId,
+      {String? idempotencyKey}) async {
     try {
-      await _dio.delete('/finance/settlements/$settlementId');
+      await _dio.delete('/finance/settlements/$settlementId',
+          options: outboxOptions(idempotencyKey));
     } on DioException catch (e) {
       _logger.e('Cancel settlement failed: ${e.response?.data}');
       throw apiException(e);
@@ -332,9 +334,11 @@ class FinanceService {
 
   // Recurring expenses
   Future<RecurringExpense> createRecurringExpense(
-      CreateRecurringExpenseRequest req) async {
+      CreateRecurringExpenseRequest req,
+      {String? idempotencyKey}) async {
     try {
-      final r = await _dio.post('/recurring-expenses', data: req.toJson());
+      final r = await _dio.post('/recurring-expenses',
+          data: req.toJson(), options: outboxOptions(idempotencyKey));
       final data = r.data;
       if (data is! Map) throw ApiException('Unexpected response format');
       return RecurringExpense.fromJson(data.cast<String, dynamic>());
@@ -378,9 +382,11 @@ class FinanceService {
   }
 
   Future<RecurringExpense> updateRecurringExpense(
-      String id, UpdateRecurringExpenseRequest req) async {
+      String id, UpdateRecurringExpenseRequest req,
+      {String? idempotencyKey}) async {
     try {
-      final r = await _dio.patch('/recurring-expenses/$id', data: req.toJson());
+      final r = await _dio.patch('/recurring-expenses/$id',
+          data: req.toJson(), options: outboxOptions(idempotencyKey));
       final data = r.data;
       if (data is! Map) throw ApiException('Unexpected response format');
       return RecurringExpense.fromJson(data.cast<String, dynamic>());
@@ -390,9 +396,11 @@ class FinanceService {
     }
   }
 
-  Future<void> deleteRecurringExpense(String id) async {
+  Future<void> deleteRecurringExpense(String id,
+      {String? idempotencyKey}) async {
     try {
-      await _dio.delete('/recurring-expenses/$id');
+      await _dio.delete('/recurring-expenses/$id',
+          options: outboxOptions(idempotencyKey));
     } on DioException catch (e) {
       _logger.e('Delete recurring expense failed: ${e.response?.data}');
       throw apiException(e);

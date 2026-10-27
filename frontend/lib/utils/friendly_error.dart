@@ -45,6 +45,13 @@ String friendlyErrorMessage(Object error, AppLocalizations l10n) {
       return l10n.commonCheckConnection;
     }
 
+    // No answer at all: a raw socket failure, a connection dropped before
+    // the response, a captive portal breaking TLS. Dio files these under
+    // `unknown`, which used to read as "something went wrong".
+    if (error.response == null && error.error is IOException) {
+      return l10n.commonCheckConnection;
+    }
+
     if (statusCode != null) {
       if (statusCode >= 500) {
         return l10n.errorServerHiccup;

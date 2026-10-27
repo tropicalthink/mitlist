@@ -27,6 +27,16 @@ class OAuthCallbackScreen extends ConsumerStatefulWidget {
 class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
   String? _error;
 
+  /// The exchange never reached the server (offline, a dropped connection),
+  /// so the one-time code is still good and trying again is honest.
+  bool _canRetry = false;
+
+  /// Choices parked before the browser round-trip. Read once: the stored
+  /// copies are cleared on read, and a retry must still honour them.
+  bool _pendingConsumed = false;
+  bool _rememberMe = true;
+  String? _parkedNavigation;
+
   /// True when this round-trip upgraded a guest rather than signing someone
   /// in: the backend marks it with `link=1`. The person is already signed in
   /// and belongs back on their account page, not in onboarding.
@@ -68,9 +78,13 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
 
     try {
       final authService = await ref.read(authServiceProviderAsync.future);
-      final rememberMe = await authService.consumePendingOAuthRememberMe();
-      final parkedNavigation =
-          await authService.consumePendingOAuthNavigation();
+      if (!_pendingConsumed) {
+        _rememberMe = await authService.consumePendingOAuthRememberMe();
+        _parkedNavigation = await authService.consumePendingOAuthNavigation();
+        _pendingConsumed = true;
+      }
+      final rememberMe = _rememberMe;
+      final parkedNavigation = _parkedNavigation;
       if (handoff != null && handoff.isNotEmpty) {
         await authService.exchangeOAuthHandoff(
           handoff,
@@ -112,9 +126,21 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
       ref.read(authStateProvider.notifier).state = true;
     } catch (e) {
       if (!mounted) return;
-      setState(() =>
-          _error = friendlyErrorMessage(e, AppLocalizations.of(context)!));
+      final l10n = AppLocalizations.of(context)!;
+      final message = friendlyErrorMessage(e, l10n);
+      setState(() {
+        _error = message;
+        _canRetry = message == l10n.commonCheckConnection;
+      });
     }
+  }
+
+  void _retry() {
+    setState(() {
+      _error = null;
+      _canRetry = false;
+    });
+    _complete();
   }
 
   /// Only an in-app path may be restored from storage; anything else falls
@@ -156,6 +182,24 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     AppAlert(type: AppAlertType.error, message: _error!),
+                    if (_canRetry) ...[
+                      const SizedBox(height: MitlistSpacing.md),
+                      AppButton(
+                        text: l10n.commonRetry,
+                        onPressed: _retry,
+                      ),
+                    ],
+                    if (!_isLink) ...[
+                      // Otherwise a failed sign-in is a dead end: this screen
+                      // has no other way out, and back may leave the app.
+                      const SizedBox(height: MitlistSpacing.md),
+                      AppButton(
+                        text: l10n.commonBack,
+                        variant: AppButtonVariant.outline,
+                        color: AppButtonColor.neutral,
+                        onPressed: () => context.go('/welcome'),
+                      ),
+                    ],
                     if (_isLink) ...[
                       const SizedBox(height: MitlistSpacing.md),
                       AppButton(

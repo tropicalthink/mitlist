@@ -1,12 +1,13 @@
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
 import 'package:drift/native.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:mitlist/models/finance_models.dart';
 import 'package:mitlist/repositories/finance_repository.dart';
-import 'package:mitlist/storage/app_database.dart';
+import 'package:mitlist/storage/app_database.dart' hide FinanceSummary;
 
 import '../support/fakes.dart';
 
@@ -579,6 +580,471 @@ void main() {
       expect(await repo.getSettlementsOnce(groupId), isEmpty);
     });
   });
+
+  _offlineGroups();
+}
+
+// Offline audit: every money action must work offline, and nothing queued
+// may be lost or misdirected when it finally syncs.
+void _offlineGroups() {
+  late AppDatabase db;
+  late _OfflineFinanceService remote;
+  late FinanceRepository repo;
+  const groupId = 'group-1';
+
+  setUp(() {
+    db = _memoryDb();
+    remote = _OfflineFinanceService();
+    repo = FinanceRepository(db: db, remote: remote, autoSync: false);
+  });
+
+  tearDown(() => db.close());
+
+  Expense serverExpense(String id, {int amount = 1000, String? description}) =>
+      Expense(
+        id: id,
+        groupId: groupId,
+        payerId: 'payer-1',
+        amount: amount,
+        baseAmount: amount,
+        description: description ?? 'Server $id',
+        category: 'food',
+        currency: 'USD',
+        date: DateTime.utc(2026, 1, 10),
+        createdAt: DateTime.utc(2026, 1, 10),
+        updatedAt: DateTime.utc(2026, 1, 10),
+      );
+
+  Future<void> clearBackoff() => db.customUpdate(
+        'UPDATE outbox_ops SET last_attempt_at = NULL',
+        updates: {db.outboxOps},
+      );
+
+  group('FinanceRepository offline expenses —', () {
+    test('a refresh keeps queued work and still lands other members\' changes',
+        () async {
+      await db.upsertExpensesRows([
+        for (final e in [
+          serverExpense('kept'),
+          serverExpense('edited-by-me'),
+          serverExpense('deleted-by-me'),
+          serverExpense('deleted-on-server'),
+        ])
+          ExpensesTableCompanion.insert(
+            id: e.id,
+            groupId: e.groupId,
+            payerId: e.payerId,
+            amount: e.amount,
+            description: e.description,
+            category: e.category,
+            currency: e.currency,
+            notes: e.notes,
+            date: e.date,
+            createdAt: e.createdAt,
+          ),
+      ]);
+      final local = await repo.createExpenseOfflineFirst(_req());
+      await repo.updateExpenseOfflineFirst(
+          'edited-by-me', const UpdateExpenseRequest(description: 'Mine'));
+      await repo.deleteExpenseOfflineFirst('deleted-by-me');
+
+      remote.expenses = [
+        serverExpense('kept', description: 'Renamed by Sam'),
+        serverExpense('edited-by-me', amount: 4200),
+        serverExpense('deleted-by-me'),
+        serverExpense('new-from-sam'),
+      ];
+      await repo.refreshGroup(groupId);
+
+      final byId = {
+        for (final e in await repo.getExpensesByGroupOnce(groupId)) e.id: e
+      };
+      expect(byId.keys,
+          unorderedEquals([local.id, 'kept', 'edited-by-me', 'new-from-sam']));
+      expect(byId['kept']!.description, 'Renamed by Sam',
+          reason: 'a refresh must not overwrite server edits with stale rows');
+      expect(byId['edited-by-me']!.description, 'Mine',
+          reason: 'the queued edit is re-applied on the fresh server row');
+      expect(byId['edited-by-me']!.amount, 4200);
+    });
+
+    test('a refresh that cannot reach the server leaves the cache alone',
+        () async {
+      final local = await repo.createExpenseOfflineFirst(_req());
+      remote.offline = true;
+
+      await expectLater(repo.refreshGroup(groupId), throwsA(anything));
+
+      final rows = await repo.getExpensesByGroupOnce(groupId);
+      expect(rows.map((e) => e.id), [local.id]);
+    });
+
+    test('deleting an expense that never synced sends nothing', () async {
+      final local = await repo.createExpenseOfflineFirst(_req());
+      await repo.updateExpenseOfflineFirst(
+          local.id, const UpdateExpenseRequest(amount: 999));
+
+      await repo.deleteExpenseOfflineFirst(local.id);
+      await repo.drainOutboxOnce();
+
+      expect(await db.outboxCount(), 0);
+      expect(remote.createCalls, isEmpty);
+      expect(remote.updateCalls, isEmpty);
+      expect(remote.deleteCalls, isEmpty);
+      expect(await repo.getExpensesByGroupOnce(groupId), isEmpty);
+    });
+
+    test('an edit queued against the temp id is sent to the server id',
+        () async {
+      final local = await repo.createExpenseOfflineFirst(_req());
+      await repo.updateExpenseOfflineFirst(
+          local.id, const UpdateExpenseRequest(description: 'Pizza'));
+
+      await repo.drainOutboxOnce();
+
+      expect(remote.updateCalls.single.id, remote.serverExpenseId);
+      expect(await db.outboxCount(), 0);
+      final rows = await repo.getExpensesByGroupOnce(groupId);
+      expect(rows.single.id, remote.serverExpenseId);
+    });
+
+    test('a write through a stale temp id after the sync hits the server id',
+        () async {
+      final local = await repo.createExpenseOfflineFirst(_req());
+      await repo.drainOutboxOnce();
+
+      // A sheet opened before the sync still holds the temp id.
+      await repo.deleteExpenseOfflineFirst(local.id);
+      await clearBackoff();
+      await repo.drainOutboxOnce();
+
+      expect(remote.deleteCalls, [remote.serverExpenseId]);
+      expect(await repo.getExpensesByGroupOnce(groupId), isEmpty);
+    });
+
+    test('deleted while its create was in flight: the server copy is deleted',
+        () async {
+      late String tempId;
+      remote.onCreate = () => repo.deleteExpenseOfflineFirst(tempId);
+      tempId = (await repo.createExpenseOfflineFirst(_req())).id;
+
+      await repo.drainOutboxOnce();
+      expect(await repo.getExpensesByGroupOnce(groupId), isEmpty,
+          reason: 'the row must not come back once the POST returns');
+
+      await clearBackoff();
+      await repo.drainOutboxOnce();
+      expect(remote.deleteCalls, [remote.serverExpenseId]);
+      expect(await db.outboxCount(), 0);
+    });
+
+    test('custom splits survive the outbox round-trip', () async {
+      await repo.createExpenseOfflineFirst(CreateExpenseRequest(
+        groupId: groupId,
+        payerId: 'a',
+        amount: 1000,
+        baseAmount: 1000,
+        description: 'Dinner',
+        date: _date,
+        splitMode: 'amount',
+        splits: const [
+          CreateExpenseSplitRequest(userId: 'a', amount: 300),
+          CreateExpenseSplitRequest(userId: 'b', amount: 700),
+        ],
+      ));
+
+      await repo.drainOutboxOnce();
+
+      final sent = remote.createCalls.single;
+      expect(sent.splitMode, 'amount');
+      expect(sent.splits.map((s) => s.amount), [300, 700]);
+    });
+
+    test('splits of an unsynced expense are computed on the device', () async {
+      final local = await repo.createExpenseOfflineFirst(CreateExpenseRequest(
+        groupId: groupId,
+        payerId: 'b',
+        amount: 1000,
+        baseAmount: 1000,
+        description: 'Dinner',
+        date: _date,
+        splitUserIds: const ['c', 'a', 'b'],
+      ));
+
+      final splits = await repo.loadExpenseSplits(local.id);
+
+      expect(remote.splitCalls, isEmpty, reason: 'no request for a temp id');
+      expect(splits.map((s) => s.userId), ['a', 'b', 'c']);
+      expect(splits.map((s) => s.amount), [334, 333, 333],
+          reason: 'same remainder rule as the server');
+      expect(splits.map((s) => s.isSettled), [false, true, false],
+          reason: "the payer's own share is born settled");
+      expect(
+          await repo.loadExpenseReceipts(groupId: groupId, expenseId: local.id),
+          isEmpty);
+    });
+
+    test('balances are re-fetched once a queued expense syncs', () async {
+      await repo.createExpenseOfflineFirst(_req());
+      await repo.drainOutboxOnce();
+
+      expect(remote.summaryCalls, [groupId]);
+      expect(await repo.getSummaryOnce(groupId), isNotNull);
+    });
+  });
+
+  group('FinanceRepository offline recurring expenses —', () {
+    RecurringExpense rule(String id, {bool active = true}) => RecurringExpense(
+          id: id,
+          groupId: groupId,
+          payerId: 'payer-1',
+          amount: 5000,
+          description: 'Rent $id',
+          category: 'housing',
+          currency: 'EUR',
+          frequency: 'monthly',
+          nextDue: DateTime.utc(2026, 2, 1),
+          isActive: active,
+          createdAt: DateTime.utc(2026, 1, 1),
+          splitMode: 'equal',
+          splitInputs: const [RecurringSplitInput(userId: 'payer-1')],
+        );
+
+    CreateRecurringExpenseRequest createReq() => CreateRecurringExpenseRequest(
+          groupId: groupId,
+          payerId: 'payer-1',
+          amount: 1500,
+          description: 'Internet',
+          currency: 'EUR',
+          nextDue: DateTime.utc(2026, 2, 3),
+          splitMode: 'equal',
+          splitInputs: const [RecurringSplitInput(userId: 'payer-1')],
+        );
+
+    test('the list renders offline from the stored copy with queued changes',
+        () async {
+      remote.recurring = [rule('r1'), rule('r2')];
+      await repo.loadRecurringExpenses(groupId); // online once
+      remote.offline = true;
+
+      await repo.updateRecurringExpenseOfflineFirst(
+          groupId, 'r1', const UpdateRecurringExpenseRequest(isActive: false));
+      await repo.deleteRecurringExpenseOfflineFirst(groupId, 'r2');
+      final local = await repo.createRecurringExpenseOfflineFirst(createReq());
+
+      final items = await repo.loadRecurringExpenses(groupId);
+
+      expect(items.map((r) => r.id), ['r1', local.id]);
+      expect(items.first.isActive, isFalse, reason: 'paused offline');
+      expect(local.isLocal, isTrue);
+    });
+
+    test('a rule created offline syncs, and edits queued on it follow',
+        () async {
+      remote.offline = true;
+      final local = await repo.createRecurringExpenseOfflineFirst(createReq());
+      await repo.updateRecurringExpenseOfflineFirst(
+          groupId, local.id, const UpdateRecurringExpenseRequest(amount: 1600));
+      expect((await repo.loadRecurringExpenses(groupId)).single.amount, 1600,
+          reason: 'shown with the queued edit even though never loaded online');
+
+      remote.offline = false;
+      await clearBackoff();
+      await repo.drainOutboxOnce();
+
+      expect(remote.recurringCreates.single.description, 'Internet');
+      expect(remote.recurringUpdates.single.$1, 'server-rule-1',
+          reason: 'the edit went to the server id, not the temp id');
+      expect(await db.outboxCount(), 0);
+      final stored = await repo.getRecurringExpensesOnce(groupId);
+      expect(stored!.map((r) => r.id), ['server-rule-1']);
+    });
+
+    test('deleting a rule that never synced sends nothing', () async {
+      final local = await repo.createRecurringExpenseOfflineFirst(createReq());
+      await repo.deleteRecurringExpenseOfflineFirst(groupId, local.id);
+      await repo.drainOutboxOnce();
+
+      expect(await db.outboxCount(), 0);
+      expect(remote.recurringCreates, isEmpty);
+      expect(remote.recurringDeletes, isEmpty);
+    });
+
+    test('a queued delete drains, and "already gone" counts as done', () async {
+      remote.recurring = [rule('r1')];
+      await repo.loadRecurringExpenses(groupId);
+      remote.deleteRecurringNotFound = true;
+
+      await repo.deleteRecurringExpenseOfflineFirst(groupId, 'r1');
+      await repo.drainOutboxOnce();
+
+      expect(remote.recurringDeletes, ['r1']);
+      expect(await db.outboxCount(), 0);
+      expect(await repo.getRecurringExpensesOnce(groupId), isEmpty);
+    });
+  });
+
+  group('FinanceRepository offline settlement cancel —', () {
+    Settlement server(String id) => Settlement(
+          id: id,
+          groupId: groupId,
+          fromUserId: 'me',
+          toUserId: 'them',
+          amount: 2500,
+          status: SettlementStatus.pending,
+          createdBy: 'me',
+          createdAt: DateTime.utc(2026, 1, 1),
+        );
+
+    test('cancelling queues the DELETE and hides the row through refreshes',
+        () async {
+      remote.settlements = [server('s1')];
+      await repo.loadSettlements(groupId);
+
+      await repo.cancelSettlementOfflineFirst(groupId, 's1');
+      expect(await repo.getSettlementsOnce(groupId), isEmpty);
+
+      // A refresh that lands before the drain must not bring it back.
+      expect(await repo.loadSettlements(groupId), isEmpty);
+
+      await repo.drainOutboxOnce();
+      expect(remote.cancelledSettlements, ['s1']);
+      expect(await db.outboxCount(), 0);
+    });
+  });
+}
+
+DateTime get _date => DateTime.utc(2026, 1, 15);
+
+/// [FakeFinanceService] with the reads and recurring/settlement writes the
+/// offline paths use, and a switch that makes every call fail like a device
+/// with no connection.
+class _OfflineFinanceService extends FakeFinanceService {
+  bool offline = false;
+  List<Expense> expenses = [];
+  List<RecurringExpense> recurring = [];
+  bool deleteRecurringNotFound = false;
+  Future<void> Function()? onCreate;
+
+  final List<String> splitCalls = [];
+  final List<String> summaryCalls = [];
+  final List<CreateRecurringExpenseRequest> recurringCreates = [];
+  final List<(String, UpdateRecurringExpenseRequest)> recurringUpdates = [];
+  final List<String> recurringDeletes = [];
+  final List<String> cancelledSettlements = [];
+
+  void _check() {
+    if (offline) {
+      throw DioException(
+        requestOptions: RequestOptions(path: '/offline'),
+        type: DioExceptionType.connectionError,
+      );
+    }
+  }
+
+  @override
+  Future<Expense> createExpense(CreateExpenseRequest req,
+      {String? idempotencyKey}) async {
+    _check();
+    final hook = onCreate;
+    onCreate = null;
+    if (hook != null) await hook();
+    return super.createExpense(req, idempotencyKey: idempotencyKey);
+  }
+
+  @override
+  Future<List<Expense>> listExpenses(String groupId,
+      {int limit = 50, int offset = 0}) async {
+    _check();
+    return expenses;
+  }
+
+  @override
+  Future<FinanceSummary> getFinanceSummary(String groupId) async {
+    _check();
+    summaryCalls.add(groupId);
+    return const FinanceSummary(balances: [], reimbursements: []);
+  }
+
+  @override
+  Future<List<Split>> listExpenseSplits(String expenseId) async {
+    splitCalls.add(expenseId);
+    _check();
+    return const [];
+  }
+
+  @override
+  Future<List<Settlement>> listSettlements(String groupId,
+      {int limit = 50, int offset = 0}) async {
+    _check();
+    return super.listSettlements(groupId, limit: limit, offset: offset);
+  }
+
+  @override
+  Future<void> cancelSettlement(String settlementId,
+      {String? idempotencyKey}) async {
+    _check();
+    cancelledSettlements.add(settlementId);
+  }
+
+  @override
+  Future<List<RecurringExpense>> listRecurringExpenses(String groupId,
+      {int limit = 50, int offset = 0}) async {
+    _check();
+    return recurring;
+  }
+
+  @override
+  Future<RecurringExpense> createRecurringExpense(
+      CreateRecurringExpenseRequest req,
+      {String? idempotencyKey}) async {
+    _check();
+    recurringCreates.add(req);
+    return RecurringExpense(
+      id: 'server-rule-${recurringCreates.length}',
+      groupId: req.groupId,
+      payerId: req.payerId,
+      amount: req.amount,
+      description: req.description,
+      category: req.category,
+      currency: req.currency ?? 'EUR',
+      frequency: req.frequency,
+      nextDue: req.nextDue,
+      isActive: req.isActive,
+      createdAt: DateTime.utc(2026, 1, 1),
+      splitMode: req.splitMode,
+      splitInputs: req.splitInputs,
+    );
+  }
+
+  @override
+  Future<RecurringExpense> updateRecurringExpense(
+      String id, UpdateRecurringExpenseRequest req,
+      {String? idempotencyKey}) async {
+    _check();
+    recurringUpdates.add((id, req));
+    return RecurringExpense(
+      id: id,
+      groupId: 'group-1',
+      payerId: 'payer-1',
+      amount: req.amount ?? 0,
+      description: 'Internet',
+      category: 'other',
+      currency: 'EUR',
+      frequency: 'monthly',
+      nextDue: DateTime.utc(2026, 2, 3),
+      isActive: req.isActive ?? true,
+      createdAt: DateTime.utc(2026, 1, 1),
+    );
+  }
+
+  @override
+  Future<void> deleteRecurringExpense(String id,
+      {String? idempotencyKey}) async {
+    _check();
+    recurringDeletes.add(id);
+    if (deleteRecurringNotFound) throw fakeDioException(statusCode: 404);
+  }
 }
 
 // ---------------------------------------------------------------------------

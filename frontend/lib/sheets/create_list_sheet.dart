@@ -149,8 +149,10 @@ class _CreateListSheetState extends ConsumerState<CreateListSheet> {
     });
 
     try {
+      // Local first: the list exists (and can be opened and filled) at once,
+      // online or not; its create is queued and syncs in the background.
       final repo = await ref.read(listRepositoryProvider.future);
-      final created = await repo.createList(
+      final created = await repo.createListOfflineFirst(
         CreateListRequest(
           groupId: _selectedGroupId!,
           name: _nameController.text.trim(),

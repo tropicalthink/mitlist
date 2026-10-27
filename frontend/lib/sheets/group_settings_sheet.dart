@@ -84,18 +84,43 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
     });
     try {
       final svc = await ref.read(groupServiceProviderAsync.future);
+      final repo = await ref.read(groupRepositoryProvider.future);
       final attachmentSvc =
           await ref.read(attachmentServiceProviderAsync.future);
-      final results = await Future.wait([
-        svc.getGroup(widget.groupId),
-        svc.listMembers(widget.groupId),
+      // Offline the household's details come from the device's cache, so
+      // the sheet still opens (and a rename can be queued); only the parts
+      // the server alone knows (members, storage) may be missing.
+      Future<Group> loadGroup() async {
+        try {
+          return await svc.getGroup(widget.groupId);
+        } catch (_) {
+          final cached = await repo.getCachedGroup(widget.groupId);
+          if (cached == null) rethrow;
+          return cached;
+        }
+      }
+
+      Future<List<GroupMemberProfile>> loadMembers() async {
+        try {
+          return await svc.listMembers(widget.groupId);
+        } catch (_) {
+          if (await repo.getCachedGroup(widget.groupId) == null) rethrow;
+          return const [];
+        }
+      }
+
+      final results = await Future.wait<Object?>([
+        loadGroup(),
+        loadMembers(),
         attachmentSvc
             .getStorageUsage(groupId: widget.groupId)
             .then<StorageUsage?>((value) => value)
             .catchError((_) => null),
       ]);
       if (!mounted) return;
-      final group = results[0] as Group;
+      // A rename still queued offline is newer than any server answer.
+      final group = await repo.applyPendingEdits(results[0] as Group);
+      if (!mounted) return;
       final members = results[1] as List<GroupMemberProfile>;
       final storageUsage = results[2] as StorageUsage?;
       _nameController.text = group.name;
@@ -133,8 +158,11 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
 
     setState(() => _isSaving = true);
     try {
-      final svc = await ref.read(groupServiceProviderAsync.future);
-      final updated = await svc.updateGroup(
+      // Online the server answers first (so "only admins can rename" reaches
+      // the person pressing Save); offline the edit is applied to the cached
+      // household and queued.
+      final repo = await ref.read(groupRepositoryProvider.future);
+      final result = await repo.updateGroupOfflineFirst(
         widget.groupId,
         UpdateGroupRequest(
           name: newName != oldName ? newName : null,
@@ -144,13 +172,19 @@ class _GroupSettingsSheetState extends ConsumerState<GroupSettingsSheet> {
       );
       if (!mounted) return;
       setState(() {
-        _group = updated;
+        _group = result.group ?? _group;
         _isSaving = false;
         _nameChanged = false;
         _descChanged = false;
         _currencyChanged = false;
       });
-      await refreshCachedGroups(ref);
+      if (result.queued) {
+        // The cache is already patched; repaint its readers without waiting
+        // on a network that is not there.
+        ref.invalidate(cachedGroupsProvider);
+      } else {
+        await refreshCachedGroups(ref);
+      }
       if (!mounted) return;
       AppToast.success(context, l10n.sheetGroupSettingsSaved);
     } catch (e) {

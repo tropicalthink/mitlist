@@ -76,11 +76,13 @@ class _CookbooksScreenState extends ConsumerState<CookbooksScreen> {
     });
     try {
       final household = await _resolveHousehold();
-      final svc = await ref.read(recipeServiceProviderAsync.future);
+      // The repository lays cookbook changes made offline over the server's
+      // list (or its cached copy).
+      final repo = await ref.read(recipeRepositoryProvider.future);
       // Without the household the list would only ever show cookbooks the
       // user created, and the kitchen tab would count more than this screen
       // could show.
-      final items = await svc.listCollections(
+      final items = await repo.loadCollections(
         limit: 100,
         groupId: household?.id,
       );
@@ -246,8 +248,9 @@ class _CookbooksScreenState extends ConsumerState<CookbooksScreen> {
 
     setState(() => _submittingId = 'create');
     try {
-      final svc = await ref.read(recipeServiceProviderAsync.future);
-      await svc.createCollection(CreateCollectionRequest(
+      // Queued: shows at once and syncs when it can, offline included.
+      final repo = await ref.read(recipeRepositoryProvider.future);
+      await repo.createCollectionOfflineFirst(CreateCollectionRequest(
         name: result.name,
         groupId: result.shareWithHousehold ? _household?.id : null,
       ));
@@ -272,8 +275,8 @@ class _CookbooksScreenState extends ConsumerState<CookbooksScreen> {
 
     setState(() => _submittingId = c.id);
     try {
-      final svc = await ref.read(recipeServiceProviderAsync.future);
-      await svc.updateCollection(
+      final repo = await ref.read(recipeRepositoryProvider.future);
+      await repo.updateCollectionOfflineFirst(
         c.id,
         UpdateCollectionRequest(
           name: result.name,
@@ -316,8 +319,8 @@ class _CookbooksScreenState extends ConsumerState<CookbooksScreen> {
 
     setState(() => _submittingId = c.id);
     try {
-      final svc = await ref.read(recipeServiceProviderAsync.future);
-      await svc.deleteCollection(c.id);
+      final repo = await ref.read(recipeRepositoryProvider.future);
+      await repo.deleteCollectionOfflineFirst(c.id);
       await _load();
     } catch (_) {
       if (!mounted) return;

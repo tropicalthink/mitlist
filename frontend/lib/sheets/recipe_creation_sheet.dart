@@ -80,9 +80,10 @@ class _RecipeCreationSheetState extends ConsumerState<RecipeCreationSheet> {
     setState(() => _isSaving = true);
 
     try {
-      final recipeService = await ref.read(recipeServiceProviderAsync.future);
+      // Saved locally and queued: works offline, syncs when it can.
+      final recipeRepo = await ref.read(recipeRepositoryProvider.future);
 
-      await recipeService.createRecipe(
+      await recipeRepo.createRecipeOfflineFirst(
         CreateRecipeRequest(
           title: _titleController.text.trim(),
           description: _buildDescription(),

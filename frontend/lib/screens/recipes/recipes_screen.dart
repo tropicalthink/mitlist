@@ -265,12 +265,14 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
 
     try {
       final service = await ref.read(recipeServiceProviderAsync.future);
+      final repo = await ref.read(recipeRepositoryProvider.future);
 
       try {
         _recipesRequestSeq++;
         // Passing the household widens the list beyond the user's own recipes
-        // to everything shared with it.
-        final recipes = await service.listRecipes(
+        // to everything shared with it. The repository adds recipes made
+        // offline and answers from the cache when the server is unreachable.
+        final page = await repo.loadRecipesPage(
           limit: _pageLimit,
           offset: 0,
           groupId: groupId,
@@ -280,8 +282,8 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
         setState(() {
           _recipes
             ..clear()
-            ..addAll(recipes.map(_fromApi));
-          _hasMore = recipes.length == _pageLimit;
+            ..addAll(page.recipes.map(_fromApi));
+          _hasMore = page.hasMore;
           // With a tag filter active an empty page means "no matches", not an
           // empty kitchen; the loaded body renders that with a way out.
           _viewState = _recipes.isEmpty && _selectedTags.isEmpty
@@ -309,7 +311,12 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
               .removeWhere((t) => !tags.any((available) => available.tag == t));
         });
       } catch (_) {
-        // The tag bar is an enhancement; the list works without it.
+        // The tag bar is an enhancement; the list works without it. Offline,
+        // count the tags of what is on screen so filtering still works.
+        if (!mounted) return;
+        if (_availableTags.isEmpty) {
+          setState(() => _availableTags = _localTagCounts());
+        }
       }
     } catch (_) {
       if (!mounted) return;
@@ -320,13 +327,29 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
     }
   }
 
+  /// Tag counts over the loaded recipes, most used first — the offline
+  /// stand-in for the server's tag listing.
+  List<RecipeTagCount> _localTagCounts() {
+    final counts = <String, int>{};
+    for (final r in _recipes) {
+      for (final tag in r.tags) {
+        counts[tag] = (counts[tag] ?? 0) + 1;
+      }
+    }
+    final entries = counts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    return [
+      for (final e in entries.take(30))
+        RecipeTagCount(tag: e.key, count: e.value),
+    ];
+  }
+
   Future<void> _reloadCollections({RecipeService? service}) async {
     try {
-      final RecipeService svc =
-          service ?? await ref.read(recipeServiceProviderAsync.future);
-      final collections = await svc.listCollections(
+      // Cookbooks made or changed offline are laid over the server's list.
+      final repo = await ref.read(recipeRepositoryProvider.future);
+      final collections = await repo.loadCollections(
         limit: 50,
-        offset: 0,
         groupId: _groupId,
       );
       if (!mounted) return;
@@ -375,10 +398,10 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
     });
 
     try {
-      final service = await ref.read(recipeServiceProviderAsync.future);
+      final repo = await ref.read(recipeRepositoryProvider.future);
       // Same scope and tag filter as the first page, or page two would
       // silently mix in rows the bar says are filtered out.
-      final recipes = await service.listRecipes(
+      final page = await repo.loadRecipesPage(
         limit: _pageLimit,
         offset: _recipes.length,
         groupId: _groupId,
@@ -386,8 +409,12 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
       );
       if (!mounted) return;
       setState(() {
-        _recipes.addAll(recipes.map(_fromApi));
-        _hasMore = recipes.length == _pageLimit;
+        // Offline-created recipes sit on page one, so a later page can
+        // repeat a row the first one already shows.
+        final seen = _recipes.map((r) => r.id).toSet();
+        _recipes.addAll(
+            page.recipes.where((r) => !seen.contains(r.id)).map(_fromApi));
+        _hasMore = page.hasMore;
         _isLoadingMore = false;
       });
     } catch (_) {
@@ -437,8 +464,8 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
     final l10n = AppLocalizations.of(context)!;
     final seq = ++_recipesRequestSeq;
     try {
-      final service = await ref.read(recipeServiceProviderAsync.future);
-      final recipes = await service.listRecipes(
+      final repo = await ref.read(recipeRepositoryProvider.future);
+      final page = await repo.loadRecipesPage(
         limit: _pageLimit,
         offset: 0,
         groupId: _groupId,
@@ -448,8 +475,8 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
       setState(() {
         _recipes
           ..clear()
-          ..addAll(recipes.map(_fromApi));
-        _hasMore = recipes.length == _pageLimit;
+          ..addAll(page.recipes.map(_fromApi));
+        _hasMore = page.hasMore;
         _loadMoreErrorMessage = null;
         _viewState = _recipes.isEmpty && _selectedTags.isEmpty
             ? _ViewState.empty

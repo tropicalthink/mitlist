@@ -13,6 +13,7 @@ import '../../providers/group_provider.dart';
 import '../../providers/grocery_provider.dart';
 import '../../providers/list_provider.dart' show grocerySeedProvider;
 import '../../providers/recipe_provider.dart';
+import '../../repositories/outbox_error_classifier.dart';
 import '../../router.dart' show currentGroupIdProvider;
 import '../../services/scan/grocery_suggestion_service.dart';
 import '../../theme/spacing.dart';
@@ -262,7 +263,15 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
       setState(() => _isScraping = false);
-      AppToast.error(context, l10n.recipeCreationCouldNotFetch);
+      // Importing reads the page on the server, so it needs a connection;
+      // offline, say that rather than blaming the link. Writing the recipe
+      // by hand still works offline.
+      AppToast.error(
+        context,
+        classifyOutboxError(e) == OutboxErrorDisposition.unreachable
+            ? l10n.commonCheckConnection
+            : l10n.recipeCreationCouldNotFetch,
+      );
     }
   }
 
@@ -273,7 +282,8 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
 
     try {
       final l10n = AppLocalizations.of(context)!;
-      final recipeService = await ref.read(recipeServiceProviderAsync.future);
+      // Saved locally and queued: works offline, syncs when it can.
+      final recipeRepo = await ref.read(recipeRepositoryProvider.future);
       final url = _urlController.text.trim();
       final title = _titleController.text.trim().isEmpty
           ? _titleFromUrl(url, l10n)
@@ -281,7 +291,7 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
       final ingredients = await _buildEnrichedIngredients();
       final shareGroupId = _shareWithHousehold ? _activeGroupId() : null;
 
-      await recipeService.createRecipe(
+      await recipeRepo.createRecipeOfflineFirst(
         CreateRecipeRequest(
           title: title,
           description: _buildDescription(url, l10n),

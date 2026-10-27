@@ -9,12 +9,14 @@ import '../../models/list_item_photo_models.dart';
 import '../../models/list_models.dart';
 import '../../providers/attachment_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/finance_provider.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/grocery_provider.dart';
 import '../../providers/list_provider.dart';
 import '../../providers/onboarding_provider.dart';
 import '../../repositories/grocery_repository.dart';
 import '../../repositories/list_repository.dart';
+import '../../repositories/outbox_error_classifier.dart';
 import '../../services/list_service.dart';
 import '../../services/restock_service.dart';
 import '../../services/scan/grocery_suggestion_service.dart';
@@ -41,6 +43,12 @@ enum AddItemOutcome {
   increased,
 }
 
+/// Thrown by actions that need the server to have the list (generating an
+/// expense from it) while the list was created offline and has not synced.
+class ListNotSyncedException implements Exception {
+  const ListNotSyncedException();
+}
+
 /// Owns all data + side-effect state for [ListDetailScreen]: the items stream,
 /// photos, suggestions, the settle/collapse animation bookkeeping, and every
 /// offline-first mutation. The screen keeps only BuildContext-bound concerns
@@ -55,14 +63,26 @@ enum AddItemOutcome {
 class ListDetailController extends ChangeNotifier {
   ListDetailController({
     required this.ref,
-    required this.listId,
+    required String listId,
     String? initialListName,
-  }) : _listName = (initialListName != null && initialListName.isNotEmpty)
+  })  : _listId = listId,
+        _listName = (initialListName != null && initialListName.isNotEmpty)
             ? initialListName
             : '';
 
   final WidgetRef ref;
-  final String listId;
+
+  /// The list's id. A list created offline starts under a temporary id and
+  /// moves to the server's once its create syncs; the controller follows that
+  /// switch (see [ListRepository.listIdChanges]) so a screen opened on the
+  /// temporary id keeps working across it.
+  String get listId => _listId;
+  String _listId;
+  StreamSubscription<ListIdChange>? _listIdSub;
+
+  /// True while a reminder change made here is still queued, so a refresh
+  /// does not show the server's older value over it.
+  bool _reminderQueued = false;
 
   bool _disposed = false;
   Future<void>? _loadFuture;
@@ -183,12 +203,14 @@ class ListDetailController extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
-    if (_itemsAddedThisSession) {
+    if (_itemsAddedThisSession && !ListRepository.isLocalListId(listId)) {
       // Leaving the list ends the adding session: release the notification
       // digest now. Best-effort — the service logs and swallows failures, and
-      // the server's idle window still delivers if this never arrives.
+      // the server's idle window still delivers if this never arrives (also
+      // the path for a list that has not reached the server yet).
       unawaited(_service?.flushListNotifications(listId));
     }
+    unawaited(_listIdSub?.cancel());
     for (final timer in _settleTimers.values) {
       timer.cancel();
     }
@@ -244,28 +266,8 @@ class ListDetailController extends ChangeNotifier {
       _service = service;
       final repo = await ref.read(listRepositoryProvider.future);
 
-      await _itemsSub?.cancel();
-      _itemsSub = repo.watchItemsByList(listId).listen((items) {
-        if (_disposed) return;
-        _sectionsDirty = true;
-        _items
-          ..clear()
-          ..addAll(items);
-        // A pending UI row stays visible until Drift publishes its local row.
-        // Match on content + creation time because the repository owns the
-        // durable temp id.
-        for (final pending in _pendingCreates.values) {
-          final landed = items.any((item) =>
-              !item.createdAt.isBefore(pending.createdAt) &&
-              item.name == pending.name &&
-              item.quantity == pending.quantity &&
-              item.unit == pending.unit);
-          if (!landed) _items.add(pending);
-        }
-        _notify();
-        unawaited(_loadPhotosForItems(items));
-        unawaited(_ensureGroceryCategories());
-      });
+      _followListId(repo);
+      await _watchItems(repo);
 
       final cached = await repo.getItemsByListOnce(listId);
       if (_disposed) return;
@@ -281,63 +283,58 @@ class ListDetailController extends ChangeNotifier {
       _isLoading = cached.isEmpty && !_hasLocalSnapshot;
       if (cachedGroupId != null) _groupId = cachedGroupId;
       _listType = cachedListType;
+      await _applyCachedListState(repo);
+      if (_disposed) return;
       _notify();
       if (_listType == 'shopping') {
         unawaited(_ensureGroceryCategories());
       }
 
+      if (ListRepository.isLocalListId(listId)) {
+        // Created on this device and not on the server yet: the cache is the
+        // whole list, and there is nothing to fetch until its create syncs.
+        _isLoading = false;
+        _hasLocalSnapshot = true;
+        _notify();
+        final groupId = _groupId;
+        if (groupId != null) await _loadHouseholdContext(repo, groupId);
+        return;
+      }
+
       // Refresh list + items in background; stream will update.
-      await repo.refreshListDetail(listId);
-      final list = await service.getList(listId);
+      ItemList? list;
+      try {
+        await repo.refreshListDetail(listId);
+        list = await service.getList(listId);
+      } catch (e) {
+        // Offline with the list cached: keep showing the cache, quietly.
+        // Anything else (or offline with nothing to show) is a real failure.
+        final offline =
+            classifyOutboxError(e) == OutboxErrorDisposition.unreachable;
+        if (!offline || !(_hasLocalSnapshot || _items.isNotEmpty)) rethrow;
+      }
 
       if (_disposed) return;
       _isLoading = false;
       _hasLocalSnapshot = true;
-      _listName = list.name;
-      _groupId = list.groupId;
-      _listType = list.type;
-      _remindAt = list.remindAt;
-      _reminderSentAt = list.reminderSentAt;
+      if (list != null) {
+        _groupId = list.groupId;
+        _listName = list.name;
+        _listType = list.type;
+        if (!_reminderQueued) {
+          _remindAt = list.remindAt;
+          _reminderSentAt = list.reminderSentAt;
+        }
+        // The cached row carries any rename or type change still queued here,
+        // which the server copy does not have yet.
+        await _applyCachedListState(repo);
+        if (_disposed) return;
+      }
       _notify();
-      unawaited(_backfillCanonicalLinks(repo, list.groupId));
-
-      // Attach SSE so edits from other household members appear in real time.
-      final sseService = ref.read(sseServiceProvider);
-      repo.attachSse(sseService, list.groupId);
-      // Grocery graph shares the same SSE stream: corrections/aisles from
-      // other members invalidate the local graph live.
-      try {
-        await _ensureGroceryCategories();
-        final groceryRepo = _groceryRepo;
-        if (!_disposed) {
-          groceryRepo?.attachSse(sseService, list.groupId);
-        }
-      } catch (_) {}
-      try {
-        final authService = await ref.read(authServiceProviderAsync.future);
-        final me = await authService.getMe();
-        if (!_disposed) {
-          _userId = me.id;
-          _notify();
-        }
-      } catch (_) {}
-      try {
-        final groupService = await ref.read(groupServiceProviderAsync.future);
-        final group = await groupService.getGroup(list.groupId);
-        if (!_disposed) {
-          _groupCurrency = group.currency;
-          _notify();
-        }
-      } catch (_) {}
-      try {
-        final groupService = await ref.read(groupServiceProviderAsync.future);
-        final members = await groupService.listMembers(list.groupId);
-        if (!_disposed) {
-          _memberNames = {for (final m in members) m.userId: m.displayName};
-          _notify();
-        }
-      } catch (_) {}
-      unawaited(_loadPhotosForItems(_items));
+      final groupId = _groupId;
+      if (groupId == null) return;
+      unawaited(_backfillCanonicalLinks(repo, groupId));
+      await _loadHouseholdContext(repo, groupId);
     } catch (e) {
       if (_disposed) return;
       _isLoading = false;
@@ -346,6 +343,113 @@ class ListDetailController extends ChangeNotifier {
       _refreshFailed = hasUsableContent;
       _notify();
     }
+  }
+
+  /// Keeps [listId] pointing at the stored list when a list created offline
+  /// syncs and moves to its server id. Best-effort: a repository without the
+  /// hook (a test double) just keeps the id it was given.
+  void _followListId(ListRepository repo) {
+    if (_listIdSub != null) return;
+    try {
+      _listId = repo.resolveListId(_listId);
+      _listIdSub = repo.listIdChanges.listen((change) {
+        if (_disposed || change.from != _listId) return;
+        _listId = change.to;
+        unawaited(_watchItems(repo));
+        _notify();
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _watchItems(ListRepository repo) async {
+    await _itemsSub?.cancel();
+    _itemsSub = repo.watchItemsByList(listId).listen((items) {
+      if (_disposed) return;
+      _sectionsDirty = true;
+      _items
+        ..clear()
+        ..addAll(items);
+      // A pending UI row stays visible until Drift publishes its local row.
+      // Match on content + creation time because the repository owns the
+      // durable temp id.
+      for (final pending in _pendingCreates.values) {
+        final landed = items.any((item) =>
+            !item.createdAt.isBefore(pending.createdAt) &&
+            item.name == pending.name &&
+            item.quantity == pending.quantity &&
+            item.unit == pending.unit);
+        if (!landed) _items.add(pending);
+      }
+      _notify();
+      unawaited(_loadPhotosForItems(items));
+      unawaited(_ensureGroceryCategories());
+    });
+  }
+
+  /// Name and type from the cached list row, and a reminder change still
+  /// queued in the outbox, so a list opened offline (or from a link with no
+  /// name attached) shows what this device last knew. Best-effort.
+  Future<void> _applyCachedListState(ListRepository repo) async {
+    try {
+      final cachedList = await repo.getListOnce(listId);
+      if (cachedList != null) {
+        if (cachedList.name.isNotEmpty) _listName = cachedList.name;
+        _listType = cachedList.type;
+        _groupId ??= cachedList.groupId;
+      }
+      final queued = await repo.queuedListReminder(listId);
+      if (queued != null) {
+        _reminderQueued = true;
+        _remindAt = queued.remindAt;
+        _reminderSentAt = null;
+      }
+    } catch (_) {}
+  }
+
+  /// Live updates and household context for the open list: SSE, the signed-in
+  /// user, the household's currency and roster. Each read falls back to the
+  /// last response the app cached, so this also works offline.
+  Future<void> _loadHouseholdContext(
+    ListRepository repo,
+    String groupId,
+  ) async {
+    // Attach SSE so edits from other household members appear in real time.
+    final sseService = ref.read(sseServiceProvider);
+    repo.attachSse(sseService, groupId);
+    // Grocery graph shares the same SSE stream: corrections/aisles from
+    // other members invalidate the local graph live.
+    try {
+      await _ensureGroceryCategories();
+      final groceryRepo = _groceryRepo;
+      if (!_disposed) {
+        groceryRepo?.attachSse(sseService, groupId);
+      }
+    } catch (_) {}
+    try {
+      final authService = await ref.read(authServiceProviderAsync.future);
+      final me = await authService.getMe();
+      if (!_disposed) {
+        _userId = me.id;
+        _notify();
+      }
+    } catch (_) {}
+    try {
+      final groupService = await ref.read(groupServiceProviderAsync.future);
+      final group = await groupService.getGroup(groupId);
+      if (!_disposed) {
+        _groupCurrency = group.currency;
+        _notify();
+      }
+    } catch (_) {}
+    try {
+      final groupService = await ref.read(groupServiceProviderAsync.future);
+      final members = await groupService.listMembers(groupId);
+      if (!_disposed) {
+        _memberNames = {for (final m in members) m.userId: m.displayName};
+        _notify();
+      }
+    } catch (_) {}
+    unawaited(_loadPhotosForItems(_items));
   }
 
   Future<void> _ensureGroceryCategories() async {
@@ -404,6 +508,8 @@ class ListDetailController extends ChangeNotifier {
     final groupId = _groupId;
     final service = _service;
     if (groupId == null || service == null) return;
+    // Photos live on the server only; a list it does not have yet has none.
+    if (ListRepository.isLocalListId(listId)) return;
 
     final toLoad =
         items.where((item) => !_photoLoadAttempted.contains(item.id)).toList();
@@ -428,8 +534,16 @@ class ListDetailController extends ChangeNotifier {
           _notify();
         }
         return;
-      } catch (_) {
+      } catch (e) {
         if (_disposed) return;
+        if (classifyOutboxError(e) == OutboxErrorDisposition.unreachable) {
+          // Offline: no per-item fan-out of doomed requests, and these items
+          // are tried again on the next load.
+          for (final item in toLoad) {
+            _photoLoadAttempted.remove(item.id);
+          }
+          return;
+        }
         // Older self-hosted backends predate the batch route; fall back to
         // per-item requests for the rest of this controller's lifetime.
         _batchPhotosSupported = false;
@@ -983,66 +1097,103 @@ class ListDetailController extends ChangeNotifier {
     }
   }
 
+  /// Renames the list offline-first: the cache (and so the lists grid,
+  /// whatever route the user takes back) changes at once, the server when the
+  /// queued edit syncs.
   Future<void> renameList(String newName) async {
-    final service = _service;
-    if (service == null) return;
-    await service.updateList(listId, UpdateListRequest(name: newName));
-    // Persist into the local cache too — otherwise the lists grid keeps the
-    // old name when the user leaves via a system back gesture (which returns
-    // no "changed" result to trigger a reload there).
-    try {
-      final repo = await ref.read(listRepositoryProvider.future);
-      await repo.renameListLocal(listId, newName);
-    } catch (_) {}
+    if (_service == null) return;
+    final repo = await ref.read(listRepositoryProvider.future);
+    await repo.updateListOfflineFirst(listId, UpdateListRequest(name: newName));
     if (_disposed) return;
     _listName = newName;
     _notify();
   }
 
   /// Schedules (or clears, with null) the household reminder for this list.
-  /// Throws on failure so the screen can show its own message.
+  /// Queued through the outbox, so it works offline. Throws on failure so the
+  /// screen can show its own message.
   Future<void> setReminder(DateTime? remindAt) async {
-    final service = _service;
-    if (service == null) return;
-    final updated = await service.setListReminder(listId, remindAt);
+    if (_service == null) return;
+    final repo = await ref.read(listRepositoryProvider.future);
+    await repo.setListReminderOfflineFirst(listId, remindAt);
     if (_disposed) return;
-    _remindAt = updated.remindAt;
-    _reminderSentAt = updated.reminderSentAt;
+    _reminderQueued = true;
+    _remindAt = remindAt;
+    _reminderSentAt = null;
     _notify();
   }
 
   /// Returns true if the archive was performed (false if the list isn't loaded
   /// yet), so the screen only navigates away on a real archive.
   Future<bool> archiveList() async {
-    final service = _service;
-    if (service == null) return false;
-    await service.archiveList(listId);
+    if (_service == null) return false;
+    final repo = await ref.read(listRepositoryProvider.future);
+    await repo.archiveListOfflineFirst(listId);
     return true;
   }
 
   /// Returns true if the delete was performed (false if the list isn't loaded
   /// yet), so the screen only navigates away on a real delete.
   Future<bool> deleteList() async {
-    final service = _service;
-    if (service == null) return false;
-    await service.deleteList(listId);
+    if (_service == null) return false;
     final repo = await ref.read(listRepositoryProvider.future);
-    await repo.deleteListLocal(listId);
+    await repo.deleteListOfflineFirst(listId);
     return true;
   }
 
-  Future<Map<String, dynamic>> getCostSummary() {
+  /// The server's cost summary, or the same sums worked out from the cached
+  /// items when the server can't be reached (or doesn't have the list yet).
+  Future<Map<String, dynamic>> getCostSummary() async {
     final service = _service;
-    if (service == null) {
-      return Future<Map<String, dynamic>>.error(StateError('list not loaded'));
+    if (service == null) throw StateError('list not loaded');
+    if (ListRepository.isLocalListId(listId)) return _localCostSummary();
+    try {
+      return await service.getCostSummary(listId);
+    } catch (e) {
+      if (classifyOutboxError(e) != OutboxErrorDisposition.unreachable) {
+        rethrow;
+      }
+      return _localCostSummary();
     }
-    return service.getCostSummary(listId);
   }
 
+  /// Mirrors the backend: the total of every priced item, split evenly over
+  /// the household (rounded up). The roster may be unknown offline, in which
+  /// case the share is the whole total.
+  Map<String, dynamic> _localCostSummary() {
+    final total =
+        _items.fold<int>(0, (sum, item) => sum + (item.priceCents ?? 0));
+    final members = _memberNames.isEmpty ? 1 : _memberNames.length;
+    return {
+      'total_cents': total,
+      'equal_share_cents': (total + members - 1) ~/ members,
+    };
+  }
+
+  /// Turns the priced items into an expense. Server-side only (it creates the
+  /// expense and its splits there), so it needs a connection and a list the
+  /// server already has.
   Future<void> generateExpense() async {
     final service = _service;
     if (service == null) return;
+    if (ListRepository.isLocalListId(listId)) {
+      throw const ListNotSyncedException();
+    }
+    // The server sums the prices it has: send any price edits still waiting
+    // in the sync session first, or the expense would miss them.
+    try {
+      final repo = await ref.read(listRepositoryProvider.future);
+      await repo.drainOutboxOnce();
+    } catch (_) {}
     await service.generateExpense(listId);
+    // The expense was made on the server; pull it into the Money cache so it
+    // shows there without waiting for the next refresh. Best-effort.
+    final groupId = _groupId;
+    if (groupId == null) return;
+    try {
+      final finance = await ref.read(financeRepositoryProvider.future);
+      await finance.refreshGroup(groupId);
+    } catch (_) {}
   }
 
   // ---- Photos ---------------------------------------------------------------
@@ -1050,6 +1201,10 @@ class ListDetailController extends ChangeNotifier {
   Future<void> addItemPhoto(ListItem item) async {
     final groupId = _groupId;
     if (groupId == null) return;
+    // Photos attach to the server's copy of the item.
+    if (ListRepository.isLocalListId(listId)) {
+      throw const ListNotSyncedException();
+    }
     final picker = ImagePicker();
     final file = await picker.pickImage(source: ImageSource.gallery);
     if (file == null) return;

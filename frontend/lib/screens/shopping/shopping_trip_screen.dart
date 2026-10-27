@@ -15,6 +15,8 @@ import '../../services/widgets/widget_bridge.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/list_provider.dart';
 import '../../providers/store_provider.dart';
+import '../../repositories/list_repository.dart';
+import '../../repositories/outbox_error_classifier.dart';
 import '../../router.dart' show currentGroupIdProvider;
 import '../../theme/animations.dart';
 import '../../theme/shadows.dart';
@@ -173,69 +175,36 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
         }
       }
 
-      final listSvc = await ref.read(listServiceProviderAsync.future);
-      final lists = await listSvc.listLists(groupId, limit: 100);
-      final shoppingLists = lists
-          .where((l) => l.type == 'shopping' || l.type == 'general')
-          .toList();
-
-      if (shoppingLists.isEmpty) {
-        if (!mounted || !_loadGuard.isCurrent(request)) return;
-        setState(() {
-          _lists.clear();
-          _itemsByList.clear();
-          _categoryByCanonicalId = {};
-          _hasHousehold = true;
-          _isLoading = false;
-        });
-        return;
-      }
-
-      final listIds = shoppingLists.map((l) => l.id).toList();
-      final result = await listSvc.getShoppingTrip(listIds, groupId: groupId);
+      // The trip reads from the local cache, the same rows the lists screens
+      // show: painted at once, and offline it is the whole trip. A refresh
+      // then updates the cache and the trip is read back from it.
+      final repo = await ref.read(listRepositoryProvider.future);
+      final hadCache = await _showCachedTrip(
+        repo,
+        groupId,
+        request,
+        // Nothing cached yet: keep the skeleton up for the first fetch.
+        keepLoadingIfEmpty: !hadContent,
+      );
       if (!mounted || !_loadGuard.isCurrent(request)) return;
 
-      final itemsByList = <String, List<ListItem>>{};
-      final rawLists = result['lists'] as List<dynamic>? ?? [];
-      for (final rl in rawLists) {
-        final listId = rl['list_id'] as String? ?? '';
-        final rawItems = rl['items'] as List<dynamic>? ?? [];
-        final items = rawItems
-            .map((ri) {
-              final m = Map<String, dynamic>.from(ri as Map);
-              return ListItem.fromJson(m);
-            })
-            .where((i) => !i.checked)
+      try {
+        await repo.refreshLists(groupId);
+        final listIds = (await repo.getListsByGroupOnce(groupId))
+            .where(_isTripList)
+            .map((l) => l.id)
             .toList();
-        if (items.isNotEmpty) {
-          itemsByList[listId] = items;
-        }
+        await repo.refreshShoppingTrip(groupId, listIds);
+      } catch (e) {
+        // Offline the cached trip stands, empty or not (a list can still be
+        // made from the empty state). Other failures only matter when there
+        // is nothing on screen.
+        final offline =
+            classifyOutboxError(e) == OutboxErrorDisposition.unreachable;
+        if (!offline && !hadCache && !hadContent) rethrow;
       }
-
-      setState(() {
-        _lists.clear();
-        _lists.addAll(shoppingLists);
-        _itemsByList.clear();
-        _itemsByList.addAll(itemsByList);
-        final activeCanonicalIds = {
-          for (final items in itemsByList.values)
-            for (final item in items)
-              if (item.canonicalItemId != null) item.canonicalItemId!,
-        };
-        _categoryByCanonicalId.removeWhere(
-          (id, _) => !activeCanonicalIds.contains(id),
-        );
-        _hasHousehold = true;
-        _isLoading = false;
-      });
-      unawaited(
-        _loadCategories(
-          itemsByList.values.expand((items) => items),
-          request,
-        ),
-      );
-      unawaited(_recomputeAisles());
-      _syncLiveActivity();
+      if (!mounted || !_loadGuard.isCurrent(request)) return;
+      await _showCachedTrip(repo, groupId, request);
     } catch (e) {
       if (!mounted || !_loadGuard.isCurrent(request)) return;
       final message = friendlyErrorMessage(e, AppLocalizations.of(context)!);
@@ -260,6 +229,70 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
     } catch (_) {
       return null;
     }
+  }
+
+  static bool _isTripList(ItemList list) =>
+      list.type == 'shopping' || list.type == 'general';
+
+  /// Shows the trip as the local cache has it: the household's shopping lists
+  /// (newest first, like the server orders them) and their open items. Returns
+  /// whether the cache had any shopping list at all.
+  Future<bool> _showCachedTrip(
+    ListRepository repo,
+    String groupId,
+    int request, {
+    bool keepLoadingIfEmpty = false,
+  }) async {
+    final lists = (await repo.getListsByGroupOnce(groupId))
+        .where(_isTripList)
+        .toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    if (lists.isEmpty && keepLoadingIfEmpty) return false;
+    final itemsByList = <String, List<ListItem>>{};
+    for (final list in lists) {
+      final open = (await repo.getItemsByListOnce(list.id))
+          .where((i) => !i.checked)
+          .toList()
+        ..sort((a, b) => a.position.compareTo(b.position));
+      if (open.isNotEmpty) itemsByList[list.id] = open;
+    }
+    if (!mounted || !_loadGuard.isCurrent(request)) return lists.isNotEmpty;
+
+    final shownIds = {
+      for (final items in itemsByList.values)
+        for (final item in items) item.id,
+    };
+    setState(() {
+      _lists
+        ..clear()
+        ..addAll(lists);
+      _itemsByList
+        ..clear()
+        ..addAll(itemsByList);
+      // Items that left the trip (checked elsewhere, or synced under their
+      // server id) drop out of the basket.
+      _checkedItemIds.removeWhere((id) => !shownIds.contains(id));
+      final activeCanonicalIds = {
+        for (final items in itemsByList.values)
+          for (final item in items)
+            if (item.canonicalItemId != null) item.canonicalItemId!,
+      };
+      _categoryByCanonicalId.removeWhere(
+        (id, _) => !activeCanonicalIds.contains(id),
+      );
+      _hasHousehold = true;
+      _isLoading = false;
+      _error = null;
+    });
+    unawaited(
+      _loadCategories(
+        itemsByList.values.expand((items) => items),
+        request,
+      ),
+    );
+    unawaited(_recomputeAisles());
+    _syncLiveActivity();
+    return lists.isNotEmpty;
   }
 
   Future<void> _loadCategories(
@@ -412,8 +445,16 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
         checkedItems.fold<int>(0, (sum, item) => sum + (item.priceCents ?? 0));
 
     try {
-      final listSvc = await ref.read(listServiceProviderAsync.future);
-      await listSvc.completeShoppingItems(_checkedItemIds.toList());
+      // Offline-first, item by item, like checking them off on the list:
+      // the basket empties at once and the checks sync when they can.
+      final repo = await ref.read(listRepositoryProvider.future);
+      await repo.completeItemsOfflineFirst({
+        for (final entry in _itemsByList.entries)
+          entry.key: [
+            for (final item in entry.value)
+              if (_checkedItemIds.contains(item.id)) item.id,
+          ],
+      });
 
       if (!mounted) return;
       // The trip is done: a heavy stamp and the matching thwack.

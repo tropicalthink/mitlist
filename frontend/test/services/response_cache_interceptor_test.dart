@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io' show SocketException;
+import 'dart:io' show HttpException, SocketException;
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
@@ -189,6 +189,72 @@ void main() {
       adapter.script = (_) => const SocketException('no route');
       final res = await dio.get('/v');
       expect(res.data, {'v': 2});
+    });
+
+    test('a connection closed before the response counts as offline', () async {
+      final store = _MemoryStore();
+      final adapter = _ScriptedAdapter((_) => {'v': 3});
+      final dio = _client(adapter, store);
+      await dio.get('/v');
+      await Future<void>.delayed(Duration.zero);
+
+      adapter.script =
+          (_) => const HttpException('Connection closed before full header');
+      final res = await dio.get('/v');
+      expect(res.data, {'v': 3});
+    });
+
+    test('liveOnly stores fresh bodies but never serves a stale one', () async {
+      final store = _MemoryStore();
+      final adapter = _ScriptedAdapter((_) => {'lists': 1});
+      final dio = _client(adapter, store);
+
+      final live =
+          await ResponseCacheInterceptor.liveOnly(() => dio.get('/lists'));
+      expect(live.data, {'lists': 1});
+      await Future<void>.delayed(Duration.zero);
+      expect(store.rows, hasLength(1),
+          reason: 'screens without their own cache still benefit');
+
+      adapter.script = _offline;
+      await expectLater(
+        ResponseCacheInterceptor.liveOnly(() async {
+          // Built a few awaits deep, like a repository calling a service.
+          await Future<void>.delayed(Duration.zero);
+          return dio.get('/lists');
+        }),
+        throwsA(isA<DioException>()),
+      );
+
+      // Outside the zone the same request is still answered from cache.
+      final cached = await dio.get('/lists');
+      expect(cached.extra[ResponseCacheInterceptor.fromCacheExtra], isTrue);
+    });
+
+    test('liveOnly is not answered from cache even when known offline',
+        () async {
+      final store = _MemoryStore();
+      final adapter = _ScriptedAdapter((_) => {'n': 1});
+      var offline = false;
+      final dio = _client(adapter, store, isKnownOffline: () => offline);
+      await dio.get('/groups');
+      await Future<void>.delayed(Duration.zero);
+
+      offline = true;
+      adapter.script = _offline;
+      await expectLater(
+        ResponseCacheInterceptor.liveOnly(() => dio.get('/groups')),
+        throwsA(isA<DioException>()),
+      );
+      await expectLater(
+        dio.get(
+          '/groups',
+          options: Options(
+            extra: {ResponseCacheInterceptor.liveOnlyExtra: true},
+          ),
+        ),
+        throwsA(isA<DioException>()),
+      );
     });
 
     test('opts out per request', () async {

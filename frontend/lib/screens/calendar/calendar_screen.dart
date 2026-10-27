@@ -981,7 +981,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             statusLabel: event.chore!.status,
             assignee: '',
             dueDate: event.date,
-            onDelete: () => _deleteChore(event.chore!.choreId),
+            onDelete: () => _deleteChore(event.chore!.choreId, event.groupId),
           );
         }
       case CalendarEventType.mealPlan:
@@ -1002,14 +1002,16 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   }
 
   /// Runs once the detail sheet has already confirmed the delete with the
-  /// user, so it closes the sheet and deletes without asking again.
-  Future<void> _deleteChore(String choreId) async {
+  /// user, so it closes the sheet and deletes without asking again. The
+  /// delete is queued (it works offline); the calendar drops the chore's
+  /// events while it waits, see `CalendarRepository`.
+  Future<void> _deleteChore(String choreId, String groupId) async {
     if (_isSaving) return;
     _isSaving = true;
     Navigator.of(context).pop();
     try {
-      final service = await ref.read(choreServiceProviderAsync.future);
-      await service.deleteChore(choreId);
+      final repo = await ref.read(choreRepositoryProvider.future);
+      await repo.deleteOfflineFirst(choreId, groupId: groupId);
       // Refetch the affected range(s). Invalidating the whole family is simple
       // and correct — the visible range reloads, others drop their cache.
       ref.invalidate(calendarEventsProvider);

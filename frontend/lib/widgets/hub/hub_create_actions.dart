@@ -113,6 +113,10 @@ Future<void> addToAList(
 /// Opens the expense sheet. One expense from a hub shortcut is a complete
 /// entry session, so its household notification goes out right away instead
 /// of waiting for the fallback window.
+///
+/// The flush is a hint, not part of the expense: offline (the expense is
+/// queued) it fails quietly and the server's fallback window delivers the
+/// notification once the expense syncs.
 Future<void> addExpenseAndNotify(
   BuildContext context,
   WidgetRef ref, {
@@ -120,6 +124,10 @@ Future<void> addExpenseAndNotify(
 }) async {
   final created = await ExpenseCreationSheet.show(context);
   if (created != true) return;
-  final service = await ref.read(financeServiceProviderAsync.future);
-  unawaited(service.flushExpenseNotifications(groupId));
+  unawaited(() async {
+    try {
+      final service = await ref.read(financeServiceProviderAsync.future);
+      await service.flushExpenseNotifications(groupId);
+    } catch (_) {}
+  }());
 }

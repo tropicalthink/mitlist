@@ -132,6 +132,10 @@ typedef _Spies = ({
   return (coordinator: coordinator, spies: spies, db: db);
 }
 
+/// The coordinator's dead-letter threshold (the default of
+/// `outboxPendingCount`).
+const kOutboxMaxAttemptsForTest = 10;
+
 void main() {
   group('OutboxCoordinator —', () {
     late FakeConnectivityService connectivity;
@@ -243,6 +247,39 @@ void main() {
 
       expect(spies.list.drainCalls, greaterThanOrEqualTo(1),
           reason: 'start() should drain immediately if already online');
+    });
+
+    // -------------------------------------------------------------------------
+    // Case 5b: only still-queued ops re-arm the follow-up drain. A
+    // dead-lettered op waits for an explicit retry; counting it kept a drain
+    // and a probe running every five seconds for the life of the app.
+    // -------------------------------------------------------------------------
+    test('a dead-lettered op does not keep re-arming drains', () async {
+      connectivity = FakeConnectivityService(initiallyOnline: true);
+      final failed = _build(connectivity);
+      final pending = _build(connectivity);
+      addTearDown(failed.db.close);
+      addTearDown(pending.db.close);
+      addTearDown(failed.coordinator.dispose);
+      addTearDown(pending.coordinator.dispose);
+
+      Future<void> enqueue(AppDatabase db) => db.enqueueOutbox(
+            id: 'op-1',
+            type: 'createItem',
+            payload: const {'listId': 'l1'},
+          );
+      await enqueue(failed.db);
+      await failed.db.markOutboxPermanentFailure('op-1',
+          threshold: kOutboxMaxAttemptsForTest);
+      await enqueue(pending.db);
+
+      await failed.coordinator.drain();
+      await pending.coordinator.drain();
+      // The follow-up is scheduled five seconds out.
+      await Future<void>.delayed(const Duration(milliseconds: 5500));
+
+      expect(failed.spies.list.drainCalls, 1);
+      expect(pending.spies.list.drainCalls, greaterThanOrEqualTo(2));
     });
 
     // -------------------------------------------------------------------------

@@ -961,9 +961,18 @@ FROM recipes_table;
         .go();
   }
 
+  /// Queue order: oldest first, then insertion order. `created_at` is stored
+  /// in whole seconds, so a list created offline and the item added to it a
+  /// moment later usually tie — without the rowid tiebreak SQLite may hand the
+  /// item create to the drainer first, against a list the server doesn't have.
+  static final List<OrderClauseGenerator<$OutboxOpsTable>> _outboxOrder = [
+    (t) => OrderingTerm(expression: t.createdAt),
+    (t) => OrderingTerm(expression: t.rowId),
+  ];
+
   Future<List<OutboxOp>> getOutboxBatch({int limit = 50}) {
     return (select(outboxOps)
-          ..orderBy([(t) => OrderingTerm(expression: t.createdAt)])
+          ..orderBy(_outboxOrder)
           ..limit(limit))
         .get();
   }
@@ -981,7 +990,7 @@ FROM recipes_table;
               t.attemptCount.isSmallerThanValue(maxAttempts) &
               (t.lastAttemptAt.isNull() |
                   t.lastAttemptAt.isSmallerThanValue(cutoff)))
-          ..orderBy([(t) => OrderingTerm(expression: t.createdAt)])
+          ..orderBy(_outboxOrder)
           ..limit(limit))
         .get();
   }
@@ -1000,7 +1009,7 @@ FROM recipes_table;
   Future<List<OutboxOp>> getOutboxOpsByType(String type) {
     return (select(outboxOps)
           ..where((t) => t.type.equals(type))
-          ..orderBy([(t) => OrderingTerm(expression: t.createdAt)]))
+          ..orderBy(_outboxOrder))
         .get();
   }
 
@@ -1075,6 +1084,8 @@ FROM recipes_table;
       case 'listItem':
         await (delete(listItemsTable)..where((t) => t.id.equals(entityId)))
             .go();
+      case 'list':
+        await _deleteLocalOnlyList(entityId);
       case 'expense':
         await (delete(expensesTable)..where((t) => t.id.equals(entityId))).go();
       case 'recipe':
@@ -1091,7 +1102,49 @@ FROM recipes_table;
         );
       case 'settlement':
         await _spliceFromSettlementsCaches(entityId);
+      case 'pinwallPost':
+        await _spliceFromPinwallCaches(entityId);
     }
+  }
+
+  /// Drops a discarded pinwall note from every cached board, along with the
+  /// edits and moves still queued against its temporary id — they target a
+  /// note the server will never have.
+  Future<void> _spliceFromPinwallCaches(String entityId) async {
+    await (delete(outboxOps)..where((t) => t.entityId.equals(entityId))).go();
+    final rows = await select(pinwallPostsCaches).get();
+    for (final row in rows) {
+      try {
+        final decoded = jsonDecode(row.postsJson);
+        if (decoded is! List) continue;
+        final kept =
+            decoded.where((e) => !(e is Map && e['id'] == entityId)).toList();
+        if (kept.length == decoded.length) continue;
+        await upsertPinwallPosts(
+          groupId: row.groupId,
+          postsJson: jsonEncode(kept),
+        );
+      } catch (_) {
+        // Best-effort cleanup; a later refresh reconciles.
+      }
+    }
+  }
+
+  /// Drops a list created offline whose create was discarded: its row, its
+  /// items, and every op still queued against its temporary id (its items'
+  /// creates and edits), none of which can ever reach the server. Only
+  /// temporary (`local-…`) ids, which appear nowhere but this list's own ops.
+  Future<void> _deleteLocalOnlyList(String listId) async {
+    if (!listId.startsWith('local-')) return;
+    await transaction(() async {
+      await (delete(listsTable)..where((t) => t.id.equals(listId))).go();
+      await (delete(listItemsTable)..where((t) => t.listId.equals(listId)))
+          .go();
+      await (delete(outboxOps)
+            ..where((t) =>
+                t.entityId.equals(listId) | t.payloadJson.like('%$listId%')))
+          .go();
+    });
   }
 
   /// Removes any entry identified by [idOf] == [entityId] from every cached
@@ -1276,6 +1329,18 @@ FROM recipes_table;
       ],
       updates: {outboxOps},
     );
+  }
+
+  /// Re-points the `entity_id` column of queued ops from a temp id to the
+  /// server id, the column-side twin of [rewriteOutboxPayloadIds]. Without it,
+  /// per-entity lookups ([pendingOpCountForEntity], "is a create still
+  /// queued?") miss follow-up ops queued against the temp id before it synced.
+  Future<void> rewriteOutboxEntityIds({
+    required String oldId,
+    required String newId,
+  }) async {
+    await (update(outboxOps)..where((t) => t.entityId.equals(oldId)))
+        .write(OutboxOpsCompanion(entityId: Value(newId)));
   }
 
   /// Updates the canonical link carried by a queued list-item create/add.

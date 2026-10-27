@@ -5,6 +5,7 @@ import '../../l10n/app_localizations.dart';
 import '../../models/list_models.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/list_provider.dart';
+import '../../repositories/outbox_error_classifier.dart';
 import '../../router.dart' show currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
 import '../../services/scan/grocery_suggestion_service.dart';
@@ -74,12 +75,24 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
         });
         return;
       }
-      final service = await ref.read(listServiceProviderAsync.future);
-      final items = await service.listProducts(groupId!);
+      // Products added here but not synced yet sit in the outbox; they are
+      // shown alongside the server's (offline: the last cached) catalog.
+      final repo = await ref.read(listRepositoryProvider.future);
+      final queued = await repo.queuedProducts(groupId!);
+      var items = const <Product>[];
+      try {
+        final service = await ref.read(listServiceProviderAsync.future);
+        items = await service.listProducts(groupId);
+      } catch (e) {
+        final offline =
+            classifyOutboxError(e) == OutboxErrorDisposition.unreachable;
+        if (!offline || queued.isEmpty) rethrow;
+      }
       if (!mounted || !_loadGuard.isCurrent(request)) return;
       setState(() {
         _items.clear();
         _items.addAll(items);
+        _items.addAll(queued);
         _hasHousehold = true;
         _isLoading = false;
       });
@@ -270,8 +283,9 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
     if (result == null) return;
 
     try {
-      final service = await ref.read(listServiceProviderAsync.future);
-      await service.createProduct(
+      // Queued, so it works offline; it shows from the outbox until it syncs.
+      final repo = await ref.read(listRepositoryProvider.future);
+      await repo.createProductOfflineFirst(
         CreateProductRequest(
           groupId: result.groupId,
           name: result.name,

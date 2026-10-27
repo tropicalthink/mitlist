@@ -2,20 +2,29 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:collection/collection.dart';
+import 'package:dio/dio.dart' show DioException;
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:uuid/uuid.dart';
 
 import '../models/list_models.dart';
 import '../utils/uuid_validation.dart';
+import '../services/api_error_mapper.dart';
 import '../services/list_service.dart';
 import '../services/error_reporter.dart';
 import '../services/scan/local_item_promotion_service.dart';
 import '../services/product_events.dart';
+import '../services/response_cache_interceptor.dart';
 import '../services/sse_service.dart';
 import '../storage/app_database.dart';
 import 'grocery_repository.dart';
 import 'outbox_drainer.dart';
+
+/// A list created on this device that the server has now accepted: [from] is
+/// the temporary id it carried while it only existed locally, [to] the
+/// server's. Screens still holding [from] (an open list detail, a route) move
+/// over to [to].
+typedef ListIdChange = ({String from, String to});
 
 class ListRepository {
   final AppDatabase _db;
@@ -62,6 +71,45 @@ class ListRepository {
   final Set<String> _sseRefreshInFlight = {};
   final Set<String> _sseRefreshDirty = {};
 
+  /// Prefix of the id a list created on this device carries until its
+  /// `createList` op has synced. Never a valid server id, so nothing that
+  /// holds one can be mistaken for a list the server knows.
+  static const String localListIdPrefix = 'local-';
+
+  /// True for a list created offline that the server does not have yet.
+  static bool isLocalListId(String listId) =>
+      listId.startsWith(localListIdPrefix);
+
+  /// Server id of every list this repository saw sync, keyed by the temporary
+  /// id it was created under. In memory on purpose: only live screens and
+  /// in-flight calls can still hold a temp id, and none survive a restart.
+  final Map<String, String> _syncedListIds = {};
+  final StreamController<ListIdChange> _listIdChanges =
+      StreamController<ListIdChange>.broadcast();
+
+  /// Emits when a list created offline reaches the server and its rows move
+  /// from the temporary id to the server's.
+  Stream<ListIdChange> get listIdChanges => _listIdChanges.stream;
+
+  /// The id [listId] is stored under now: the server id when it was a
+  /// temporary id that has since synced, otherwise [listId] itself.
+  String resolveListId(String listId) => _syncedListIds[listId] ?? listId;
+
+  /// Op types whose payload targets one list through its `listId`. A list's
+  /// own create orders ahead of all of them, and deleting the list drops them.
+  static const List<String> _listScopedOpTypes = [
+    'createItem',
+    'updateItem',
+    'deleteItem',
+    'reorderItems',
+    'addItemAmount',
+    'clearItems',
+    'updateList',
+    'archiveList',
+    'deleteList',
+    'setListReminder',
+  ];
+
   ListRepository({
     required AppDatabase db,
     required ListService remote,
@@ -91,56 +139,157 @@ class ListRepository {
 
   Stream<List<ListItem>> watchItemsByList(String listId) {
     return _db
-        .watchItemsByList(listId)
+        .watchItemsByList(resolveListId(listId))
         .map((rows) => rows.map(_toListItem).toList());
   }
 
   Future<List<ListItem>> getItemsByListOnce(String listId) async {
-    final rows = await _db.getItemsByListOnce(listId);
+    final rows = await _db.getItemsByListOnce(resolveListId(listId));
     return rows.map(_toListItem).toList();
   }
 
-  /// Creates a list on the server and lands it in the local cache in the same
-  /// step. The create sheet used to call the service directly, which left
-  /// every DB-backed watcher — the lists grid, the hub quick start — unaware
-  /// the list existed until something forced a refresh: the new list simply
-  /// didn't appear, and the quick-start step it satisfied stayed unticked.
-  Future<ItemList> createList(CreateListRequest req) async {
-    final created = await _remote.createList(req);
-    await _db.upsertListsRows([_toListsRow(created)]);
-    return created;
+  /// The cached row of [listId], or null when it is not in the local cache.
+  Future<ItemList?> getListOnce(String listId) async {
+    final row = await (_db.select(_db.listsTable)
+          ..where((t) => t.id.equals(resolveListId(listId))))
+        .getSingleOrNull();
+    return row == null ? null : _toItemList(row);
+  }
+
+  /// Same as [createListOfflineFirst]; kept for callers written against the
+  /// old online-only name. The returned list may carry a temporary id.
+  Future<ItemList> createList(CreateListRequest req) =>
+      createListOfflineFirst(req);
+
+  /// Creates a list locally under a temporary id (see [isLocalListId]) and
+  /// queues its `createList` op in the same transaction, so it works offline:
+  /// the caller can open it and add items right away. Item ops queued against
+  /// the temporary id drain after the create (same drain pass, ordered by
+  /// creation time) and are pointed at the server id once it exists; screens
+  /// follow the switch through [listIdChanges].
+  Future<ItemList> createListOfflineFirst(CreateListRequest req) async {
+    final tempId = '$localListIdPrefix${_uuid.v4()}';
+    final now = DateTime.now();
+    final local = ItemList(
+      id: tempId,
+      groupId: req.groupId,
+      name: req.name,
+      type: req.type,
+      itemCount: 0,
+      createdAt: now,
+      updatedAt: now,
+    );
+    await _db.transaction(() async {
+      await _db.upsertListsRows([_toListsRow(local)]);
+      await _db.enqueueOutbox(
+        id: _uuid.v4(),
+        type: 'createList',
+        payload: {
+          'tempId': tempId,
+          'groupId': req.groupId,
+          'name': req.name,
+          'type': req.type,
+        },
+        idempotencyKey: 'createList:$tempId',
+        entityType: 'list',
+        entityId: tempId,
+      );
+    });
+    _afterLocalWrite();
+    return local;
   }
 
   Future<int> refreshLists(String groupId,
       {int limit = 200, int offset = 0}) async {
-    final remote =
-        await _remote.listLists(groupId, limit: limit, offset: offset);
+    // Taken before the fetch: a create that syncs while it is in flight leaves
+    // the outbox, and the server answer may predate it — its new server id
+    // must not be pruned as "deleted elsewhere".
+    final pendingCreates = (await _db.getOutboxOpsByType('createList'))
+        .map((op) => op.entityId)
+        .whereType<String>()
+        .toList();
+    // Live only: a cached (stale) answer must never be written over the
+    // cache and pruned against; offline the refresh fails and the cache
+    // stands.
+    final remote = await ResponseCacheInterceptor.liveOnly(
+        () => _remote.listLists(groupId, limit: limit, offset: offset));
     // Upsert first, never wipe-then-repopulate: a clear before the upsert made
     // the Drift watch stream emit an empty frame, flashing the whole lists
     // grid away on every refresh. Stale local rows (deleted on another device)
     // are pruned only when this page is the complete server set — with a full
     // page we can't tell "missing" from "on a later page".
-    await _db.upsertListsRows(remote.map(_toListsRow));
+    //
+    // Queued list changes may not have drained yet (the sync session defers
+    // them, and offline they wait for the network), so the server copy can
+    // predate them: rows still carrying one are merged rather than
+    // overwritten. A list deleted or archived here must not come back, and a
+    // rename must not flip back to the server's old name.
+    await _db.upsertListsRows(await _mergePendingListChanges(remote));
     if (offset == 0 && remote.length < limit) {
+      // Lists created here and not yet on the server (or only just) are no
+      // stale rows.
       await _db.deleteListsForGroupExcluding(
         groupId,
-        remote.map((l) => l.id).toSet(),
+        {
+          ...remote.map((l) => l.id),
+          ...pendingCreates,
+          ...pendingCreates.map(resolveListId),
+        },
       );
     }
     unawaited(_hydrateMissingListPreviews(remote));
     return remote.length;
   }
 
+  /// Server [lists] as cache rows, minus the ones with a queued delete or
+  /// archive, and with a queued rename / type change kept as it is locally.
+  Future<List<ListsTableCompanion>> _mergePendingListChanges(
+    List<ItemList> lists,
+  ) async {
+    final pending = await (_db.select(_db.outboxOps)
+          ..where((t) =>
+              t.type.isIn(const ['updateList', 'archiveList', 'deleteList'])))
+        .get();
+    if (pending.isEmpty) return lists.map(_toListsRow).toList();
+    final removed = <String>{};
+    final edited = <String>{};
+    for (final op in pending) {
+      final listId = _decodePayload(op.payloadJson)?['listId'];
+      if (listId is! String) continue;
+      (op.type == 'updateList' ? edited : removed).add(listId);
+    }
+    final rows = <ListsTableCompanion>[];
+    for (final list in lists) {
+      if (removed.contains(list.id)) continue;
+      var row = _toListsRow(list);
+      if (edited.contains(list.id)) {
+        final local = await (_db.select(_db.listsTable)
+              ..where((t) => t.id.equals(list.id)))
+            .getSingleOrNull();
+        if (local != null) {
+          row = row.copyWith(name: Value(local.name), type: Value(local.type));
+        }
+      }
+      rows.add(row);
+    }
+    return rows;
+  }
+
   /// Persists a rename into the local cache so screens watching the lists
   /// stream (the lists grid) reflect it immediately, whatever route the user
   /// takes back.
   Future<void> renameListLocal(String listId, String name) =>
-      _db.updateListName(listId, name);
+      _db.updateListName(resolveListId(listId), name);
 
   Future<int> refreshItems(String listId,
       {int limit = 500, int offset = 0}) async {
-    final remote =
-        await _remote.listItems(listId, limit: limit, offset: offset);
+    listId = resolveListId(listId);
+    // Not on the server yet: the local rows are the whole list.
+    if (isLocalListId(listId)) {
+      return (await _db.getItemsByListOnce(listId)).length;
+    }
+    final remote = await ResponseCacheInterceptor.liveOnly(
+        () => _remote.listItems(listId, limit: limit, offset: offset));
     if (offset == 0) {
       await _reconcileListItems(listId, remote);
       if (remote.length < limit) _itemsFetched.add(listId);
@@ -159,7 +308,11 @@ class ListRepository {
   Future<void> fetchUnsyncedItems(String groupId) async {
     final lists = await getListsByGroupOnce(groupId);
     for (final list in lists) {
-      if (list.isArchived || _itemsFetched.contains(list.id)) continue;
+      if (list.isArchived ||
+          isLocalListId(list.id) ||
+          _itemsFetched.contains(list.id)) {
+        continue;
+      }
       try {
         await refreshItems(list.id);
       } catch (_) {
@@ -169,13 +322,18 @@ class ListRepository {
   }
 
   Future<void> refreshListDetail(String listId) async {
-    final results = await Future.wait<Object>([
-      _remote.getList(listId),
-      _remote.listItems(listId, limit: 500, offset: 0),
-    ]);
+    listId = resolveListId(listId);
+    // Created offline and not synced yet: there is nothing to fetch.
+    if (isLocalListId(listId)) return;
+    final results = await ResponseCacheInterceptor.liveOnly(
+      () => Future.wait<Object>([
+        _remote.getList(listId),
+        _remote.listItems(listId, limit: 500, offset: 0),
+      ]),
+    );
     final list = results[0] as ItemList;
     final items = results[1] as List<ListItem>;
-    await _db.upsertListsRows([_toListsRow(list)]);
+    await _db.upsertListsRows(await _mergePendingListChanges([list]));
     await _reconcileListItems(listId, items);
     await _patchListPreviewFromLocalItems(listId);
   }
@@ -206,12 +364,44 @@ class ListRepository {
             : _withCanonicalItemId(item, localCanonicalById[item.id]))
         .toList(growable: false);
     final pendingIds = await _db.getPendingListItemIds();
+    // A queued clear or reorder of the whole list is not tied to any one item,
+    // so the server copy (or, offline, the cached copy of it) still shows the
+    // rows the clear removed and the order before the reorder. Hold both back
+    // until the op has synced, or a refresh would undo them on screen.
+    final listOps = await (_db.select(_db.outboxOps)
+          ..where((t) =>
+              t.entityType.equals('list') &
+              t.entityId.equals(listId) &
+              t.type.isIn(const ['clearItems', 'reorderItems'])))
+        .get();
+    var clearsAll = false;
+    var clearsChecked = false;
+    var reorders = false;
+    for (final op in listOps) {
+      if (op.type == 'reorderItems') {
+        reorders = true;
+      } else if (_decodePayload(op.payloadJson)?['onlyChecked'] == true) {
+        clearsChecked = true;
+      } else {
+        clearsAll = true;
+      }
+    }
+    final localPositions = {
+      if (reorders)
+        for (final row in beforeRefresh) row.id: row.position,
+    };
     // A row with an unsynced local edit (or delete) keeps its optimistic state:
     // the server still holds the pre-edit value, and the op's own sync writes
     // the server's answer back. Overwriting it here would flash the old value
     // (or resurrect a deleted row) every time an SSE event lands mid-sync.
     await _db.upsertListItemsRows(enrichedServerItems
         .where((item) => !pendingIds.contains(item.id))
+        .where((item) => !(clearsAll || (clearsChecked && item.checked)))
+        .map((item) => switch (localPositions[item.id]) {
+              final position? when position != item.position =>
+                _withPosition(item, position),
+              _ => item,
+            })
         .map(_toListItemsRow));
 
     final serverIds = serverItems.map((i) => i.id).toSet();
@@ -268,9 +458,11 @@ class ListRepository {
     }
   }
 
-  Future<String?> getGroupId(String listId) => _db.getListGroupId(listId);
+  Future<String?> getGroupId(String listId) =>
+      _db.getListGroupId(resolveListId(listId));
 
-  Future<String?> getListType(String listId) => _db.getListType(listId);
+  Future<String?> getListType(String listId) =>
+      _db.getListType(resolveListId(listId));
 
   // ---------------------------------------------------------------------------
   // Offline-first writes (optimistic local + outbox)
@@ -282,6 +474,7 @@ class ListRepository {
     bool deferImmediateSync = false,
     String? addedBy,
   }) async {
+    listId = resolveListId(listId);
     final tempId = _uuid.v4();
     final now = DateTime.now();
 
@@ -375,6 +568,7 @@ class ListRepository {
     bool deferImmediateSync = false,
     String? addedBy,
   }) async {
+    listId = resolveListId(listId);
     final now = DateTime.now();
     final existingRows = await _db.getItemsByListOnce(listId);
     final match = existingRows
@@ -462,6 +656,7 @@ class ListRepository {
     String itemId,
     String? canonicalItemId,
   ) async {
+    listId = resolveListId(listId);
     final row = (await _db.getItemsByListOnce(listId))
         .firstWhereOrNull((candidate) => candidate.id == itemId);
     if (row == null) {
@@ -490,6 +685,7 @@ class ListRepository {
     String itemId,
     UpdateListItemRequest req,
   ) async {
+    listId = resolveListId(listId);
     // Optimistic local patch
     final existingRow = (await _db.getItemsByListOnce(listId))
         .firstWhereOrNull((e) => e.id == itemId);
@@ -656,6 +852,7 @@ class ListRepository {
     String listId,
     List<String> itemIdsInOrder,
   ) async {
+    listId = resolveListId(listId);
     final existingRows = await _db.getItemsByListOnce(listId);
     final byId = {for (final row in existingRows) row.id: _toListItem(row)};
 
@@ -703,6 +900,7 @@ class ListRepository {
   }
 
   Future<void> deleteItemOfflineFirst(String listId, String itemId) async {
+    listId = resolveListId(listId);
     // Optimistic local delete
     await _db.transaction(() async {
       await (_db.delete(_db.listItemsTable)..where((t) => t.id.equals(itemId)))
@@ -729,6 +927,7 @@ class ListRepository {
     String listId, {
     required bool checked,
   }) async {
+    listId = resolveListId(listId);
     final rows = await _db.getItemsByListOnce(listId);
     final targets = rows.where((r) => r.checked != checked).toList();
     if (targets.isEmpty) return;
@@ -754,9 +953,30 @@ class ListRepository {
         updatedAt: now,
       )));
     }
-    await _db.upsertListItemsRows(patched);
-    await _patchListPreviewFromLocalItems(listId);
+    // The rows and their sync intents are one atomic change, as for a single
+    // edit: a process death between them must not leave checks the server
+    // never hears about.
+    await _db.transaction(() async {
+      await _db.upsertListItemsRows(patched);
+      await _patchListPreviewFromLocalItems(listId);
+      for (final r in targets) {
+        await _db.enqueueOutbox(
+          id: _uuid.v4(),
+          type: 'updateItem',
+          payload: {
+            'listId': listId,
+            'itemId': r.id,
+            'patch': UpdateListItemRequest(checked: checked).toJson(),
+          },
+          idempotencyKey: 'updateItem:${r.id}:${now.toIso8601String()}',
+          entityType: 'listItem',
+          entityId: r.id,
+        );
+      }
+    });
 
+    // Purchase telemetry runs after the commit, for the reason given in
+    // [updateItemOfflineFirst].
     if (checked) {
       final notYetRecorded = targets.map((row) => row.id).toSet();
       for (final row in targets) {
@@ -769,20 +989,6 @@ class ListRepository {
         );
       }
     }
-    for (final r in targets) {
-      await _db.enqueueOutbox(
-        id: _uuid.v4(),
-        type: 'updateItem',
-        payload: {
-          'listId': listId,
-          'itemId': r.id,
-          'patch': UpdateListItemRequest(checked: checked).toJson(),
-        },
-        idempotencyKey: 'updateItem:${r.id}:${now.toIso8601String()}',
-        entityType: 'listItem',
-        entityId: r.id,
-      );
-    }
 
     _afterLocalWrite();
   }
@@ -794,25 +1000,376 @@ class ListRepository {
     String listId, {
     required bool onlyChecked,
   }) async {
+    listId = resolveListId(listId);
     final rows = await _db.getItemsByListOnce(listId);
     final targets =
         (onlyChecked ? rows.where((r) => r.checked) : rows).toList();
     if (targets.isEmpty) return;
     final ids = targets.map((r) => r.id).toList();
 
-    await (_db.delete(_db.listItemsTable)..where((t) => t.id.isIn(ids))).go();
-    await _patchListPreviewFromLocalItems(listId);
-
-    await _db.enqueueOutbox(
-      id: _uuid.v4(),
-      type: 'clearItems',
-      payload: {'listId': listId, 'onlyChecked': onlyChecked},
-      idempotencyKey: 'clearItems:$listId:${DateTime.now().toIso8601String()}',
-      entityType: 'list',
-      entityId: listId,
-    );
+    await _db.transaction(() async {
+      await (_db.delete(_db.listItemsTable)..where((t) => t.id.isIn(ids)))
+          .go();
+      await _patchListPreviewFromLocalItems(listId);
+      await _db.enqueueOutbox(
+        id: _uuid.v4(),
+        type: 'clearItems',
+        payload: {'listId': listId, 'onlyChecked': onlyChecked},
+        idempotencyKey:
+            'clearItems:$listId:${DateTime.now().toIso8601String()}',
+        entityType: 'list',
+        entityId: listId,
+      );
+    });
 
     _afterLocalWrite();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Offline-first list writes
+  // ---------------------------------------------------------------------------
+
+  /// Renames and/or retypes a list. The cache changes at once and the change
+  /// is queued as an `updateList` op. A list that has not reached the server
+  /// yet has its queued create rewritten instead, so it is created under the
+  /// new name rather than created and then renamed.
+  Future<void> updateListOfflineFirst(
+    String listId,
+    UpdateListRequest req,
+  ) async {
+    listId = resolveListId(listId);
+    final patch = req.toJson();
+    if (patch.isEmpty) return;
+    var queued = false;
+    await _db.transaction(() async {
+      await (_db.update(_db.listsTable)..where((t) => t.id.equals(listId)))
+          .write(ListsTableCompanion(
+        name: req.name == null ? const Value.absent() : Value(req.name!),
+        type: req.type == null ? const Value.absent() : Value(req.type!),
+      ));
+
+      final create = await _queuedCreateList(listId);
+      if (create != null) {
+        final payload = _decodePayload(create.payloadJson) ?? {};
+        payload.addAll(patch);
+        await _writeOutboxPayload(create.id, payload);
+        return;
+      }
+
+      // Fold an edit that has not been sent yet into this one, so a burst of
+      // renames syncs as the last name instead of every intermediate one.
+      final earlier = (await _db.getOutboxOpsByType('updateList'))
+          .where((op) => op.entityId == listId)
+          .toList();
+      final merged = <String, dynamic>{};
+      for (final op in earlier) {
+        final previous = _decodePayload(op.payloadJson)?['patch'];
+        if (previous is Map) merged.addAll(previous.cast<String, dynamic>());
+        await _db.deleteOutboxOp(op.id);
+      }
+      merged.addAll(patch);
+      await _db.enqueueOutbox(
+        id: _uuid.v4(),
+        type: 'updateList',
+        payload: {'listId': listId, 'name': req.name, 'patch': merged},
+        idempotencyKey:
+            'updateList:$listId:${DateTime.now().toIso8601String()}',
+        entityType: 'list',
+        entityId: listId,
+      );
+      queued = true;
+    });
+    if (queued) _afterLocalWrite();
+  }
+
+  /// Archives a list: it leaves the cache at once (the server stops listing
+  /// archived lists) and an `archiveList` op is queued. Its items stay cached
+  /// so their own queued ops still sync. Archiving a list that has not reached
+  /// the server yet queues behind its create.
+  Future<void> archiveListOfflineFirst(String listId) async {
+    listId = resolveListId(listId);
+    await _db.transaction(() async {
+      await (_db.delete(_db.listsTable)..where((t) => t.id.equals(listId)))
+          .go();
+      await _db.enqueueOutbox(
+        id: _uuid.v4(),
+        type: 'archiveList',
+        payload: {'listId': listId},
+        idempotencyKey:
+            'archiveList:$listId:${DateTime.now().toIso8601String()}',
+        entityType: 'list',
+        entityId: listId,
+      );
+    });
+    _afterLocalWrite();
+  }
+
+  /// Deletes a list and its items locally and queues a `deleteList` op. Every
+  /// op still queued for the list is dropped with it: the server would only
+  /// answer them with a 404. A list that never reached the server needs no
+  /// request at all — dropping its queued create is the whole delete.
+  Future<void> deleteListOfflineFirst(String listId) async {
+    listId = resolveListId(listId);
+    final local = isLocalListId(listId);
+    await _db.transaction(() async {
+      await (_db.delete(_db.listsTable)..where((t) => t.id.equals(listId)))
+          .go();
+      await _db.deleteItemsForList(listId);
+      for (final op in await _queuedOpsForList(listId)) {
+        await _db.deleteOutboxOp(op.id);
+      }
+      if (local) return;
+      await _db.enqueueOutbox(
+        id: _uuid.v4(),
+        type: 'deleteList',
+        payload: {'listId': listId},
+        idempotencyKey: 'deleteList:$listId',
+        entityType: 'list',
+        entityId: listId,
+      );
+    });
+    _itemsFetched.remove(listId);
+    if (!local) _afterLocalWrite();
+  }
+
+  /// Schedules (or clears, with null) the list's household reminder through
+  /// the outbox. Only the newest queued value is kept. The reminder is not a
+  /// cached column, so screens read a queued value back with
+  /// [queuedListReminder] until the server has it.
+  Future<void> setListReminderOfflineFirst(
+    String listId,
+    DateTime? remindAt,
+  ) async {
+    listId = resolveListId(listId);
+    await _db.transaction(() async {
+      for (final op in await _db.getOutboxOpsByType('setListReminder')) {
+        if (_decodePayload(op.payloadJson)?['listId'] == listId) {
+          await _db.deleteOutboxOp(op.id);
+        }
+      }
+      await _db.enqueueOutbox(
+        id: _uuid.v4(),
+        type: 'setListReminder',
+        payload: {
+          'listId': listId,
+          'remindAt': remindAt?.toUtc().toIso8601String(),
+        },
+        idempotencyKey:
+            'setListReminder:$listId:${DateTime.now().toIso8601String()}',
+        entityType: 'list',
+        entityId: listId,
+      );
+    });
+    _afterLocalWrite();
+  }
+
+  /// The reminder value queued for [listId] and not yet synced, or null when
+  /// none is queued. A queued clear comes back as `(remindAt: null)`.
+  Future<({DateTime? remindAt})?> queuedListReminder(String listId) async {
+    listId = resolveListId(listId);
+    final ops = await _db.getOutboxOpsByType('setListReminder');
+    for (final op in ops.reversed) {
+      final payload = _decodePayload(op.payloadJson);
+      if (payload?['listId'] != listId) continue;
+      final raw = payload?['remindAt'];
+      return (
+        remindAt: raw is String ? DateTime.tryParse(raw)?.toLocal() : null,
+      );
+    }
+    return null;
+  }
+
+  /// Checks off items from several lists at once (the shopping trip's "done"),
+  /// through the same offline-first edit as a single check-off.
+  Future<void> completeItemsOfflineFirst(
+    Map<String, List<String>> itemIdsByList,
+  ) async {
+    for (final entry in itemIdsByList.entries) {
+      final listId = resolveListId(entry.key);
+      final cached = {
+        for (final row in await _db.getItemsByListOnce(listId)) row.id: row,
+      };
+      for (final itemId in entry.value) {
+        final row = cached[itemId];
+        if (row == null || row.checked) continue;
+        await updateItemOfflineFirst(
+          listId,
+          itemId,
+          const UpdateListItemRequest(checked: true),
+        );
+      }
+    }
+  }
+
+  /// Refreshes the items of [listIds] with one request (the shopping trip's
+  /// aggregate endpoint) and reconciles each list into the cache, so the trip
+  /// can be read back from the cache offline. Lists not on the server yet are
+  /// skipped; their cached rows are already complete.
+  Future<void> refreshShoppingTrip(String groupId, List<String> listIds) async {
+    final serverIds = listIds
+        .map(resolveListId)
+        .where((id) => !isLocalListId(id))
+        .toList(growable: false);
+    if (serverIds.isEmpty) return;
+    final result = await ResponseCacheInterceptor.liveOnly(
+        () => _remote.getShoppingTrip(serverIds, groupId: groupId));
+    final rawLists = result['lists'];
+    if (rawLists is! List) return;
+    for (final raw in rawLists.whereType<Map>()) {
+      final listId = raw['list_id'];
+      final rawItems = raw['items'];
+      if (listId is! String || !serverIds.contains(listId)) continue;
+      final items = rawItems is List
+          ? rawItems
+              .whereType<Map>()
+              .map((e) => ListItem.fromJson(e.cast<String, dynamic>()))
+              .toList()
+          : <ListItem>[];
+      await _reconcileListItems(listId, items);
+      _itemsFetched.add(listId);
+      await _patchListPreviewFromLocalItems(listId);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Products and shopping locations (household catalog)
+  // ---------------------------------------------------------------------------
+
+  /// Queues a product for the household catalog and returns it under a
+  /// temporary id. The catalog is not a cached table; screens merge
+  /// [queuedProducts] into what the server (or its cached response) lists.
+  Future<Product> createProductOfflineFirst(CreateProductRequest req) async {
+    final tempId = '$localListIdPrefix${_uuid.v4()}';
+    final now = DateTime.now();
+    await _db.enqueueOutbox(
+      id: _uuid.v4(),
+      type: 'createProduct',
+      payload: {'tempId': tempId, 'name': req.name, 'request': req.toJson()},
+      idempotencyKey: 'createProduct:$tempId',
+      entityType: 'product',
+      entityId: tempId,
+    );
+    _afterLocalWrite();
+    return Product(
+      id: tempId,
+      groupId: req.groupId,
+      name: req.name,
+      barcode: req.barcode,
+      unit: req.unit,
+      storeId: req.storeId,
+      minStock: req.minStock,
+      inStock: req.inStock,
+      createdAt: now,
+      updatedAt: now,
+    );
+  }
+
+  /// Products of [groupId] still waiting in the outbox, oldest first.
+  Future<List<Product>> queuedProducts(String groupId) async {
+    final products = <Product>[];
+    for (final op in await _db.getOutboxOpsByType('createProduct')) {
+      final payload = _decodePayload(op.payloadJson);
+      final request = payload?['request'];
+      if (request is! Map || request['group_id'] != groupId) continue;
+      products.add(Product(
+        id: payload?['tempId'] as String? ?? op.id,
+        groupId: groupId,
+        name: request['name'] as String? ?? '',
+        barcode: request['barcode'] as String? ?? '',
+        unit: request['unit'] as String? ?? '',
+        createdAt: op.createdAt,
+        updatedAt: op.createdAt,
+      ));
+    }
+    return products;
+  }
+
+  /// Queues a shopping location; see [createProductOfflineFirst].
+  Future<ShoppingLocation> createShoppingLocationOfflineFirst(
+    CreateShoppingLocationRequest req,
+  ) async {
+    final tempId = '$localListIdPrefix${_uuid.v4()}';
+    final now = DateTime.now();
+    await _db.enqueueOutbox(
+      id: _uuid.v4(),
+      type: 'createShoppingLocation',
+      payload: {'tempId': tempId, 'name': req.name, 'request': req.toJson()},
+      idempotencyKey: 'createShoppingLocation:$tempId',
+      entityType: 'shoppingLocation',
+      entityId: tempId,
+    );
+    _afterLocalWrite();
+    return ShoppingLocation(
+      id: tempId,
+      groupId: req.groupId,
+      name: req.name,
+      sortOrder: req.sortOrder,
+      createdAt: now,
+      updatedAt: now,
+    );
+  }
+
+  /// Shopping locations of [groupId] still waiting in the outbox.
+  Future<List<ShoppingLocation>> queuedShoppingLocations(
+    String groupId,
+  ) async {
+    final locations = <ShoppingLocation>[];
+    for (final op in await _db.getOutboxOpsByType('createShoppingLocation')) {
+      final payload = _decodePayload(op.payloadJson);
+      final request = payload?['request'];
+      if (request is! Map || request['group_id'] != groupId) continue;
+      locations.add(ShoppingLocation(
+        id: payload?['tempId'] as String? ?? op.id,
+        groupId: groupId,
+        name: request['name'] as String? ?? '',
+        sortOrder: (request['sort_order'] as num?)?.toInt() ?? 0,
+        createdAt: op.createdAt,
+        updatedAt: op.createdAt,
+      ));
+    }
+    return locations;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Outbox helpers for list ops
+  // ---------------------------------------------------------------------------
+
+  /// The queued (or dead-lettered) create of [listId], if it has one.
+  Future<OutboxOp?> _queuedCreateList(String listId) async {
+    if (!isLocalListId(listId)) return null;
+    return (_db.select(_db.outboxOps)
+          ..where((t) => t.type.equals('createList') & t.entityId.equals(listId))
+          ..limit(1))
+        .getSingleOrNull();
+  }
+
+  /// Every queued op that targets [listId]: its create and all list-scoped
+  /// ops whose payload names it.
+  Future<List<OutboxOp>> _queuedOpsForList(String listId) async {
+    final ops = await (_db.select(_db.outboxOps)
+          ..where((t) => t.type.isIn(const ['createList', ..._listScopedOpTypes])))
+        .get();
+    return ops.where((op) {
+      if (op.entityId == listId) return true;
+      final payload = _decodePayload(op.payloadJson);
+      return payload?['listId'] == listId || payload?['tempId'] == listId;
+    }).toList();
+  }
+
+  Future<void> _writeOutboxPayload(
+    String opId,
+    Map<String, dynamic> payload,
+  ) async {
+    await (_db.update(_db.outboxOps)..where((t) => t.id.equals(opId)))
+        .write(OutboxOpsCompanion(payloadJson: Value(jsonEncode(payload))));
+  }
+
+  /// Points queued ops' `entity_id` from a temporary id at the server id.
+  /// [AppDatabase.rewriteOutboxPayloadIds] only rewrites payloads, and the
+  /// entity id is what "is this row still pending?" lookups key on.
+  Future<void> _rewriteOutboxEntityIds(String oldId, String newId) async {
+    await (_db.update(_db.outboxOps)..where((t) => t.entityId.equals(oldId)))
+        .write(OutboxOpsCompanion(entityId: Value(newId)));
   }
 
   /// Called after a write has queued an op (always after its transaction).
@@ -850,28 +1407,48 @@ class ListRepository {
     // (to preserve per-entity ordering), so a recordPurchase op stuck on a
     // failing grocery endpoint used to sit at the head of the shared queue
     // and block every item add/update behind it for its whole retry cycle.
+    //
+    // A list created offline drains in the same pass as its items: the batch
+    // is ordered by creation time, so `createList` always runs before the
+    // item ops queued against its temporary id, and its sync rewrites their
+    // payloads to the server id before the drainer re-reads them. Ops whose
+    // list is still waiting (its create backed off or dead-lettered) are
+    // parked by [_afterListSynced] instead of being sent to a list the server
+    // does not have.
     await OutboxDrainer(_db).drain(
       types: const [
-        'createItem',
-        'updateItem',
-        'deleteItem',
-        'reorderItems',
-        'addItemAmount',
-        'clearItems',
+        'createList',
+        ..._listScopedOpTypes,
+        'createProduct',
+        'createShoppingLocation',
       ],
       handlers: {
-        'createItem': (op, payload) =>
-            _syncCreateItem(op.id, payload, op.idempotencyKey),
-        'updateItem': (op, payload) =>
-            _syncUpdateItem(op.id, payload, op.idempotencyKey),
-        'deleteItem': (op, payload) =>
-            _syncDeleteItem(op.id, payload, op.idempotencyKey),
-        'reorderItems': (op, payload) =>
-            _syncReorderItems(op.id, payload, op.idempotencyKey),
-        'addItemAmount': (op, payload) =>
-            _syncAddItemAmount(op.id, payload, op.idempotencyKey),
-        'clearItems': (op, payload) =>
-            _syncClearItems(op.id, payload, op.idempotencyKey),
+        'createList': (op, payload) =>
+            _syncCreateList(op.id, payload, op.idempotencyKey),
+        'createItem': _afterListSynced((op, payload) =>
+            _syncCreateItem(op.id, payload, op.idempotencyKey)),
+        'updateItem': _afterListSynced((op, payload) =>
+            _syncUpdateItem(op.id, payload, op.idempotencyKey)),
+        'deleteItem': _afterListSynced((op, payload) =>
+            _syncDeleteItem(op.id, payload, op.idempotencyKey)),
+        'reorderItems': _afterListSynced((op, payload) =>
+            _syncReorderItems(op.id, payload, op.idempotencyKey)),
+        'addItemAmount': _afterListSynced((op, payload) =>
+            _syncAddItemAmount(op.id, payload, op.idempotencyKey)),
+        'clearItems': _afterListSynced((op, payload) =>
+            _syncClearItems(op.id, payload, op.idempotencyKey)),
+        'updateList': _afterListSynced((op, payload) =>
+            _syncUpdateList(op.id, payload, op.idempotencyKey)),
+        'archiveList': _afterListSynced((op, payload) =>
+            _syncArchiveList(op.id, payload, op.idempotencyKey)),
+        'deleteList': _afterListSynced((op, payload) =>
+            _syncDeleteList(op.id, payload, op.idempotencyKey)),
+        'setListReminder': _afterListSynced((op, payload) =>
+            _syncSetListReminder(op.id, payload, op.idempotencyKey)),
+        'createProduct': (op, payload) =>
+            _syncCreateProduct(op.id, payload, op.idempotencyKey),
+        'createShoppingLocation': (op, payload) =>
+            _syncCreateShoppingLocation(op.id, payload, op.idempotencyKey),
       },
     );
     await OutboxDrainer(_db).drain(
@@ -881,6 +1458,239 @@ class ListRepository {
             _syncRecordPurchase(op.id, payload, op.idempotencyKey),
       },
     );
+  }
+
+  /// Wraps the handler of an op that names a list in its payload so it is
+  /// never sent while that list only exists on this device.
+  ///
+  /// * Its list synced earlier (a screen queued the op against the temporary
+  ///   id after the switch): the op is pointed at the server id and sent.
+  /// * Its list's create is still queued (backing off, or dead-lettered): the
+  ///   op is left untouched and the pass moves on. It costs no attempt and
+  ///   drains right behind the create once that goes through.
+  /// * Its list's create is gone (discarded from the failed-changes sheet):
+  ///   nothing can ever carry the op to the server, so it is dropped.
+  OutboxOpHandler _afterListSynced(OutboxOpHandler handler) {
+    return (op, payload) async {
+      final listId = payload['listId'];
+      if (listId is! String || !isLocalListId(listId)) {
+        return handler(op, payload);
+      }
+      final serverId = _syncedListIds[listId];
+      if (serverId != null) {
+        await _db.rewriteOutboxPayloadIds(oldId: listId, newId: serverId);
+        await _rewriteOutboxEntityIds(listId, serverId);
+        return handler(op, {...payload, 'listId': serverId});
+      }
+      if (await _queuedCreateList(listId) == null) {
+        await _db.deleteOutboxOp(op.id);
+      }
+    };
+  }
+
+  /// Sends a list created offline and moves everything local onto the server
+  /// id in one transaction: the list row, its items, and every queued op that
+  /// names the temporary id (payload and entity id). The ops behind it in the
+  /// same drain pass then re-read their payload and target the server list.
+  Future<void> _syncCreateList(
+      String opId, Map<String, dynamic> payload, String? idempotencyKey) async {
+    final tempId = payload['tempId'] as String?;
+    final groupId = payload['groupId'] as String?;
+    final name = payload['name'] as String?;
+    if (tempId == null || groupId == null || name == null) {
+      await _db.deleteOutboxOp(opId);
+      return;
+    }
+
+    final created = await _remote.createList(
+      CreateListRequest(
+        groupId: groupId,
+        name: name,
+        type: payload['type'] as String? ?? 'shopping',
+      ),
+      idempotencyKey: idempotencyKey,
+    );
+
+    await _db.transaction(() async {
+      // Gone means the user deleted the list while this request was in
+      // flight; deleting it took the op and every op behind it along.
+      final stillQueued = await _db.getOutboxOpById(opId) != null;
+      final local = await (_db.select(_db.listsTable)
+            ..where((t) => t.id.equals(tempId)))
+          .getSingleOrNull();
+      await (_db.delete(_db.listsTable)..where((t) => t.id.equals(tempId)))
+          .go();
+      // No local row (but the op still queued) means the list was archived
+      // before it synced: the queued archive follows, so don't show it again.
+      if (local != null) {
+        await _db.upsertListsRows([
+          ListsTableCompanion(
+            id: Value(created.id),
+            groupId: Value(created.groupId),
+            name: Value(local.name),
+            type: Value(local.type),
+            itemCount: Value(local.itemCount),
+            itemPreviewJson: Value(local.itemPreviewJson),
+            createdAt: Value(created.createdAt),
+            updatedAt: Value(created.updatedAt),
+          ),
+        ]);
+      }
+      await (_db.update(_db.listItemsTable)
+            ..where((t) => t.listId.equals(tempId)))
+          .write(ListItemsTableCompanion(listId: Value(created.id)));
+      await _db.rewriteOutboxPayloadIds(oldId: tempId, newId: created.id);
+      await _rewriteOutboxEntityIds(tempId, created.id);
+      await _db.deleteOutboxOp(opId);
+
+      if (!stillQueued) {
+        await _db.enqueueOutbox(
+          id: _uuid.v4(),
+          type: 'deleteList',
+          payload: {'listId': created.id},
+          idempotencyKey: 'deleteList:${created.id}',
+          entityType: 'list',
+          entityId: created.id,
+        );
+      } else if (local != null &&
+          (local.name != created.name || local.type != created.type)) {
+        // Renamed while the create was in flight, too late to rewrite it.
+        await _db.enqueueOutbox(
+          id: _uuid.v4(),
+          type: 'updateList',
+          payload: {
+            'listId': created.id,
+            'name': local.name,
+            'patch': {'name': local.name, 'type': local.type},
+          },
+          idempotencyKey:
+              'updateList:${created.id}:${DateTime.now().toIso8601String()}',
+          entityType: 'list',
+          entityId: created.id,
+        );
+      }
+    });
+
+    _syncedListIds[tempId] = created.id;
+    if (_itemsFetched.remove(tempId)) _itemsFetched.add(created.id);
+    if (!_listIdChanges.isClosed) {
+      _listIdChanges.add((from: tempId, to: created.id));
+    }
+    // The pass that ran this fetched its batch before any op enqueued above.
+    _drainRequested = true;
+    await _patchListPreviewFromLocalItems(created.id);
+  }
+
+  Future<void> _syncUpdateList(
+      String opId, Map<String, dynamic> payload, String? idempotencyKey) async {
+    final listId = payload['listId'] as String?;
+    final patch = payload['patch'];
+    if (listId == null || patch is! Map) {
+      await _db.deleteOutboxOp(opId);
+      return;
+    }
+    // The cache already shows the edit; the response only confirms it.
+    await _remote.updateList(
+      listId,
+      UpdateListRequest(
+        name: patch['name'] as String?,
+        type: patch['type'] as String?,
+      ),
+      idempotencyKey: idempotencyKey,
+    );
+    await _db.deleteOutboxOp(opId);
+  }
+
+  Future<void> _syncArchiveList(
+      String opId, Map<String, dynamic> payload, String? idempotencyKey) async {
+    final listId = payload['listId'] as String?;
+    if (listId == null) {
+      await _db.deleteOutboxOp(opId);
+      return;
+    }
+    await _remote.archiveList(listId, idempotencyKey: idempotencyKey);
+    await _db.deleteOutboxOp(opId);
+  }
+
+  Future<void> _syncDeleteList(
+      String opId, Map<String, dynamic> payload, String? idempotencyKey) async {
+    final listId = payload['listId'] as String?;
+    if (listId == null) {
+      await _db.deleteOutboxOp(opId);
+      return;
+    }
+    try {
+      await _remote.deleteList(listId, idempotencyKey: idempotencyKey);
+    } catch (e) {
+      // Already gone (deleted on another device): that is what we wanted.
+      if (!_isNotFound(e)) rethrow;
+    }
+    await _db.deleteOutboxOp(opId);
+  }
+
+  Future<void> _syncSetListReminder(
+      String opId, Map<String, dynamic> payload, String? idempotencyKey) async {
+    final listId = payload['listId'] as String?;
+    if (listId == null) {
+      await _db.deleteOutboxOp(opId);
+      return;
+    }
+    final raw = payload['remindAt'];
+    await _remote.setListReminder(
+      listId,
+      raw is String ? DateTime.tryParse(raw) : null,
+      idempotencyKey: idempotencyKey,
+    );
+    await _db.deleteOutboxOp(opId);
+  }
+
+  Future<void> _syncCreateProduct(
+      String opId, Map<String, dynamic> payload, String? idempotencyKey) async {
+    final request = payload['request'];
+    if (request is! Map ||
+        request['group_id'] is! String ||
+        request['name'] is! String) {
+      await _db.deleteOutboxOp(opId);
+      return;
+    }
+    await _remote.createProduct(
+      CreateProductRequest(
+        groupId: request['group_id'] as String,
+        name: request['name'] as String,
+        barcode: request['barcode'] as String? ?? '',
+        unit: request['unit'] as String? ?? '',
+        storeId: request['store_id'] as String?,
+        minStock: (request['min_stock'] as num?)?.toDouble() ?? 0,
+        inStock: (request['in_stock'] as num?)?.toDouble() ?? 0,
+      ),
+      idempotencyKey: idempotencyKey,
+    );
+    await _db.deleteOutboxOp(opId);
+  }
+
+  Future<void> _syncCreateShoppingLocation(
+      String opId, Map<String, dynamic> payload, String? idempotencyKey) async {
+    final request = payload['request'];
+    if (request is! Map ||
+        request['group_id'] is! String ||
+        request['name'] is! String) {
+      await _db.deleteOutboxOp(opId);
+      return;
+    }
+    await _remote.createShoppingLocation(
+      CreateShoppingLocationRequest(
+        groupId: request['group_id'] as String,
+        name: request['name'] as String,
+        sortOrder: (request['sort_order'] as num?)?.toInt() ?? 0,
+      ),
+      idempotencyKey: idempotencyKey,
+    );
+    await _db.deleteOutboxOp(opId);
+  }
+
+  static bool _isNotFound(Object error) {
+    final cause = error is ApiException ? error.cause : error;
+    return cause is DioException && cause.response?.statusCode == 404;
   }
 
   Future<void> _syncCreateItem(
@@ -909,12 +1719,25 @@ class ListRepository {
     // Atomically replace the temp row and rewrite all queued payloads that
     // still reference the temp ID, so subsequent ops in the same drain pass
     // see the server ID when they re-read their payload from the DB.
-    await _db.transaction(() async {
-      await _db.replaceTempItemId(tempId: tempId, server: created);
-      await _db.rewriteOutboxPayloadIds(oldId: tempId, newId: created.id);
-    });
+    await _db.transaction(() => _adoptServerItemId(tempId, created));
     await _db.deleteOutboxOp(opId);
-    await _patchListPreviewFromLocalItems(listId);
+    await _patchListPreviewFromLocalItems(created.listId);
+  }
+
+  /// Swaps the optimistic row [tempId] for [server] and points queued ops at
+  /// the server id. A row the user removed while its create was queued (a
+  /// delete, a clear) is not brought back: the op that removed it is queued
+  /// too, now aimed at the server id, and the server copy goes with it.
+  Future<void> _adoptServerItemId(String tempId, ListItem server) async {
+    final stillShown = await (_db.select(_db.listItemsTable)
+              ..where((t) => t.id.equals(tempId)))
+            .getSingleOrNull() !=
+        null;
+    if (stillShown) {
+      await _db.replaceTempItemId(tempId: tempId, server: server);
+    }
+    await _db.rewriteOutboxPayloadIds(oldId: tempId, newId: server.id);
+    await _rewriteOutboxEntityIds(tempId, server.id);
   }
 
   Future<void> _syncAddItemAmount(
@@ -942,10 +1765,7 @@ class ListRepository {
     if (tempId != null) {
       // New-row case: swap the optimistic temp id for the server's, the same
       // way createItem reconciles, so later ops in this drain see the real id.
-      await _db.transaction(() async {
-        await _db.replaceTempItemId(tempId: tempId, server: result);
-        await _db.rewriteOutboxPayloadIds(oldId: tempId, newId: result.id);
-      });
+      await _db.transaction(() => _adoptServerItemId(tempId, result));
     }
     // Merge case (tempId == null): the local quantity was already bumped
     // optimistically against a real row, and the server applied the same
@@ -1121,6 +1941,11 @@ class ListRepository {
     _sseSub = events.listen(_handleSseEvent);
   }
 
+  /// Releases the repository's own resources (the [listIdChanges] stream).
+  void dispose() {
+    unawaited(_listIdChanges.close());
+  }
+
   /// Stop the active SSE subscription without closing the service itself.
   void detachSse() {
     _sseSub?.cancel();
@@ -1278,6 +2103,35 @@ class ListRepository {
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     );
+  }
+
+  ListItem _withPosition(ListItem item, int position) {
+    return ListItem(
+      id: item.id,
+      listId: item.listId,
+      name: item.name,
+      quantity: item.quantity,
+      unit: item.unit,
+      note: item.note,
+      priceCents: item.priceCents,
+      canonicalItemId: item.canonicalItemId,
+      checked: item.checked,
+      position: position,
+      claimedBy: item.claimedBy,
+      addedBy: item.addedBy,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
+    );
+  }
+
+  static Map<String, dynamic>? _decodePayload(String payloadJson) {
+    try {
+      final decoded = jsonDecode(payloadJson);
+      if (decoded is Map) return decoded.cast<String, dynamic>();
+    } catch (_) {
+      // A malformed payload is the drainer's to drop; treat it as empty here.
+    }
+    return null;
   }
 
   ListItem _withCanonicalItemId(ListItem item, String? canonicalItemId) {
@@ -1465,10 +2319,12 @@ class ListRepository {
           continue;
         }
 
-        final remoteItems = await _remote.listItems(
-          list.id,
-          limit: _listCardPreviewLines,
-          offset: 0,
+        final remoteItems = await ResponseCacheInterceptor.liveOnly(
+          () => _remote.listItems(
+            list.id,
+            limit: _listCardPreviewLines,
+            offset: 0,
+          ),
         );
         if (remoteItems.isEmpty) continue;
 

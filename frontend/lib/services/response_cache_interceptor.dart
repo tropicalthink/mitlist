@@ -1,5 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
-import 'dart:io' show SocketException;
+import 'dart:io' show IOException;
 
 import 'package:dio/dio.dart';
 
@@ -74,6 +75,17 @@ class DriftResponseCacheStore implements ResponseCacheStore {
 /// `x-mitlist-cache: stale` header for callers that want to show it as such.
 ///
 /// Writes (POST/PATCH/DELETE) are never cached: the outbox owns those.
+///
+/// A stale body must never reach code that *persists* what it is handed. The
+/// repositories keep their own Drift copy, which is usually newer than the
+/// last raw `GET` (write responses, SSE events and the optimistic outbox all
+/// update it without one), and they prune rows missing from a refresh. Fed a
+/// stale list, a refresh therefore reverted synced edits and deleted
+/// households and lists created since, exactly while the user could not get
+/// them back. Such callers run their requests through [liveOnly] (or send
+/// [liveOnlyExtra]): the body is still stored for the screens that have no
+/// cache of their own, but a transport failure stays a failure, so the
+/// refresh fails and the Drift copy stands.
 class ResponseCacheInterceptor extends Interceptor {
   final ResponseCacheStore Function() _store;
   final bool Function() _isKnownOffline;
@@ -84,6 +96,10 @@ class ResponseCacheInterceptor extends Interceptor {
 
   static const String fromCacheExtra = 'fromCache';
   static const String noCacheExtra = 'noCache';
+
+  /// Request extra: store the fresh body as usual, but never answer this
+  /// request with a cached one. Set implicitly inside [liveOnly].
+  static const String liveOnlyExtra = 'liveOnly';
   static const String cacheHeader = 'x-mitlist-cache';
 
   ResponseCacheInterceptor({
@@ -92,12 +108,25 @@ class ResponseCacheInterceptor extends Interceptor {
   })  : _store = store,
         _isKnownOffline = isKnownOffline ?? (() => false);
 
+  static const Symbol _liveOnlyZoneKey = #mitlistResponseCacheLiveOnly;
+
+  /// Runs [body] with every request it makes marked [liveOnlyExtra], however
+  /// deep in a service the request is built. For refreshes that write the
+  /// answer into Drift; see the class doc for why they must not get a stale
+  /// one.
+  static Future<T> liveOnly<T>(Future<T> Function() body) =>
+      runZoned(body, zoneValues: {_liveOnlyZoneKey: true});
+
   static bool _cacheable(RequestOptions options) {
     if (options.method.toUpperCase() != 'GET') return false;
     if (options.responseType != ResponseType.json) return false;
     if (options.extra[noCacheExtra] == true) return false;
     return true;
   }
+
+  /// Whether a cached body may stand in for this request's answer.
+  static bool _mayServe(RequestOptions options) =>
+      _cacheable(options) && options.extra[liveOnlyExtra] != true;
 
   static String cacheKey(RequestOptions options) =>
       '${options.method.toUpperCase()} ${options.uri}';
@@ -112,7 +141,10 @@ class ResponseCacheInterceptor extends Interceptor {
       case DioExceptionType.receiveTimeout:
         return true;
       case DioExceptionType.unknown:
-        return err.error is SocketException;
+        // A raw SocketException, a connection closed before the response
+        // headers (HttpException) or a captive portal breaking the TLS
+        // handshake: none of them is an answer from our server.
+        return err.error is IOException;
       case DioExceptionType.badResponse:
       case DioExceptionType.cancel:
       case DioExceptionType.badCertificate:
@@ -123,7 +155,13 @@ class ResponseCacheInterceptor extends Interceptor {
   @override
   void onRequest(
       RequestOptions options, RequestInterceptorHandler handler) async {
-    if (!_cacheable(options) || !_isKnownOffline()) {
+    // Interceptors run in the zone the request was made from, so this is
+    // where a [liveOnly] caller is recognised. Recorded on the options so the
+    // error path sees it too.
+    if (Zone.current[_liveOnlyZoneKey] == true) {
+      options.extra[liveOnlyExtra] = true;
+    }
+    if (!_mayServe(options) || !_isKnownOffline()) {
       handler.next(options);
       return;
     }
@@ -157,7 +195,7 @@ class ResponseCacheInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
-    if (!_cacheable(err.requestOptions) || !isTransportFailure(err)) {
+    if (!_mayServe(err.requestOptions) || !isTransportFailure(err)) {
       handler.next(err);
       return;
     }

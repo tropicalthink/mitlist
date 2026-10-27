@@ -1143,9 +1143,13 @@ class _ListCard extends ConsumerWidget {
     controller.dispose();
     if (newName == null || newName.isEmpty || newName == list.name) return;
     try {
-      final svc = await ref.read(listServiceProviderAsync.future);
-      await svc.updateList(list.id, UpdateListRequest(name: newName));
-      onChanged();
+      // Offline-first: the card renames at once from the cache, the server
+      // catches up when the queued edit syncs.
+      final repo = await ref.read(listRepositoryProvider.future);
+      await repo.updateListOfflineFirst(
+        list.id,
+        UpdateListRequest(name: newName),
+      );
     } catch (_) {
       if (context.mounted) {
         unawaited(Haptics.failure());
@@ -1176,11 +1180,8 @@ class _ListCard extends ConsumerWidget {
     );
     if (confirmed != true) return;
     try {
-      final svc = await ref.read(listServiceProviderAsync.future);
-      await svc.deleteList(list.id);
       final repo = await ref.read(listRepositoryProvider.future);
-      await repo.deleteListLocal(list.id);
-      onChanged();
+      await repo.deleteListOfflineFirst(list.id);
     } catch (_) {
       if (context.mounted) {
         unawaited(Haptics.failure());

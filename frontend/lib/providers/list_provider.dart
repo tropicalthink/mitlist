@@ -59,12 +59,14 @@ final listRepositoryProvider = FutureProvider<ListRepository>((ref) async {
   final db = ref.watch(appDatabaseProvider);
   final service = await ref.read(listServiceProviderAsync.future);
   final groceryRepo = await ref.read(groceryRepositoryProvider.future);
-  return ListRepository(
+  final repo = ListRepository(
     db: db,
     remote: service,
     groceryRepo: groceryRepo,
     onLocalWrite: ref.watch(syncSchedulerProvider).noteLocalWrite,
   );
+  ref.onDispose(repo.dispose);
+  return repo;
 });
 
 // ---------------------------------------------------------------------------

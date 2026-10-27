@@ -78,10 +78,12 @@ class _CookbookDetailScreenState extends ConsumerState<CookbookDetailScreen> {
       _error = null;
     });
     try {
-      final svc = await ref.read(recipeServiceProviderAsync.future);
+      // Through the repository so filings and renames made offline show,
+      // and a cookbook created offline opens at all.
+      final repo = await ref.read(recipeRepositoryProvider.future);
       final results = await Future.wait([
-        svc.getCollectionRecipes(widget.collectionId, limit: 200),
-        svc.getCollection(widget.collectionId),
+        repo.loadCollectionRecipes(widget.collectionId),
+        repo.loadCollection(widget.collectionId),
       ]);
       if (!mounted || !_loadGuard.isCurrent(request)) return;
       setState(() {
@@ -295,8 +297,9 @@ class _CookbookDetailScreenState extends ConsumerState<CookbookDetailScreen> {
     final l10n = AppLocalizations.of(context)!;
     setState(() => _submittingId = r.id);
     try {
-      final svc = await ref.read(recipeServiceProviderAsync.future);
-      await svc.removeRecipeFromCollection(widget.collectionId, r.id);
+      final repo = await ref.read(recipeRepositoryProvider.future);
+      await repo.removeRecipeFromCollectionOfflineFirst(
+          widget.collectionId, r.id);
       _changed = true;
       await _load();
       if (!mounted) return;

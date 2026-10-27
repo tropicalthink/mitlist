@@ -86,10 +86,12 @@ class _CookbookAddRecipesScreenState
       } catch (_) {
         // Personal recipes still list without a household.
       }
-      final svc = await ref.read(recipeServiceProviderAsync.future);
+      final repo = await ref.read(recipeRepositoryProvider.future);
       // The household's recipes are as fileable as the user's own; without
-      // the group id they would simply never appear here.
-      final recipes = await svc.listRecipes(limit: 200, groupId: groupId);
+      // the group id they would simply never appear here. The repository
+      // adds recipes made offline and answers from the cache offline.
+      final recipes =
+          (await repo.loadRecipesPage(limit: 200, groupId: groupId)).recipes;
       if (!mounted) return;
       setState(() {
         _recipes
@@ -135,12 +137,13 @@ class _CookbookAddRecipesScreenState
     final l10n = AppLocalizations.of(context)!;
     setState(() => _isSubmitting = true);
     try {
-      final svc = await ref.read(recipeServiceProviderAsync.future);
+      final repo = await ref.read(recipeRepositoryProvider.future);
       final selected = _selectedIds.toList();
       for (final id in selected) {
-        await svc.addRecipeToCollection(
+        await repo.addRecipeToCollectionOfflineFirst(
           widget.collectionId,
-          AddRecipeToCollectionRequest(recipeId: id),
+          id,
+          recipe: _recipes.where((r) => r.id == id).firstOrNull,
         );
       }
       if (!mounted) return;

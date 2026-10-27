@@ -6,7 +6,9 @@ import 'package:logger/logger.dart';
 import '../repositories/account_repository.dart';
 import '../repositories/chore_repository.dart';
 import '../repositories/finance_repository.dart';
+import '../repositories/group_repository.dart';
 import '../repositories/list_repository.dart';
+import '../repositories/meal_plan_repository.dart';
 import '../repositories/pinwall_repository.dart';
 import '../repositories/recipe_repository.dart';
 import '../repositories/widget_ops_repository.dart';
@@ -45,6 +47,12 @@ class OutboxCoordinator {
   /// (plans/047). Optional for the same reason.
   final WidgetOpsRepository? _widgetOpsRepo;
 
+  /// Household detail edits (rename, currency). Optional for the same reason.
+  final GroupRepository? _groupRepo;
+
+  /// Meals planned, changed or removed offline. Optional for the same reason.
+  final MealPlanRepository? _mealPlanRepo;
+
   /// Whether a session is signed in. Ops left in the outbox at sign-out stay
   /// put until the next sign-in instead of being sent without a session.
   /// Optional; null means always.
@@ -70,11 +78,15 @@ class OutboxCoordinator {
     required PinwallRepository pinwallRepo,
     AccountRepository? accountRepo,
     WidgetOpsRepository? widgetOpsRepo,
+    GroupRepository? groupRepo,
+    MealPlanRepository? mealPlanRepo,
     bool Function()? isSignedIn,
     this.sessionIdleWindow = kSyncSessionIdleWindow,
   })  : _db = db,
         _accountRepo = accountRepo,
         _widgetOpsRepo = widgetOpsRepo,
+        _groupRepo = groupRepo,
+        _mealPlanRepo = mealPlanRepo,
         _isSignedIn = isSignedIn,
         _connectivity = connectivity,
         _listRepo = listRepo,
@@ -172,14 +184,21 @@ class OutboxCoordinator {
       // Drain in dependency order: lists first (other entities may reference them)
       await _listRepo.drainOutboxOnce();
       await _recipeRepo.drainOutboxOnce();
+      // After recipes: a meal planned with a recipe created offline replays
+      // once that recipe's sync has rewritten its id into the op.
+      await _mealPlanRepo?.drainOutboxOnce();
       await _financeRepo.drainOutboxOnce();
       await _choreRepo.drainOutboxOnce();
       await _pinwallRepo.drainOutboxOnce();
       await _accountRepo?.drainOutboxOnce();
+      await _groupRepo?.drainOutboxOnce();
       await _widgetOpsRepo?.drainOutboxOnce();
 
-      // Schedule a follow-up in case new ops were queued during drain
-      final remaining = await _db.outboxCount();
+      // Schedule a follow-up in case new ops were queued during drain.
+      // Dead-lettered ops wait for an explicit retry and do not count: with
+      // them included, one failed change kept a drain (and a network probe)
+      // running every five seconds for as long as the app was open.
+      final remaining = await _db.outboxPendingCount();
       if (remaining > 0) {
         _scheduleRetry(const Duration(seconds: 5));
       }
@@ -252,6 +271,9 @@ class OutboxCoordinator {
         case 'listItem':
           final listId = payload['listId'] as String?;
           if (listId != null) await _listRepo.refreshItems(listId);
+        case 'chore':
+          final groupId = payload['groupId'] as String?;
+          if (groupId != null) await _choreRepo.refreshCurrentChores(groupId);
       }
     } catch (_) {
       // Reconciliation is best-effort; the op is already gone.

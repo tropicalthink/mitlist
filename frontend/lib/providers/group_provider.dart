@@ -3,7 +3,8 @@ import '../models/group_models.dart';
 import '../repositories/group_repository.dart';
 import '../services/group_service.dart';
 import 'auth_provider.dart' show authStateProvider;
-import 'list_provider.dart' show appDatabaseProvider;
+import 'list_provider.dart' show appDatabaseProvider, syncSchedulerProvider;
+import 'outbox_provider.dart' show connectivityServiceProvider;
 
 /// Provider for the GroupService instance.
 final groupServiceProviderAsync = FutureProvider<GroupService>((ref) async {
@@ -14,7 +15,13 @@ final groupServiceProviderAsync = FutureProvider<GroupService>((ref) async {
 final groupRepositoryProvider = FutureProvider<GroupRepository>((ref) async {
   final db = ref.watch(appDatabaseProvider);
   final service = await ref.read(groupServiceProviderAsync.future);
-  return GroupRepository(db: db, groups: service);
+  final connectivity = ref.watch(connectivityServiceProvider);
+  return GroupRepository(
+    db: db,
+    groups: service,
+    onLocalWrite: ref.watch(syncSchedulerProvider).noteLocalWrite,
+    isKnownOffline: () => connectivity.isKnownOffline,
+  );
 });
 
 /// The welcome screen's look at an invite code before the person has an

@@ -13,6 +13,8 @@ import '../../providers/chore_provider.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/list_provider.dart';
 import '../../providers/onboarding_provider.dart';
+import '../../models/list_models.dart' show CreateListItemRequest;
+import '../../repositories/outbox_error_classifier.dart';
 import '../../router.dart' show BottomNavScaffold, currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
 import '../../services/sse_service.dart' show SseEvent;
@@ -194,9 +196,22 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       // may be stale so the user isn't acting on silently-old data.
       unawaited(repo.refreshCurrentChores(gid).then((_) {
         if (mounted && _refreshFailed) setState(() => _refreshFailed = false);
-      }).catchError((e) {
+      }).catchError((Object e) {
         _logger.w('Background chores refresh failed', error: e);
-        if (mounted) setState(() => _refreshFailed = true);
+        if (!mounted) return;
+        final offline = _isOffline(e);
+        setState(() {
+          // Offline is not news: the app-wide banner already says so, and the
+          // cache is all there is to show.
+          if (!offline) _refreshFailed = true;
+          // Nothing cached and nothing fetched: stop the skeleton. Offline
+          // that is an empty queue the user can still add to; a server error
+          // gets the retry state.
+          if (_isLoading) {
+            _isLoading = false;
+            _hasError = !offline;
+          }
+        });
       }));
 
       // Best-effort context for the fairness strip: who I am (to highlight my
@@ -285,7 +300,9 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
           completedAt: lastDoneAt,
           byUserId: last.userId,
           byLabel: _memberNames[last.userId],
-          byIsMe: last.userId == _myUserId,
+          // An empty doer is the repository's placeholder for a chore this
+          // device completed before the server assigned it: that was us.
+          byIsMe: last.userId == _myUserId || last.userId.isEmpty,
           nextDueDate: pendingDone ? null : entry.pendingAssignment?.dueDate,
           nextTurnName: pendingDone
               ? null
@@ -315,6 +332,10 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   }
 
   Future<void> _onRefresh() => _loadChores();
+
+  /// True for failures that mean the server was never reached.
+  static bool _isOffline(Object e) =>
+      classifyOutboxError(e) == OutboxErrorDisposition.unreachable;
 
   Future<void> _addChore({String? initialTitle}) async {
     unawaited(Haptics.light());
@@ -361,9 +382,15 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     );
   }
 
-  /// Opens the prefilled edit sheet for a chore. The full chore is fetched
-  /// fresh so the sheet edits what the server has, not the row's summary.
+  /// Opens the prefilled edit sheet for a chore. The full chore comes from
+  /// the cache, which carries edits still queued offline; the server is only
+  /// asked when the chore is not cached.
   Future<void> _editChore(String id, {Chore? chore}) async {
+    final gid = _groupId;
+    if (chore == null && gid != null) {
+      final repo = await ref.read(choreRepositoryProvider.future);
+      chore = (await repo.getCachedChore(gid, id))?.chore;
+    }
     if (chore == null) {
       try {
         final service = await ref.read(choreServiceProviderAsync.future);
@@ -375,9 +402,9 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       }
     }
     if (!mounted) return;
-    final updated =
-        await ChoreCreationSheet.show(context, existingChore: chore);
-    if (updated == true) await _loadChores();
+    // The save patches the cache, so the live subscription repaints the row;
+    // nothing to reload here.
+    await ChoreCreationSheet.show(context, existingChore: chore);
   }
 
   Future<void> _openChoreDetail(String id) async {
@@ -400,37 +427,58 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
         completed: true,
       );
     }
+    final repo = await ref.read(choreRepositoryProvider.future);
+    final gid = _groupId;
+    // The cached entry is what the row shows, queued offline edits included,
+    // so it leads; the details fetch only adds the stats. Offline that fetch
+    // is answered from the response cache when it can be, and a chore still
+    // waiting for its create has no server details at all.
+    final cached = gid == null ? null : await repo.getCachedChore(gid, id);
+    // The cache already swapped in the server id if the create has synced.
+    final serverId = cached?.chore.id ?? id;
     ChoreDetails? details;
-    List<ChoreSubtask> subtasks = [];
-    try {
-      final service = await ref.read(choreServiceProviderAsync.future);
-      details = await service.getChoreDetails(id);
-      subtasks = await service.listSubtasks(id);
-    } catch (_) {
-      // Keep the sheet available when an older API does not expose details yet.
+    if (!serverId.startsWith('local-')) {
+      try {
+        final service = await ref.read(choreServiceProviderAsync.future);
+        details = await service.getChoreDetails(serverId);
+      } catch (_) {
+        // Keep the sheet available offline or when an older API does not
+        // expose details yet.
+      }
     }
+    List<ChoreSubtask> subtasks = const [];
+    try {
+      subtasks = await repo.loadSubtasks(id);
+    } catch (_) {}
     if (!mounted) return;
     unawaited(Haptics.light());
-    // Editing needs the full chore to prefill the sheet, so it's only offered
-    // when the details fetch succeeded.
-    final choreForEdit = details?.chore;
+    // Editing needs the full chore to prefill the sheet; the cache has it even
+    // offline.
+    final choreForEdit = cached?.chore ?? details?.chore;
+    final pending = cached?.pendingAssignment ?? details?.pendingAssignment;
+    final nextAssigneeId =
+        cached?.nextAssigneeUserId ?? details?.nextAssigneeUserId;
+    final supplies = choreForEdit?.supplies ?? chore.supplies;
     await ChoreDetailSheet.show(
       context,
       choreId: id,
-      title: details?.chore.name ?? chore.title,
-      statusLabel: _statusLabel(details?.dueStatus, chore.completed),
-      assignee: details?.pendingAssignment?.userId != null
-          ? _shortUserLabel(details!.pendingAssignment!.userId)
+      title: choreForEdit?.name ?? chore.title,
+      statusLabel: _statusLabel(
+          cached?.dueStatus ?? details?.dueStatus, chore.completed),
+      // A placeholder assignment (completed before the create synced) has no
+      // assignee yet.
+      assignee: pending != null && pending.userId.isNotEmpty
+          ? _shortUserLabel(pending.userId)
           : chore.assigneeInitials,
-      nextAssignee: details?.nextAssigneeUserId != null
-          ? _shortUserLabel(details!.nextAssigneeUserId!)
+      nextAssignee: nextAssigneeId != null
+          ? _shortUserLabel(nextAssigneeId)
           : chore.nextTurnName,
-      frequencyLabel: details != null
+      frequencyLabel: choreForEdit != null
           ? _frequencyLabel(
-              _l10n, details.chore.frequency, details.chore.periodInterval)
+              _l10n, choreForEdit.frequency, choreForEdit.periodInterval)
           : _frequencyLabel(_l10n, chore.frequency, chore.periodInterval),
-      zone: details?.chore.category ?? chore.category,
-      dueDate: details?.pendingAssignment?.dueDate ?? chore.dueDate,
+      zone: choreForEdit?.category ?? chore.category,
+      dueDate: pending?.dueDate ?? chore.dueDate,
       trackedCount: details?.stats.trackedCount,
       lastTrackedAt: details?.stats.lastTrackedAt,
       lastDoneByLabel: details?.stats.lastDoneByUserId != null
@@ -438,7 +486,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
           : null,
       averageFrequencyHours: details?.stats.averageFrequencyHours,
       subtasks: subtasks,
-      supplies: details?.chore.supplies ?? [],
+      supplies: supplies,
       onMarkDone: chore.completed
           ? null
           : () async {
@@ -461,51 +509,38 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
         Navigator.of(context).pop();
         await _undoLastExecution(id);
       },
+      // Subtask edits are local + queued, so they work offline; a failure
+      // here is a local storage error, not the network.
       onToggleSubtask: (subtaskId, completed) async {
-        if (_isMutating) return;
-        _isMutating = true;
         try {
-          final service = await ref.read(choreServiceProviderAsync.future);
-          await service.updateSubtask(subtaskId, completed: completed);
+          await repo.toggleSubtaskOfflineFirst(id, subtaskId, completed);
         } catch (e) {
           if (!mounted) return;
           _showChoreActionError(_l10n.choreFailedUpdateSubtask);
-        } finally {
-          _isMutating = false;
         }
       },
       onAddSubtask: (title) async {
-        if (_isMutating) return null;
-        _isMutating = true;
         try {
-          final service = await ref.read(choreServiceProviderAsync.future);
-          final created = await service.createSubtask(id, title);
+          final created = await repo.addSubtaskOfflineFirst(id, title);
           return created.id;
         } catch (e) {
           if (!mounted) return null;
           _showChoreActionError(_l10n.choreFailedAddSubtask);
           return null;
-        } finally {
-          _isMutating = false;
         }
       },
       onDeleteSubtask: (subtaskId) async {
-        if (_isMutating) return;
-        _isMutating = true;
         try {
-          final service = await ref.read(choreServiceProviderAsync.future);
-          await service.deleteSubtask(subtaskId);
+          await repo.deleteSubtaskOfflineFirst(id, subtaskId);
         } catch (e) {
           if (!mounted) return;
           unawaited(Haptics.failure());
           _showChoreActionError(
               friendlyErrorMessage(e, AppLocalizations.of(context)!));
-        } finally {
-          _isMutating = false;
         }
       },
       onAddSuppliesToList: () async {
-        await _addSuppliesToList(id);
+        await _addSuppliesToList(supplies);
       },
       onEdit: choreForEdit == null
           ? null
@@ -513,7 +548,8 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
               Navigator.of(context).pop();
               await _editChore(id, chore: choreForEdit);
             },
-      onDelete: () => _deleteChore(id),
+      onDelete: () =>
+          _deleteChore(id, name: choreForEdit?.name ?? chore!.title),
     );
   }
 
@@ -536,7 +572,7 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   }
 
   /// Quiet sync: pulls fresh data without resetting the stream subscription
-  /// or flashing skeletons. Used after mutations that bypass the repo cache.
+  /// or flashing skeletons. The stale notice's retry.
   Future<void> _refreshQuietly() async {
     final gid = _groupId;
     if (gid == null) return;
@@ -546,7 +582,9 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
       if (mounted && _refreshFailed) setState(() => _refreshFailed = false);
     } catch (e) {
       _logger.w('Quiet chores refresh failed', error: e);
-      if (mounted) setState(() => _refreshFailed = true);
+      // Offline the banner already explains it; the notice is for a server
+      // that answered badly.
+      if (mounted) setState(() => _refreshFailed = !_isOffline(e));
     }
   }
 
@@ -665,14 +703,12 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     if (_isMutating) return;
     _isMutating = true;
     try {
-      if (reason != null && reason.isNotEmpty) {
-        final service = await ref.read(choreServiceProviderAsync.future);
-        await service.skipChore(id, skipReason: reason);
-        await _refreshQuietly();
-      } else {
-        final repo = await ref.read(choreRepositoryProvider.future);
-        await repo.skipOfflineFirst(id, groupId: _groupId);
-      }
+      final repo = await ref.read(choreRepositoryProvider.future);
+      await repo.skipOfflineFirst(
+        id,
+        reason: reason != null && reason.isNotEmpty ? reason : null,
+        groupId: _groupId,
+      );
     } catch (e) {
       if (!mounted) return;
       unawaited(Haptics.failure());
@@ -682,20 +718,36 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
     }
   }
 
-  Future<void> _addSuppliesToList(String choreId) async {
+  /// Adds the chore's [supplies] to a list the user picks, as ordinary queued
+  /// list items: the same result as the server's add-supplies endpoint, but
+  /// it works offline and the items show on the list at once.
+  Future<void> _addSuppliesToList(List<String> supplies) async {
     if (_isMutating) return;
     _isMutating = true;
     try {
-      final listSvc = await ref.read(listServiceProviderAsync.future);
+      final names = [
+        for (final s in supplies)
+          if (s.trim().isNotEmpty) s.trim(),
+      ];
+      if (names.isEmpty) return;
       final groups = await ref.read(cachedGroupsProvider.future);
       final groupId = resolveActiveGroupId(
         groups,
         ref.read(currentGroupIdProvider),
       );
       if (groupId == null) return;
-      final lists = await listSvc.listLists(groupId, limit: 50);
+      final listRepo = await ref.read(listRepositoryProvider.future);
+      var lists = await listRepo.getListsByGroupOnce(groupId);
+      if (lists.isEmpty) {
+        // Lists never opened on this device: ask the server once.
+        try {
+          await listRepo.refreshLists(groupId);
+          lists = await listRepo.getListsByGroupOnce(groupId);
+        } catch (_) {}
+      }
       final shoppingLists = lists
-          .where((l) => l.type == 'shopping' || l.type == 'general')
+          .where((l) =>
+              !l.isArchived && (l.type == 'shopping' || l.type == 'general'))
           .toList();
       if (shoppingLists.isEmpty) {
         if (!mounted) return;
@@ -727,8 +779,15 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
         ),
       );
       if (selectedList == null) return;
-      final choreSvc = await ref.read(choreServiceProviderAsync.future);
-      await choreSvc.addSuppliesToList(choreId, selectedList);
+      for (var i = 0; i < names.length; i++) {
+        await listRepo.createItemOfflineFirst(
+          selectedList,
+          CreateListItemRequest(name: names[i]),
+          // One sync for the batch, after the last item.
+          deferImmediateSync: i < names.length - 1,
+          addedBy: _myUserId,
+        );
+      }
       if (!mounted) return;
       AppToast.success(context, _l10n.choreSuppliesAdded);
     } catch (e) {
@@ -770,15 +829,17 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
   }
 
   /// Runs once the detail sheet has already confirmed the delete with the
-  /// user, so it closes the sheet and deletes without asking again.
-  Future<void> _deleteChore(String id) async {
+  /// user, so it closes the sheet and deletes without asking again. The row
+  /// leaves at once; the delete itself is queued, so it works offline.
+  Future<void> _deleteChore(String id, {String? name}) async {
     if (_isMutating) return;
     _isMutating = true;
     Navigator.of(context).pop();
     try {
-      final service = await ref.read(choreServiceProviderAsync.future);
-      await service.deleteChore(id);
-      await _refreshQuietly();
+      final gid = _groupId;
+      if (gid == null) return;
+      final repo = await ref.read(choreRepositoryProvider.future);
+      await repo.deleteOfflineFirst(id, groupId: gid, name: name);
     } catch (e) {
       if (!mounted) return;
       unawaited(Haptics.failure());

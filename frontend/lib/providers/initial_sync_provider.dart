@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../router.dart';
+import '../services/response_cache_interceptor.dart';
 import 'billing_provider.dart';
 import 'chore_provider.dart';
 import 'finance_provider.dart';
@@ -53,6 +54,20 @@ class InitialSyncNotifier extends StateNotifier<InitialSyncStatus> {
 
   Future<void> _run() async {
     state = InitialSyncStatus.syncing;
+    // Known offline (a cold start in airplane mode): there is nothing to
+    // pull, and trying only waits out timeouts. Report it as not done, which
+    // the banner hides behind its offline state, so the connectivity listener
+    // above runs it once the network is back.
+    if (!await _ref.read(connectivityServiceProvider).isOnline()) {
+      if (mounted) state = InitialSyncStatus.failed;
+      return;
+    }
+    // Live answers only: every refresh below writes into Drift, and a stale
+    // HTTP-cache body would roll the cache back (see ResponseCacheInterceptor).
+    await ResponseCacheInterceptor.liveOnly(_pull);
+  }
+
+  Future<void> _pull() async {
     var failures = 0;
     try {
       // Membership first — it validates the persisted active-group choice.

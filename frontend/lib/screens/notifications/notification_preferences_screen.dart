@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../models/notification_models.dart';
+import '../../providers/account_provider.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../services/api_client.dart' show dioProvider;
@@ -144,7 +145,13 @@ class _NotificationPreferencesScreenState
       final notificationService =
           await ref.read(notificationServiceProviderAsync.future);
 
-      final prefs = await notificationService.getPreferences();
+      // Offline this is the last answer the server gave (the response
+      // cache); toggles still queued go back on top of it.
+      var prefs = await notificationService.getPreferences();
+      try {
+        final account = await ref.read(accountRepositoryProvider.future);
+        prefs = await account.withPendingPreferences(prefs);
+      } catch (_) {}
       if (!mounted) return;
 
       final names = <String, String>{};
@@ -166,15 +173,20 @@ class _NotificationPreferencesScreenState
     }
   }
 
+  /// Queued offline-first: the switch keeps its new position at once and
+  /// the outbox delivers it, so a toggle never fails for want of a network.
   Future<void> _toggle(String groupId, String field, bool value) async {
     final l10n = AppLocalizations.of(context)!;
     final key = '$groupId:$field';
     setState(() => _savingKeys[key] = true);
 
     try {
-      final service = await ref.read(notificationServiceProviderAsync.future);
+      final account = await ref.read(accountRepositoryProvider.future);
       final idx = _preferences.indexWhere((p) => p.groupId == groupId);
-      if (idx < 0) return;
+      if (idx < 0) {
+        if (mounted) setState(() => _savingKeys.remove(key));
+        return;
+      }
 
       final pref = _preferences[idx];
       final updated = NotificationPreferenceModel(
@@ -195,7 +207,7 @@ class _NotificationPreferencesScreenState
         emailEnabled: field == 'email_enabled' ? value : pref.emailEnabled,
       );
 
-      await service.updatePreference(updated);
+      await account.queueNotificationPreference(updated);
       if (!mounted) return;
       setState(() {
         _preferences[idx] = updated;

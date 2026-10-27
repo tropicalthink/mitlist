@@ -5,6 +5,7 @@ import '../models/expense_receipt_models.dart';
 import '../models/finance_models.dart';
 import '../providers/attachment_provider.dart';
 import '../providers/finance_provider.dart';
+import '../repositories/outbox_error_classifier.dart';
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
 import '../utils/format_currency.dart';
@@ -99,6 +100,10 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
   List<Split> _splits = const [];
   bool _loadingSplits = true;
 
+  /// Splits could not be fetched because the device is offline (and none
+  /// were cached), as opposed to the expense genuinely having none.
+  bool _splitsUnavailable = false;
+
   @override
   void initState() {
     super.initState();
@@ -106,31 +111,45 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
     _loadSplits();
   }
 
+  /// Offline the last fetched splits are served from the response cache, and
+  /// an expense still waiting to sync gets splits computed on the device.
+  /// With neither, a connection failure just leaves the section out: being
+  /// offline is not something to raise a toast about.
   Future<void> _loadSplits() async {
     try {
-      final finance = await ref.read(financeServiceProviderAsync.future);
-      final splits = await finance.listExpenseSplits(widget.expenseId);
+      final repo = await ref.read(financeRepositoryProvider.future);
+      final splits = await repo.loadExpenseSplits(widget.expenseId);
       if (!mounted) return;
       setState(() {
         _splits = splits;
         _loadingSplits = false;
+        _splitsUnavailable = false;
       });
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
-        setState(() => _loadingSplits = false);
-        AppToast.error(context, l10n.expenseDetailCouldNotLoadSplits);
+        final offline = _isOffline(e);
+        setState(() {
+          _loadingSplits = false;
+          _splitsUnavailable = offline;
+        });
+        if (!offline) {
+          AppToast.error(context, l10n.expenseDetailCouldNotLoadSplits);
+        }
       }
     }
   }
+
+  static bool _isOffline(Object error) =>
+      classifyOutboxError(error) == OutboxErrorDisposition.unreachable;
 
   Future<void> _loadReceipts() async {
     setState(() {
       _loadingReceipts = true;
     });
     try {
-      final finance = await ref.read(financeServiceProviderAsync.future);
-      final receipts = await finance.listExpenseReceipts(
+      final repo = await ref.read(financeRepositoryProvider.future);
+      final receipts = await repo.loadExpenseReceipts(
         groupId: widget.groupId,
         expenseId: widget.expenseId,
       );
@@ -145,7 +164,9 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
       setState(() {
         _loadingReceipts = false;
       });
-      AppToast.error(context, l10n.expenseDetailCouldNotLoadReceipts);
+      if (!_isOffline(e)) {
+        AppToast.error(context, l10n.expenseDetailCouldNotLoadReceipts);
+      }
     }
   }
 
@@ -229,13 +250,18 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
       if (!mounted) return;
       setState(() => _removing = false);
       await _loadReceipts();
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context)!;
       setState(() {
         _removing = false;
       });
-      AppToast.error(context, l10n.expenseDetailCouldNotRemoveReceipt);
+      // Receipt changes are online-only (the attachment lives in storage).
+      AppToast.error(
+          context,
+          _isOffline(e)
+              ? l10n.commonCheckConnection
+              : l10n.expenseDetailCouldNotRemoveReceipt);
     }
   }
 
@@ -327,7 +353,7 @@ class _ExpenseDetailSheetState extends ConsumerState<ExpenseDetailSheet> {
           ),
           const SizedBox(height: MitlistSpacing.md),
         ],
-        if (!_loadingSplits && _splits.isEmpty)
+        if (!_loadingSplits && _splits.isEmpty && !_splitsUnavailable)
           AppAlert(
             type: AppAlertType.info,
             message: l10n.expenseDetailNotSplitYet,

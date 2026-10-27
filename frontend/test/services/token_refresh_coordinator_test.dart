@@ -136,6 +136,26 @@ void main() {
       });
     }
 
+    test('a 200 that is not a token pair keeps the session', () async {
+      // A captive portal answering for the API with its own login page.
+      final store = _MemoryTokenStore(refreshToken: 'old-refresh');
+      final dio = _dioWithRefresh((options, handler) async {
+        handler.resolve(Response(
+          requestOptions: options,
+          statusCode: 200,
+          data: '<html>Sign in to the hotel wifi</html>',
+        ));
+      });
+
+      final outcome =
+          await TokenRefreshCoordinator(store, dio).refreshDetailed();
+
+      expect(outcome.type, TokenRefreshOutcomeType.transportError);
+      expect(store.saveCount, 0);
+      expect(store.clearCount, 0);
+      expect(store.refreshToken, 'old-refresh');
+    });
+
     test('missing refresh token returns authRejected', () async {
       final store = _MemoryTokenStore();
       final dio = _dioWithRefresh((options, handler) async {

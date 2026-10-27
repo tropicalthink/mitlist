@@ -106,15 +106,17 @@ class _CookModeScreenState extends ConsumerState<CookModeScreen> {
       _hasError = false;
     });
     try {
-      final service = await ref.read(recipeServiceProviderAsync.future);
-      final recipe = await service.getRecipe(widget.recipeId);
+      // Cooking happens in kitchens with bad signal: the repository answers
+      // from the cache (or the queued create of a recipe made offline).
+      final repo = await ref.read(recipeRepositoryProvider.future);
+      final recipe = await repo.loadRecipe(widget.recipeId);
       List<RecipeIngredient> ingredients = const [];
       List<RecipeStep> steps = const [];
       try {
-        ingredients = await service.getRecipeIngredients(widget.recipeId);
+        ingredients = await repo.loadIngredients(widget.recipeId);
       } catch (_) {}
       try {
-        steps = await service.getRecipeSteps(widget.recipeId);
+        steps = await repo.loadSteps(widget.recipeId);
       } catch (_) {}
       if (!mounted) return;
       setState(() {

@@ -10,6 +10,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../models/recipe_models.dart';
+import '../../providers/outbox_provider.dart';
 import '../../providers/recipe_provider.dart';
 import '../../sheets/recipe_add_to_cookbook_sheet.dart';
 import '../../sheets/recipe_add_to_list_sheet.dart';
@@ -83,15 +84,17 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
       _hasError = false;
     });
     try {
-      final service = await ref.read(recipeServiceProviderAsync.future);
-      final recipe = await service.getRecipe(widget.recipeId);
+      // The repository answers offline too: from the cache, or from the
+      // queued create for a recipe made on this device that has not synced.
+      final repo = await ref.read(recipeRepositoryProvider.future);
+      final recipe = await repo.loadRecipe(widget.recipeId);
       List<RecipeIngredient> ingredients = const [];
       List<RecipeStep> steps = const [];
       try {
-        ingredients = await service.getRecipeIngredients(widget.recipeId);
+        ingredients = await repo.loadIngredients(widget.recipeId);
       } catch (_) {}
       try {
-        steps = await service.getRecipeSteps(widget.recipeId);
+        steps = await repo.loadSteps(widget.recipeId);
       } catch (_) {}
       if (!mounted || !_loadGuard.isCurrent(request)) return;
       setState(() {
@@ -131,8 +134,24 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
 
     setState(() => _isSharing = true);
     try {
+      // A share link is minted by the server, so the recipe has to exist
+      // there. One created offline gets a chance to sync first; if it still
+      // cannot, say so instead of sending a temporary id the server rejects.
+      final repo = await ref.read(recipeRepositoryProvider.future);
+      var recipeId = recipe.id;
+      if (await repo.isPendingCreate(recipeId)) {
+        try {
+          final coordinator = await ref.read(outboxCoordinatorProvider.future);
+          await coordinator.flushSession(reason: 'share recipe');
+        } catch (_) {}
+        if (await repo.isPendingCreate(recipeId)) {
+          if (mounted) AppToast.error(context, l10n.commonCheckConnection);
+          return;
+        }
+      }
+      recipeId = repo.resolveRecipeId(recipeId);
       final service = await ref.read(recipeServiceProviderAsync.future);
-      final link = await service.createShareLink(recipe.id);
+      final link = await service.createShareLink(recipeId);
       if (!mounted) return;
 
       // iOS renders a shared URL as a link card; everywhere else a URL is
@@ -184,8 +203,9 @@ class _RecipeDetailScreenState extends ConsumerState<RecipeDetailScreen> {
     if (confirmed != true || !mounted) return;
     setState(() => _isDeleting = true);
     try {
-      final service = await ref.read(recipeServiceProviderAsync.future);
-      await service.deleteRecipe(widget.recipeId);
+      // Removed locally at once; the delete replays from the outbox.
+      final repo = await ref.read(recipeRepositoryProvider.future);
+      await repo.deleteRecipeOfflineFirst(widget.recipeId);
       if (!mounted) return;
       context.pop(true);
     } catch (e) {

@@ -1,3 +1,5 @@
+import 'dart:io' show HttpException, SocketException;
+
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mitlist/l10n/app_localizations_en.dart';
@@ -56,6 +58,21 @@ void main() {
       final dio = _dioError(type: DioExceptionType.connectionError);
       final err = apiException(dio);
       expect(friendlyErrorMessage(err, l10n), l10n.commonCheckConnection);
+    });
+
+    test('a raw socket or dropped connection reads as a connection problem',
+        () {
+      for (final cause in const [
+        SocketException('Failed host lookup'),
+        HttpException('Connection closed before full header was received'),
+      ]) {
+        final dio = DioException(
+          requestOptions: RequestOptions(path: '/groups'),
+          error: cause,
+        );
+        expect(friendlyErrorMessage(apiException(dio), l10n),
+            l10n.commonCheckConnection);
+      }
     });
 
     test('plain ApiException without cause falls back to generic', () {

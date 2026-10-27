@@ -9057,6 +9057,126 @@
   "@outboxOpUncheckItem": {
     "description": "Outbox op label: mark a list item as unchecked"
   },
+  "outboxOpCreateList": "Create list",
+  "@outboxOpCreateList": {
+    "description": "Outbox op label: create a list"
+  },
+  "outboxOpUpdateList": "Edit list",
+  "@outboxOpUpdateList": {
+    "description": "Outbox op label: rename or retype a list"
+  },
+  "outboxOpArchiveList": "Archive list",
+  "@outboxOpArchiveList": {
+    "description": "Outbox op label: archive a list"
+  },
+  "outboxOpDeleteList": "Delete list",
+  "@outboxOpDeleteList": {
+    "description": "Outbox op label: delete a list"
+  },
+  "outboxOpSetListReminder": "Set list reminder",
+  "@outboxOpSetListReminder": {
+    "description": "Outbox op label: set or clear a list reminder"
+  },
+  "outboxOpAddProduct": "Add product",
+  "@outboxOpAddProduct": {
+    "description": "Outbox op label: add a household product"
+  },
+  "outboxOpAddShoppingLocation": "Add store",
+  "@outboxOpAddShoppingLocation": {
+    "description": "Outbox op label: add a shopping location (store)"
+  },
+  "outboxOpUpdateChore": "Edit chore",
+  "@outboxOpUpdateChore": {
+    "description": "Outbox op label: edit a chore"
+  },
+  "outboxOpDeleteChore": "Delete chore",
+  "@outboxOpDeleteChore": {
+    "description": "Outbox op label: delete a chore"
+  },
+  "outboxOpAddSubtask": "Add subtask",
+  "@outboxOpAddSubtask": {
+    "description": "Outbox op label: add a chore subtask"
+  },
+  "outboxOpUpdateSubtask": "Update subtask",
+  "@outboxOpUpdateSubtask": {
+    "description": "Outbox op label: update a chore subtask"
+  },
+  "outboxOpDeleteSubtask": "Delete subtask",
+  "@outboxOpDeleteSubtask": {
+    "description": "Outbox op label: delete a chore subtask"
+  },
+  "outboxOpCreateRecurringExpense": "Add recurring expense",
+  "@outboxOpCreateRecurringExpense": {
+    "description": "Outbox op label: create a recurring expense"
+  },
+  "outboxOpUpdateRecurringExpense": "Update recurring expense",
+  "@outboxOpUpdateRecurringExpense": {
+    "description": "Outbox op label: edit, pause or resume a recurring expense"
+  },
+  "outboxOpDeleteRecurringExpense": "Delete recurring expense",
+  "@outboxOpDeleteRecurringExpense": {
+    "description": "Outbox op label: delete a recurring expense"
+  },
+  "outboxOpCancelSettlement": "Cancel settlement",
+  "@outboxOpCancelSettlement": {
+    "description": "Outbox op label: cancel a settlement"
+  },
+  "outboxOpAddMeal": "Plan meal",
+  "@outboxOpAddMeal": {
+    "description": "Outbox op label: plan a meal"
+  },
+  "outboxOpUpdateMeal": "Update meal",
+  "@outboxOpUpdateMeal": {
+    "description": "Outbox op label: change a planned meal"
+  },
+  "outboxOpRemoveMeal": "Remove meal",
+  "@outboxOpRemoveMeal": {
+    "description": "Outbox op label: remove a planned meal"
+  },
+  "outboxOpCreateCookbook": "Create cookbook",
+  "@outboxOpCreateCookbook": {
+    "description": "Outbox op label: create a cookbook"
+  },
+  "outboxOpUpdateCookbook": "Edit cookbook",
+  "@outboxOpUpdateCookbook": {
+    "description": "Outbox op label: rename or share a cookbook"
+  },
+  "outboxOpDeleteCookbook": "Delete cookbook",
+  "@outboxOpDeleteCookbook": {
+    "description": "Outbox op label: delete a cookbook"
+  },
+  "outboxOpAddToCookbook": "Add to cookbook",
+  "@outboxOpAddToCookbook": {
+    "description": "Outbox op label: file a recipe into a cookbook"
+  },
+  "outboxOpRemoveFromCookbook": "Remove from cookbook",
+  "@outboxOpRemoveFromCookbook": {
+    "description": "Outbox op label: remove a recipe from a cookbook"
+  },
+  "outboxOpUpdateHousehold": "Update household",
+  "@outboxOpUpdateHousehold": {
+    "description": "Outbox op label: edit household settings"
+  },
+  "outboxOpUpdateProfile": "Update profile",
+  "@outboxOpUpdateProfile": {
+    "description": "Outbox op label: edit the user's profile"
+  },
+  "outboxOpMarkNotificationRead": "Mark notification read",
+  "@outboxOpMarkNotificationRead": {
+    "description": "Outbox op label: mark one notification as read"
+  },
+  "outboxOpMarkAllNotificationsRead": "Mark all notifications read",
+  "@outboxOpMarkAllNotificationsRead": {
+    "description": "Outbox op label: mark all notifications as read"
+  },
+  "outboxOpDeleteNotification": "Delete notification",
+  "@outboxOpDeleteNotification": {
+    "description": "Outbox op label: delete a notification"
+  },
+  "outboxOpUpdateNotificationPreference": "Update notification setting",
+  "@outboxOpUpdateNotificationPreference": {
+    "description": "Outbox op label: change a notification preference"
+  },
   "offlineBannerQueueHeading": "Waiting to sync",
   "@offlineBannerQueueHeading": {
     "description": "Sync status sheet: heading above the list of queued changes"

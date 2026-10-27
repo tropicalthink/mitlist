@@ -4,6 +4,7 @@
 
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -18,9 +19,10 @@ import 'package:mitlist/providers/finance_provider.dart';
 import 'package:mitlist/providers/group_provider.dart';
 import 'package:mitlist/providers/grocery_provider.dart';
 import 'package:mitlist/providers/list_provider.dart' show grocerySeedProvider;
+import 'package:mitlist/repositories/finance_repository.dart';
 import 'package:mitlist/sheets/expense_creation_sheet.dart';
+import 'package:mitlist/services/api_error_mapper.dart';
 import 'package:mitlist/services/auth_service.dart';
-import 'package:mitlist/services/finance_service.dart';
 import 'package:mitlist/services/grocery_expense_category_service.dart';
 import 'package:mitlist/services/group_service.dart';
 import 'package:mitlist/widgets/chip.dart';
@@ -67,6 +69,8 @@ void main() {
     WidgetTester tester, {
     String? initialDescription,
     List<Override> extraOverrides = const [],
+    GroupService? groupService,
+    AuthService? authService,
   }) async {
     await tester.binding.setSurfaceSize(const Size(800, 1600));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -79,10 +83,12 @@ void main() {
           // doesn't hang on the Drift-backed groupRepositoryProvider.
           cachedGroupsProvider.overrideWith((ref) async => [group]),
           groupServiceProviderAsync.overrideWith(
-            (ref) async => FakeGroupService(groups: [group], members: members),
+            (ref) async =>
+                groupService ??
+                FakeGroupService(groups: [group], members: members),
           ),
-          authServiceProviderAsync
-              .overrideWith((ref) async => FakeAuthService(currentUser: user)),
+          authServiceProviderAsync.overrideWith((ref) async =>
+              authService ?? FakeAuthService(currentUser: user)),
           ...extraOverrides,
         ],
         child: MaterialApp(
@@ -204,11 +210,11 @@ void main() {
 
   testWidgets('percent shares that cannot be written exactly still total 100%',
       (tester) async {
-    final finance = FakeFinanceService();
+    final finance = FakeFinanceRepository();
     await pumpSheet(
       tester,
       extraOverrides: [
-        financeServiceProviderAsync.overrideWith((ref) async => finance),
+        financeRepositoryProvider.overrideWith((ref) async => finance),
       ],
     );
 
@@ -248,7 +254,64 @@ void main() {
     // The stray basis point lands on the larger share, and nobody drops to zero.
     expect(points..sort(), [3333, 6667]);
   });
+
+  testWidgets(
+      'offline: opens from cached state and saves through the outbox repo',
+      (tester) async {
+    // Every network lookup fails the way it does with no connection. The
+    // sheet must still open (saved user, cached household, members from the
+    // cached balances) and hand the expense to the offline-first repository.
+    final finance = FakeFinanceRepository(
+      summary: const FinanceSummary(
+        balances: [
+          BalanceEntry(
+              userId: userId,
+              displayName: 'Test User',
+              paid: 0,
+              owed: 0,
+              total: 0),
+          BalanceEntry(
+              userId: otherId, displayName: 'Sam', paid: 0, owed: 0, total: 0),
+        ],
+        reimbursements: [],
+      ),
+    );
+    await pumpSheet(
+      tester,
+      groupService: _OfflineGroupService(),
+      authService: FakeAuthService(currentUser: user, offline: true),
+      extraOverrides: [
+        financeRepositoryProvider.overrideWith((ref) async => finance),
+      ],
+    );
+
+    expect(find.text('Retry'), findsNothing,
+        reason: 'no "could not load members" state while offline');
+
+    final fields = find.byType(TextField);
+    await tester.enterText(fields.at(0), '30.00');
+    await tester.enterText(fields.at(1), 'Pizza');
+    await tester.pump();
+
+    await tester.ensureVisible(find.text('ADD EXPENSE'));
+    await tester.pump();
+    await tester.tap(find.text('ADD EXPENSE'));
+    for (var i = 0; i < 6; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+
+    final request = finance.lastCreate;
+    expect(request, isNotNull);
+    expect(request!.payerId, userId, reason: 'payer from the saved user');
+    expect(request.currency, 'USD', reason: 'currency from the cached group');
+    expect(request.splitUserIds.toSet(), {userId, otherId});
+  });
 }
+
+DioException _connectionError(String path) => DioException(
+      requestOptions: RequestOptions(path: path),
+      type: DioExceptionType.connectionError,
+    );
 
 // ---------------------------------------------------------------------------
 // Fakes
@@ -274,13 +337,30 @@ class FakeGroupService implements GroupService {
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 
-class FakeAuthService implements AuthService {
-  FakeAuthService({required this.currentUser});
-
-  final User currentUser;
+class _OfflineGroupService implements GroupService {
+  @override
+  Future<Group> getGroup(String groupId) async =>
+      throw apiException(_connectionError('/groups/$groupId'));
 
   @override
-  Future<User> getMe() async => currentUser;
+  Future<List<GroupMemberProfile>> listMembers(String groupId) async =>
+      throw apiException(_connectionError('/groups/$groupId/members'));
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+class FakeAuthService implements AuthService {
+  FakeAuthService({required this.currentUser, this.offline = false});
+
+  final User currentUser;
+  final bool offline;
+
+  @override
+  Future<User> getMe() async {
+    if (offline) throw apiException(_connectionError('/auth/me'));
+    return currentUser;
+  }
 
   @override
   User? get cachedMe => currentUser;
@@ -289,14 +369,18 @@ class FakeAuthService implements AuthService {
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 
-class FakeFinanceService implements FinanceService {
+/// Stands in for the offline-first repository: the sheet only queues.
+class FakeFinanceRepository implements FinanceRepository {
+  FakeFinanceRepository({this.summary});
+
+  final FinanceSummary? summary;
   CreateExpenseRequest? lastCreate;
 
   @override
-  Future<Expense> createExpense(
-    CreateExpenseRequest req, {
-    String? idempotencyKey,
-  }) async {
+  Future<FinanceSummary?> getSummaryOnce(String groupId) async => summary;
+
+  @override
+  Future<Expense> createExpenseOfflineFirst(CreateExpenseRequest req) async {
     lastCreate = req;
     return Expense(
       id: '55555555-5555-5555-5555-555555555555',
@@ -310,7 +394,6 @@ class FakeFinanceService implements FinanceService {
       currency: req.currency,
       date: req.date,
       createdAt: DateTime.utc(2026, 1, 1),
-      updatedAt: DateTime.utc(2026, 1, 1),
     );
   }
 

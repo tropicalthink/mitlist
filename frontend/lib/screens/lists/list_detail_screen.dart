@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import '../../models/list_models.dart';
+import '../../repositories/outbox_error_classifier.dart';
 import '../../services/restock_service.dart';
 import '../../theme/animations.dart';
 import '../../theme/list_tile_accent.dart';
@@ -298,6 +299,12 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     super.dispose();
   }
 
+  /// True for failures that only a connection fixes: the request never
+  /// reached the server, or the list has not synced to it yet.
+  static bool _needsConnection(Object error) =>
+      error is ListNotSyncedException ||
+      classifyOutboxError(error) == OutboxErrorDisposition.unreachable;
+
   Future<void> _addItemPhoto(ListItem item) async {
     final operation = _operationKey('item:${item.id}');
     if (!_beginOperation(operation)) return;
@@ -307,7 +314,11 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.listDetailCouldNotAddPhoto)),
+          SnackBar(
+            content: Text(_needsConnection(e)
+                ? l10n.commonCheckConnection
+                : l10n.listDetailCouldNotAddPhoto),
+          ),
         );
       }
     } finally {
@@ -324,7 +335,11 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       if (mounted) {
         final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.listDetailCouldNotRemovePhoto)),
+          SnackBar(
+            content: Text(_needsConnection(e)
+                ? l10n.commonCheckConnection
+                : l10n.listDetailCouldNotRemovePhoto),
+          ),
         );
       }
     } finally {
@@ -814,10 +829,12 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                   }
                 } catch (e) {
                   if (mounted) {
+                    final l10n = AppLocalizations.of(context)!;
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                          content: Text(friendlyErrorMessage(
-                              e, AppLocalizations.of(context)!))),
+                          content: Text(_needsConnection(e)
+                              ? l10n.commonCheckConnection
+                              : friendlyErrorMessage(e, l10n))),
                     );
                   }
                 } finally {
@@ -866,7 +883,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       ref,
       groupId: groupId,
       userId: userId,
-      listId: widget.listId,
+      listId: _controller.listId,
       listName: _controller.listName.isNotEmpty ? _controller.listName : null,
       source: source,
     );

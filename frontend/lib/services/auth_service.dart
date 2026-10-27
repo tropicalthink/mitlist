@@ -550,6 +550,15 @@ class AuthService {
           _tokenStore,
           _dio,
         ).refreshDetailed();
+        if (outcome.type == TokenRefreshOutcomeType.transportError) {
+          // The web keeps its session in a cookie that only the server can
+          // vouch for. Unreachable is not "signed out": with a remembered
+          // account on this browser, open on the cached data, and the first
+          // request back online refreshes the session (or ends it if the
+          // server refuses).
+          return cachedMe != null &&
+              _prefs.getBool(ApiConfig.persistSessionKey) != false;
+        }
         return outcome.type == TokenRefreshOutcomeType.success;
       }
       return false;

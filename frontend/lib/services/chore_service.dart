@@ -171,9 +171,19 @@ class ChoreService {
     }
   }
 
-  Future<Chore> updateChore(String id, UpdateChoreRequest req) async {
+  Future<Chore> updateChore(String id, UpdateChoreRequest req) =>
+      updateChoreBody(id, req.toJson());
+
+  /// [updateChore] from an already-encoded request, which is how a queued
+  /// offline edit is stored and replayed.
+  Future<Chore> updateChoreBody(
+    String id,
+    Map<String, dynamic> body, {
+    String? idempotencyKey,
+  }) async {
     try {
-      final r = await _dio.patch('/chores/$id', data: req.toJson());
+      final r = await _dio.patch('/chores/$id',
+          data: body, options: outboxOptions(idempotencyKey));
       return Chore.fromJson(r.data);
     } on DioException catch (e) {
       _logger.e('Update chore failed: ${e.response?.data}');
@@ -200,9 +210,9 @@ class ChoreService {
     }
   }
 
-  Future<void> deleteChore(String id) async {
+  Future<void> deleteChore(String id, {String? idempotencyKey}) async {
     try {
-      await _dio.delete('/chores/$id');
+      await _dio.delete('/chores/$id', options: outboxOptions(idempotencyKey));
     } on DioException catch (e) {
       _logger.e('Delete chore failed: ${e.response?.data}');
       throw apiException(e);
@@ -288,10 +298,12 @@ class ChoreService {
     }
   }
 
-  Future<ChoreSubtask> createSubtask(String choreId, String title) async {
+  Future<ChoreSubtask> createSubtask(String choreId, String title,
+      {String? idempotencyKey}) async {
     try {
       final r = await _dio.post('/chores/$choreId/subtasks',
-          data: CreateSubtaskRequest(title: title).toJson());
+          data: CreateSubtaskRequest(title: title).toJson(),
+          options: outboxOptions(idempotencyKey));
       return ChoreSubtask.fromJson((r.data as Map).cast<String, dynamic>());
     } on DioException catch (e) {
       _logger.e('Create subtask failed: ${e.response?.data}');
@@ -304,6 +316,7 @@ class ChoreService {
     String? title,
     bool? completed,
     int? position,
+    String? idempotencyKey,
   }) async {
     try {
       final r = await _dio.patch('/chores/subtasks/$subtaskId',
@@ -311,7 +324,8 @@ class ChoreService {
             title: title,
             completed: completed,
             position: position,
-          ).toJson());
+          ).toJson(),
+          options: outboxOptions(idempotencyKey));
       return ChoreSubtask.fromJson((r.data as Map).cast<String, dynamic>());
     } on DioException catch (e) {
       _logger.e('Update subtask failed: ${e.response?.data}');
@@ -319,9 +333,10 @@ class ChoreService {
     }
   }
 
-  Future<void> deleteSubtask(String subtaskId) async {
+  Future<void> deleteSubtask(String subtaskId, {String? idempotencyKey}) async {
     try {
-      await _dio.delete('/chores/subtasks/$subtaskId');
+      await _dio.delete('/chores/subtasks/$subtaskId',
+          options: outboxOptions(idempotencyKey));
     } on DioException catch (e) {
       _logger.e('Delete subtask failed: ${e.response?.data}');
       throw apiException(e);

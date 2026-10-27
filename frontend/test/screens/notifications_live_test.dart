@@ -2,11 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:drift/drift.dart' as drift;
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:mitlist/models/group_models.dart';
 import 'package:mitlist/models/notification_models.dart';
+import 'package:mitlist/providers/account_provider.dart';
 import 'package:mitlist/providers/group_provider.dart';
 import 'package:mitlist/providers/list_provider.dart' show sseServiceProvider;
 import 'package:mitlist/providers/notification_provider.dart';
@@ -15,7 +18,9 @@ import 'package:mitlist/l10n/app_localizations.dart';
 import 'package:mitlist/router.dart'
     show currentGroupIdProvider, CurrentGroupIdNotifier;
 import 'package:mitlist/services/notification_service.dart';
+import 'package:mitlist/repositories/account_repository.dart';
 import 'package:mitlist/services/sse_service.dart';
+import 'package:mitlist/storage/app_database.dart';
 
 // ---------------------------------------------------------------------------
 // Fake SSE service — no real HTTP; supports manual event injection.
@@ -74,6 +79,24 @@ final _testGroup = Group(
   updatedAt: DateTime.utc(2026, 1, 1),
 );
 
+/// The inbox lays queued reads/deletes from the account repository over each
+/// page; give it one on an in-memory database.
+Override _accountRepo(NotificationService notifications) =>
+    accountRepositoryProvider.overrideWith((ref) async {
+      final db = AppDatabase(
+        drift.DatabaseConnection(
+          NativeDatabase.memory(),
+          closeStreamsSynchronously: true,
+        ),
+      );
+      ref.onDispose(db.close);
+      return AccountRepository(
+        db: db,
+        updateMe: (_) async {},
+        notifications: notifications,
+      );
+    });
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -103,6 +126,7 @@ void main() {
                 .overrideWith((ref) async => fakeNotifSvc),
             // Inject fake SSE.
             sseServiceProvider.overrideWithValue(fakeSse),
+            _accountRepo(fakeNotifSvc),
           ],
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -155,6 +179,7 @@ void main() {
             notificationServiceProviderAsync
                 .overrideWith((ref) async => fakeNotifSvc),
             sseServiceProvider.overrideWithValue(fakeSse),
+            _accountRepo(fakeNotifSvc),
           ],
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,

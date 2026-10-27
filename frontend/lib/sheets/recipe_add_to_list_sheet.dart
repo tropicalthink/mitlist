@@ -7,6 +7,7 @@ import '../utils/cook_mode.dart';
 import '../providers/group_provider.dart';
 import '../providers/list_provider.dart';
 import '../providers/recipe_provider.dart';
+import '../repositories/list_repository.dart';
 import '../router.dart' show currentGroupIdProvider;
 import '../theme/spacing.dart';
 import '../theme/typography.dart';
@@ -80,14 +81,25 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
 
   Future<void> _load() async {
     try {
-      final recipeSvc = await ref.read(recipeServiceProviderAsync.future);
-      final listSvc = await ref.read(listServiceProviderAsync.future);
-      final ingredients = await recipeSvc.getRecipeIngredients(widget.recipeId);
+      // Both reads work offline: ingredients come from the recipe repository
+      // (cache, or the queued create of a recipe made offline) and lists from
+      // the local list cache, which the lists screen keeps current.
+      final recipeRepo = await ref.read(recipeRepositoryProvider.future);
+      final listRepo = await ref.read(listRepositoryProvider.future);
+      final ingredients = await recipeRepo.loadIngredients(widget.recipeId);
 
       final groupId = await _resolveGroupId();
       List<ItemList> lists = [];
       if (groupId != null) {
-        lists = await listSvc.listLists(groupId, limit: 100);
+        lists = await listRepo.getListsByGroupOnce(groupId);
+        if (lists.isEmpty) {
+          try {
+            await listRepo.refreshLists(groupId);
+            lists = await listRepo.getListsByGroupOnce(groupId);
+          } catch (_) {
+            // Offline with nothing cached: the sheet says there is no list.
+          }
+        }
         lists = lists
             .where((l) => l.type == 'shopping' || l.type == 'general')
             .toList();
@@ -125,13 +137,16 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
 
     setState(() => _isSubmitting = true);
     try {
-      final recipeSvc = await ref.read(recipeServiceProviderAsync.future);
-      await recipeSvc.addToList(
-        widget.recipeId,
-        _selectedListId!,
-        servings: _servings,
-        ingredientIds: _selectedIngredientIds.toList(),
-      );
+      // Added locally and queued, like typing the items in by hand: same
+      // scaling and note as the server's add-to-list, and amounts merge into
+      // an item already on the list.
+      final listRepo = await ref.read(listRepositoryProvider.future);
+      final scale =
+          widget.defaultServings > 0 ? _servings / widget.defaultServings : 1.0;
+      for (final ing in _ingredients) {
+        if (!_selectedIngredientIds.contains(ing.id)) continue;
+        await _addIngredient(listRepo, ing, scale);
+      }
       if (mounted) {
         Navigator.of(context).pop();
         final l10n = AppLocalizations.of(context)!;
@@ -156,10 +171,19 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
 
     setState(() => _isSubmittingMissing = true);
     try {
-      final recipeSvc = await ref.read(recipeServiceProviderAsync.future);
-      final result =
-          await recipeSvc.addMissingToList(widget.recipeId, _selectedListId!);
-      final added = (result['added'] as List?)?.length ?? 0;
+      // Diffed against the local copy of the list, which also holds items
+      // added offline that the server has not seen yet.
+      final listRepo = await ref.read(listRepositoryProvider.future);
+      final existing = {
+        for (final item in await listRepo.getItemsByListOnce(_selectedListId!))
+          _normalize(item.name),
+      };
+      var added = 0;
+      for (final ing in _ingredients) {
+        if (existing.contains(_normalize(_ingredientName(ing)))) continue;
+        await _addIngredient(listRepo, ing, 1.0);
+        added++;
+      }
       if (mounted) {
         Navigator.of(context).pop();
         final l10n = AppLocalizations.of(context)!;
@@ -173,6 +197,32 @@ class _RecipeAddToListSheetState extends ConsumerState<RecipeAddToListSheet> {
     } finally {
       if (mounted) setState(() => _isSubmittingMissing = false);
     }
+  }
+
+  static String _normalize(String name) => name.trim().toLowerCase();
+
+  static String _ingredientName(RecipeIngredient ing) =>
+      ing.name.trim().isNotEmpty ? ing.name.trim() : ing.rawText.trim();
+
+  Future<void> _addIngredient(
+    ListRepository listRepo,
+    RecipeIngredient ing,
+    double scale,
+  ) async {
+    final name = _ingredientName(ing);
+    if (name.isEmpty) return;
+    var amount = ing.quantity * scale;
+    // No parsable amount counts as one portion, as on the server.
+    if (amount <= 0) amount = scale;
+    await listRepo.addItemAmountOfflineFirst(
+      _selectedListId!,
+      name: name,
+      amount: (amount * 100).roundToDouble() / 100,
+      unit: ing.unit,
+      // The server's wording for the same action, so items look alike
+      // whichever path added them.
+      note: 'From recipe: ${widget.recipeTitle}',
+    );
   }
 
   @override

@@ -11511,6 +11511,186 @@ abstract class AppLocalizations {
   /// **'Uncheck'**
   String get outboxOpUncheckItem;
 
+  /// Outbox op label: create a list
+  ///
+  /// In en, this message translates to:
+  /// **'Create list'**
+  String get outboxOpCreateList;
+
+  /// Outbox op label: rename or retype a list
+  ///
+  /// In en, this message translates to:
+  /// **'Edit list'**
+  String get outboxOpUpdateList;
+
+  /// Outbox op label: archive a list
+  ///
+  /// In en, this message translates to:
+  /// **'Archive list'**
+  String get outboxOpArchiveList;
+
+  /// Outbox op label: delete a list
+  ///
+  /// In en, this message translates to:
+  /// **'Delete list'**
+  String get outboxOpDeleteList;
+
+  /// Outbox op label: set or clear a list reminder
+  ///
+  /// In en, this message translates to:
+  /// **'Set list reminder'**
+  String get outboxOpSetListReminder;
+
+  /// Outbox op label: add a household product
+  ///
+  /// In en, this message translates to:
+  /// **'Add product'**
+  String get outboxOpAddProduct;
+
+  /// Outbox op label: add a shopping location (store)
+  ///
+  /// In en, this message translates to:
+  /// **'Add store'**
+  String get outboxOpAddShoppingLocation;
+
+  /// Outbox op label: edit a chore
+  ///
+  /// In en, this message translates to:
+  /// **'Edit chore'**
+  String get outboxOpUpdateChore;
+
+  /// Outbox op label: delete a chore
+  ///
+  /// In en, this message translates to:
+  /// **'Delete chore'**
+  String get outboxOpDeleteChore;
+
+  /// Outbox op label: add a chore subtask
+  ///
+  /// In en, this message translates to:
+  /// **'Add subtask'**
+  String get outboxOpAddSubtask;
+
+  /// Outbox op label: update a chore subtask
+  ///
+  /// In en, this message translates to:
+  /// **'Update subtask'**
+  String get outboxOpUpdateSubtask;
+
+  /// Outbox op label: delete a chore subtask
+  ///
+  /// In en, this message translates to:
+  /// **'Delete subtask'**
+  String get outboxOpDeleteSubtask;
+
+  /// Outbox op label: create a recurring expense
+  ///
+  /// In en, this message translates to:
+  /// **'Add recurring expense'**
+  String get outboxOpCreateRecurringExpense;
+
+  /// Outbox op label: edit, pause or resume a recurring expense
+  ///
+  /// In en, this message translates to:
+  /// **'Update recurring expense'**
+  String get outboxOpUpdateRecurringExpense;
+
+  /// Outbox op label: delete a recurring expense
+  ///
+  /// In en, this message translates to:
+  /// **'Delete recurring expense'**
+  String get outboxOpDeleteRecurringExpense;
+
+  /// Outbox op label: cancel a settlement
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel settlement'**
+  String get outboxOpCancelSettlement;
+
+  /// Outbox op label: plan a meal
+  ///
+  /// In en, this message translates to:
+  /// **'Plan meal'**
+  String get outboxOpAddMeal;
+
+  /// Outbox op label: change a planned meal
+  ///
+  /// In en, this message translates to:
+  /// **'Update meal'**
+  String get outboxOpUpdateMeal;
+
+  /// Outbox op label: remove a planned meal
+  ///
+  /// In en, this message translates to:
+  /// **'Remove meal'**
+  String get outboxOpRemoveMeal;
+
+  /// Outbox op label: create a cookbook
+  ///
+  /// In en, this message translates to:
+  /// **'Create cookbook'**
+  String get outboxOpCreateCookbook;
+
+  /// Outbox op label: rename or share a cookbook
+  ///
+  /// In en, this message translates to:
+  /// **'Edit cookbook'**
+  String get outboxOpUpdateCookbook;
+
+  /// Outbox op label: delete a cookbook
+  ///
+  /// In en, this message translates to:
+  /// **'Delete cookbook'**
+  String get outboxOpDeleteCookbook;
+
+  /// Outbox op label: file a recipe into a cookbook
+  ///
+  /// In en, this message translates to:
+  /// **'Add to cookbook'**
+  String get outboxOpAddToCookbook;
+
+  /// Outbox op label: remove a recipe from a cookbook
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from cookbook'**
+  String get outboxOpRemoveFromCookbook;
+
+  /// Outbox op label: edit household settings
+  ///
+  /// In en, this message translates to:
+  /// **'Update household'**
+  String get outboxOpUpdateHousehold;
+
+  /// Outbox op label: edit the user's profile
+  ///
+  /// In en, this message translates to:
+  /// **'Update profile'**
+  String get outboxOpUpdateProfile;
+
+  /// Outbox op label: mark one notification as read
+  ///
+  /// In en, this message translates to:
+  /// **'Mark notification read'**
+  String get outboxOpMarkNotificationRead;
+
+  /// Outbox op label: mark all notifications as read
+  ///
+  /// In en, this message translates to:
+  /// **'Mark all notifications read'**
+  String get outboxOpMarkAllNotificationsRead;
+
+  /// Outbox op label: delete a notification
+  ///
+  /// In en, this message translates to:
+  /// **'Delete notification'**
+  String get outboxOpDeleteNotification;
+
+  /// Outbox op label: change a notification preference
+  ///
+  /// In en, this message translates to:
+  /// **'Update notification setting'**
+  String get outboxOpUpdateNotificationPreference;
+
   /// Sync status sheet: heading above the list of queued changes
   ///
   /// In en, this message translates to:

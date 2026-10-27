@@ -285,9 +285,17 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
       final cachedGroup = await repo.getGroupOnce(_resolvedGroupId!);
       final cachedActivities = await repo.getActivitiesOnce(_resolvedGroupId!);
       if (!mounted) return;
-      final hadCache = cachedGroup != null || cachedActivities.$1.isNotEmpty;
+      // A household never opened on this device has no Home row yet, but the
+      // household list does: that names the app bar, and every section below
+      // paints from its own cache, so Home need not wait on the network
+      // (offline, a whole connect timeout) to show them.
+      final listedGroup =
+          households.where((g) => g.id == _resolvedGroupId).firstOrNull;
+      final hadCache = cachedGroup != null ||
+          listedGroup != null ||
+          cachedActivities.$1.isNotEmpty;
       setState(() {
-        _data = cachedGroup;
+        _data = cachedGroup ?? listedGroup;
         _households = households;
         _snapshot = _HubSnapshot(
           activities: cachedActivities.$1,
@@ -381,12 +389,25 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
 
   Future<void> _openHouseholdSwitcher(BuildContext context) async {
     await Haptics.light();
+    // Open on the cached households at once; switching works entirely from
+    // the cache. Awaiting a refresh first held the sheet behind a network
+    // round-trip, and offline behind a whole connect timeout. The refresh
+    // still runs and lands in the hub for the next open.
     var groups = _households;
     try {
-      await refreshCachedGroups(ref);
-      groups = await ref.read(cachedGroupsProvider.future);
-      if (mounted) setState(() => _households = groups);
+      final cached = await ref.read(cachedGroupsProvider.future);
+      if (cached.isNotEmpty) groups = cached;
     } catch (_) {}
+    if (mounted && groups != _households) {
+      setState(() => _households = groups);
+    }
+    unawaited(() async {
+      try {
+        await refreshCachedGroups(ref);
+        final fresh = await ref.read(cachedGroupsProvider.future);
+        if (mounted) setState(() => _households = fresh);
+      } catch (_) {}
+    }());
     if (!context.mounted) return;
 
     final hubContext = context;

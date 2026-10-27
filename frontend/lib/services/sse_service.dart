@@ -53,6 +53,15 @@ class SseService {
   String? _currentGroupId;
   int _generation = 0;
 
+  /// Set by [wake]: the retry loop skips what is left of its backoff and
+  /// starts again from the shortest one.
+  bool _wakeRequested = false;
+
+  /// Bounds the TCP connect on a dead uplink. Without it a captive or
+  /// silently dropped network held each attempt for the OS default (over a
+  /// minute) before the backoff even started.
+  static const _connectTimeout = Duration(seconds: 10);
+
   // Most recent event per `type|groupId`, so a listener that subscribes after
   // an event was emitted (e.g. a presence snapshot delivered at connect time)
   // can seed itself instead of waiting for the next change.
@@ -86,6 +95,10 @@ class SseService {
     var backoff = initialBackoff;
 
     while (!_disposed && _generation == gen) {
+      if (_wakeRequested) {
+        _wakeRequested = false;
+        backoff = initialBackoff;
+      }
       try {
         final connected = await _connectOnce(groupId, gen);
         if (_disposed || _generation != gen) break;
@@ -125,7 +138,10 @@ class SseService {
   Future<void> _delayUnlessCancelled(Duration delay, int gen) async {
     var remaining = delay;
     const tick = Duration(milliseconds: 250);
-    while (remaining > Duration.zero && !_disposed && _generation == gen) {
+    while (remaining > Duration.zero &&
+        !_disposed &&
+        _generation == gen &&
+        !_wakeRequested) {
       final slice = remaining < tick ? remaining : tick;
       await Future.delayed(slice);
       remaining -= slice;
@@ -148,9 +164,26 @@ class SseService {
       '$baseUrl${ApiConfig.apiPrefix}/events?group_id=$groupId',
     );
 
-    final client = HttpClient();
+    final client = HttpClient()..connectionTimeout = _connectTimeout;
     _httpClient = client;
+    try {
+      return await _streamFrom(client, uri, token, groupId, gen);
+    } finally {
+      // Every attempt gets a fresh client; close this one whether the stream
+      // ended or the connect failed, so a long offline stretch does not pile
+      // up one abandoned client per retry.
+      client.close(force: true);
+      if (identical(_httpClient, client)) _httpClient = null;
+    }
+  }
 
+  Future<bool> _streamFrom(
+    HttpClient client,
+    Uri uri,
+    String token,
+    String groupId,
+    int gen,
+  ) async {
     final request = await client.getUrl(uri);
     request.headers.set('Authorization', 'Bearer $token');
     request.headers.set('Accept', 'text/event-stream');
@@ -211,6 +244,16 @@ class SseService {
     if (_currentGroupId == null || _disposed) return;
     _httpClient?.close(force: true);
     _httpClient = null;
+    // A loop sitting out a long backoff (the app was offline for a while)
+    // would otherwise stay disconnected for up to a minute after resume.
+    _wakeRequested = true;
+  }
+
+  /// The network is back: retry now instead of finishing the current backoff.
+  /// Leaves a live connection alone.
+  void wake() {
+    if (_currentGroupId == null || _disposed) return;
+    _wakeRequested = true;
   }
 
   /// Stop the SSE connection and free resources.
