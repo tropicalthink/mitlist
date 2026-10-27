@@ -36,3 +36,6 @@ frontend/assets/models/ocr/*/inference.onnx
 # AI design-critique logs are local working notes, not project docs.
 .impeccable/
 **/.impeccable/
+
+# Remotion promo video lives on the video-promo branch for now
+video/
