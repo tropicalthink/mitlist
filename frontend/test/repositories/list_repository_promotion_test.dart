@@ -59,7 +59,18 @@ void main() {
 
   setUp(() {
     db = _memoryDb();
-    repo = ListRepository(db: db, remote: FakeListService(), autoSync: false);
+    // Each check-off is a separate trip a day later; re-checks within one trip
+    // count once (see local_item_promotion_service_test).
+    var now = DateTime(2026, 1, 1);
+    repo = ListRepository(
+      db: db,
+      remote: FakeListService(),
+      autoSync: false,
+      promotionService: LocalItemPromotionService(
+        db,
+        clock: () => now = now.add(const Duration(days: 1)),
+      ),
+    );
   });
 
   tearDown(() => db.close());

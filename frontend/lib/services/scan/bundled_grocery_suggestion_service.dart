@@ -68,6 +68,8 @@ class BundledGrocerySuggestionService {
         bestById[entry.id] = BundledGroceryMatch(
           canonicalItemId: entry.id,
           similarity: similarity,
+          category: entry.category,
+          unit: entry.unit,
         );
       }
     }
@@ -100,10 +102,14 @@ class BundledGroceryMatch {
   const BundledGroceryMatch({
     required this.canonicalItemId,
     required this.similarity,
+    this.category = '',
+    this.unit = '',
   });
 
   final String canonicalItemId;
   final double similarity;
+  final String category;
+  final String unit;
 }
 
 class _BundledGroceryName {

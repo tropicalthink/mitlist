@@ -3,6 +3,7 @@ import '../models/list_models.dart';
 import '../repositories/list_repository.dart';
 import '../services/grocery_reference_installer.dart';
 import '../services/list_service.dart';
+import '../services/scan/local_item_promotion_service.dart';
 import '../services/sse_service.dart';
 import '../services/sync_scheduler.dart';
 import '../storage/app_database.dart';
@@ -59,11 +60,27 @@ final listRepositoryProvider = FutureProvider<ListRepository>((ref) async {
   final db = ref.watch(appDatabaseProvider);
   final service = await ref.read(listServiceProviderAsync.future);
   final groceryRepo = await ref.read(groceryRepositoryProvider.future);
+  final bundledNames = ref.read(bundledGrocerySuggestionServiceProvider);
   final repo = ListRepository(
     db: db,
     remote: service,
     groceryRepo: groceryRepo,
     onLocalWrite: ref.watch(syncSchedulerProvider).noteLocalWrite,
+    promotionService: LocalItemPromotionService(
+      db,
+      // A word the catalog lacks still shelves like its closest spelling.
+      // The bundled name index is in memory, so this stays cheap inside the
+      // check-off transaction that mints the item.
+      shelfHint: (name) async {
+        final matches = await bundledNames.nearest(
+          name,
+          limit: 1,
+          minimumSimilarity: 0.75,
+        );
+        if (matches.isEmpty || matches.first.category.isEmpty) return null;
+        return (category: matches.first.category, unit: matches.first.unit);
+      },
+    ),
   );
   ref.onDispose(repo.dispose);
   return repo;

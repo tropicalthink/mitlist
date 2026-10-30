@@ -16,9 +16,15 @@ void main() {
   late LocalItemPromotionService svc;
   const group = 'g1';
 
+  // Each check-off lands on a later day: separate shopping trips, the way a
+  // household actually comes to buy a word regularly.
+  late DateTime now;
+  DateTime nextTrip() => now = now.add(const Duration(days: 1));
+
   setUp(() {
     db = memoryDb();
-    svc = LocalItemPromotionService(db);
+    now = DateTime(2026, 1, 1);
+    svc = LocalItemPromotionService(db, clock: nextTrip);
   });
 
   tearDown(() async => db.close());
@@ -27,6 +33,32 @@ void main() {
       (await db.select(db.canonicalItemsTable).get()).length;
   Future<int> aliasCount() async =>
       (await db.select(db.itemAliasesTable).get()).length;
+
+  test('re-checks on one trip count once', () async {
+    final sameTrip = LocalItemPromotionService(db, clock: () => now);
+    for (var i = 0; i < kLocalPromotionThreshold + 2; i++) {
+      expect(
+        await sameTrip.recordUnresolvedCheckoff(
+            groupId: group, rawName: 'fassi'),
+        isNull,
+      );
+    }
+    expect(await canonicalCount(), 0);
+  });
+
+  test('a minted word takes the shelf of its closest catalog name', () async {
+    final shelved = LocalItemPromotionService(
+      db,
+      clock: nextTrip,
+      shelfHint: (name) async => (category: 'frozen', unit: 'piece'),
+    );
+    for (var i = 0; i < kLocalPromotionThreshold; i++) {
+      await shelved.recordUnresolvedCheckoff(groupId: group, rawName: 'fassi');
+    }
+    final minted = (await db.select(db.canonicalItemsTable).get()).single;
+    expect(minted.category, 'frozen');
+    expect(minted.defaultUnit, 'piece');
+  });
 
   test('sub-threshold check-offs mint nothing and just tally', () async {
     for (var i = 0; i < kLocalPromotionThreshold - 1; i++) {
@@ -99,7 +131,7 @@ void main() {
     }
     final firstId = (await db.select(db.canonicalItemsTable).get()).single.id;
     // A second fresh service instance minting the same word again.
-    final svc2 = LocalItemPromotionService(db);
+    final svc2 = LocalItemPromotionService(db, clock: nextTrip);
     final r =
         await svc2.recordUnresolvedCheckoff(groupId: group, rawName: 'fassi');
     expect(r!.canonicalItemId, firstId);
