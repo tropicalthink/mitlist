@@ -4123,6 +4123,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'If that email exists, a reset code has been sent.';
 
   @override
+  String get authLoginResetUnavailable =>
+      'This server can\'t send email, so passwords can\'t be reset here. Ask whoever runs it for help.';
+
+  @override
+  String get authSignupEmailTaken =>
+      'An account with this email already exists. Sign in instead.';
+
+  @override
   String get authLoginResetFillAllFields =>
       'Fill out the reset code and both password fields.';
 

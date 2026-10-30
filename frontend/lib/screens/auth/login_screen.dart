@@ -215,7 +215,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             } catch (e) {
               setSheetState(() {
                 isSubmitting = false;
-                error = l10n.authLoginGenericError;
+                error = e is ApiException && e.isEmailUnavailable
+                    ? l10n.authLoginResetUnavailable
+                    : l10n.authLoginGenericError;
               });
             }
           }
@@ -660,18 +662,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                 ),
               ],
             ),
-            const SizedBox(height: MitlistSpacing.space2),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                AppButton(
-                  variant: AppButtonVariant.ghost,
-                  color: AppButtonColor.neutral,
-                  text: l10n.authLoginForgotPassword,
-                  onPressed: _showPasswordResetSheet,
-                ),
-              ],
-            ),
+            // A server without an email provider cannot send a reset code,
+            // so the door is not shown there.
+            if (providers.passwordReset) ...[
+              const SizedBox(height: MitlistSpacing.space2),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  AppButton(
+                    variant: AppButtonVariant.ghost,
+                    color: AppButtonColor.neutral,
+                    text: l10n.authLoginForgotPassword,
+                    onPressed: _showPasswordResetSheet,
+                  ),
+                ],
+              ),
+            ],
           ],
         ],
       ),

@@ -4159,6 +4159,14 @@ class AppLocalizationsNl extends AppLocalizations {
       'Als dat e-mailadres bestaat, is er een herstelcode verstuurd.';
 
   @override
+  String get authLoginResetUnavailable =>
+      'Deze server kan geen e-mail versturen, dus je wachtwoord kan hier niet worden hersteld. Vraag de beheerder om hulp.';
+
+  @override
+  String get authSignupEmailTaken =>
+      'Er bestaat al een account met dit e-mailadres. Log in plaats daarvan in.';
+
+  @override
   String get authLoginResetFillAllFields =>
       'Vul de code en beide wachtwoordvelden in.';
 

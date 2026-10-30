@@ -53,8 +53,13 @@ Future<void> _pumpSignup(
         // Password-only: no provider buttons, so the form is unfolded from
         // the first frame and these cases reach it without a tap.
         oauthProvidersProvider.overrideWith(
-          (ref) async =>
-              (google: false, apple: false, password: true, guest: false),
+          (ref) async => (
+            google: false,
+            apple: false,
+            password: true,
+            guest: false,
+            passwordReset: true,
+          ),
         ),
       ],
       child: MaterialApp.router(
@@ -83,6 +88,11 @@ Future<void> _submit(WidgetTester tester) async {
 }
 
 class _FakeAuthService implements AuthService {
+  _FakeAuthService({
+    this.result = const RegistrationResult(verificationRequired: true),
+  });
+
+  final RegistrationResult result;
   RegisterRequest? registered;
   bool loginCalled = false;
 
@@ -92,7 +102,7 @@ class _FakeAuthService implements AuthService {
     bool rememberMe = true,
   }) async {
     registered = request;
-    return const RegistrationResult(verificationRequired: true);
+    return result;
   }
 
   /// The account cannot sign in before its email is confirmed, so sign-up
@@ -184,5 +194,48 @@ void main() {
     expect(find.text('Enter the code we emailed to ada@example.com.'),
         findsOneWidget);
     expect(auth.loginCalled, isFalse);
+  });
+
+  testWidgets('a server without email signs the new account in instead of '
+      'asking for a code', (tester) async {
+    final auth = _FakeAuthService(
+      result: const RegistrationResult(
+        verificationRequired: false,
+        session: TokenPair(accessToken: 'access', refreshToken: 'refresh'),
+      ),
+    );
+    await _pumpSignup(tester, authService: auth);
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(SignupScreen)),
+    );
+    container.read(authStateProvider.notifier).state = false;
+
+    await _fillForm(tester, password: 'Passw0rd!');
+    await _submit(tester);
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(auth.registered?.email, 'ada@example.com');
+    expect(find.text('Enter the code we emailed to ada@example.com.'),
+        findsNothing);
+    expect(auth.loginCalled, isFalse);
+    expect(container.read(authStateProvider), isTrue);
+    expect(container.read(pendingAuthNavigationProvider), '/onboarding');
+  });
+
+  test('a token answer to register is a signed-in registration', () {
+    final signedIn = RegistrationResult.fromJson({
+      'access_token': 'a',
+      'refresh_token': 'r',
+      'user': null,
+    });
+    expect(signedIn.verificationRequired, isFalse);
+    expect(signedIn.session?.accessToken, 'a');
+
+    final pending = RegistrationResult.fromJson({
+      'verification_required': true,
+      'message': 'if the address can be registered, a code has been sent',
+    });
+    expect(pending.verificationRequired, isTrue);
+    expect(pending.session, isNull);
   });
 }

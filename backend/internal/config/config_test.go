@@ -264,3 +264,84 @@ func TestValidateRequiresAppleAppIDOutsideSandbox(t *testing.T) {
 		t.Fatalf("sandbox Apple IAP should not require an app Apple ID: %v", err)
 	}
 }
+
+func TestEmailConfigured(t *testing.T) {
+	tests := []struct {
+		name string
+		cfg  Config
+		want bool
+	}{
+		{name: "nothing set", cfg: Config{}, want: false},
+		{name: "defaulted relay hosts only", cfg: Config{SendGridSMTPHost: "smtp.sendgrid.net", BrevoSMTPHost: "smtp-relay.sendinblue.com"}, want: false},
+		{name: "generic SMTP host", cfg: Config{SMTPHost: "mail.example.org"}, want: true},
+		{name: "blank generic SMTP host", cfg: Config{SMTPHost: "  "}, want: false},
+		{name: "SES region", cfg: Config{SESRegion: "eu-central-1"}, want: true},
+		{name: "SendGrid credentials", cfg: Config{SendGridSMTPUser: "apikey"}, want: true},
+		{name: "Brevo credentials", cfg: Config{BrevoSMTPUser: "user"}, want: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.cfg.EmailConfigured(); got != tt.want {
+				t.Errorf("EmailConfigured() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestLogIntegrationStatus_WarnsWhenPasswordAuthHasNoEmail(t *testing.T) {
+	const warning = "email verification and password reset are disabled because no email provider is configured"
+	out := captureLog((&Config{PasswordAuthEnabled: true}).LogIntegrationStatus)
+	if !strings.Contains(out, warning) {
+		t.Errorf("missing no-email warning; got: %s", out)
+	}
+	out = captureLog((&Config{PasswordAuthEnabled: true, SMTPHost: "mail.example.org"}).LogIntegrationStatus)
+	if strings.Contains(out, warning) {
+		t.Errorf("no-email warning logged although SMTP_HOST is set; got: %s", out)
+	}
+	if !strings.Contains(out, `"email":true`) {
+		t.Errorf("SMTP_HOST did not turn email on; got: %s", out)
+	}
+}
+
+func TestMaskSecrets_SMTPPassword(t *testing.T) {
+	masked := Config{SMTPPassword: "app-password"}.MaskSecrets()
+	if masked.SMTPPassword != "***" {
+		t.Errorf("SMTP_PASSWORD not masked: %q", masked.SMTPPassword)
+	}
+}
+
+func TestValidateSMTPTLS(t *testing.T) {
+	for _, mode := range []string{"", "starttls", "tls", "none", "TLS"} {
+		cfg := &Config{Environment: "development", SMTPTLS: mode}
+		if err := cfg.Validate(); err != nil {
+			t.Errorf("SMTP_TLS=%q rejected: %v", mode, err)
+		}
+	}
+	cfg := &Config{Environment: "development", SMTPTLS: "ssl"}
+	if err := cfg.Validate(); err == nil {
+		t.Error("SMTP_TLS=ssl accepted")
+	}
+	cfg = &Config{Environment: "development", SMTPHost: "mail.example.org", SMTPPort: 0}
+	if err := cfg.Validate(); err == nil {
+		t.Error("SMTP_HOST with port 0 accepted")
+	}
+}
+
+// TestLogIntegrationStatusLocalStorage: local-disk storage counts as file
+// storage only together with PUBLIC_API_URL, and the hint names what is missing.
+func TestLogIntegrationStatusLocalStorage(t *testing.T) {
+	out := captureLog((&Config{StorageLocalPath: "/data", PublicAPIURL: "https://api.example.test"}).LogIntegrationStatus)
+	if !strings.Contains(out, `"file_storage":true`) {
+		t.Errorf("expected file_storage on for local disk + PUBLIC_API_URL; got: %s", out)
+	}
+
+	out = captureLog((&Config{StorageLocalPath: "/data"}).LogIntegrationStatus)
+	if !strings.Contains(out, `"file_storage":false`) || !strings.Contains(out, "PUBLIC_API_URL is empty") {
+		t.Errorf("expected file_storage off with a PUBLIC_API_URL hint; got: %s", out)
+	}
+
+	out = captureLog((&Config{}).LogIntegrationStatus)
+	if !strings.Contains(out, "STORAGE_LOCAL_PATH") {
+		t.Errorf("expected the disabled hint to mention STORAGE_LOCAL_PATH; got: %s", out)
+	}
+}

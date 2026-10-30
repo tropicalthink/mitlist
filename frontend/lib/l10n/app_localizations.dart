@@ -7299,6 +7299,18 @@ abstract class AppLocalizations {
   /// **'If that email exists, a reset code has been sent.'**
   String get authLoginResetCodeSent;
 
+  /// Shown instead of sending a reset code when the server has no email provider configured
+  ///
+  /// In en, this message translates to:
+  /// **'This server can\'t send email, so passwords can\'t be reset here. Ask whoever runs it for help.'**
+  String get authLoginResetUnavailable;
+
+  /// Sign-up error on a server without email when the address already has an account
+  ///
+  /// In en, this message translates to:
+  /// **'An account with this email already exists. Sign in instead.'**
+  String get authSignupEmailTaken;
+
   /// Validation: all reset fields required
   ///
   /// In en, this message translates to:

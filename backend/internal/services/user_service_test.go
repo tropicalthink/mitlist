@@ -42,6 +42,28 @@ func TestUserService_Register(t *testing.T) {
 		assert.False(t, user.IsVerified)
 	})
 
+	t.Run("no email provider creates a verified, unproven account and sends nothing", func(t *testing.T) {
+		userRepo := new(mocks.MockUserRepo)
+		authRepo := new(mocks.MockAuthRepo)
+		passSvc := new(mocks.MockPasswordService)
+		mailSvc := new(mocks.MockMailService)
+		svc := NewUserService(userRepo, authRepo, new(mocks.MockJWTService), passSvc, mailSvc)
+		svc.SetEmailConfigured(false)
+
+		userRepo.On("GetByEmail", ctx, "new@example.com").Return(nil, errors.New("user not found"))
+		passSvc.On("Hash", "Password123!").Return("hashed", nil)
+		authRepo.On("CreateUnprovenUser", ctx, mock.MatchedBy(func(u *models.User) bool {
+			return u.IsVerified && u.IsActive && !u.IsGuest && u.Email == "new@example.com"
+		})).Return(nil)
+
+		user, err := svc.Register(ctx, RegisterInput{Email: "New@Example.com", Password: "Password123!", FirstName: "New"})
+		require.NoError(t, err)
+		assert.True(t, user.IsVerified)
+		authRepo.AssertNotCalled(t, "CreateUnverifiedUser", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+		mailSvc.AssertNotCalled(t, "SendHTML", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+		authRepo.AssertExpectations(t)
+	})
+
 	t.Run("missing email or password", func(t *testing.T) {
 		svc := NewUserService(nil, nil, nil, nil, nil)
 		_, err := svc.Register(ctx, RegisterInput{Email: "", Password: ""})
@@ -619,4 +641,30 @@ func TestUserServicePushRegistrationInputCaps(t *testing.T) {
 	require.ErrorAs(t, err, &validationErr)
 	assert.Equal(t, "token", validationErr.Field)
 	authRepo.AssertNotCalled(t, "SaveDeviceToken", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+}
+
+func TestUserService_NoEmailProvider(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("password reset is refused, not faked", func(t *testing.T) {
+		authRepo := new(mocks.MockAuthRepo)
+		mailSvc := new(mocks.MockMailService)
+		svc := NewUserService(new(mocks.MockUserRepo), authRepo, nil, nil, mailSvc)
+		svc.SetEmailConfigured(false)
+
+		err := svc.RequestPasswordReset(ctx, "someone@example.com")
+		require.Error(t, err)
+		assert.ErrorIs(t, err, api.ErrEmailUnavailable)
+		authRepo.AssertNotCalled(t, "CreatePasswordResetToken", mock.Anything, mock.Anything)
+	})
+
+	t.Run("verification resend is a quiet no-op", func(t *testing.T) {
+		svc := NewUserService(new(mocks.MockUserRepo), new(mocks.MockAuthRepo), nil, nil, new(mocks.MockMailService))
+		svc.SetEmailConfigured(false)
+		require.NoError(t, svc.ResendEmailVerification(ctx, "someone@example.com"))
+	})
+
+	t.Run("email is assumed configured unless told otherwise", func(t *testing.T) {
+		assert.True(t, NewUserService(nil, nil, nil, nil, nil).EmailConfigured())
+	})
 }

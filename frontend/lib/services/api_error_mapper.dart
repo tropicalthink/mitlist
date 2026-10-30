@@ -31,6 +31,10 @@ class ApiException implements Exception {
   /// Callers open the verification step instead of showing an error.
   bool get isEmailUnverified => code == 'email_unverified';
 
+  /// True when the server has no email provider, so it cannot send the code
+  /// the action depends on (a password reset). Callers say so plainly.
+  bool get isEmailUnavailable => code == 'email_unavailable';
+
   @override
   String toString() => message;
 }

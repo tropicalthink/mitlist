@@ -7,6 +7,7 @@ import '../../l10n/app_localizations.dart';
 import '../../models/auth_models.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/oauth_provider.dart';
+import '../../services/api_error_mapper.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../widgets/alert.dart';
@@ -162,19 +163,30 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
         firstName: firstName,
         lastName: lastName,
       );
-      await authService.register(request);
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _awaitingVerification = true;
-          _errorMessage = null;
-        });
-        _verificationFocus.requestFocus();
+      final result = await authService.register(request);
+      if (!mounted) return;
+      if (result.session != null) {
+        // A server without an email provider cannot send a code, so it
+        // signed the account in already; there is nothing to verify.
+        _trackSignupCompleted();
+        await _completeSignup();
+        return;
       }
+      setState(() {
+        _isLoading = false;
+        _awaitingVerification = true;
+        _errorMessage = null;
+      });
+      _verificationFocus.requestFocus();
       return;
     } catch (e) {
+      if (!mounted) return;
       setState(() {
-        _errorMessage = l10n.authSignupGenericError;
+        // Only a server without email reports a taken address (with email
+        // it answers every sign-up alike and sends the code instead).
+        _errorMessage = e is ApiException && e.code == 'conflict'
+            ? l10n.authSignupEmailTaken
+            : l10n.authSignupGenericError;
       });
     } finally {
       if (mounted && !_isSuccess) setState(() => _isLoading = false);

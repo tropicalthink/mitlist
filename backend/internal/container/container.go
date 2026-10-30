@@ -419,6 +419,7 @@ func (c *Container) UserService() *services.UserService {
 	c.userServiceOnce.Do(func() {
 		c.userService = services.NewUserService(c.UserRepo(), c.AuthRepo(), c.JWT(), c.Password(), c.Mail())
 		c.userService.SetFrontendURL(c.cfg.FrontendURL)
+		c.userService.SetEmailConfigured(c.cfg.EmailConfigured())
 	})
 	return c.userService
 }

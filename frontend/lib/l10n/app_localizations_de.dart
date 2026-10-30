@@ -4191,6 +4191,14 @@ class AppLocalizationsDe extends AppLocalizations {
       'Falls diese E-Mail existiert, wurde ein Code gesendet.';
 
   @override
+  String get authLoginResetUnavailable =>
+      'Dieser Server kann keine E-Mails senden, daher lässt sich das Passwort hier nicht zurücksetzen. Wende dich an die Person, die ihn betreibt.';
+
+  @override
+  String get authSignupEmailTaken =>
+      'Mit dieser E-Mail gibt es schon ein Konto. Melde dich stattdessen an.';
+
+  @override
   String get authLoginResetFillAllFields =>
       'Fülle den Code und beide Passwortfelder aus.';
 

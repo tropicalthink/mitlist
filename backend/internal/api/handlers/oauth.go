@@ -25,6 +25,7 @@ type OAuthHandler struct {
 	frontendURL  string
 	passwordAuth bool
 	guestAuth    bool
+	emailOn      bool
 }
 
 const (
@@ -45,6 +46,7 @@ func NewOAuthHandler(cfg *config.Config, service *services.OAuthService) *OAuthH
 		frontendURL:  cfg.FrontendURL,
 		passwordAuth: cfg.PasswordAuthEnabled,
 		guestAuth:    cfg.GuestAuthEnabled,
+		emailOn:      cfg.EmailConfigured(),
 	}
 }
 
@@ -53,12 +55,17 @@ func NewOAuthHandler(cfg *config.Config, service *services.OAuthService) *OAuthH
 // email + password surface: login, registration, reset and change-password.
 // "guest" is whether new guest accounts can be created; a missing key on an
 // older server means the client should assume they cannot.
+// "password_reset" is whether a forgotten password can be reset by emailed
+// code: false where passwords are off or the server has no email provider
+// (sign-up then skips verification too). A missing key on an older server
+// means reset is available whenever "password" is.
 func (h *OAuthHandler) GetProviders(w http.ResponseWriter, r *http.Request) {
 	api.RespondJSON(w, http.StatusOK, map[string]bool{
-		"google":   h.googleClient.Configured(),
-		"apple":    h.appleClient.Configured(),
-		"password": h.passwordAuth,
-		"guest":    h.guestAuth,
+		"google":         h.googleClient.Configured(),
+		"apple":          h.appleClient.Configured(),
+		"password":       h.passwordAuth,
+		"password_reset": h.passwordAuth && h.emailOn,
+		"guest":          h.guestAuth,
 	})
 }
 

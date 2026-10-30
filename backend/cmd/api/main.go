@@ -101,16 +101,17 @@ func main() {
 	})
 	// Onboarding tips need a working unsubscribe link, and that link points at
 	// this API's public origin. Without PUBLIC_API_URL the series stays off
-	// rather than sending mail nobody can opt out of.
-	if cfg.OnboardingEmailsEnabled && cfg.PublicAPIURL != "" {
+	// rather than sending mail nobody can opt out of. A self-host without an
+	// email provider skips both series instead of failing every run.
+	if cfg.OnboardingEmailsEnabled && cfg.PublicAPIURL != "" && cfg.EmailConfigured() {
 		runner.RegisterOnboardingTips(jobs.NewOnboardingTips(pool, cnt.Mail(), cfg.SecretKey, cfg.FrontendURL, cfg.PublicAPIURL, cfg.APIPrefix, log))
 	} else {
-		log.Info().Bool("enabled", cfg.OnboardingEmailsEnabled).Bool("public_api_url_set", cfg.PublicAPIURL != "").Msg("onboarding tips disabled")
+		log.Info().Bool("enabled", cfg.OnboardingEmailsEnabled).Bool("public_api_url_set", cfg.PublicAPIURL != "").Bool("email_configured", cfg.EmailConfigured()).Msg("onboarding tips disabled")
 	}
-	if cfg.ReengagementEmailsEnabled && cfg.PublicAPIURL != "" {
+	if cfg.ReengagementEmailsEnabled && cfg.PublicAPIURL != "" && cfg.EmailConfigured() {
 		runner.RegisterReengagement(jobs.NewReengagement(pool, cnt.Mail(), cfg.SecretKey, cfg.FrontendURL, cfg.PublicAPIURL, cfg.APIPrefix, log))
 	} else {
-		log.Info().Bool("enabled", cfg.ReengagementEmailsEnabled).Bool("public_api_url_set", cfg.PublicAPIURL != "").Msg("reengagement emails disabled")
+		log.Info().Bool("enabled", cfg.ReengagementEmailsEnabled).Bool("public_api_url_set", cfg.PublicAPIURL != "").Bool("email_configured", cfg.EmailConfigured()).Msg("reengagement emails disabled")
 	}
 	runner.Start()
 
@@ -197,6 +198,14 @@ func main() {
 		// Unsubscribe from the tips series: the token in the link is the
 		// credential, so this works from any mail client without a session.
 		handlers.NewEmailUnsubscribeHandler(cfg, cnt.UserRepo()).RegisterRoutes(r)
+
+		// Local-disk file storage (STORAGE_LOCAL_PATH, self-hosts without
+		// S3): the presigned-style PUT/GET URLs the attachment endpoints hand
+		// out point here. Public: the HMAC signature in the query is the
+		// credential, as with an S3 presigned URL.
+		if local := cnt.Storage().Local(); local != nil {
+			local.RegisterRoutes(r)
+		}
 
 		// Public configuration endpoints
 		r.Get("/vapid", handlers.NewVAPIDHandler(cfg).ServeHTTP)

@@ -753,8 +753,13 @@ void main() {
       overrides: [
         authServiceProviderAsync.overrideWith((ref) async => authService),
         oauthProvidersProvider.overrideWith(
-          (ref) async =>
-              (google: true, apple: true, password: true, guest: false),
+          (ref) async => (
+            google: true,
+            apple: true,
+            password: true,
+            guest: false,
+            passwordReset: true,
+          ),
         ),
       ],
     );
@@ -920,8 +925,13 @@ void main() {
       overrides: [
         authServiceProviderAsync.overrideWith((ref) async => authService),
         oauthProvidersProvider.overrideWith(
-          (ref) async =>
-              (google: false, apple: false, password: true, guest: false),
+          (ref) async => (
+            google: false,
+            apple: false,
+            password: true,
+            guest: false,
+            passwordReset: true,
+          ),
         ),
       ],
     );
@@ -962,8 +972,13 @@ void main() {
       overrides: [
         authServiceProviderAsync.overrideWith((ref) async => authService),
         oauthProvidersProvider.overrideWith(
-          (ref) async =>
-              (google: false, apple: false, password: true, guest: false),
+          (ref) async => (
+            google: false,
+            apple: false,
+            password: true,
+            guest: false,
+            passwordReset: true,
+          ),
         ),
       ],
     );
@@ -1001,8 +1016,13 @@ void main() {
       overrides: [
         authServiceProviderAsync.overrideWith((ref) async => authService),
         oauthProvidersProvider.overrideWith(
-          (ref) async =>
-              (google: true, apple: false, password: false, guest: false),
+          (ref) async => (
+            google: true,
+            apple: false,
+            password: false,
+            guest: false,
+            passwordReset: true,
+          ),
         ),
       ],
     );
@@ -1019,6 +1039,34 @@ void main() {
     expect(find.text('Remember me'), findsOneWidget);
   });
 
+  testWidgets('login screen hides forgot password when the server cannot '
+      'send email', (tester) async {
+    await _setLargeSurface(tester);
+    final authService = FakeAuthService(currentUser: user);
+
+    await _pumpScreen(
+      tester,
+      child: const LoginScreen(),
+      overrides: [
+        authServiceProviderAsync.overrideWith((ref) async => authService),
+        oauthProvidersProvider.overrideWith(
+          (ref) async => (
+            google: false,
+            apple: false,
+            password: true,
+            guest: false,
+            passwordReset: false,
+          ),
+        ),
+      ],
+    );
+
+    // Signing in and creating an account still work; only reset is gone.
+    expect(find.text('SIGN IN'), findsOneWidget);
+    expect(find.text('Create account'), findsOneWidget);
+    expect(find.text('Forgot password?'), findsNothing);
+  });
+
   testWidgets('login screen puts the password form after the OAuth buttons',
       (tester) async {
     await _setLargeSurface(tester);
@@ -1030,8 +1078,13 @@ void main() {
       overrides: [
         authServiceProviderAsync.overrideWith((ref) async => authService),
         oauthProvidersProvider.overrideWith(
-          (ref) async =>
-              (google: true, apple: false, password: true, guest: false),
+          (ref) async => (
+            google: true,
+            apple: false,
+            password: true,
+            guest: false,
+            passwordReset: true,
+          ),
         ),
       ],
     );
@@ -1062,8 +1115,13 @@ void main() {
       overrides: [
         authServiceProviderAsync.overrideWith((ref) async => authService),
         oauthProvidersProvider.overrideWith(
-          (ref) async =>
-              (google: false, apple: false, password: false, guest: false),
+          (ref) async => (
+            google: false,
+            apple: false,
+            password: false,
+            guest: false,
+            passwordReset: true,
+          ),
         ),
       ],
     );
@@ -1230,8 +1288,13 @@ void main() {
       child: const SignupScreen(),
       overrides: [
         oauthProvidersProvider.overrideWith(
-          (ref) async =>
-              (google: true, apple: true, password: true, guest: false),
+          (ref) async => (
+            google: true,
+            apple: true,
+            password: true,
+            guest: false,
+            passwordReset: true,
+          ),
         ),
       ],
     );
@@ -1260,8 +1323,13 @@ void main() {
       child: const SignupScreen(),
       overrides: [
         oauthProvidersProvider.overrideWith(
-          (ref) async =>
-              (google: false, apple: false, password: true, guest: false),
+          (ref) async => (
+            google: false,
+            apple: false,
+            password: true,
+            guest: false,
+            passwordReset: true,
+          ),
         ),
       ],
     );
@@ -1687,8 +1755,13 @@ void main() {
           appDatabaseProvider.overrideWithValue(db),
           authServiceProviderAsync.overrideWith((ref) async => authService),
           oauthProvidersProvider.overrideWith(
-            (ref) async =>
-                (google: false, apple: false, password: true, guest: false),
+            (ref) async => (
+              google: false,
+              apple: false,
+              password: true,
+              guest: false,
+              passwordReset: true,
+            ),
           ),
           groupServiceProviderAsync.overrideWith((ref) async => groupService),
           activityServiceProviderAsync

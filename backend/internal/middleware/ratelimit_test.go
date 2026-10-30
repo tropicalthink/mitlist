@@ -121,3 +121,14 @@ func BenchmarkLimiterUniqueKeyChurn(b *testing.B) {
 		limiter.Allow("spray-"+strconv.Itoa(i), 1, 1, 100)
 	}
 }
+
+// Signed local-storage file URLs are exempt from the per-IP budget (one
+// request per photo would drain it); everything else under the API is not.
+func TestShouldSkipLocalFiles(t *testing.T) {
+	if !shouldSkip("/api/v1/files/groups/g/attachments/a/x.jpg", "/api") {
+		t.Error("local file route should skip the IP rate limit")
+	}
+	if shouldSkip("/api/v1/lists", "/api") || shouldSkip("/api/v1/filesx", "/api") {
+		t.Error("only the files route may skip the IP rate limit")
+	}
+}

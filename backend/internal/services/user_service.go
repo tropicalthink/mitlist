@@ -29,6 +29,27 @@ type UserService struct {
 	password    PasswordService
 	mail        MailService
 	frontendURL string
+	// emailDisabled is set on a server with no email provider: sign-up then
+	// cannot deliver a verification code, so it skips verification, and
+	// password reset is refused instead of pretending a code was sent.
+	emailDisabled bool
+}
+
+// SetEmailConfigured tells the service whether an email provider exists
+// (config.EmailConfigured). Unset, the service assumes it does.
+func (s *UserService) SetEmailConfigured(configured bool) {
+	s.emailDisabled = !configured
+}
+
+// EmailConfigured reports whether this server can deliver email codes.
+func (s *UserService) EmailConfigured() bool {
+	return !s.emailDisabled
+}
+
+// errPasswordResetUnavailable is the answer to a reset request on a server
+// with no email provider: there is no way to deliver the code.
+var errPasswordResetUnavailable = &api.EmailUnavailableError{
+	Message: "password reset is unavailable because this server has no email provider configured",
 }
 
 // SetFrontendURL adds a clickable signup/recovery link to email messages while
@@ -72,6 +93,12 @@ type RegisterInput struct {
 
 // Register creates an inactive-login account and sends a one-time email
 // verification credential. Sessions are issued only after verification.
+//
+// On a server with no email provider the code could never arrive, so the
+// account is created verified instead and the caller signs it in at once.
+// Such an account is marked email_unproven: the address was claimed, not
+// shown to belong to the person, and OAuth sign-in will not link to it by
+// matching email (see OAuthService.processOAuthUser).
 func (s *UserService) Register(ctx context.Context, input RegisterInput) (*models.User, error) {
 	input.Email = validation.NormalizeEmail(input.Email)
 	if err := validation.Email(input.Email); err != nil {
@@ -115,6 +142,14 @@ func (s *UserService) Register(ctx context.Context, input RegisterInput) (*model
 		IsGuest:      false,
 		// The tips series is opt-out; every email carries the way out.
 		TipsEmailsEnabled: true,
+	}
+
+	if s.emailDisabled {
+		user.IsVerified = true
+		if err := s.authRepo.CreateUnprovenUser(ctx, user); err != nil {
+			return nil, err
+		}
+		return user, nil
 	}
 
 	rawToken, tokenHash, expiresAt, err := newEmailVerificationToken()
@@ -197,6 +232,11 @@ func (s *UserService) allowEmailCodeSend(ctx context.Context, purpose, email str
 
 // ResendEmailVerification intentionally returns no account-existence signal.
 func (s *UserService) ResendEmailVerification(ctx context.Context, email string) error {
+	if s.emailDisabled {
+		// Nothing can be delivered; answering like every other address keeps
+		// this endpoint as uninformative as it is with mail.
+		return nil
+	}
 	email = validation.NormalizeEmail(email)
 	if allowed, err := s.allowEmailCodeSend(ctx, "verify-resend", email); err != nil || !allowed {
 		return err
@@ -490,7 +530,12 @@ func (s *UserService) ChangePassword(ctx context.Context, userID uuid.UUID, oldP
 
 // RequestPasswordReset generates a reset token and sends it via email.
 // To prevent email enumeration, it always returns nil when the email is not found.
+// On a server with no email provider it refuses every request alike with
+// an EmailUnavailableError, which says nothing about the address.
 func (s *UserService) RequestPasswordReset(ctx context.Context, email string) error {
+	if s.emailDisabled {
+		return errPasswordResetUnavailable
+	}
 	email = validation.NormalizeEmail(email)
 	if allowed, err := s.allowEmailCodeSend(ctx, "password-reset", email); err != nil || !allowed {
 		return err

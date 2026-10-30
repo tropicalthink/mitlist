@@ -34,6 +34,8 @@ type AuthRepo interface {
 	ConsumePasswordReset(ctx context.Context, tokenHash, passwordHash string) (uuid.UUID, error)
 	UpdatePasswordAndRevokeSessions(ctx context.Context, userID uuid.UUID, passwordHash string) error
 	CreateUnverifiedUser(ctx context.Context, user *models.User, tokenHash string, expiresAt time.Time) error
+	CreateUnprovenUser(ctx context.Context, user *models.User) error
+	IsEmailUnproven(ctx context.Context, userID uuid.UUID) (bool, error)
 	CreateEmailVerification(ctx context.Context, userID uuid.UUID, tokenHash string, expiresAt time.Time) error
 	ConsumeEmailVerification(ctx context.Context, tokenHash string) (uuid.UUID, error)
 	ReserveLoginAttempt(ctx context.Context, identifier string, limit int, window time.Duration) (bool, error)

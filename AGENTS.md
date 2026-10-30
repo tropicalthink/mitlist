@@ -41,6 +41,9 @@ go test ./...               # Run all tests
 docker compose up -d        # Start postgres
 ```
 
+### Self-hosting
+`./scripts/selfhost-setup.sh && docker compose up -d --build` (guide: `docs/SELF_HOSTING.md`). One public URL (`MITLIST_URL`) serves the web app and the API: a web build without `API_BASE_URL` calls its own origin and the web image's nginx (`frontend/nginx/default.conf.template`) proxies `/api` to the backend. Attachments use local disk (`STORAGE_LOCAL_PATH`) without S3; without an email provider, sign-up skips verification. Keep new required config optional for a self-host, or add it to the setup script and the guide.
+
 ## Architecture
 
 ### Frontend
@@ -267,8 +270,9 @@ showAppDialog<bool>(
 | 000077 | `integration_credentials.push_token`: iOS 26 WidgetKit push token of a device's widgets (plans/047) |
 | 000078 | `product_events`: first-party onboarding-funnel and Home events (plans/048 stage 8); no IP, user agent or free text |
 | 000079 | `group_invites.created_by`: who minted an invite code, for the signed-out preview (plans/048 stage 7) |
+| 000080 | `users.email_unproven`: password account created verified on a server with no email provider; never linked to an OAuth identity by email until an emailed code proves the address |
 
-Latest migration: `000079_add_invite_created_by`.
+Latest migration: `000080_add_users_email_unproven`.
 
 ## Key API Endpoints Added
 

@@ -46,9 +46,17 @@ All config via environment variables (see `.env.example`):
 | `SECRET_KEY` | Yes | — | Token signing key |
 | `S3_BUCKET_NAME` | No | — | R2 bucket for attachments |
 | `S3_ENDPOINT_URL` | No | — | R2 S3 endpoint |
+| `STORAGE_LOCAL_PATH` | No | — (compose prod profile: `/app/data/uploads`) | Self-host without S3: store attachments on local disk under this directory, served by the API through signed URLs. Ignored when `S3_BUCKET_NAME` is set; requires `PUBLIC_API_URL` |
+| `PUBLIC_API_URL` | For local file storage and onboarding/re-engagement emails | — | Public origin of this API (e.g. `https://api.example.com`), used to build absolute links back to it |
 | `MAX_FILE_SIZE_BYTES` | No | `10485760` | Maximum attachment size (10 MiB) |
 | `MAX_STORAGE_PER_GROUP_GB` | No | `1` | Storage quota per household; `0` disables it for self-hosters |
 | `PASSWORD_AUTH_ENABLED` | No | `false` | Offer email + password sign-in (register, login, reset, change-password). Self-hosts without Google/Apple OAuth need this on; `.env.example` sets it |
+| `SMTP_HOST` | No | — | Your own SMTP server or provider (Fastmail, Mailcow, Gmail app password, a local relay). Tried before SendGrid/Brevo; setting it turns email on. **With no email provider at all** (`SMTP_HOST`, `AWS_SES_REGION`, `SENDGRID_SMTP_USER` and `BREVO_SMTP_USER` all empty), password sign-up skips address verification and signs the person in at once, password reset is refused and hidden in the app, and a startup warning says so |
+| `SMTP_PORT` | No | `587` | Port of `SMTP_HOST` (`465` for implicit TLS) |
+| `SMTP_USERNAME` / `SMTP_PASSWORD` | No | — | SMTP credentials; leave empty for an unauthenticated relay |
+| `SMTP_TLS` | No | `starttls` | `starttls` (upgrade required, refuses servers that do not offer it), `tls` (implicit TLS, port 465), or `none` (plaintext trusted relay; credentials are only sent to `localhost`) |
+| `AWS_SES_REGION` | No | — | Opt into Amazon SES as the primary mail provider (ahead of SMTP); see `.env.example` |
+| `MAIL_FROM_EMAIL` / `MAIL_FROM_NAME` | No | `noreply@mitlist.me` / `mitlist` | Sender address (must be one your provider lets you send as) and display name |
 | `GUEST_AUTH_ENABLED` | No | `false` | Allow new guest accounts (`POST /auth/guest`). Off by default to stop drive-by account creation; existing guests can still refresh and upgrade. Deployments that never set it lose guest sign-up on upgrade, so set it explicitly if you rely on guests |
 | `FIREBASE_APP_CHECK_REQUIRED` | No | `false` | Require a valid Firebase App Check token for guest creation; production must fail closed when enabled |
 | `FIREBASE_PROJECT_NUMBER` | When App Check is enabled | — | Numeric Firebase project number used for App Check issuer/audience checks |

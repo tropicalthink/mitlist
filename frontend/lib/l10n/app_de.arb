@@ -1166,6 +1166,8 @@
   "accountSupportRow": "mitlist unterstützen",
   "accountServerRow": "Server",
   "authLoginResetCodeSent": "Falls diese E-Mail existiert, wurde ein Code gesendet.",
+  "authLoginResetUnavailable": "Dieser Server kann keine E-Mails senden, daher lässt sich das Passwort hier nicht zurücksetzen. Wende dich an die Person, die ihn betreibt.",
+  "authSignupEmailTaken": "Mit dieser E-Mail gibt es schon ein Konto. Melde dich stattdessen an.",
   "authLoginResetFillAllFields": "Fülle den Code und beide Passwortfelder aus.",
   "authLoginResetSuccess": "Passwort aktualisiert. Du bist angemeldet.",
   "authLinkOpenInApp": "In der mitlist-App öffnen",

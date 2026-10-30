@@ -4490,6 +4490,8 @@
   "@authLoginResetCodeSent": {
     "description": "Success message after requesting reset code"
   },
+  "authLoginResetUnavailable": "Deze server kan geen e-mail versturen, dus je wachtwoord kan hier niet worden hersteld. Vraag de beheerder om hulp.",
+  "authSignupEmailTaken": "Er bestaat al een account met dit e-mailadres. Log in plaats daarvan in.",
   "authLoginResetFillAllFields": "Vul de code en beide wachtwoordvelden in.",
   "@authLoginResetFillAllFields": {
     "description": "Validation: all reset fields required"

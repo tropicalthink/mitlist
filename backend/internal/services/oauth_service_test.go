@@ -158,11 +158,44 @@ func TestOAuthService_processOAuthUser(t *testing.T) {
 
 		userID := uuid.New()
 		authRepo.On("GetOAuthByProviderID", ctx, "apple", "apple123").Return(nil, errors.New("oauth account not found"))
-		userRepo.On("GetByEmail", ctx, "test@icloud.com").Return(&models.User{ID: userID, Email: "test@icloud.com"}, nil)
+		userRepo.On("GetByEmail", ctx, "test@icloud.com").Return(&models.User{ID: userID, Email: "test@icloud.com", IsActive: true, IsVerified: true}, nil)
+		authRepo.On("IsEmailUnproven", ctx, userID).Return(false, nil)
 		authRepo.On("CreateOAuthAccount", ctx, mock.AnythingOfType("*models.OAuthAccount")).Return(nil)
 
 		user, err := svc.processOAuthUser(ctx, "apple", "apple123", "test@icloud.com", "Test", "User", "")
 		require.NoError(t, err)
 		assert.Equal(t, userID, user.ID)
 	})
+
+	// An account whose address was never proven must not be joined to a
+	// provider identity by email: whoever claimed the address first would
+	// own the provider's sign-in (account pre-hijacking).
+	for _, tc := range []struct {
+		name     string
+		existing models.User
+		unproven bool
+	}{
+		{name: "refuses a password account made without email", existing: models.User{IsActive: true, IsVerified: true}, unproven: true},
+		{name: "refuses a pending registration", existing: models.User{IsActive: true, IsVerified: false}},
+		{name: "refuses a guest mid-conversion", existing: models.User{IsActive: true, IsVerified: false, IsGuest: true}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			userRepo := new(mocks.MockUserRepo)
+			authRepo := new(mocks.MockAuthRepo)
+			svc := NewOAuthService(userRepo, authRepo, new(mocks.MockJWTService), nil, nil)
+
+			existing := tc.existing
+			existing.ID = uuid.New()
+			existing.Email = "victim@gmail.com"
+			authRepo.On("GetOAuthByProviderID", ctx, "google", "g-victim").Return(nil, errors.New("oauth account not found"))
+			userRepo.On("GetByEmail", ctx, "victim@gmail.com").Return(&existing, nil)
+			authRepo.On("IsEmailUnproven", ctx, existing.ID).Return(tc.unproven, nil)
+
+			_, err := svc.processOAuthUser(ctx, "google", "g-victim", "Victim@Gmail.com", "", "", "")
+			require.Error(t, err)
+			assert.IsType(t, &api.ConflictError{}, err)
+			authRepo.AssertNotCalled(t, "CreateOAuthAccount", mock.Anything, mock.Anything)
+			userRepo.AssertNotCalled(t, "Create", mock.Anything, mock.Anything)
+		})
+	}
 }

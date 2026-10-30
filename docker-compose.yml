@@ -1,13 +1,15 @@
-# Local dev:  docker compose up
-# Production: docker compose --profile prod up -d
+# Self-host:  ./scripts/selfhost-setup.sh && docker compose up -d
+#             (step by step, plus HTTPS, backups and upgrades: docs/SELF_HOSTING.md)
+# Local dev:  docker compose --profile dev up
 #
-# Prod images are built by .gitea/workflows/deploy-prod.yml and pushed as:
-#   ${MITLIST_IMAGE}-frontend:${MITLIST_TAG}
-#   ${MITLIST_IMAGE}-backend:${MITLIST_TAG}
+# The prod profile builds both images from this checkout the first time it
+# starts. To run prebuilt images instead, set MITLIST_IMAGE and MITLIST_TAG in
+# .env and `docker compose pull`.
 #
-# Set MITLIST_IMAGE in .env (e.g. git.vinylnostalgia.com/you/mitlist).
-# Bake PRODUCTION_API_BASE_URL into the frontend image at build time so the PWA
-# can reach the API (see frontend/Dockerfile.prod).
+# Everything is configured from the one root .env: it feeds the ${...} below
+# and is also loaded into the API container as its runtime config. The setup
+# script writes COMPOSE_PROFILES there, which is why plain `docker compose up`
+# starts the self-host stack.
 
 services:
   api:
@@ -19,7 +21,6 @@ services:
         RUN go install github.com/air-verse/air@latest
         WORKDIR /app
         CMD ["air", "-c", ".air.toml"]
-    container_name: mitlist-api
     ports:
       - "8000:8000"
     volumes:
@@ -48,22 +49,43 @@ services:
 
   backend:
     profiles: [prod]
-    image: ${MITLIST_IMAGE:-git.vinylnostalgia.com/mitlist/mitlist}-backend:${MITLIST_TAG:-latest}
-    container_name: mitlist-backend
-    ports:
-      - "8000:8000"
+    image: ${MITLIST_IMAGE:-mitlist}-backend:${MITLIST_TAG:-local}
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    # Not published: the frontend container serves the app and proxies /api
+    # and /healthz here, so one public URL is all a household needs.
+    expose:
+      - "8000"
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-mitlist}?sslmode=${DB_SSLMODE:-disable}}
       ENVIRONMENT: production
-      FRONTEND_URL: ${FRONTEND_URL:?set FRONTEND_URL to the public web app origin}
+      FRONTEND_URL: ${MITLIST_URL:-}
+      PUBLIC_API_URL: ${MITLIST_URL:-}
       RUN_MIGRATIONS_ON_STARTUP: "true"
-      LOG_LEVEL: WARNING
-      SCRAPER_FLARESOLVER_URL: http://flaresolverr:8191
+      LOG_LEVEL: ${LOG_LEVEL:-WARNING}
+      # Attachments live on local disk unless S3_BUCKET_NAME is set in .env.
+      STORAGE_LOCAL_PATH: /app/data/uploads
+      # Requests arrive through the frontend's nginx (and usually a TLS proxy
+      # in front of it), so the client IP is in X-Forwarded-For. Trusting the
+      # private ranges keeps per-IP rate limits per person, not per proxy.
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-127.0.0.0/8,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,::1/128,fc00::/7}
+      # Recipe import falls back to FlareSolverr for sites that block plain
+      # fetches. Opt in by adding the scraper profile (see flaresolverr below).
+      SCRAPER_FLARESOLVER_URL: ${SCRAPER_FLARESOLVER_URL:-}
     env_file:
       - path: .env
         required: false
       - path: backend/.env
         required: false
+    volumes:
+      - uploads:/app/data/uploads
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8000/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     depends_on:
       db:
         condition: service_healthy
@@ -71,19 +93,46 @@ services:
 
   frontend:
     profiles: [prod]
-    image: ${MITLIST_IMAGE:-git.vinylnostalgia.com/mitlist/mitlist}-frontend:${MITLIST_TAG:-latest}
-    container_name: mitlist-frontend
+    image: ${MITLIST_IMAGE:-mitlist}-frontend:${MITLIST_TAG:-local}
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      # No API_BASE_URL: the web app calls the origin it was served from, and
+      # this container proxies /api to the backend.
     ports:
-      - "8080:80"
+      # Loopback by default, for a reverse proxy on the same host. Set
+      # MITLIST_BIND=0.0.0.0 to reach it directly from the LAN.
+      - "${MITLIST_BIND:-127.0.0.1}:${MITLIST_PORT:-8080}:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Automatic HTTPS for a self-host with a domain (the https profile). Caddy
+  # gets a Let's Encrypt certificate for MITLIST_URL's host, whose DNS must
+  # point here with ports 80 and 443 reachable, and proxies to the frontend.
+  # Leave it off if you already run a reverse proxy; point that at MITLIST_PORT.
+  caddy:
+    profiles: [https]
+    image: caddy:2.10-alpine
+    command: caddy reverse-proxy --from ${MITLIST_URL:-} --to frontend:80
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - frontend
     restart: unless-stopped
 
   db:
     image: postgres:16-alpine
-    container_name: mitlist-db
     ports:
-      - "127.0.0.1:5432:5432"
+      # Published for local development (go run against localhost). Change
+      # POSTGRES_HOST_PORT if the host already runs its own PostgreSQL.
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-5432}:5432"
     environment:
       POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
@@ -99,10 +148,14 @@ services:
 
   # Headless-browser proxy that solves Cloudflare/JS bot challenges. The scraper
   # falls back to it (SCRAPER_FLARESOLVER_URL) when a host blocks the direct
-  # fetch — common from datacenter IPs even with a browser user-agent.
+  # Headless-browser proxy that solves Cloudflare/JS bot challenges. The scraper
+  # falls back to it (SCRAPER_FLARESOLVER_URL) when a host blocks the direct
+  # fetch — common from datacenter IPs even with a browser user-agent. It is a
+  # whole Chromium, so a self-host runs it only when asked: add "scraper" to
+  # COMPOSE_PROFILES and set SCRAPER_FLARESOLVER_URL=http://flaresolverr:8191.
   flaresolverr:
+    profiles: [dev, scraper]
     image: ghcr.io/flaresolverr/flaresolverr:latest
-    container_name: mitlist-flaresolverr
     expose:
       - "8191"
     restart: unless-stopped
@@ -110,3 +163,6 @@ services:
 volumes:
   postgres-data:
   go-mod-cache:
+  uploads:
+  caddy-data:
+  caddy-config:

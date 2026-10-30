@@ -1,0 +1,28 @@
+# The web image (Dockerfile.prod) only needs lib/, web/, assets/, l10n,
+# third_party/ and the pub manifests. Local build output and the tool cache are
+# gigabytes, and a host .dart_tool/ carries host paths that break `pub get`
+# inside the container.
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+*.log
+libsqlite3.so
+
+# Native platform projects and tests play no part in a web build.
+android/
+ios/
+linux/
+macos/
+windows/
+test/
+integration_test/
+test_driver/
+doc/
+plans/
+
+# The OCR models are native-only; Dockerfile.prod drops their asset entry.
+assets/models/ocr/
+
+.env
+.env.*

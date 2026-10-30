@@ -5550,6 +5550,14 @@
   "@authLoginResetCodeSent": {
     "description": "Success message after requesting reset code"
   },
+  "authLoginResetUnavailable": "This server can't send email, so passwords can't be reset here. Ask whoever runs it for help.",
+  "@authLoginResetUnavailable": {
+    "description": "Shown instead of sending a reset code when the server has no email provider configured"
+  },
+  "authSignupEmailTaken": "An account with this email already exists. Sign in instead.",
+  "@authSignupEmailTaken": {
+    "description": "Sign-up error on a server without email when the address already has an account"
+  },
   "authLoginResetFillAllFields": "Fill out the reset code and both password fields.",
   "@authLoginResetFillAllFields": {
     "description": "Validation: all reset fields required"

@@ -4148,6 +4148,14 @@ class AppLocalizationsEs extends AppLocalizations {
       'Si ese correo existe, se ha enviado un código de restablecimiento.';
 
   @override
+  String get authLoginResetUnavailable =>
+      'Este servidor no puede enviar correos, así que aquí no se puede restablecer la contraseña. Pide ayuda a quien lo administra.';
+
+  @override
+  String get authSignupEmailTaken =>
+      'Ya existe una cuenta con este correo. Inicia sesión en su lugar.';
+
+  @override
   String get authLoginResetFillAllFields =>
       'Rellena el código y ambos campos de contraseña.';
 

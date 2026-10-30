@@ -104,61 +104,29 @@ household, not per person. That is what keeps the servers on.
 
 ## Self-host in 5 minutes
 
+You need a Linux machine with Docker (Compose v2), `git` and `openssl`.
+
 ```bash
-git clone https://git.vinylnostalgia.com/mo/mitlist.git
+git clone https://github.com/tropicalthink/mitlist.git
 cd mitlist
-cp .env.example .env                  # docker compose database credentials
-cp backend/.env.example backend/.env  # the app's own runtime config
+./scripts/selfhost-setup.sh      # asks for your URL, generates every secret
+docker compose up -d --build     # first build takes 10–20 minutes
 ```
 
-There are **two** env files, and they do different jobs:
+Open your URL and create an account; the phone apps connect through
+**Choose your server** on the sign-in screen. One URL serves the web app and
+the API, attachments are stored on local disk, and email is optional. Without
+it, sign-up skips the verification code.
 
-- **Root `.env`** feeds docker compose `${...}` interpolation — the Postgres
-  credentials and the generated `DATABASE_URL`. The prod profile reads
-  these and **refuses to start** if `POSTGRES_PASSWORD` is unset.
-- **`backend/.env`** is the application's own runtime config (`SECRET_KEY`,
-  `SESSION_SECRET_KEY`, OAuth, API keys, …). It does **not** feed compose
-  interpolation, so the database password must go in the root `.env`.
-
-Open the **root `.env`** and set **strong, unique** credentials before starting:
-
-```bash
-# Generate strong passwords (run these and paste the output into the root .env)
-openssl rand -base64 24   # use for POSTGRES_PASSWORD
-```
-
-Set in the root `.env`:
-
-```
-POSTGRES_PASSWORD=<strong random value>   # REQUIRED — no default
-POSTGRES_USER=mitlist
-POSTGRES_DB=mitlist
-```
-
-Then fill in `SECRET_KEY`, `SESSION_SECRET_KEY`, and any OAuth/API keys in
-`backend/.env`, and start:
-
-```bash
-docker compose --profile prod up -d
-```
-
-PostgreSQL and the Go API start automatically. The database schema is
-created on first boot (`RUN_MIGRATIONS_ON_STARTUP=true` — idempotent, safe to
-leave on). Point the Flutter app at your server and you're done.
-
-> **Security note**: The database port is bound to `127.0.0.1` only and is
-> not reachable from the public network. If you point `DATABASE_URL` at a remote
-> Postgres over a public network, set `DB_SSLMODE=require` in the root `.env`.
-
-See [backend/README.md](backend/README.md) for full configuration reference, including how to [enable optional crash reporting](backend/README.md#enable-error-reporting-optional) (off by default — set `SENTRY_DSN` for the backend and the `GLITCHTIP_DSN_WEB` CI secret for the web PWA).
+The [self-hosting guide](docs/SELF_HOSTING.md) covers HTTPS (bundled Caddy,
+your own proxy, or a Tailscale/Cloudflare tunnel), email, mobile apps and push,
+backups, upgrades and troubleshooting. Every runtime option is documented in
+[backend/.env.example](backend/.env.example) and can go in the same `.env`.
+Crash reporting is [opt-in](backend/README.md#enable-error-reporting-optional).
 
 The Flutter app's own build-time settings (`--dart-define`) are listed in
-[docs/build-configuration.md](docs/build-configuration.md) — including which
-optional features silently disappear when a define is missing.
-
-For production releases, follow the [deployment checklist](docs/DEPLOYMENT.md).
-It includes replicated PostgreSQL migration checks, the Redis-free cutover, rollback
-guidance, and the automated post-deploy smoke command.
+[docs/build-configuration.md](docs/build-configuration.md). The hosted
+service's release runbook is [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ### Hosted database: replicated PostgreSQL
 
@@ -230,7 +198,7 @@ mitlist is now in public beta. The hosted web app is open to everyone at [app.mi
 | iOS | Public beta through TestFlight |
 | Android | On [Google Play](https://play.google.com/store/apps/details?id=me.mitlist) |
 | Web | Public beta at `app.mitlist.me`, or point a build at your own instance |
-| Self-host | `docker compose --profile prod up -d` |
+| Self-host | `./scripts/selfhost-setup.sh && docker compose up -d --build` ([guide](docs/SELF_HOSTING.md)) |
 
 > The mobile app bundles ~117 MB of assets — the OCR models and the grocery
 > reference database — so that scanning and autocomplete work offline. Build
@@ -304,8 +272,8 @@ go run ./cmd/api
 ```
 
 The root `.env.example` ships dev-usable defaults, so `docker compose up` works
-out of the box for local development. For production, set strong values (see
-[Self-host in 5 minutes](#self-host-in-5-minutes)).
+out of the box for local development. A self-host gets strong values from
+`scripts/selfhost-setup.sh` instead (see [Self-host in 5 minutes](#self-host-in-5-minutes)).
 
 ---
 

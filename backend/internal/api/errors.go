@@ -19,7 +19,24 @@ var (
 	ErrUnauthorized     = errors.New("unauthorized")
 	ErrPaymentRequired  = errors.New("payment required")
 	ErrEmailUnverified  = errors.New("email not verified")
+	ErrEmailUnavailable = errors.New("email delivery unavailable")
 )
+
+// EmailUnavailableError refuses an action that only works by sending an
+// email (a password reset code) on a server with no email provider. Clients
+// branch on its code to say so plainly instead of claiming a code was sent.
+type EmailUnavailableError struct {
+	Message string
+}
+
+func (e *EmailUnavailableError) Error() string {
+	if e.Message != "" {
+		return e.Message
+	}
+	return "this server cannot send email"
+}
+
+func (e *EmailUnavailableError) Unwrap() error { return ErrEmailUnavailable }
 
 // EmailUnverifiedError is the one refusal a client should act on rather than
 // display: the credentials were right, the address just has not been proven
@@ -163,6 +180,9 @@ func CodeForError(err error) string {
 	if errors.Is(err, ErrEmailUnverified) {
 		return "email_unverified"
 	}
+	if errors.Is(err, ErrEmailUnavailable) {
+		return "email_unavailable"
+	}
 	if errors.Is(err, ErrUnauthorized) {
 		return "unauthorized"
 	}
@@ -182,7 +202,7 @@ func HTTPStatusForError(err error) int {
 	if errors.As(err, &pd) || errors.Is(err, ErrPermissionDenied) {
 		return http.StatusForbidden
 	}
-	if errors.Is(err, ErrEmailUnverified) {
+	if errors.Is(err, ErrEmailUnverified) || errors.Is(err, ErrEmailUnavailable) {
 		return http.StatusForbidden
 	}
 	var ve *ValidationError

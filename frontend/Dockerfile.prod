@@ -49,5 +49,9 @@ RUN flutter build web --release \
 
 FROM nginx:1.29-alpine
 COPY --from=build /app/build/web /usr/share/nginx/html
-COPY nginx/default.conf /etc/nginx/conf.d/default.conf
+# Rendered to /etc/nginx/conf.d/default.conf by the image's envsubst entrypoint.
+COPY nginx/default.conf.template /etc/nginx/templates/default.conf.template
+# Where /api is proxied when the app is built without API_BASE_URL (self-host).
+ENV MITLIST_API_UPSTREAM=http://backend:8000
+ENV NGINX_ENTRYPOINT_LOCAL_RESOLVERS=1
 EXPOSE 80

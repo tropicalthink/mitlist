@@ -4490,6 +4490,8 @@
   "@authLoginResetCodeSent": {
     "description": "Success message after requesting reset code"
   },
+  "authLoginResetUnavailable": "Ce serveur ne peut pas envoyer d'e-mails, le mot de passe ne peut donc pas être réinitialisé ici. Demande de l'aide à la personne qui l'administre.",
+  "authSignupEmailTaken": "Un compte existe déjà avec cet e-mail. Connecte-toi plutôt.",
   "authLoginResetFillAllFields": "Remplis le code et les deux champs de mot de passe.",
   "@authLoginResetFillAllFields": {
     "description": "Validation: all reset fields required"

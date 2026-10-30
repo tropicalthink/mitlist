@@ -1579,7 +1579,13 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     final l10n = AppLocalizations.of(context)!;
     if (!_isGuest || !_isVerified) return const SizedBox.shrink();
     final providers = ref.watch(oauthProvidersProvider).valueOrNull ??
-        (google: false, apple: false, password: true, guest: false);
+        (
+          google: false,
+          apple: false,
+          password: true,
+          guest: false,
+          passwordReset: true,
+        );
     final hasOAuth = providers.google || providers.apple;
     if (!hasOAuth && !providers.password) return const SizedBox.shrink();
     final busy = _linkingProvider != null;
