@@ -47,7 +47,7 @@ VERSION_SIDECAR = ASSETS / "grocery_ref.version.json"
 # Must equal GroceryReferenceDatabase.schemaVersion in the Flutter app.
 DRIFT_SCHEMA_VERSION = 1
 # Bump when any input asset changes so the installer re-copies on-device.
-REF_VERSION = 1
+REF_VERSION = 2
 GLOBAL_GROUP_ID = "__global__"
 
 # Fixed epoch for created_at/updated_at — never displayed, only filtered on
@@ -147,6 +147,15 @@ def build(db: sqlite3.Connection) -> dict:
     seed_version = int(seed.get("version", 0))
     canonical_rows = []
     alias_rows = []
+    # A French/Spanish display name that is another item's German or English
+    # name ("pasta" for a Spanish paste) is still shown, but not matched: the
+    # German/English item owns that word (same rule as build_app_seed.py).
+    claims: dict[str, set] = {}
+    for item in seed["items"]:
+        for lang in ("de", "en"):
+            name = normalise_text(item.get(f"name_{lang}", "") or "")
+            if name:
+                claims.setdefault(name, set()).add(item["id"])
     for item in seed["items"]:
         cid = item["id"]
         canonical_rows.append((
@@ -177,7 +186,11 @@ def build(db: sqlite3.Connection) -> dict:
         for lang in ("de", "en", "fr", "es"):
             for a in item.get(f"aliases_{lang}", []) or []:
                 add_alias(a, lang)
-            add_alias(item.get(f"name_{lang}"), lang)
+            name = item.get(f"name_{lang}")
+            owners = claims.get(normalise_text(name or ""), set())
+            if lang in ("fr", "es") and owners and cid not in owners:
+                continue
+            add_alias(name, lang)
 
     stats["canonical"] = len(canonical_rows)
     stats["aliases_seed"] = len(alias_rows)

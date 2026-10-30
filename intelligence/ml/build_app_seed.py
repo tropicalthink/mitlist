@@ -11,9 +11,23 @@ fallback label, so the 40 fine-grained source categories are mapped down to the
 coarse aisle vocabulary the app already uses.
 
 Enrichment pipeline (applied in order):
+  0. added_items.jsonl      — everyday items the generated seed lacks (bread,
+                              cheese, chicken, toilet paper, ...).
   1. curated_aliases.jsonl  — brand/staple aliases mapped to existing canonical ids.
   2. alias_blocklist.jsonl  — drop harmful (alias, canonical_id) pairs.
   3. No-space variant aliases — "corn flakes" → also emit "cornflakes" alias and vice-versa.
+  4. Alias hygiene (curated aliases are exempt; see prune_aliases):
+     - synthetic noise: abbreviations ending in "." ("m.", "s." pointed at
+       hundreds of items), one/two-character tokens, quantity prefixes
+       ("500ml milch" — extraction strips quantities before lookup);
+     - name claims: a word that is another item's own German or English name,
+       or a hand-curated alias of another item, is that item's, not an alias
+       elsewhere ("sugar" belongs to Sugar, not Sugar Apple; "wasser" to
+       Water, not Electric Kettle; curated "salat" to head lettuce, not to
+       the twelve salads that also listed it);
+     - cross-language collisions: a French/Spanish alias that is a German or
+       English alias of a different item ("pasta" is Spanish for paste, "brot"
+       a Spanish alias of canned bamboo shoots) is dropped.
 """
 import json, re, unicodedata, collections, pathlib
 
@@ -27,7 +41,11 @@ CURATED_ALIASES = HERE / "data" / "curated_aliases.jsonl"
 # (plan 012 A4, typo-like subset only; cross-word mappings stay deferred).
 CURATED_MINED = HERE / "data" / "curated_aliases_mined.jsonl"
 ALIAS_BLOCKLIST = HERE / "data" / "alias_blocklist.jsonl"
-ASSET_VERSION = 5
+ADDED_ITEMS = HERE / "data" / "added_items.jsonl"
+ASSET_VERSION = 6
+
+LANGS = ("de", "en", "fr", "es")
+PRIMARY_LANGS = ("de", "en")
 
 
 def normalise_text(value: str) -> str:
@@ -112,6 +130,67 @@ def no_space_variant(alias: str) -> str | None:
     return variant
 
 
+def load_added_items(path: pathlib.Path) -> list[dict]:
+    if not path.exists():
+        return []
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+
+_NOISE_ALIAS = re.compile(r"^\d|\.$")
+
+
+def is_noise_alias(alias: str) -> bool:
+    return len(alias) <= 2 or bool(_NOISE_ALIAS.search(alias))
+
+
+def prune_aliases(items: list[dict], curated_keys: dict[str, set[str]]) -> collections.Counter:
+    """Apply the alias hygiene rules in place; returns drop counts by rule.
+
+    [curated_keys] maps item id -> normalised curated aliases, which are kept
+    whatever the rules say.
+    """
+    claims: dict[str, set[str]] = collections.defaultdict(set)
+    for it in items:
+        for lang in PRIMARY_LANGS:
+            name = normalise_text(it.get(f"name_{lang}", "") or "")
+            if name:
+                claims[name].add(it["id"])
+    for cid, texts in curated_keys.items():
+        for text in texts:
+            claims[text].add(cid)
+
+    primary_owners: dict[str, set[str]] = collections.defaultdict(set)
+    for it in items:
+        for lang in PRIMARY_LANGS:
+            for a in it.get(f"aliases_{lang}", []):
+                text = normalise_text(a)
+                if text and not is_noise_alias(text):
+                    primary_owners[text].add(it["id"])
+
+    dropped: collections.Counter = collections.Counter()
+    for it in items:
+        iid = it["id"]
+        keep_always = curated_keys.get(iid, set())
+        for lang in LANGS:
+            kept = []
+            for a in it.get(f"aliases_{lang}", []):
+                text = normalise_text(a)
+                if text in keep_always:
+                    kept.append(a)
+                elif is_noise_alias(text):
+                    dropped["noise"] += 1
+                elif text in claims and iid not in claims[text]:
+                    dropped["claimed_by_name"] += 1
+                elif (lang not in PRIMARY_LANGS
+                      and text in primary_owners
+                      and iid not in primary_owners[text]):
+                    dropped["cross_language"] += 1
+                else:
+                    kept.append(a)
+            it[f"aliases_{lang}"] = kept
+    return dropped
+
+
 def merge_aliases_for_item(item: dict, curated: list[dict], blocklist: set[tuple[str, str]]) -> dict:
     """Apply curated additions and blocklist drops to a single item dict."""
     iid = item["id"]
@@ -161,6 +240,7 @@ def merge_aliases_for_item(item: dict, curated: list[dict], blocklist: set[tuple
 
 def main():
     items = json.loads(SRC.read_text())
+    items.extend(load_added_items(ADDED_ITEMS))
 
     # Load enrichment data
     curated_by_id = load_curated_aliases(CURATED_ALIASES)
@@ -220,6 +300,15 @@ def main():
 
     if unmapped:
         print("WARNING unmapped categories ->", sorted(unmapped))
+
+    # Only the hand-reviewed file is authoritative. Mined aliases are typo
+    # candidates and go through the hygiene rules like seed aliases.
+    curated_keys = {
+        cid: {normalise_text(e["alias"]) for e in entries}
+        for cid, entries in load_curated_aliases(CURATED_ALIASES).items()
+    }
+    pruned = prune_aliases(out, curated_keys)
+    print("pruned aliases:", dict(pruned))
 
     DST.write_text(json.dumps({"version": ASSET_VERSION, "items": out},
                               ensure_ascii=False, indent=0))
@@ -288,6 +377,13 @@ def main():
         ("barilla", "pasta"),
         ("heinz", "ketchup"),
         ("nutella", "chocolate_hazelnut_spread"),
+        ("brot", "bread"),
+        ("cheese", "cheese"),
+        ("hähnchen", "chicken"),
+        ("klopapier", "toilet_paper"),
+        ("paper towels", "kitchen_roll"),
+        ("tomaten", "tomato"),
+        ("karotten", "carrot"),
     ]
     item_map = {row["id"]: row for row in out}
     print("\n--- Coverage probe ---")

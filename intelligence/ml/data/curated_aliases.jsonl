@@ -134,3 +134,43 @@
 {"canonical_id": "orange_juice", "alias": "hohes c", "lang": "de", "source": "curated"}
 {"canonical_id": "orange_juice", "alias": "oj", "lang": "en", "source": "curated"}
 {"canonical_id": "orange_juice", "alias": "tropicana orange juice", "lang": "en", "source": "curated"}
+{"canonical_id": "tomato", "alias": "tomaten", "lang": "de", "source": "curated"}
+{"canonical_id": "onion", "alias": "zwiebeln", "lang": "de", "source": "curated"}
+{"canonical_id": "carrot", "alias": "karotten", "lang": "de", "source": "curated"}
+{"canonical_id": "carrot", "alias": "möhren", "lang": "de", "source": "curated"}
+{"canonical_id": "potato", "alias": "kartoffeln", "lang": "de", "source": "curated"}
+{"canonical_id": "orange", "alias": "orangen", "lang": "de", "source": "curated"}
+{"canonical_id": "strawberry", "alias": "erdbeeren", "lang": "de", "source": "curated"}
+{"canonical_id": "strawberry", "alias": "strawberries", "lang": "en", "source": "curated"}
+{"canonical_id": "grape", "alias": "trauben", "lang": "de", "source": "curated"}
+{"canonical_id": "grape", "alias": "weintrauben", "lang": "de", "source": "curated"}
+{"canonical_id": "lemon", "alias": "zitronen", "lang": "de", "source": "curated"}
+{"canonical_id": "mushrooms", "alias": "champignons", "lang": "de", "source": "curated"}
+{"canonical_id": "mushrooms", "alias": "pilze", "lang": "de", "source": "curated"}
+{"canonical_id": "head_lettuce", "alias": "salat", "lang": "de", "source": "curated"}
+{"canonical_id": "head_lettuce", "alias": "lettuce", "lang": "en", "source": "curated"}
+{"canonical_id": "cooking_oil", "alias": "öl", "lang": "de", "source": "curated"}
+{"canonical_id": "cooking_oil", "alias": "oil", "lang": "en", "source": "curated"}
+{"canonical_id": "potato_chips", "alias": "chips", "lang": "de", "source": "curated"}
+{"canonical_id": "potato_chips", "alias": "crisps", "lang": "en", "source": "curated"}
+{"canonical_id": "pork_bacon", "alias": "bacon", "lang": "en", "source": "curated"}
+{"canonical_id": "pork_bacon", "alias": "speck", "lang": "de", "source": "curated"}
+{"canonical_id": "hand_soap", "alias": "seife", "lang": "de", "source": "curated"}
+{"canonical_id": "hand_soap", "alias": "soap", "lang": "en", "source": "curated"}
+{"canonical_id": "deodorant", "alias": "deo", "lang": "de", "source": "curated"}
+{"canonical_id": "flour_tortilla", "alias": "tortillas", "lang": "en", "source": "curated"}
+{"canonical_id": "flour_tortilla", "alias": "wraps", "lang": "en", "source": "curated"}
+{"canonical_id": "mineral_water", "alias": "sprudel", "lang": "de", "source": "curated"}
+{"canonical_id": "mineral_water", "alias": "sparkling water", "lang": "en", "source": "curated"}
+{"canonical_id": "facial_tissue", "alias": "taschentücher", "lang": "de", "source": "curated"}
+{"canonical_id": "facial_tissue", "alias": "tissues", "lang": "en", "source": "curated"}
+{"canonical_id": "ice_cream", "alias": "eis", "lang": "de", "source": "curated"}
+{"canonical_id": "frozen_pizza", "alias": "pizza", "lang": "en", "source": "curated"}
+{"canonical_id": "dish_soap", "alias": "spüli", "lang": "de", "source": "curated"}
+{"canonical_id": "dish_soap", "alias": "spülmittel", "lang": "de", "source": "curated"}
+{"canonical_id": "kitchen_roll", "alias": "paper towels", "lang": "en", "source": "curated"}
+{"canonical_id": "kitchen_roll", "alias": "paper towel", "lang": "en", "source": "curated"}
+{"canonical_id": "kitchen_roll", "alias": "kitchen paper", "lang": "en", "source": "curated"}
+{"canonical_id": "kitchen_roll", "alias": "küchenpapier", "lang": "de", "source": "curated"}
+{"canonical_id": "pasta", "alias": "nudeln", "lang": "de", "source": "curated"}
+{"canonical_id": "oat_milk", "alias": "oatly", "lang": "en", "source": "curated"}
