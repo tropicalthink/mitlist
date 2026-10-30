@@ -336,6 +336,72 @@ func TestGroceryGraphDeltaPaginationDrains(t *testing.T) {
 	assert.Equal(t, int64(501), sinceVersion)
 }
 
+// A fresh device must receive every row even when one table is far behind
+// another: here 700 old purchases sit below 780 recent co-occurrence pairs,
+// two pairs per version so a page can end in the middle of a version.
+func TestGroceryGraphDeltaPaginationAcrossTables(t *testing.T) {
+	clearTables(t)
+	router, _ := newGroceryRouter(t)
+
+	user := createTestUser(t, "grocery-pagination-tables@example.com", "Password123!")
+	token := generateTestToken(user.ID)
+	group := createGroceryTestGroup(t, user.ID, "Grocery Pagination Tables Group")
+	ctx := context.Background()
+	now := time.Now().UTC()
+
+	_, err := testDB.Exec(ctx, `
+		INSERT INTO canonical_items (id, group_id, name_de, name_en, version, created_at, updated_at)
+		SELECT uuid_generate_v4(), $1, 'Item ' || gs::text, 'Item ' || gs::text, 0, $2, $2
+		FROM generate_series(1, 40) AS gs`, group.ID, now)
+	require.NoError(t, err)
+	_, err = testDB.Exec(ctx, `
+		INSERT INTO purchase_history (group_id, version, purchased_at)
+		SELECT $1, gs, $2 FROM generate_series(1, 700) AS gs`, group.ID, now)
+	require.NoError(t, err)
+	_, err = testDB.Exec(ctx, `
+		INSERT INTO item_cooccurrence (group_id, item_a_id, item_b_id, count, last_seen_at, version)
+		SELECT $1, a.id, b.id, 1, $2,
+		       700 + (row_number() OVER (ORDER BY a.id, b.id) + 1) / 2
+		FROM canonical_items a
+		JOIN canonical_items b ON a.id < b.id
+		WHERE a.group_id = $1 AND b.group_id = $1`, group.ID, now)
+	require.NoError(t, err)
+	_, err = testDB.Exec(ctx, `
+		INSERT INTO grocery_versions (group_id, current_version, updated_at)
+		VALUES ($1, 1090, $2)`, group.ID, now)
+	require.NoError(t, err)
+
+	purchases := map[string]struct{}{}
+	pairs := map[string]struct{}{}
+	sinceVersion := int64(0)
+	for page := 0; ; page++ {
+		require.Less(t, page, 20, "pagination did not terminate")
+		rec := execRequest(t, router, "GET", "/groups/"+group.ID.String()+"/grocery/graph?since_version="+strconv.FormatInt(sinceVersion, 10), nil, token)
+		requireStatus(t, rec, http.StatusOK)
+		var graph models.GroceryGraphDelta
+		parseJSONResponse(t, rec, &graph)
+		for _, p := range graph.PurchaseHistory {
+			key := p.ID.String()
+			_, dup := purchases[key]
+			require.False(t, dup, "purchase sent twice: %s", key)
+			purchases[key] = struct{}{}
+		}
+		for _, c := range graph.ItemCooccurrence {
+			key := c.ItemAID.String() + c.ItemBID.String()
+			_, dup := pairs[key]
+			require.False(t, dup, "pair sent twice: %s", key)
+			pairs[key] = struct{}{}
+		}
+		require.Greater(t, graph.MaxVersion, sinceVersion, "cursor did not advance")
+		sinceVersion = graph.MaxVersion
+		if !graph.HasMore {
+			break
+		}
+	}
+	assert.Len(t, purchases, 700)
+	assert.Len(t, pairs, 780)
+}
+
 func TestGroceryHandlerValidation(t *testing.T) {
 	clearTables(t)
 	router, _ := newGroceryRouter(t)
@@ -370,6 +436,64 @@ func TestGroceryHandlerValidation(t *testing.T) {
 	requireStatus(t, rec, http.StatusBadRequest)
 	parseJSONResponse(t, rec, &errResp)
 	assert.Equal(t, "aisles", errResp.Field)
+}
+
+// Feedback for a shipped store layout (a slug, not a shopping location) must
+// update one row in place and reach other devices with its store key.
+func TestGroceryAisleFeedbackForShippedStore(t *testing.T) {
+	clearTables(t)
+	router, _ := newGroceryRouter(t)
+
+	user := createTestUser(t, "grocery-aisle-key@example.com", "Password123!")
+	token := generateTestToken(user.ID)
+	group := createGroceryTestGroup(t, user.ID, "Grocery Aisle Key Group")
+	canonicalID := uuid.MustParse("44444444-4444-4444-4444-444444444444")
+	insertGroceryCanonicalItem(t, group.ID, canonicalID, "Milch")
+
+	for i, aisle := range []string{"Dairy", "Kühlregal"} {
+		rec := execRequest(t, router, "PATCH", "/groups/"+group.ID.String()+"/grocery/aisles", map[string]any{
+			"aisles": []map[string]any{{
+				"canonical_item_id": canonicalID.String(),
+				"store_key":         "rewe",
+				"aisle":             aisle,
+				"sort_order":        10 + i,
+			}},
+		}, token)
+		requireStatus(t, rec, http.StatusOK)
+	}
+	// The same item without any store is a separate row, also updated in place.
+	for range 2 {
+		rec := execRequest(t, router, "PATCH", "/groups/"+group.ID.String()+"/grocery/aisles", map[string]any{
+			"aisles": []map[string]any{{
+				"canonical_item_id": canonicalID.String(),
+				"aisle":             "Anywhere",
+				"sort_order":        1,
+			}},
+		}, token)
+		requireStatus(t, rec, http.StatusOK)
+	}
+
+	var rows int
+	require.NoError(t, testDB.QueryRow(context.Background(),
+		`SELECT count(*) FROM store_aisles WHERE group_id = $1`, group.ID).Scan(&rows))
+	assert.Equal(t, 2, rows)
+
+	rec := execRequest(t, router, "GET", "/groups/"+group.ID.String()+"/grocery/graph?since_version=0", nil, token)
+	requireStatus(t, rec, http.StatusOK)
+	var graph models.GroceryGraphDelta
+	parseJSONResponse(t, rec, &graph)
+	require.Len(t, graph.StoreAisles, 2)
+	byKey := map[string]models.StoreAisle{}
+	for _, a := range graph.StoreAisles {
+		key := ""
+		if a.StoreKey != nil {
+			key = *a.StoreKey
+		}
+		byKey[key] = a
+	}
+	assert.Equal(t, "Kühlregal", byKey["rewe"].Aisle)
+	assert.Equal(t, 11, byKey["rewe"].SortOrder)
+	assert.Equal(t, "Anywhere", byKey[""].Aisle)
 }
 
 func createGroceryTestGroup(t *testing.T, userID uuid.UUID, name string) *models.Group {

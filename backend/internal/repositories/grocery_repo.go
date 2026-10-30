@@ -76,15 +76,37 @@ func (r *GroceryRepository) CurrentVersion(ctx context.Context, groupID uuid.UUI
 // GetDelta returns the graph delta for a household since a client cursor.
 func (r *GroceryRepository) GetDelta(ctx context.Context, groupID uuid.UUID, sinceVersion int64) (*models.GroceryGraphDelta, error) {
 	delta := &models.GroceryGraphDelta{}
-	var maxSeen int64
+	// Each table is capped independently, so the next cursor must not pass the
+	// end of any truncated page: later rows of that table were not sent. A
+	// page whose last version continues past the cap only vouches for the
+	// versions below it. Rows above the cursor are held back from every table
+	// so a page never repeats or skips a row.
+	var blockMax, overflow int64
+	var blockTruncated bool
+	var cursor int64 = -1
 	noteVersion := func(version int64) {
-		if version > maxSeen {
-			maxSeen = version
+		if version > blockMax {
+			blockMax = version
 		}
 	}
-	markTruncated := func(count int) {
-		if count == deltaPageLimit {
-			delta.HasMore = true
+	noteOverflow := func(version int64) {
+		overflow = version
+		blockTruncated = true
+	}
+	markTruncated := func() {
+		defer func() { blockMax, overflow, blockTruncated = 0, 0, false }()
+		if !blockTruncated {
+			return
+		}
+		delta.HasMore = true
+		safe := blockMax
+		if overflow == blockMax && blockMax-1 > sinceVersion {
+			safe = blockMax - 1
+		}
+		// If one version fills the whole page, advancing past it is the only
+		// way to make progress; the rest of that version is lost.
+		if cursor < 0 || safe < cursor {
+			cursor = safe
 		}
 	}
 
@@ -97,7 +119,7 @@ func (r *GroceryRepository) GetDelta(ctx context.Context, groupID uuid.UUID, sin
 			WHERE (group_id = $1 OR is_global = true) AND version > $2
 			ORDER BY version
 			LIMIT $3`
-		rows, err := r.pool.Query(ctx, q, groupID, sinceVersion, deltaPageLimit)
+		rows, err := r.pool.Query(ctx, q, groupID, sinceVersion, deltaPageLimit+1)
 		if err != nil {
 			return nil, err
 		}
@@ -111,13 +133,17 @@ func (r *GroceryRepository) GetDelta(ctx context.Context, groupID uuid.UUID, sin
 				return nil, err
 			}
 			count++
+			if count > deltaPageLimit {
+				noteOverflow(it.Version)
+				break
+			}
 			noteVersion(it.Version)
 			delta.CanonicalItems = append(delta.CanonicalItems, it)
 		}
 		if err := rows.Err(); err != nil {
 			return nil, err
 		}
-		markTruncated(count)
+		markTruncated()
 	}
 
 	// Item aliases.
@@ -129,7 +155,7 @@ func (r *GroceryRepository) GetDelta(ctx context.Context, groupID uuid.UUID, sin
 			WHERE (group_id = $1 OR group_id = '00000000-0000-0000-0000-000000000000') AND version > $2
 			ORDER BY version
 			LIMIT $3`
-		rows, err := r.pool.Query(ctx, q, groupID, sinceVersion, deltaPageLimit)
+		rows, err := r.pool.Query(ctx, q, groupID, sinceVersion, deltaPageLimit+1)
 		if err != nil {
 			return nil, err
 		}
@@ -143,13 +169,17 @@ func (r *GroceryRepository) GetDelta(ctx context.Context, groupID uuid.UUID, sin
 				return nil, err
 			}
 			count++
+			if count > deltaPageLimit {
+				noteOverflow(a.Version)
+				break
+			}
 			noteVersion(a.Version)
 			delta.ItemAliases = append(delta.ItemAliases, a)
 		}
 		if err := rows.Err(); err != nil {
 			return nil, err
 		}
-		markTruncated(count)
+		markTruncated()
 	}
 
 	// Corrections.
@@ -162,7 +192,7 @@ func (r *GroceryRepository) GetDelta(ctx context.Context, groupID uuid.UUID, sin
 			WHERE group_id = $1 AND version > $2
 			ORDER BY version
 			LIMIT $3`
-		rows, err := r.pool.Query(ctx, q, groupID, sinceVersion, deltaPageLimit)
+		rows, err := r.pool.Query(ctx, q, groupID, sinceVersion, deltaPageLimit+1)
 		if err != nil {
 			return nil, err
 		}
@@ -180,25 +210,29 @@ func (r *GroceryRepository) GetDelta(ctx context.Context, groupID uuid.UUID, sin
 				c.CorrectedValue = json.RawMessage(correctedValueBytes)
 			}
 			count++
+			if count > deltaPageLimit {
+				noteOverflow(c.Version)
+				break
+			}
 			noteVersion(c.Version)
 			delta.Corrections = append(delta.Corrections, c)
 		}
 		if err := rows.Err(); err != nil {
 			return nil, err
 		}
-		markTruncated(count)
+		markTruncated()
 	}
 
 	// Store aisles.
 	{
 		q := `
-			SELECT id, group_id, store_id, canonical_item_id, aisle, sort_order,
+			SELECT id, group_id, store_id, store_key, canonical_item_id, aisle, sort_order,
 			       confidence, version, created_at, updated_at, deleted_at
 			FROM store_aisles
 			WHERE group_id = $1 AND version > $2
 			ORDER BY version
 			LIMIT $3`
-		rows, err := r.pool.Query(ctx, q, groupID, sinceVersion, deltaPageLimit)
+		rows, err := r.pool.Query(ctx, q, groupID, sinceVersion, deltaPageLimit+1)
 		if err != nil {
 			return nil, err
 		}
@@ -206,19 +240,23 @@ func (r *GroceryRepository) GetDelta(ctx context.Context, groupID uuid.UUID, sin
 		count := 0
 		for rows.Next() {
 			var a models.StoreAisle
-			if err := rows.Scan(&a.ID, &a.GroupID, &a.StoreID, &a.CanonicalItemID,
+			if err := rows.Scan(&a.ID, &a.GroupID, &a.StoreID, &a.StoreKey, &a.CanonicalItemID,
 				&a.Aisle, &a.SortOrder, &a.Confidence, &a.Version,
 				&a.CreatedAt, &a.UpdatedAt, &a.DeletedAt); err != nil {
 				return nil, err
 			}
 			count++
+			if count > deltaPageLimit {
+				noteOverflow(a.Version)
+				break
+			}
 			noteVersion(a.Version)
 			delta.StoreAisles = append(delta.StoreAisles, a)
 		}
 		if err := rows.Err(); err != nil {
 			return nil, err
 		}
-		markTruncated(count)
+		markTruncated()
 	}
 
 	// Purchase history.
@@ -230,7 +268,7 @@ func (r *GroceryRepository) GetDelta(ctx context.Context, groupID uuid.UUID, sin
 			WHERE group_id = $1 AND version > $2
 			ORDER BY version
 			LIMIT $3`
-		rows, err := r.pool.Query(ctx, q, groupID, sinceVersion, deltaPageLimit)
+		rows, err := r.pool.Query(ctx, q, groupID, sinceVersion, deltaPageLimit+1)
 		if err != nil {
 			return nil, err
 		}
@@ -243,13 +281,17 @@ func (r *GroceryRepository) GetDelta(ctx context.Context, groupID uuid.UUID, sin
 				return nil, err
 			}
 			count++
+			if count > deltaPageLimit {
+				noteOverflow(p.Version)
+				break
+			}
 			noteVersion(p.Version)
 			delta.PurchaseHistory = append(delta.PurchaseHistory, p)
 		}
 		if err := rows.Err(); err != nil {
 			return nil, err
 		}
-		markTruncated(count)
+		markTruncated()
 	}
 
 	// Item co-occurrence.
@@ -260,7 +302,7 @@ func (r *GroceryRepository) GetDelta(ctx context.Context, groupID uuid.UUID, sin
 			WHERE group_id = $1 AND version > $2
 			ORDER BY version
 			LIMIT $3`
-		rows, err := r.pool.Query(ctx, q, groupID, sinceVersion, deltaPageLimit)
+		rows, err := r.pool.Query(ctx, q, groupID, sinceVersion, deltaPageLimit+1)
 		if err != nil {
 			return nil, err
 		}
@@ -273,19 +315,40 @@ func (r *GroceryRepository) GetDelta(ctx context.Context, groupID uuid.UUID, sin
 				return nil, err
 			}
 			count++
+			if count > deltaPageLimit {
+				noteOverflow(co.Version)
+				break
+			}
 			noteVersion(co.Version)
 			delta.ItemCooccurrence = append(delta.ItemCooccurrence, co)
 		}
 		if err := rows.Err(); err != nil {
 			return nil, err
 		}
-		markTruncated(count)
+		markTruncated()
 	}
 
 	if delta.HasMore {
-		delta.MaxVersion = maxSeen
+		delta.MaxVersion = cursor
+		delta.CanonicalItems = keepUpTo(delta.CanonicalItems, cursor, func(v models.CanonicalItem) int64 { return v.Version })
+		delta.ItemAliases = keepUpTo(delta.ItemAliases, cursor, func(v models.ItemAlias) int64 { return v.Version })
+		delta.Corrections = keepUpTo(delta.Corrections, cursor, func(v models.Correction) int64 { return v.Version })
+		delta.StoreAisles = keepUpTo(delta.StoreAisles, cursor, func(v models.StoreAisle) int64 { return v.Version })
+		delta.PurchaseHistory = keepUpTo(delta.PurchaseHistory, cursor, func(v models.PurchaseHistory) int64 { return v.Version })
+		delta.ItemCooccurrence = keepUpTo(delta.ItemCooccurrence, cursor, func(v models.ItemCooccurrence) int64 { return v.Version })
 	}
 	return delta, nil
+}
+
+// keepUpTo drops rows above the page cursor; the next page sends them.
+func keepUpTo[T any](rows []T, cursor int64, version func(T) int64) []T {
+	kept := rows[:0]
+	for _, row := range rows {
+		if version(row) <= cursor {
+			kept = append(kept, row)
+		}
+	}
+	return kept
 }
 
 // ---------------------------------------------------------------------------
@@ -389,8 +452,11 @@ func correctionSourceForDB(source string) string {
 type AisleFeedbackItem struct {
 	CanonicalItemID uuid.UUID  `json:"canonical_item_id"`
 	StoreID         *uuid.UUID `json:"store_id,omitempty"`
-	Aisle           string     `json:"aisle"`
-	SortOrder       int        `json:"sort_order"`
+	// StoreKey names a shipped store layout ("rewe") that has no
+	// shopping_locations row. Ignored when StoreID is set.
+	StoreKey  *string `json:"store_key,omitempty"`
+	Aisle     string  `json:"aisle"`
+	SortOrder int     `json:"sort_order"`
 }
 
 // UpsertAislesBatch persists a batch of aisle feedback rows from the client.
@@ -401,28 +467,32 @@ func (r *GroceryRepository) UpsertAislesBatch(ctx context.Context, groupID uuid.
 	now := time.Now().UTC()
 	ids := make([]uuid.UUID, len(items))
 	storeIDs := make([]*uuid.UUID, len(items))
+	storeKeys := make([]*string, len(items))
 	canonicalIDs := make([]uuid.UUID, len(items))
 	aisles := make([]string, len(items))
 	sortOrders := make([]int32, len(items))
 	for i, item := range items {
 		ids[i] = uuid.New()
 		storeIDs[i] = item.StoreID
+		if item.StoreID == nil {
+			storeKeys[i] = item.StoreKey
+		}
 		canonicalIDs[i] = item.CanonicalItemID
 		aisles[i] = item.Aisle
 		sortOrders[i] = int32(item.SortOrder)
 	}
 	_, err := r.pool.Exec(ctx, `
 		INSERT INTO store_aisles
-			(id, group_id, store_id, canonical_item_id, aisle, sort_order, confidence, version, created_at, updated_at)
-		SELECT id, $1, store_id, canonical_item_id, aisle, sort_order, 1.0, $2, $3, $3
-		FROM unnest($4::uuid[], $5::uuid[], $6::uuid[], $7::text[], $8::int[]) AS t(id, store_id, canonical_item_id, aisle, sort_order)
-		ON CONFLICT (group_id, store_id, canonical_item_id) DO UPDATE
+			(id, group_id, store_id, store_key, canonical_item_id, aisle, sort_order, confidence, version, created_at, updated_at)
+		SELECT id, $1, store_id, store_key, canonical_item_id, aisle, sort_order, 1.0, $2, $3, $3
+		FROM unnest($4::uuid[], $5::uuid[], $6::text[], $7::uuid[], $8::text[], $9::int[]) AS t(id, store_id, store_key, canonical_item_id, aisle, sort_order)
+		ON CONFLICT (group_id, (COALESCE(store_id::text, store_key, '')), canonical_item_id) DO UPDATE
 			SET aisle      = EXCLUDED.aisle,
 			    sort_order = EXCLUDED.sort_order,
 			    confidence = 1.0,
 			    version    = EXCLUDED.version,
 			    updated_at = EXCLUDED.updated_at
-	`, groupID, version, now, ids, storeIDs, canonicalIDs, aisles, sortOrders)
+	`, groupID, version, now, ids, storeIDs, storeKeys, canonicalIDs, aisles, sortOrders)
 	return err
 }
 
@@ -444,7 +514,12 @@ func (r *GroceryRepository) ResolveAlias(ctx context.Context, groupID uuid.UUID,
 		LIMIT 1`
 	var id uuid.UUID
 	if err := r.pool.QueryRow(ctx, query, groupID, aliasText, globalGroupID).Scan(&id); err != nil {
-		return uuid.Nil, false, nil //nolint:nilerr // not-found is not an error here
+		if errors.Is(err, pgx.ErrNoRows) {
+			return uuid.Nil, false, nil
+		}
+		// A broken query must surface: swallowing it is how the grocery sync
+		// once failed silently in production.
+		return uuid.Nil, false, err
 	}
 	return id, true, nil
 }

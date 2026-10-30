@@ -196,7 +196,8 @@ class GroceryRepository {
           id: j['id'] as String,
           groupId: j['group_id'] as String,
           canonicalItemId: mapId(j['canonical_item_id'] as String),
-          storeId: Value(j['store_id'] as String?),
+          // Shipped layouts come back as a slug in store_key.
+          storeId: Value(j['store_id'] as String? ?? j['store_key'] as String?),
           aisle: Value(j['aisle'] as String? ?? ''),
           sortOrder: Value(j['sort_order'] as int? ?? 99),
           confidence: Value((j['confidence'] as num?)?.toDouble() ?? 1.0),
@@ -206,7 +207,7 @@ class GroceryRepository {
           deletedAt: Value(_parseDate(j['deleted_at'])),
         );
       }).toList();
-      await _db.upsertStoreAisles(aisles);
+      await _db.upsertHouseholdStoreAisles(aisles);
     }
 
     final rawPurchases = delta['purchase_history'] as List? ?? [];
@@ -254,7 +255,8 @@ class GroceryRepository {
   // ---------------------------------------------------------------------------
 
   /// Persists aisle drag-to-reorder feedback from the review screen.
-  /// Writes locally first via [db.upsertStoreAisles], then uploads to server.
+  /// Writes locally first via [AppDatabase.upsertHouseholdStoreAisles], then
+  /// uploads to the server.
   Future<void> updateAisleFeedback({
     required String groupId,
     required List<AisleFeedbackEntry> entries,
@@ -275,7 +277,7 @@ class GroceryRepository {
           createdAt: now,
           updatedAt: now,
         ));
-    await _db.upsertStoreAisles(companions);
+    await _db.upsertHouseholdStoreAisles(companions);
 
     // Best-effort server upload.
     try {
@@ -285,8 +287,12 @@ class GroceryRepository {
           'aisles': entries
               .map((e) => {
                     'canonical_item_id': apiCanonicalId(e.canonicalItemId),
-                    // Seed store slugs are local-only; the API accepts UUID stores.
-                    if (isApiUuid(e.storeId)) 'store_id': e.storeId,
+                    // A shipped layout's slug has no shopping location row, so
+                    // it travels as store_key.
+                    if (isApiUuid(e.storeId))
+                      'store_id': e.storeId
+                    else if (e.storeId != null)
+                      'store_key': e.storeId,
                     'aisle': e.aisle,
                     'sort_order': e.sortOrder,
                   })

@@ -2278,7 +2278,10 @@ INSERT INTO item_aliases_table
               t.storeId.equals(storeId) &
               t.canonicalItemId.equals(canonicalItemId) &
               t.deletedAt.isNull())
-          ..orderBy([(t) => OrderingTerm.desc(t.groupId)])
+          ..orderBy([
+            (t) => OrderingTerm.desc(t.groupId),
+            (t) => OrderingTerm.desc(t.updatedAt),
+          ])
           ..limit(1))
         .getSingleOrNull();
     if (main != null) return main;
@@ -2323,6 +2326,32 @@ INSERT INTO item_aliases_table
     await batch((b) {
       b.insertAllOnConflictUpdate(
           storeAislesTable, rows.toList(growable: false));
+    });
+  }
+
+  /// Writes household aisle rows keyed by (group, store, item) rather than by
+  /// row id: a local drag and the server's copy of it carry different ids, and
+  /// keeping both left [getStoreAisle] choosing between stale duplicates.
+  Future<void> upsertHouseholdStoreAisles(
+      Iterable<StoreAislesTableCompanion> rows) async {
+    final list = rows.toList(growable: false);
+    if (list.isEmpty) return;
+    await transaction(() async {
+      for (final row in list) {
+        final storeId = row.storeId.present ? row.storeId.value : null;
+        await (delete(storeAislesTable)
+              ..where((t) =>
+                  t.groupId.equals(row.groupId.value) &
+                  t.canonicalItemId.equals(row.canonicalItemId.value) &
+                  (storeId == null
+                      ? t.storeId.isNull()
+                      : t.storeId.equals(storeId)) &
+                  t.id.equals(row.id.value).not()))
+            .go();
+      }
+      await batch((b) {
+        b.insertAllOnConflictUpdate(storeAislesTable, list);
+      });
     });
   }
 

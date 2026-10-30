@@ -17,6 +17,7 @@ import '../../providers/list_provider.dart';
 import '../../providers/store_provider.dart';
 import '../../repositories/list_repository.dart';
 import '../../repositories/outbox_error_classifier.dart';
+import '../../storage/app_database.dart' show AppDatabase, kGlobalGroupId;
 import '../../router.dart' show currentGroupIdProvider;
 import '../../theme/animations.dart';
 import '../../theme/shadows.dart';
@@ -353,6 +354,8 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
     ];
     final ctx = await resolver.prepareContext(groupId, listContext: linkedIds);
     final result = <String, _ItemAisle>{};
+    final categoryAisles = await _categoryAislesFor(db, storeId);
+    final pending = <String, String>{};
 
     for (final items in _itemsByList.values) {
       for (final item in items) {
@@ -371,12 +374,65 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
         );
         if (row != null && row.aisle.isNotEmpty) {
           result[item.id] = _ItemAisle(row.aisle, row.sortOrder);
+        } else {
+          pending[item.id] = canonicalId;
         }
+      }
+    }
+
+    // Shipped layouts list only a few hundred items per store. Anything not
+    // listed walks with its category: it joins the aisle where most of that
+    // category's listed items are, instead of piling up under "Other".
+    if (pending.isNotEmpty && categoryAisles.isNotEmpty) {
+      final items = await db.getCanonicalItemsByIds(pending.values.toSet());
+      final categoryById = {for (final item in items) item.id: item.category};
+      for (final entry in pending.entries) {
+        final aisle = categoryAisles[categoryById[entry.value]];
+        if (aisle != null) result[entry.key] = aisle;
       }
     }
 
     if (!mounted || !_aisleGuard.isCurrent(request)) return;
     setState(() => _aisleByItemId = result);
+  }
+
+  /// For each category, the aisle holding most of its items in this store's
+  /// layout (household overrides included), at that aisle's first position.
+  Future<Map<String, _ItemAisle>> _categoryAislesFor(
+    AppDatabase db,
+    String storeId,
+  ) async {
+    final groupId = _groupId;
+    final rows = [
+      if (groupId != null)
+        ...await db.getStoreAisles(groupId: groupId, storeId: storeId),
+      ...await db.getStoreAisles(groupId: kGlobalGroupId, storeId: storeId),
+    ];
+    if (rows.isEmpty) return const {};
+    final items =
+        await db.getCanonicalItemsByIds(rows.map((r) => r.canonicalItemId));
+    final categoryById = {for (final item in items) item.id: item.category};
+    final votes = <String, Map<String, int>>{};
+    final firstSort = <String, int>{};
+    for (final row in rows) {
+      final category = categoryById[row.canonicalItemId];
+      if (category == null || category.isEmpty || row.aisle.isEmpty) continue;
+      final counts = votes.putIfAbsent(category, () => {});
+      counts[row.aisle] = (counts[row.aisle] ?? 0) + 1;
+      final sort = firstSort[row.aisle];
+      if (sort == null || row.sortOrder < sort) {
+        firstSort[row.aisle] = row.sortOrder;
+      }
+    }
+    return {
+      for (final entry in votes.entries)
+        entry.key: () {
+          final aisle = entry.value.entries
+              .reduce((a, b) => b.value > a.value ? b : a)
+              .key;
+          return _ItemAisle(aisle, firstSort[aisle] ?? 100000);
+        }(),
+    };
   }
 
   /// Groups all open items by aisle, ordered by shopping path. Items without a

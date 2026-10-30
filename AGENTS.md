@@ -271,8 +271,9 @@ showAppDialog<bool>(
 | 000078 | `product_events`: first-party onboarding-funnel and Home events (plans/048 stage 8); no IP, user agent or free text |
 | 000079 | `group_invites.created_by`: who minted an invite code, for the signed-out preview (plans/048 stage 7) |
 | 000080 | `users.email_unproven`: password account created verified on a server with no email provider; never linked to an OAuth identity by email until an emailed code proves the address |
+| 000081 | `store_aisles.store_key` (a shipped store layout's slug) and a unique index that treats a missing store as one value, so aisle feedback updates in place; dedupes the NULL-store rows that piled up |
 
-Latest migration: `000080_add_users_email_unproven`.
+Latest migration: `000081_store_aisles_store_key`.
 
 ## Key API Endpoints Added
 

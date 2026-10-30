@@ -62,6 +62,7 @@ type StoreAisle struct {
 	ID              uuid.UUID  `json:"id"`
 	GroupID         uuid.UUID  `json:"group_id"`
 	StoreID         *uuid.UUID `json:"store_id,omitempty"`
+	StoreKey        *string    `json:"store_key,omitempty"`
 	CanonicalItemID uuid.UUID  `json:"canonical_item_id"`
 	Aisle           string     `json:"aisle"`
 	SortOrder       int        `json:"sort_order"`
