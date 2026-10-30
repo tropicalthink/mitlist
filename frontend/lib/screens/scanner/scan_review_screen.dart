@@ -284,7 +284,7 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
       unawaited(svc.recordReject(
         groupId: widget.groupId,
         userId: widget.userId,
-        rawText: item.rawText,
+        rawText: item.cleanName,
         rejectedCanonicalItemId: item.canonicalItemId,
       ));
       unawaited(_uploadReject(item));
@@ -304,7 +304,7 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
     final groceryRepo = await ref.read(groceryRepositoryProvider.future);
     await groceryRepo.uploadReject(
       groupId: widget.groupId,
-      rawText: item.rawText,
+      rawText: item.cleanName,
     );
   }
 
@@ -336,16 +336,18 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
       for (final item in _items) {
         if (item.userConfirmed &&
             item.canonicalItemId != null &&
-            item.rawText.toLowerCase() != item.displayName.toLowerCase()) {
+            item.cleanName.toLowerCase() != item.displayName.toLowerCase()) {
+          // Keyed on the cleaned name: the raw line still carries bullets and
+          // quantities ("- 2 Milch") that no later lookup will ever match.
           await correctionSvc.recordAlias(
             groupId: widget.groupId,
             userId: widget.userId,
-            rawText: item.rawText,
+            rawText: item.cleanName,
             canonicalItemId: item.canonicalItemId!,
           );
           unawaited(groceryRepo.uploadCorrection(
             groupId: widget.groupId,
-            rawText: item.rawText,
+            rawText: item.cleanName,
             canonicalItemId: item.canonicalItemId!,
           ));
         }
@@ -354,10 +356,10 @@ class _ScanReviewScreenState extends ConsumerState<ScanReviewScreen> {
       await Future.wait(_items.map((p) => repo.createItemOfflineFirst(
             targetListId,
             CreateListItemRequest(
-              name: p.displayName,
+              name: p.listName,
               quantity: p.quantity,
               unit: p.unit,
-              canonicalItemId: p.canonicalItemId,
+              canonicalItemId: p.listCanonicalItemId,
             ),
             addedBy: widget.userId,
           )));
@@ -823,13 +825,12 @@ class _PredictionTile extends StatelessWidget {
     final stateColor = _stateColor(context);
     final needsAction =
         prediction.confidenceLevel != ConfidenceLevel.autoAccept;
-    final leadWithRaw = prediction.confidenceLevel == ConfidenceLevel.ask &&
-        prediction.rawText.trim().isNotEmpty;
-    final headline = leadWithRaw ? prediction.rawText : prediction.displayName;
+    final leadWithRaw = prediction.leadsWithWrittenText;
+    final headline = prediction.listName;
     final showGuess = leadWithRaw &&
         prediction.canonicalItemId != null &&
         prediction.displayName.toLowerCase() !=
-            prediction.rawText.toLowerCase();
+            prediction.cleanName.toLowerCase();
 
     return Padding(
       padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),

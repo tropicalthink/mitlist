@@ -75,6 +75,9 @@ class ParsedItem {
   final MarkStatus markStatus;
   final List<OcrAlternative> alternatives;
 
+  /// The recognizer's own confidence in the line text, when it reported one.
+  final double? ocrConfidence;
+
   const ParsedItem({
     required this.rawText,
     required this.itemName,
@@ -84,6 +87,7 @@ class ParsedItem {
     this.priceCents,
     this.markStatus = MarkStatus.normal,
     this.alternatives = const [],
+    this.ocrConfidence,
   });
 }
 
@@ -91,6 +95,10 @@ class ParsedItem {
 class GroceryPrediction {
   final String id;
   final String rawText;
+
+  /// The OCR line with bullets, quantity, unit and price stripped. Null for
+  /// predictions that did not come from OCR (suggestions, tests).
+  final String? itemName;
   final String displayName;
   final OcrBBox? bbox;
   final String? canonicalItemId;
@@ -108,6 +116,7 @@ class GroceryPrediction {
   const GroceryPrediction({
     required this.id,
     required this.rawText,
+    this.itemName,
     required this.displayName,
     this.bbox,
     this.canonicalItemId,
@@ -138,6 +147,7 @@ class GroceryPrediction {
     return GroceryPrediction(
       id: id,
       rawText: rawText,
+      itemName: itemName,
       displayName: displayName ?? this.displayName,
       bbox: bbox,
       canonicalItemId: canonicalItemId ?? this.canonicalItemId,
@@ -153,6 +163,26 @@ class GroceryPrediction {
       userConfirmed: userConfirmed ?? this.userConfirmed,
     );
   }
+
+  /// What was written on the list, without bullets or quantities.
+  String get cleanName {
+    final name = itemName?.trim();
+    return name == null || name.isEmpty ? rawText.trim() : name;
+  }
+
+  /// An unconfirmed low-confidence match: the resolver's guess is only a hint,
+  /// so the review shows, and the list receives, what was actually written.
+  bool get leadsWithWrittenText =>
+      !userConfirmed &&
+      confidenceLevel == ConfidenceLevel.ask &&
+      cleanName.isNotEmpty;
+
+  /// The name added to the list — always the headline the review shows.
+  String get listName => leadsWithWrittenText ? cleanName : displayName;
+
+  /// Only a match the person can see as the headline is linked.
+  String? get listCanonicalItemId =>
+      leadsWithWrittenText ? null : canonicalItemId;
 }
 
 /// The full output of `ScanPipelineService.run`.

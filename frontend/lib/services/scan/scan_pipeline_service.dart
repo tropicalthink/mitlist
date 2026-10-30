@@ -15,6 +15,9 @@ import 'scan_models.dart';
 
 const _uuid = Uuid();
 
+/// Below this recognizer confidence a line is never auto-accepted.
+const double kMinOcrConfidenceForAutoAccept = 0.7;
+
 /// Single entry point for the grocery scan pipeline.
 ///
 /// Flow: portable crop → PP-OCRv6 → extract → resolve → aisle → confidence
@@ -144,10 +147,11 @@ class ScanPipelineService {
         }
       }
 
-      final prediction = _confidence.applyTo(
+      var prediction = _confidence.applyTo(
         GroceryPrediction(
           id: _uuid.v4(),
           rawText: item.rawText,
+          itemName: item.itemName,
           displayName: resolved.displayName,
           bbox: item.bbox,
           canonicalItemId: resolved.canonicalItemId,
@@ -163,6 +167,15 @@ class ScanPipelineService {
         autoThreshold: resolved.autoThreshold,
         reviewThreshold: resolved.reviewThreshold,
       );
+      // A shaky reading can still collide with a real alias. The resolver
+      // only sees the text, so the recognizer's doubt caps it at review.
+      final ocrConfidence = item.ocrConfidence;
+      if (ocrConfidence != null &&
+          ocrConfidence < kMinOcrConfidenceForAutoAccept &&
+          prediction.confidenceLevel == ConfidenceLevel.autoAccept) {
+        prediction =
+            prediction.copyWith(confidenceLevel: ConfidenceLevel.review);
+      }
 
       if (item.markStatus == MarkStatus.crossedOut ||
           item.markStatus == MarkStatus.checked) {
