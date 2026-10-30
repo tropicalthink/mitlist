@@ -39,9 +39,13 @@ final canonicalResolverServiceProvider =
     Provider<CanonicalResolverService>((ref) {
   return CanonicalResolverService(
     ref.watch(appDatabaseProvider),
-    classifier: ref.watch(groceryClassifierServiceProvider),
+    // No classifier voter: its labels stop short of the current catalog, it
+    // cannot run in tests, and resolution/gold_test measures the shipped
+    // catalog + embedder without it (0 confident-wrong). An unmeasured voter
+    // on top would make that gate describe a different system.
     embedder: ref.watch(staticEmbeddingServiceProvider),
     useEnsemble: true,
+    prior: ref.watch(householdPriorServiceProvider),
   );
 });
 

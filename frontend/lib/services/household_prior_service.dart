@@ -171,6 +171,11 @@ class HouseholdPriorContext {
   final int vocabularySize;
 
   Set<String> get repertoireIds => lifetimeCounts.keys.toSet();
+
+  /// Whole days since the household last bought [canonicalItemId], or null if
+  /// it is not in the recent history.
+  int? daysSince(String canonicalItemId) =>
+      _itemStats[canonicalItemId]?.daysSince;
 }
 
 class HouseholdPriorService {

@@ -46,11 +46,12 @@ EXPECTED_FEATURE_NAMES = [
     "recency",
     "listCooccurrence",
     "isExactAlias",
+    "isUniqueExactAlias",
 ]
 
 # Source: frontend/lib/services/scan/resolution/calibrated_scorer.dart
 # CalibratedScorer.kDefaultWeights / kDefaultBias / default tauAuto.
-DEFAULT_WEIGHTS = [1.4, 4.4, 2.2, 1.8, 0.8, 2.6, 1.8, 0.5, 1.4, 0.4]
+DEFAULT_WEIGHTS = [1.4, 4.4, 2.2, 1.8, 0.8, 2.6, 1.8, 0.5, 1.4, 0.4, 2.0]
 DEFAULT_BIAS = -2.7
 DEFAULT_TAU_AUTO = 0.85
 

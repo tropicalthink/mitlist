@@ -10,21 +10,23 @@
     "householdFreq",
     "recency",
     "listCooccurrence",
-    "isExactAlias"
+    "isExactAlias",
+    "isUniqueExactAlias"
   ],
   "weights": [
-    3.965267,
-    6.619987,
+    2.190348,
+    7.037157,
     0.0,
     0.0,
-    0.360802,
+    -0.298048,
     0.0,
-    2.544656,
+    0.143453,
     0.0,
     0.0,
-    0.147892
+    0.699647,
+    2.047377
   ],
-  "bias": -6.198304,
-  "tau_auto": 0.9766,
+  "bias": -5.170375,
+  "tau_auto": 0.9468,
   "tau_review": 0.5
 }

@@ -1,5 +1,6 @@
 import '../../../storage/app_database.dart';
 import '../../canonical_display.dart';
+import '../../household_prior_service.dart';
 import '../canonical_resolver_service.dart'
     show ResolveAlternative, ResolveResult;
 import '../grocery_classifier_service.dart';
@@ -22,6 +23,12 @@ class EnsembleResolver {
   final CandidateGenerator _generator;
   final CalibratedScorer? _injectedScorer;
 
+  /// The household prior that also ranks typed suggestions and restock. When
+  /// set, resolution reads its cached context instead of re-reading purchase
+  /// history on every call, and the two can no longer disagree about what the
+  /// household buys.
+  final HouseholdPriorService? _prior;
+
   /// Cached load of the fitted weights bundle (one load per resolver), used
   /// only when no scorer is injected.
   Future<CalibratedScorer>? _scorerFuture;
@@ -32,9 +39,11 @@ class EnsembleResolver {
     StaticEmbeddingService? embedder,
     CalibratedScorer? scorer,
     CandidateGenerator? generator,
+    HouseholdPriorService? prior,
   })  : _generator = generator ??
             CandidateGenerator(_db, classifier: classifier, embedder: embedder),
-        _injectedScorer = scorer;
+        _injectedScorer = scorer,
+        _prior = prior;
 
   Future<CalibratedScorer> _ensureScorer() {
     final injected = _injectedScorer;
@@ -105,6 +114,8 @@ class EnsembleResolver {
     String groupId,
     List<String> listContext,
   ) async {
+    final prior = _prior;
+    if (prior != null) return _contextFromPrior(prior, groupId, listContext);
     final history = await _db.getGroupPurchaseHistory(groupId: groupId);
     final counts = <String, int>{};
     final lastAt = <String, DateTime>{};
@@ -145,6 +156,31 @@ class EnsembleResolver {
 
     return ResolutionContext(
       purchaseCounts: counts,
+      daysSinceLastPurchase: days,
+      cooccurrence: cooc,
+    );
+  }
+
+  Future<ResolutionContext> _contextFromPrior(
+    HouseholdPriorService prior,
+    String groupId,
+    List<String> listContext,
+  ) async {
+    final base = await prior.baseContext(groupId);
+    final days = <String, int>{};
+    final cooc = <String, double>{};
+    for (final id in base.repertoireIds) {
+      final since = base.daysSince(id);
+      if (since != null) days[id] = since;
+      if (listContext.isNotEmpty) {
+        final affinity = prior
+            .featuresFor(id, base, listContextIds: listContext)
+            .cooccurrence;
+        if (affinity > 0) cooc[id] = affinity;
+      }
+    }
+    return ResolutionContext(
+      purchaseCounts: base.lifetimeCounts,
       daysSinceLastPurchase: days,
       cooccurrence: cooc,
     );

@@ -1,0 +1,218 @@
+# Resolution gold set: typed/handwritten shopping words -> acceptable canonical ids.
+# "accept": [] means the line is not groceries and must never auto-link.
+{"text": "milk", "accept": ["milk"]}
+{"text": "whole milk", "accept": ["whole_milk"]}
+{"text": "bread", "accept": ["bread"]}
+{"text": "eggs", "accept": ["eggs", "egg"]}
+{"text": "butter", "accept": ["butter"]}
+{"text": "cheese", "accept": ["cheese"]}
+{"text": "yogurt", "accept": ["yogurt", "plain_yogurt"]}
+{"text": "yoghurt", "accept": ["yogurt", "plain_yogurt"]}
+{"text": "cream", "accept": ["cream"]}
+{"text": "sour cream", "accept": ["sour_cream"]}
+{"text": "apples", "accept": ["apple"]}
+{"text": "bananas", "accept": ["banana"]}
+{"text": "oranges", "accept": ["orange"]}
+{"text": "lemons", "accept": ["lemon"]}
+{"text": "limes", "accept": ["lime"]}
+{"text": "grapes", "accept": ["grape"]}
+{"text": "strawberries", "accept": ["strawberry"]}
+{"text": "blueberries", "accept": ["blueberry"]}
+{"text": "tomatoes", "accept": ["tomato"]}
+{"text": "potatoes", "accept": ["potato"]}
+{"text": "onions", "accept": ["onion"]}
+{"text": "red onions", "accept": ["red_onions", "onion_red_fresh"]}
+{"text": "garlic", "accept": ["garlic"]}
+{"text": "carrots", "accept": ["carrot", "carrots"]}
+{"text": "cucumber", "accept": ["cucumber"]}
+{"text": "lettuce", "accept": ["head_lettuce"]}
+{"text": "spinach", "accept": ["spinach"]}
+{"text": "broccoli", "accept": ["broccoli"]}
+{"text": "peppers", "accept": ["bell_pepper", "pepper"]}
+{"text": "mushrooms", "accept": ["mushrooms"]}
+{"text": "zucchini", "accept": ["zucchini"]}
+{"text": "avocado", "accept": ["avocado"]}
+{"text": "ginger", "accept": ["ginger"]}
+{"text": "chicken", "accept": ["chicken"]}
+{"text": "chicken breast", "accept": ["chicken_breast", "chicken_breast_fillet"]}
+{"text": "chicken thighs", "accept": ["chicken_thighs"]}
+{"text": "ground beef", "accept": ["ground_beef"]}
+{"text": "bacon", "accept": ["pork_bacon"]}
+{"text": "ham", "accept": ["ham"]}
+{"text": "salami", "accept": ["salami"]}
+{"text": "sausages", "accept": ["sausages"]}
+{"text": "salmon", "accept": ["salmon"]}
+{"text": "tuna", "accept": ["tuna"]}
+{"text": "rice", "accept": ["rice"]}
+{"text": "pasta", "accept": ["pasta"]}
+{"text": "spaghetti", "accept": ["spaghetti"]}
+{"text": "flour", "accept": ["flour"]}
+{"text": "sugar", "accept": ["sugar"]}
+{"text": "salt", "accept": ["salt"]}
+{"text": "olive oil", "accept": ["olive_oil"]}
+{"text": "vinegar", "accept": ["vinegar"]}
+{"text": "coffee", "accept": ["coffee"]}
+{"text": "tea", "accept": ["tea"]}
+{"text": "orange juice", "accept": ["orange_juice"]}
+{"text": "water", "accept": ["water"]}
+{"text": "beer", "accept": ["beer"]}
+{"text": "wine", "accept": ["wine", "red_wine", "white_wine"]}
+{"text": "chocolate", "accept": ["chocolate"]}
+{"text": "honey", "accept": ["honey"]}
+{"text": "jam", "accept": ["jam"]}
+{"text": "peanut butter", "accept": ["peanut_butter"]}
+{"text": "ketchup", "accept": ["ketchup", "tomato_ketchup"]}
+{"text": "mustard", "accept": ["mustard"]}
+{"text": "mayonnaise", "accept": ["mayonnaise"]}
+{"text": "cereal", "accept": ["breakfast_cereal"]}
+{"text": "oats", "accept": ["rolled_oats", "oatmeal"]}
+{"text": "toilet paper", "accept": ["toilet_paper"]}
+{"text": "paper towels", "accept": ["kitchen_roll"]}
+{"text": "dish soap", "accept": ["dish_soap"]}
+{"text": "laundry detergent", "accept": ["laundry_detergent"]}
+{"text": "shampoo", "accept": ["shampoo"]}
+{"text": "toothpaste", "accept": ["toothpaste"]}
+{"text": "toothbrush", "accept": ["toothbrush"]}
+{"text": "deodorant", "accept": ["deodorant"]}
+{"text": "trash bags", "accept": ["trash_bags"]}
+{"text": "aluminum foil", "accept": ["aluminum_foil"]}
+{"text": "baking paper", "accept": ["baking_paper"]}
+{"text": "batteries", "accept": ["batteries"]}
+{"text": "diapers", "accept": ["diapers"]}
+{"text": "cat food", "accept": ["cat_food", "wet_cat_food", "dry_cat_food"]}
+{"text": "ice cream", "accept": ["ice_cream"]}
+{"text": "frozen pizza", "accept": ["frozen_pizza"]}
+{"text": "tofu", "accept": ["tofu"]}
+{"text": "hummus", "accept": ["hummus"]}
+{"text": "lentils", "accept": ["lentils", "red_lentils", "brown_lentils"]}
+{"text": "chickpeas", "accept": ["chickpeas"]}
+{"text": "canned tomatoes", "accept": ["canned_tomatoes"]}
+{"text": "tomato paste", "accept": ["tomato_paste"]}
+{"text": "yeast", "accept": ["yeast", "dry_yeast"]}
+{"text": "baking powder", "accept": ["baking_powder"]}
+{"text": "oat milk", "accept": ["oat_milk"]}
+{"text": "almond milk", "accept": ["almond_milk"]}
+{"text": "cream cheese", "accept": ["cream_cheese", "plain_cream_cheese", "cream_cheese_plain"]}
+{"text": "mozzarella", "accept": ["mozzarella"]}
+{"text": "parmesan", "accept": ["parmesan"]}
+{"text": "feta", "accept": ["feta"]}
+{"text": "milch", "accept": ["milk"]}
+{"text": "vollmilch", "accept": ["whole_milk"]}
+{"text": "brot", "accept": ["bread"]}
+{"text": "eier", "accept": ["eggs", "egg"]}
+{"text": "käse", "accept": ["cheese"]}
+{"text": "joghurt", "accept": ["yogurt", "plain_yogurt"]}
+{"text": "sahne", "accept": ["cream"]}
+{"text": "schmand", "accept": ["sour_cream", "sour_cream_schmand", "sour_cream_german_style"]}
+{"text": "quark", "accept": ["quark", "quark_curd_cheese"]}
+{"text": "äpfel", "accept": ["apple"]}
+{"text": "bananen", "accept": ["banana"]}
+{"text": "orangen", "accept": ["orange"]}
+{"text": "zitronen", "accept": ["lemon"]}
+{"text": "trauben", "accept": ["grape"]}
+{"text": "erdbeeren", "accept": ["strawberry"]}
+{"text": "tomaten", "accept": ["tomato"]}
+{"text": "kartoffeln", "accept": ["potato"]}
+{"text": "zwiebeln", "accept": ["onion"]}
+{"text": "knoblauch", "accept": ["garlic"]}
+{"text": "karotten", "accept": ["carrot", "carrots"]}
+{"text": "möhren", "accept": ["carrot", "carrots"]}
+{"text": "gurke", "accept": ["cucumber"]}
+{"text": "salat", "accept": ["head_lettuce"]}
+{"text": "spinat", "accept": ["spinach"]}
+{"text": "brokkoli", "accept": ["broccoli"]}
+{"text": "paprika", "accept": ["bell_pepper"]}
+{"text": "champignons", "accept": ["mushrooms"]}
+{"text": "pilze", "accept": ["mushrooms"]}
+{"text": "zucchini", "accept": ["zucchini"]}
+{"text": "ingwer", "accept": ["ginger"]}
+{"text": "hähnchen", "accept": ["chicken"]}
+{"text": "hähnchenbrust", "accept": ["chicken_breast", "chicken_breast_fillet"]}
+{"text": "hackfleisch", "accept": ["ground_beef", "mixed_minced_meat"]}
+{"text": "speck", "accept": ["pork_bacon"]}
+{"text": "schinken", "accept": ["ham"]}
+{"text": "würstchen", "accept": ["sausages", "vienna_sausages"]}
+{"text": "aufschnitt", "accept": ["cold_cuts"]}
+{"text": "lachs", "accept": ["salmon"]}
+{"text": "thunfisch", "accept": ["tuna"]}
+{"text": "reis", "accept": ["rice"]}
+{"text": "nudeln", "accept": ["pasta"]}
+{"text": "mehl", "accept": ["flour"]}
+{"text": "zucker", "accept": ["sugar"]}
+{"text": "salz", "accept": ["salt"]}
+{"text": "olivenöl", "accept": ["olive_oil"]}
+{"text": "essig", "accept": ["vinegar"]}
+{"text": "kaffee", "accept": ["coffee"]}
+{"text": "tee", "accept": ["tea"]}
+{"text": "orangensaft", "accept": ["orange_juice"]}
+{"text": "wasser", "accept": ["water"]}
+{"text": "mineralwasser", "accept": ["mineral_water"]}
+{"text": "sprudel", "accept": ["mineral_water"]}
+{"text": "bier", "accept": ["beer"]}
+{"text": "wein", "accept": ["wine", "red_wine", "white_wine"]}
+{"text": "schokolade", "accept": ["chocolate"]}
+{"text": "honig", "accept": ["honey"]}
+{"text": "marmelade", "accept": ["jam", "marmalade"]}
+{"text": "senf", "accept": ["mustard"]}
+{"text": "müsli", "accept": ["muesli"]}
+{"text": "haferflocken", "accept": ["rolled_oats", "oatmeal"]}
+{"text": "klopapier", "accept": ["toilet_paper"]}
+{"text": "toilettenpapier", "accept": ["toilet_paper"]}
+{"text": "küchenrolle", "accept": ["kitchen_roll"]}
+{"text": "spülmittel", "accept": ["dish_soap"]}
+{"text": "spüli", "accept": ["dish_soap"]}
+{"text": "waschmittel", "accept": ["laundry_detergent"]}
+{"text": "zahnpasta", "accept": ["toothpaste"]}
+{"text": "zahnbürste", "accept": ["toothbrush"]}
+{"text": "müllbeutel", "accept": ["trash_bags"]}
+{"text": "alufolie", "accept": ["aluminum_foil"]}
+{"text": "backpapier", "accept": ["baking_paper"]}
+{"text": "batterien", "accept": ["batteries"]}
+{"text": "windeln", "accept": ["diapers"]}
+{"text": "brötchen", "accept": ["bread_roll"]}
+{"text": "butter", "accept": ["butter"]}
+{"text": "margarine", "accept": ["margarine"]}
+{"text": "brühe", "accept": ["broth"]}
+{"text": "hefe", "accept": ["yeast", "dry_yeast"]}
+{"text": "backpulver", "accept": ["baking_powder"]}
+{"text": "hafermilch", "accept": ["oat_milk"]}
+{"text": "frischkäse", "accept": ["cream_cheese", "plain_cream_cheese", "cream_cheese_plain"]}
+{"text": "eis", "accept": ["ice_cream"]}
+{"text": "taschentücher", "accept": ["facial_tissue"]}
+{"text": "seife", "accept": ["hand_soap"]}
+{"text": "deo", "accept": ["deodorant"]}
+{"text": "coke", "accept": ["cola"]}
+{"text": "coca cola", "accept": ["cola"]}
+{"text": "pringles", "accept": ["potato_chips"]}
+{"text": "nutella", "accept": ["chocolate_hazelnut_spread"]}
+{"text": "oreo", "accept": ["cookies"]}
+{"text": "haribo", "accept": ["gummy_bears"]}
+{"text": "oatly", "accept": ["oat_milk"]}
+{"text": "chips", "accept": ["potato_chips"]}
+{"text": "crisps", "accept": ["potato_chips"]}
+{"text": "cornflakes", "accept": ["corn_flakes"]}
+{"text": "red bull", "accept": ["energy_drink"]}
+{"text": "ketchup heinz", "accept": ["ketchup", "tomato_ketchup"]}
+{"text": "mlik", "accept": ["milk"]}
+{"text": "bannanas", "accept": ["banana"]}
+{"text": "tomatos", "accept": ["tomato"]}
+{"text": "brocoli", "accept": ["broccoli"]}
+{"text": "yoghurt", "accept": ["yogurt", "plain_yogurt"]}
+{"text": "joghurd", "accept": ["yogurt", "plain_yogurt"]}
+{"text": "zwibeln", "accept": ["onion"]}
+{"text": "kartofeln", "accept": ["potato"]}
+{"text": "schokolde", "accept": ["chocolate"]}
+{"text": "letuce", "accept": ["head_lettuce"]}
+{"text": "avacado", "accept": ["avocado"]}
+{"text": "spagetti", "accept": ["spaghetti"]}
+{"text": "cofee", "accept": ["coffee"]}
+{"text": "call mom", "accept": []}
+{"text": "birthday present", "accept": []}
+{"text": "fix the bike", "accept": []}
+{"text": "geschenk für oma", "accept": []}
+{"text": "xqzt", "accept": []}
+{"text": "termin zahnarzt", "accept": []}
+{"text": "pay rent", "accept": []}
+{"text": "asdf", "accept": []}
+{"text": "pick up kids", "accept": []}
+{"text": "steuererklärung", "accept": []}

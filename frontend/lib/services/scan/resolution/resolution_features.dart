@@ -44,6 +44,7 @@ const List<String> kResolutionFeatureNames = [
   'recency', // 7 — 1 / (1 + daysSinceLastPurchase)
   'listCooccurrence', // 8
   'isExactAlias', // 9
+  'isUniqueExactAlias', // 10 — exact alias of this item and no other
 ];
 
 int get kResolutionFeatureCount => kResolutionFeatureNames.length;
@@ -85,5 +86,6 @@ List<double> buildResolutionFeatures(
     recency,
     ctx.cooccurrence[id] ?? 0.0,
     c.isExactAlias ? 1.0 : 0.0,
+    c.isUniqueExactAlias ? 1.0 : 0.0,
   ];
 }

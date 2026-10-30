@@ -8,7 +8,6 @@ import 'confidence_service.dart';
 import 'correction_memory_service.dart';
 import 'document_rectifier_service.dart';
 import 'extraction_service.dart';
-import 'grocery_classifier_service.dart';
 import 'ocr_service.dart';
 import 'static_embedding_service.dart';
 import 'scan_models.dart';
@@ -38,7 +37,7 @@ class ScanPipelineService {
         _resolver = resolver ??
             CanonicalResolverService(
               db,
-              classifier: GroceryClassifierService(),
+              // Same configuration as canonicalResolverServiceProvider.
               embedder: StaticEmbeddingService(),
               // Plan 037: the calibrated ensemble (candidate-union + household
               // prior + canonicalNameSim) — on the eval it lifts precision@auto
