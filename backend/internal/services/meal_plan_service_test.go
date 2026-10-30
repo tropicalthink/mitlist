@@ -257,3 +257,59 @@ func TestMealPlanService_GenerateShoppingList_BatchesRecipeAndIngredientQueries(
 	recipeRepo.AssertNotCalled(t, "ListIngredients", ctx, recipeID)
 	listRepo.AssertNotCalled(t, "CreateItem", ctx, mock.Anything)
 }
+
+// Two recipes spelling an ingredient differently become one line, and a row
+// bought last trip on the reused list is restored rather than skipped.
+func TestMealPlanService_GenerateShoppingList_MergesSpellingsAndRestoresChecked(t *testing.T) {
+	ctx := context.Background()
+	groupID := uuid.New()
+	userID := uuid.New()
+	user := &models.User{ID: userID}
+	soupID := uuid.New()
+	stewID := uuid.New()
+	listID := uuid.New()
+	onionRowID := uuid.New()
+	from := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
+	to := from.Add(7 * 24 * time.Hour)
+
+	mpRepo := new(mocks.MockMealPlanRepo)
+	groupRepo := new(mocks.MockGroupRepo)
+	recipeRepo := new(mocks.MockRecipeRepo)
+	listRepo := new(mocks.MockListRepo)
+	svc := newMealPlanService(mpRepo, groupRepo, recipeRepo, listRepo)
+
+	plans := []models.MealPlan{
+		{ID: uuid.New(), GroupID: groupID, RecipeID: soupID, Servings: 2, Date: from},
+		{ID: uuid.New(), GroupID: groupID, RecipeID: stewID, Servings: 2, Date: from},
+	}
+	groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
+	mpRepo.On("ListMealPlansByGroup", ctx, groupID, from, to).Return(plans, nil)
+	recipeRepo.On("GetRecipeByID", ctx, mock.Anything).Return(&models.Recipe{UserID: userID}, nil)
+	recipeRepo.On("GetRecipesByIDs", ctx, []uuid.UUID{soupID, stewID}).Return(map[uuid.UUID]*models.Recipe{
+		soupID: {ID: soupID, Servings: 2},
+		stewID: {ID: stewID, Servings: 2},
+	}, nil)
+	recipeRepo.On("ListIngredientsByRecipeIDs", ctx, []uuid.UUID{soupID, stewID}).Return(map[uuid.UUID][]models.RecipeIngredient{
+		soupID: {
+			{RecipeID: soupID, Name: "Onions", Quantity: "2"},
+			{RecipeID: soupID, Name: "Carrots", Quantity: "3", Unit: "Pcs"},
+		},
+		stewID: {{RecipeID: stewID, Name: "onions ", Quantity: "1"}},
+	}, nil)
+	listRepo.On("GetListByID", ctx, listID).Return(&models.List{ID: listID, GroupID: groupID}, nil)
+	listRepo.On("ListItemsByList", ctx, listID, 0, 0).Return([]models.ListItem{
+		{ID: onionRowID, ListID: listID, Name: "onions", Quantity: 5, Checked: true},
+	}, nil)
+	listRepo.On("UpdateItem", ctx, mock.MatchedBy(func(item *models.ListItem) bool {
+		return item.ID == onionRowID && !item.Checked && item.Quantity == 3
+	})).Return(nil)
+	listRepo.On("CreateItems", ctx, mock.MatchedBy(func(items []models.ListItem) bool {
+		return len(items) == 1 && items[0].Name == "Carrots" && items[0].Unit == "Pcs"
+	})).Return(nil)
+
+	targetID := listID
+	_, created, err := svc.GenerateShoppingList(ctx, user, groupID, from, to, &targetID)
+	require.NoError(t, err)
+	assert.Len(t, created, 2)
+	listRepo.AssertExpectations(t)
+}

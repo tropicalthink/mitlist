@@ -288,7 +288,10 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
       final title = _titleController.text.trim().isEmpty
           ? _titleFromUrl(url, l10n)
           : _titleController.text.trim();
-      final ingredients = await _buildEnrichedIngredients();
+      // Ingredients keep the words the person wrote. Swapping in the matched
+      // catalog name renamed "Kaffee" to "Coffee" and "cheese" to "Cheese
+      // Dip"; linking happens where the items land on a list instead.
+      final ingredients = _buildIngredients();
       final shareGroupId = _shareWithHousehold ? _activeGroupId() : null;
 
       await recipeRepo.createRecipeOfflineFirst(
@@ -463,49 +466,6 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
 
   String? _activeGroupId() =>
       resolveActiveGroupId(_groups, ref.read(currentGroupIdProvider));
-
-  Future<List<CreateIngredientRequest>> _buildEnrichedIngredients() async {
-    final ingredients = _buildIngredients();
-    final groupId = resolveActiveGroupId(
-      _groups,
-      ref.read(currentGroupIdProvider),
-    );
-    if (groupId == null || ingredients.isEmpty) return ingredients;
-    try {
-      await ref.read(grocerySeedProvider.future);
-      final links = ref.read(canonicalLinkServiceProvider);
-      final context = <String>[];
-      final resolutionContext = await links.prepareContext(groupId);
-      final enriched = <CreateIngredientRequest>[];
-      for (final ingredient in ingredients) {
-        final result = await links.resolveHighConfidenceResult(
-          ingredient.name,
-          groupId,
-          listContext: context,
-          context: resolutionContext,
-        );
-        if (result?.canonicalItemId case final canonicalId?) {
-          context.add(canonicalId);
-        }
-        enriched.add(CreateIngredientRequest(
-          // Keep the original line in rawText, while giving recipe/list
-          // integrations the clean canonical label for matching and merging.
-          name: result == null
-              ? ingredient.name
-              : GrocerySuggestionService.labelForSelection(
-                  ingredient.name,
-                  result.displayName,
-                ),
-          quantity: ingredient.quantity,
-          unit: ingredient.unit,
-          rawText: ingredient.rawText,
-        ));
-      }
-      return enriched;
-    } catch (_) {
-      return ingredients;
-    }
-  }
 
   List<CreateStepRequest> _buildSteps() {
     final text = _stepsController.text.trim();

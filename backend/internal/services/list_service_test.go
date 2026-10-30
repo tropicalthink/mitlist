@@ -549,3 +549,39 @@ func TestListService_AddItemsBatch_SingleListFetch(t *testing.T) {
 	listRepo.AssertNumberOfCalls(t, "GetListByID", 1)
 	listRepo.AssertNotCalled(t, "GetItemByListNameUnit", ctx, mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 }
+
+// A recipe's "onion " tops up the list's open "Onion" row, and a row checked
+// off last trip comes back with the new amount instead of last week's plus it.
+func TestListService_AddItemsBatch_MergesByNormalisedNameAndRestoresChecked(t *testing.T) {
+	ctx := context.Background()
+	user := validUser()
+	listID := uuid.New()
+	groupID := uuid.New()
+	onionID := uuid.New()
+	milkID := uuid.New()
+
+	listRepo := new(mocks.MockListRepo)
+	groupRepo := new(mocks.MockGroupRepo)
+	svc := NewListService(listRepo, groupRepo)
+
+	listRepo.On("GetListByID", ctx, listID).Return(&models.List{ID: listID, GroupID: groupID}, nil)
+	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
+	listRepo.On("ListItemsByList", ctx, listID, 0, 0).Return([]models.ListItem{
+		{ID: onionID, ListID: listID, Name: "Onion", Quantity: 1},
+		{ID: milkID, ListID: listID, Name: "Milk", Unit: "L", Quantity: 4, Checked: true},
+	}, nil)
+	listRepo.On("UpdateItem", ctx, mock.MatchedBy(func(item *models.ListItem) bool {
+		return item.ID == onionID && item.Quantity == 3 && !item.Checked
+	})).Return(nil)
+	listRepo.On("UpdateItem", ctx, mock.MatchedBy(func(item *models.ListItem) bool {
+		return item.ID == milkID && item.Quantity == 1 && !item.Checked
+	})).Return(nil)
+
+	items, err := svc.AddItemsBatch(ctx, user, listID, []ListItemAmountInput{
+		{Name: "onion ", Amount: 2},
+		{Name: "milk", Amount: 1, Unit: "l"},
+	})
+	require.NoError(t, err)
+	require.Len(t, items, 2)
+	listRepo.AssertNotCalled(t, "CreateItem", ctx, mock.Anything)
+}

@@ -234,12 +234,15 @@ func (s *MealPlanService) GenerateShoppingList(ctx context.Context, user *models
 		return nil, nil, &api.ValidationError{Message: "no meal plans in selected date range"}
 	}
 
-	// Collect all ingredients scaled by servings
+	// Collect all ingredients scaled by servings. Recipes spell the same
+	// ingredient differently ("Onion", "onion "), so lines merge on a
+	// normalised name and keep the first spelling seen.
 	type ingredientKey struct {
 		name string
 		unit string
 	}
 	ingredientMap := make(map[ingredientKey]float64)
+	displayNames := make(map[ingredientKey]ingredientKey)
 
 	recipeIDs := make([]uuid.UUID, 0, len(plans))
 	seenRecipes := make(map[uuid.UUID]struct{}, len(plans))
@@ -274,7 +277,10 @@ func (s *MealPlanService) GenerateShoppingList(ctx context.Context, user *models
 		}
 
 		for _, ing := range ingredients {
-			key := ingredientKey{name: ing.Name, unit: ing.Unit}
+			key := ingredientKey{name: normalizeItemName(ing.Name), unit: normalizeItemName(ing.Unit)}
+			if _, seen := displayNames[key]; !seen {
+				displayNames[key] = ingredientKey{name: strings.TrimSpace(ing.Name), unit: strings.TrimSpace(ing.Unit)}
+			}
 			qty := parseIngredientAmount(ing.Quantity) * scale
 			if qty <= 0 {
 				qty = 1 * scale
@@ -313,33 +319,55 @@ func (s *MealPlanService) GenerateShoppingList(ctx context.Context, user *models
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to list existing items: %w", err)
 	}
-	existingNames := make(map[string]struct{}, len(existingItems))
-	existingCanonicalIDs := make(map[uuid.UUID]struct{}, len(existingItems))
-	for _, item := range existingItems {
-		existingNames[strings.ToLower(strings.TrimSpace(item.Name))] = struct{}{}
+	// Only rows still waiting to be bought count as "already there". A checked
+	// row on a reused list was bought last time; it is restored instead.
+	openNames := make(map[string]struct{}, len(existingItems))
+	openCanonicalIDs := make(map[uuid.UUID]struct{}, len(existingItems))
+	checkedByName := make(map[string]*models.ListItem, len(existingItems))
+	for i := range existingItems {
+		item := &existingItems[i]
+		name := normalizeItemName(item.Name)
+		if item.Checked {
+			if _, ok := checkedByName[name]; !ok {
+				checkedByName[name] = item
+			}
+			continue
+		}
+		openNames[name] = struct{}{}
 		if item.CanonicalItemID != nil {
-			existingCanonicalIDs[*item.CanonicalItemID] = struct{}{}
+			openCanonicalIDs[*item.CanonicalItemID] = struct{}{}
 		}
 	}
 
 	// Add ingredients to list
 	toCreate := make([]models.ListItem, 0, len(ingredientMap))
+	restored := make([]models.ListItem, 0)
 	for key, qty := range ingredientMap {
-		if _, exists := existingNames[strings.ToLower(strings.TrimSpace(key.name))]; exists {
+		if _, exists := openNames[key.name]; exists {
+			continue
+		}
+		if previous, ok := checkedByName[key.name]; ok {
+			previous.Checked = false
+			previous.Quantity = qty
+			previous.Unit = displayNames[key].unit
+			if err := s.listRepo.UpdateItem(ctx, previous); err != nil {
+				return nil, nil, fmt.Errorf("failed to restore item: %w", err)
+			}
+			restored = append(restored, *previous)
 			continue
 		}
 		item := models.ListItem{
 			ListID:   targetList.ID,
-			Name:     key.name,
+			Name:     displayNames[key].name,
 			Quantity: qty,
-			Unit:     key.unit,
+			Unit:     displayNames[key].unit,
 			AddedBy:  &user.ID,
 		}
 		if s.resolveCanonical != nil {
-			if canonicalID, resolveErr := s.resolveCanonical(ctx, groupID, key.name); resolveErr == nil {
+			if canonicalID, resolveErr := s.resolveCanonical(ctx, groupID, displayNames[key].name); resolveErr == nil {
 				item.CanonicalItemID = canonicalID
 				if canonicalID != nil {
-					if _, exists := existingCanonicalIDs[*canonicalID]; exists {
+					if _, exists := openCanonicalIDs[*canonicalID]; exists {
 						continue
 					}
 				}
@@ -352,9 +380,15 @@ func (s *MealPlanService) GenerateShoppingList(ctx context.Context, user *models
 			return nil, nil, fmt.Errorf("failed to create items: %w", err)
 		}
 	}
-	createdItems := toCreate
+	createdItems := append(toCreate, restored...)
 
 	return targetList, createdItems, nil
+}
+
+// normalizeItemName folds case and whitespace so "Onion " and "onion" are one
+// ingredient and match one list row.
+func normalizeItemName(name string) string {
+	return strings.Join(strings.Fields(strings.ToLower(name)), " ")
 }
 
 func parseIngredientAmount(raw string) float64 {

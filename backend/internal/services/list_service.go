@@ -551,9 +551,15 @@ func (s *ListService) AddItemsBatch(ctx context.Context, user *models.User, list
 		name string
 		unit string
 	}
+	// Rows match on case- and space-insensitive name and unit, so "Onion" from
+	// a recipe tops up the "onion" already on the list. An open row wins over a
+	// checked one with the same name.
 	existingByKey := make(map[itemKey]*models.ListItem, len(existingItems))
 	for i := range existingItems {
-		key := itemKey{name: strings.TrimSpace(existingItems[i].Name), unit: strings.TrimSpace(existingItems[i].Unit)}
+		key := itemKey{name: normalizeItemName(existingItems[i].Name), unit: normalizeItemName(existingItems[i].Unit)}
+		if current, ok := existingByKey[key]; ok && !current.Checked {
+			continue
+		}
 		existingByKey[key] = &existingItems[i]
 	}
 
@@ -568,9 +574,14 @@ func (s *ListService) AddItemsBatch(ctx context.Context, user *models.User, list
 		if input.Amount <= 0 {
 			return nil, &api.ValidationError{Field: "amount", Message: "amount must be greater than zero"}
 		}
-		key := itemKey{name: name, unit: unit}
+		key := itemKey{name: normalizeItemName(name), unit: normalizeItemName(unit)}
 		if item, ok := existingByKey[key]; ok {
-			item.Quantity += input.Amount
+			if item.Checked {
+				// Bought last time: this is a fresh need, not more of the old one.
+				item.Quantity = input.Amount
+			} else {
+				item.Quantity += input.Amount
+			}
 			item.Checked = false
 			if note != "" {
 				item.Note = note

@@ -593,9 +593,13 @@ func (h *RecipeHandler) AddMissingToList(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// Build set of existing item names (normalized)
+	// Only rows still waiting to be bought count as present. A checked row was
+	// bought last time; AddItemsBatch restores it with the recipe's amount.
 	existingNames := make(map[string]struct{}, len(existingItems))
 	for _, item := range existingItems {
+		if item.Checked {
+			continue
+		}
 		existingNames[normalizeName(item.Name)] = struct{}{}
 	}
 
@@ -645,7 +649,7 @@ func (h *RecipeHandler) AddMissingToList(w http.ResponseWriter, r *http.Request)
 }
 
 func normalizeName(name string) string {
-	return strings.ToLower(strings.TrimSpace(name))
+	return strings.Join(strings.Fields(strings.ToLower(name)), " ")
 }
 
 func parseIngredientAmount(raw string) float64 {
