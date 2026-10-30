@@ -1470,6 +1470,11 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                   .where((it) => !it.checked)
                   .map((it) => it.name.toLowerCase())
                   .toSet(),
+              currentCanonicalIds: _controller.items
+                  .where((it) => !it.checked)
+                  .map((it) => it.canonicalItemId)
+                  .whereType<String>()
+                  .toSet(),
               onAdd: _addRestockSuggestion,
             ),
           ),

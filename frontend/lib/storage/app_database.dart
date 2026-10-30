@@ -1236,8 +1236,7 @@ FROM recipes_table;
     return (select(outboxOps)
           ..where((t) => t.attemptCount.isSmallerThanValue(maxAttempts))
           ..orderBy([
-            (t) =>
-                OrderingTerm(expression: t.createdAt, mode: OrderingMode.asc)
+            (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.asc)
           ]))
         .watch();
   }
@@ -2344,6 +2343,35 @@ INSERT INTO item_aliases_table
     });
   }
 
+  /// Whether [listItemId] already produced a purchase at or after [since]: a
+  /// check, uncheck, re-check of one row is one purchase, not two.
+  Future<bool> hasPurchaseForListItemSince({
+    required String listItemId,
+    required DateTime since,
+  }) async {
+    final row = await (select(purchaseHistoryTable)
+          ..where((t) =>
+              t.listItemId.equals(listItemId) &
+              t.purchasedAt.isBiggerOrEqualValue(since))
+          ..limit(1))
+        .getSingleOrNull();
+    return row != null;
+  }
+
+  /// The household's purchases at or after [since], across all lists — the
+  /// items bought on the same trip.
+  Future<List<PurchaseHistoryTableData>> getGroupPurchasesSince({
+    required String groupId,
+    required DateTime since,
+  }) {
+    return (select(purchaseHistoryTable)
+          ..where((t) =>
+              t.groupId.equals(groupId) &
+              t.canonicalItemId.isNotNull() &
+              t.purchasedAt.isBiggerOrEqualValue(since)))
+        .get();
+  }
+
   Future<List<PurchaseHistoryTableData>> getRecentPurchases({
     required String groupId,
     required String canonicalItemId,
@@ -2431,6 +2459,22 @@ INSERT INTO item_aliases_table
       });
     return merged;
   }
+
+  /// A value that changes whenever the household's purchase history does
+  /// (new check-off, synced purchase, cleared data): count plus newest time.
+  Future<String> getGroupPurchaseRevision(String groupId) =>
+      _purchaseRevisionQuery(groupId).getSingle();
+
+  Stream<String> watchGroupPurchaseRevision(String groupId) =>
+      _purchaseRevisionQuery(groupId).watchSingle();
+
+  Selectable<String> _purchaseRevisionQuery(String groupId) => customSelect(
+        '''SELECT COUNT(*) AS n, COALESCE(MAX(purchased_at), 0) AS latest
+             FROM purchase_history_table
+            WHERE group_id = ?''',
+        variables: [Variable.withString(groupId)],
+        readsFrom: {purchaseHistoryTable},
+      ).map((row) => '${row.read<int>('n')}:${row.read<int>('latest')}');
 
   Future<Map<String, int>> getGroupPurchaseCountsForPrior({
     required String groupId,

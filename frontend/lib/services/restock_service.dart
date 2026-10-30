@@ -41,6 +41,7 @@ class RestockService {
   Future<List<RestockSuggestion>> due({
     required String groupId,
     Set<String> currentItemNames = const {},
+    Set<String> currentCanonicalIds = const {},
     List<String> listContextIds = const [],
     int limit = 8,
   }) async {
@@ -64,34 +65,41 @@ class RestockService {
     final suggestions = <RestockSuggestion>[];
     for (final entry in ranked) {
       final name = nameById[entry.canonicalItemId] ?? entry.canonicalItemId;
-      if (normalizedCurrent.contains(name.toLowerCase())) continue;
+      if (normalizedCurrent.contains(name.toLowerCase()) ||
+          currentCanonicalIds.contains(entry.canonicalItemId)) {
+        continue;
+      }
+      // Bought within the first quarter of its usual interval (today, for a
+      // weekly item): suggesting it again would be noise.
+      if (entry.daysSince * 4 < entry.estimatedIntervalDays) continue;
       suggestions.add(RestockSuggestion(
         canonicalItemId: entry.canonicalItemId,
         name: name,
         intervalDays: entry.estimatedIntervalDays,
         daysSince: entry.daysSince,
-        reason: _reason(entry.features),
+        reason: _reason(entry),
       ));
       if (suggestions.length == limit) break;
     }
     return suggestions;
   }
 
-  RestockReason _reason(HouseholdPriorFeatures features) {
+  RestockReason _reason(ScoredPriorItem entry) {
+    // "Due" is about the item's own rhythm: it has been at least one usual
+    // interval since the last purchase. (Comparing score contributions could
+    // never pick it: dueWeighted is dueness × familiarity, so it is always at
+    // most the familiarity term it was weighed against.)
+    final features = entry.features;
     final weights = _prior.defaults;
-    final dueContribution = weights.dueWeightedWeight * features.dueWeighted;
     final usualContribution = weights.familiarityWeight * features.familiarity +
         weights.dayOfWeekWeight * features.dayOfWeek;
     final cooccurrenceContribution =
         weights.cooccurrenceWeight * features.cooccurrence;
-    if (cooccurrenceContribution > dueContribution &&
-        cooccurrenceContribution > usualContribution) {
+    if (cooccurrenceContribution > usualContribution) {
       return RestockReason.goesWith;
     }
-    if (dueContribution > usualContribution &&
-        dueContribution > cooccurrenceContribution) {
+    if (entry.daysSince >= entry.estimatedIntervalDays)
       return RestockReason.due;
-    }
     return RestockReason.usual;
   }
 

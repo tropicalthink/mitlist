@@ -26,6 +26,14 @@ import 'outbox_drainer.dart';
 /// over to [to].
 typedef ListIdChange = ({String from, String to});
 
+/// A row checked again within this window of its last purchase was unchecked
+/// by mistake, not bought twice.
+const Duration kPurchaseRecheckWindow = Duration(hours: 12);
+
+/// Purchases this close together count as one shopping trip for "bought
+/// together".
+const Duration kSameTripWindow = Duration(hours: 3);
+
 class ListRepository {
   final AppDatabase _db;
   final ListService _remote;
@@ -786,6 +794,18 @@ class ListRepository {
       )),
     ]);
     await _patchListPreviewFromLocalItems(listId);
+    // A check-off from the widget is a purchase like one in the app.
+    await _recordPurchaseSignal(listId, itemId, row);
+  }
+
+  /// Records the purchase for a check-off the widget already delivered to the
+  /// server itself. A no-op when the row is not cached, and a repeat within
+  /// [kPurchaseRecheckWindow] counts once.
+  Future<void> recordExternalPurchase(String listId, String itemId) async {
+    final rows = await _db.getItemsByListOnce(listId);
+    final row = rows.firstWhereOrNull((r) => r.id == itemId);
+    if (row == null) return;
+    await _recordPurchaseSignal(listId, itemId, row);
   }
 
   /// Shows an item added outside the app under [tempId] (the native op id)
@@ -1008,8 +1028,7 @@ class ListRepository {
     final ids = targets.map((r) => r.id).toList();
 
     await _db.transaction(() async {
-      await (_db.delete(_db.listItemsTable)..where((t) => t.id.isIn(ids)))
-          .go();
+      await (_db.delete(_db.listItemsTable)..where((t) => t.id.isIn(ids))).go();
       await _patchListPreviewFromLocalItems(listId);
       await _db.enqueueOutbox(
         id: _uuid.v4(),
@@ -1338,7 +1357,8 @@ class ListRepository {
   Future<OutboxOp?> _queuedCreateList(String listId) async {
     if (!isLocalListId(listId)) return null;
     return (_db.select(_db.outboxOps)
-          ..where((t) => t.type.equals('createList') & t.entityId.equals(listId))
+          ..where(
+              (t) => t.type.equals('createList') & t.entityId.equals(listId))
           ..limit(1))
         .getSingleOrNull();
   }
@@ -1347,7 +1367,8 @@ class ListRepository {
   /// ops whose payload names it.
   Future<List<OutboxOp>> _queuedOpsForList(String listId) async {
     final ops = await (_db.select(_db.outboxOps)
-          ..where((t) => t.type.isIn(const ['createList', ..._listScopedOpTypes])))
+          ..where(
+              (t) => t.type.isIn(const ['createList', ..._listScopedOpTypes])))
         .get();
     return ops.where((op) {
       if (op.entityId == listId) return true;
@@ -2185,6 +2206,15 @@ class ListRepository {
       final groupId = await _db.getListGroupId(listId);
       if (groupId == null) return;
 
+      final purchasedAt = DateTime.now();
+      if (await _db.hasPurchaseForListItemSince(
+        listItemId: itemId,
+        since: purchasedAt.subtract(kPurchaseRecheckWindow),
+      )) {
+        // Unchecked by mistake and checked again: the purchase already counts.
+        return;
+      }
+
       // Kept final (not a reassigned var) so it promotes to non-null inside the
       // nested transaction closure below.
       final String canonicalId;
@@ -2216,12 +2246,18 @@ class ListRepository {
           ));
         }
       }
-      final peers = await _db.getCheckedItemsWithCanonical(listId);
-      final peerCanonicalIds = peers
+      // "Bought together" means bought on the same trip, not "ticked on this
+      // list at some point": a reused list keeps rows checked weeks ago.
+      final tripPurchases = await _db.getGroupPurchasesSince(
+        groupId: groupId,
+        since: purchasedAt.subtract(kSameTripWindow),
+      );
+      final peerCanonicalIds = tripPurchases
           .where((p) =>
-              p.id != itemId &&
-              !excludedPeerItemIds.contains(p.id) &&
-              p.canonicalItemId != null)
+              p.listItemId != itemId &&
+              !excludedPeerItemIds.contains(p.listItemId) &&
+              p.canonicalItemId != null &&
+              p.canonicalItemId != canonicalId)
           .map((p) => p.canonicalItemId!)
           .toSet()
           .toList();
@@ -2239,7 +2275,6 @@ class ListRepository {
             'default_unit': item.defaultUnit,
           };
       final eventId = _uuid.v4();
-      final purchasedAt = DateTime.now();
       final event = <String, dynamic>{
         'id': eventId,
         'canonical_item': stub(canonical),

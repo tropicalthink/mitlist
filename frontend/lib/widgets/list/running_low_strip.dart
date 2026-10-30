@@ -23,6 +23,7 @@ class RunningLowStrip extends ConsumerWidget {
     super.key,
     required this.groupId,
     required this.currentItemNames,
+    this.currentCanonicalIds = const {},
     required this.onAdd,
   });
 
@@ -33,6 +34,10 @@ class RunningLowStrip extends ConsumerWidget {
   /// are filtered out client-side so the strip never re-proposes things the
   /// user already added.
   final Set<String> currentItemNames;
+
+  /// Canonical items already on the open list. A row typed as "Milch" and a
+  /// suggestion named "Whole milk" share an item even though the names differ.
+  final Set<String> currentCanonicalIds;
 
   /// Called when the user taps a chip. The screen is responsible for writing
   /// the item to the list via the existing offline-first write path.
@@ -48,7 +53,9 @@ class RunningLowStrip extends ConsumerWidget {
       error: (_, __) => const SizedBox.shrink(),
       data: (suggestions) {
         final filtered = suggestions
-            .where((s) => !currentItemNames.contains(s.name.toLowerCase()))
+            .where((s) =>
+                !currentItemNames.contains(s.name.toLowerCase()) &&
+                !currentCanonicalIds.contains(s.canonicalItemId))
             .toList();
         if (filtered.isEmpty) return const SizedBox.shrink();
 

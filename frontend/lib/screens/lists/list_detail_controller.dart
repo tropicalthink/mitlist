@@ -1567,6 +1567,7 @@ class ListDetailController extends ChangeNotifier {
       final restock = await ref.read(restockServiceProvider).due(
             groupId: groupId,
             currentItemNames: currentNames,
+            currentCanonicalIds: _openCanonicalContextIds.toSet(),
             listContextIds: _openCanonicalContextIds,
             limit: 5,
           );

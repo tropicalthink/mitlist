@@ -107,10 +107,17 @@ final groceryRepositoryProvider =
   return GroceryRepository.create(db, ref);
 });
 
+/// Changes whenever [groupId]'s purchase history does.
+final purchaseRevisionProvider =
+    StreamProvider.autoDispose.family<String, String>((ref, groupId) {
+  return ref.watch(appDatabaseProvider).watchGroupPurchaseRevision(groupId);
+});
+
 /// Household-prior restock predictions for [groupId], computed on-device.
-final runningLowProvider =
-    FutureProvider.family<List<RestockSuggestion>, String>(
-        (ref, groupId) async {
+/// Recomputed after every purchase so a just-checked item leaves the strip.
+final runningLowProvider = FutureProvider.autoDispose
+    .family<List<RestockSuggestion>, String>((ref, groupId) async {
+  await ref.watch(purchaseRevisionProvider(groupId).future);
   return ref.read(restockServiceProvider).due(groupId: groupId, limit: 8);
 });
 

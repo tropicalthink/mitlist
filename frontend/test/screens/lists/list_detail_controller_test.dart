@@ -51,6 +51,7 @@ class _CapturingRestock extends RestockService {
   Future<List<RestockSuggestion>> due({
     required String groupId,
     Set<String> currentItemNames = const {},
+    Set<String> currentCanonicalIds = const {},
     List<String> listContextIds = const [],
     int limit = 8,
   }) async {
