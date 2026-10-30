@@ -264,10 +264,35 @@ class PpOcrProcessor {
     return PpOcrImageTensor(data: tensor, width: width, height: height);
   }
 
+  /// The recognizer classes worth decoding for grocery lists: the CTC blank,
+  /// the space class, and every Latin-script character. The bundled dictionary
+  /// holds 18,708 classes, 18,208 of them CJK and other scripts, which a
+  /// German/English/French/Spanish list never contains. Restricting decoding to
+  /// this set removes impossible glyphs and makes each timestep ~37× cheaper.
+  static Int32List latinClasses(List<String> characters) {
+    final allowed = <int>[0];
+    for (var i = 0; i < characters.length; i++) {
+      if (_isLatinCharacter(characters[i])) allowed.add(i + 1);
+    }
+    allowed.add(characters.length + 1);
+    return Int32List.fromList(allowed);
+  }
+
+  static bool _isLatinCharacter(String character) {
+    if (character.runes.length != 1) return false;
+    final c = character.runes.single;
+    return (c >= 0x20 && c <= 0x7E) || // ASCII
+        (c >= 0xA0 && c <= 0x24F) || // Latin-1, Extended-A/B (ß ä é ñ œ ½ ×)
+        (c >= 0x1E00 && c <= 0x1EFF) || // Latin Extended Additional
+        (c >= 0x2010 && c <= 0x2027) || // dashes, quotes, bullets
+        c == 0x20AC; // €
+  }
+
   PpOcrDecodedText decodeCtc(
     List<List<double>> logits,
-    List<String> characters,
-  ) {
+    List<String> characters, {
+    Int32List? allowedClasses,
+  }) {
     final text = StringBuffer();
     var confidenceSum = 0.0;
     var emitted = 0;
@@ -276,10 +301,19 @@ class PpOcrProcessor {
       if (timestep.isEmpty) continue;
       var bestIndex = 0;
       var bestScore = timestep.first;
-      for (var index = 1; index < timestep.length; index++) {
-        if (timestep[index] > bestScore) {
-          bestIndex = index;
-          bestScore = timestep[index];
+      if (allowedClasses == null) {
+        for (var index = 1; index < timestep.length; index++) {
+          if (timestep[index] > bestScore) {
+            bestIndex = index;
+            bestScore = timestep[index];
+          }
+        }
+      } else {
+        for (final index in allowedClasses) {
+          if (index < timestep.length && timestep[index] > bestScore) {
+            bestIndex = index;
+            bestScore = timestep[index];
+          }
         }
       }
       if (bestIndex != 0 && bestIndex != previous) {
@@ -311,11 +345,18 @@ class PpOcrProcessor {
     int beamWidth = 8,
     int classesPerStep = 6,
     int maxAlternatives = 5,
+    Int32List? allowedClasses,
   }) {
-    final greedy = decodeCtc(logits, characters);
+    final greedy =
+        decodeCtc(logits, characters, allowedClasses: allowedClasses);
     if (logits.isEmpty || beamWidth < 2 || classesPerStep < 2) {
       return [greedy];
     }
+    // Whether the graph emits probabilities or raw logits is a property of
+    // the model, so decide once rather than per timestep.
+    final firstStep = logits.firstWhere((step) => step.isNotEmpty,
+        orElse: () => const <double>[]);
+    final emitsProbabilities = _looksLikeProbabilities(firstStep);
 
     var beams = <String, _CtcBeam>{
       '': const _CtcBeam(
@@ -323,9 +364,20 @@ class PpOcrProcessor {
     };
     for (final timestep in logits) {
       if (timestep.isEmpty) continue;
-      final logProbabilities = _asLogProbabilities(timestep);
-      final topClasses = _topClassIndices(logProbabilities, classesPerStep);
-      if (!topClasses.contains(0)) topClasses.add(0);
+      // Work on the allowed classes only; `classOf` maps a position in that
+      // compact view back to the model's class index.
+      final values = allowedClasses == null
+          ? timestep
+          : [
+              for (final index in allowedClasses)
+                if (index < timestep.length) timestep[index],
+            ];
+      int classOf(int position) =>
+          allowedClasses == null ? position : allowedClasses[position];
+      final logProbabilities = _asLogProbabilities(values, emitsProbabilities);
+      final topPositions = _topClassIndices(logProbabilities, classesPerStep);
+      // Position 0 is the blank in both views.
+      if (!topPositions.contains(0)) topPositions.add(0);
       final next = <String, _CtcBeam>{};
 
       void updateBlank(_CtcBeam source, double score) {
@@ -351,8 +403,9 @@ class PpOcrProcessor {
 
       for (final beam in beams.values) {
         final total = _logAdd(beam.blank, beam.nonBlank);
-        for (final classIndex in topClasses) {
-          final logP = logProbabilities[classIndex];
+        for (final position in topPositions) {
+          final logP = logProbabilities[position];
+          final classIndex = classOf(position);
           if (classIndex == 0) {
             updateBlank(beam, total + logP);
             continue;
@@ -564,13 +617,25 @@ double _logAdd(double a, double b) {
 
 String _tokenKey(List<int> tokens) => tokens.join(',');
 
-List<double> _asLogProbabilities(List<double> values) {
+bool _looksLikeProbabilities(List<double> values) {
+  if (values.isEmpty) return false;
   final sum = values.fold<double>(0, (total, value) => total + value);
-  final probabilities = values.every((value) => value >= 0 && value <= 1) &&
+  return values.every((value) => value >= 0 && value <= 1) &&
       sum >= 0.8 &&
       sum <= 1.2;
-  if (probabilities) {
-    return values.map((value) => math.log(math.max(value, 1e-30))).toList();
+}
+
+/// Log-probabilities over [values], renormalised over just these classes so a
+/// restricted class set still forms a distribution.
+List<double> _asLogProbabilities(List<double> values, bool areProbabilities) {
+  if (areProbabilities) {
+    final logs =
+        values.map((value) => math.log(math.max(value, 1e-30))).toList();
+    final maximum = logs.reduce(math.max);
+    final denominator = logs.fold<double>(
+        0, (total, value) => total + math.exp(value - maximum));
+    final logDenominator = maximum + math.log(denominator);
+    return logs.map((value) => value - logDenominator).toList();
   }
   final maximum = values.reduce(math.max);
   final denominator = values.fold<double>(
