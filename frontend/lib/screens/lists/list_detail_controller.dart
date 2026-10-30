@@ -19,6 +19,7 @@ import '../../repositories/list_repository.dart';
 import '../../repositories/outbox_error_classifier.dart';
 import '../../services/list_service.dart';
 import '../../services/restock_service.dart';
+import '../../services/scan/correction_memory_service.dart';
 import '../../services/scan/grocery_suggestion_service.dart';
 import '../../services/scan/household_suggestion_engine.dart';
 import '../../theme/animations.dart';
@@ -741,7 +742,14 @@ class ListDetailController extends ChangeNotifier {
   /// bottom, where a fresh add would land), and an open match is left alone.
   /// The quantity path keeps its additive behaviour — it merges into the same
   /// row inside the repository — so only the outcome reported back differs.
-  Future<AddItemOutcome> addItem(String text, {String? canonicalItemId}) async {
+  /// Adds [text] to the list. [pickedFromQuery] is what the person had typed
+  /// when they picked the suggestion that supplied [canonicalItemId]; the add
+  /// then also teaches the resolver that word (see [_learnFromPick]).
+  Future<AddItemOutcome> addItem(
+    String text, {
+    String? canonicalItemId,
+    String? pickedFromQuery,
+  }) async {
     final service = _service;
     if (service == null) {
       throw StateError('list detail is not ready');
@@ -826,6 +834,9 @@ class ListDetailController extends ChangeNotifier {
           : (match.checked
               ? AddItemOutcome.restored
               : AddItemOutcome.increased);
+      if (canonicalItemId != null && pickedFromQuery != null) {
+        unawaited(_learnFromPick(pickedFromQuery, canonicalItemId));
+      }
       if (_disposed) return outcome;
       _pendingCreates.remove(pending.id);
       _items.removeWhere((item) => item.id == pending.id);
@@ -844,6 +855,44 @@ class ListDetailController extends ChangeNotifier {
       _sectionsDirty = true;
       _notify();
       rethrow;
+    }
+  }
+
+  /// Remembers that this household means [canonicalItemId] by [typedQuery]
+  /// ("nutella" → chocolate hazelnut spread), so the next time it is typed and
+  /// submitted without tapping the suggestion it still links.
+  ///
+  /// Only words the catalog could not have matched by spelling are learned. A
+  /// fragment ("mi" before tapping Milk) or a near-spelling of the item's own
+  /// name would teach a misleading household alias.
+  Future<void> _learnFromPick(String typedQuery, String canonicalItemId) async {
+    final groupId = _groupId;
+    final typed = normaliseText(parseComposerItem(typedQuery).name);
+    if (groupId == null || typed.isEmpty) return;
+    try {
+      final db = ref.read(appDatabaseProvider);
+      final items = await db.getCanonicalItemsByIds([canonicalItemId]);
+      if (items.isEmpty) return;
+      final item = items.single;
+      if (!CorrectionMemoryService.isLearnablePick(
+          typed, [item.nameEn, item.nameDe, item.nameFr, item.nameEs])) {
+        return;
+      }
+      await ref.read(correctionMemoryProvider).recordAlias(
+            groupId: groupId,
+            userId: _userId ?? '',
+            rawText: typed,
+            canonicalItemId: canonicalItemId,
+            source: 'suggestion_pick',
+          );
+      final groceryRepo = await ref.read(groceryRepositoryProvider.future);
+      unawaited(groceryRepo.uploadCorrection(
+        groupId: groupId,
+        rawText: typed,
+        canonicalItemId: canonicalItemId,
+      ));
+    } catch (_) {
+      // Learning is best-effort; the add itself already succeeded.
     }
   }
 

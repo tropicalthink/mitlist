@@ -17,6 +17,24 @@ class CorrectionMemoryService {
 
   CorrectionMemoryService(this._db);
 
+  /// Whether picking a suggestion for [typed] says something the catalog does
+  /// not already know. A fragment ("mi" before tapping Milk) or a near-spelling
+  /// of one of [canonicalNames] is matched by spelling anyway, and saved as a
+  /// household alias it would outrank every other "mi…" item from then on.
+  static bool isLearnablePick(String typed, Iterable<String> canonicalNames) {
+    final query = normaliseText(typed);
+    if (query.length < 3) return false;
+    for (final name in canonicalNames) {
+      final normalized = normaliseText(name);
+      if (normalized.isEmpty) continue;
+      if (normalized.startsWith(query) ||
+          editDistance(query, normalized) <= 2) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   /// Record that [rawText] (normalised) should resolve to [canonicalItemId].
   /// Idempotent: if an alias already exists for this text/canonical pair, the
   /// weight is incremented instead.

@@ -94,17 +94,18 @@ void main() {
               sources: {HouseholdSuggestionSource.catalog},
             ),
           ],
-          onSuggestionSelected: (s) =>
-              events.add('selected:${s.canonicalItemId}'),
+          onSuggestionSelected: (s, typed) =>
+              events.add('selected:${s.canonicalItemId}:$typed'),
         ),
       ),
     );
 
+    controller.text = 'mlk';
     await tester.tap(find.text('Milch'));
     await tester.pump();
 
     expect(controller.text, equals('Milch'));
-    expect(events, equals(['selected:milk', 'add:Milch']));
+    expect(events, equals(['selected:milk:mlk', 'add:Milch']));
     final cardSize = tester.getSize(find.byType(AppCard));
     expect(cardSize.width, 160);
     expect(cardSize.height, greaterThanOrEqualTo(56));

@@ -82,6 +82,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   bool _showProductSuggestions = false;
   String? _pendingCanonicalId;
 
+  /// What was typed when a suggestion was picked, so the pick can teach the
+  /// resolver that word.
+  String? _pendingTypedQuery;
+
   /// Operation-scoped re-entrancy guards. Unrelated work (for example adding
   /// an item while another row's photo uploads) must not silently block the
   /// entire screen.
@@ -207,6 +211,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     // A chip tap sets the text first (running this) and the id after, so the
     // suggestion flow itself is unaffected.
     _pendingCanonicalId = null;
+    _pendingTypedQuery = null;
     if (!_composerFocusNode.hasFocus) return;
     _controller.refreshSuggestionsDebounced(_newItemController.text);
   }
@@ -251,6 +256,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       _editingTitle = false;
       _showProductSuggestions = false;
       _pendingCanonicalId = null;
+      _pendingTypedQuery = null;
       _autoFocusDone = false;
       _operationGeneration++;
       _activeOperations.clear();
@@ -408,13 +414,19 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       return;
     }
     final canonicalId = _pendingCanonicalId;
+    final typedQuery = _pendingTypedQuery;
     _pendingCanonicalId = null;
+    _pendingTypedQuery = null;
     unawaited(Haptics.light());
     // addItem publishes a pending row synchronously before its first database
     // await, so by the time this returns the future the row is already visible.
     // Clear only after that publish, so there is never a frame where the value
     // is visible in neither place.
-    final addFuture = _controller.addItem(text, canonicalItemId: canonicalId);
+    final addFuture = _controller.addItem(
+      text,
+      canonicalItemId: canonicalId,
+      pickedFromQuery: canonicalId == null ? null : typedQuery,
+    );
     if (_newItemController.text.trim() == text) {
       _newItemController.clear();
     }
@@ -441,6 +453,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         _newItemController.selection =
             TextSelection.collapsed(offset: text.length);
         _pendingCanonicalId = canonicalId;
+        _pendingTypedQuery = typedQuery;
       }
       final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1608,7 +1621,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       onScan: () => _launchScan(),
       suggestions: _controller.suggestions,
       showProductSuggestions: _showProductSuggestions,
-      onSuggestionSelected: (s) => _pendingCanonicalId = s.canonicalItemId,
+      onSuggestionSelected: (s, typedQuery) {
+        _pendingCanonicalId = s.canonicalItemId;
+        _pendingTypedQuery = typedQuery;
+      },
     );
   }
 }

@@ -28,7 +28,10 @@ class ListComposerBar extends StatelessWidget {
   final VoidCallback onScan;
   final List<HouseholdSuggestion> suggestions;
   final bool showProductSuggestions;
-  final ValueChanged<HouseholdSuggestion>? onSuggestionSelected;
+
+  /// A suggestion was tapped; [typedQuery] is the text it replaced.
+  final void Function(HouseholdSuggestion suggestion, String typedQuery)?
+      onSuggestionSelected;
 
   Widget _buildSuggestions(BuildContext context) {
     if (!showProductSuggestions) return const SizedBox.shrink();
@@ -42,8 +45,11 @@ class ListComposerBar extends StatelessWidget {
                 brightness,
               ),
               onTap: () {
+                // What was typed ("nutella") is gone once the field takes the
+                // suggestion's name, so it travels with the pick.
+                final typed = controller.text;
                 controller.text = suggestion.name;
-                onSuggestionSelected?.call(suggestion);
+                onSuggestionSelected?.call(suggestion, typed);
                 onAdd();
               },
             ))
