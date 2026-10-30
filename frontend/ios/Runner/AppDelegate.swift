@@ -4,42 +4,41 @@ import UIKit
 import WidgetKit
 
 @main
-@objc class AppDelegate: FlutterAppDelegate {
+@objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
   private let oauthLauncherChannelName = "mitlist/oauth_launcher"
 
   /// ASWebAuthenticationSession is deallocated — and the sheet dismissed — the
   /// moment nothing holds it, so the in-flight session has to outlive the call.
   private var authSession: ASWebAuthenticationSession?
 
-  override func application(
-    _ application: UIApplication,
-    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
-  ) -> Bool {
-    GeneratedPluginRegistrant.register(with: self)
+  /// The app runs on the UIScene lifecycle (Info.plist `UIApplicationSceneManifest`):
+  /// apps built with the iOS 27 SDK that don't adopt it are killed by UIKit at
+  /// launch. The scene creates the FlutterViewController, and with it the
+  /// engine, after `didFinishLaunching`, when the app delegate has no window
+  /// yet, so plugins and app channels register here instead.
+  func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
+    GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
 
-    if let controller = window?.rootViewController as? FlutterViewController {
-      let channel = FlutterMethodChannel(
-        name: oauthLauncherChannelName,
-        binaryMessenger: controller.binaryMessenger
-      )
-      channel.setMethodCallHandler { [weak self] call, result in
-        guard let self = self else {
-          result(FlutterMethodNotImplemented)
-          return
-        }
-        guard call.method == "startAuthSession" else {
-          result(FlutterMethodNotImplemented)
-          return
-        }
-        self.startAuthSession(call: call, result: result)
+    let messenger = engineBridge.applicationRegistrar.messenger()
+    let channel = FlutterMethodChannel(
+      name: oauthLauncherChannelName,
+      binaryMessenger: messenger
+    )
+    channel.setMethodCallHandler { [weak self] call, result in
+      guard let self = self else {
+        result(FlutterMethodNotImplemented)
+        return
       }
-
-      // Home screen widgets, Siri and the shopping-trip Live Activity
-      // (plan 047, contract C4).
-      WidgetChannel.register(with: controller.binaryMessenger)
+      guard call.method == "startAuthSession" else {
+        result(FlutterMethodNotImplemented)
+        return
+      }
+      self.startAuthSession(call: call, result: result)
     }
 
-    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    // Home screen widgets, Siri and the shopping-trip Live Activity
+    // (plan 047, contract C4).
+    WidgetChannel.register(with: messenger)
   }
 
   /// The silent "widgets stale" push (plan 047, C6): ask every widget to
@@ -138,7 +137,11 @@ import WidgetKit
 }
 
 extension AppDelegate: ASWebAuthenticationPresentationContextProviding {
+  /// The Flutter view's window belongs to the window scene, not the app
+  /// delegate, whose `window` stays nil under the scene lifecycle.
   func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
-    return window ?? ASPresentationAnchor()
+    let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+    let scene = scenes.first { $0.activationState == .foregroundActive } ?? scenes.first
+    return scene?.keyWindow ?? scene?.windows.first ?? ASPresentationAnchor()
   }
 }
