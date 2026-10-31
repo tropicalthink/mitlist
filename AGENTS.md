@@ -121,6 +121,9 @@ The mobile scanner uses bundled **PP-OCRv6 ONNX models** and an on-device grocer
 
 - Service: `frontend/lib/services/scan/scan_pipeline_service.dart`
 - Screen: `frontend/lib/screens/scanner/scanner_screen.dart`
+- One engine for every photo: `ocrServiceProvider` (`providers/ocr_provider.dart`). Lists read with `OcrPageKind.list` (household vocabulary + catalog); receipts and recipes read with `OcrPageKind.document` (text as printed, up to 240 boxes) through `screens/scanner/document_photo_reader.dart`.
+- Receipts: the Money screen's camera button → `screens/money/receipt_scan.dart` → `services/scan/receipt_parser.dart` (store, date, total, priced lines; checks the lines add up to the total) → the expense sheet, prefilled with the photo attached and the lines in the notes. Eval: `samples/receipts/` + `test/fixtures/receipts/`.
+- Recipes: "Read a photo" on recipe creation → `services/scan/recipe_text_parser.dart` (title, two-column ingredients, method split into sentences, ½ fractions repaired). Eval: `samples/recipes/` + `test/fixtures/recipes/`.
 
 ## Cross-Feature Integration
 
