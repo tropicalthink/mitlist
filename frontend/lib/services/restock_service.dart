@@ -98,8 +98,9 @@ class RestockService {
     if (cooccurrenceContribution > usualContribution) {
       return RestockReason.goesWith;
     }
-    if (entry.daysSince >= entry.estimatedIntervalDays)
+    if (entry.daysSince >= entry.estimatedIntervalDays) {
       return RestockReason.due;
+    }
     return RestockReason.usual;
   }
 
