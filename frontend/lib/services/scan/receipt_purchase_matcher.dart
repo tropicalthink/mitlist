@@ -19,6 +19,24 @@ class ReceiptPurchase {
   final double quantity;
 }
 
+/// An open item on one of the household's shopping lists that a receipt
+/// shows was bought.
+class ReceiptListItem {
+  const ReceiptListItem({
+    required this.listId,
+    required this.itemId,
+    required this.name,
+    required this.canonicalItemId,
+  });
+
+  final String listId;
+  final String itemId;
+
+  /// The item's name on the list ("Milk"), not the receipt's.
+  final String name;
+  final String canonicalItemId;
+}
+
 /// Finds which lines of a receipt are things the household already buys.
 ///
 /// Receipt text is shorthand ("TUNA STEAKS", "ORANGE NET", "C/CHP COOKIE"),
@@ -68,5 +86,66 @@ class ReceiptPurchaseMatcher {
           quantity: counts[entry.key]!,
         ),
     ];
+  }
+
+  /// The open shopping-list items [purchases] account for: an item counts
+  /// when it is linked to the same grocery item as a receipt line, which is
+  /// the household's own vocabulary agreeing with the receipt, so names alone
+  /// ("Milk" against "MILK ROLL") never tick anything. One line ticks one
+  /// item; when a thing is on several lists, the list the receipt covers
+  /// most wins (the one that was being shopped), then the most recent one.
+  /// An item added after [boughtBy] cannot have been on this receipt.
+  Future<List<ReceiptListItem>> openListItems(
+    List<ReceiptPurchase> purchases,
+    String groupId, {
+    required DateTime boughtBy,
+  }) async {
+    if (purchases.isEmpty) return const [];
+    final wanted = {for (final p in purchases) p.canonicalItemId: p.quantity};
+    final lists = [
+      for (final list in await _db.getListsByGroupOnce(groupId))
+        if (list.type == 'shopping') list,
+    ];
+    final candidates = <(ListsTableData, ListItemsTableData)>[];
+    for (final list in lists) {
+      for (final item in await _db.getItemsByListOnce(list.id)) {
+        if (item.checked || item.createdAt.isAfter(boughtBy)) continue;
+        if (!wanted.containsKey(item.canonicalItemId)) continue;
+        candidates.add((list, item));
+      }
+    }
+    if (candidates.isEmpty) return const [];
+
+    final coverage = <String, int>{};
+    for (final (list, _) in candidates) {
+      coverage[list.id] = (coverage[list.id] ?? 0) + 1;
+    }
+    candidates.sort((a, b) {
+      final byCoverage = coverage[b.$1.id]!.compareTo(coverage[a.$1.id]!);
+      if (byCoverage != 0) return byCoverage;
+      final byRecency = b.$1.updatedAt.compareTo(a.$1.updatedAt);
+      if (byRecency != 0) return byRecency;
+      return a.$2.position.compareTo(b.$2.position);
+    });
+    final left = {
+      for (final entry in wanted.entries) entry.key: entry.value.ceil(),
+    };
+    return [
+      for (final (list, item) in candidates)
+        if (_take(left, item.canonicalItemId!))
+          ReceiptListItem(
+            listId: list.id,
+            itemId: item.id,
+            name: item.name,
+            canonicalItemId: item.canonicalItemId!,
+          ),
+    ];
+  }
+
+  static bool _take(Map<String, int> left, String id) {
+    final n = left[id] ?? 0;
+    if (n <= 0) return false;
+    left[id] = n - 1;
+    return true;
   }
 }

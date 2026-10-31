@@ -145,4 +145,69 @@ void main() {
   test('a household with no history learns nothing from a receipt', () async {
     expect(await matcher.match(_receipt('aldi_2006'), 'new-home'), isEmpty);
   });
+
+  test('a receipt ticks the open list items it covers', () async {
+    final listed = DateTime(2026, 10, 30);
+    ListsTableCompanion list(String id, String type, DateTime updated) =>
+        ListsTableCompanion.insert(
+          id: id,
+          groupId: 'home',
+          name: id,
+          type: type,
+          createdAt: listed,
+          updatedAt: updated,
+        );
+    var position = 0;
+    ListItemsTableCompanion item(
+      String id,
+      String listId,
+      String name,
+      String? canonical, {
+      bool checked = false,
+      DateTime? added,
+    }) =>
+        ListItemsTableCompanion.insert(
+          id: id,
+          listId: listId,
+          name: name,
+          quantity: 1,
+          unit: '',
+          checked: checked,
+          position: position++,
+          canonicalItemId: Value(canonical),
+          createdAt: added ?? listed,
+          updatedAt: added ?? listed,
+        );
+    await db.upsertListsRows([
+      list('weekly', 'shopping', listed),
+      // More recent, but the receipt covers less of it.
+      list('party', 'shopping', listed.add(const Duration(hours: 5))),
+      list('errands', 'todo', listed),
+    ]);
+    await db.upsertListItemsRows([
+      item('w-apples', 'weekly', 'Apples', 'apple'),
+      item('w-bananas', 'weekly', 'Bananas', 'banana'),
+      item('w-milk', 'weekly', 'Milk', 'milk'),
+      item('w-done', 'weekly', 'Bananas', 'banana', checked: true),
+      item('w-unlinked', 'weekly', 'apples', null),
+      item('p-bananas', 'party', 'Bananas', 'banana'),
+      item('e-bananas', 'errands', 'Bananas for Mum', 'banana'),
+    ]);
+
+    final purchases = await matcher.match(_receipt('woolworths'), 'home');
+    Future<List<String>> ticked(DateTime boughtBy) async => [
+          for (final item in await matcher.openListItems(purchases, 'home',
+              boughtBy: boughtBy))
+            item.itemId,
+        ];
+
+    // One line ticks one item, on the list being shopped; the milk was not
+    // bought, the checked row is done, the to-do list is not shopping.
+    expect(await ticked(DateTime(2026, 10, 31)),
+        unorderedEquals(['w-apples', 'w-bananas']));
+    // Things listed after the receipt was printed were not on it.
+    expect(await ticked(DateTime(2026, 10, 29)), isEmpty);
+    expect(await matcher.openListItems(const [], 'home', boughtBy: listed),
+        isEmpty);
+  });
 }
