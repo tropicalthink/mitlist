@@ -1022,10 +1022,16 @@ class _IgnoredTile extends StatelessWidget {
           const SizedBox(width: MitlistSpacing.sm),
           Expanded(
             child: Text(
-              prediction.displayName,
+              // What is on the paper, struck through only if it was crossed
+              // out there; print set aside as not-a-list-line is not.
+              prediction.cleanName,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    decoration: TextDecoration.lineThrough,
+                    decoration: prediction.markStatus == MarkStatus.crossedOut
+                        ? TextDecoration.lineThrough
+                        : null,
                   ),
             ),
           ),

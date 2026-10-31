@@ -15,7 +15,14 @@ enum ConfidenceLevel {
 }
 
 /// Whether the source line had a visual mark on it.
-enum MarkStatus { normal, crossedOut, checked }
+enum MarkStatus {
+  normal,
+  crossedOut,
+  checked,
+
+  /// Probably not a list entry: print around the list, a date, a smudge.
+  notList,
+}
 
 /// Pixel bounding box within the original image.
 class OcrBBox {
