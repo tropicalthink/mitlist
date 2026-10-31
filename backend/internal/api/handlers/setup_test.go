@@ -451,23 +451,9 @@ func newListRouter(t *testing.T) (chi.Router, *ListHandler) {
 
 	r := chi.NewRouter()
 	r.Use(testAuthMiddleware)
-	r.Post("/api/v1/lists", h.CreateList)
-	r.Get("/api/v1/lists", h.ListLists)
-	r.Post("/api/v1/shopping-locations", h.CreateShoppingLocation)
-	r.Get("/api/v1/shopping-locations", h.ListShoppingLocations)
-	r.Post("/api/v1/products", h.CreateProduct)
-	r.Get("/api/v1/products", h.ListProducts)
-	r.Get("/api/v1/lists/{id}", h.GetList)
-	r.Patch("/api/v1/lists/{id}", h.UpdateList)
-	r.Delete("/api/v1/lists/{id}", h.DeleteList)
-	r.Post("/api/v1/lists/{id}/items", h.CreateItem)
-	r.Get("/api/v1/lists/{id}/items", h.ListItems)
-	r.Post("/api/v1/lists/{id}/items/clear", h.ClearItems)
-	r.Post("/api/v1/lists/{id}/items/add", h.AddItemAmount)
-	r.Post("/api/v1/lists/{id}/items/remove", h.RemoveItemAmount)
-	r.Patch("/api/v1/lists/{id}/items/{item_id}", h.UpdateItem)
-	r.Delete("/api/v1/lists/{id}/items/{item_id}", h.DeleteItem)
-	r.Post("/api/v1/lists/{id}/reorder", h.ReorderItems)
+	// The handler's own route table, so a new endpoint is testable here
+	// without a second copy to keep in step.
+	r.Route("/api/v1", h.RegisterRoutes)
 	return r, h
 }
 
