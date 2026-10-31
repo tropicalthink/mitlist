@@ -174,3 +174,18 @@
 {"canonical_id": "kitchen_roll", "alias": "küchenpapier", "lang": "de", "source": "curated"}
 {"canonical_id": "pasta", "alias": "nudeln", "lang": "de", "source": "curated"}
 {"canonical_id": "oat_milk", "alias": "oatly", "lang": "en", "source": "curated"}
+{"canonical_id": "eggplant", "alias": "aubergine", "lang": "de", "source": "curated"}
+{"canonical_id": "eggplant", "alias": "auberginen", "lang": "de", "source": "curated"}
+{"canonical_id": "eggplant", "alias": "aubergine", "lang": "en", "source": "curated"}
+{"canonical_id": "eggplant", "alias": "eierfrucht", "lang": "de", "source": "curated"}
+{"canonical_id": "frozen_french_fries", "alias": "fries", "lang": "en", "source": "curated"}
+{"canonical_id": "frozen_french_fries", "alias": "french fries", "lang": "en", "source": "curated"}
+{"canonical_id": "frozen_french_fries", "alias": "pommes frites", "lang": "de", "source": "curated"}
+{"canonical_id": "trash_bags", "alias": "mülltüten", "lang": "de", "source": "curated"}
+{"canonical_id": "trash_bags", "alias": "mülltüte", "lang": "de", "source": "curated"}
+{"canonical_id": "trash_bags", "alias": "müllsäcke", "lang": "de", "source": "curated"}
+{"canonical_id": "trash_bags", "alias": "restmülltüten", "lang": "de", "source": "curated"}
+{"canonical_id": "trash_bags", "alias": "restmüllbeutel", "lang": "de", "source": "curated"}
+{"canonical_id": "trash_bags", "alias": "biomüllbeutel", "lang": "de", "source": "curated"}
+{"canonical_id": "trash_bags", "alias": "biomüll beutel", "lang": "de", "source": "curated"}
+{"canonical_id": "trash_bags", "alias": "biomülltüten", "lang": "de", "source": "curated"}

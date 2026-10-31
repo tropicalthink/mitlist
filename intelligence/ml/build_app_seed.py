@@ -42,7 +42,7 @@ CURATED_ALIASES = HERE / "data" / "curated_aliases.jsonl"
 CURATED_MINED = HERE / "data" / "curated_aliases_mined.jsonl"
 ALIAS_BLOCKLIST = HERE / "data" / "alias_blocklist.jsonl"
 ADDED_ITEMS = HERE / "data" / "added_items.jsonl"
-ASSET_VERSION = 6
+ASSET_VERSION = 7
 
 LANGS = ("de", "en", "fr", "es")
 PRIMARY_LANGS = ("de", "en")

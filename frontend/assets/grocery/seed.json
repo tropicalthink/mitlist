@@ -1,5 +1,5 @@
 {
-"version": 6,
+"version": 7,
 "items": [
 {
 "id": "strawberry",
@@ -5879,7 +5879,7 @@
 },
 {
 "id": "eggplant",
-"name_de": "Eierfrucht",
+"name_de": "Aubergine",
 "name_en": "Eggplant",
 "name_fr": "Aubergine",
 "name_es": "Berenjena",
@@ -5901,6 +5901,7 @@
 "eierfr",
 "eierf",
 "brgn",
+"auberginen",
 "aubergine (eggplant)"
 ],
 "aliases_en": [
@@ -92479,8 +92480,10 @@
 "tiefk",
 "tfkhlpmmss frts",
 "t.k.pommes",
+"pommes frites",
 "tiefkühlpommesfrites",
-"tfkhlpmmssfrts"
+"tfkhlpmmssfrts",
+"pommesfrites"
 ],
 "aliases_en": [
 "frozen french fries",
@@ -92499,7 +92502,10 @@
 "froze",
 "froßen french fries",
 "frozen french freis",
-"frozenfries"
+"fries",
+"french fries",
+"frozenfries",
+"frenchfries"
 ],
 "aliases_fr": [
 "frites surgelées",
@@ -168626,7 +168632,6 @@
 "canned eggplant",
 "dosenoberginen",
 "dosenaubergien",
-"auberginen",
 "dosen-abi",
 "dosenauberginens",
 "dosena",
@@ -201329,7 +201334,14 @@
 "umllbeutel",
 "mulbeutel",
 "muullbeutel",
-"müllbeutel 20 stück"
+"müllbeutel 20 stück",
+"mülltüten",
+"mülltüte",
+"restmülltüten",
+"restmüllbeutel",
+"biomüllbeutel",
+"biomüll beutel",
+"biomülltüten"
 ],
 "aliases_en": [
 "trash bags",
@@ -206729,7 +206741,6 @@
 "mllsck",
 "muellsack",
 "mullsack",
-"müllsäcke",
 "müllsack (müllbeutel)",
 "müllzsack",
 "müll-sack",
@@ -255568,11 +255579,9 @@
 "brgnn gtrcknt",
 "Auberginen-Getrocknet",
 "auberginengetrocknet",
-"auberginen",
 "auberginet",
 "getrocknet auberginen",
 "melanzani getrocknet",
-"aubergine",
 "auberg",
 "dried eggplant",
 "auberginen (getrocknet)",
@@ -255617,7 +255626,6 @@
 "aubergines sech",
 "séchées aubergines",
 "aubergines déshydratées",
-"aubergine",
 "aubergi",
 "aubergines séchées france",
 "abrgns schs",

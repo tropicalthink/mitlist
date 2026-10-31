@@ -216,3 +216,9 @@
 {"text": "asdf", "accept": []}
 {"text": "pick up kids", "accept": []}
 {"text": "steuererklärung", "accept": []}
+{"text": "aubergine", "accept": ["eggplant"]}
+{"text": "auberginen", "accept": ["eggplant"]}
+{"text": "fries", "accept": ["frozen_french_fries"]}
+{"text": "pommes frites", "accept": ["frozen_french_fries"]}
+{"text": "mülltüten", "accept": ["trash_bags"]}
+{"text": "restmülltüten", "accept": ["trash_bags"]}

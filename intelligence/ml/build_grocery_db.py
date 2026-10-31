@@ -47,7 +47,7 @@ VERSION_SIDECAR = ASSETS / "grocery_ref.version.json"
 # Must equal GroceryReferenceDatabase.schemaVersion in the Flutter app.
 DRIFT_SCHEMA_VERSION = 1
 # Bump when any input asset changes so the installer re-copies on-device.
-REF_VERSION = 2
+REF_VERSION = 3
 GLOBAL_GROUP_ID = "__global__"
 
 # Fixed epoch for created_at/updated_at — never displayed, only filtered on
