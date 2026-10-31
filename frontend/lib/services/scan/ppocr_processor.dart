@@ -78,6 +78,69 @@ class PpOcrLineEvidence {
   final List<Float64List> logProbabilities;
 }
 
+/// How the photo was enlarged and straightened before reading, so boxes can
+/// be mapped back onto the photo the caller holds (training crops, review).
+class PpOcrGeometry {
+  const PpOcrGeometry({
+    required this.originalWidth,
+    required this.originalHeight,
+    this.scale = 1,
+    this.rotationDegrees = 0,
+    this.rotatedWidth = 0,
+    this.rotatedHeight = 0,
+  });
+
+  final int originalWidth;
+  final int originalHeight;
+
+  /// Enlargement applied first (1 = none).
+  final double scale;
+
+  /// Rotation applied after scaling (0 = none), as passed to img.copyRotate.
+  final double rotationDegrees;
+  final int rotatedWidth;
+  final int rotatedHeight;
+
+  /// The axis-aligned box on the original photo covering [region].
+  PpOcrRegion mapBack(PpOcrRegion region) {
+    var xs = <double>[region.left.toDouble(), region.right.toDouble()];
+    var ys = <double>[region.top.toDouble(), region.bottom.toDouble()];
+    var corners = <(double, double)>[
+      for (final x in xs)
+        for (final y in ys) (x, y),
+    ];
+    if (rotationDegrees != 0) {
+      // Inverse of img.copyRotate: destination (x, y) samples the scaled
+      // source at (w2 + X cos a + Y sin a, h2 - X sin a + Y cos a).
+      final radians = rotationDegrees * math.pi / 180;
+      final ca = math.cos(radians);
+      final sa = math.sin(radians);
+      final w2 = 0.5 * originalWidth * scale;
+      final h2 = 0.5 * originalHeight * scale;
+      final dw2 = 0.5 * rotatedWidth;
+      final dh2 = 0.5 * rotatedHeight;
+      corners = [
+        for (final (x, y) in corners)
+          (
+            w2 + (x - dw2) * ca + (y - dh2) * sa,
+            h2 - (x - dw2) * sa + (y - dh2) * ca,
+          ),
+      ];
+    }
+    xs = [for (final (x, _) in corners) x / scale];
+    ys = [for (final (_, y) in corners) y / scale];
+    final left = xs.reduce(math.min).floor().clamp(0, originalWidth - 1);
+    final top = ys.reduce(math.min).floor().clamp(0, originalHeight - 1);
+    return PpOcrRegion(
+      left: left,
+      top: top,
+      right: xs.reduce(math.max).ceil().clamp(left + 1, originalWidth),
+      bottom: ys.reduce(math.max).ceil().clamp(top + 1, originalHeight),
+      score: region.score,
+    );
+  }
+}
+
 /// Portable PP-OCRv6 image transforms and post-processing.
 ///
 /// This intentionally uses only Dart and `package:image`; Android and iOS run
@@ -91,6 +154,115 @@ class PpOcrProcessor {
     final decoded = img.decodeImage(bytes);
     if (decoded == null) throw const FormatException('Unsupported scan image.');
     return img.bakeOrientation(decoded);
+  }
+
+  /// Enlarges a small photo (a thumbnail, a cropped screenshot) so its
+  /// handwriting reaches the recognizer at a readable height. Photos already
+  /// [minLongSide] or larger are returned unchanged.
+  img.Image normalizeScale(
+    img.Image source, {
+    int minLongSide = 1200,
+    int targetLongSide = 1600,
+  }) {
+    final longSide = math.max(source.width, source.height);
+    if (longSide >= minLongSide || longSide == 0) return source;
+    final scale = targetLongSide / longSide;
+    return img.copyResize(
+      source,
+      width: (source.width * scale).round(),
+      height: (source.height * scale).round(),
+      interpolation: img.Interpolation.cubic,
+    );
+  }
+
+  /// The dominant slant of the text lines in degrees (positive: lines run
+  /// down to the right), from the elongated components of the detector map.
+  /// Returns 0 when there are too few lines to tell.
+  double estimateSkewDegrees(
+    List<List<double>> probability, {
+    double threshold = 0.2,
+  }) {
+    if (probability.isEmpty || probability.first.isEmpty) return 0;
+    final height = probability.length;
+    final width = probability.first.length;
+    final visited = Uint8List(width * height);
+    final queue = Int32List(width * height);
+    final angles = <(double, int)>[];
+    for (var startY = 0; startY < height; startY++) {
+      for (var startX = 0; startX < width; startX++) {
+        final start = startY * width + startX;
+        if (visited[start] != 0 || probability[startY][startX] <= threshold) {
+          continue;
+        }
+        var head = 0;
+        var tail = 0;
+        queue[tail++] = start;
+        visited[start] = 1;
+        var n = 0;
+        var sx = 0.0, sy = 0.0, sxx = 0.0, syy = 0.0, sxy = 0.0;
+        while (head < tail) {
+          final index = queue[head++];
+          final y = index ~/ width;
+          final x = index - y * width;
+          n++;
+          sx += x;
+          sy += y;
+          sxx += x * x;
+          syy += y * y;
+          sxy += x * y;
+          for (var dy = -1; dy <= 1; dy++) {
+            final nextY = y + dy;
+            if (nextY < 0 || nextY >= height) continue;
+            for (var dx = -1; dx <= 1; dx++) {
+              final nextX = x + dx;
+              if (nextX < 0 || nextX >= width) continue;
+              final next = nextY * width + nextX;
+              if (visited[next] != 0 ||
+                  probability[nextY][nextX] <= threshold) {
+                continue;
+              }
+              visited[next] = 1;
+              queue[tail++] = next;
+            }
+          }
+        }
+        if (n < 40) continue;
+        final mx = sx / n, my = sy / n;
+        final cxx = sxx / n - mx * mx;
+        final cyy = syy / n - my * my;
+        final cxy = sxy / n - mx * my;
+        final spread = math.sqrt((cxx - cyy) * (cxx - cyy) + 4 * cxy * cxy);
+        final major = (cxx + cyy + spread) / 2;
+        final minor = (cxx + cyy - spread) / 2;
+        // Only clearly line-shaped blobs (about 3:1 or longer) say anything
+        // about the slant; dots and single letters do not.
+        if (minor <= 0 || major / minor < 9) continue;
+        final angle = 0.5 * math.atan2(2 * cxy, cxx - cyy) * 180 / math.pi;
+        if (angle.abs() > 45) continue;
+        angles.add((angle, n));
+      }
+    }
+    if (angles.length < 3) return 0;
+    angles.sort((a, b) => a.$1.compareTo(b.$1));
+    final total = angles.fold<int>(0, (sum, a) => sum + a.$2);
+    var running = 0;
+    for (final (angle, weight) in angles) {
+      running += weight;
+      if (running * 2 >= total) return angle;
+    }
+    return angles.last.$1;
+  }
+
+  /// Rotates [source] by [degrees] (as img.copyRotate), filling the exposed
+  /// corners with white so the detector does not read them as ink.
+  img.Image rotate(img.Image source, double degrees) {
+    final copy = img.Image.from(source)
+      ..backgroundColor = img.ColorRgb8(255, 255, 255);
+    return img.copyRotate(
+      copy,
+      angle: degrees,
+      interpolation: img.Interpolation.linear,
+    );
   }
 
   /// Matches PP-OCRv6 detector preprocessing: BGR, ImageNet normalization,
@@ -729,11 +901,30 @@ class PpOcrProcessor {
       }
       (target ?? (groups..add(<PpOcrRecognizedRegion>[])).last).add(line);
     }
+    // A wide horizontal gap inside one row is a column break ("Klopapier ...
+    // PENNY", "Goose Island ... + Burgers"), not a space between words.
+    final split = <List<PpOcrRecognizedRegion>>[];
     for (final group in groups) {
       group.sort((a, b) => a.region.left.compareTo(b.region.left));
+      final heights = group.map((e) => e.region.height).toList()..sort();
+      final lineHeight = heights[heights.length ~/ 2];
+      var current = <PpOcrRecognizedRegion>[group.first];
+      for (final fragment in group.skip(1)) {
+        final gap = fragment.region.left - current.last.region.right;
+        if (gap > lineHeight * kColumnGapLineHeights) {
+          split.add(current);
+          current = [fragment];
+        } else {
+          current.add(fragment);
+        }
+      }
+      split.add(current);
     }
-    return groups;
+    return split;
   }
+
+  /// A horizontal gap wider than this many line heights separates columns.
+  static const double kColumnGapLineHeights = 1.6;
 
   /// Joins fragments occupying the same visual row. This recovered split
   /// phrases such as `Olive | oil` and reduced unmatched sample predictions

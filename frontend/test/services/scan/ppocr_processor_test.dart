@@ -263,4 +263,109 @@ void main() {
       expect(chosen, ['abe', 'care']);
     });
   });
+
+  group('photo geometry', () {
+    const processor = PpOcrProcessor();
+
+    /// A detector map with three text lines slanted by [degrees].
+    List<List<double>> slantedLines(double degrees) {
+      const w = 400, h = 300;
+      final map = List.generate(h, (_) => List<double>.filled(w, 0));
+      final t = math.tan(degrees * math.pi / 180);
+      for (final baseline in [80, 150, 220]) {
+        for (var x = 60; x < 340; x++) {
+          final y = (baseline + (x - 200) * t).round();
+          for (var dy = -3; dy <= 3; dy++) {
+            if (y + dy >= 0 && y + dy < h) map[y + dy][x] = 0.9;
+          }
+        }
+      }
+      return map;
+    }
+
+    test('reads the slant of the lines', () {
+      for (final degrees in [-12.0, -4.0, 0.0, 7.0, 15.0]) {
+        expect(processor.estimateSkewDegrees(slantedLines(degrees)),
+            closeTo(degrees, 1.0));
+      }
+    });
+
+    test('rotating by minus the slant levels the lines', () {
+      // A dark line slanted by 10 degrees on a white page.
+      final page = img.Image(width: 400, height: 300)
+        ..clear(img.ColorRgb8(255, 255, 255));
+      final t = math.tan(10 * math.pi / 180);
+      for (var x = 60; x < 340; x++) {
+        final y = (150 + (x - 200) * t).round();
+        for (var dy = -3; dy <= 3; dy++) {
+          page.setPixelRgb(x, y + dy, 0, 0, 0);
+        }
+      }
+      final level = processor.rotate(page, -10);
+      final map = [
+        for (var y = 0; y < level.height; y++)
+          [
+            for (var x = 0; x < level.width; x++)
+              level.getPixel(x, y).r < 128 ? 0.9 : 0.0,
+          ],
+      ];
+      expect(processor.estimateSkewDegrees([...map, ...map, ...map]).abs(),
+          lessThan(1.0));
+      // The corners the rotation exposes are white, not black ink.
+      expect(level.getPixel(0, 0).r, greaterThan(200));
+    });
+
+    test('boxes map back onto the original photo', () {
+      final page = img.Image(width: 800, height: 600);
+      final rotated = processor.rotate(page, -10);
+      final geometry = PpOcrGeometry(
+        originalWidth: 800,
+        originalHeight: 600,
+        scale: 1,
+        rotationDegrees: -10,
+        rotatedWidth: rotated.width,
+        rotatedHeight: rotated.height,
+      );
+      // The rotated canvas centre is the photo centre.
+      final centre = geometry.mapBack(PpOcrRegion(
+        left: rotated.width ~/ 2 - 1,
+        top: rotated.height ~/ 2 - 1,
+        right: rotated.width ~/ 2 + 1,
+        bottom: rotated.height ~/ 2 + 1,
+        score: 1,
+      ));
+      expect(centre.left, inInclusiveRange(397, 401));
+      expect(centre.top, inInclusiveRange(297, 301));
+      final scaled = const PpOcrGeometry(
+              originalWidth: 400, originalHeight: 300, scale: 4)
+          .mapBack(const PpOcrRegion(
+              left: 400, top: 400, right: 800, bottom: 480, score: 1));
+      expect([scaled.left, scaled.top, scaled.right, scaled.bottom],
+          [100, 100, 200, 120]);
+    });
+
+    test('small photos are enlarged, large ones left alone', () {
+      final small = processor.normalizeScale(img.Image(width: 350, height: 300));
+      expect(small.width, 1600);
+      final large = img.Image(width: 1600, height: 1200);
+      expect(identical(processor.normalizeScale(large), large), isTrue);
+    });
+
+    test('a wide gap inside a row splits columns', () {
+      PpOcrRecognizedRegion at(int left, int right, String text) =>
+          PpOcrRecognizedRegion(
+            region: PpOcrRegion(
+                left: left, top: 100, right: right, bottom: 140, score: 1),
+            text: text,
+            confidence: 1,
+          );
+      final groups = processor.lineGroups([
+        at(10, 120, '1 Bund'),
+        at(135, 300, 'Basilikum'),
+        at(600, 700, 'PENNY'),
+      ]);
+      expect(groups.map((g) => g.map((r) => r.text).join(' ')),
+          ['1 Bund Basilikum', 'PENNY']);
+    });
+  });
 }

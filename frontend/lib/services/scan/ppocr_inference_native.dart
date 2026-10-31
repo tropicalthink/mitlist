@@ -6,6 +6,7 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
+import 'package:image/image.dart' as img;
 import 'package:onnxruntime/onnxruntime.dart';
 
 import 'ocr_lexicon.dart';
@@ -15,6 +16,9 @@ import 'scan_models.dart';
 const _detectorAsset = 'assets/models/ocr/ppocrv6_small_det/inference.onnx';
 const _recognizerAsset = 'assets/models/ocr/ppocrv6_medium_rec/inference.onnx';
 const _charactersAsset = 'assets/models/ocr/ppocrv6_medium_rec/characters.json';
+/// Slant below which a photo is read as it is.
+const double kMinDeskewDegrees = 2;
+
 // Catalog names, for the decoder's unknown-word model and cold-start shortlist.
 const _catalogNamesAsset = 'assets/grocery/autocomplete.json';
 
@@ -313,14 +317,41 @@ class _OcrEngine {
     }
   }
 
-  List<OcrLine> recognise(Uint8List imageBytes, List<OcrLexiconEntry> lexicon) {
-    final source = _processor.decode(imageBytes);
-    final detectorInput = _processor.detectorTensor(source);
-    final probability = _detectorProbability(_run(
+  List<List<double>> _detect(img.Image source) {
+    final input = _processor.detectorTensor(source);
+    return _detectorProbability(_run(
       _detector,
-      detectorInput.data,
-      [1, 3, detectorInput.height, detectorInput.width],
+      input.data,
+      [1, 3, input.height, input.width],
     ));
+  }
+
+  List<OcrLine> recognise(Uint8List imageBytes, List<OcrLexiconEntry> lexicon) {
+    final photo = _processor.decode(imageBytes);
+    // Thumbnails and screenshots are enlarged so handwriting reaches the
+    // recognizer at a readable height.
+    var source = _processor.normalizeScale(photo);
+    var geometry = PpOcrGeometry(
+      originalWidth: photo.width,
+      originalHeight: photo.height,
+      scale: source.width / photo.width,
+    );
+    var probability = _detect(source);
+    // A list photographed at an angle gives axis-aligned boxes that cut
+    // through neighbouring lines. Straighten it and detect again.
+    final skew = _processor.estimateSkewDegrees(probability);
+    if (skew.abs() >= kMinDeskewDegrees) {
+      source = _processor.rotate(source, -skew);
+      geometry = PpOcrGeometry(
+        originalWidth: photo.width,
+        originalHeight: photo.height,
+        scale: geometry.scale,
+        rotationDegrees: -skew,
+        rotatedWidth: source.width,
+        rotatedHeight: source.height,
+      );
+      probability = _detect(source);
+    }
     final regions = _processor.detectorRegions(
       probability,
       originalWidth: source.width,
@@ -361,7 +392,8 @@ class _OcrEngine {
     }
 
     return _processor.mergeLineFragments(decided).map((line) {
-      final region = line.region;
+      // Boxes are reported on the photo the caller sent.
+      final region = geometry.mapBack(line.region);
       return OcrLine(
         text: line.text,
         confidence: line.confidence,
