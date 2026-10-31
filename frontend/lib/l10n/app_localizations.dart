@@ -2480,6 +2480,12 @@ abstract class AppLocalizations {
   /// **'Count {count, plural, =1{1 item} other{{count} items}} you usually buy as bought, for restock and suggestions'**
   String receiptRememberPurchasesDesc(int count);
 
+  /// Expense sheet switch after a receipt scan: tick off the open shopping-list items the receipt shows were bought
+  ///
+  /// In en, this message translates to:
+  /// **'Tick off {count, plural, =1{1 item} other{{count} items}} on your lists'**
+  String receiptTickListItems(int count);
+
   /// Card title: scanning in progress
   ///
   /// In en, this message translates to:

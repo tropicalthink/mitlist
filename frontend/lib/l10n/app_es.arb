@@ -1383,6 +1383,7 @@
   "receiptScanCheckTotal": "Las líneas del tique no suman su total. Revisa el importe y las notas.",
   "receiptRememberPurchases": "Recordar lo comprado",
   "receiptRememberPurchasesDesc": "Contar {count, plural, =1{1 artículo habitual} other{{count} artículos habituales}} como comprados, para reponer y sugerencias",
+  "receiptTickListItems": "Marcar {count, plural, =1{1 artículo} other{{count} artículos}} en tus listas",
   "@recipeCreationTypeItInDesc": {
     "description": "Card subtitle: type manually"
   },

@@ -1383,6 +1383,7 @@
   "receiptScanCheckTotal": "De regels van de bon tellen niet op tot het totaal. Controleer bedrag en notities.",
   "receiptRememberPurchases": "Aankopen onthouden",
   "receiptRememberPurchasesDesc": "{count, plural, =1{1 vast artikel} other{{count} vaste artikelen}} als gekocht tellen, voor aanvullen en suggesties",
+  "receiptTickListItems": "{count, plural, =1{1 item} other{{count} items}} op je lijsten afvinken",
   "@recipeCreationTypeItInDesc": {
     "description": "Card subtitle: type manually"
   },

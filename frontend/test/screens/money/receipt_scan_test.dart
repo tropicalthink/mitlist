@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mitlist/screens/money/receipt_scan.dart';
 import 'package:mitlist/services/scan/receipt_parser.dart';
+import 'package:mitlist/services/scan/receipt_purchase_matcher.dart';
 
 void main() {
   final now = DateTime(2026, 10, 31, 18, 30);
@@ -19,6 +20,30 @@ void main() {
     expect(receiptPurchaseTime(DateTime(2026, 10, 31), now: now), now);
     expect(receiptPurchaseTime(DateTime(2026, 10, 28), now: now),
         DateTime(2026, 10, 28, 12));
+  });
+
+  test('list items added after the receipt day were not on it', () {
+    expect(receiptBoughtBy(null, now: now), now);
+    expect(receiptBoughtBy(DateTime(2026, 10, 31), now: now), now);
+    expect(receiptBoughtBy(DateTime(2026, 10, 28), now: now),
+        DateTime(2026, 10, 29));
+  });
+
+  test('a ticked list item is not also recorded from the receipt', () {
+    const purchases = [
+      ReceiptPurchase(canonicalItemId: 'apple', name: 'APPLES'),
+      ReceiptPurchase(canonicalItemId: 'banana', name: 'BANANAS'),
+    ];
+    final rest = purchasesBesides(purchases, const [
+      ReceiptListItem(
+        listId: 'weekly',
+        itemId: 'w-apples',
+        name: 'Apples',
+        canonicalItemId: 'apple',
+      ),
+    ]);
+    expect([for (final p in rest) p.canonicalItemId], ['banana']);
+    expect(purchasesBesides(purchases, const []), purchases);
   });
 
   test('the lines go into the notes with their prices', () {

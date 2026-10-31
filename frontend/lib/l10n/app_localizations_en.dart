@@ -1414,6 +1414,17 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String receiptTickListItems(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items',
+      one: '1 item',
+    );
+    return 'Tick off $_temp0 on your lists';
+  }
+
+  @override
   String get recipeCreationScanning => 'Scanning…';
 
   @override

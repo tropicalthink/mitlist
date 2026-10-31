@@ -1859,6 +1859,15 @@
       }
     }
   },
+  "receiptTickListItems": "Tick off {count, plural, =1{1 item} other{{count} items}} on your lists",
+  "@receiptTickListItems": {
+    "description": "Expense sheet switch after a receipt scan: tick off the open shopping-list items the receipt shows were bought",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "recipeCreationScanning": "Scanning…",
   "@recipeCreationScanning": {
     "description": "Card title: scanning in progress"

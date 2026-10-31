@@ -55,6 +55,12 @@ class ExpenseCreationSheet extends ConsumerStatefulWidget {
   /// the caller records them once the expense is saved.
   final int receiptPurchaseCount;
   final ValueNotifier<bool>? rememberReceiptPurchases;
+
+  /// Open shopping-list items the scanned receipt shows were bought. With
+  /// [tickReceiptListItems], the sheet offers to tick them off; the caller
+  /// does so once the expense is saved.
+  final List<String> receiptListItemNames;
+  final ValueNotifier<bool>? tickReceiptListItems;
   final ValueNotifier<bool>? dirtyNotifier;
 
   /// The recurring rule being edited, when opened from the recurring list.
@@ -75,6 +81,8 @@ class ExpenseCreationSheet extends ConsumerStatefulWidget {
     this.receiptImage,
     this.receiptPurchaseCount = 0,
     this.rememberReceiptPurchases,
+    this.receiptListItemNames = const [],
+    this.tickReceiptListItems,
     this.dirtyNotifier,
     this.initialRecurring,
     this.recurringOnly = false,
@@ -89,6 +97,8 @@ class ExpenseCreationSheet extends ConsumerStatefulWidget {
     File? receiptImage,
     int receiptPurchaseCount = 0,
     ValueNotifier<bool>? rememberReceiptPurchases,
+    List<String> receiptListItemNames = const [],
+    ValueNotifier<bool>? tickReceiptListItems,
   }) async {
     final l10n = AppLocalizations.of(context)!;
     final dirty = ValueNotifier<bool>(false);
@@ -104,6 +114,8 @@ class ExpenseCreationSheet extends ConsumerStatefulWidget {
         receiptImage: receiptImage,
         receiptPurchaseCount: receiptPurchaseCount,
         rememberReceiptPurchases: rememberReceiptPurchases,
+        receiptListItemNames: receiptListItemNames,
+        tickReceiptListItems: tickReceiptListItems,
         dirtyNotifier: dirty,
       ),
     );
@@ -1333,6 +1345,20 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
                     .receiptRememberPurchasesDesc(widget.receiptPurchaseCount),
                 value: value,
                 onChanged: (next) => remember.value = next,
+              ),
+            ),
+          ],
+          if (widget.tickReceiptListItems case final tick?
+              when widget.receiptListItemNames.isNotEmpty) ...[
+            const SizedBox(height: MitlistSpacing.md),
+            ValueListenableBuilder<bool>(
+              valueListenable: tick,
+              builder: (context, value, _) => AppSwitchListTile(
+                title: l10n
+                    .receiptTickListItems(widget.receiptListItemNames.length),
+                subtitle: widget.receiptListItemNames.join(', '),
+                value: value,
+                onChanged: (next) => tick.value = next,
               ),
             ),
           ],

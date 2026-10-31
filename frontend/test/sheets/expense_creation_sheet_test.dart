@@ -73,6 +73,8 @@ void main() {
     String? initialNotes,
     int receiptPurchaseCount = 0,
     ValueNotifier<bool>? rememberReceiptPurchases,
+    List<String> receiptListItemNames = const [],
+    ValueNotifier<bool>? tickReceiptListItems,
     List<Override> extraOverrides = const [],
     GroupService? groupService,
     AuthService? authService,
@@ -107,6 +109,8 @@ void main() {
                 initialNotes: initialNotes,
                 receiptPurchaseCount: receiptPurchaseCount,
                 rememberReceiptPurchases: rememberReceiptPurchases,
+                receiptListItemNames: receiptListItemNames,
+                tickReceiptListItems: tickReceiptListItems,
               ),
             ),
           ),
@@ -172,6 +176,40 @@ void main() {
     await pumpSheet(tester, rememberReceiptPurchases: remember);
 
     expect(find.text('Remember what was bought'), findsNothing);
+  });
+
+  testWidgets('a receipt offers to tick off what it covers on the lists',
+      (tester) async {
+    final remember = ValueNotifier(true);
+    final tick = ValueNotifier(true);
+    addTearDown(remember.dispose);
+    addTearDown(tick.dispose);
+    await pumpSheet(
+      tester,
+      receiptPurchaseCount: 2,
+      rememberReceiptPurchases: remember,
+      receiptListItemNames: const ['Apples', 'Bananas'],
+      tickReceiptListItems: tick,
+    );
+
+    expect(find.text('Tick off 2 items on your lists'), findsOneWidget);
+    expect(find.text('Apples, Bananas'), findsOneWidget);
+
+    final toggle = find.byType(AppSwitch).last;
+    await tester.ensureVisible(toggle);
+    await tester.pump();
+    await tester.tap(toggle);
+    await tester.pump();
+    expect(tick.value, isFalse);
+    expect(remember.value, isTrue);
+  });
+
+  testWidgets('nothing open on the lists, no tick-off switch', (tester) async {
+    final tick = ValueNotifier(true);
+    addTearDown(tick.dispose);
+    await pumpSheet(tester, tickReceiptListItems: tick);
+
+    expect(find.textContaining('on your lists'), findsNothing);
   });
 
   testWidgets('tapping the summary unfolds the full split editor',
