@@ -12,6 +12,7 @@ import '../utils/uuid_validation.dart';
 import '../services/api_error_mapper.dart';
 import '../services/list_service.dart';
 import '../services/error_reporter.dart';
+import '../services/scan/receipt_purchase_matcher.dart' show ReceiptPurchase;
 import '../services/scan/local_item_promotion_service.dart';
 import '../services/product_events.dart';
 import '../services/response_cache_interceptor.dart';
@@ -2175,6 +2176,123 @@ class ListRepository {
   }
 
   // ---------------------------------------------------------------------------
+  // Purchases read from a till receipt
+  // ---------------------------------------------------------------------------
+
+  /// Records the household's items found on a scanned receipt as bought at
+  /// [purchasedAt], with the same events, bought-together counts and sync op
+  /// as a check-off. An item already recorded within
+  /// [kPurchaseRecheckWindow] of it (checked off on a list during the trip,
+  /// or the same receipt scanned twice) is not counted again. Returns how
+  /// many purchases were recorded.
+  Future<int> recordReceiptPurchases({
+    required String groupId,
+    required List<ReceiptPurchase> purchases,
+    required DateTime purchasedAt,
+  }) async {
+    if (purchases.isEmpty) return 0;
+    final earliest = purchasedAt.subtract(kPurchaseRecheckWindow);
+    final latest = purchasedAt.add(kPurchaseRecheckWindow);
+    final nearby = (await _db.getGroupPurchasesSince(
+      groupId: groupId,
+      since: earliest,
+    ))
+        .where((p) => !p.purchasedAt.isAfter(latest))
+        .toList();
+    final alreadyBought = {for (final p in nearby) p.canonicalItemId!};
+    final fresh = <ReceiptPurchase>[
+      for (final purchase in purchases)
+        if (alreadyBought.add(purchase.canonicalItemId)) purchase,
+    ];
+    if (fresh.isEmpty) return 0;
+
+    // Bought together: everything else on the receipt, and what was checked
+    // off on the same trip. Each pair is counted once, by the later event.
+    final tripPeers = {
+      for (final p in nearby)
+        if (p.purchasedAt.difference(purchasedAt).abs() <= kSameTripWindow)
+          p.canonicalItemId!,
+    };
+    final byId = {
+      for (final item in await _db.getCanonicalItemsByIds(
+        {...tripPeers, for (final p in fresh) p.canonicalItemId}.toList(),
+      ))
+        item.id: item,
+    };
+    final recordable = [
+      for (final purchase in fresh)
+        if (byId.containsKey(purchase.canonicalItemId)) purchase,
+    ];
+    if (recordable.isEmpty) return 0;
+
+    final events = <Map<String, dynamic>>[];
+    final rows = <PurchaseHistoryTableCompanion>[];
+    final pairs = <(String, String)>[];
+    final earlier = <String>[...tripPeers];
+    for (final purchase in recordable) {
+      final id = purchase.canonicalItemId;
+      final peers = [
+        for (final peer in earlier)
+          if (peer != id) peer,
+      ];
+      final eventId = _uuid.v4();
+      events.add({
+        'id': eventId,
+        'canonical_item': _purchaseStub(byId[id]!),
+        'quantity': purchase.quantity,
+        'unit': null,
+        'purchased_at': purchasedAt.toUtc().toIso8601String(),
+        'peers': [
+          for (final peer in peers)
+            if (byId[peer] case final item?) _purchaseStub(item),
+        ],
+      });
+      rows.add(PurchaseHistoryTableCompanion.insert(
+        id: eventId,
+        groupId: groupId,
+        canonicalItemId: Value(id),
+        quantity: Value(purchase.quantity),
+        version: const Value(0),
+        purchasedAt: purchasedAt,
+      ));
+      for (final peer in peers) {
+        pairs.add((id, peer));
+      }
+      earlier.add(id);
+    }
+
+    await _db.transaction(() async {
+      for (final row in rows) {
+        await _db.insertPurchaseHistory(row);
+      }
+      for (final (a, b) in pairs) {
+        await _db.incrementCooccurrence(
+            groupId: groupId, itemAId: a, itemBId: b);
+      }
+      final firstId = events.first['id'] as String;
+      await _db.enqueueOutbox(
+        id: _uuid.v4(),
+        type: 'recordPurchase',
+        payload: {'groupId': groupId, 'events': events},
+        idempotencyKey: 'recordPurchase:$firstId',
+        entityType: 'groceryPurchase',
+        entityId: firstId,
+      );
+    });
+    // Drained after the transaction has committed (see _doPurchaseSignal).
+    _afterLocalWrite();
+    return recordable.length;
+  }
+
+  static Map<String, dynamic> _purchaseStub(CanonicalItemsTableData item) => {
+        'id': apiCanonicalId(item.id),
+        'name_de': item.nameDe,
+        'name_en': item.nameEn,
+        'category': item.category,
+        'default_unit': item.defaultUnit,
+      };
+
+  // ---------------------------------------------------------------------------
   // Phase 6: purchase signal on item check-off
   // ---------------------------------------------------------------------------
 
@@ -2267,13 +2385,7 @@ class ListRepository {
       final byId = {for (final item in canonicalItems) item.id: item};
       final canonical = byId[canonicalId];
       if (canonical == null) return;
-      Map<String, dynamic> stub(CanonicalItemsTableData item) => {
-            'id': apiCanonicalId(item.id),
-            'name_de': item.nameDe,
-            'name_en': item.nameEn,
-            'category': item.category,
-            'default_unit': item.defaultUnit,
-          };
+      const stub = _purchaseStub;
       final eventId = _uuid.v4();
       final event = <String, dynamic>{
         'id': eventId,

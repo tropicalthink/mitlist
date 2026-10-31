@@ -2549,6 +2549,35 @@ INSERT INTO item_aliases_table
     return vocabulary;
   }
 
+  /// The grocery items this household already keeps track of: bought
+  /// before, linked from one of its lists, or named by its own aliases. A
+  /// receipt only confirms purchases of these; it never introduces new ones.
+  Future<Set<String>> getHouseholdCanonicalIds(String groupId) async {
+    final rows = await customSelect(
+      '''SELECT canonical_item_id AS id FROM purchase_history_table
+          WHERE group_id = ? AND canonical_item_id IS NOT NULL
+         UNION
+         SELECT li.canonical_item_id FROM list_items_table li
+           JOIN lists_table l ON l.id = li.list_id
+          WHERE l.group_id = ? AND li.canonical_item_id IS NOT NULL
+         UNION
+         SELECT canonical_item_id FROM item_aliases_table
+          WHERE group_id = ? AND deleted_at IS NULL''',
+      variables: [
+        Variable.withString(groupId),
+        Variable.withString(groupId),
+        Variable.withString(groupId),
+      ],
+      readsFrom: {
+        purchaseHistoryTable,
+        listItemsTable,
+        listsTable,
+        itemAliasesTable
+      },
+    ).get();
+    return {for (final row in rows) row.read<String>('id')};
+  }
+
   Future<Map<String, int>> getGroupPurchaseCountsForPrior({
     required String groupId,
   }) async {
