@@ -1416,6 +1416,20 @@ class AppLocalizationsNl extends AppLocalizations {
       'De regels van de bon tellen niet op tot het totaal. Controleer bedrag en notities.';
 
   @override
+  String get receiptRememberPurchases => 'Aankopen onthouden';
+
+  @override
+  String receiptRememberPurchasesDesc(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count vaste artikelen',
+      one: '1 vast artikel',
+    );
+    return '$_temp0 als gekocht tellen, voor aanvullen en suggesties';
+  }
+
+  @override
   String get recipeCreationScanning => 'Scannen…';
 
   @override

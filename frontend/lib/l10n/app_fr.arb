@@ -1381,6 +1381,8 @@
   "receiptScanReading": "Lecture du ticket…",
   "receiptScanNoTotal": "Aucun total trouvé sur le ticket. Saisis le montant toi-même.",
   "receiptScanCheckTotal": "Les lignes du ticket ne correspondent pas à son total. Vérifie le montant et les notes.",
+  "receiptRememberPurchases": "Retenir les achats",
+  "receiptRememberPurchasesDesc": "Compter {count, plural, =1{1 article habituel} other{{count} articles habituels}} comme achetés, pour le réassort et les suggestions",
   "@recipeCreationTypeItInDesc": {
     "description": "Card subtitle: type manually"
   },

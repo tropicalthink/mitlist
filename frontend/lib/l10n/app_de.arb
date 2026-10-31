@@ -367,6 +367,8 @@
   "receiptScanReading": "Kassenbon wird gelesen…",
   "receiptScanNoTotal": "Auf dem Bon wurde keine Summe gefunden. Gib den Betrag selbst ein.",
   "receiptScanCheckTotal": "Die Positionen ergeben nicht die Summe des Bons. Prüfe Betrag und Notizen.",
+  "receiptRememberPurchases": "Einkauf merken",
+  "receiptRememberPurchasesDesc": "{count, plural, =1{1 Artikel} other{{count} Artikel}}, die ihr sonst kauft, als gekauft zählen – für Nachkauf und Vorschläge",
   "recipeCreationScanning": "Wird gescannt…",
   "recipeCreationScanPhoto": "Foto scannen",
   "recipeCreationScanPhotoDesc": "Fotografiere eine Rezeptkarte oder Kochbuchseite",

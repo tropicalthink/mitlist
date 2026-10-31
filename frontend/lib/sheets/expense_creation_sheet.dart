@@ -34,6 +34,7 @@ import '../utils/friendly_error.dart';
 import '../widgets/chip.dart';
 import '../widgets/skeleton.dart';
 
+import '../widgets/app_switch.dart';
 import '../widgets/app_toast.dart';
 
 /// The single editor for money leaving the household — whether it happens once
@@ -48,6 +49,12 @@ class ExpenseCreationSheet extends ConsumerStatefulWidget {
   final DateTime? initialDate;
   final String? initialNotes;
   final File? receiptImage;
+
+  /// How many of the household's own items a scanned receipt lists. With
+  /// [rememberReceiptPurchases], the sheet offers to record them as bought;
+  /// the caller records them once the expense is saved.
+  final int receiptPurchaseCount;
+  final ValueNotifier<bool>? rememberReceiptPurchases;
   final ValueNotifier<bool>? dirtyNotifier;
 
   /// The recurring rule being edited, when opened from the recurring list.
@@ -66,6 +73,8 @@ class ExpenseCreationSheet extends ConsumerStatefulWidget {
     this.initialDate,
     this.initialNotes,
     this.receiptImage,
+    this.receiptPurchaseCount = 0,
+    this.rememberReceiptPurchases,
     this.dirtyNotifier,
     this.initialRecurring,
     this.recurringOnly = false,
@@ -78,6 +87,8 @@ class ExpenseCreationSheet extends ConsumerStatefulWidget {
     DateTime? initialDate,
     String? initialNotes,
     File? receiptImage,
+    int receiptPurchaseCount = 0,
+    ValueNotifier<bool>? rememberReceiptPurchases,
   }) async {
     final l10n = AppLocalizations.of(context)!;
     final dirty = ValueNotifier<bool>(false);
@@ -91,6 +102,8 @@ class ExpenseCreationSheet extends ConsumerStatefulWidget {
         initialDate: initialDate,
         initialNotes: initialNotes,
         receiptImage: receiptImage,
+        receiptPurchaseCount: receiptPurchaseCount,
+        rememberReceiptPurchases: rememberReceiptPurchases,
         dirtyNotifier: dirty,
       ),
     );
@@ -1309,6 +1322,20 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
             maxLines: 4,
             onChanged: (_) => _markDirty(),
           ),
+          if (widget.rememberReceiptPurchases case final remember?
+              when widget.receiptPurchaseCount > 0) ...[
+            const SizedBox(height: MitlistSpacing.md),
+            ValueListenableBuilder<bool>(
+              valueListenable: remember,
+              builder: (context, value, _) => AppSwitchListTile(
+                title: l10n.receiptRememberPurchases,
+                subtitle: l10n
+                    .receiptRememberPurchasesDesc(widget.receiptPurchaseCount),
+                value: value,
+                onChanged: (next) => remember.value = next,
+              ),
+            ),
+          ],
         ],
         const SizedBox(height: MitlistSpacing.lg),
         SizedBox(

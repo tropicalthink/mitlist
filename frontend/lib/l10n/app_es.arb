@@ -1381,6 +1381,8 @@
   "receiptScanReading": "Leyendo el tique…",
   "receiptScanNoTotal": "No se encontró el total en el tique. Introduce el importe tú mismo.",
   "receiptScanCheckTotal": "Las líneas del tique no suman su total. Revisa el importe y las notas.",
+  "receiptRememberPurchases": "Recordar lo comprado",
+  "receiptRememberPurchasesDesc": "Contar {count, plural, =1{1 artículo habitual} other{{count} artículos habituales}} como comprados, para reponer y sugerencias",
   "@recipeCreationTypeItInDesc": {
     "description": "Card subtitle: type manually"
   },

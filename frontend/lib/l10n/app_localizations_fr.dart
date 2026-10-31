@@ -1415,6 +1415,20 @@ class AppLocalizationsFr extends AppLocalizations {
       'Les lignes du ticket ne correspondent pas à son total. Vérifie le montant et les notes.';
 
   @override
+  String get receiptRememberPurchases => 'Retenir les achats';
+
+  @override
+  String receiptRememberPurchasesDesc(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count articles habituels',
+      one: '1 article habituel',
+    );
+    return 'Compter $_temp0 comme achetés, pour le réassort et les suggestions';
+  }
+
+  @override
   String get recipeCreationScanning => 'Scan en cours…';
 
   @override

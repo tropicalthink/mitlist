@@ -9,12 +9,17 @@ import '../../widgets/app_toast.dart';
 import 'smart_capture_launcher.dart';
 import 'smart_capture_screen.dart';
 
-/// A photographed page and the text read from it.
-class DocumentPhoto {
-  const DocumentPhoto({required this.capture, required this.lines});
+/// A photographed page, the text read from it, and what was made of it.
+class DocumentPhoto<T> {
+  const DocumentPhoto({
+    required this.capture,
+    required this.lines,
+    required this.result,
+  });
 
   final SmartCaptureResult capture;
   final List<OcrLine> lines;
+  final T result;
 }
 
 /// Whether this device can read photos (the OCR models are not on web).
@@ -22,13 +27,15 @@ bool get canReadDocumentPhotos => !kIsWeb;
 
 /// Takes or picks a photo of a printed page (a receipt, a recipe) and reads
 /// it on the device, as written: no household vocabulary, nothing sent off
-/// the phone. Returns null when the person backs out or nothing could be
-/// read; the failure toast is shown here.
-Future<DocumentPhoto?> captureDocumentPhoto(
+/// the phone. [interpret] turns the lines into what the caller needs while
+/// the "reading" panel is still up. Returns null when the person backs out
+/// or nothing could be read; the failure toast is shown here.
+Future<DocumentPhoto<T>?> captureDocumentPhoto<T>(
   BuildContext context,
   WidgetRef ref, {
   required String title,
   required String readingMessage,
+  required Future<T> Function(List<OcrLine> lines) interpret,
 }) async {
   final l10n = AppLocalizations.of(context)!;
   final source = await pickCaptureSource(context, title: title);
@@ -38,12 +45,14 @@ Future<DocumentPhoto?> captureDocumentPhoto(
   if (capture == null || !context.mounted) return null;
 
   showScanProgress(context, readingMessage);
-  List<OcrLine> lines;
+  List<OcrLine> lines = const [];
+  T? result;
   try {
     lines = await ref.read(ocrServiceProvider).recognise(
           capture.originalBytes,
           kind: OcrPageKind.document,
         );
+    if (lines.isNotEmpty) result = await interpret(lines);
   } catch (e, stack) {
     debugPrint('document photo read failed: $e\n$stack');
     lines = const [];
@@ -55,5 +64,5 @@ Future<DocumentPhoto?> captureDocumentPhoto(
     AppToast.error(context, l10n.scanCouldNotProcess);
     return null;
   }
-  return DocumentPhoto(capture: capture, lines: lines);
+  return DocumentPhoto(capture: capture, lines: lines, result: result as T);
 }

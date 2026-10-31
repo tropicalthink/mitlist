@@ -1846,6 +1846,19 @@
   "@receiptScanCheckTotal": {
     "description": "Toast: a scanned receipt's lines don't sum to its total"
   },
+  "receiptRememberPurchases": "Remember what was bought",
+  "@receiptRememberPurchases": {
+    "description": "Expense sheet switch after a receipt scan: record its household items as purchases"
+  },
+  "receiptRememberPurchasesDesc": "Count {count, plural, =1{1 item} other{{count} items}} you usually buy as bought, for restock and suggestions",
+  "@receiptRememberPurchasesDesc": {
+    "description": "Subtitle of the remember-purchases switch",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "recipeCreationScanning": "Scanning…",
   "@recipeCreationScanning": {
     "description": "Card title: scanning in progress"

@@ -1406,6 +1406,20 @@ class AppLocalizationsEs extends AppLocalizations {
       'Las líneas del tique no suman su total. Revisa el importe y las notas.';
 
   @override
+  String get receiptRememberPurchases => 'Recordar lo comprado';
+
+  @override
+  String receiptRememberPurchasesDesc(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count artículos habituales',
+      one: '1 artículo habitual',
+    );
+    return 'Contar $_temp0 como comprados, para reponer y sugerencias';
+  }
+
+  @override
   String get recipeCreationScanning => 'Escaneando…';
 
   @override

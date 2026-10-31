@@ -2468,6 +2468,18 @@ abstract class AppLocalizations {
   /// **'The receipt lines don\'t add up to its total. Check the amount and notes.'**
   String get receiptScanCheckTotal;
 
+  /// Expense sheet switch after a receipt scan: record its household items as purchases
+  ///
+  /// In en, this message translates to:
+  /// **'Remember what was bought'**
+  String get receiptRememberPurchases;
+
+  /// Subtitle of the remember-purchases switch
+  ///
+  /// In en, this message translates to:
+  /// **'Count {count, plural, =1{1 item} other{{count} items}} you usually buy as bought, for restock and suggestions'**
+  String receiptRememberPurchasesDesc(int count);
+
   /// Card title: scanning in progress
   ///
   /// In en, this message translates to:

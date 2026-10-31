@@ -1419,6 +1419,20 @@ class AppLocalizationsDe extends AppLocalizations {
       'Die Positionen ergeben nicht die Summe des Bons. Prüfe Betrag und Notizen.';
 
   @override
+  String get receiptRememberPurchases => 'Einkauf merken';
+
+  @override
+  String receiptRememberPurchasesDesc(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Artikel',
+      one: '1 Artikel',
+    );
+    return '$_temp0, die ihr sonst kauft, als gekauft zählen – für Nachkauf und Vorschläge';
+  }
+
+  @override
   String get recipeCreationScanning => 'Wird gescannt…';
 
   @override

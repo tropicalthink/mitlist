@@ -1400,6 +1400,20 @@ class AppLocalizationsEn extends AppLocalizations {
       'The receipt lines don\'t add up to its total. Check the amount and notes.';
 
   @override
+  String get receiptRememberPurchases => 'Remember what was bought';
+
+  @override
+  String receiptRememberPurchasesDesc(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items',
+      one: '1 item',
+    );
+    return 'Count $_temp0 you usually buy as bought, for restock and suggestions';
+  }
+
+  @override
   String get recipeCreationScanning => 'Scanning…';
 
   @override

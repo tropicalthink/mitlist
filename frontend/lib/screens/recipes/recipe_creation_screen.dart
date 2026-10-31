@@ -383,9 +383,10 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
       ref,
       title: l10n.recipePhotoTitle,
       readingMessage: l10n.recipePhotoReading,
+      interpret: (lines) async => const RecipeTextParser().parse(lines),
     );
     if (photo == null || !mounted) return;
-    final draft = const RecipeTextParser().parse(photo.lines);
+    final draft = photo.result;
     if (draft.isEmpty) {
       AppToast.error(context, l10n.recipePhotoNothingFound);
       return;

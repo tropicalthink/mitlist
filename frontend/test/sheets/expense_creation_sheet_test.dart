@@ -21,6 +21,7 @@ import 'package:mitlist/providers/grocery_provider.dart';
 import 'package:mitlist/providers/list_provider.dart' show grocerySeedProvider;
 import 'package:mitlist/repositories/finance_repository.dart';
 import 'package:mitlist/sheets/expense_creation_sheet.dart';
+import 'package:mitlist/widgets/app_switch.dart';
 import 'package:mitlist/services/api_error_mapper.dart';
 import 'package:mitlist/services/auth_service.dart';
 import 'package:mitlist/services/grocery_expense_category_service.dart';
@@ -70,6 +71,8 @@ void main() {
     String? initialDescription,
     DateTime? initialDate,
     String? initialNotes,
+    int receiptPurchaseCount = 0,
+    ValueNotifier<bool>? rememberReceiptPurchases,
     List<Override> extraOverrides = const [],
     GroupService? groupService,
     AuthService? authService,
@@ -102,6 +105,8 @@ void main() {
                 initialDescription: initialDescription,
                 initialDate: initialDate,
                 initialNotes: initialNotes,
+                receiptPurchaseCount: receiptPurchaseCount,
+                rememberReceiptPurchases: rememberReceiptPurchases,
               ),
             ),
           ),
@@ -138,6 +143,35 @@ void main() {
 
     expect(find.textContaining('Oct 3'), findsOneWidget);
     expect(find.text('Gemüsemais 0.98\nMilchbrötchen 0.99'), findsOneWidget);
+  });
+
+  testWidgets('a receipt with household items offers to remember them',
+      (tester) async {
+    final remember = ValueNotifier(true);
+    addTearDown(remember.dispose);
+    await pumpSheet(
+      tester,
+      receiptPurchaseCount: 9,
+      rememberReceiptPurchases: remember,
+    );
+
+    expect(find.text('Remember what was bought'), findsOneWidget);
+    expect(find.textContaining('9 items you usually buy'), findsOneWidget);
+
+    final toggle = find.byType(AppSwitch);
+    await tester.ensureVisible(toggle);
+    await tester.pump();
+    await tester.tap(toggle);
+    await tester.pump();
+    expect(remember.value, isFalse);
+  });
+
+  testWidgets('no household items on the receipt, no switch', (tester) async {
+    final remember = ValueNotifier(true);
+    addTearDown(remember.dispose);
+    await pumpSheet(tester, rememberReceiptPurchases: remember);
+
+    expect(find.text('Remember what was bought'), findsNothing);
   });
 
   testWidgets('tapping the summary unfolds the full split editor',
