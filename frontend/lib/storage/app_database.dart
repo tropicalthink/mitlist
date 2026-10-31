@@ -2505,6 +2505,50 @@ INSERT INTO item_aliases_table
         readsFrom: {purchaseHistoryTable},
       ).map((row) => '${row.read<int>('n')}:${row.read<int>('latest')}');
 
+  /// Every spelling this household has used for groceries, with how often:
+  /// names written on its lists, its own aliases and corrections, and the
+  /// names of items it has bought. The scanner reads handwriting against this
+  /// vocabulary first.
+  Future<Map<String, int>> getHouseholdVocabulary(String groupId) async {
+    final vocabulary = <String, int>{};
+    void add(String text, int count) {
+      final trimmed = text.trim();
+      if (trimmed.isEmpty || count <= 0) return;
+      vocabulary[trimmed] = (vocabulary[trimmed] ?? 0) + count;
+    }
+
+    final written = await customSelect(
+      '''SELECT MIN(li.name) AS name, COUNT(*) AS uses
+           FROM list_items_table li
+           JOIN lists_table l ON l.id = li.list_id
+          WHERE l.group_id = ?
+          GROUP BY lower(trim(li.name))''',
+      variables: [Variable.withString(groupId)],
+      readsFrom: {listItemsTable, listsTable},
+    ).get();
+    for (final row in written) {
+      add(row.read<String>('name'), row.read<int>('uses'));
+    }
+
+    final aliases = await (select(itemAliasesTable)
+          ..where((t) => t.groupId.equals(groupId) & t.deletedAt.isNull()))
+        .get();
+    for (final alias in aliases) {
+      add(alias.aliasText, alias.weight);
+    }
+
+    final bought = await getGroupPurchaseCountsForPrior(groupId: groupId);
+    if (bought.isNotEmpty) {
+      final items = await getCanonicalItemsByIds(bought.keys);
+      for (final item in items) {
+        final count = bought[item.id] ?? 0;
+        add(item.nameDe, count);
+        if (item.nameEn != item.nameDe) add(item.nameEn, count);
+      }
+    }
+    return vocabulary;
+  }
+
   Future<Map<String, int>> getGroupPurchaseCountsForPrior({
     required String groupId,
   }) async {

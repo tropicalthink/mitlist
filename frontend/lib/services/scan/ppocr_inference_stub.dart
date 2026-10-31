@@ -1,9 +1,13 @@
 import 'dart:typed_data';
 
+import 'ppocr_processor.dart';
 import 'scan_models.dart';
 
 class PpOcrInference {
-  Future<List<OcrLine>> recognise(Uint8List imageBytes) =>
+  Future<List<OcrLine>> recognise(
+    Uint8List imageBytes, {
+    List<OcrLexiconEntry> lexicon = const [],
+  }) =>
       Future.error(UnsupportedError('On-device OCR is unavailable on web.'));
 
   Future<List<OcrLine>> recogniseFromPath(String path) =>

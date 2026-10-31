@@ -1,3 +1,6 @@
+import 'dart:math' as math;
+import 'dart:typed_data';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:mitlist/services/scan/ppocr_processor.dart';
@@ -151,5 +154,113 @@ void main() {
     expect(processor.hasStrikethrough(crossed), isTrue);
     expect(processor.hasStrikethrough(diagonal), isTrue);
     expect(processor.hasStrikethrough(plain), isFalse);
+  });
+
+  group('lexicon decoding', () {
+    // Classes: 0 blank, then the characters below; a final space class.
+    const chars = ['a', 'b', 'c', 'i', 'r', 'e', 'f'];
+    final allowed =
+        Int32List.fromList([for (var i = 0; i <= chars.length + 1; i++) i]);
+    final positions = PpOcrProcessor.positionsByCharacter(chars, allowed);
+
+    /// Evidence whose most likely reading at each step is [peaks] (one
+    /// character per step, '_' for blank), with [peak] probability.
+    PpOcrLineEvidence evidence(List<String> peaks, {double peak = 0.9}) {
+      final classes = allowed.length;
+      return PpOcrLineEvidence([
+        for (final p in peaks)
+          Float64List.fromList([
+            for (var c = 0; c < classes; c++)
+              math.log(c == (p == '_' ? 0 : positions[p]!)
+                  ? peak
+                  : (1 - peak) / (classes - 1)),
+          ]),
+      ]);
+    }
+
+    test('forward likelihood matches the sum over every alignment', () {
+      final ev = evidence(['a', '_', 'b'], peak: 0.6);
+      // Brute force: every class sequence of length 3 that collapses to "ab".
+      var total = 0.0;
+      final classes = allowed.length;
+      for (var x = 0; x < classes; x++) {
+        for (var y = 0; y < classes; y++) {
+          for (var z = 0; z < classes; z++) {
+            final seq = [x, y, z];
+            final collapsed = <int>[];
+            int? previous;
+            for (final c in seq) {
+              if (c != previous && c != 0) collapsed.add(c);
+              previous = c;
+            }
+            if (collapsed.length == 2 &&
+                collapsed[0] == positions['a'] &&
+                collapsed[1] == positions['b']) {
+              total += math.exp(ev.logProbabilities[0][x] +
+                  ev.logProbabilities[1][y] +
+                  ev.logProbabilities[2][z]);
+            }
+          }
+        }
+      }
+      expect(PpOcrProcessor.ctcLogLikelihood(ev, 'ab', positions),
+          closeTo(math.log(total), 1e-9));
+      expect(
+          PpOcrProcessor.ctcLogLikelihood(ev, 'abc', positions) <
+              PpOcrProcessor.ctcLogLikelihood(ev, 'ab', positions),
+          isTrue);
+      expect(PpOcrProcessor.ctcLogLikelihood(ev, 'aQ', positions),
+          double.negativeInfinity);
+    });
+
+    test('a household word the pixels support replaces a misread', () {
+      // Read as "fice"; the first stroke is ambiguous between f and r.
+      final ev = PpOcrLineEvidence([
+        Float64List.fromList([
+          for (var c = 0; c < allowed.length; c++)
+            math.log(c == positions['f']
+                ? 0.55
+                : c == positions['r']
+                    ? 0.4
+                    : 0.05 / 7),
+        ]),
+        ...evidence(['i', 'c', 'e']).logProbabilities,
+      ]);
+      final chosen = PpOcrProcessor.decodeLineWithLexicon(
+        [ev],
+        ['fice'],
+        const [OcrLexiconEntry('rice', -2)],
+        positions,
+        rawLogPrior: -12,
+      );
+      expect(chosen, ['rice']);
+    });
+
+    test('a word the pixels do not show is never forced', () {
+      final chosen = PpOcrProcessor.decodeLineWithLexicon(
+        [
+          evidence(['b', 'a', 'c', 'e'])
+        ],
+        ['bace'],
+        const [OcrLexiconEntry('rice', 0)],
+        positions,
+        rawLogPrior: -40,
+      );
+      expect(chosen, isNull);
+    });
+
+    test('an item can span the fragments of one line', () {
+      final chosen = PpOcrProcessor.decodeLineWithLexicon(
+        [
+          evidence(['a', 'b', 'e']),
+          evidence(['c', 'a', 'r', 'e'])
+        ],
+        ['abe', 'care'],
+        const [OcrLexiconEntry('abe care', -1)],
+        positions,
+        rawLogPrior: -15,
+      );
+      expect(chosen, ['abe', 'care']);
+    });
   });
 }

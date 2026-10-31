@@ -8,6 +8,7 @@ import 'confidence_service.dart';
 import 'correction_memory_service.dart';
 import 'document_rectifier_service.dart';
 import 'extraction_service.dart';
+import 'ocr_lexicon.dart';
 import 'ocr_service.dart';
 import 'static_embedding_service.dart';
 import 'scan_models.dart';
@@ -65,7 +66,14 @@ class ScanPipelineService {
 
     // 2. PP-OCRv6 receives the natural color image and performs its own exact
     //    model normalization. Preview enhancement is deliberately separate.
-    final lines = await _ocr.recognise(cropped);
+    //    Lines are read against what this household writes and buys: a list
+    //    is mostly its own vocabulary in its own handwriting.
+    final lines = await _ocr.recognise(
+      cropped,
+      lexicon: householdLexiconEntries(
+        await _db.getHouseholdVocabulary(groupId),
+      ),
+    );
 
     // 3. Extract qty / unit / price / name.
     final parsed = _extraction.extractAll(lines);

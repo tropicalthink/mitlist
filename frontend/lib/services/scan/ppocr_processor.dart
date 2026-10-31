@@ -60,6 +60,24 @@ class PpOcrDecodedText {
   final double confidence;
 }
 
+/// One reading the lexicon decoder may choose for a line, with the prior
+/// belief (natural log) that this household wrote it.
+class OcrLexiconEntry {
+  const OcrLexiconEntry(this.text, this.logPrior);
+
+  final String text;
+  final double logPrior;
+}
+
+/// A recognised region's evidence in the form the lexicon decoder scores:
+/// per-timestep log-probabilities over the decodable (Latin) classes,
+/// renormalised over them. Index 0 is the CTC blank.
+class PpOcrLineEvidence {
+  const PpOcrLineEvidence(this.logProbabilities);
+
+  final List<Float64List> logProbabilities;
+}
+
 /// Portable PP-OCRv6 image transforms and post-processing.
 ///
 /// This intentionally uses only Dart and `package:image`; Android and iOS run
@@ -443,10 +461,249 @@ class PpOcrProcessor {
     return results;
   }
 
-  /// Joins fragments occupying the same visual row. This recovered split
-  /// phrases such as `Olive | oil` and reduced unmatched sample predictions
-  /// from nine to two in the six-image benchmark.
-  List<PpOcrRecognizedRegion> mergeLineFragments(
+  /// Per-timestep log-probabilities over [allowedClasses] (position 0 is the
+  /// blank), renormalised over that set. The lexicon decoder scores every
+  /// candidate against the same evidence, so their likelihoods compare.
+  PpOcrLineEvidence lineEvidence(
+    List<List<double>> logits,
+    Int32List allowedClasses,
+  ) {
+    final firstStep = logits.firstWhere((step) => step.isNotEmpty,
+        orElse: () => const <double>[]);
+    final emitsProbabilities = _looksLikeProbabilities(firstStep);
+    final steps = <Float64List>[];
+    for (final timestep in logits) {
+      if (timestep.isEmpty) continue;
+      final values = [
+        for (final index in allowedClasses)
+          index < timestep.length ? timestep[index] : 0.0,
+      ];
+      steps.add(Float64List.fromList(
+          _asLogProbabilities(values, emitsProbabilities)));
+    }
+    return PpOcrLineEvidence(steps);
+  }
+
+  /// Maps each decodable character to its position in [allowedClasses].
+  static Map<String, int> positionsByCharacter(
+    List<String> characters,
+    Int32List allowedClasses,
+  ) {
+    final result = <String, int>{};
+    for (var position = 1; position < allowedClasses.length; position++) {
+      final classIndex = allowedClasses[position];
+      if (classIndex == characters.length + 1) {
+        result[' '] = position;
+      } else if (classIndex >= 1 && classIndex <= characters.length) {
+        result[characters[classIndex - 1]] = position;
+      }
+    }
+    return result;
+  }
+
+  /// log P(evidence | text): the CTC forward algorithm summed over every
+  /// alignment of [text], not just the single best path. Returns -infinity
+  /// when a character cannot be decoded or the line is too short for it.
+  static double ctcLogLikelihood(
+    PpOcrLineEvidence evidence,
+    String text,
+    Map<String, int> positionsByCharacter,
+  ) {
+    final labels = <int>[];
+    for (final rune in text.runes) {
+      final position = positionsByCharacter[String.fromCharCode(rune)];
+      if (position == null) return double.negativeInfinity;
+      labels.add(position);
+    }
+    final steps = evidence.logProbabilities;
+    if (labels.isEmpty || steps.isEmpty) return double.negativeInfinity;
+    // Extended label sequence: blank, l1, blank, l2, ..., blank.
+    final extended = Int32List(labels.length * 2 + 1);
+    for (var i = 0; i < labels.length; i++) {
+      extended[2 * i + 1] = labels[i];
+    }
+    final width = extended.length;
+    var alpha = Float64List(width)
+      ..fillRange(0, width, double.negativeInfinity);
+    alpha[0] = steps[0][extended[0]];
+    alpha[1] = steps[0][extended[1]];
+    var next = Float64List(width);
+    for (var t = 1; t < steps.length; t++) {
+      final step = steps[t];
+      for (var s = 0; s < width; s++) {
+        var total = alpha[s];
+        if (s >= 1) total = _logAdd(total, alpha[s - 1]);
+        if (s >= 2 && extended[s] != 0 && extended[s] != extended[s - 2]) {
+          total = _logAdd(total, alpha[s - 2]);
+        }
+        next[s] = total == double.negativeInfinity
+            ? double.negativeInfinity
+            : total + step[extended[s]];
+      }
+      final swap = alpha;
+      alpha = next;
+      next = swap;
+    }
+    return _logAdd(alpha[width - 1], alpha[width - 2]);
+  }
+
+  /// Chooses between the recognizer's own reading and [lexicon] words by
+  /// posterior: visual likelihood (CTC forward) plus prior. The raw reading
+  /// always competes with prior [rawLogPrior], so a word the household has
+  /// never written ("Yildiz sauce") is kept as read, never forced onto the
+  /// nearest known word. Returns the winner first, with its posterior over
+  /// everything scored as the confidence.
+  static List<PpOcrDecodedText> decodeWithLexicon(
+    PpOcrLineEvidence evidence,
+    String rawText,
+    Iterable<OcrLexiconEntry> lexicon,
+    Map<String, int> positionsByCharacter, {
+    double rawLogPrior = -2.3,
+  }) {
+    final scored = <String, double>{};
+    void consider(String text, double logPrior) {
+      final likelihood = ctcLogLikelihood(evidence, text, positionsByCharacter);
+      if (likelihood == double.negativeInfinity) return;
+      final score = likelihood + logPrior;
+      final previous = scored[text];
+      if (previous == null || score > previous) scored[text] = score;
+    }
+
+    if (rawText.isNotEmpty) consider(rawText, rawLogPrior);
+    for (final entry in lexicon) {
+      // Handwriting capitalises freely; the prior belongs to the word.
+      for (final form in _caseForms(entry.text)) {
+        consider(form, entry.logPrior);
+      }
+    }
+    if (scored.isEmpty) return [PpOcrDecodedText(rawText, 0)];
+    final ranked = scored.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    var normaliser = double.negativeInfinity;
+    for (final entry in ranked) {
+      normaliser = _logAdd(normaliser, entry.value);
+    }
+    return [
+      for (final entry in ranked.take(6))
+        PpOcrDecodedText(entry.key, math.exp(entry.value - normaliser)),
+    ];
+  }
+
+  /// Bullet marks a list line may begin with. They are scored as part of the
+  /// reading so "-chicken thight" can still be "- chicken thighs"; extraction
+  /// strips them afterwards.
+  static const List<String> kLineBullets = ['', '-', '- ', '• ', '* '];
+
+  /// Lexicon decoding for one visual line made of [parts] (fragments left to
+  /// right) with raw readings [rawParts]. A multi-word entry may span the
+  /// fragments, split between words in order ("dunklen | Balsamico-essig").
+  /// Returns the chosen text for each fragment, or null to keep the raw
+  /// readings.
+  static List<String>? decodeLineWithLexicon(
+    List<PpOcrLineEvidence> parts,
+    List<String> rawParts,
+    Iterable<OcrLexiconEntry> lexicon,
+    Map<String, int> positionsByCharacter, {
+    required double rawLogPrior,
+    double maxVisualGapPerCharacter = kMaxVisualGapPerCharacter,
+  }) {
+    if (parts.isEmpty || parts.length != rawParts.length) return null;
+    var rawLikelihood = 0.0;
+    for (var i = 0; i < parts.length; i++) {
+      rawLikelihood +=
+          ctcLogLikelihood(parts[i], rawParts[i], positionsByCharacter);
+    }
+    final rawScore = rawLogPrior + rawLikelihood;
+    // A word may only replace the reading if it explains the image nearly as
+    // well. Priors decide between words the pixels support; they never make
+    // the decoder see a word the pixels do not show ("Yildiz sauce" is not
+    // "Hoisin sauce", however often the household buys hoisin).
+    final rawLength = rawParts.fold<int>(0, (sum, part) => sum + part.length);
+    final likelihoodFloor =
+        rawLikelihood - maxVisualGapPerCharacter * math.max(1, rawLength);
+    var bestScore = rawScore;
+    List<String>? best;
+    for (final entry in lexicon) {
+      // Cheap reject: a reading far off in length can never pass the visual
+      // floor, and the CTC forward pass is the expensive part.
+      final length = entry.text.length;
+      if ((length - rawLength).abs() > math.max(4, rawLength * 0.6)) continue;
+      for (final form in _caseForms(entry.text)) {
+        // Fragments also break inside hyphenated words ("Balsamico-|essig").
+        final words = form
+            .split(' ')
+            .expand((word) => word.split(RegExp(r'(?<=-)')))
+            .where((word) => word.isNotEmpty)
+            .toList();
+        if (words.length < parts.length) continue;
+        for (final split in _splits(words, parts.length)) {
+          for (final bullet in kLineBullets) {
+            final texts = [
+              for (var i = 0; i < split.length; i++)
+                i == 0 ? '$bullet${split[i]}' : split[i],
+            ];
+            var likelihood = 0.0;
+            for (var i = 0; i < parts.length; i++) {
+              likelihood +=
+                  ctcLogLikelihood(parts[i], texts[i], positionsByCharacter);
+              if (likelihood < likelihoodFloor) break;
+            }
+            if (likelihood < likelihoodFloor) continue;
+            final score = entry.logPrior + likelihood;
+            if (score > bestScore) {
+              bestScore = score;
+              best = texts;
+            }
+          }
+        }
+      }
+    }
+    return best;
+  }
+
+  /// Every way to cut [words] into [parts] contiguous, non-empty groups.
+  static Iterable<List<String>> _splits(List<String> words, int parts) sync* {
+    if (parts == 1) {
+      yield [_joinWords(words)];
+      return;
+    }
+    for (var cut = 1; cut <= words.length - parts + 1; cut++) {
+      final head = _joinWords(words.sublist(0, cut));
+      for (final rest in _splits(words.sublist(cut), parts - 1)) {
+        yield [head, ...rest];
+      }
+    }
+  }
+
+  /// Rejoins split words: a piece ending in "-" was cut at a hyphen, not a
+  /// space.
+  static String _joinWords(List<String> words) {
+    final out = StringBuffer();
+    for (var i = 0; i < words.length; i++) {
+      out.write(words[i]);
+      if (i + 1 < words.length && !words[i].endsWith('-')) out.write(' ');
+    }
+    return out.toString();
+  }
+
+  /// How much worse (natural log, per raw character) a lexicon reading may
+  /// explain the image than the recognizer's own reading.
+  static const double kMaxVisualGapPerCharacter = 1.5;
+
+  static Iterable<String> _caseForms(String text) sync* {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return;
+    final lower = trimmed.toLowerCase();
+    final capitalised = lower[0].toUpperCase() + lower.substring(1);
+    final seen = <String>{};
+    for (final form in [trimmed, lower, capitalised]) {
+      if (seen.add(form)) yield form;
+    }
+  }
+
+  /// Groups non-empty fragments into visual rows, each row left to right and
+  /// rows top to bottom.
+  List<List<PpOcrRecognizedRegion>> lineGroups(
     List<PpOcrRecognizedRegion> input,
   ) {
     final pending = input.where((line) => line.text.trim().isNotEmpty).toList()
@@ -472,10 +729,20 @@ class PpOcrProcessor {
       }
       (target ?? (groups..add(<PpOcrRecognizedRegion>[])).last).add(line);
     }
-
-    final merged = <PpOcrRecognizedRegion>[];
     for (final group in groups) {
       group.sort((a, b) => a.region.left.compareTo(b.region.left));
+    }
+    return groups;
+  }
+
+  /// Joins fragments occupying the same visual row. This recovered split
+  /// phrases such as `Olive | oil` and reduced unmatched sample predictions
+  /// from nine to two in the six-image benchmark.
+  List<PpOcrRecognizedRegion> mergeLineFragments(
+    List<PpOcrRecognizedRegion> input,
+  ) {
+    final merged = <PpOcrRecognizedRegion>[];
+    for (final group in lineGroups(input)) {
       final left = group.map((e) => e.region.left).reduce(math.min);
       final top = group.map((e) => e.region.top).reduce(math.min);
       final right = group.map((e) => e.region.right).reduce(math.max);

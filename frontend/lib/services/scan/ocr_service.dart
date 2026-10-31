@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'ppocr_inference_native.dart'
     if (dart.library.html) 'ppocr_inference_stub.dart';
+import 'ppocr_processor.dart' show OcrLexiconEntry;
 import 'scan_models.dart';
 
 /// Cross-platform, fully offline PP-OCRv6 service.
@@ -13,8 +14,13 @@ class OcrService {
 
   final PpOcrInference _inference;
 
-  Future<List<OcrLine>> recognise(Uint8List imageBytes) =>
-      _inference.recognise(imageBytes);
+  /// Reads [imageBytes], preferring the household's own words in [lexicon]
+  /// wherever the pixels support them.
+  Future<List<OcrLine>> recognise(
+    Uint8List imageBytes, {
+    List<OcrLexiconEntry> lexicon = const [],
+  }) =>
+      _inference.recognise(imageBytes, lexicon: lexicon);
 
   Future<List<OcrLine>> recogniseFromPath(String path) =>
       _inference.recogniseFromPath(path);

@@ -2,17 +2,21 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
 import 'package:onnxruntime/onnxruntime.dart';
 
+import 'ocr_lexicon.dart';
 import 'ppocr_processor.dart';
 import 'scan_models.dart';
 
 const _detectorAsset = 'assets/models/ocr/ppocrv6_small_det/inference.onnx';
 const _recognizerAsset = 'assets/models/ocr/ppocrv6_medium_rec/inference.onnx';
 const _charactersAsset = 'assets/models/ocr/ppocrv6_medium_rec/characters.json';
+// Catalog names, for the decoder's unknown-word model and cold-start shortlist.
+const _catalogNamesAsset = 'assets/grocery/autocomplete.json';
 
 /// Runs both PP-OCRv6 graphs locally through the same ONNX Runtime CPU path on
 /// Android and iOS. No platform OCR API, network request, or cloud model is
@@ -32,10 +36,16 @@ class PpOcrInference {
   Completer<void>? _operationLock;
   bool _disposed = false;
 
-  Future<List<OcrLine>> recognise(Uint8List imageBytes) =>
+  /// Reads [imageBytes]. [lexicon] is the household's own vocabulary: a line
+  /// is read as one of those words when the pixels support it about as well
+  /// as the recognizer's own reading (see PpOcrProcessor.decodeLineWithLexicon).
+  Future<List<OcrLine>> recognise(
+    Uint8List imageBytes, {
+    List<OcrLexiconEntry> lexicon = const [],
+  }) =>
       _withOperationLock(() async {
         final worker = await _ensureWorker();
-        return worker.recognise(imageBytes);
+        return worker.recognise(imageBytes, lexicon);
       });
 
   Future<List<OcrLine>> recogniseFromPath(String path) async =>
@@ -100,6 +110,18 @@ class _OcrWorker {
     final characters =
         (jsonDecode(await rootBundle.loadString(_charactersAsset)) as List)
             .cast<String>();
+    var catalogNames = const <String>[];
+    try {
+      final autocomplete =
+          jsonDecode(await rootBundle.loadString(_catalogNamesAsset))
+              as Map<String, dynamic>;
+      catalogNames = [
+        for (final entry in autocomplete['entries'] as List)
+          (entry as List)[2] as String,
+      ];
+    } catch (_) {
+      // Without the catalog the decoder still reads against the household.
+    }
 
     final handshake = ReceivePort();
     final isolate = await Isolate.spawn(
@@ -116,6 +138,7 @@ class _OcrWorker {
       detector: TransferableTypedData.fromList([detector]),
       recognizer: TransferableTypedData.fromList([recognizer]),
       characters: characters,
+      catalogNames: catalogNames,
       detectorMaxSide: processor.detectorMaxSide,
     ));
     final result = await reply.first;
@@ -127,11 +150,15 @@ class _OcrWorker {
     return _OcrWorker._(isolate, commands);
   }
 
-  Future<List<OcrLine>> recognise(Uint8List imageBytes) async {
+  Future<List<OcrLine>> recognise(
+    Uint8List imageBytes,
+    List<OcrLexiconEntry> lexicon,
+  ) async {
     final reply = ReceivePort();
     _commands.send(_RecogniseRequest(
       reply: reply.sendPort,
       image: TransferableTypedData.fromList([imageBytes]),
+      lexicon: lexicon,
     ));
     final result = await reply.first;
     reply.close();
@@ -161,6 +188,7 @@ class _InitRequest {
     required this.detector,
     required this.recognizer,
     required this.characters,
+    required this.catalogNames,
     required this.detectorMaxSide,
   });
 
@@ -168,14 +196,20 @@ class _InitRequest {
   final TransferableTypedData detector;
   final TransferableTypedData recognizer;
   final List<String> characters;
+  final List<String> catalogNames;
   final int detectorMaxSide;
 }
 
 class _RecogniseRequest {
-  const _RecogniseRequest({required this.reply, required this.image});
+  const _RecogniseRequest({
+    required this.reply,
+    required this.image,
+    required this.lexicon,
+  });
 
   final SendPort reply;
   final TransferableTypedData image;
+  final List<OcrLexiconEntry> lexicon;
 }
 
 class _CloseRequest {
@@ -211,8 +245,10 @@ void _ocrWorkerMain(SendPort handshake) {
           return;
         }
         try {
-          message.reply.send(
-              current.recognise(message.image.materialize().asUint8List()));
+          message.reply.send(current.recognise(
+            message.image.materialize().asUint8List(),
+            message.lexicon,
+          ));
         } catch (error) {
           message.reply.send(_WorkerError('$error'));
         }
@@ -233,13 +269,19 @@ class _OcrEngine {
     this._recognizer,
     this._characters,
     this._allowedClasses,
-  );
+    this._unknownWords,
+    this._catalog,
+  ) : _positions =
+            PpOcrProcessor.positionsByCharacter(_characters, _allowedClasses);
 
   final PpOcrProcessor _processor;
   final OrtSession _detector;
   final OrtSession _recognizer;
   final List<String> _characters;
   final Int32List _allowedClasses;
+  final Map<String, int> _positions;
+  final CharacterBigramModel _unknownWords;
+  final CatalogShortlist _catalog;
 
   static _OcrEngine create(_InitRequest request) {
     OrtEnv.instance.init();
@@ -259,6 +301,8 @@ class _OcrEngine {
         recognizer,
         request.characters,
         PpOcrProcessor.latinClasses(request.characters),
+        CharacterBigramModel.train(request.catalogNames),
+        CatalogShortlist(request.catalogNames),
       );
     } catch (_) {
       detector?.release();
@@ -269,7 +313,7 @@ class _OcrEngine {
     }
   }
 
-  List<OcrLine> recognise(Uint8List imageBytes) {
+  List<OcrLine> recognise(Uint8List imageBytes, List<OcrLexiconEntry> lexicon) {
     final source = _processor.decode(imageBytes);
     final detectorInput = _processor.detectorTensor(source);
     final probability = _detectorProbability(_run(
@@ -284,30 +328,39 @@ class _OcrEngine {
     );
 
     final recognized = <PpOcrRecognizedRegion>[];
+    final evidence = Map<PpOcrRecognizedRegion, PpOcrLineEvidence>.identity();
     for (final region in regions.take(80)) {
       final crop = _processor.crop(source, region);
       final recognitionInput = _processor.recognitionTensor(crop);
+      final logits = _recognitionLogits(_run(
+        _recognizer,
+        recognitionInput.data,
+        [1, 3, recognitionInput.height, recognitionInput.width],
+      ));
       final candidates = _processor.decodeCtcCandidates(
-        _recognitionLogits(_run(
-          _recognizer,
-          recognitionInput.data,
-          [1, 3, recognitionInput.height, recognitionInput.width],
-        )),
+        logits,
         _characters,
         allowedClasses: _allowedClasses,
       );
       final decoded = candidates.first;
       if (decoded.text.isEmpty) continue;
-      recognized.add(PpOcrRecognizedRegion(
+      final fragment = PpOcrRecognizedRegion(
         region: region,
         text: decoded.text,
         confidence: decoded.confidence,
         crossedOut: _processor.hasStrikethrough(crop),
         alternatives: candidates.skip(1).toList(growable: false),
-      ));
+      );
+      recognized.add(fragment);
+      evidence[fragment] = _processor.lineEvidence(logits, _allowedClasses);
     }
 
-    return _processor.mergeLineFragments(recognized).map((line) {
+    final decided = <PpOcrRecognizedRegion>[];
+    for (final group in _processor.lineGroups(recognized)) {
+      decided.addAll(_readAgainstVocabulary(group, evidence, lexicon));
+    }
+
+    return _processor.mergeLineFragments(decided).map((line) {
       final region = line.region;
       return OcrLine(
         text: line.text,
@@ -328,6 +381,42 @@ class _OcrEngine {
         ],
       );
     }).toList(growable: false);
+  }
+
+  /// Re-reads one visual line against the household's words and the closest
+  /// catalog names. The recognizer's own reading stays the first alternative
+  /// whenever a word replaces it.
+  List<PpOcrRecognizedRegion> _readAgainstVocabulary(
+    List<PpOcrRecognizedRegion> line,
+    Map<PpOcrRecognizedRegion, PpOcrLineEvidence> evidence,
+    List<OcrLexiconEntry> lexicon,
+  ) {
+    // A crossed-out line is not added to the list; re-reading it only risks
+    // changing how it is matched against the strike.
+    if (line.any((fragment) => fragment.crossedOut)) return line;
+    final raw = line.map((fragment) => fragment.text).join(' ');
+    final chosen = PpOcrProcessor.decodeLineWithLexicon(
+      [for (final fragment in line) evidence[fragment]!],
+      [for (final fragment in line) fragment.text],
+      [...lexicon, ..._catalog.near(raw)],
+      _positions,
+      rawLogPrior:
+          math.log(kUnknownWordMass) + _unknownWords.logProbability(raw),
+    );
+    if (chosen == null) return line;
+    return [
+      for (var i = 0; i < line.length; i++)
+        PpOcrRecognizedRegion(
+          region: line[i].region,
+          text: chosen[i],
+          confidence: line[i].confidence,
+          crossedOut: line[i].crossedOut,
+          alternatives: [
+            if (chosen[i] != line[i].text) PpOcrDecodedText(line[i].text, 1),
+            ...line[i].alternatives,
+          ],
+        ),
+    ];
   }
 
   Object? _run(OrtSession session, Float32List data, List<int> shape) {
