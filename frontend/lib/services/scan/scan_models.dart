@@ -24,6 +24,17 @@ enum MarkStatus {
   notList,
 }
 
+/// What kind of page a photo shows, which decides how it is read.
+enum OcrPageKind {
+  /// A household list, usually handwritten: lines are read against the
+  /// household's own words and the grocery catalog.
+  list,
+
+  /// Printed or written text taken as it stands: a receipt, a recipe. Lines
+  /// are never rewritten towards a vocabulary, and a long page is read whole.
+  document,
+}
+
 /// Pixel bounding box within the original image.
 class OcrBBox {
   final double left, top, width, height;

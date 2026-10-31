@@ -7,6 +7,7 @@ class PpOcrInference {
   Future<List<OcrLine>> recognise(
     Uint8List imageBytes, {
     List<OcrLexiconEntry> lexicon = const [],
+    OcrPageKind kind = OcrPageKind.list,
   }) =>
       Future.error(UnsupportedError('On-device OCR is unavailable on web.'));
 

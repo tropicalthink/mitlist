@@ -20,6 +20,11 @@ const _charactersAsset = 'assets/models/ocr/ppocrv6_medium_rec/characters.json';
 /// Slant below which a photo is read as it is.
 const double kMinDeskewDegrees = 2;
 
+/// Text boxes read from one page. A list rarely has more than a few dozen; a
+/// long receipt has a name box and a price box on every row.
+const int kMaxListRegions = 80;
+const int kMaxDocumentRegions = 240;
+
 // Catalog names, for the decoder's unknown-word model and cold-start shortlist.
 const _catalogNamesAsset = 'assets/grocery/autocomplete.json';
 
@@ -44,13 +49,15 @@ class PpOcrInference {
   /// Reads [imageBytes]. [lexicon] is the household's own vocabulary: a line
   /// is read as one of those words when the pixels support it about as well
   /// as the recognizer's own reading (see PpOcrProcessor.decodeLineWithLexicon).
+  /// A [OcrPageKind.document] is read as it stands, with no vocabulary.
   Future<List<OcrLine>> recognise(
     Uint8List imageBytes, {
     List<OcrLexiconEntry> lexicon = const [],
+    OcrPageKind kind = OcrPageKind.list,
   }) =>
       _withOperationLock(() async {
         final worker = await _ensureWorker();
-        return worker.recognise(imageBytes, lexicon);
+        return worker.recognise(imageBytes, lexicon, kind);
       });
 
   Future<List<OcrLine>> recogniseFromPath(String path) async =>
@@ -158,12 +165,14 @@ class _OcrWorker {
   Future<List<OcrLine>> recognise(
     Uint8List imageBytes,
     List<OcrLexiconEntry> lexicon,
+    OcrPageKind kind,
   ) async {
     final reply = ReceivePort();
     _commands.send(_RecogniseRequest(
       reply: reply.sendPort,
       image: TransferableTypedData.fromList([imageBytes]),
       lexicon: lexicon,
+      kind: kind,
     ));
     final result = await reply.first;
     reply.close();
@@ -210,11 +219,13 @@ class _RecogniseRequest {
     required this.reply,
     required this.image,
     required this.lexicon,
+    required this.kind,
   });
 
   final SendPort reply;
   final TransferableTypedData image;
   final List<OcrLexiconEntry> lexicon;
+  final OcrPageKind kind;
 }
 
 class _CloseRequest {
@@ -253,6 +264,7 @@ void _ocrWorkerMain(SendPort handshake) {
           message.reply.send(current.recognise(
             message.image.materialize().asUint8List(),
             message.lexicon,
+            message.kind,
           ));
         } catch (error) {
           message.reply.send(_WorkerError('$error'));
@@ -327,7 +339,11 @@ class _OcrEngine {
     ));
   }
 
-  List<OcrLine> recognise(Uint8List imageBytes, List<OcrLexiconEntry> lexicon) {
+  List<OcrLine> recognise(
+    Uint8List imageBytes,
+    List<OcrLexiconEntry> lexicon,
+    OcrPageKind kind,
+  ) {
     final photo = _processor.decode(imageBytes);
     // Thumbnails and screenshots are enlarged so handwriting reaches the
     // recognizer at a readable height.
@@ -361,7 +377,11 @@ class _OcrEngine {
 
     final recognized = <PpOcrRecognizedRegion>[];
     final evidence = Map<PpOcrRecognizedRegion, PpOcrLineEvidence>.identity();
-    for (final region in regions.take(80)) {
+    final maxRegions = switch (kind) {
+      OcrPageKind.list => kMaxListRegions,
+      OcrPageKind.document => kMaxDocumentRegions,
+    };
+    for (final region in regions.take(maxRegions)) {
       final crop = _processor.crop(source, region);
       final recognitionInput = _processor.recognitionTensor(crop);
       final logits = _recognitionLogits(_run(
@@ -388,8 +408,14 @@ class _OcrEngine {
     }
 
     final decided = <PpOcrRecognizedRegion>[];
-    for (final group in _processor.lineGroups(recognized)) {
-      decided.addAll(_readAgainstVocabulary(group, evidence, lexicon));
+    if (kind == OcrPageKind.document) {
+      // A receipt or a recipe says what it says: an item called
+      // "Apfelschorle" must not be read as the household's "Apfelsaft".
+      decided.addAll(recognized);
+    } else {
+      for (final group in _processor.lineGroups(recognized)) {
+        decided.addAll(_readAgainstVocabulary(group, evidence, lexicon));
+      }
     }
 
     return _processor.mergeLineFragments(decided).map((line) {

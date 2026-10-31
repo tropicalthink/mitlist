@@ -14,13 +14,15 @@ class OcrService {
 
   final PpOcrInference _inference;
 
-  /// Reads [imageBytes], preferring the household's own words in [lexicon]
-  /// wherever the pixels support them.
+  /// Reads [imageBytes]. A [OcrPageKind.list] prefers the household's own
+  /// words in [lexicon] wherever the pixels support them; a
+  /// [OcrPageKind.document] is read as it stands.
   Future<List<OcrLine>> recognise(
     Uint8List imageBytes, {
     List<OcrLexiconEntry> lexicon = const [],
+    OcrPageKind kind = OcrPageKind.list,
   }) =>
-      _inference.recognise(imageBytes, lexicon: lexicon);
+      _inference.recognise(imageBytes, lexicon: lexicon, kind: kind);
 
   Future<List<OcrLine>> recogniseFromPath(String path) =>
       _inference.recogniseFromPath(path);

@@ -14,6 +14,7 @@ import '../services/scan/scan_pipeline_service.dart';
 import '../services/scan/static_embedding_service.dart';
 export 'outbox_provider.dart' show connectivityServiceProvider;
 import 'list_provider.dart';
+import 'ocr_provider.dart';
 
 /// On-device static semantic embedder (pure Dart, no ML runtime).
 ///
@@ -92,6 +93,7 @@ final scanPipelineProvider = FutureProvider<ScanPipelineService>((ref) async {
   return ScanPipelineService(
     db: db,
     resolver: ref.watch(canonicalResolverServiceProvider),
+    ocr: ref.watch(ocrServiceProvider),
   );
 });
 

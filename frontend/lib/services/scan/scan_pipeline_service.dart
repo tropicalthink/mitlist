@@ -33,8 +33,9 @@ class ScanPipelineService {
   ScanPipelineService({
     required AppDatabase db,
     CanonicalResolverService? resolver,
+    OcrService? ocr,
   })  : _db = db,
-        _ocr = OcrService(),
+        _ocr = ocr ?? OcrService(),
         _extraction = ExtractionService(),
         _resolver = resolver ??
             CanonicalResolverService(
