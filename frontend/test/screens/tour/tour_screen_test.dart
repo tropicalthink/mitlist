@@ -81,8 +81,13 @@ void main() {
         overrides: [
           authServiceProviderAsync.overrideWith((ref) async => authService),
           oauthProvidersProvider.overrideWith(
-            (ref) async =>
-                (google: true, apple: false, password: true, guest: guest),
+            (ref) async => (
+              google: true,
+              apple: false,
+              password: true,
+              guest: guest,
+              passwordReset: true,
+            ),
           ),
         ],
         child: Builder(
