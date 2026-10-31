@@ -362,6 +362,11 @@ func (m *captureMailService) verificationCodeFor(t *testing.T, to string) string
 	return ""
 }
 
+// The new*Router helpers mount each handler's own RegisterRoutes under
+// /api/v1, as the server does, so a new endpoint is reachable in tests
+// without a second route table to keep in step (a hand-copied one missed
+// PUT /lists/{id}/reminder).
+
 func newAuthRouter(t *testing.T) (chi.Router, *AuthHandler) {
 	r, h, _ := newAuthRouterWithMail(t)
 	return r, h
@@ -386,35 +391,12 @@ func newAuthRouterWithConfig(t *testing.T, cfg *config.Config) (chi.Router, *Aut
 
 	h := NewAuthHandler(cfg, userSvc, guestSvc, oauthSvc, jwtSvc)
 
+	// The handler's own routes, gates and real auth middleware, as the
+	// server mounts them: the password surface sits behind
+	// PASSWORD_AUTH_ENABLED, and registration hands back no tokens, so a test
+	// that needs an authenticated user has to complete verification.
 	r := chi.NewRouter()
-	r.Route("/api/v1/auth", func(r chi.Router) {
-		r.Post("/token/refresh", h.Refresh)
-		r.Post("/logout", h.Logout)
-		r.With(h.requireGuestAuth).Post("/guest", h.CreateGuest)
-		// Mounted like the real router: the password surface sits behind the
-		// PASSWORD_AUTH_ENABLED gate, and registration hands back no tokens,
-		// so a test that needs an authenticated user has to complete
-		// verification.
-		r.Group(func(r chi.Router) {
-			r.Use(h.requirePasswordAuth)
-			r.Post("/register", h.Register)
-			r.Post("/verify-email", h.VerifyEmail)
-			r.Post("/verify-email/resend", h.ResendEmailVerification)
-			r.Post("/login", h.Login)
-			r.Post("/password-reset", h.PasswordReset)
-			r.Post("/password-reset/confirm", h.PasswordResetConfirm)
-		})
-		r.Group(func(r chi.Router) {
-			r.Use(testAuthMiddleware)
-			r.Get("/me", h.GetMe)
-			r.Patch("/me", h.UpdateMe)
-			r.Delete("/me", h.DeleteMe)
-			r.With(h.requirePasswordAuth).Post("/change-password", h.ChangePassword)
-			r.With(h.requirePasswordAuth).Post("/guest/convert", h.ConvertGuest)
-			r.With(h.requirePasswordAuth).Post("/claim-account", h.ClaimAccount)
-			r.Post("/oauth-link", h.CreateOAuthLink)
-		})
-	})
+	r.Route("/api/v1", h.RegisterRoutes)
 	return r, h, ms
 }
 
@@ -426,20 +408,7 @@ func newGroupRouter(t *testing.T) (chi.Router, *GroupHandler) {
 
 	r := chi.NewRouter()
 	r.Use(testAuthMiddleware)
-	r.Post("/api/v1/groups", h.CreateGroup)
-	r.Get("/api/v1/groups", h.ListGroups)
-	r.Get("/api/v1/groups/{id}", h.GetGroup)
-	r.Patch("/api/v1/groups/{id}", h.UpdateGroup)
-	r.Delete("/api/v1/groups/{id}", h.DeleteGroup)
-	r.Get("/api/v1/groups/{id}/members", h.ListMembers)
-	r.Post("/api/v1/groups/{id}/members", h.InviteMember)
-	r.Get("/api/v1/groups/invites/{code}", h.PreviewInvite)
-	r.Post("/api/v1/groups/join", h.JoinGroup)
-	r.Delete("/api/v1/groups/{id}/members/{user_id}", h.RemoveMember)
-	r.Patch("/api/v1/groups/{id}/members/{user_id}", h.UpdateMemberRole)
-	r.Get("/api/v1/groups/{id}/pending-claims", h.GetPendingClaims)
-	r.Post("/api/v1/groups/{id}/pending-claims/{claim_id}/approve", h.ApproveClaim)
-	r.Post("/api/v1/groups/{id}/pending-claims/{claim_id}/reject", h.RejectClaim)
+	r.Route("/api/v1", h.RegisterRoutes)
 	return r, h
 }
 
@@ -451,8 +420,6 @@ func newListRouter(t *testing.T) (chi.Router, *ListHandler) {
 
 	r := chi.NewRouter()
 	r.Use(testAuthMiddleware)
-	// The handler's own route table, so a new endpoint is testable here
-	// without a second copy to keep in step.
 	r.Route("/api/v1", h.RegisterRoutes)
 	return r, h
 }
@@ -466,17 +433,7 @@ func newTemplateRouter(t *testing.T) (chi.Router, *TemplateHandler) {
 
 	r := chi.NewRouter()
 	r.Use(testAuthMiddleware)
-	r.Post("/api/v1/templates", h.CreateTemplate)
-	r.Get("/api/v1/templates", h.ListTemplates)
-	r.Get("/api/v1/templates/{id}", h.GetTemplate)
-	r.Patch("/api/v1/templates/{id}", h.UpdateTemplate)
-	r.Delete("/api/v1/templates/{id}", h.DeleteTemplate)
-	r.Post("/api/v1/templates/{id}/apply", h.ApplyTemplate)
-	r.Post("/api/v1/chore-templates", h.CreateChoreTemplate)
-	r.Get("/api/v1/chore-templates", h.ListChoreTemplates)
-	r.Get("/api/v1/chore-templates/{id}", h.GetChoreTemplate)
-	r.Patch("/api/v1/chore-templates/{id}", h.UpdateChoreTemplate)
-	r.Delete("/api/v1/chore-templates/{id}", h.DeleteChoreTemplate)
+	r.Route("/api/v1", h.RegisterRoutes)
 	return r, h
 }
 
@@ -489,19 +446,7 @@ func newChoreRouter(t *testing.T) (chi.Router, *ChoreHandler) {
 
 	r := chi.NewRouter()
 	r.Use(testAuthMiddleware)
-	r.Post("/api/v1/chores", h.CreateChore)
-	r.Get("/api/v1/chores", h.ListChores)
-	r.Get("/api/v1/chores/current", h.ListCurrentChores)
-	r.Get("/api/v1/chores/{id}/details", h.GetChoreDetails)
-	r.Get("/api/v1/chores/{id}", h.GetChore)
-	r.Patch("/api/v1/chores/{id}", h.UpdateChore)
-	r.Delete("/api/v1/chores/{id}", h.DeleteChore)
-	r.Post("/api/v1/chores/{id}/rotate", h.RotateChore)
-	r.Post("/api/v1/chores/{id}/complete", h.CompleteChore)
-	r.Post("/api/v1/chores/{id}/skip", h.SkipChore)
-	r.Patch("/api/v1/chores/{id}/pending", h.RescheduleChore)
-	r.Post("/api/v1/chores/{id}/undo", h.UndoLastChoreExecution)
-	r.Get("/api/v1/chores/{id}/assignments", h.GetAssignments)
+	r.Route("/api/v1", h.RegisterRoutes)
 	return r, h
 }
 
@@ -513,27 +458,7 @@ func newFinanceRouter(t *testing.T) (chi.Router, *FinanceHandler) {
 
 	r := chi.NewRouter()
 	r.Use(testAuthMiddleware)
-	r.Get("/api/v1/finance/summary", h.GetFinanceSummary)
-	r.Get("/api/v1/finance/export/json", h.ExportExpensesJSON)
-	r.Get("/api/v1/finance/export/csv", h.ExportExpensesCSV)
-	r.Post("/api/v1/expenses", h.CreateExpense)
-	r.Get("/api/v1/expenses", h.ListExpenses)
-	r.Get("/api/v1/expenses/{id}", h.GetExpense)
-	r.Patch("/api/v1/expenses/{id}", h.UpdateExpense)
-	r.Delete("/api/v1/expenses/{id}", h.DeleteExpense)
-	r.Post("/api/v1/expenses/{id}/splits", h.CreateSplit)
-	r.Patch("/api/v1/expenses/{id}/splits/{split_id}", h.UpdateSplit)
-	r.Delete("/api/v1/expenses/{id}/splits/{split_id}", h.DeleteSplit)
-	r.Get("/api/v1/finance/settlements", h.ListSettlements)
-	r.Post("/api/v1/finance/settlements", h.CreateGroupSettlement)
-	r.Post("/api/v1/finance/settlements/{id}/confirm", h.ConfirmSettlement)
-	r.Post("/api/v1/finance/settlements/{id}/decline", h.DeclineSettlement)
-	r.Delete("/api/v1/finance/settlements/{id}", h.DeleteSettlement)
-	r.Post("/api/v1/recurring-expenses", h.CreateRecurringExpense)
-	r.Get("/api/v1/recurring-expenses", h.ListRecurringExpenses)
-	r.Get("/api/v1/recurring-expenses/{id}", h.GetRecurringExpense)
-	r.Patch("/api/v1/recurring-expenses/{id}", h.UpdateRecurringExpense)
-	r.Delete("/api/v1/recurring-expenses/{id}", h.DeleteRecurringExpense)
+	r.Route("/api/v1", h.RegisterRoutes)
 	return r, h
 }
 
@@ -546,24 +471,7 @@ func newRecipeRouterWithGrocery(t *testing.T) (chi.Router, *RecipeHandler) {
 
 	r := chi.NewRouter()
 	r.Use(testAuthMiddleware)
-	r.Post("/api/v1/recipes", h.CreateRecipe)
-	r.Get("/api/v1/recipes", h.ListRecipes)
-	r.Get("/api/v1/recipes/{id}", h.GetRecipe)
-	r.Patch("/api/v1/recipes/{id}", h.UpdateRecipe)
-	r.Delete("/api/v1/recipes/{id}", h.DeleteRecipe)
-	r.Post("/api/v1/recipes/{id}/share", h.ShareRecipe)
-	r.Get("/api/v1/recipes/{id}/ingredients", h.GetRecipeIngredients)
-	r.Get("/api/v1/recipes/{id}/steps", h.GetRecipeSteps)
-	r.Post("/api/v1/recipes/{id}/add-to-list", h.AddToList)
-	r.Post("/api/v1/recipes/{id}/add-missing-to-list", h.AddMissingToList)
-	r.Post("/api/v1/recipes/clip", h.ClipRecipe)
-	r.Post("/api/v1/collections", h.CreateCollection)
-	r.Get("/api/v1/collections", h.ListCollections)
-	r.Get("/api/v1/collections/{id}", h.GetCollection)
-	r.Patch("/api/v1/collections/{id}", h.UpdateCollection)
-	r.Delete("/api/v1/collections/{id}", h.DeleteCollection)
-	r.Post("/api/v1/collections/{id}/recipes", h.AddToCollection)
-	r.Delete("/api/v1/collections/{id}/recipes/{recipe_id}", h.RemoveFromCollection)
+	r.Route("/api/v1", h.RegisterRoutes)
 	return r, h
 }
 
@@ -575,24 +483,7 @@ func newRecipeRouter(t *testing.T) (chi.Router, *RecipeHandler) {
 
 	r := chi.NewRouter()
 	r.Use(testAuthMiddleware)
-	r.Post("/api/v1/recipes", h.CreateRecipe)
-	r.Get("/api/v1/recipes", h.ListRecipes)
-	r.Get("/api/v1/recipes/{id}", h.GetRecipe)
-	r.Patch("/api/v1/recipes/{id}", h.UpdateRecipe)
-	r.Delete("/api/v1/recipes/{id}", h.DeleteRecipe)
-	r.Post("/api/v1/recipes/{id}/share", h.ShareRecipe)
-	r.Get("/api/v1/recipes/{id}/ingredients", h.GetRecipeIngredients)
-	r.Get("/api/v1/recipes/{id}/steps", h.GetRecipeSteps)
-	r.Post("/api/v1/recipes/{id}/add-to-list", h.AddToList)
-	r.Post("/api/v1/recipes/{id}/add-missing-to-list", h.AddMissingToList)
-	r.Post("/api/v1/recipes/clip", h.ClipRecipe)
-	r.Post("/api/v1/collections", h.CreateCollection)
-	r.Get("/api/v1/collections", h.ListCollections)
-	r.Get("/api/v1/collections/{id}", h.GetCollection)
-	r.Patch("/api/v1/collections/{id}", h.UpdateCollection)
-	r.Delete("/api/v1/collections/{id}", h.DeleteCollection)
-	r.Post("/api/v1/collections/{id}/recipes", h.AddToCollection)
-	r.Delete("/api/v1/collections/{id}/recipes/{recipe_id}", h.RemoveFromCollection)
+	r.Route("/api/v1", h.RegisterRoutes)
 	return r, h
 }
 
