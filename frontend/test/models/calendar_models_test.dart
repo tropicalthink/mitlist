@@ -34,8 +34,8 @@ void main() {
   test('maps every snake_case server type onto the enum', () {
     expect(CalendarEvent.fromJson(event('meal_plan')).type,
         CalendarEventType.mealPlan);
-    expect(CalendarEvent.fromJson(event('chore')).type,
-        CalendarEventType.chore);
+    expect(
+        CalendarEvent.fromJson(event('chore')).type, CalendarEventType.chore);
     expect(CalendarEvent.fromJson(event('recurring_expense')).type,
         CalendarEventType.recurringExpense);
     expect(CalendarEvent.fromJson(event('expense')).type,

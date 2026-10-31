@@ -197,8 +197,8 @@ void main() {
     await repo.drainOutboxOnce();
 
     expect(remote.createListCalls.single.name, 'Weekend');
-    expect(remote.createItemCalls.map((c) => c.listId).toSet(),
-        {'server-list-1'});
+    expect(
+        remote.createItemCalls.map((c) => c.listId).toSet(), {'server-list-1'});
     expect(remote.createItemCalls.map((c) => c.req.name), ['Milk', 'Bread']);
     expect(remote.updateItemCalls.single.listId, 'server-list-1');
     expect(remote.updateItemCalls.single.itemId, startsWith('server-item-'));
@@ -286,8 +286,7 @@ void main() {
     expect((await repo.getListOnce('server-list-1'))?.name, 'New');
   });
 
-  test('deleting a list before it synced never contacts the server',
-      () async {
+  test('deleting a list before it synced never contacts the server', () async {
     final local = await repo.createListOfflineFirst(
       const CreateListRequest(groupId: _groupId, name: 'Oops'),
     );
@@ -413,8 +412,7 @@ void main() {
     expect(jsonDecode(itemOp.payloadJson)['listId'], local.id);
   });
 
-  test('a queued clear is not undone by a refresh that predates it',
-      () async {
+  test('a queued clear is not undone by a refresh that predates it', () async {
     await _insertServerList(db, remote, 'list-a', 'Groceries');
     final now = DateTime.utc(2026, 1, 1);
     remote.itemsToReturn = [

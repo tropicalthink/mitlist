@@ -8,7 +8,8 @@ import '../providers/initial_sync_provider.dart';
 import '../providers/outbox_provider.dart';
 import '../router.dart';
 import '../sheets/conflict_resolution_sheet.dart';
-import '../screens/you/feature_board_widgets.dart' show featureBoardRelativeTime;
+import '../screens/you/feature_board_widgets.dart'
+    show featureBoardRelativeTime;
 import '../sheets/failed_changes_sheet.dart';
 import '../storage/app_database.dart';
 import '../theme/colors.dart';

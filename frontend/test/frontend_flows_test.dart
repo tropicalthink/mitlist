@@ -1039,7 +1039,8 @@ void main() {
     expect(find.text('Remember me'), findsOneWidget);
   });
 
-  testWidgets('login screen hides forgot password when the server cannot '
+  testWidgets(
+      'login screen hides forgot password when the server cannot '
       'send email', (tester) async {
     await _setLargeSurface(tester);
     final authService = FakeAuthService(currentUser: user);
@@ -1565,8 +1566,8 @@ void main() {
       'without the skeleton', (tester) async {
     await _setLargeSurface(tester);
     SharedPreferences.setMockInitialValues({});
-    addTearDown(() => SharedPreferences.setMockInitialValues(
-        {'current_group_id': groupId}));
+    addTearDown(() =>
+        SharedPreferences.setMockInitialValues({'current_group_id': groupId}));
 
     Group household(int members) => Group(
           id: groupId,
@@ -1653,8 +1654,8 @@ void main() {
     await _setLargeSurface(tester);
     // A fresh install.
     SharedPreferences.setMockInitialValues({});
-    addTearDown(() => SharedPreferences.setMockInitialValues(
-        {'current_group_id': groupId}));
+    addTearDown(() =>
+        SharedPreferences.setMockInitialValues({'current_group_id': groupId}));
 
     const flatId = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee';
     final flat = Group(
@@ -1742,8 +1743,7 @@ void main() {
         GoRoute(
           path: '/onboarding',
           name: 'onboarding',
-          builder: (context, state) =>
-              const Scaffold(body: Text('ONBOARDING')),
+          builder: (context, state) => const Scaffold(body: Text('ONBOARDING')),
         ),
       ],
     );
@@ -1786,8 +1786,8 @@ void main() {
           listItemCountsProvider.overrideWith((ref, id) => Stream.value({
                 groceries.id: (open: 3, total: 4),
               })),
-          cachedCurrentChoresByGroupProvider.overrideWith(
-              (ref, id) => Stream.value(const <CurrentChore>[])),
+          cachedCurrentChoresByGroupProvider
+              .overrideWith((ref, id) => Stream.value(const <CurrentChore>[])),
           cachedExpensesByGroupProvider
               .overrideWith((ref, id) => Stream.value(const <Expense>[])),
           cachedFinanceSummaryByGroupProvider.overrideWith((ref, id) =>

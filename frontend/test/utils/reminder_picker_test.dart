@@ -14,7 +14,8 @@ void main() {
       expect(reminderPickerSeed(future, now), future);
     });
 
-    test('falls back to now, including the time of day, once a reminder '
+    test(
+        'falls back to now, including the time of day, once a reminder '
         'has already fired', () {
       final past = DateTime(2026, 9, 17, 9, 15);
       final seed = reminderPickerSeed(past, now);

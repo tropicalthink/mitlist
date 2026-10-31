@@ -11,8 +11,7 @@ final accountRepositoryProvider =
     FutureProvider<AccountRepository>((ref) async {
   final db = ref.watch(appDatabaseProvider);
   final authService = await ref.read(authServiceProviderAsync.future);
-  final notifications =
-      await ref.read(notificationServiceProviderAsync.future);
+  final notifications = await ref.read(notificationServiceProviderAsync.future);
   return AccountRepository(
     db: db,
     updateMe: authService.updateMe,

@@ -121,7 +121,8 @@ class _FakeAuthService implements AuthService {
 }
 
 void main() {
-  testWidgets('one password field, with a show/hide button instead of a '
+  testWidgets(
+      'one password field, with a show/hide button instead of a '
       'confirmation field', (tester) async {
     await _pumpSignup(tester);
     expect(find.text('CONFIRM PASSWORD'), findsNothing);
@@ -181,7 +182,8 @@ void main() {
         find.text('Password must be at least 8 characters.'), findsOneWidget);
   });
 
-  testWidgets('a valid registration asks for the emailed code on the same '
+  testWidgets(
+      'a valid registration asks for the emailed code on the same '
       'screen', (tester) async {
     final auth = _FakeAuthService();
     await _pumpSignup(tester, authService: auth);
@@ -196,7 +198,8 @@ void main() {
     expect(auth.loginCalled, isFalse);
   });
 
-  testWidgets('a server without email signs the new account in instead of '
+  testWidgets(
+      'a server without email signs the new account in instead of '
       'asking for a code', (tester) async {
     final auth = _FakeAuthService(
       result: const RegistrationResult(

@@ -32,7 +32,7 @@ func TestActivityRepository_ListRecentActivity_IncludesJoins(t *testing.T) {
 		"member", joiner.String(), (*string)(nil), &name,
 	)
 
-	mock.ExpectQuery(`(?s)'member_joined'.*FROM group_memberships jm.*` +
+	mock.ExpectQuery(`(?s)'member_joined'.*FROM group_memberships jm.*`+
 		`NOT \(jm\.user_id = jg\.created_by AND jm\.joined_at <= jg\.created_at \+ INTERVAL '1 minute'\)`).
 		WithArgs(groupID, 10).
 		WillReturnRows(rows)

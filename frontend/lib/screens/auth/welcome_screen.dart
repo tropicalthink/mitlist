@@ -412,7 +412,10 @@ class _InvitePinnedNote extends ConsumerWidget {
         householdName: final household,
         memberCount: final count,
       ) =>
-        (l10n.welcomeInviteFrom(inviter), l10n.welcomeInviteTo(household, count)),
+        (
+          l10n.welcomeInviteFrom(inviter),
+          l10n.welcomeInviteTo(household, count)
+        ),
       PublicInvitePreview(householdName: final household) => (
           l10n.welcomeInviteHeadline,
           l10n.welcomeInviteJoin(household),

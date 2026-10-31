@@ -92,8 +92,8 @@ void main() {
                 groupService ??
                 FakeGroupService(groups: [group], members: members),
           ),
-          authServiceProviderAsync.overrideWith((ref) async =>
-              authService ?? FakeAuthService(currentUser: user)),
+          authServiceProviderAsync.overrideWith(
+              (ref) async => authService ?? FakeAuthService(currentUser: user)),
           ...extraOverrides,
         ],
         child: MaterialApp(
