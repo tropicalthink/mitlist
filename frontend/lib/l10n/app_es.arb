@@ -1371,6 +1371,16 @@
     "description": "Card title: type recipe manually"
   },
   "recipeCreationTypeItInDesc": "Empieza con un título y añade ingredientes después",
+  "recipeCreationFromPhoto": "Leer una foto",
+  "recipeCreationFromPhotoDesc": "Fotografía una ficha de receta o una página de libro. Se lee en tu teléfono",
+  "recipePhotoTitle": "Fotografía la receta",
+  "recipePhotoReading": "Leyendo la receta…",
+  "recipePhotoNothingFound": "No se encontró ninguna receta en la foto. Prueba más cerca y más recto.",
+  "recipePhotoRead": "Se leyeron {ingredients, plural, =1{1 ingrediente} other{{ingredients} ingredientes}} y {steps, plural, =1{1 paso} other{{steps} pasos}}. Revísalos antes de guardar.",
+  "receiptScanTitle": "Fotografía el tique",
+  "receiptScanReading": "Leyendo el tique…",
+  "receiptScanNoTotal": "No se encontró el total en el tique. Introduce el importe tú mismo.",
+  "receiptScanCheckTotal": "Las líneas del tique no suman su total. Revisa el importe y las notas.",
   "@recipeCreationTypeItInDesc": {
     "description": "Card subtitle: type manually"
   },

@@ -1371,6 +1371,16 @@
     "description": "Card title: type recipe manually"
   },
   "recipeCreationTypeItInDesc": "Commence avec un titre et ajoute les ingrédients plus tard",
+  "recipeCreationFromPhoto": "Lire une photo",
+  "recipeCreationFromPhotoDesc": "Photographie une fiche recette ou une page de livre. Elle est lue sur ton téléphone",
+  "recipePhotoTitle": "Photographier la recette",
+  "recipePhotoReading": "Lecture de la recette…",
+  "recipePhotoNothingFound": "Aucune recette trouvée sur la photo. Essaie plus près et plus droit.",
+  "recipePhotoRead": "{ingredients, plural, =1{1 ingrédient} other{{ingredients} ingrédients}} et {steps, plural, =1{1 étape} other{{steps} étapes}} lus. Vérifie-les avant d’enregistrer.",
+  "receiptScanTitle": "Photographier le ticket",
+  "receiptScanReading": "Lecture du ticket…",
+  "receiptScanNoTotal": "Aucun total trouvé sur le ticket. Saisis le montant toi-même.",
+  "receiptScanCheckTotal": "Les lignes du ticket ne correspondent pas à son total. Vérifie le montant et les notes.",
   "@recipeCreationTypeItInDesc": {
     "description": "Card subtitle: type manually"
   },

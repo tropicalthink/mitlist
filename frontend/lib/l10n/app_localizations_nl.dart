@@ -1368,6 +1368,54 @@ class AppLocalizationsNl extends AppLocalizations {
       'Begin met een titel en voeg later ingrediënten toe';
 
   @override
+  String get recipeCreationFromPhoto => 'Foto lezen';
+
+  @override
+  String get recipeCreationFromPhotoDesc =>
+      'Fotografeer een receptkaart of kookboekpagina. Hij wordt op je telefoon gelezen';
+
+  @override
+  String get recipePhotoTitle => 'Fotografeer het recept';
+
+  @override
+  String get recipePhotoReading => 'Recept wordt gelezen…';
+
+  @override
+  String get recipePhotoNothingFound =>
+      'Geen recept gevonden op de foto. Probeer het dichterbij en rechter.';
+
+  @override
+  String recipePhotoRead(int ingredients, int steps) {
+    String _temp0 = intl.Intl.pluralLogic(
+      ingredients,
+      locale: localeName,
+      other: '$ingredients ingrediënten',
+      one: '1 ingrediënt',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      steps,
+      locale: localeName,
+      other: '$steps stappen',
+      one: '1 stap',
+    );
+    return '$_temp0 en $_temp1 gelezen. Controleer ze voor het opslaan.';
+  }
+
+  @override
+  String get receiptScanTitle => 'Fotografeer de kassabon';
+
+  @override
+  String get receiptScanReading => 'Kassabon wordt gelezen…';
+
+  @override
+  String get receiptScanNoTotal =>
+      'Geen totaal gevonden op de bon. Vul het bedrag zelf in.';
+
+  @override
+  String get receiptScanCheckTotal =>
+      'De regels van de bon tellen niet op tot het totaal. Controleer bedrag en notities.';
+
+  @override
   String get recipeCreationScanning => 'Scannen…';
 
   @override

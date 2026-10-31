@@ -1367,6 +1367,54 @@ class AppLocalizationsFr extends AppLocalizations {
       'Commence avec un titre et ajoute les ingrédients plus tard';
 
   @override
+  String get recipeCreationFromPhoto => 'Lire une photo';
+
+  @override
+  String get recipeCreationFromPhotoDesc =>
+      'Photographie une fiche recette ou une page de livre. Elle est lue sur ton téléphone';
+
+  @override
+  String get recipePhotoTitle => 'Photographier la recette';
+
+  @override
+  String get recipePhotoReading => 'Lecture de la recette…';
+
+  @override
+  String get recipePhotoNothingFound =>
+      'Aucune recette trouvée sur la photo. Essaie plus près et plus droit.';
+
+  @override
+  String recipePhotoRead(int ingredients, int steps) {
+    String _temp0 = intl.Intl.pluralLogic(
+      ingredients,
+      locale: localeName,
+      other: '$ingredients ingrédients',
+      one: '1 ingrédient',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      steps,
+      locale: localeName,
+      other: '$steps étapes',
+      one: '1 étape',
+    );
+    return '$_temp0 et $_temp1 lus. Vérifie-les avant d’enregistrer.';
+  }
+
+  @override
+  String get receiptScanTitle => 'Photographier le ticket';
+
+  @override
+  String get receiptScanReading => 'Lecture du ticket…';
+
+  @override
+  String get receiptScanNoTotal =>
+      'Aucun total trouvé sur le ticket. Saisis le montant toi-même.';
+
+  @override
+  String get receiptScanCheckTotal =>
+      'Les lignes du ticket ne correspondent pas à son total. Vérifie le montant et les notes.';
+
+  @override
   String get recipeCreationScanning => 'Scan en cours…';
 
   @override

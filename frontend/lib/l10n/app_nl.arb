@@ -1371,6 +1371,16 @@
     "description": "Card title: type recipe manually"
   },
   "recipeCreationTypeItInDesc": "Begin met een titel en voeg later ingrediënten toe",
+  "recipeCreationFromPhoto": "Foto lezen",
+  "recipeCreationFromPhotoDesc": "Fotografeer een receptkaart of kookboekpagina. Hij wordt op je telefoon gelezen",
+  "recipePhotoTitle": "Fotografeer het recept",
+  "recipePhotoReading": "Recept wordt gelezen…",
+  "recipePhotoNothingFound": "Geen recept gevonden op de foto. Probeer het dichterbij en rechter.",
+  "recipePhotoRead": "{ingredients, plural, =1{1 ingrediënt} other{{ingredients} ingrediënten}} en {steps, plural, =1{1 stap} other{{steps} stappen}} gelezen. Controleer ze voor het opslaan.",
+  "receiptScanTitle": "Fotografeer de kassabon",
+  "receiptScanReading": "Kassabon wordt gelezen…",
+  "receiptScanNoTotal": "Geen totaal gevonden op de bon. Vul het bedrag zelf in.",
+  "receiptScanCheckTotal": "De regels van de bon tellen niet op tot het totaal. Controleer bedrag en notities.",
   "@recipeCreationTypeItInDesc": {
     "description": "Card subtitle: type manually"
   },

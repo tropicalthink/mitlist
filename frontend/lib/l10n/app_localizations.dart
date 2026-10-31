@@ -2408,6 +2408,66 @@ abstract class AppLocalizations {
   /// **'Start with a title and add ingredients later'**
   String get recipeCreationTypeItInDesc;
 
+  /// Recipe creation entry card: read a recipe from a photo
+  ///
+  /// In en, this message translates to:
+  /// **'Read a photo'**
+  String get recipeCreationFromPhoto;
+
+  /// Card subtitle: photo of a recipe card or cookbook page, read on-device
+  ///
+  /// In en, this message translates to:
+  /// **'Snap a recipe card or cookbook page. It is read on your phone'**
+  String get recipeCreationFromPhotoDesc;
+
+  /// Capture screen title when photographing a recipe
+  ///
+  /// In en, this message translates to:
+  /// **'Photograph the recipe'**
+  String get recipePhotoTitle;
+
+  /// Progress message while a recipe photo is read
+  ///
+  /// In en, this message translates to:
+  /// **'Reading the recipe…'**
+  String get recipePhotoReading;
+
+  /// Error toast: no recipe text found in the photo
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t find a recipe in that photo. Try a closer, straighter shot.'**
+  String get recipePhotoNothingFound;
+
+  /// Toast after a recipe photo filled the form
+  ///
+  /// In en, this message translates to:
+  /// **'Read {ingredients, plural, =1{1 ingredient} other{{ingredients} ingredients}} and {steps, plural, =1{1 step} other{{steps} steps}}. Check them before saving.'**
+  String recipePhotoRead(int ingredients, int steps);
+
+  /// Capture screen title when photographing a receipt
+  ///
+  /// In en, this message translates to:
+  /// **'Photograph the receipt'**
+  String get receiptScanTitle;
+
+  /// Progress message while a receipt photo is read
+  ///
+  /// In en, this message translates to:
+  /// **'Reading the receipt…'**
+  String get receiptScanReading;
+
+  /// Toast: no total found on a scanned receipt
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t find a total on the receipt. Enter the amount yourself.'**
+  String get receiptScanNoTotal;
+
+  /// Toast: a scanned receipt's lines don't sum to its total
+  ///
+  /// In en, this message translates to:
+  /// **'The receipt lines don\'t add up to its total. Check the amount and notes.'**
+  String get receiptScanCheckTotal;
+
   /// Card title: scanning in progress
   ///
   /// In en, this message translates to:

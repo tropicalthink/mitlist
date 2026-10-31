@@ -1798,6 +1798,54 @@
   "@recipeCreationTypeItInDesc": {
     "description": "Card subtitle: type manually"
   },
+  "recipeCreationFromPhoto": "Read a photo",
+  "@recipeCreationFromPhoto": {
+    "description": "Recipe creation entry card: read a recipe from a photo"
+  },
+  "recipeCreationFromPhotoDesc": "Snap a recipe card or cookbook page. It is read on your phone",
+  "@recipeCreationFromPhotoDesc": {
+    "description": "Card subtitle: photo of a recipe card or cookbook page, read on-device"
+  },
+  "recipePhotoTitle": "Photograph the recipe",
+  "@recipePhotoTitle": {
+    "description": "Capture screen title when photographing a recipe"
+  },
+  "recipePhotoReading": "Reading the recipe…",
+  "@recipePhotoReading": {
+    "description": "Progress message while a recipe photo is read"
+  },
+  "recipePhotoNothingFound": "Couldn't find a recipe in that photo. Try a closer, straighter shot.",
+  "@recipePhotoNothingFound": {
+    "description": "Error toast: no recipe text found in the photo"
+  },
+  "recipePhotoRead": "Read {ingredients, plural, =1{1 ingredient} other{{ingredients} ingredients}} and {steps, plural, =1{1 step} other{{steps} steps}}. Check them before saving.",
+  "@recipePhotoRead": {
+    "description": "Toast after a recipe photo filled the form",
+    "placeholders": {
+      "ingredients": {
+        "type": "int"
+      },
+      "steps": {
+        "type": "int"
+      }
+    }
+  },
+  "receiptScanTitle": "Photograph the receipt",
+  "@receiptScanTitle": {
+    "description": "Capture screen title when photographing a receipt"
+  },
+  "receiptScanReading": "Reading the receipt…",
+  "@receiptScanReading": {
+    "description": "Progress message while a receipt photo is read"
+  },
+  "receiptScanNoTotal": "Couldn't find a total on the receipt. Enter the amount yourself.",
+  "@receiptScanNoTotal": {
+    "description": "Toast: no total found on a scanned receipt"
+  },
+  "receiptScanCheckTotal": "The receipt lines don't add up to its total. Check the amount and notes.",
+  "@receiptScanCheckTotal": {
+    "description": "Toast: a scanned receipt's lines don't sum to its total"
+  },
   "recipeCreationScanning": "Scanning…",
   "@recipeCreationScanning": {
     "description": "Card title: scanning in progress"
