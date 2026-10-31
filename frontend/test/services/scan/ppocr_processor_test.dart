@@ -253,7 +253,9 @@ void main() {
       // Near-flat evidence fits almost any short reading within the visual
       // allowance; spelling similarity is what stops "fice" becoming "baba".
       final chosen = PpOcrProcessor.decodeLineWithLexicon(
-        [evidence(['f', 'i', 'c', 'e'], peak: 0.2)],
+        [
+          evidence(['f', 'i', 'c', 'e'], peak: 0.2)
+        ],
         ['fice'],
         const [OcrLexiconEntry('baba', 0)],
         positions,
@@ -349,16 +351,17 @@ void main() {
       ));
       expect(centre.left, inInclusiveRange(397, 401));
       expect(centre.top, inInclusiveRange(297, 301));
-      final scaled = const PpOcrGeometry(
-              originalWidth: 400, originalHeight: 300, scale: 4)
-          .mapBack(const PpOcrRegion(
-              left: 400, top: 400, right: 800, bottom: 480, score: 1));
+      final scaled =
+          const PpOcrGeometry(originalWidth: 400, originalHeight: 300, scale: 4)
+              .mapBack(const PpOcrRegion(
+                  left: 400, top: 400, right: 800, bottom: 480, score: 1));
       expect([scaled.left, scaled.top, scaled.right, scaled.bottom],
           [100, 100, 200, 120]);
     });
 
     test('small photos are enlarged, large ones left alone', () {
-      final small = processor.normalizeScale(img.Image(width: 350, height: 300));
+      final small =
+          processor.normalizeScale(img.Image(width: 350, height: 300));
       expect(small.width, 1600);
       final large = img.Image(width: 1600, height: 1200);
       expect(identical(processor.normalizeScale(large), large), isTrue);

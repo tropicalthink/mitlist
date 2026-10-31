@@ -872,8 +872,8 @@ class PpOcrProcessor {
   /// recognizer's own, bullets and case aside.
   static const double kMinReadingSimilarity = 0.5;
 
-  static String _bare(String text) => normaliseText(
-      text.replaceFirst(RegExp(r'^[\s\-–—•*+]+'), ''));
+  static String _bare(String text) =>
+      normaliseText(text.replaceFirst(RegExp(r'^[\s\-–—•*+]+'), ''));
 
   /// How much worse (natural log, per raw character) a lexicon reading may
   /// explain the image than the recognizer's own reading.
@@ -1015,6 +1015,10 @@ class PpOcrProcessor {
 
   /// Conservative, portable strikethrough signal based on a long dark stroke
   /// through the middle half of a recognized line crop.
+  /// Share of the crop's width a single unbroken stroke must cover to count
+  /// as crossing the line out.
+  static const double kStrikeRunFraction = 0.6;
+
   bool hasStrikethrough(img.Image crop) {
     if (crop.width < 24 || crop.height < 12) return false;
     final gray = img.grayscale(crop);
@@ -1027,15 +1031,27 @@ class PpOcrProcessor {
     if (darkThreshold < 40) return false;
     final startY = (gray.height * 0.25).floor();
     final endY = (gray.height * 0.75).ceil();
-    var strongestCoverage = 0.0;
+    // A strike is one unbroken stroke across the word. Counting dark pixels
+    // per row also fires on a thick pen's letters ("Eis": the E's bar, the i,
+    // the s), which leave gaps between them; the longest run does not.
+    final maxGap = math.max(2, (gray.height * 0.06).round());
+    var longestRun = 0;
     for (var y = startY; y < endY; y++) {
-      var dark = 0;
+      var run = 0;
+      var gap = 0;
       for (var x = 0; x < gray.width; x++) {
-        if (gray.getPixel(x, y).r < darkThreshold) dark++;
+        if (gray.getPixel(x, y).r < darkThreshold) {
+          run += gap + 1;
+          gap = 0;
+        } else if (run > 0 && ++gap > maxGap) {
+          longestRun = math.max(longestRun, run);
+          run = 0;
+          gap = 0;
+        }
       }
-      strongestCoverage = math.max(strongestCoverage, dark / gray.width);
+      longestRun = math.max(longestRun, run);
     }
-    if (strongestCoverage >= 0.42) return true;
+    if (longestRun >= gray.width * kStrikeRunFraction) return true;
 
     // A handwritten strike is commonly diagonal, which spreads its pixels
     // across several raster rows and defeats the horizontal projection above.
@@ -1047,7 +1063,9 @@ class PpOcrProcessor {
     for (var riseStep = -4; riseStep <= 4; riseStep++) {
       final totalRise = gray.height * riseStep * 0.075;
       for (var centerY = startY; centerY < endY; centerY += 2) {
-        var dark = 0;
+        var run = 0;
+        var best = 0;
+        var misses = 0;
         for (var x = 0; x < gray.width; x += 2) {
           final progress = gray.width <= 1 ? 0.0 : x / (gray.width - 1) - 0.5;
           final y = (centerY + totalRise * progress).round();
@@ -1061,9 +1079,17 @@ class PpOcrProcessor {
               break;
             }
           }
-          if (hit) dark++;
+          if (hit) {
+            run += misses + 1;
+            misses = 0;
+          } else if (run > 0 && ++misses > 1) {
+            best = math.max(best, run);
+            run = 0;
+            misses = 0;
+          }
         }
-        if (dark / sampleCount >= 0.62) return true;
+        best = math.max(best, run);
+        if (best >= sampleCount * kStrikeRunFraction) return true;
       }
     }
     return false;

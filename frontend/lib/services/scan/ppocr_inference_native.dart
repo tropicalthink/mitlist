@@ -16,6 +16,7 @@ import 'scan_models.dart';
 const _detectorAsset = 'assets/models/ocr/ppocrv6_small_det/inference.onnx';
 const _recognizerAsset = 'assets/models/ocr/ppocrv6_medium_rec/inference.onnx';
 const _charactersAsset = 'assets/models/ocr/ppocrv6_medium_rec/characters.json';
+
 /// Slant below which a photo is read as it is.
 const double kMinDeskewDegrees = 2;
 
