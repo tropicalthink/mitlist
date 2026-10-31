@@ -68,6 +68,8 @@ void main() {
   Future<void> pumpSheet(
     WidgetTester tester, {
     String? initialDescription,
+    DateTime? initialDate,
+    String? initialNotes,
     List<Override> extraOverrides = const [],
     GroupService? groupService,
     AuthService? authService,
@@ -98,6 +100,8 @@ void main() {
             body: SingleChildScrollView(
               child: ExpenseCreationSheet(
                 initialDescription: initialDescription,
+                initialDate: initialDate,
+                initialNotes: initialNotes,
               ),
             ),
           ),
@@ -122,6 +126,18 @@ void main() {
     expect(find.text('Shares'), findsNothing);
     // The per-member "Paid by" picker is also folded away.
     expect(find.text('Sam'), findsNothing);
+  });
+
+  testWidgets('a scanned receipt fills in its date and lines', (tester) async {
+    await pumpSheet(
+      tester,
+      initialDescription: 'Lidl',
+      initialDate: DateTime(2026, 10, 3),
+      initialNotes: 'Gemüsemais 0.98\nMilchbrötchen 0.99',
+    );
+
+    expect(find.textContaining('Oct 3'), findsOneWidget);
+    expect(find.text('Gemüsemais 0.98\nMilchbrötchen 0.99'), findsOneWidget);
   });
 
   testWidgets('tapping the summary unfolds the full split editor',

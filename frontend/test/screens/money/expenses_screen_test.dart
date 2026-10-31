@@ -126,6 +126,15 @@ void main() {
     // Key state 2: the create action is present. AppButton's solid variant
     // (the FAB's default) uppercases its label — see AppButton._displayText.
     expect(find.text('ADD EXPENSE'), findsOneWidget);
+
+    // Key state 3: the camera reads a receipt into an expense; it used to
+    // open the grocery-list scanner.
+    await tester.tap(find.byTooltip('Scan receipt'));
+    for (var i = 0; i < 4; i++) {
+      await tester.pump(const Duration(milliseconds: 200));
+    }
+    expect(find.text('Photograph the receipt'), findsOneWidget);
+    expect(find.text('Take a photo'), findsOneWidget);
   });
 
   testWidgets('offline: the cached timeline renders when /auth/me fails',

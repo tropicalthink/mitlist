@@ -43,6 +43,10 @@ import '../widgets/app_toast.dart';
 class ExpenseCreationSheet extends ConsumerStatefulWidget {
   final String? initialDescription;
   final String? initialAmount;
+
+  /// When the expense happened, e.g. the date printed on a scanned receipt.
+  final DateTime? initialDate;
+  final String? initialNotes;
   final File? receiptImage;
   final ValueNotifier<bool>? dirtyNotifier;
 
@@ -59,6 +63,8 @@ class ExpenseCreationSheet extends ConsumerStatefulWidget {
     super.key,
     this.initialDescription,
     this.initialAmount,
+    this.initialDate,
+    this.initialNotes,
     this.receiptImage,
     this.dirtyNotifier,
     this.initialRecurring,
@@ -69,6 +75,8 @@ class ExpenseCreationSheet extends ConsumerStatefulWidget {
     BuildContext context, {
     String? initialDescription,
     String? initialAmount,
+    DateTime? initialDate,
+    String? initialNotes,
     File? receiptImage,
   }) async {
     final l10n = AppLocalizations.of(context)!;
@@ -80,6 +88,8 @@ class ExpenseCreationSheet extends ConsumerStatefulWidget {
       body: ExpenseCreationSheet(
         initialDescription: initialDescription,
         initialAmount: initialAmount,
+        initialDate: initialDate,
+        initialNotes: initialNotes,
         receiptImage: receiptImage,
         dirtyNotifier: dirty,
       ),
@@ -215,6 +225,10 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
       _amountController.selection = TextSelection.fromPosition(
         TextPosition(offset: widget.initialAmount!.length),
       );
+    }
+    if (widget.initialDate != null) _date = widget.initialDate!;
+    if (widget.initialNotes != null) {
+      _notesController.text = widget.initialNotes!;
     }
     final recurring = widget.initialRecurring;
     if (recurring != null) {

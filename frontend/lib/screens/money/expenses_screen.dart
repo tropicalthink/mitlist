@@ -27,6 +27,8 @@ import '../../widgets/mitlist_app_bar.dart';
 import 'expense_format.dart';
 import 'expenses_controller.dart';
 import 'widgets/expense_balance_card.dart';
+import '../scanner/document_photo_reader.dart';
+import 'receipt_scan.dart';
 import 'widgets/expense_chip_bar.dart';
 import 'widgets/expense_settlements_body.dart';
 import 'widgets/expense_states.dart';
@@ -214,8 +216,19 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
 
   Future<void> _openCreateExpense({String? initialAmount}) async {
     unawaited(Haptics.light());
-    final created =
-        await ExpenseCreationSheet.show(context, initialAmount: initialAmount);
+    await _afterExpenseSheet(
+      await ExpenseCreationSheet.show(context, initialAmount: initialAmount),
+    );
+  }
+
+  /// The receipt flow ends in the same sheet as "Add expense", so a saved
+  /// receipt lands like any other new expense.
+  Future<void> _scanReceipt() async {
+    unawaited(Haptics.light());
+    await _afterExpenseSheet(await scanReceiptToExpense(context, ref));
+  }
+
+  Future<void> _afterExpenseSheet(bool? created) async {
     if (created == true && mounted) {
       final groupId = _controller.groupId;
       if (groupId != null) {
@@ -335,11 +348,12 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       appBar: MitlistAppBar.titleText(
         l10n.expenseAppBarTitle,
         actions: [
-          IconButton(
-            icon: const AppIcon(name: 'camera'),
-            tooltip: l10n.expenseScanReceiptTooltip,
-            onPressed: () => context.pushNamed('scanner'),
-          ),
+          if (canReadDocumentPhotos)
+            IconButton(
+              icon: const AppIcon(name: 'camera'),
+              tooltip: l10n.expenseScanReceiptTooltip,
+              onPressed: _scanReceipt,
+            ),
           IconButton(
             icon: const AppIcon(name: 'repeat'),
             tooltip: l10n.expenseRecurringTooltip,
