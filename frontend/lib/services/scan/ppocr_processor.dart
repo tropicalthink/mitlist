@@ -3,6 +3,8 @@ import 'dart:typed_data';
 
 import 'package:image/image.dart' as img;
 
+import 'resolution/string_sim.dart';
+
 /// Model-ready tensor plus the resized image used to produce it.
 class PpOcrImageTensor {
   const PpOcrImageTensor({
@@ -791,6 +793,7 @@ class PpOcrProcessor {
     // the decoder see a word the pixels do not show ("Yildiz sauce" is not
     // "Hoisin sauce", however often the household buys hoisin).
     final rawLength = rawParts.fold<int>(0, (sum, part) => sum + part.length);
+    final rawBare = _bare(rawParts.join(' '));
     final likelihoodFloor =
         rawLikelihood - maxVisualGapPerCharacter * math.max(1, rawLength);
     var bestScore = rawScore;
@@ -821,6 +824,13 @@ class PpOcrProcessor {
               if (likelihood < likelihoodFloor) break;
             }
             if (likelihood < likelihoodFloor) continue;
+            // A word must share most of its letters with what was read. Short
+            // smudges and background print ("0iz4", "baThexa") otherwise fit
+            // some short word ("fig", "beer") within the visual allowance.
+            if (stringSimilarity(_bare(texts.join(' ')), rawBare) <
+                kMinReadingSimilarity) {
+              continue;
+            }
             final score = entry.logPrior + likelihood;
             if (score > bestScore) {
               bestScore = score;
@@ -857,6 +867,13 @@ class PpOcrProcessor {
     }
     return out.toString();
   }
+
+  /// Minimum spelling similarity between a lexicon reading and the
+  /// recognizer's own, bullets and case aside.
+  static const double kMinReadingSimilarity = 0.5;
+
+  static String _bare(String text) => normaliseText(
+      text.replaceFirst(RegExp(r'^[\s\-–—•*+]+'), ''));
 
   /// How much worse (natural log, per raw character) a lexicon reading may
   /// explain the image than the recognizer's own reading.

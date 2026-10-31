@@ -249,6 +249,19 @@ void main() {
       expect(chosen, isNull);
     });
 
+    test('a smudge never becomes a word it shares no letters with', () {
+      // Near-flat evidence fits almost any short reading within the visual
+      // allowance; spelling similarity is what stops "fice" becoming "baba".
+      final chosen = PpOcrProcessor.decodeLineWithLexicon(
+        [evidence(['f', 'i', 'c', 'e'], peak: 0.2)],
+        ['fice'],
+        const [OcrLexiconEntry('baba', 0)],
+        positions,
+        rawLogPrior: -60,
+      );
+      expect(chosen, isNull);
+    });
+
     test('an item can span the fragments of one line', () {
       final chosen = PpOcrProcessor.decodeLineWithLexicon(
         [
