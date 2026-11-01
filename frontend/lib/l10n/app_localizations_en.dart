@@ -2974,7 +2974,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get shoppingTripMarkDone => 'Mark done';
+  String get shoppingTripFinish => 'Finish trip';
 
   @override
   String shoppingTripBasketBar(num collected, String price) {

@@ -3355,10 +3355,7 @@
       }
     }
   },
-  "shoppingTripMarkDone": "Marcar como hecho",
-  "@shoppingTripMarkDone": {
-    "description": "Button to mark item as purchased"
-  },
+  "shoppingTripFinish": "Terminar compra",
   "shoppingTripBasketBar": "/ {collected} recogidos{price}",
   "@shoppingTripBasketBar": {
     "description": "Basket bar: collected count and price",

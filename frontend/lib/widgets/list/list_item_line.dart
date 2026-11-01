@@ -39,6 +39,7 @@ class ListItemLine extends ConsumerWidget {
     this.reorderIndex,
     this.onMoveUp,
     this.onMoveDown,
+    this.checked,
   });
 
   final ListItem item;
@@ -68,6 +69,10 @@ class ListItemLine extends ConsumerWidget {
   /// Screen-reader stand-ins for dragging.
   final VoidCallback? onMoveUp;
   final VoidCallback? onMoveDown;
+
+  /// Shown ticked state when it runs ahead of [item] (the shopping trip
+  /// ticks a line before the cache row it was read from catches up).
+  final bool? checked;
 
   static String formatQuantity(double value) {
     if (value == value.roundToDouble()) return value.toInt().toString();
@@ -137,9 +142,11 @@ class ListItemLine extends ConsumerWidget {
     } else {
       words = AnimatedStrikethrough(
         text: item.name,
-        struck: item.checked,
+        struck: checked ?? item.checked,
         style: nameStyle ?? const TextStyle(),
-        color: item.checked ? scheme.onSurfaceVariant : scheme.onSurface,
+        color: (checked ?? item.checked)
+            ? scheme.onSurfaceVariant
+            : scheme.onSurface,
       );
     }
 
@@ -149,7 +156,7 @@ class ListItemLine extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           AnimatedCheckToggle(
-            value: item.checked,
+            value: checked ?? item.checked,
             onChanged: onToggle,
             size: 22,
             semanticLabelOn: l10n.listItemMarkUnchecked(item.name),

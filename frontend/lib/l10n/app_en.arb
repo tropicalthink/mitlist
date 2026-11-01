@@ -3962,10 +3962,8 @@
       }
     }
   },
-  "shoppingTripMarkDone": "Mark done",
-  "@shoppingTripMarkDone": {
-    "description": "Button to mark item as purchased"
-  },
+  "shoppingTripFinish": "Finish trip",
+  "@shoppingTripFinish": {"description": "Button that ends a shopping trip; each tick was already saved"},
   "shoppingTripBasketBar": "/ {collected} collected{price}",
   "@shoppingTripBasketBar": {
     "description": "Basket bar: collected count and price",

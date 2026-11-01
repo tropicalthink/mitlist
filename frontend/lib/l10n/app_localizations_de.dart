@@ -3021,7 +3021,7 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get shoppingTripMarkDone => 'Als gekauft markieren';
+  String get shoppingTripFinish => 'Einkauf beenden';
 
   @override
   String shoppingTripBasketBar(num collected, String price) {

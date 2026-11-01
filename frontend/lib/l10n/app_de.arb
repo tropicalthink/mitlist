@@ -825,7 +825,7 @@
   "shoppingTripAllCaughtUpDesc": "Keine offenen Einträge in deinen Listen. Füge Einträge hinzu, um sie hier zu sehen.",
   "shoppingTripSortedByAisles": "Nach Gängen sortiert",
   "shoppingTripSortedByStoreAisles": "Nach {store}-Gängen sortiert",
-  "shoppingTripMarkDone": "Als gekauft markieren",
+  "shoppingTripFinish": "Einkauf beenden",
   "shoppingTripBasketBar": "/ {collected} gesammelt{price}",
   "shoppingTripItemsWorthDone": "{amount} an Artikeln als gekauft markiert",
   "shoppingTripAddExpense": "Ausgabe hinzufügen",

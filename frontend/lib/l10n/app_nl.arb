@@ -3355,10 +3355,7 @@
       }
     }
   },
-  "shoppingTripMarkDone": "Markeren als gedaan",
-  "@shoppingTripMarkDone": {
-    "description": "Button to mark item as purchased"
-  },
+  "shoppingTripFinish": "Boodschappen afronden",
   "shoppingTripBasketBar": "/ {collected} verzameld{price}",
   "@shoppingTripBasketBar": {
     "description": "Basket bar: collected count and price",

@@ -65,13 +65,7 @@ class _AnimatedCheckToggleState extends State<AnimatedCheckToggle>
     final l10n = AppLocalizations.of(context)!;
     final disableAnimations = MediaQuery.of(context).disableAnimations;
     final colorScheme = Theme.of(context).colorScheme;
-    final progress =
-        disableAnimations ? (widget.value ? 1.0 : 0.0) : _controller.value;
     final isInteractive = widget.onChanged != null;
-    final bgColor =
-        _lerpColor(colorScheme.surface, colorScheme.primary, progress);
-    final borderColor =
-        _lerpColor(colorScheme.outline, colorScheme.primary, progress);
 
     final label = widget.value
         ? (widget.semanticLabelOn ?? l10n.checkToggleChecked)
@@ -83,23 +77,33 @@ class _AnimatedCheckToggleState extends State<AnimatedCheckToggle>
       child: GestureDetector(
         onTap: isInteractive ? () => widget.onChanged!(!widget.value) : null,
         behavior: HitTestBehavior.opaque,
+        // The fill, border and tick all follow the animation. (The fill used
+        // to be read once per build, so a box ticked in place stayed white
+        // with a white tick on it until something else rebuilt it.)
         child: Center(
-          child: Container(
-            width: widget.size,
-            height: widget.size,
-            decoration: BoxDecoration(
-              color: bgColor,
-              border: Border.all(color: borderColor, width: 2),
-              borderRadius: BorderRadius.zero,
-              boxShadow: progress > 0.5
-                  ? MitlistShadows.shadowSoft
-                  : MitlistShadows.shadowNone,
-            ),
-            child: AnimatedBuilder(
-              animation: _controller,
-              builder: (context, child) {
-                final t = _controller.value;
-                return Opacity(
+          child: AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              final t = disableAnimations
+                  ? (widget.value ? 1.0 : 0.0)
+                  : _controller.value;
+              return Container(
+                width: widget.size,
+                height: widget.size,
+                decoration: BoxDecoration(
+                  color:
+                      _lerpColor(colorScheme.surface, colorScheme.primary, t),
+                  border: Border.all(
+                    color:
+                        _lerpColor(colorScheme.outline, colorScheme.primary, t),
+                    width: 2,
+                  ),
+                  borderRadius: BorderRadius.zero,
+                  boxShadow: t > 0.5
+                      ? MitlistShadows.shadowSoft
+                      : MitlistShadows.shadowNone,
+                ),
+                child: Opacity(
                   opacity: t.clamp(0.0, 1.0),
                   child: Transform.scale(
                     scale: 0.4 + (t * 0.6).clamp(0.0, 1.0),
@@ -109,9 +113,9 @@ class _AnimatedCheckToggleState extends State<AnimatedCheckToggle>
                       color: colorScheme.onPrimary,
                     ),
                   ),
-                );
-              },
-            ),
+                ),
+              );
+            },
           ),
         ),
       ),

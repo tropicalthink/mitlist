@@ -5235,11 +5235,11 @@ abstract class AppLocalizations {
   /// **'Sorted by {store} aisles'**
   String shoppingTripSortedByStoreAisles(String store);
 
-  /// Button to mark item as purchased
+  /// Button that ends a shopping trip; each tick was already saved
   ///
   /// In en, this message translates to:
-  /// **'Mark done'**
-  String get shoppingTripMarkDone;
+  /// **'Finish trip'**
+  String get shoppingTripFinish;
 
   /// Basket bar: collected count and price
   ///
