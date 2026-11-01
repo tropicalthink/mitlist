@@ -2211,19 +2211,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get listDetailCheckedOff => 'Checked off';
 
   @override
-  String get listDetailNothingHere => 'Nothing here yet';
-
-  @override
-  String get listDetailNothingHereDesc =>
-      'Photograph a handwritten list, fridge note, or screenshot. We\'ll pull out the items.';
-
-  @override
-  String get listDetailScanThisList => 'Scan this list';
-
-  @override
-  String get listDetailTypeItem => 'Type an item';
-
-  @override
   String get listDetailNoMatch => 'No items match your filter';
 
   @override
@@ -2265,9 +2252,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get listDetailCouldNotStartScan => 'Couldn\'t start scan. Try again.';
-
-  @override
-  String get listDetailSetPrice => 'Set price';
 
   @override
   String get listDetailPriceInput => 'Price';
@@ -3838,9 +3822,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get offlineBannerRetry => 'Retry';
 
   @override
-  String get composerNewItem => 'New item';
-
-  @override
   String get composerScanList => 'Scan list';
 
   @override
@@ -3859,22 +3840,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get listItemRemovePhoto => 'Remove photo';
 
   @override
-  String get listItemSetPrice => 'Set price';
-
-  @override
-  String get listItemChangeQuantity => 'Change quantity';
-
-  @override
   String get listItemQuantityAmount => 'Amount';
-
-  @override
-  String get listItemQuantityUnit => 'Unit (optional)';
-
-  @override
-  String get listItemAddNote => 'Add note';
-
-  @override
-  String get listItemEditNote => 'Edit note';
 
   @override
   String get listItemNoteLabel => 'Note';
@@ -3908,9 +3874,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get listItemReorder => 'Reorder';
-
-  @override
   String listItemMarkUnchecked(String name) {
     return 'Mark $name as unchecked';
   }
@@ -3929,7 +3892,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get listItemFailedSave => 'Failed to save — tap the sync bar to retry';
 
   @override
-  String get listItemLongPressHint => 'Long press for more options';
+  String get listItemUnit => 'Unit';
+
+  @override
+  String get listItemDetails => 'Details';
+
+  @override
+  String get listItemMoveUp => 'Move up';
+
+  @override
+  String get listItemMoveDown => 'Move down';
+
+  @override
+  String get listItemOneLess => 'One less';
+
+  @override
+  String get listItemOneMore => 'One more';
 
   @override
   String get scanCheckListPhoto => 'Check list photo';
@@ -5573,9 +5551,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pinwallCouldNotLoad => 'Couldn\'t load the pinwall.';
-
-  @override
-  String get composerItemHint => 'e.g. Milk, 2 avocados, or 500g flour';
 
   @override
   String get aisleOther => 'Other';

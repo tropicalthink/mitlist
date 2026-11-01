@@ -1035,25 +1035,16 @@ class ListDetailController extends ChangeNotifier {
     _dirty = true;
   }
 
-  Future<void> setItemPrice(ListItem item, int cents) async {
-    final repo = await ref.read(listRepositoryProvider.future);
-    await repo.updateItemOfflineFirst(
-      listId,
-      item.id,
-      UpdateListItemRequest(priceCents: cents),
-    );
-    if (_disposed) return;
-    _dirty = true;
-  }
-
-  /// Patches name/quantity/unit/note on an item through the same offline-first
-  /// path as [setItemPrice]. Only non-null fields are sent.
+  /// Patches name/quantity/unit/note/price on an item through the
+  /// offline-first path, as one write. Only non-null fields
+  /// are sent; a [priceCents] of 0 clears the price.
   Future<void> updateItemFields(
     ListItem item, {
     String? name,
     double? quantity,
     String? unit,
     String? note,
+    int? priceCents,
   }) async {
     final repo = await ref.read(listRepositoryProvider.future);
     await repo.updateItemOfflineFirst(
@@ -1064,6 +1055,7 @@ class ListDetailController extends ChangeNotifier {
         quantity: quantity,
         unit: unit,
         note: note,
+        priceCents: priceCents,
       ),
     );
     if (name != null &&

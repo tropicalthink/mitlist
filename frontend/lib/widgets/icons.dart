@@ -9,6 +9,7 @@ class AppIcons {
 
   // Heroicons-solid placeholders
   static const IconData plus = Icons.add;
+  static const IconData minus = Icons.remove;
   static const IconData arrowLeft = Icons.arrow_back;
   static const IconData arrowRight = Icons.arrow_forward;
   static const IconData arrowDown = Icons.arrow_downward;
@@ -147,6 +148,7 @@ class AppIcons {
   static IconData? resolve(String name) {
     return switch (name) {
       'plus' => plus,
+      'minus' => minus,
       'arrowLeft' => arrowLeft,
       'arrowRight' => arrowRight,
       'arrowDown' => arrowDown,

@@ -2430,22 +2430,6 @@
   "@listDetailCheckedOff": {
     "description": "Section header for completed items"
   },
-  "listDetailNothingHere": "Nada aquí todavía",
-  "@listDetailNothingHere": {
-    "description": "Empty state when list has no items"
-  },
-  "listDetailNothingHereDesc": "Fotografía una lista escrita a mano, una nota de nevera o una captura. Extraeremos los artículos.",
-  "@listDetailNothingHereDesc": {
-    "description": "Description for empty list"
-  },
-  "listDetailScanThisList": "Escanear esta lista",
-  "@listDetailScanThisList": {
-    "description": "CTA to scan list content"
-  },
-  "listDetailTypeItem": "Escribir un artículo",
-  "@listDetailTypeItem": {
-    "description": "CTA to type an item manually"
-  },
   "listDetailNoMatch": "Ningún artículo coincide con tu filtro",
   "@listDetailNoMatch": {
     "description": "Search empty result for items"
@@ -2495,10 +2479,6 @@
   "listDetailCouldNotStartScan": "No se pudo iniciar el escaneo. Inténtalo de nuevo.",
   "@listDetailCouldNotStartScan": {
     "description": "Snackbar when scan fails to start"
-  },
-  "listDetailSetPrice": "Establecer precio",
-  "@listDetailSetPrice": {
-    "description": "Dialog title for setting item price"
   },
   "listDetailPriceInput": "Precio",
   "@listDetailPriceInput": {
@@ -4144,31 +4124,29 @@
   "offlineBannerConflictCount": "{count} cambios necesitan tu revisión",
   "offlineBannerConflictOne": "Un cambio necesita tu revisión",
   "offlineBannerRetry": "Reintentar",
-  "composerNewItem": "Nuevo artículo",
   "composerScanList": "Escanear lista",
   "composerAddItem": "Agregar artículo",
   "listItemViewPhoto": "Ver foto",
   "listItemReplacePhoto": "Reemplazar foto",
   "listItemAddPhoto": "Agregar foto",
   "listItemRemovePhoto": "Quitar foto",
-  "listItemSetPrice": "Fijar precio",
-  "listItemChangeQuantity": "Cambiar cantidad",
   "listItemQuantityAmount": "Cantidad",
-  "listItemQuantityUnit": "Unidad (opcional)",
-  "listItemAddNote": "Añadir nota",
-  "listItemEditNote": "Editar nota",
   "listItemNoteLabel": "Nota",
   "listDetailProgress": "{done} de {total} hechos",
   "listOpenCount": "{count, plural, =0{Todo hecho} =1{Queda 1} other{Quedan {count}}}",
   "listSortListView": "Vista de lista",
   "listItemDeleteAction": "Eliminar",
   "listItemAddedBy": "Lo añadió {name}",
-  "listItemReorder": "Reordenar",
   "listItemMarkUnchecked": "Marcar {name} como no completado",
   "listItemMarkChecked": "Marcar {name} como completado",
   "listItemViewPhotoFor": "Ver foto de {name}",
   "listItemFailedSave": "Error al guardar — toca la barra de sincronización para reintentar",
-  "listItemLongPressHint": "Mantén presionado para más opciones",
+  "listItemUnit": "Unidad",
+  "listItemDetails": "Detalles",
+  "listItemMoveUp": "Subir",
+  "listItemMoveDown": "Bajar",
+  "listItemOneLess": "Uno menos",
+  "listItemOneMore": "Uno más",
   "scanCheckListPhoto": "Revisar foto de la lista",
   "scanReadingList": "Leyendo tu lista…",
   "scanCouldNotProcess": "No se pudo procesar la imagen. Inténtalo de nuevo.",
@@ -4795,10 +4773,6 @@
   "listReminderChipTooltip": "Recordatorio del hogar. Toca para cambiarlo.",
   "@commonView": {
     "description": "Generic view button"
-  },
-  "composerItemHint": "p. ej. Leche, 2 aguacates o 500 g de harina",
-  "@composerItemHint": {
-    "description": "Hint for list composer input"
   },
   "conflictItemChanged": "Artículo modificado",
   "@conflictItemChanged": {

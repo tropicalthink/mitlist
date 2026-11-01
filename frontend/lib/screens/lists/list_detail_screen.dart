@@ -27,12 +27,12 @@ import '../../utils/list_composer_parser.dart';
 import '../../widgets/list/list_detail_states.dart';
 import '../../widgets/list/list_done_section_header.dart';
 import '../../widgets/list/list_group_banner.dart';
-import '../../widgets/list/list_item_actions_sheet.dart';
+import '../../widgets/list/list_item_edit_sheet.dart';
 import '../../widgets/list/list_item_photo_viewer.dart';
-import '../../widgets/list/list_item_row_reactive.dart';
+import '../../widgets/list/list_item_line.dart';
 import '../../widgets/list/list_scan_launcher.dart';
 import '../../widgets/list/list_settle_collapse.dart';
-import '../../widgets/list/running_low_strip.dart';
+import '../../widgets/list/running_low_lines.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/mitlist_app_bar.dart';
 import 'list_detail_controller.dart';
@@ -73,6 +73,24 @@ class ListDetailScreen extends ConsumerStatefulWidget {
 class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   late ListDetailController _controller;
   bool _showSearch = false;
+
+  /// The item whose words are being edited in place, if any. One at a time,
+  /// with its own controller so live updates to the list never overwrite
+  /// what is being typed.
+  String? _editingItemId;
+
+  /// The typed-suggestion lines under the add line, kept scrolled into view
+  /// above the keyboard as they arrive.
+  final GlobalKey _typedSuggestionsKey = GlobalKey();
+
+  /// Words are on the add line and it has the keyboard: typed suggestions
+  /// show, and the "you might also need" lines step aside for them.
+  bool _wasTyping = false;
+
+  bool get _typingAnItem =>
+      _showProductSuggestions && _newItemController.text.trim().isNotEmpty;
+  final TextEditingController _editController = TextEditingController();
+  final FocusNode _editFocusNode = FocusNode();
   final TextEditingController _newItemController = TextEditingController();
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _titleController = TextEditingController();
@@ -115,6 +133,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     _composerFocusNode.addListener(_onComposerFocusChanged);
     _newItemController.addListener(_onComposerTextChanged);
     _titleFocusNode.addListener(_onTitleFocusChanged);
+    _editFocusNode.addListener(_onEditFocusChanged);
+    _controller.suggestionsRevision.addListener(_revealTypedSuggestions);
     if (widget.autoFocusTitle) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _startEditingTitle());
     }
@@ -197,6 +217,22 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     }
   }
 
+  /// Scrolls just enough that the last typed suggestion clears the keyboard.
+  void _revealTypedSuggestions() {
+    if (!_typingAnItem) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final target = _typedSuggestionsKey.currentContext;
+      if (!mounted || target == null || !_typingAnItem) return;
+      unawaited(Scrollable.ensureVisible(
+        target,
+        duration: MediaQuery.of(context).disableAnimations
+            ? Duration.zero
+            : MitlistAnimations.micro,
+        alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+      ));
+    });
+  }
+
   void _onComposerFocusChanged() {
     if (_composerFocusNode.hasFocus) {
       _controller.refreshSuggestions(_newItemController.text);
@@ -212,6 +248,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     // suggestion flow itself is unaffected.
     _pendingCanonicalId = null;
     _pendingTypedQuery = null;
+    // The first letter swaps "you might also need" for typed suggestions,
+    // and clearing the line swaps them back.
+    final typing = _typingAnItem;
+    if (typing != _wasTyping) setState(() => _wasTyping = typing);
     if (!_composerFocusNode.hasFocus) return;
     _controller.refreshSuggestionsDebounced(_newItemController.text);
   }
@@ -294,6 +334,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     _composerFocusNode.removeListener(_onComposerFocusChanged);
     _newItemController.removeListener(_onComposerTextChanged);
     _titleFocusNode.removeListener(_onTitleFocusChanged);
+    _editFocusNode.removeListener(_onEditFocusChanged);
+    _controller.suggestionsRevision.removeListener(_revealTypedSuggestions);
     _controller
       ..removeListener(_onControllerChanged)
       ..dispose();
@@ -302,6 +344,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     _titleController.dispose();
     _composerFocusNode.dispose();
     _titleFocusNode.dispose();
+    _editController.dispose();
+    _editFocusNode.dispose();
     super.dispose();
   }
 
@@ -354,6 +398,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   }
 
   Future<void> _toggleItem(ListItem item, bool value) async {
+    if (_editingItemId != null) unawaited(_commitEdit());
     final operation = _operationKey('toggle:${item.id}');
     if (!_beginOperation(operation)) return;
     final disableAnimations = MediaQuery.of(context).disableAnimations;
@@ -578,73 +623,6 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.listDetailCouldNotRestore)),
       );
-    }
-  }
-
-  Future<void> _setItemPrice(ListItem item) async {
-    final operation = _operationKey('item:${item.id}');
-    if (!_beginOperation(operation)) return;
-    final l10n = AppLocalizations.of(context)!;
-    final priceController = TextEditingController(
-      text: item.priceCents != null
-          ? (item.priceCents! / 100).toStringAsFixed(2)
-          : '',
-    );
-    final priceStr = await showAppDialog<String>(
-      context: context,
-      title: l10n.listDetailSetPrice,
-      body: TextField(
-        controller: priceController,
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        autofocus: true,
-        decoration: InputDecoration(
-          labelText: l10n.listDetailPriceInput,
-          prefixText: currencySymbol(_controller.groupCurrency),
-          hintText: l10n.listDetailPriceHint,
-        ),
-      ),
-      actions: [
-        AppButton(
-          text: l10n.commonCancel,
-          variant: AppButtonVariant.outline,
-          onPressed: () => Navigator.of(context, rootNavigator: true).pop(null),
-        ),
-        const SizedBox(width: MitlistSpacing.sm),
-        AppButton(
-          text: l10n.commonSave,
-          onPressed: () =>
-              Navigator.of(context).pop(priceController.text.trim()),
-        ),
-      ],
-    );
-    priceController.dispose();
-    if (priceStr == null || priceStr.isEmpty) {
-      _finishOperation(operation);
-      return;
-    }
-    final price = double.tryParse(priceStr.replaceAll(',', '.'));
-    if (price == null || price < 0) {
-      _finishOperation(operation);
-      // Silent discard read as "the price didn't save" with no clue why.
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.listDetailCouldNotSetPrice)),
-        );
-      }
-      return;
-    }
-    final cents = (price * 100).round();
-
-    try {
-      await _controller.setItemPrice(item, cents);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.listDetailCouldNotSetPrice)),
-        );
-      }
-    } finally {
-      _finishOperation(operation);
     }
   }
 
@@ -908,203 +886,94 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     );
   }
 
-  Future<void> _handleItemAction(ListItem item) async {
+  /// Long-press: one sheet edits everything about the item. Whatever the
+  /// fields hold when it closes is saved in one write; a photo or delete
+  /// picked there runs after.
+  Future<void> _editItem(ListItem item) async {
+    final operation = _operationKey('item:${item.id}');
+    if (!_beginOperation(operation)) return;
+    final l10n = AppLocalizations.of(context)!;
     final photos = _controller.photosFor(item.id);
     final hasPhoto = photos != null && photos.isNotEmpty;
 
-    final action = await ListItemActionsSheet.show(
-      context,
-      item: item,
-      hasPhoto: hasPhoto,
-    );
-    if (!mounted || action == null) return;
+    final ListItemSheetResult result;
+    try {
+      result = await ListItemEditSheet.show(
+        context,
+        item: item,
+        hasPhoto: hasPhoto,
+        currencySymbol: currencySymbol(_controller.groupCurrency),
+      );
+    } catch (_) {
+      _finishOperation(operation);
+      rethrow;
+    }
 
-    switch (action) {
-      case ListItemAction.rename:
-        await _renameItem(item);
-      case ListItemAction.quantity:
-        await _setItemQuantity(item);
-      case ListItemAction.note:
-        await _editItemNote(item);
-      case ListItemAction.viewPhoto:
+    final draft = result.draft;
+    final name = draft.name.trim();
+    final amount = double.tryParse(draft.amount.trim().replaceAll(',', '.'));
+    final unit = draft.unit.trim();
+    final note = draft.note.trim();
+    final priceText = draft.price.trim().replaceAll(',', '.');
+    final price = priceText.isEmpty ? 0.0 : double.tryParse(priceText);
+    final priceCents =
+        price == null || price < 0 ? null : (price * 100).round();
+    final oldPriceCents = item.priceCents ?? 0;
+
+    final nameChanged = name.isNotEmpty && name != item.name;
+    final amountChanged =
+        amount != null && amount > 0 && amount != item.quantity;
+    final unitChanged = unit != item.unit;
+    final noteChanged = note != item.note;
+    final priceChanged = priceCents != null && priceCents != oldPriceCents;
+    final deleting = result.action == ListItemSheetAction.delete;
+
+    if (!deleting &&
+        (nameChanged ||
+            amountChanged ||
+            unitChanged ||
+            noteChanged ||
+            priceChanged)) {
+      try {
+        await _controller.updateItemFields(
+          item,
+          name: nameChanged ? name : null,
+          quantity: amountChanged ? amount : null,
+          unit: unitChanged ? unit : null,
+          note: noteChanged ? note : null,
+          priceCents: priceChanged ? priceCents : null,
+        );
+      } catch (_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.listDetailCouldNotUpdate)),
+          );
+        }
+      }
+    }
+    if (priceCents == null && !deleting && mounted) {
+      // An unreadable price is dropped, not guessed at; say so.
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.listDetailCouldNotSetPrice)),
+      );
+    }
+    _finishOperation(operation);
+    if (!mounted) return;
+
+    switch (result.action) {
+      case null:
+        break;
+      case ListItemSheetAction.viewPhoto:
         final viewPhotos = _controller.photosFor(item.id);
         if (viewPhotos != null && viewPhotos.isNotEmpty) {
           await ListItemPhotoViewer.show(context, viewPhotos.first.url);
         }
-      case ListItemAction.photo:
+      case ListItemSheetAction.photo:
         await _addItemPhoto(item);
-      case ListItemAction.removePhoto:
+      case ListItemSheetAction.removePhoto:
         await _removeItemPhoto(item);
-      case ListItemAction.price:
-        await _setItemPrice(item);
-      case ListItemAction.delete:
+      case ListItemSheetAction.delete:
         await _deleteItem(item);
-    }
-  }
-
-  Future<void> _renameItem(ListItem item) async {
-    final operation = _operationKey('item:${item.id}');
-    if (!_beginOperation(operation)) return;
-    final l10n = AppLocalizations.of(context)!;
-    final nameController = TextEditingController(text: item.name);
-    final newName = await showAppDialog<String>(
-      context: context,
-      title: l10n.commonRename,
-      body: TextField(
-        controller: nameController,
-        autofocus: true,
-        maxLength: 200,
-        textInputAction: TextInputAction.done,
-        decoration: InputDecoration(labelText: l10n.listItemName),
-        onSubmitted: (value) =>
-            Navigator.of(context, rootNavigator: true).pop(value.trim()),
-      ),
-      actions: [
-        AppButton(
-          text: l10n.commonCancel,
-          variant: AppButtonVariant.outline,
-          onPressed: () => Navigator.of(context, rootNavigator: true).pop(null),
-        ),
-        const SizedBox(width: MitlistSpacing.sm),
-        AppButton(
-          text: l10n.commonSave,
-          onPressed: () => Navigator.of(context, rootNavigator: true)
-              .pop(nameController.text.trim()),
-        ),
-      ],
-    );
-    nameController.dispose();
-    if (newName == null || newName.isEmpty || newName == item.name) {
-      _finishOperation(operation);
-      return;
-    }
-    try {
-      await _controller.updateItemFields(item, name: newName);
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.listDetailCouldNotUpdate)),
-        );
-      }
-    } finally {
-      _finishOperation(operation);
-    }
-  }
-
-  Future<void> _setItemQuantity(ListItem item) async {
-    final operation = _operationKey('item:${item.id}');
-    if (!_beginOperation(operation)) return;
-    final l10n = AppLocalizations.of(context)!;
-    final amountController = TextEditingController(
-      text: item.quantity == item.quantity.roundToDouble()
-          ? item.quantity.toInt().toString()
-          : item.quantity.toString(),
-    );
-    final unitController = TextEditingController(text: item.unit);
-    final confirmed = await showAppDialog<bool>(
-      context: context,
-      title: l10n.listItemChangeQuantity,
-      body: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: amountController,
-            autofocus: true,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: InputDecoration(labelText: l10n.listItemQuantityAmount),
-          ),
-          const SizedBox(height: MitlistSpacing.sm),
-          TextField(
-            controller: unitController,
-            maxLength: 20,
-            textInputAction: TextInputAction.done,
-            decoration: InputDecoration(labelText: l10n.listItemQuantityUnit),
-            onSubmitted: (_) =>
-                Navigator.of(context, rootNavigator: true).pop(true),
-          ),
-        ],
-      ),
-      actions: [
-        AppButton(
-          text: l10n.commonCancel,
-          variant: AppButtonVariant.outline,
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
-        const SizedBox(width: MitlistSpacing.sm),
-        AppButton(
-          text: l10n.commonSave,
-          onPressed: () => Navigator.of(context).pop(true),
-        ),
-      ],
-    );
-    final amount =
-        double.tryParse(amountController.text.trim().replaceAll(',', '.'));
-    final unit = unitController.text.trim();
-    amountController.dispose();
-    unitController.dispose();
-    if (confirmed != true || amount == null || amount <= 0) {
-      _finishOperation(operation);
-      return;
-    }
-    try {
-      await _controller.updateItemFields(item, quantity: amount, unit: unit);
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.listDetailCouldNotUpdate)),
-        );
-      }
-    } finally {
-      _finishOperation(operation);
-    }
-  }
-
-  Future<void> _editItemNote(ListItem item) async {
-    final operation = _operationKey('item:${item.id}');
-    if (!_beginOperation(operation)) return;
-    final l10n = AppLocalizations.of(context)!;
-    final noteController = TextEditingController(text: item.note);
-    final confirmed = await showAppDialog<bool>(
-      context: context,
-      title: item.note.isEmpty ? l10n.listItemAddNote : l10n.listItemEditNote,
-      body: TextField(
-        controller: noteController,
-        autofocus: true,
-        minLines: 1,
-        maxLines: 3,
-        maxLength: 500,
-        decoration: InputDecoration(labelText: l10n.listItemNoteLabel),
-      ),
-      actions: [
-        AppButton(
-          text: l10n.commonCancel,
-          variant: AppButtonVariant.outline,
-          onPressed: () =>
-              Navigator.of(context, rootNavigator: true).pop(false),
-        ),
-        const SizedBox(width: MitlistSpacing.sm),
-        AppButton(
-          text: l10n.commonSave,
-          onPressed: () => Navigator.of(context, rootNavigator: true).pop(true),
-        ),
-      ],
-    );
-    final note = noteController.text.trim();
-    noteController.dispose();
-    if (confirmed != true || note == item.note) {
-      _finishOperation(operation);
-      return;
-    }
-    try {
-      await _controller.updateItemFields(item, note: note);
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.listDetailCouldNotUpdate)),
-        );
-      }
-    } finally {
-      _finishOperation(operation);
     }
   }
 
@@ -1125,10 +994,13 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     return PopScope(
       // System back closes transient editing states (search, title edit)
       // before it may leave the screen, matching the in-app back arrow.
-      canPop: !_showSearch && !_editingTitle,
+      canPop: !_showSearch && !_editingTitle && _editingItemId == null,
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) return;
-        if (_editingTitle) {
+        if (_editingItemId != null) {
+          _editFocusNode.unfocus();
+          unawaited(_commitEdit());
+        } else if (_editingTitle) {
           // Drop editing state before unfocusing so the blur listener doesn't
           // treat this cancel as a submit.
           setState(() => _editingTitle = false);
@@ -1291,11 +1163,6 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
           if (_controller.groupId != null)
             ListGroupBanner(groupId: _controller.groupId!),
           Expanded(child: _buildBody()),
-          if (!_controller.isLoading && !_controller.hasError)
-            ValueListenableBuilder<int>(
-              valueListenable: _controller.suggestionsRevision,
-              builder: (context, _, __) => _buildBottomBar(),
-            ),
         ],
       ),
     );
@@ -1452,19 +1319,57 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
 
     final open = _controller.openItemsSorted;
     final done = _controller.doneItemsSorted;
-    if (open.isEmpty && done.isEmpty) {
-      return _wrapForRefresh(ListDetailEmptyView(
-        onScan: () => _launchScan(source: ImageSource.camera),
-        onType: () => _composerFocusNode.requestFocus(),
-      ));
-    }
 
     return CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
-        if (_controller.groupId != null && _controller.listType == 'shopping')
+        if (open.isNotEmpty)
+          SliverReorderableList(
+            itemCount: open.length,
+            onReorder: (oldIndex, newIndex) =>
+                unawaited(_onReorder(oldIndex, newIndex)),
+            itemBuilder: (context, index) {
+              final item = open[index];
+              return _buildDismissibleItemRow(
+                item,
+                reorderIndex: index,
+                openCount: open.length,
+              );
+            },
+          ),
+        SliverToBoxAdapter(
+          child: ListAddLine(
+            controller: _newItemController,
+            focusNode: _composerFocusNode,
+            onAdd: _addItem,
+            onScan: () => _launchScan(),
+          ),
+        ),
+        // What matches the words being typed, right under them.
+        SliverToBoxAdapter(
+          child: KeyedSubtree(
+            key: _typedSuggestionsKey,
+            child: ValueListenableBuilder<int>(
+              valueListenable: _controller.suggestionsRevision,
+              builder: (context, _, __) => _typingAnItem
+                  ? ListComposerSuggestions(
+                      controller: _newItemController,
+                      onAdd: _addItem,
+                      suggestions: _controller.suggestions,
+                      onSuggestionSelected: (s, typedQuery) {
+                        _pendingCanonicalId = s.canonicalItemId;
+                        _pendingTypedQuery = typedQuery;
+                      },
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ),
+        ),
+        if (_controller.groupId != null &&
+            _controller.listType == 'shopping' &&
+            !_typingAnItem)
           SliverToBoxAdapter(
-            child: RunningLowStrip(
+            child: RunningLowLines(
               groupId: _controller.groupId!,
               currentItemNames: _controller.items
                   .where((it) => !it.checked)
@@ -1477,16 +1382,6 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                   .toSet(),
               onAdd: _addRestockSuggestion,
             ),
-          ),
-        if (open.isNotEmpty)
-          SliverReorderableList(
-            itemCount: open.length,
-            onReorder: (oldIndex, newIndex) =>
-                unawaited(_onReorder(oldIndex, newIndex)),
-            itemBuilder: (context, index) {
-              final item = open[index];
-              return _buildDismissibleItemRow(item, reorderIndex: index);
-            },
           ),
         if (open.isEmpty && done.isNotEmpty)
           SliverToBoxAdapter(
@@ -1509,8 +1404,9 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
               childCount: done.length,
             ),
           ),
+        // Room to scroll the last lines clear of the suggestion strip.
         const SliverToBoxAdapter(
-          child: SizedBox(height: MitlistSpacing.md),
+          child: SizedBox(height: MitlistSpacing.xxl * 2),
         ),
       ],
     );
@@ -1527,29 +1423,33 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     );
   }
 
-  Widget _buildDismissibleItemRow(ListItem item, {int? reorderIndex}) {
-    final row = SettleCollapse(
+  Widget _buildDismissibleItemRow(
+    ListItem item, {
+    int? reorderIndex,
+    int openCount = 0,
+  }) {
+    return SettleCollapse(
       key: ValueKey(item.id),
       collapsed: _controller.isCollapsing(item.id),
       onCollapsed: () => _controller.finishSettle(item.id),
-      child: _buildDismissibleCore(item, reorderIndex: reorderIndex),
-    );
-    if (_controller.listType != 'shopping') return row;
-
-    return Padding(
-      key: ValueKey('shopping-${item.id}'),
-      padding: const EdgeInsets.symmetric(
-        horizontal: MitlistSpacing.md,
-        vertical: MitlistSpacing.xs,
+      child: _buildDismissibleCore(
+        item,
+        reorderIndex: reorderIndex,
+        openCount: openCount,
       ),
-      child: row,
     );
   }
 
-  Widget _buildDismissibleCore(ListItem item, {int? reorderIndex}) {
+  Widget _buildDismissibleCore(
+    ListItem item, {
+    int? reorderIndex,
+    int openCount = 0,
+  }) {
+    final editing = _editingItemId == item.id;
     return Dismissible(
       key: ValueKey('dismiss-${item.id}'),
-      direction: DismissDirection.endToStart,
+      // A line being typed in does not swipe away under the thumb.
+      direction: editing ? DismissDirection.none : DismissDirection.endToStart,
       // If another gesture holds the save lock, refuse the dismissal instead
       // of letting the row disappear while _deleteItem no-ops — that mismatch
       // crashes with "a dismissed Dismissible is still part of the tree".
@@ -1570,33 +1470,116 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         Haptics.medium();
         _deleteItem(item);
       },
-      child: _buildItemRow(item, reorderIndex: reorderIndex),
+      child: _buildItemRow(
+        item,
+        reorderIndex: reorderIndex,
+        openCount: openCount,
+      ),
     );
   }
 
-  Widget _buildItemRow(ListItem item, {int? reorderIndex}) {
+  Widget _buildItemRow(ListItem item, {int? reorderIndex, int openCount = 0}) {
     final photos = _controller.photosFor(item.id);
     final thumbUrl =
         (photos != null && photos.isNotEmpty) ? photos.first.url : null;
+    final editing = _editingItemId == item.id;
+    final index = reorderIndex;
 
-    return ListItemRowReactive(
+    return ListItemLine(
       item: item,
-      photoUrl: thumbUrl,
-      currencySymbol: currencySymbol(_controller.groupCurrency),
-      claimedLabel: item.claimedBy != null
-          ? '· ${AppLocalizations.of(context)!.listItemClaimed}'
-          : null,
-      addedByName: _addedByName(item),
+      editing: editing,
+      editController: editing ? _editController : null,
+      editFocusNode: editing ? _editFocusNode : null,
       onToggle: (val) => _toggleItem(item, val),
-      onTap: () => _toggleItem(item, !item.checked),
+      onEdit: () => _startEdit(item),
+      onSubmitEdit: () => _commitEdit(thenAddNext: true),
+      onDetails: () => _openDetails(item),
+      onRemove: () => _removeEditedItem(item),
+      photoUrl: thumbUrl,
       onPhotoTap: thumbUrl != null
           ? () => ListItemPhotoViewer.show(context, thumbUrl)
           : null,
-      onLongPress: () => _handleItemAction(item),
-      reorderIndex: reorderIndex,
-      shoppingVisual: _controller.listType == 'shopping',
-      groceryCategory: _controller.categoryFor(item),
+      currencySymbol: currencySymbol(_controller.groupCurrency),
+      claimed: item.claimedBy != null,
+      addedByName: _addedByName(item),
+      reorderIndex: index,
+      onMoveUp: index != null && index > 0
+          ? () => _onReorder(index, index - 1)
+          : null,
+      onMoveDown: index != null && index < openCount - 1
+          ? () => _onReorder(index, index + 2)
+          : null,
     );
+  }
+
+  /// Starts editing [item]'s words in place, finishing any other line first.
+  void _startEdit(ListItem item) {
+    if (_editingItemId == item.id) return;
+    if (_editingItemId != null) unawaited(_commitEdit());
+    _editController.text = item.name;
+    _editController.selection =
+        TextSelection.collapsed(offset: item.name.length);
+    setState(() => _editingItemId = item.id);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _editingItemId == item.id) {
+        _editFocusNode.requestFocus();
+      }
+    });
+  }
+
+  void _onEditFocusChanged() {
+    if (!_editFocusNode.hasFocus && _editingItemId != null) {
+      unawaited(_commitEdit());
+    }
+  }
+
+  /// Saves the line being edited and closes it. Emptied words remove the
+  /// item (with undo), like deleting a line of a note. With [thenAddNext],
+  /// the keyboard moves on to the add line, the way return starts the next
+  /// line in a checklist.
+  Future<void> _commitEdit({bool thenAddNext = false}) async {
+    final id = _editingItemId;
+    if (id == null) return;
+    final name = _editController.text.trim();
+    setState(() => _editingItemId = null);
+    if (thenAddNext) {
+      _composerFocusNode.requestFocus();
+    }
+    final item = _controller.items.where((i) => i.id == id).firstOrNull;
+    if (item == null) return;
+    if (name.isEmpty) {
+      await _deleteItem(item);
+      return;
+    }
+    if (name == item.name) return;
+    final operation = _operationKey('item:$id');
+    if (!_beginOperation(operation)) return;
+    try {
+      await _controller.updateItemFields(item, name: name);
+    } catch (_) {
+      if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.listDetailCouldNotUpdate)),
+        );
+      }
+    } finally {
+      _finishOperation(operation);
+    }
+  }
+
+  Future<void> _removeEditedItem(ListItem item) async {
+    setState(() => _editingItemId = null);
+    _editFocusNode.unfocus();
+    await _deleteItem(item);
+  }
+
+  Future<void> _openDetails(ListItem item) async {
+    await _commitEdit();
+    if (!mounted) return;
+    final current =
+        _controller.items.where((i) => i.id == item.id).firstOrNull ?? item;
+    await _editItem(current);
   }
 
   /// Name to credit under the row. Your own additions stay unlabelled: on a
@@ -1616,20 +1599,5 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   void _closeSearch() {
     setState(() => _showSearch = false);
     _clearSearch();
-  }
-
-  Widget _buildBottomBar() {
-    return ListComposerBar(
-      controller: _newItemController,
-      focusNode: _composerFocusNode,
-      onAdd: _addItem,
-      onScan: () => _launchScan(),
-      suggestions: _controller.suggestions,
-      showProductSuggestions: _showProductSuggestions,
-      onSuggestionSelected: (s, typedQuery) {
-        _pendingCanonicalId = s.canonicalItemId;
-        _pendingTypedQuery = typedQuery;
-      },
-    );
   }
 }

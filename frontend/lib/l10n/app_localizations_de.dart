@@ -2239,19 +2239,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get listDetailCheckedOff => 'Erledigt';
 
   @override
-  String get listDetailNothingHere => 'Noch nichts hier';
-
-  @override
-  String get listDetailNothingHereDesc =>
-      'Fotografiere eine handgeschriebene Liste, einen Kühlschrankzettel oder Screenshot. Wir extrahieren die Einträge.';
-
-  @override
-  String get listDetailScanThisList => 'Diese Liste scannen';
-
-  @override
-  String get listDetailTypeItem => 'Eintrag eintippen';
-
-  @override
   String get listDetailNoMatch => 'Keine Einträge zu deinem Filter';
 
   @override
@@ -2296,9 +2283,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get listDetailCouldNotStartScan =>
       'Scan konnte nicht gestartet werden. Versuche es erneut.';
-
-  @override
-  String get listDetailSetPrice => 'Preis festlegen';
 
   @override
   String get listDetailPriceInput => 'Preis';
@@ -3905,9 +3889,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get offlineBannerRetry => 'Wiederholen';
 
   @override
-  String get composerNewItem => 'Neuer Eintrag';
-
-  @override
   String get composerScanList => 'Liste scannen';
 
   @override
@@ -3926,22 +3907,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get listItemRemovePhoto => 'Foto entfernen';
 
   @override
-  String get listItemSetPrice => 'Preis festlegen';
-
-  @override
-  String get listItemChangeQuantity => 'Menge ändern';
-
-  @override
   String get listItemQuantityAmount => 'Menge';
-
-  @override
-  String get listItemQuantityUnit => 'Einheit (optional)';
-
-  @override
-  String get listItemAddNote => 'Notiz hinzufügen';
-
-  @override
-  String get listItemEditNote => 'Notiz bearbeiten';
 
   @override
   String get listItemNoteLabel => 'Notiz';
@@ -3975,9 +3941,6 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get listItemReorder => 'Neu anordnen';
-
-  @override
   String listItemMarkUnchecked(String name) {
     return '$name als unerledigt markieren';
   }
@@ -3997,7 +3960,22 @@ class AppLocalizationsDe extends AppLocalizations {
       'Speichern fehlgeschlagen – tippe auf die Sync-Leiste zum Wiederholen';
 
   @override
-  String get listItemLongPressHint => 'Lang drücken für weitere Optionen';
+  String get listItemUnit => 'Einheit';
+
+  @override
+  String get listItemDetails => 'Details';
+
+  @override
+  String get listItemMoveUp => 'Nach oben';
+
+  @override
+  String get listItemMoveDown => 'Nach unten';
+
+  @override
+  String get listItemOneLess => 'Eins weniger';
+
+  @override
+  String get listItemOneMore => 'Eins mehr';
 
   @override
   String get scanCheckListPhoto => 'Listenfoto prüfen';
@@ -5661,9 +5639,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get pinwallCouldNotLoad => 'Pinwall konnte nicht geladen werden.';
-
-  @override
-  String get composerItemHint => 'z. B. Milch, 2 Avocados oder 500 g Mehl';
 
   @override
   String get aisleOther => 'Sonstiges';

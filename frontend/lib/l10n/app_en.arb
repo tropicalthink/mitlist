@@ -2952,22 +2952,6 @@
   "@listDetailCheckedOff": {
     "description": "Section header for completed items"
   },
-  "listDetailNothingHere": "Nothing here yet",
-  "@listDetailNothingHere": {
-    "description": "Empty state when list has no items"
-  },
-  "listDetailNothingHereDesc": "Photograph a handwritten list, fridge note, or screenshot. We'll pull out the items.",
-  "@listDetailNothingHereDesc": {
-    "description": "Description for empty list"
-  },
-  "listDetailScanThisList": "Scan this list",
-  "@listDetailScanThisList": {
-    "description": "CTA to scan list content"
-  },
-  "listDetailTypeItem": "Type an item",
-  "@listDetailTypeItem": {
-    "description": "CTA to type an item manually"
-  },
   "listDetailNoMatch": "No items match your filter",
   "@listDetailNoMatch": {
     "description": "Search empty result for items"
@@ -3017,10 +3001,6 @@
   "listDetailCouldNotStartScan": "Couldn't start scan. Try again.",
   "@listDetailCouldNotStartScan": {
     "description": "Snackbar when scan fails to start"
-  },
-  "listDetailSetPrice": "Set price",
-  "@listDetailSetPrice": {
-    "description": "Dialog title for setting item price"
   },
   "listDetailPriceInput": "Price",
   "@listDetailPriceInput": {
@@ -5138,10 +5118,6 @@
   "@offlineBannerRetry": {
     "description": "Retry button in offline banner"
   },
-  "composerNewItem": "New item",
-  "@composerNewItem": {
-    "description": "Placeholder for the list composer input"
-  },
   "composerScanList": "Scan list",
   "@composerScanList": {
     "description": "Tooltip for scanning a list from composer"
@@ -5166,29 +5142,9 @@
   "@listItemRemovePhoto": {
     "description": "Action: remove attached photo"
   },
-  "listItemSetPrice": "Set price",
-  "@listItemSetPrice": {
-    "description": "Action: set price on item"
-  },
-  "listItemChangeQuantity": "Change quantity",
-  "@listItemChangeQuantity": {
-    "description": "Action: change item quantity/unit"
-  },
   "listItemQuantityAmount": "Amount",
   "@listItemQuantityAmount": {
     "description": "Input label for item quantity"
-  },
-  "listItemQuantityUnit": "Unit (optional)",
-  "@listItemQuantityUnit": {
-    "description": "Input label for item unit"
-  },
-  "listItemAddNote": "Add note",
-  "@listItemAddNote": {
-    "description": "Action: add a note to an item"
-  },
-  "listItemEditNote": "Edit note",
-  "@listItemEditNote": {
-    "description": "Action: edit an item's note"
   },
   "listItemNoteLabel": "Note",
   "@listItemNoteLabel": {
@@ -5232,10 +5188,6 @@
       }
     }
   },
-  "listItemReorder": "Reorder",
-  "@listItemReorder": {
-    "description": "Semantics label for reorder handle"
-  },
   "listItemMarkUnchecked": "Mark {name} as unchecked",
   "@listItemMarkUnchecked": {
     "description": "Semantics: mark item unchecked",
@@ -5267,10 +5219,18 @@
   "@listItemFailedSave": {
     "description": "Error shown when item save fails locally"
   },
-  "listItemLongPressHint": "Long press for more options",
-  "@listItemLongPressHint": {
-    "description": "Accessibility hint for list item long press"
-  },
+  "listItemUnit": "Unit",
+  "@listItemUnit": {"description": "Short label for the unit field (kg, l, pack) in the list item editor"},
+  "listItemDetails": "Details",
+  "@listItemDetails": {"description": "Tooltip on the button that opens an item's amount, note, price and photo while its line is being edited"},
+  "listItemMoveUp": "Move up",
+  "@listItemMoveUp": {"description": "Screen-reader action that moves a list item one place up"},
+  "listItemMoveDown": "Move down",
+  "@listItemMoveDown": {"description": "Screen-reader action that moves a list item one place down"},
+  "listItemOneLess": "One less",
+  "@listItemOneLess": {"description": "Tooltip on the minus button that lowers a list item's amount by one"},
+  "listItemOneMore": "One more",
+  "@listItemOneMore": {"description": "Tooltip on the plus button that raises a list item's amount by one"},
   "scanCheckListPhoto": "Check list photo",
   "@scanCheckListPhoto": {
     "description": "Smart capture review title for a list photo"
@@ -7542,10 +7502,6 @@
   "pinwallCouldNotLoad": "Couldn't load the pinwall.",
   "@pinwallCouldNotLoad": {
     "description": "Error when pinwall posts fail to load"
-  },
-  "composerItemHint": "e.g. Milk, 2 avocados, or 500g flour",
-  "@composerItemHint": {
-    "description": "Hint for list composer input"
   },
   "aisleOther": "Other",
   "@aisleOther": {

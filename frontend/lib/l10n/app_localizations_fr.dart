@@ -2232,19 +2232,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get listDetailCheckedOff => 'Cochés';
 
   @override
-  String get listDetailNothingHere => 'Rien ici pour l\'instant';
-
-  @override
-  String get listDetailNothingHereDesc =>
-      'Photographie une liste manuscrite, une note sur le frigo ou une capture d\'écran. On extrait les éléments.';
-
-  @override
-  String get listDetailScanThisList => 'Scanner cette liste';
-
-  @override
-  String get listDetailTypeItem => 'Saisir un élément';
-
-  @override
   String get listDetailNoMatch => 'Aucun élément ne correspond à ton filtre';
 
   @override
@@ -2288,9 +2275,6 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get listDetailCouldNotStartScan =>
       'Impossible de lancer le scan. Réessaie.';
-
-  @override
-  String get listDetailSetPrice => 'Définir le prix';
 
   @override
   String get listDetailPriceInput => 'Prix';
@@ -3886,9 +3870,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get offlineBannerRetry => 'Réessayer';
 
   @override
-  String get composerNewItem => 'Nouvel article';
-
-  @override
   String get composerScanList => 'Scanner la liste';
 
   @override
@@ -3907,22 +3888,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get listItemRemovePhoto => 'Supprimer la photo';
 
   @override
-  String get listItemSetPrice => 'Définir le prix';
-
-  @override
-  String get listItemChangeQuantity => 'Modifier la quantité';
-
-  @override
   String get listItemQuantityAmount => 'Quantité';
-
-  @override
-  String get listItemQuantityUnit => 'Unité (facultatif)';
-
-  @override
-  String get listItemAddNote => 'Ajouter une note';
-
-  @override
-  String get listItemEditNote => 'Modifier la note';
 
   @override
   String get listItemNoteLabel => 'Note';
@@ -3956,9 +3922,6 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get listItemReorder => 'Réorganiser';
-
-  @override
   String listItemMarkUnchecked(String name) {
     return 'Marquer $name comme non coché';
   }
@@ -3978,7 +3941,22 @@ class AppLocalizationsFr extends AppLocalizations {
       'Échec de l\'enregistrement — appuyez sur la barre de synchronisation pour réessayer';
 
   @override
-  String get listItemLongPressHint => 'Appui long pour plus d\'options';
+  String get listItemUnit => 'Unité';
+
+  @override
+  String get listItemDetails => 'Détails';
+
+  @override
+  String get listItemMoveUp => 'Monter';
+
+  @override
+  String get listItemMoveDown => 'Descendre';
+
+  @override
+  String get listItemOneLess => 'Un de moins';
+
+  @override
+  String get listItemOneMore => 'Un de plus';
 
   @override
   String get scanCheckListPhoto => 'Vérifier la photo de la liste';
@@ -5643,9 +5621,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get pinwallCouldNotLoad => 'Impossible de charger le pinwall.';
-
-  @override
-  String get composerItemHint => 'ex. Lait, 2 avocats ou 500 g de farine';
 
   @override
   String get aisleOther => 'Autre';

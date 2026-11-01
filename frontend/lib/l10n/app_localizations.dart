@@ -3879,30 +3879,6 @@ abstract class AppLocalizations {
   /// **'Checked off'**
   String get listDetailCheckedOff;
 
-  /// Empty state when list has no items
-  ///
-  /// In en, this message translates to:
-  /// **'Nothing here yet'**
-  String get listDetailNothingHere;
-
-  /// Description for empty list
-  ///
-  /// In en, this message translates to:
-  /// **'Photograph a handwritten list, fridge note, or screenshot. We\'ll pull out the items.'**
-  String get listDetailNothingHereDesc;
-
-  /// CTA to scan list content
-  ///
-  /// In en, this message translates to:
-  /// **'Scan this list'**
-  String get listDetailScanThisList;
-
-  /// CTA to type an item manually
-  ///
-  /// In en, this message translates to:
-  /// **'Type an item'**
-  String get listDetailTypeItem;
-
   /// Search empty result for items
   ///
   /// In en, this message translates to:
@@ -3962,12 +3938,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t start scan. Try again.'**
   String get listDetailCouldNotStartScan;
-
-  /// Dialog title for setting item price
-  ///
-  /// In en, this message translates to:
-  /// **'Set price'**
-  String get listDetailSetPrice;
 
   /// Input label for price
   ///
@@ -6741,12 +6711,6 @@ abstract class AppLocalizations {
   /// **'Retry'**
   String get offlineBannerRetry;
 
-  /// Placeholder for the list composer input
-  ///
-  /// In en, this message translates to:
-  /// **'New item'**
-  String get composerNewItem;
-
   /// Tooltip for scanning a list from composer
   ///
   /// In en, this message translates to:
@@ -6783,41 +6747,11 @@ abstract class AppLocalizations {
   /// **'Remove photo'**
   String get listItemRemovePhoto;
 
-  /// Action: set price on item
-  ///
-  /// In en, this message translates to:
-  /// **'Set price'**
-  String get listItemSetPrice;
-
-  /// Action: change item quantity/unit
-  ///
-  /// In en, this message translates to:
-  /// **'Change quantity'**
-  String get listItemChangeQuantity;
-
   /// Input label for item quantity
   ///
   /// In en, this message translates to:
   /// **'Amount'**
   String get listItemQuantityAmount;
-
-  /// Input label for item unit
-  ///
-  /// In en, this message translates to:
-  /// **'Unit (optional)'**
-  String get listItemQuantityUnit;
-
-  /// Action: add a note to an item
-  ///
-  /// In en, this message translates to:
-  /// **'Add note'**
-  String get listItemAddNote;
-
-  /// Action: edit an item's note
-  ///
-  /// In en, this message translates to:
-  /// **'Edit note'**
-  String get listItemEditNote;
 
   /// Input label for item note
   ///
@@ -6855,12 +6789,6 @@ abstract class AppLocalizations {
   /// **'{name} added this'**
   String listItemAddedBy(String name);
 
-  /// Semantics label for reorder handle
-  ///
-  /// In en, this message translates to:
-  /// **'Reorder'**
-  String get listItemReorder;
-
   /// Semantics: mark item unchecked
   ///
   /// In en, this message translates to:
@@ -6885,11 +6813,41 @@ abstract class AppLocalizations {
   /// **'Failed to save — tap the sync bar to retry'**
   String get listItemFailedSave;
 
-  /// Accessibility hint for list item long press
+  /// Short label for the unit field (kg, l, pack) in the list item editor
   ///
   /// In en, this message translates to:
-  /// **'Long press for more options'**
-  String get listItemLongPressHint;
+  /// **'Unit'**
+  String get listItemUnit;
+
+  /// Tooltip on the button that opens an item's amount, note, price and photo while its line is being edited
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get listItemDetails;
+
+  /// Screen-reader action that moves a list item one place up
+  ///
+  /// In en, this message translates to:
+  /// **'Move up'**
+  String get listItemMoveUp;
+
+  /// Screen-reader action that moves a list item one place down
+  ///
+  /// In en, this message translates to:
+  /// **'Move down'**
+  String get listItemMoveDown;
+
+  /// Tooltip on the minus button that lowers a list item's amount by one
+  ///
+  /// In en, this message translates to:
+  /// **'One less'**
+  String get listItemOneLess;
+
+  /// Tooltip on the plus button that raises a list item's amount by one
+  ///
+  /// In en, this message translates to:
+  /// **'One more'**
+  String get listItemOneMore;
 
   /// Smart capture review title for a list photo
   ///
@@ -9674,12 +9632,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t load the pinwall.'**
   String get pinwallCouldNotLoad;
-
-  /// Hint for list composer input
-  ///
-  /// In en, this message translates to:
-  /// **'e.g. Milk, 2 avocados, or 500g flour'**
-  String get composerItemHint;
 
   /// Fallback aisle name for uncategorized items
   ///

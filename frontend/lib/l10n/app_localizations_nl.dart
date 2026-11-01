@@ -2232,19 +2232,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get listDetailCheckedOff => 'Afgevinkt';
 
   @override
-  String get listDetailNothingHere => 'Nog niets hier';
-
-  @override
-  String get listDetailNothingHereDesc =>
-      'Fotografeer een handgeschreven lijst, koelkastbriefje of screenshot. Wij halen de items eruit.';
-
-  @override
-  String get listDetailScanThisList => 'Scan deze lijst';
-
-  @override
-  String get listDetailTypeItem => 'Typ een item';
-
-  @override
   String get listDetailNoMatch => 'Geen items komen overeen met je filter';
 
   @override
@@ -2288,9 +2275,6 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get listDetailCouldNotStartScan =>
       'Kon scan niet starten. Probeer opnieuw.';
-
-  @override
-  String get listDetailSetPrice => 'Prijs instellen';
 
   @override
   String get listDetailPriceInput => 'Prijs';
@@ -3873,9 +3857,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get offlineBannerRetry => 'Opnieuw';
 
   @override
-  String get composerNewItem => 'Nieuw item';
-
-  @override
   String get composerScanList => 'Lijst scannen';
 
   @override
@@ -3894,22 +3875,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get listItemRemovePhoto => 'Foto verwijderen';
 
   @override
-  String get listItemSetPrice => 'Prijs instellen';
-
-  @override
-  String get listItemChangeQuantity => 'Aantal wijzigen';
-
-  @override
   String get listItemQuantityAmount => 'Aantal';
-
-  @override
-  String get listItemQuantityUnit => 'Eenheid (optioneel)';
-
-  @override
-  String get listItemAddNote => 'Notitie toevoegen';
-
-  @override
-  String get listItemEditNote => 'Notitie bewerken';
 
   @override
   String get listItemNoteLabel => 'Notitie';
@@ -3943,9 +3909,6 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get listItemReorder => 'Herschikken';
-
-  @override
   String listItemMarkUnchecked(String name) {
     return '$name als niet-afgevinkt markeren';
   }
@@ -3965,7 +3928,22 @@ class AppLocalizationsNl extends AppLocalizations {
       'Opslaan mislukt — tik op de sync-balk om opnieuw te proberen';
 
   @override
-  String get listItemLongPressHint => 'Lang indrukken voor meer opties';
+  String get listItemUnit => 'Eenheid';
+
+  @override
+  String get listItemDetails => 'Details';
+
+  @override
+  String get listItemMoveUp => 'Omhoog';
+
+  @override
+  String get listItemMoveDown => 'Omlaag';
+
+  @override
+  String get listItemOneLess => 'Eén minder';
+
+  @override
+  String get listItemOneMore => 'Eén meer';
 
   @override
   String get scanCheckListPhoto => 'Controleer lijstfoto';
@@ -5628,9 +5606,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get pinwallCouldNotLoad => 'Prikbord kon niet worden geladen.';
-
-  @override
-  String get composerItemHint => 'bijv. Melk, 2 avocado\'s of 500 g bloem';
 
   @override
   String get aisleOther => 'Overig';

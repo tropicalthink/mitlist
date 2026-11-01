@@ -5,7 +5,6 @@ import '../../theme/spacing.dart';
 import '../alert.dart';
 import '../app_button.dart';
 import '../app_icon.dart';
-import '../empty_state.dart';
 
 /// Error state for the list detail screen: the failure message with retry and
 /// dismiss affordances.
@@ -48,48 +47,6 @@ class ListDetailErrorView extends StatelessWidget {
                   onPressed: onDismiss,
                 ),
               ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Empty state for a list with no items: scan-this-list (primary) and
-/// type-an-item (secondary) calls to action.
-class ListDetailEmptyView extends StatelessWidget {
-  const ListDetailEmptyView({
-    super.key,
-    required this.onScan,
-    required this.onType,
-  });
-
-  final VoidCallback onScan;
-  final VoidCallback onType;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(MitlistSpacing.md),
-        child: AppEmptyState(
-          lottieAsset: 'assets/animations/lottie/checklist.lottie',
-          icon: AppIcon(name: 'queueList'),
-          title: l10n.listDetailNothingHere,
-          description: l10n.listDetailNothingHereDesc,
-          actions: [
-            AppButton(
-              text: l10n.listDetailScanThisList,
-              size: AppButtonSize.xl,
-              icon: const AppIcon(name: 'camera'),
-              onPressed: onScan,
-            ),
-            AppButton(
-              text: l10n.listDetailTypeItem,
-              variant: AppButtonVariant.outline,
-              onPressed: onType,
             ),
           ],
         ),
