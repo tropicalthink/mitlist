@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../providers/app_areas_provider.dart';
 import '../../providers/chore_provider.dart';
 import '../../providers/finance_provider.dart';
 import '../../providers/group_provider.dart';
@@ -61,10 +62,11 @@ class HubQuickStart extends ConsumerWidget {
     final group =
         groupsAsync.valueOrNull?.firstWhereOrNull((g) => g.id == groupId);
     final prefs = prefsAsync.value!;
+    final areas = ref.watch(visibleAreasProvider);
     final inUse = listsAsync.value!.isNotEmpty ||
         choresAsync.value!.isNotEmpty ||
         expensesAsync.value!.isNotEmpty;
-    final steps = prefs.joined && inUse
+    final allSteps = prefs.joined && inUse
         ? _joinerSteps(context, l10n, prefs, group?.name ?? '')
         : _orderForIntent(
             [
@@ -90,6 +92,7 @@ class HubQuickStart extends ConsumerWidget {
               ),
               _Step(
                 id: _StepId.list,
+                area: AppArea.lists,
                 title: l10n.hubOnboardingCreateList,
                 subtitle: l10n.hubChecklistListSub,
                 done: listsAsync.value!.isNotEmpty,
@@ -97,6 +100,7 @@ class HubQuickStart extends ConsumerWidget {
               ),
               _Step(
                 id: _StepId.chore,
+                area: AppArea.chores,
                 title: l10n.hubOnboardingAddChore,
                 subtitle: l10n.hubChecklistChoreSub,
                 done: choresAsync.value!.isNotEmpty,
@@ -104,6 +108,7 @@ class HubQuickStart extends ConsumerWidget {
               ),
               _Step(
                 id: _StepId.expense,
+                area: AppArea.money,
                 title: l10n.hubOnboardingTrackExpense,
                 subtitle: l10n.hubChecklistExpenseSub,
                 done: expensesAsync.value!.isNotEmpty,
@@ -113,9 +118,15 @@ class HubQuickStart extends ConsumerWidget {
             ],
             prefs.intent,
           );
+    // Only the parts of the app this person uses.
+    final steps = [
+      for (final step in allSteps)
+        if (step.area == null || areas.contains(step.area)) step,
+    ];
 
     final done = steps.where((s) => s.done).length;
-    if (done == steps.length) return const SizedBox.shrink();
+    // Retired: the solo invite card takes over while nobody else is in.
+    if (done == steps.length) return HubSoloInviteCard(groupId: groupId);
 
     void setCollapsed(bool collapsed) {
       unawaited(Haptics.light());
@@ -154,6 +165,7 @@ class HubQuickStart extends ConsumerWidget {
         ),
         _Step(
           id: _StepId.tick,
+          area: AppArea.lists,
           title: l10n.hubChecklistTick,
           subtitle: l10n.hubChecklistTickSub,
           done: prefs.done.contains(HubQuickStartStep.tick),
@@ -161,6 +173,7 @@ class HubQuickStart extends ConsumerWidget {
         ),
         _Step(
           id: _StepId.chore,
+          area: AppArea.chores,
           title: l10n.hubChecklistDoChore,
           subtitle: l10n.hubChecklistDoChoreSub,
           done: prefs.done.contains(HubQuickStartStep.chore),
@@ -168,6 +181,7 @@ class HubQuickStart extends ConsumerWidget {
         ),
         _Step(
           id: _StepId.balance,
+          area: AppArea.money,
           title: l10n.hubChecklistBalance,
           subtitle: l10n.hubChecklistBalanceSub,
           done: prefs.done.contains(HubQuickStartStep.balance),
@@ -203,16 +217,24 @@ class _Step {
     required this.title,
     required this.subtitle,
     required this.done,
+    this.area,
     this.onTap,
   });
 
   final _StepId id;
+
+  /// The part of the app the step belongs to; hidden with it. Null: always
+  /// shown (the household itself, inviting people).
+  final AppArea? area;
   final String title;
   final String subtitle;
   final bool done;
   final Future<void> Function()? onTap;
 }
 
+/// The checklist shows one thing to do, not five: the next open step with
+/// its button, and the other open steps as quiet buttons under it. New
+/// households told us a full list of to-dos on day one was too much.
 class _Checklist extends StatelessWidget {
   const _Checklist({
     required this.steps,
@@ -224,12 +246,19 @@ class _Checklist extends StatelessWidget {
   final int done;
   final VoidCallback onCollapse;
 
+  static void _run(_Step step) {
+    unawaited(Haptics.light());
+    unawaited(step.onTap!());
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final textTheme = Theme.of(context).textTheme;
     final scheme = Theme.of(context).colorScheme;
-    final next = steps.firstWhereOrNull((s) => !s.done);
+    final open = steps.where((s) => !s.done && s.onTap != null).toList();
+    final next = open.firstOrNull;
+    final later = open.skip(1).toList();
 
     return AppCard(
       variant: AppCardVariant.outlined,
@@ -259,9 +288,50 @@ class _Checklist extends StatelessWidget {
             ],
           ),
           _SegmentedProgress(done: done, total: steps.length),
-          const SizedBox(height: MitlistSpacing.sm),
-          for (final step in steps)
-            _StepRow(step: step, isNext: identical(step, next)),
+          if (next != null) ...[
+            const SizedBox(height: MitlistSpacing.md),
+            Text(
+              next.subtitle,
+              style: textTheme.bodyMedium,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: MitlistSpacing.md),
+            Semantics(
+              label: l10n.hubQuickStartNextSemantic(next.title),
+              excludeSemantics: true,
+              button: true,
+              child: AppButton(
+                key: ValueKey('quick-start-next-${next.id.name}'),
+                size: AppButtonSize.lg,
+                text: next.title,
+                onPressed: () => _run(next),
+              ),
+            ),
+          ],
+          if (later.isNotEmpty) ...[
+            const SizedBox(height: MitlistSpacing.sm),
+            Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: MitlistSpacing.xs,
+              children: [
+                Text(
+                  l10n.hubChecklistLater,
+                  style: textTheme.bodySmall
+                      ?.copyWith(color: scheme.onSurfaceVariant),
+                ),
+                for (final step in later)
+                  AppButton(
+                    key: ValueKey('quick-start-later-${step.id.name}'),
+                    variant: AppButtonVariant.ghost,
+                    color: AppButtonColor.neutral,
+                    size: AppButtonSize.sm,
+                    text: step.title,
+                    onPressed: () => _run(step),
+                  ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -292,115 +362,6 @@ class _SegmentedProgress extends StatelessWidget {
           ],
         ],
       ),
-    );
-  }
-}
-
-/// A step: circle check, imperative title, one line on what it gets you,
-/// and a chevron while it is still to do. Hierarchy comes from fill: done is
-/// a filled primary circle, the next step an outlined primary one, the rest
-/// a neutral outline.
-class _StepRow extends StatelessWidget {
-  const _StepRow({required this.step, required this.isNext});
-
-  final _Step step;
-  final bool isNext;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final textTheme = Theme.of(context).textTheme;
-    final scheme = Theme.of(context).colorScheme;
-    final onTap = step.done || step.onTap == null
-        ? null
-        : () {
-            unawaited(Haptics.light());
-            unawaited(step.onTap!());
-          };
-
-    return Semantics(
-      button: onTap != null,
-      label: step.done
-          ? '${step.title}. ${l10n.hubChecklistDone}'
-          : (isNext ? l10n.hubQuickStartNextSemantic(step.title) : step.title),
-      excludeSemantics: true,
-      child: InkWell(
-        onTap: onTap,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: MitlistSpacing.space14),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
-            child: Row(
-              children: [
-                _CheckCircle(done: step.done, isNext: isNext),
-                const SizedBox(width: MitlistSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        step.title,
-                        style: textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: step.done
-                              ? scheme.onSurfaceVariant
-                              : scheme.onSurface,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        step.subtitle,
-                        style: textTheme.bodySmall
-                            ?.copyWith(color: scheme.onSurfaceVariant),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                if (!step.done)
-                  Icon(
-                    Icons.chevron_right,
-                    color: isNext ? scheme.primary : scheme.onSurfaceVariant,
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _CheckCircle extends StatelessWidget {
-  const _CheckCircle({required this.done, required this.isNext});
-
-  final bool done;
-  final bool isNext;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      width: MitlistSpacing.space7,
-      height: MitlistSpacing.space7,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: done ? scheme.primary : null,
-        border: Border.all(
-          color: done || isNext ? scheme.primary : scheme.outline,
-          width: 2,
-        ),
-      ),
-      child: done
-          ? Icon(
-              Icons.check,
-              size: MitlistSpacing.space4,
-              color: scheme.onPrimary,
-            )
-          : null,
     );
   }
 }
@@ -452,8 +413,9 @@ class _CollapsedBar extends StatelessWidget {
   }
 }
 
-/// "You're the only one here": shown while the household has one member,
-/// whatever the checklist says, and gone as soon as someone joins.
+/// "You're the only one here": shown once the quick start is finished while
+/// the household still has one member (the checklist's own invite step asks
+/// before that), and gone as soon as someone joins.
 class HubSoloInviteCard extends ConsumerWidget {
   const HubSoloInviteCard({super.key, required this.groupId});
 

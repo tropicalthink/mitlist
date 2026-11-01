@@ -7302,4 +7302,34 @@ class AppLocalizationsNl extends AppLocalizations {
   String activityMemberJoined(String name, String when) {
     return '$name is lid geworden · $when';
   }
+
+  @override
+  String get authOnboardingAreasTitle => 'Waarvoor ga je mitlist gebruiken?';
+
+  @override
+  String get authOnboardingAreasBody =>
+      'Kies er zoveel als je wilt. Je ziet alleen die; zet de rest wanneer je wilt aan onder Jij.';
+
+  @override
+  String get authOnboardingAreasKitchen => 'Recepten en maaltijden';
+
+  @override
+  String get authOnboardingAreasAll => 'Laat alles zien';
+
+  @override
+  String get appAreasTitle => 'Wat je gebruikt';
+
+  @override
+  String get appAreasBody =>
+      'Verbergen wist niets. Voegt iemand een uitgave met jou toe of ben jij aan de beurt voor een klus, dan verschijnt dat deel toch.';
+
+  @override
+  String get appAreasAll => 'Alles';
+
+  @override
+  String get hubChecklistLater => 'Later:';
+
+  @override
+  String get pinwallHubEmptyIntro =>
+      'Hier komen notities voor het hele huis. Open het prikbord om er een op te prikken.';
 }

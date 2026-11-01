@@ -16,6 +16,7 @@ import '../../providers/group_provider.dart';
 import '../../providers/home_provider.dart';
 import '../../providers/pinwall_provider.dart';
 import '../../providers/recipe_provider.dart';
+import '../../providers/onboarding_provider.dart';
 import '../../l10n/app_localizations.dart';
 import '../../repositories/hub_repository.dart';
 import '../../router.dart' show currentGroupIdProvider;
@@ -732,20 +733,24 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
 
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      floatingActionButton:
-          _isLoading || _error != null || _resolvedGroupId == null
-              ? null
-              : AppButton(
-                  size: AppButtonSize.lg,
-                  onPressed: () {
-                    final groupId = _resolvedGroupId;
-                    if (groupId == null) return;
-                    showQuickAddSheet(context, ref, groupId: groupId, me: _me);
-                  },
-                  icon: const AppIcon(name: 'plus'),
-                  text: l10n.hubQuickAdd,
-                  tooltip: l10n.hubQuickAdd,
-                ),
+      // Quick add offers what the quick start already asks for; a household
+      // with nothing in it gets the one button there instead of two.
+      floatingActionButton: _isLoading ||
+              _error != null ||
+              _resolvedGroupId == null ||
+              ref.watch(householdInUseProvider(_resolvedGroupId!)) != true
+          ? null
+          : AppButton(
+              size: AppButtonSize.lg,
+              onPressed: () {
+                final groupId = _resolvedGroupId;
+                if (groupId == null) return;
+                showQuickAddSheet(context, ref, groupId: groupId, me: _me);
+              },
+              icon: const AppIcon(name: 'plus'),
+              text: l10n.hubQuickAdd,
+              tooltip: l10n.hubQuickAdd,
+            ),
       body: DismissKeyboardOnTap(child: _buildBody(l10n)),
     );
   }
@@ -841,21 +846,24 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                                     groupId: _resolvedGroupId!,
                                     me: _me,
                                   ),
-                                  const SizedBox(height: MitlistSpacing.lg),
-                                  // Both bring their own bottom gap and
-                                  // vanish once there is nothing to ask.
+                                  // Brings its own bottom gap; once done it
+                                  // becomes the solo invite card, then
+                                  // nothing.
                                   HubQuickStart(groupId: _resolvedGroupId!),
-                                  HubSoloInviteCard(
-                                    groupId: _resolvedGroupId!,
-                                  ),
                                   PinwallSection(
                                       groupId: _resolvedGroupId!, me: _me),
-                                  const SizedBox(height: MitlistSpacing.lg),
-                                  ActivityWall(
-                                    activities: _snapshot!.activities,
-                                    activityError: _snapshot!.activityError,
-                                    currentUserId: _me?.id,
-                                  ),
+                                  // An empty feed is one more section saying
+                                  // "nothing yet"; it arrives with the first
+                                  // thing that happens.
+                                  if (_snapshot!.activities.isNotEmpty ||
+                                      _snapshot!.activityError) ...[
+                                    const SizedBox(height: MitlistSpacing.lg),
+                                    ActivityWall(
+                                      activities: _snapshot!.activities,
+                                      activityError: _snapshot!.activityError,
+                                      currentUserId: _me?.id,
+                                    ),
+                                  ],
                                   // Clear the Quick add FAB so it never sits
                                   // on the last activity row.
                                   const SizedBox(

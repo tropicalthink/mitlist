@@ -1550,7 +1550,8 @@ void main() {
     );
 
     expect(find.text('Pinwall'), findsOneWidget);
-    expect(find.text('Activity'), findsOneWidget);
+    // No activity yet, so no empty feed; it arrives with the first event.
+    expect(find.text('Activity'), findsNothing);
     // Home opens with what needs you; the pinwall comes after it.
     expect(find.text('Needs you'), findsOneWidget);
     expect(
@@ -1602,10 +1603,15 @@ void main() {
         financeRepositoryProvider.overrideWith(
             (ref) async => FakeFinanceRepository(FakeFinanceService())),
         sseServiceProvider.overrideWithValue(sse),
+        // The fake list repository's stream never emits; the quick start
+        // waits for every cache, as it should with a real database.
+        cachedListsByGroupProvider
+            .overrideWith((ref, id) => Stream.value(const <ItemList>[])),
       ],
     );
 
-    expect(find.text("You're the only one here"), findsOneWidget);
+    // Alone in the household: the quick start asks for the invite.
+    expect(find.text('INVITE SOMEONE'), findsOneWidget);
     final snapshotsBefore = home.calls;
 
     // Another household's news is not this one's.
@@ -1644,7 +1650,8 @@ void main() {
 
     expect(home.calls, greaterThan(snapshotsBefore));
     expect(find.byType(HubSkeleton), findsNothing);
-    expect(find.text("You're the only one here"), findsNothing);
+    // Sam's arrival ticks the invite step and starts the activity feed.
+    expect(find.text('INVITE SOMEONE'), findsNothing);
     expect(find.text('Sam joined \u00b7 today'), findsOneWidget);
   });
 
@@ -1842,12 +1849,12 @@ void main() {
     expect(find.text('ONBOARDING'), findsNothing);
     expect(find.text('Needs you'), findsOneWidget);
     expect(find.text('Nothing on you yet'), findsOneWidget);
-    expect(find.text('Joined Flat 3B'), findsOneWidget);
-    expect(find.text('Tick something off a list'), findsOneWidget);
+    // One next step, the other two as small buttons under it.
+    expect(find.text('TICK SOMETHING OFF A LIST'), findsOneWidget);
     expect(find.text('Take or complete a chore'), findsOneWidget);
     expect(find.text('Check your balance'), findsOneWidget);
     expect(find.text('1 of 4 done'), findsOneWidget);
-    expect(find.text('Household created'), findsNothing);
+    expect(find.text('INVITE SOMEONE'), findsNothing);
   });
 
   test('logout wipes expenses and lists tables from local database', () async {

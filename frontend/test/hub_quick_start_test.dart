@@ -59,18 +59,15 @@ void main() {
               .overrideWith((ref, id) => Stream.value(chores)),
           cachedExpensesByGroupProvider
               .overrideWith((ref, id) => Stream.value(expenses)),
+          cachedFinanceSummaryByGroupProvider
+              .overrideWith((ref, id) => Stream.value(null)),
         ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: const Scaffold(
             body: SingleChildScrollView(
-              child: Column(
-                children: [
-                  HubQuickStart(groupId: groupId),
-                  HubSoloInviteCard(groupId: groupId),
-                ],
-              ),
+              child: HubQuickStart(groupId: groupId),
             ),
           ),
         ),
@@ -79,33 +76,34 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  double top(WidgetTester tester, String text) =>
-      tester.getTopLeft(find.text(text)).dy;
+  // The next step is the card's one button; the other open steps sit under
+  // it as small ghost buttons (which, unlike solid ones, keep their case).
+  Finder next(String step) => find.bySemanticsLabel('Next step: $step');
+  Finder later(String step) => find.text(step);
+
+  // A signed-in person whose saved choice of areas is [areas].
+  Map<String, Object> usesOnly(List<String> areas) => {
+        'user_data': '{"id":"me-1"}',
+        'app_areas:me-1': areas,
+      };
 
   group('HubQuickStart', () {
-    testWidgets('a new household starts at 1 of 5 with invite next',
-        (tester) async {
+    testWidgets(
+        'a new household shows one next step, invite first, '
+        'and the rest as small buttons', (tester) async {
       await pump(tester);
 
       expect(find.text('Get the house going'), findsOneWidget);
-      for (final step in [
-        'Household created',
-        'Invite someone',
-        'Create a list',
-        'Add a chore',
-        'Track an expense',
-      ]) {
-        expect(find.text(step), findsOneWidget);
-      }
-      expect(find.text('Flat 4B is set up'), findsOneWidget);
-      // "Household created" starts ticked.
+      // "Household created" starts ticked and is not shown as a row.
       expect(find.text('1 of 5 done'), findsOneWidget);
-      expect(
-          find.bySemanticsLabel('Next step: Invite someone'), findsOneWidget);
-      expect(
-        find.bySemanticsLabel('Household created. Done'),
-        findsOneWidget,
-      );
+      expect(find.text('Household created'), findsNothing);
+      expect(next('Invite someone'), findsOneWidget);
+      expect(find.text('INVITE SOMEONE'), findsOneWidget);
+      for (final step in ['Create a list', 'Add a chore', 'Track an expense']) {
+        expect(later(step), findsOneWidget);
+      }
+      // Its own invite step asks, so no second invite card alongside it.
+      expect(find.text('You\'re the only one here'), findsNothing);
     });
 
     testWidgets('steps tick as real things appear', (tester) async {
@@ -113,7 +111,8 @@ void main() {
 
       // A second member ticks the invite; the list ticks its step.
       expect(find.text('3 of 5 done'), findsOneWidget);
-      expect(find.bySemanticsLabel('Next step: Add a chore'), findsOneWidget);
+      expect(next('Add a chore'), findsOneWidget);
+      expect(later('Create a list'), findsNothing);
     });
 
     testWidgets('asking someone to join ticks the invite step', (tester) async {
@@ -123,7 +122,7 @@ void main() {
       );
 
       expect(find.text('2 of 5 done'), findsOneWidget);
-      expect(find.bySemanticsLabel('Next step: Create a list'), findsOneWidget);
+      expect(next('Create a list'), findsOneWidget);
     });
 
     testWidgets('the first-run intent moves its step to the first open place',
@@ -133,19 +132,20 @@ void main() {
         prefs: {'hub_quick_start_intent:$groupId': 'money'},
       );
 
-      expect(
-        find.bySemanticsLabel('Next step: Track an expense'),
-        findsOneWidget,
-      );
-      expect(
-        top(tester, 'Track an expense'),
-        lessThan(top(tester, 'Invite someone')),
-      );
-      // Done steps keep their place at the top.
-      expect(
-        top(tester, 'Household created'),
-        lessThan(top(tester, 'Track an expense')),
-      );
+      expect(next('Track an expense'), findsOneWidget);
+      expect(later('Invite someone'), findsOneWidget);
+    });
+
+    testWidgets('only offers the parts of the app this person uses',
+        (tester) async {
+      await pump(tester, prefs: usesOnly(['lists']));
+
+      // Household + invite + list: chores and money are left out.
+      expect(find.text('1 of 3 done'), findsOneWidget);
+      expect(next('Invite someone'), findsOneWidget);
+      expect(later('Create a list'), findsOneWidget);
+      expect(later('Add a chore'), findsNothing);
+      expect(later('Track an expense'), findsNothing);
     });
 
     testWidgets('folds into a bar for this household and opens again',
@@ -156,14 +156,14 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Quick start · 1 of 5'), findsOneWidget);
-      expect(find.text('Create a list'), findsNothing);
+      expect(later('Create a list'), findsNothing);
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getBool('hub_quick_start_collapsed:$groupId'), isTrue);
 
       await tester.tap(find.text('Quick start · 1 of 5'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Create a list'), findsOneWidget);
+      expect(later('Create a list'), findsOneWidget);
       expect(prefs.getBool('hub_quick_start_collapsed:$groupId'), isFalse);
     });
 
@@ -174,7 +174,7 @@ void main() {
         prefs: {'hub_quick_start_collapsed:another-household': true},
       );
 
-      expect(find.text('Create a list'), findsOneWidget);
+      expect(later('Create a list'), findsOneWidget);
     });
 
     testWidgets('retires once every step is done', (tester) async {
@@ -234,27 +234,14 @@ void main() {
       );
 
       expect(find.text('Get the house going'), findsOneWidget);
-      for (final step in [
-        'Joined Flat 4B',
-        'Tick something off a list',
-        'Take or complete a chore',
-        'Check your balance',
-      ]) {
-        expect(find.text(step), findsOneWidget);
-      }
-      // None of the creator's setup steps.
-      expect(find.text('Household created'), findsNothing);
-      expect(find.text('Invite someone'), findsNothing);
-      expect(find.text('Create a list'), findsNothing);
       expect(find.text('1 of 4 done'), findsOneWidget);
-      expect(
-        find.bySemanticsLabel('Joined Flat 4B. Done'),
-        findsOneWidget,
-      );
-      expect(
-        find.bySemanticsLabel('Next step: Tick something off a list'),
-        findsOneWidget,
-      );
+      expect(next('Tick something off a list'), findsOneWidget);
+      expect(later('Take or complete a chore'), findsOneWidget);
+      expect(later('Check your balance'), findsOneWidget);
+      // None of the creator's setup steps.
+      expect(next('Invite someone'), findsNothing);
+      expect(later('Invite someone'), findsNothing);
+      expect(later('Create a list'), findsNothing);
     });
 
     testWidgets('the markers set elsewhere tick the steps', (tester) async {
@@ -277,10 +264,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('3 of 4 done'), findsOneWidget);
-      expect(
-        find.bySemanticsLabel('Next step: Check your balance'),
-        findsOneWidget,
-      );
+      expect(next('Check your balance'), findsOneWidget);
 
       // Opening Money is the last one; the card then retires.
       await markHubQuickStartStep(groupId, HubQuickStartStep.balance);
@@ -299,9 +283,8 @@ void main() {
         prefs: joined,
       );
 
-      expect(find.text('Joined Flat 4B'), findsNothing);
-      expect(find.text('Household created'), findsOneWidget);
-      expect(find.text('Create a list'), findsOneWidget);
+      expect(next('Tick something off a list'), findsNothing);
+      expect(next('Create a list'), findsOneWidget);
       // Two members already, so the invite step is done.
       expect(find.text('2 of 5 done'), findsOneWidget);
     });
@@ -315,15 +298,16 @@ void main() {
         prefs: {'hub_quick_start_joined:another-household': true},
       );
 
-      expect(find.text('Joined Flat 4B'), findsNothing);
-      expect(find.text('Household created'), findsOneWidget);
+      // The creator's steps: the list exists, so a chore is next.
+      expect(next('Tick something off a list'), findsNothing);
+      expect(next('Add a chore'), findsOneWidget);
     });
   });
 
   group('HubSoloInviteCard', () {
     testWidgets(
-        'shows while the household has one member, '
-        'whatever the checklist says', (tester) async {
+        'takes over once the checklist is done '
+        'and the household still has one member', (tester) async {
       await pump(
         tester,
         lists: [_list],
@@ -340,13 +324,26 @@ void main() {
     });
 
     testWidgets('goes once a second member joins', (tester) async {
-      await pump(tester, household: _household(members: 2));
+      await pump(
+        tester,
+        household: _household(members: 2),
+        lists: [_list],
+        chores: [_currentChore()],
+        expenses: [_expense()],
+      );
       expect(find.text('You\'re the only one here'), findsNothing);
     });
 
     testWidgets('stays quiet while the member count is unknown',
         (tester) async {
-      await pump(tester, household: _household(members: null));
+      await pump(
+        tester,
+        household: _household(members: null),
+        lists: [_list],
+        chores: [_currentChore()],
+        expenses: [_expense()],
+        prefs: {'hub_quick_start_invited:$groupId': true},
+      );
       expect(find.text('You\'re the only one here'), findsNothing);
     });
   });

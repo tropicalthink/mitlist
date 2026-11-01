@@ -7,6 +7,7 @@ import '../../models/auth_models.dart';
 import '../../models/pinwall_models.dart';
 import '../../providers/pinwall_provider.dart';
 import '../../providers/list_provider.dart';
+import '../../providers/onboarding_provider.dart';
 import '../../repositories/pinwall_repository.dart';
 import '../../screens/pinwall/pinwall_board_screen.dart';
 import '../../sheets/pinwall_note_editor_sheet.dart';
@@ -97,6 +98,17 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
     final boardShadow =
         MitlistColors.neutral950.withValues(alpha: dark ? 0.38 : 0.16);
 
+    // A household with nothing in it yet sees the board, not a note box to
+    // fill: the quick start above is the one thing to do. The composer
+    // arrives with the first list, chore, expense or note.
+    final hasPosts = ref
+            .watch(pinwallPostsByGroupProvider(widget.groupId))
+            .valueOrNull
+            ?.isNotEmpty ??
+        false;
+    final showComposer =
+        hasPosts || ref.watch(householdInUseProvider(widget.groupId)) != false;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -152,9 +164,11 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: MitlistSpacing.sm),
-                PinwallComposer(groupId: widget.groupId, me: widget.me),
-                const SizedBox(height: MitlistSpacing.lg),
+                if (showComposer) ...[
+                  const SizedBox(height: MitlistSpacing.sm),
+                  PinwallComposer(groupId: widget.groupId, me: widget.me),
+                  const SizedBox(height: MitlistSpacing.lg),
+                ],
                 RepaintBoundary(
                   child: _PinwallPostsList(
                     groupId: widget.groupId,
@@ -162,6 +176,9 @@ class _PinwallSectionState extends ConsumerState<PinwallSection> {
                     boardBorder: boardBorder,
                     dark: dark,
                     textTheme: textTheme,
+                    // With the composer right above, the board needs no
+                    // "pin a note" line of its own.
+                    showEmptyHint: !showComposer,
                   ),
                 ),
               ],
@@ -267,6 +284,7 @@ class _PinwallPostsList extends ConsumerWidget {
     required this.boardBorder,
     required this.dark,
     required this.textTheme,
+    required this.showEmptyHint,
   });
 
   final String groupId;
@@ -274,6 +292,7 @@ class _PinwallPostsList extends ConsumerWidget {
   final Color boardBorder;
   final bool dark;
   final TextTheme textTheme;
+  final bool showEmptyHint;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -316,10 +335,11 @@ class _PinwallPostsList extends ConsumerWidget {
       ),
       data: (rows) {
         if (rows.isEmpty) {
+          if (!showEmptyHint) return const SizedBox.shrink();
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.md),
             child: Text(
-              l10n.pinwallEmptyBoard,
+              l10n.pinwallHubEmptyIntro,
               textAlign: TextAlign.center,
               style: textTheme.bodySmall?.copyWith(
                 color: dark

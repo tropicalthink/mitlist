@@ -343,6 +343,10 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
         _controller.errorMessage == null;
     final showSettlementsNudge =
         canSettle && (_controller.suggestions.isNotEmpty);
+    // Before the first expense, a $0.00 balance and a Settlements tab only
+    // add things to read around the one thing to do: add an expense.
+    final showBalance = !canSettle || _controller.hasMoneyActivity;
+    final selectedTab = showBalance ? _selectedTab : 0;
 
     return Scaffold(
       appBar: MitlistAppBar.titleText(
@@ -361,30 +365,34 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
           ),
         ],
       ),
+      // Stretch: the Scaffold hands its body a loose width, and an empty
+      // state alone would otherwise shrink the whole column to its own width.
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Sticky top section
-          Padding(
-            padding: const EdgeInsets.all(MitlistSpacing.md),
-            child: Column(
-              children: [
-                ExpenseBalanceCard(
-                  balance: _controller.balance,
-                  currency: _controller.groupCurrency,
-                  balanceColor: _balanceColor,
-                  isLoading: _controller.isLoading,
-                  openBalanceCount: _controller.openBalanceCount,
-                  suggestionCount: _controller.suggestions.length,
-                  onTap: showSettlementsNudge ? () => _onTabChanged(1) : null,
-                ),
-                const SizedBox(height: MitlistSpacing.md),
-                ExpenseChipBar(
-                  selectedTab: _selectedTab,
-                  onTabChanged: _onTabChanged,
-                ),
-              ],
+          if (showBalance)
+            Padding(
+              padding: const EdgeInsets.all(MitlistSpacing.md),
+              child: Column(
+                children: [
+                  ExpenseBalanceCard(
+                    balance: _controller.balance,
+                    currency: _controller.groupCurrency,
+                    balanceColor: _balanceColor,
+                    isLoading: _controller.isLoading,
+                    openBalanceCount: _controller.openBalanceCount,
+                    suggestionCount: _controller.suggestions.length,
+                    onTap: showSettlementsNudge ? () => _onTabChanged(1) : null,
+                  ),
+                  const SizedBox(height: MitlistSpacing.md),
+                  ExpenseChipBar(
+                    selectedTab: _selectedTab,
+                    onTabChanged: _onTabChanged,
+                  ),
+                ],
+              ),
             ),
-          ),
           // Body
           Expanded(
             child: _controller.isLoading
@@ -400,7 +408,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                             onOpenHouseholds: () =>
                                 context.goNamed('groupsList'),
                           )
-                        : _selectedTab == 0
+                        : selectedTab == 0
                             ? ExpenseTimelineBody(
                                 groups: _controller.timelineGroups,
                                 controller: _timelineScrollController,

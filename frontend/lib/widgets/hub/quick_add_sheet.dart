@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../models/auth_models.dart';
+import '../../providers/app_areas_provider.dart';
 import '../../providers/list_provider.dart';
 import '../../sheets/chore_creation_sheet.dart';
 import '../../theme/spacing.dart';
@@ -48,48 +49,59 @@ Future<void> showQuickAddSheet(
                 ?.any((l) => !l.isArchived) ??
             false;
 
+        // Only the parts of the app this person uses; the first option is
+        // the solid one.
+        final areas = sheetRef.watch(visibleAreasProvider);
+        final options = <(String, Widget?, Future<void> Function())>[
+          if (areas.contains(AppArea.money))
+            (
+              l10n.hubQuickAddExpense,
+              null,
+              () => addExpenseAndNotify(context, ref, groupId: groupId),
+            ),
+          if (areas.contains(AppArea.lists))
+            (
+              l10n.hubQuickAddToList,
+              null,
+              () => addToAList(context, ref, groupId: groupId),
+            ),
+          if (areas.contains(AppArea.chores))
+            (
+              l10n.hubQuickAddChore,
+              null,
+              () => ChoreCreationSheet.show(context),
+            ),
+          (
+            l10n.hubQuickAddNote,
+            null,
+            () => PinwallComposer.show(context, groupId: groupId, me: me),
+          ),
+          // On-device OCR ships on iOS and Android only; it reads receipts
+          // and lists.
+          if (!kIsWeb &&
+              (areas.contains(AppArea.money) || areas.contains(AppArea.lists)))
+            (
+              l10n.hubQuickAddScan,
+              const Icon(Icons.document_scanner_outlined),
+              () async => context.pushNamed('scanner'),
+            ),
+        ];
+
         return Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            AppButton(
-              text: l10n.hubQuickAddExpense,
-              onPressed: () => run(
-                () => addExpenseAndNotify(context, ref, groupId: groupId),
-              ),
-            ),
-            const SizedBox(height: MitlistSpacing.sm),
-            AppButton(
-              text: l10n.hubQuickAddToList,
-              variant: AppButtonVariant.outline,
-              onPressed: () =>
-                  run(() => addToAList(context, ref, groupId: groupId)),
-            ),
-            const SizedBox(height: MitlistSpacing.sm),
-            AppButton(
-              text: l10n.hubQuickAddChore,
-              variant: AppButtonVariant.outline,
-              onPressed: () => run(() => ChoreCreationSheet.show(context)),
-            ),
-            const SizedBox(height: MitlistSpacing.sm),
-            AppButton(
-              text: l10n.hubQuickAddNote,
-              variant: AppButtonVariant.outline,
-              onPressed: () => run(
-                () => PinwallComposer.show(context, groupId: groupId, me: me),
-              ),
-            ),
-            // On-device OCR ships on iOS and Android only.
-            if (!kIsWeb) ...[
-              const SizedBox(height: MitlistSpacing.sm),
+            for (final (i, (label, icon, action)) in options.indexed) ...[
+              if (i > 0) const SizedBox(height: MitlistSpacing.sm),
               AppButton(
-                text: l10n.hubQuickAddScan,
-                variant: AppButtonVariant.outline,
-                icon: const Icon(Icons.document_scanner_outlined),
-                onPressed: () => run(() => context.pushNamed('scanner')),
+                text: label,
+                icon: icon,
+                variant:
+                    i == 0 ? AppButtonVariant.solid : AppButtonVariant.outline,
+                onPressed: () => run(action),
               ),
             ],
-            if (hasLists) ...[
+            if (hasLists && areas.contains(AppArea.lists)) ...[
               Divider(
                 height: MitlistSpacing.lg,
                 color: Theme.of(sheetContext).colorScheme.outlineVariant,

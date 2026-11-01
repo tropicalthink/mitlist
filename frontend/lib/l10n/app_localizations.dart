@@ -12362,6 +12362,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{name} joined · {when}'**
   String activityMemberJoined(String name, String when);
+
+  /// First run, last step: question; the answers decide which tabs this person sees
+  ///
+  /// In en, this message translates to:
+  /// **'What will you use mitlist for?'**
+  String get authOnboardingAreasTitle;
+
+  /// First run, last step: line under the question
+  ///
+  /// In en, this message translates to:
+  /// **'Pick as many as you like. You\'ll only see those; turn the rest on any time under You.'**
+  String get authOnboardingAreasBody;
+
+  /// First run, last step: answer for the Kitchen tab
+  ///
+  /// In en, this message translates to:
+  /// **'Recipes and meals'**
+  String get authOnboardingAreasKitchen;
+
+  /// First run, last step: keeps every tab
+  ///
+  /// In en, this message translates to:
+  /// **'Show me everything'**
+  String get authOnboardingAreasAll;
+
+  /// You screen row and sheet title: which parts of the app (tabs) this person sees
+  ///
+  /// In en, this message translates to:
+  /// **'What you use'**
+  String get appAreasTitle;
+
+  /// Sheet explaining that hidden tabs keep their data and come back when something involves you
+  ///
+  /// In en, this message translates to:
+  /// **'Hiding a part keeps everything in it. If someone adds an expense with you or it\'s your turn for a chore, that part shows up for you anyway.'**
+  String get appAreasBody;
+
+  /// You screen row value when every part of the app is shown
+  ///
+  /// In en, this message translates to:
+  /// **'Everything'**
+  String get appAreasAll;
+
+  /// Home quick start: label before the other open steps, shown as small buttons under the next step
+  ///
+  /// In en, this message translates to:
+  /// **'Later:'**
+  String get hubChecklistLater;
+
+  /// Home pinwall in a household with nothing in it yet (no note box shown)
+  ///
+  /// In en, this message translates to:
+  /// **'Notes for the whole house go here. Open the board to pin one.'**
+  String get pinwallHubEmptyIntro;
 }
 
 class _AppLocalizationsDelegate

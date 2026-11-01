@@ -155,6 +155,8 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
     _trackDateOnly = chore.trackDateOnly;
     _rollover = chore.rollover;
     _category = chore.category;
+    // The zone lives under More options; open it when there is one to show.
+    if (_category != null) _showAdvanced = true;
     _supplies.addAll(chore.supplies);
     _noOne = chore.assignmentType == 'no-assignment';
     if (!_noOne) _who.addAll(chore.assignmentConfig);
@@ -188,6 +190,18 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
   }
 
   void _markDirty() => widget.dirtyNotifier?.value = true;
+
+  /// More than one person lives here: from the member list once it loads,
+  /// from the cached household before that, so Who/Order don't pop in.
+  bool get _sharedHousehold {
+    if (_members.isNotEmpty) return _members.length > 1;
+    final group = ref
+        .read(cachedGroupsProvider)
+        .valueOrNull
+        ?.where((g) => g.id == _groupId)
+        .firstOrNull;
+    return (group?.memberCount ?? 0) > 1;
+  }
 
   List<String> _activeGroupZones() {
     final groups = ref.watch(cachedGroupsProvider).valueOrNull;
@@ -647,151 +661,94 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
         const SizedBox(height: MitlistSpacing.md),
 
         // ── Who does it? (first-class: chores are about people) ──────
-        _ChipRow(
-          label: l10n.choreCreationAssignLabel,
-          children: [
-            AppChip(
-              label: l10n.choreWhoEveryone,
-              selected: !_noOne && _who.isEmpty,
-              onSelected: (_) {
-                setState(() {
-                  _noOne = false;
-                  _who.clear();
-                });
-                _markDirty();
-              },
-            ),
-            for (final member in _members)
+        // Alone in the house there is no one to share with: the chore is
+        // yours, and Who/Order would be two rows of choices that change
+        // nothing. They appear once a second person has joined.
+        if (_sharedHousehold) ...[
+          _ChipRow(
+            label: l10n.choreCreationAssignLabel,
+            children: [
               AppChip(
-                label: member.name,
-                selected: !_noOne && _who.contains(member.id),
+                label: l10n.choreWhoEveryone,
+                selected: !_noOne && _who.isEmpty,
                 onSelected: (_) {
                   setState(() {
                     _noOne = false;
-                    if (!_who.add(member.id)) _who.remove(member.id);
+                    _who.clear();
                   });
                   _markDirty();
                 },
               ),
-            AppChip(
-              label: l10n.choreWhoNoOne,
-              selected: _noOne,
-              onSelected: (_) {
-                setState(() {
-                  _noOne = !_noOne;
-                  if (_noOne) _who.clear();
-                });
-                _markDirty();
-              },
-            ),
-          ],
-        ),
-        // The rotation policy only means something when several people share
-        // the chore; a single owner or "no one" hides it.
-        if (!_noOne && _who.length != 1) ...[
-          const SizedBox(height: MitlistSpacing.sm),
-          _ChipRow(
-            label: l10n.choreWhoOrderLabel,
-            children: [
-              for (final option in [
-                (
-                  _AssignmentPolicy.roundRobin,
-                  l10n.choreCreationAssignTakeTurns
-                ),
-                (
-                  _AssignmentPolicy.leastDone,
-                  l10n.choreCreationAssignLeastDone
-                ),
-                (_AssignmentPolicy.random, l10n.choreCreationAssignRandom),
-                (
-                  _AssignmentPolicy.alphabetical,
-                  l10n.choreCreationAssignAlphabetical
-                ),
-              ])
+              for (final member in _members)
                 AppChip(
-                  label: option.$2,
-                  selected: _assignmentPolicy == option.$1,
+                  label: member.name,
+                  selected: !_noOne && _who.contains(member.id),
                   onSelected: (_) {
-                    setState(() => _assignmentPolicy = option.$1);
+                    setState(() {
+                      _noOne = false;
+                      if (!_who.add(member.id)) _who.remove(member.id);
+                    });
                     _markDirty();
                   },
                 ),
+              AppChip(
+                label: l10n.choreWhoNoOne,
+                selected: _noOne,
+                onSelected: (_) {
+                  setState(() {
+                    _noOne = !_noOne;
+                    if (_noOne) _who.clear();
+                  });
+                  _markDirty();
+                },
+              ),
             ],
           ),
-        ],
-        const SizedBox(height: MitlistSpacing.xs),
-        Padding(
-          padding: const EdgeInsets.only(left: MitlistSpacing.space14),
-          child: Text(
-            _whoHint,
-            style: textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
+          // The rotation policy only means something when several people share
+          // the chore; a single owner or "no one" hides it.
+          if (!_noOne && _who.length != 1) ...[
+            const SizedBox(height: MitlistSpacing.sm),
+            _ChipRow(
+              label: l10n.choreWhoOrderLabel,
+              children: [
+                for (final option in [
+                  (
+                    _AssignmentPolicy.roundRobin,
+                    l10n.choreCreationAssignTakeTurns
+                  ),
+                  (
+                    _AssignmentPolicy.leastDone,
+                    l10n.choreCreationAssignLeastDone
+                  ),
+                  (_AssignmentPolicy.random, l10n.choreCreationAssignRandom),
+                  (
+                    _AssignmentPolicy.alphabetical,
+                    l10n.choreCreationAssignAlphabetical
+                  ),
+                ])
+                  AppChip(
+                    label: option.$2,
+                    selected: _assignmentPolicy == option.$1,
+                    onSelected: (_) {
+                      setState(() => _assignmentPolicy = option.$1);
+                      _markDirty();
+                    },
+                  ),
+              ],
+            ),
+          ],
+          const SizedBox(height: MitlistSpacing.xs),
+          Padding(
+            padding: const EdgeInsets.only(left: MitlistSpacing.space14),
+            child: Text(
+              _whoHint,
+              style: textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: MitlistSpacing.md),
-
-        // ── Zone (folded: filing, not a decision) ─────────────────────
-        _SummaryLine(
-          text: '${l10n.choreCreationZoneLabel} · '
-              '${_category ?? l10n.choreCreationZoneNone}',
-          semanticLabel: l10n.choreCreationZoneLabel,
-          expanded: _showZone,
-          onTap: () => setState(() => _showZone = !_showZone),
-        ),
-        AnimatedSize(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeInOut,
-          alignment: Alignment.topCenter,
-          child: _showZone
-              ? Padding(
-                  padding: const EdgeInsets.only(top: MitlistSpacing.md),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // The row is here even with no zones yet: the add chip is
-                      // how the first one gets made, and a household that never
-                      // opens settings would otherwise never meet zones at all.
-                      _ChipRow(
-                        label: l10n.choreCreationZoneLabel,
-                        children: [
-                          for (final zone in groupZones)
-                            AppChip(
-                              label: zone,
-                              selected: _category == zone,
-                              onSelected: (_) {
-                                setState(() => _category =
-                                    _category == zone ? null : zone);
-                                _markDirty();
-                              },
-                              onLongPress: () => unawaited(_removeZone(zone)),
-                            ),
-                          AppChip(
-                            label: l10n.sheetGroupSettingsAddZone,
-                            leading: const AppIcon(name: 'plus', size: 14),
-                            onSelected: (_) => unawaited(_addZone()),
-                          ),
-                        ],
-                      ),
-                      if (groupZones.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(
-                            left: MitlistSpacing.space14,
-                            top: MitlistSpacing.space1,
-                          ),
-                          child: Text(
-                            l10n.choreCreationZoneManageHint,
-                            style: textTheme.labelSmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                )
-              : const SizedBox.shrink(),
-        ),
-        const SizedBox(height: MitlistSpacing.sm),
+          const SizedBox(height: MitlistSpacing.md),
+        ],
 
         // ── Repeats (folded to a calm summary line; tap to change) ────
         _SummaryLine(
@@ -987,6 +944,74 @@ class _ChoreCreationSheetState extends ConsumerState<ChoreCreationSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // ── Zone (under More options: filing, not a decision) ───────
+                      _SummaryLine(
+                        text: '${l10n.choreCreationZoneLabel} · '
+                            '${_category ?? l10n.choreCreationZoneNone}',
+                        semanticLabel: l10n.choreCreationZoneLabel,
+                        expanded: _showZone,
+                        onTap: () => setState(() => _showZone = !_showZone),
+                      ),
+                      AnimatedSize(
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeInOut,
+                        alignment: Alignment.topCenter,
+                        child: _showZone
+                            ? Padding(
+                                padding: const EdgeInsets.only(
+                                    top: MitlistSpacing.md),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // The row is here even with no zones yet: the add chip is
+                                    // how the first one gets made, and a household that never
+                                    // opens settings would otherwise never meet zones at all.
+                                    _ChipRow(
+                                      label: l10n.choreCreationZoneLabel,
+                                      children: [
+                                        for (final zone in groupZones)
+                                          AppChip(
+                                            label: zone,
+                                            selected: _category == zone,
+                                            onSelected: (_) {
+                                              setState(() => _category =
+                                                  _category == zone
+                                                      ? null
+                                                      : zone);
+                                              _markDirty();
+                                            },
+                                            onLongPress: () =>
+                                                unawaited(_removeZone(zone)),
+                                          ),
+                                        AppChip(
+                                          label: l10n.sheetGroupSettingsAddZone,
+                                          leading: const AppIcon(
+                                              name: 'plus', size: 14),
+                                          onSelected: (_) =>
+                                              unawaited(_addZone()),
+                                        ),
+                                      ],
+                                    ),
+                                    if (groupZones.isNotEmpty)
+                                      Padding(
+                                        padding: const EdgeInsets.only(
+                                          left: MitlistSpacing.space14,
+                                          top: MitlistSpacing.space1,
+                                        ),
+                                        child: Text(
+                                          l10n.choreCreationZoneManageHint,
+                                          style: textTheme.labelSmall?.copyWith(
+                                            color: colorScheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              )
+                            : const SizedBox.shrink(),
+                      ),
+                      const SizedBox(height: MitlistSpacing.sm),
+                      const SizedBox(height: MitlistSpacing.md),
                       _OptionToggle(
                         value: _trackDateOnly,
                         onChanged: (value) {

@@ -920,6 +920,17 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
     return points;
   }
 
+  /// The household has only this person: known from the member list once
+  /// it loads, and from the cached household before that, so the split line
+  /// neither pops in nor out.
+  bool get _aloneInHousehold {
+    if (!_membersLoading) return _members.length == 1;
+    final groups = ref.read(cachedGroupsProvider).valueOrNull;
+    final group = groups?.where((g) => g.id == _groupId).firstOrNull ??
+        (_groupId == null && groups?.length == 1 ? groups!.first : null);
+    return group?.memberCount == 1;
+  }
+
   List<CreateExpenseSplitRequest> _buildSplitRequests() {
     final percentages = _splitMode == 'percentage'
         ? _percentageBasisPoints()
@@ -1189,7 +1200,9 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
             onMemberChanged: _onSplitMemberChanged,
             onValueChanged: _onSplitValueChanged,
           ),
-        ] else ...[
+        ] else if (!_aloneInHousehold) ...[
+          // Alone in the house, "Paid by you · split equally" with yourself
+          // is a line that says nothing; it appears with a second member.
           const SizedBox(height: MitlistSpacing.md),
           _SummaryLine(
             text: l10n.expenseCreationSummaryPaidBySplit(

@@ -6397,5 +6397,14 @@
   "welcomeInviteJoin": "Rejoins {household} pour partager listes, tâches et argent.",
   "welcomeInviteExpiredTitle": "Cette invitation a expiré",
   "welcomeInviteExpiredBody": "Demande un nouveau lien à la personne qui te l'a envoyé.",
-  "activityMemberJoined": "{name} a rejoint le foyer · {when}"
+  "activityMemberJoined": "{name} a rejoint le foyer · {when}",
+  "authOnboardingAreasTitle": "Pour quoi vas-tu utiliser mitlist ?",
+  "authOnboardingAreasBody": "Choisis-en autant que tu veux. Tu ne verras que celles-là ; active le reste quand tu veux dans Toi.",
+  "authOnboardingAreasKitchen": "Recettes et repas",
+  "authOnboardingAreasAll": "Montre-moi tout",
+  "appAreasTitle": "Ce que tu utilises",
+  "appAreasBody": "Masquer une partie ne supprime rien. Si quelqu'un ajoute une dépense avec toi ou si c'est ton tour pour une tâche, elle s'affiche quand même.",
+  "appAreasAll": "Tout",
+  "hubChecklistLater": "Ensuite :",
+  "pinwallHubEmptyIntro": "Les notes pour toute la maison vont ici. Ouvrez le tableau pour en épingler une."
 }

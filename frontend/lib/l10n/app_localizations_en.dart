@@ -7232,4 +7232,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String activityMemberJoined(String name, String when) {
     return '$name joined · $when';
   }
+
+  @override
+  String get authOnboardingAreasTitle => 'What will you use mitlist for?';
+
+  @override
+  String get authOnboardingAreasBody =>
+      'Pick as many as you like. You\'ll only see those; turn the rest on any time under You.';
+
+  @override
+  String get authOnboardingAreasKitchen => 'Recipes and meals';
+
+  @override
+  String get authOnboardingAreasAll => 'Show me everything';
+
+  @override
+  String get appAreasTitle => 'What you use';
+
+  @override
+  String get appAreasBody =>
+      'Hiding a part keeps everything in it. If someone adds an expense with you or it\'s your turn for a chore, that part shows up for you anyway.';
+
+  @override
+  String get appAreasAll => 'Everything';
+
+  @override
+  String get hubChecklistLater => 'Later:';
+
+  @override
+  String get pinwallHubEmptyIntro =>
+      'Notes for the whole house go here. Open the board to pin one.';
 }

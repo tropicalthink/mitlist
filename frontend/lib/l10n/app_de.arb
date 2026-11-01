@@ -2452,5 +2452,14 @@
   "welcomeInviteJoin": "Tritt {household} bei, um Listen, Aufgaben und Geld zu teilen.",
   "welcomeInviteExpiredTitle": "Diese Einladung ist abgelaufen",
   "welcomeInviteExpiredBody": "Bitte die Person, die sie geschickt hat, um einen neuen Link.",
-  "activityMemberJoined": "{name} ist beigetreten · {when}"
+  "activityMemberJoined": "{name} ist beigetreten · {when}",
+  "authOnboardingAreasTitle": "Wofür nutzt du mitlist?",
+  "authOnboardingAreasBody": "Wähle so viele du willst. Nur die siehst du; den Rest kannst du jederzeit unter Du einschalten.",
+  "authOnboardingAreasKitchen": "Rezepte und Mahlzeiten",
+  "authOnboardingAreasAll": "Zeig mir alles",
+  "appAreasTitle": "Was du nutzt",
+  "appAreasBody": "Ausgeblendetes bleibt erhalten. Wenn jemand eine Ausgabe mit dir einträgt oder du bei einer Aufgabe dran bist, erscheint der Bereich trotzdem.",
+  "appAreasAll": "Alles",
+  "hubChecklistLater": "Später:",
+  "pinwallHubEmptyIntro": "Hier landen Notizen für alle im Haushalt. Öffne die Pinnwand, um eine anzupinnen."
 }

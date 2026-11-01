@@ -185,7 +185,7 @@ void main() {
   });
 
   testWidgets(
-      'no expenses: Settlements says so instead of "All settled up!", '
+      'no expenses: no balance card or Settlements tab, '
       'and the empty state is the only add action', (tester) async {
     await tester.binding.setSurfaceSize(const Size(1200, 1800));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -229,16 +229,11 @@ void main() {
     expect(find.text('No expenses yet'), findsOneWidget);
     expect(find.text('ADD FIRST EXPENSE'), findsOneWidget);
     expect(find.text('ADD EXPENSE'), findsNothing);
-
-    await tester.tap(find.text('Settlements'));
-    for (var i = 0; i < 6; i++) {
-      await tester.pump(const Duration(milliseconds: 200));
-    }
-
+    // Nothing to settle and nothing to balance yet: neither is offered, so
+    // "All settled up!" can't greet a household that never spent anything.
+    expect(find.text('Settlements'), findsNothing);
+    expect(find.text('All square'), findsNothing);
     expect(find.text('All settled up!'), findsNothing);
-    expect(find.text('No expenses yet'), findsOneWidget);
-    expect(find.text('ADD FIRST EXPENSE'), findsOneWidget);
-    expect(find.text('ADD EXPENSE'), findsNothing);
   });
 }
 

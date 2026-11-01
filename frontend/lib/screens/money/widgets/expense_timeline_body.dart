@@ -294,8 +294,11 @@ class ExpenseNoExpensesBody extends StatelessWidget {
           return SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             child: ConstrainedBox(
+              // Both: a scroll view leaves width loose, and without a minimum
+              // the empty state shrank to its text and sat against the left.
               constraints: BoxConstraints(
                 minHeight: constraints.maxHeight,
+                minWidth: constraints.maxWidth,
               ),
               child: Padding(
                 padding: const EdgeInsets.all(MitlistSpacing.md),

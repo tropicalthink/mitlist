@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mitlist/l10n/app_localizations.dart';
+import 'package:mitlist/widgets/app_button.dart';
 import 'package:mitlist/models/group_models.dart';
 import 'package:mitlist/providers/group_provider.dart';
 import 'package:mitlist/providers/list_provider.dart' show appDatabaseProvider;
@@ -71,7 +72,8 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() {
-    SharedPreferences.setMockInitialValues({});
+    // A signed-in person, so the areas they pick are saved under their id.
+    SharedPreferences.setMockInitialValues({'user_data': '{"id":"me-1"}'});
   });
 
   /// The screen under a router with a Home marker, a fake group service and
@@ -243,7 +245,7 @@ void main() {
       expect(find.text('HOME'), findsOneWidget);
     });
 
-    testWidgets('create flow: name, invite or later, then what first',
+    testWidgets('create flow: name, invite or later, then what you use',
         (tester) async {
       final service = await pumpOnboarding(tester);
 
@@ -266,16 +268,34 @@ void main() {
       // Inviting can wait: Home's checklist asks again.
       await tap(tester, 'LATER');
 
-      // The old "three things to know" recap is gone; one question instead.
+      // The old "three things to know" recap is gone; one question instead:
+      // which parts of mitlist this person will use.
       expect(find.text('Your household is ready'), findsNothing);
-      expect(find.text('What do you want to sort out first?'), findsOneWidget);
-      expect(find.text('SHOPPING LISTS'), findsOneWidget);
-      expect(find.text('CHORES'), findsOneWidget);
-      expect(find.text('Just looking'), findsOneWidget);
+      expect(find.text('What will you use mitlist for?'), findsOneWidget);
+      for (final option in [
+        'SHOPPING LISTS',
+        'CHORES',
+        'SPLITTING COSTS',
+        'RECIPES AND MEALS',
+      ]) {
+        expect(find.text(option), findsOneWidget);
+      }
+      expect(find.text('Show me everything'), findsOneWidget);
+
+      // Nothing picked yet: continuing is off.
+      final cont = find.byKey(const ValueKey('onboarding-areas-continue'));
+      expect(tester.widget<AppButton>(cont).onPressed, isNull);
 
       await tap(tester, 'SPLITTING COSTS');
+      await tap(tester, 'SHOPPING LISTS');
+      await tester.ensureVisible(cont);
+      await tester.tap(cont);
+      await tester.pumpAndSettle();
 
       final prefs = await SharedPreferences.getInstance();
+      // Saved under the person, in bar order; the first one tapped goes
+      // first on Home's checklist.
+      expect(prefs.getStringList('app_areas:me-1'), ['money', 'lists']);
       expect(prefs.getString('hub_quick_start_intent:$_newGroupId'), 'money');
       expect(prefs.getBool('hub_quick_start_invited:$_newGroupId'), isNull);
       expect(find.text('HOME'), findsOneWidget);
@@ -302,13 +322,15 @@ void main() {
       expect(prefs.getBool('hub_quick_start_invited:$_newGroupId'), isTrue);
     });
 
-    testWidgets('"Just looking" stores no intent', (tester) async {
+    testWidgets('"Show me everything" keeps every area and stores no intent',
+        (tester) async {
       await createHousehold(tester);
       await tap(tester, 'LATER');
-      await tap(tester, 'Just looking');
+      await tap(tester, 'Show me everything');
 
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString('hub_quick_start_intent:$_newGroupId'), isNull);
+      expect(prefs.getStringList('app_areas:me-1'), isNull);
       expect(find.text('HOME'), findsOneWidget);
     });
   });

@@ -311,6 +311,8 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
     });
   }
 
+  bool get _hasAnyList => _lists.any((l) => !l.isArchived);
+
   List<ItemList> get _filteredLists {
     var result = List<ItemList>.from(_lists.where((l) => !l.isArchived));
 
@@ -453,11 +455,13 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
               ),
         actions: [
           if (!_showSearch) ...[
-            IconButton(
-              icon: const AppIcon(name: 'magnifyingGlass'),
-              tooltip: l10n.commonSearch,
-              onPressed: () => setState(() => _showSearch = true),
-            ),
+            // Nothing to search before the first list.
+            if (_hasAnyList)
+              IconButton(
+                icon: const AppIcon(name: 'magnifyingGlass'),
+                tooltip: l10n.commonSearch,
+                onPressed: () => setState(() => _showSearch = true),
+              ),
             PopupMenuButton<_ListMenuAction>(
               icon: const AppIcon(name: 'ellipsisVertical'),
               tooltip: l10n.commonOptions,
@@ -650,7 +654,10 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
             ),
             child: AppAlert(type: AppAlertType.error, message: _error!),
           ),
-        _buildChipBar(),
+        // Filters over no lists at all are only more to read; they come
+        // back with the first list (or stay while a filter is still set, so
+        // it can be cleared).
+        if (_hasAnyList || _filter != _FilterOption.all) _buildChipBar(),
         Expanded(
           child: RefreshIndicator(
             color: Theme.of(context).colorScheme.primary,

@@ -1,6 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'chore_provider.dart';
+import 'finance_provider.dart';
+import 'list_provider.dart';
+
 /// Every quick-start preference key starts with this; sign-out clears them
 /// all (see `AuthService`).
 const String kHubQuickStartPrefsPrefix = 'hub_quick_start_';
@@ -100,3 +104,17 @@ Future<void> markHubQuickStartStep(
   final prefs = await SharedPreferences.getInstance();
   await prefs.setBool(_key('did_${step.name}', groupId), true);
 }
+
+/// Whether [groupId] has anything in it yet: a list, a chore or an expense.
+/// Null until the local caches have answered, so nothing flashes on or off
+/// for a household that is in use. Home keeps its busier parts (Quick add,
+/// the note composer) out of the way until this is true.
+final householdInUseProvider = Provider.family<bool?, String>((ref, groupId) {
+  final lists = ref.watch(cachedListsByGroupProvider(groupId));
+  final chores = ref.watch(cachedCurrentChoresByGroupProvider(groupId));
+  final expenses = ref.watch(cachedExpensesByGroupProvider(groupId));
+  if (!lists.hasValue || !chores.hasValue || !expenses.hasValue) return null;
+  return lists.value!.isNotEmpty ||
+      chores.value!.isNotEmpty ||
+      expenses.value!.isNotEmpty;
+});

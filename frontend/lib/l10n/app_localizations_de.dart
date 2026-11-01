@@ -7337,4 +7337,34 @@ class AppLocalizationsDe extends AppLocalizations {
   String activityMemberJoined(String name, String when) {
     return '$name ist beigetreten · $when';
   }
+
+  @override
+  String get authOnboardingAreasTitle => 'Wofür nutzt du mitlist?';
+
+  @override
+  String get authOnboardingAreasBody =>
+      'Wähle so viele du willst. Nur die siehst du; den Rest kannst du jederzeit unter Du einschalten.';
+
+  @override
+  String get authOnboardingAreasKitchen => 'Rezepte und Mahlzeiten';
+
+  @override
+  String get authOnboardingAreasAll => 'Zeig mir alles';
+
+  @override
+  String get appAreasTitle => 'Was du nutzt';
+
+  @override
+  String get appAreasBody =>
+      'Ausgeblendetes bleibt erhalten. Wenn jemand eine Ausgabe mit dir einträgt oder du bei einer Aufgabe dran bist, erscheint der Bereich trotzdem.';
+
+  @override
+  String get appAreasAll => 'Alles';
+
+  @override
+  String get hubChecklistLater => 'Später:';
+
+  @override
+  String get pinwallHubEmptyIntro =>
+      'Hier landen Notizen für alle im Haushalt. Öffne die Pinnwand, um eine anzupinnen.';
 }

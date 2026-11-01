@@ -14,6 +14,8 @@ import '../../config/api_config.dart';
 import '../../config/feedback_config.dart';
 import '../../models/auth_models.dart';
 import '../../models/group_models.dart';
+import '../../providers/app_areas_provider.dart';
+import '../../sheets/app_areas_sheet.dart';
 import '../../providers/auth_provider.dart'
     show authServiceProviderAsync, authStateProvider, isGuestProvider;
 import '../../providers/group_provider.dart';
@@ -705,6 +707,13 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     return AppCard(
       child: Column(
         children: [
+          _MenuRow(
+            icon: const AppIcon(name: 'squares2x2'),
+            label: l10n.appAreasTitle,
+            value: appAreasSummary(l10n, ref.watch(appAreasProvider)),
+            onTap: () => showAppAreasSheet(context),
+          ),
+          Divider(color: Theme.of(context).colorScheme.outlineVariant),
           _MenuRow(
             icon: const AppIcon(name: 'inbox'),
             label: l10n.accountNotificationInbox,

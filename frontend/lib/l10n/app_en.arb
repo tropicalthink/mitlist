@@ -9768,5 +9768,41 @@
         "type": "String"
       }
     }
+  },
+  "authOnboardingAreasTitle": "What will you use mitlist for?",
+  "@authOnboardingAreasTitle": {
+    "description": "First run, last step: question; the answers decide which tabs this person sees"
+  },
+  "authOnboardingAreasBody": "Pick as many as you like. You'll only see those; turn the rest on any time under You.",
+  "@authOnboardingAreasBody": {
+    "description": "First run, last step: line under the question"
+  },
+  "authOnboardingAreasKitchen": "Recipes and meals",
+  "@authOnboardingAreasKitchen": {
+    "description": "First run, last step: answer for the Kitchen tab"
+  },
+  "authOnboardingAreasAll": "Show me everything",
+  "@authOnboardingAreasAll": {
+    "description": "First run, last step: keeps every tab"
+  },
+  "appAreasTitle": "What you use",
+  "@appAreasTitle": {
+    "description": "You screen row and sheet title: which parts of the app (tabs) this person sees"
+  },
+  "appAreasBody": "Hiding a part keeps everything in it. If someone adds an expense with you or it's your turn for a chore, that part shows up for you anyway.",
+  "@appAreasBody": {
+    "description": "Sheet explaining that hidden tabs keep their data and come back when something involves you"
+  },
+  "appAreasAll": "Everything",
+  "@appAreasAll": {
+    "description": "You screen row value when every part of the app is shown"
+  },
+  "hubChecklistLater": "Later:",
+  "@hubChecklistLater": {
+    "description": "Home quick start: label before the other open steps, shown as small buttons under the next step"
+  },
+  "pinwallHubEmptyIntro": "Notes for the whole house go here. Open the board to pin one.",
+  "@pinwallHubEmptyIntro": {
+    "description": "Home pinwall in a household with nothing in it yet (no note box shown)"
   }
 }
