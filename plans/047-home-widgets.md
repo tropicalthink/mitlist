@@ -340,8 +340,9 @@ When household data a widget shows changes, the backend sends a data-only
   APNs (.p8) client.
 
 Periodic refresh is only a backstop:
-- Android: `updatePeriodMillis=0` plus an optional 60-minute WorkManager job
-  with a network constraint.
+- Android: `updatePeriodMillis=0` plus a 15-minute WorkManager job (the
+  shortest period WorkManager allows; it was 60 minutes at first) with a
+  network constraint.
 - iOS: timeline `.after(1h)`.
 
 ### D7. Widgets are bound to a household/list ID
@@ -618,7 +619,7 @@ equals the app's when it replays an op.
 | Method | Arguments | Result |
 |---|---|---|
 | `setCredential` | the credential JSON as a map | `null` |
-| `clearAll` | — | `null`. Deletes credential, snapshot, queue and flags; widgets show "Sign in to mitlist". |
+| `clearAll` | optional `{"reason": "not_remembered"}` | `null`. Deletes credential, snapshot, queue and flags; widgets show "Sign in to mitlist". With `reason: "not_remembered"` (the app's `HomeWidgetsController.start()` for a session with "Remember me" off) they show "Widgets need Remember me" instead. Sign-out sends no arguments. |
 | `writeSnapshot` | `{"json": String}` | `null`. Writes the snapshot, clears `refresh_requested`, sets `last_fetch_at`, reloads every widget. |
 | `readPendingOps` | — | `List<String>`: raw queue lines |
 | `ackPendingOps` | `{"op_ids": List<String>}` | `null`. Removes those ops. |
@@ -629,6 +630,9 @@ equals the app's when it replays an op.
 | `startShoppingTrip` | `{"household_name", "items_left", "items_total", "total_cents", "currency"}` | iOS 16.2+: activity id; otherwise `null` |
 | `updateShoppingTrip` | `{"items_left", "items_total", "total_cents"}` | `null` |
 | `endShoppingTrip` | `{"total_cents", "currency", "add_expense_url"}` | `null` |
+| `installedWidgets` | — | `List<String>`: the kind of each mitlist widget on the home screen, one of `shopping_list`, `chores`, `quick_add`, `household` (a kind twice when placed twice; empty when none). Android reports its balance widget as `household`; iOS does not report Balance widgets or Controls. Dart ignores kinds it does not know. |
+| `isPinWidgetSupported` | — | `bool`: whether the launcher can pin a widget in one tap (Android 8+ launchers that support it); always `false` on iOS. |
+| `pinWidget` | `{"kind": String}` (an `installedWidgets` kind) | `bool`: `true` when the launcher showed its pin request, `false` when it could not (the app then shows the written steps). |
 
 Unknown methods return `notImplemented`; Dart treats every failure as a
 no-op (widgets are best-effort, never block the app).
@@ -644,7 +648,7 @@ handling follows C3: 2xx → `delivered`; 401 → stays `pending`, set
 **Native refresh**: `GET <api_base_url>/widget/snapshot` with the widget
 credential; on 200 write it as `writeSnapshot` does. Triggers: a widget
 action (after delivery), the refresh push (C6), the periodic backstop
-(Android WorkManager 60 min with a network constraint; iOS timeline
+(Android WorkManager every 15 min with a network constraint; iOS timeline
 `.after(30 min)`), and `requestRefresh`. iOS widgets fetch inside
 `getTimeline` when `refresh_requested` is set or the snapshot is older than
 15 minutes. No credential or no snapshot → widgets show "Open mitlist to set
@@ -705,7 +709,7 @@ credential; the token is stored on that device's widget credential row.
 | Chores today | `ChoresWidget`: small, medium, large, accessoryRectangular, accessoryInline | `me.mitlist.widgets.ChoresWidgetReceiver`: 2x2–4x5 |
 | Household today (stage 7) | `HouseholdTodayWidget`: large, extraLarge | `me.mitlist.widgets.HouseholdTodayWidgetReceiver`: 4x4 |
 | Balance (stage 7) | `BalanceWidget`: small (amounts `privacySensitive`) | `me.mitlist.widgets.BalanceWidgetReceiver`: 2x1–2x2, `not_keyguard` |
-| Quick add (stage 6) | — (Controls instead) | `me.mitlist.widgets.QuickAddWidgetReceiver`: 1x1 and 4x1 |
+| Quick add (stage 6) | `QuickAddWidget`: small, accessoryCircular (opens the list with the composer focused) | `me.mitlist.widgets.QuickAddWidgetReceiver`: 1x1 and 4x1 |
 | Controls (stage 6, iOS 18) | `AddItemControl`, `ScanReceiptControl` | Quick Settings tile `QuickAddTileService` |
 | Shopping trip (stage 7) | Live Activity `ShoppingTripAttributes` | — |
 
@@ -1081,7 +1085,7 @@ Code: `frontend/android/app/src/main/kotlin/me/mitlist/widgets/`.
   - the queue under a process lock plus a file lock, with atomic rewrite;
   - the AES-GCM Keystore credential;
   - `WidgetApi`, `WidgetSync` and `WidgetSyncWorker` (immediate, expedited
-    for taps, plus a 60-minute backstop);
+    for taps, plus a periodic backstop, now 15 minutes, first 60);
   - the `me.mitlist/widgets` channel in `MainActivity`;
   - `WidgetPushReceiver` (C6). FlutterFire 16 registers its own receiver
     the same way.
