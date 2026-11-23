@@ -499,6 +499,13 @@ class $ListItemsTableTable extends ListItemsTable
   late final GeneratedColumn<String> addedBy = GeneratedColumn<String>(
       'added_by', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+      'note', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(''));
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -523,6 +530,7 @@ class $ListItemsTableTable extends ListItemsTable
         priceCents,
         canonicalItemId,
         addedBy,
+        note,
         createdAt,
         updatedAt
       ];
@@ -593,6 +601,10 @@ class $ListItemsTableTable extends ListItemsTable
       context.handle(_addedByMeta,
           addedBy.isAcceptableOrUnknown(data['added_by']!, _addedByMeta));
     }
+    if (data.containsKey('note')) {
+      context.handle(
+          _noteMeta, note.isAcceptableOrUnknown(data['note']!, _noteMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -634,6 +646,8 @@ class $ListItemsTableTable extends ListItemsTable
           DriftSqlType.string, data['${effectivePrefix}canonical_item_id']),
       addedBy: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}added_by']),
+      note: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}note'])!,
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       updatedAt: attachedDatabase.typeMapping
@@ -659,6 +673,9 @@ class ListItemsTableData extends DataClass
   final int? priceCents;
   final String? canonicalItemId;
   final String? addedBy;
+
+  /// The item's note, as the server or this device last set it.
+  final String note;
   final DateTime createdAt;
   final DateTime updatedAt;
   const ListItemsTableData(
@@ -672,6 +689,7 @@ class ListItemsTableData extends DataClass
       this.priceCents,
       this.canonicalItemId,
       this.addedBy,
+      required this.note,
       required this.createdAt,
       required this.updatedAt});
   @override
@@ -693,6 +711,7 @@ class ListItemsTableData extends DataClass
     if (!nullToAbsent || addedBy != null) {
       map['added_by'] = Variable<String>(addedBy);
     }
+    map['note'] = Variable<String>(note);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
@@ -716,6 +735,7 @@ class ListItemsTableData extends DataClass
       addedBy: addedBy == null && nullToAbsent
           ? const Value.absent()
           : Value(addedBy),
+      note: Value(note),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -735,6 +755,7 @@ class ListItemsTableData extends DataClass
       priceCents: serializer.fromJson<int?>(json['priceCents']),
       canonicalItemId: serializer.fromJson<String?>(json['canonicalItemId']),
       addedBy: serializer.fromJson<String?>(json['addedBy']),
+      note: serializer.fromJson<String>(json['note']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -753,6 +774,7 @@ class ListItemsTableData extends DataClass
       'priceCents': serializer.toJson<int?>(priceCents),
       'canonicalItemId': serializer.toJson<String?>(canonicalItemId),
       'addedBy': serializer.toJson<String?>(addedBy),
+      'note': serializer.toJson<String>(note),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -769,6 +791,7 @@ class ListItemsTableData extends DataClass
           Value<int?> priceCents = const Value.absent(),
           Value<String?> canonicalItemId = const Value.absent(),
           Value<String?> addedBy = const Value.absent(),
+          String? note,
           DateTime? createdAt,
           DateTime? updatedAt}) =>
       ListItemsTableData(
@@ -784,6 +807,7 @@ class ListItemsTableData extends DataClass
             ? canonicalItemId.value
             : this.canonicalItemId,
         addedBy: addedBy.present ? addedBy.value : this.addedBy,
+        note: note ?? this.note,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
       );
@@ -802,6 +826,7 @@ class ListItemsTableData extends DataClass
           ? data.canonicalItemId.value
           : this.canonicalItemId,
       addedBy: data.addedBy.present ? data.addedBy.value : this.addedBy,
+      note: data.note.present ? data.note.value : this.note,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -820,6 +845,7 @@ class ListItemsTableData extends DataClass
           ..write('priceCents: $priceCents, ')
           ..write('canonicalItemId: $canonicalItemId, ')
           ..write('addedBy: $addedBy, ')
+          ..write('note: $note, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -827,8 +853,20 @@ class ListItemsTableData extends DataClass
   }
 
   @override
-  int get hashCode => Object.hash(id, listId, name, quantity, unit, checked,
-      position, priceCents, canonicalItemId, addedBy, createdAt, updatedAt);
+  int get hashCode => Object.hash(
+      id,
+      listId,
+      name,
+      quantity,
+      unit,
+      checked,
+      position,
+      priceCents,
+      canonicalItemId,
+      addedBy,
+      note,
+      createdAt,
+      updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -843,6 +881,7 @@ class ListItemsTableData extends DataClass
           other.priceCents == this.priceCents &&
           other.canonicalItemId == this.canonicalItemId &&
           other.addedBy == this.addedBy &&
+          other.note == this.note &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -858,6 +897,7 @@ class ListItemsTableCompanion extends UpdateCompanion<ListItemsTableData> {
   final Value<int?> priceCents;
   final Value<String?> canonicalItemId;
   final Value<String?> addedBy;
+  final Value<String> note;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
@@ -872,6 +912,7 @@ class ListItemsTableCompanion extends UpdateCompanion<ListItemsTableData> {
     this.priceCents = const Value.absent(),
     this.canonicalItemId = const Value.absent(),
     this.addedBy = const Value.absent(),
+    this.note = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -887,6 +928,7 @@ class ListItemsTableCompanion extends UpdateCompanion<ListItemsTableData> {
     this.priceCents = const Value.absent(),
     this.canonicalItemId = const Value.absent(),
     this.addedBy = const Value.absent(),
+    this.note = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
@@ -910,6 +952,7 @@ class ListItemsTableCompanion extends UpdateCompanion<ListItemsTableData> {
     Expression<int>? priceCents,
     Expression<String>? canonicalItemId,
     Expression<String>? addedBy,
+    Expression<String>? note,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
@@ -925,6 +968,7 @@ class ListItemsTableCompanion extends UpdateCompanion<ListItemsTableData> {
       if (priceCents != null) 'price_cents': priceCents,
       if (canonicalItemId != null) 'canonical_item_id': canonicalItemId,
       if (addedBy != null) 'added_by': addedBy,
+      if (note != null) 'note': note,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -942,6 +986,7 @@ class ListItemsTableCompanion extends UpdateCompanion<ListItemsTableData> {
       Value<int?>? priceCents,
       Value<String?>? canonicalItemId,
       Value<String?>? addedBy,
+      Value<String>? note,
       Value<DateTime>? createdAt,
       Value<DateTime>? updatedAt,
       Value<int>? rowid}) {
@@ -956,6 +1001,7 @@ class ListItemsTableCompanion extends UpdateCompanion<ListItemsTableData> {
       priceCents: priceCents ?? this.priceCents,
       canonicalItemId: canonicalItemId ?? this.canonicalItemId,
       addedBy: addedBy ?? this.addedBy,
+      note: note ?? this.note,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -995,6 +1041,9 @@ class ListItemsTableCompanion extends UpdateCompanion<ListItemsTableData> {
     if (addedBy.present) {
       map['added_by'] = Variable<String>(addedBy.value);
     }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -1020,6 +1069,7 @@ class ListItemsTableCompanion extends UpdateCompanion<ListItemsTableData> {
           ..write('priceCents: $priceCents, ')
           ..write('canonicalItemId: $canonicalItemId, ')
           ..write('addedBy: $addedBy, ')
+          ..write('note: $note, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -10380,6 +10430,7 @@ typedef $$ListItemsTableTableCreateCompanionBuilder = ListItemsTableCompanion
   Value<int?> priceCents,
   Value<String?> canonicalItemId,
   Value<String?> addedBy,
+  Value<String> note,
   required DateTime createdAt,
   required DateTime updatedAt,
   Value<int> rowid,
@@ -10396,6 +10447,7 @@ typedef $$ListItemsTableTableUpdateCompanionBuilder = ListItemsTableCompanion
   Value<int?> priceCents,
   Value<String?> canonicalItemId,
   Value<String?> addedBy,
+  Value<String> note,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
   Value<int> rowid,
@@ -10440,6 +10492,9 @@ class $$ListItemsTableTableFilterComposer
 
   ColumnFilters<String> get addedBy => $composableBuilder(
       column: $table.addedBy, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get note => $composableBuilder(
+      column: $table.note, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
@@ -10488,6 +10543,9 @@ class $$ListItemsTableTableOrderingComposer
   ColumnOrderings<String> get addedBy => $composableBuilder(
       column: $table.addedBy, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get note => $composableBuilder(
+      column: $table.note, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
 
@@ -10534,6 +10592,9 @@ class $$ListItemsTableTableAnnotationComposer
   GeneratedColumn<String> get addedBy =>
       $composableBuilder(column: $table.addedBy, builder: (column) => column);
 
+  GeneratedColumn<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => column);
+
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
@@ -10578,6 +10639,7 @@ class $$ListItemsTableTableTableManager extends RootTableManager<
             Value<int?> priceCents = const Value.absent(),
             Value<String?> canonicalItemId = const Value.absent(),
             Value<String?> addedBy = const Value.absent(),
+            Value<String> note = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
             Value<int> rowid = const Value.absent(),
@@ -10593,6 +10655,7 @@ class $$ListItemsTableTableTableManager extends RootTableManager<
             priceCents: priceCents,
             canonicalItemId: canonicalItemId,
             addedBy: addedBy,
+            note: note,
             createdAt: createdAt,
             updatedAt: updatedAt,
             rowid: rowid,
@@ -10608,6 +10671,7 @@ class $$ListItemsTableTableTableManager extends RootTableManager<
             Value<int?> priceCents = const Value.absent(),
             Value<String?> canonicalItemId = const Value.absent(),
             Value<String?> addedBy = const Value.absent(),
+            Value<String> note = const Value.absent(),
             required DateTime createdAt,
             required DateTime updatedAt,
             Value<int> rowid = const Value.absent(),
@@ -10623,6 +10687,7 @@ class $$ListItemsTableTableTableManager extends RootTableManager<
             priceCents: priceCents,
             canonicalItemId: canonicalItemId,
             addedBy: addedBy,
+            note: note,
             createdAt: createdAt,
             updatedAt: updatedAt,
             rowid: rowid,

@@ -13,15 +13,22 @@ class OutboxDrainer {
   final AppDatabase _db;
   const OutboxDrainer(this._db);
 
-  Future<void> drain({
+  /// Runs one batch of up to [limit] ops of [types] (only those [where]
+  /// accepts, when given). Returns true when the batch was full and ran to
+  /// its end, i.e. more ops may be waiting behind it; false when the queue
+  /// ran dry or the pass stopped on a failure.
+  Future<bool> drain({
     required List<String> types,
     required Map<String, OutboxOpHandler> handlers,
     int limit = 25,
     Duration minBackoff = const Duration(seconds: 5),
+    bool Function(OutboxOp op)? where,
   }) async {
-    final batch = await _db.getOutboxBatchByTypes(types,
-        limit: limit, minBackoff: minBackoff);
-    if (batch.isEmpty) return;
+    var batch = await _db.getOutboxBatchByTypes(types,
+        limit: where == null ? limit : 1000, minBackoff: minBackoff);
+    final full = where == null && batch.length >= limit;
+    if (where != null) batch = batch.where(where).toList();
+    if (batch.isEmpty) return false;
     for (final op in batch) {
       final fresh = await _db.getOutboxOpById(op.id);
       if (fresh == null) continue;
@@ -50,7 +57,7 @@ class OutboxDrainer {
         switch (classifyOutboxError(e)) {
           case OutboxErrorDisposition.transient:
             await _db.markOutboxAttempt(op.id, error: message);
-            return;
+            return false;
           case OutboxErrorDisposition.unreachable:
             // Stamp the backoff but spend no attempt: the server never saw
             // this op, so it has earned no evidence of being bad. Stop the
@@ -61,7 +68,7 @@ class OutboxDrainer {
               error: message,
               countsTowardFailure: false,
             );
-            return;
+            return false;
           case OutboxErrorDisposition.permanent:
             await _db.markOutboxPermanentFailure(op.id,
                 error: message, threshold: kOutboxMaxAttempts);
@@ -76,6 +83,7 @@ class OutboxDrainer {
         }
       }
     }
+    return full;
   }
 
   /// Persists a conflict from a failed op so the resolution UI can offer

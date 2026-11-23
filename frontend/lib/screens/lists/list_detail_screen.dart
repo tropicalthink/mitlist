@@ -1,11 +1,15 @@
 import 'dart:async';
+import 'package:flutter/gestures.dart' show kTouchSlop;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import '../../models/list_models.dart';
+import '../../providers/list_provider.dart' show syncSchedulerProvider;
 import '../../repositories/outbox_error_classifier.dart';
+import '../../services/sync_scheduler.dart';
 import '../../services/restock_service.dart';
 import '../../theme/animations.dart';
 import '../../theme/list_tile_accent.dart';
@@ -24,10 +28,11 @@ import '../../widgets/list/list_all_done_panel.dart';
 import '../../widgets/list/list_composer_bar.dart';
 import '../../widgets/list/list_detail_skeleton.dart';
 import '../../utils/list_composer_parser.dart';
+import '../../utils/list_item_edit.dart';
 import '../../widgets/list/list_detail_states.dart';
 import '../../widgets/list/list_done_section_header.dart';
 import '../../widgets/list/list_group_banner.dart';
-import '../../widgets/list/list_item_edit_sheet.dart';
+import '../../widgets/list/list_item_edit_accessory.dart';
 import '../../widgets/list/list_item_photo_viewer.dart';
 import '../../widgets/list/list_item_line.dart';
 import '../../widgets/list/list_scan_launcher.dart';
@@ -36,6 +41,7 @@ import '../../widgets/list/running_low_lines.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/mitlist_app_bar.dart';
 import 'list_detail_controller.dart';
+import 'list_undo_stack.dart' show listItemWithId;
 
 /// Optional [GoRouter] `extra` when opening a list from the hub (title shows immediately).
 class ListDetailRouteArgs {
@@ -74,6 +80,23 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   late ListDetailController _controller;
   bool _showSearch = false;
 
+  /// The outbox hold of this visit: while the list is the visible route its
+  /// writes stay queued on the device, so undo stays exact, and they go out
+  /// in one flush when the person leaves it (see AGENTS.md, Offline outbox).
+  /// Released when the router moves elsewhere and on dispose, whatever the
+  /// reason; taken again if the router comes back to this list.
+  SyncHold? _outboxHold;
+  SyncScheduler? _scheduler;
+  GoRouter? _router;
+
+  /// The router path this screen was opened at, read when it first built.
+  String? _ownPath;
+
+  /// The line being edited moved to its server id: its fields stay open
+  /// while the row rebuilds under the new key, instead of the lost focus
+  /// committing (and closing) the edit.
+  bool _editRekeying = false;
+
   /// The item whose words are being edited in place, if any. One at a time,
   /// with its own controller so live updates to the list never overwrite
   /// what is being typed.
@@ -89,8 +112,51 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
 
   bool get _typingAnItem =>
       _showProductSuggestions && _newItemController.text.trim().isNotEmpty;
+  // The line being edited: its name, note, amount, unit and price, each in
+  // a field of its own, all read once when the edit is committed.
   final TextEditingController _editController = TextEditingController();
   final FocusNode _editFocusNode = FocusNode();
+  final TextEditingController _editNoteController = TextEditingController();
+  final FocusNode _editNoteFocusNode = FocusNode();
+  final TextEditingController _editQuantityController = TextEditingController();
+  final FocusNode _editQuantityFocusNode = FocusNode();
+  final TextEditingController _editUnitController = TextEditingController();
+  final FocusNode _editUnitFocusNode = FocusNode();
+  final TextEditingController _editPriceController = TextEditingController();
+  final FocusNode _editPriceFocusNode = FocusNode();
+
+  /// The item as it was when its edit began: a commit sends only what the
+  /// person changed from this, so a live update to another field is never
+  /// overwritten with what was on screen.
+  ListItem? _editOriginal;
+
+  /// The note field is open under the name.
+  bool _editNoteOpen = false;
+
+  /// A photo is being picked or viewed: the edit stays open while the
+  /// keyboard is away.
+  bool _editPaused = false;
+  bool _editFocusCheckScheduled = false;
+
+  /// The line being edited and the controls above the keyboard: a tap in
+  /// either is inside the edit, a tap anywhere else commits it.
+  final Object _editTapGroup = Object();
+  Offset? _editTapDownAt;
+  String? _editTapDownItem;
+
+  /// Commits whose write is still running. The edit itself closes at once,
+  /// so the undo arrow waits on these: a tap on it ends the edit through
+  /// "tap outside" before the arrow's own handler runs, and the undo must
+  /// take back that edit, not the change before it.
+  final Set<Future<void>> _commitsInFlight = {};
+
+  List<FocusNode> get _editFocusNodes => [
+        _editFocusNode,
+        _editNoteFocusNode,
+        _editQuantityFocusNode,
+        _editUnitFocusNode,
+        _editPriceFocusNode,
+      ];
   final TextEditingController _newItemController = TextEditingController();
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _titleController = TextEditingController();
@@ -129,11 +195,16 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       ref: ref,
       listId: widget.listId,
       initialListName: widget.initialListName,
-    )..addListener(_onControllerChanged);
+    )
+      ..addListener(_onControllerChanged)
+      ..onItemIdAdopted = _onItemIdAdopted;
+    _scheduler = ref.read(syncSchedulerProvider);
     _composerFocusNode.addListener(_onComposerFocusChanged);
     _newItemController.addListener(_onComposerTextChanged);
     _titleFocusNode.addListener(_onTitleFocusChanged);
-    _editFocusNode.addListener(_onEditFocusChanged);
+    for (final node in _editFocusNodes) {
+      node.addListener(_onEditFocusChanged);
+    }
     _controller.suggestionsRevision.addListener(_revealTypedSuggestions);
     if (widget.autoFocusTitle) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _startEditingTitle());
@@ -141,8 +212,81 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     _runLoad();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final router = GoRouter.maybeOf(context);
+    if (!identical(router, _router)) {
+      _router?.routerDelegate.removeListener(_syncOutboxHold);
+      _router = router;
+      router?.routerDelegate.addListener(_syncOutboxHold);
+      _ownPath ??= _currentRouterPath();
+    }
+    _syncOutboxHold();
+  }
+
+  String? _currentRouterPath() {
+    try {
+      return _router?.routerDelegate.currentConfiguration.uri.path;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Holds the outbox while this list is what the router shows (a sheet,
+  /// dialog or the scanner pushed over it keep the location, so they keep
+  /// the hold), and lets go as soon as it is not.
+  void _syncOutboxHold() {
+    final ownPath = _ownPath;
+    final visible = mounted &&
+        (_router == null || ownPath == null || _currentRouterPath() == ownPath);
+    if (visible) {
+      _outboxHold ??= _scheduler?.hold('list ${widget.listId}');
+    } else {
+      _releaseOutboxHold();
+    }
+  }
+
+  /// Gives the hold back, which flushes what the visit queued.
+  void _releaseOutboxHold() {
+    final hold = _outboxHold;
+    _outboxHold = null;
+    hold?.release();
+  }
+
+  /// The line being edited was created on this device and its create has
+  /// just synced: follow it to the server id, keeping what was typed.
+  void _onItemIdAdopted(String from, String to) {
+    if (!mounted || _editingItemId != from) return;
+    final original = _editOriginal;
+    if (original != null) _editOriginal = listItemWithId(original, to);
+    if (_editTapDownItem == from) _editTapDownItem = to;
+    final focused = _editFocusNodes.where((node) => node.hasFocus).firstOrNull;
+    _editRekeying = true;
+    setState(() => _editingItemId = to);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _editingItemId == to) {
+        (focused ?? _editFocusNode).requestFocus();
+      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _editRekeying = false;
+      });
+      WidgetsBinding.instance.ensureVisualUpdate();
+    });
+  }
+
   void _onControllerChanged() {
     if (!mounted) return;
+    // The row being edited is gone (a housemate removed it, or an undo took
+    // back its add): close the edit instead of leaving its fields and focus
+    // pointing at nothing. What was typed has nowhere to go.
+    if (_editingItemId != null &&
+        !_controller.isLoading &&
+        _editingItem == null) {
+      _endEditSession();
+      _dropEditFocus();
+      return;
+    }
     setState(() {});
     // Quick-add (autoFocusComposer) should let you type the moment the composer
     // appears — i.e. right after the cached items load — not after the whole
@@ -306,14 +450,21 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
       _titleController.clear();
       _controller
         ..removeListener(_onControllerChanged)
+        ..onItemIdAdopted = null
         ..dispose();
+      // A new list is a new visit: the old one's writes go out now.
+      _releaseOutboxHold();
+      _ownPath = _currentRouterPath();
+      _syncOutboxHold();
       _showSearch = false;
       _searchController.clear();
       _controller = ListDetailController(
         ref: ref,
         listId: widget.listId,
         initialListName: widget.initialListName,
-      )..addListener(_onControllerChanged);
+      )
+        ..addListener(_onControllerChanged)
+        ..onItemIdAdopted = _onItemIdAdopted;
       if (widget.autoFocusTitle) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) _startEditingTitle();
@@ -331,21 +482,37 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
 
   @override
   void dispose() {
+    // First, so nothing below can keep the visit's writes from going out.
+    _router?.routerDelegate.removeListener(_syncOutboxHold);
+    _releaseOutboxHold();
     _composerFocusNode.removeListener(_onComposerFocusChanged);
     _newItemController.removeListener(_onComposerTextChanged);
     _titleFocusNode.removeListener(_onTitleFocusChanged);
-    _editFocusNode.removeListener(_onEditFocusChanged);
+    for (final node in _editFocusNodes) {
+      node.removeListener(_onEditFocusChanged);
+    }
     _controller.suggestionsRevision.removeListener(_revealTypedSuggestions);
     _controller
       ..removeListener(_onControllerChanged)
+      ..onItemIdAdopted = null
       ..dispose();
     _newItemController.dispose();
     _searchController.dispose();
     _titleController.dispose();
     _composerFocusNode.dispose();
     _titleFocusNode.dispose();
-    _editController.dispose();
-    _editFocusNode.dispose();
+    for (final node in _editFocusNodes) {
+      node.dispose();
+    }
+    for (final c in [
+      _editController,
+      _editNoteController,
+      _editQuantityController,
+      _editUnitController,
+      _editPriceController,
+    ]) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -590,10 +757,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
   Future<void> _deleteItem(ListItem item) async {
     final operation = _operationKey('item:${item.id}');
     if (!_beginOperation(operation)) return;
-    var deleted = false;
     try {
+      // No per-delete undo toast: the app bar's undo arrow takes it back
+      // (with its id, position and photos), like every other change.
       await _controller.deleteItem(item);
-      deleted = true;
     } catch (e) {
       if (mounted) {
         unawaited(Haptics.failure());
@@ -606,24 +773,99 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     } finally {
       _finishOperation(operation);
     }
-    if (!deleted || !mounted) return;
-    AppToast.undo(
-      context,
-      message: AppLocalizations.of(context)!.listDetailItemDeleted(item.name),
-      onUndo: () => _restoreDeletedItem(item),
-    );
   }
 
-  Future<void> _restoreDeletedItem(ListItem item) async {
+  /// The app bar's undo / redo arrows. An open line or title edit is
+  /// committed first, so it becomes the step the arrow takes back.
+  Future<void> _undoOrRedo({required bool undo}) async {
+    final operation = _operationKey('undo');
+    if (!_beginOperation(operation)) return;
+    unawaited(Haptics.light());
+    final l10n = AppLocalizations.of(context)!;
     try {
-      await _controller.restoreDeletedItem(item);
+      if (_editingItemId != null) {
+        final commit = _commitEdit();
+        _dropEditFocus();
+        await commit;
+      }
+      // The edit is closed (here, or by the tap on the arrow landing outside
+      // it): its keyboard goes too, rather than falling back to whichever
+      // field had focus before it.
+      _dropEditFocus();
+      if (_commitsInFlight.isNotEmpty) {
+        await Future.wait(_commitsInFlight.toList());
+      }
+      if (_editingTitle) await _submitTitleEdit();
+      final result = undo ? await _controller.undo() : await _controller.redo();
+      if (!mounted) return;
+      switch (result.outcome) {
+        case ListUndoOutcome.changedElsewhere:
+          AppToast.info(
+            context,
+            undo
+                ? l10n.listUndoChangedElsewhere
+                : l10n.listUndoRedoChangedElsewhere,
+          );
+        case ListUndoOutcome.applied when result.restoredCount > 1:
+          AppToast.success(
+              context, l10n.listUndoRestoredItems(result.restoredCount));
+        case ListUndoOutcome.applied:
+        case ListUndoOutcome.nothing:
+          break;
+      }
     } catch (_) {
       if (!mounted) return;
-      final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.listDetailCouldNotRestore)),
+      unawaited(Haptics.failure());
+      AppToast.error(
+        context,
+        undo ? l10n.listUndoCouldNotUndo : l10n.listUndoCouldNotRedo,
       );
+    } finally {
+      _finishOperation(operation);
     }
+  }
+
+  /// Undo and redo arrows, shown from the visit's first change on; each is
+  /// disabled while its history is empty.
+  Widget _buildUndoRedoActions(AppLocalizations l10n) {
+    return ListenableBuilder(
+      listenable: _controller.undoStack,
+      builder: (context, _) {
+        final history = _controller.undoStack;
+        if (!history.hasHistory) return const SizedBox.shrink();
+        final scheme = Theme.of(context).colorScheme;
+        final disabled = scheme.onSurface.withValues(alpha: 0.38);
+        Widget arrow({
+          required String icon,
+          required String tooltip,
+          required bool enabled,
+          required bool undo,
+        }) =>
+            IconButton(
+              key: ValueKey(undo ? 'list-undo' : 'list-redo'),
+              icon: AppIcon(name: icon, color: enabled ? null : disabled),
+              tooltip: tooltip,
+              onPressed: enabled ? () => _undoOrRedo(undo: undo) : null,
+            );
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            arrow(
+              icon: 'arrowUturnLeft',
+              tooltip: l10n.listUndoUndoTooltip,
+              enabled: history.canUndo,
+              undo: true,
+            ),
+            arrow(
+              icon: 'arrowUturnRight',
+              tooltip: l10n.listUndoRedoTooltip,
+              enabled: history.canRedo,
+              undo: false,
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _onMenuSelected(String value) {
@@ -886,97 +1128,6 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     );
   }
 
-  /// Long-press: one sheet edits everything about the item. Whatever the
-  /// fields hold when it closes is saved in one write; a photo or delete
-  /// picked there runs after.
-  Future<void> _editItem(ListItem item) async {
-    final operation = _operationKey('item:${item.id}');
-    if (!_beginOperation(operation)) return;
-    final l10n = AppLocalizations.of(context)!;
-    final photos = _controller.photosFor(item.id);
-    final hasPhoto = photos != null && photos.isNotEmpty;
-
-    final ListItemSheetResult result;
-    try {
-      result = await ListItemEditSheet.show(
-        context,
-        item: item,
-        hasPhoto: hasPhoto,
-        currencySymbol: currencySymbol(_controller.groupCurrency),
-      );
-    } catch (_) {
-      _finishOperation(operation);
-      rethrow;
-    }
-
-    final draft = result.draft;
-    final name = draft.name.trim();
-    final amount = double.tryParse(draft.amount.trim().replaceAll(',', '.'));
-    final unit = draft.unit.trim();
-    final note = draft.note.trim();
-    final priceText = draft.price.trim().replaceAll(',', '.');
-    final price = priceText.isEmpty ? 0.0 : double.tryParse(priceText);
-    final priceCents =
-        price == null || price < 0 ? null : (price * 100).round();
-    final oldPriceCents = item.priceCents ?? 0;
-
-    final nameChanged = name.isNotEmpty && name != item.name;
-    final amountChanged =
-        amount != null && amount > 0 && amount != item.quantity;
-    final unitChanged = unit != item.unit;
-    final noteChanged = note != item.note;
-    final priceChanged = priceCents != null && priceCents != oldPriceCents;
-    final deleting = result.action == ListItemSheetAction.delete;
-
-    if (!deleting &&
-        (nameChanged ||
-            amountChanged ||
-            unitChanged ||
-            noteChanged ||
-            priceChanged)) {
-      try {
-        await _controller.updateItemFields(
-          item,
-          name: nameChanged ? name : null,
-          quantity: amountChanged ? amount : null,
-          unit: unitChanged ? unit : null,
-          note: noteChanged ? note : null,
-          priceCents: priceChanged ? priceCents : null,
-        );
-      } catch (_) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.listDetailCouldNotUpdate)),
-          );
-        }
-      }
-    }
-    if (priceCents == null && !deleting && mounted) {
-      // An unreadable price is dropped, not guessed at; say so.
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.listDetailCouldNotSetPrice)),
-      );
-    }
-    _finishOperation(operation);
-    if (!mounted) return;
-
-    switch (result.action) {
-      case null:
-        break;
-      case ListItemSheetAction.viewPhoto:
-        final viewPhotos = _controller.photosFor(item.id);
-        if (viewPhotos != null && viewPhotos.isNotEmpty) {
-          await ListItemPhotoViewer.show(context, viewPhotos.first.url);
-        }
-      case ListItemSheetAction.photo:
-        await _addItemPhoto(item);
-      case ListItemSheetAction.removePhoto:
-        await _removeItemPhoto(item);
-      case ListItemSheetAction.delete:
-        await _deleteItem(item);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -1058,6 +1209,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                       ),
                     ),
               actions: [
+                _buildUndoRedoActions(l10n),
                 IconButton(
                   icon: AppIcon(
                     name: 'magnifyingGlass',
@@ -1163,6 +1315,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
           if (_controller.groupId != null)
             ListGroupBanner(groupId: _controller.groupId!),
           Expanded(child: _buildBody()),
+          // The body ends at the keyboard, so this sits right on top of it.
+          if (_editingItem case final item?) _buildEditAccessory(item),
         ],
       ),
     );
@@ -1485,20 +1639,22 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     final editing = _editingItemId == item.id;
     final index = reorderIndex;
 
-    return ListItemLine(
+    final line = ListItemLine(
       item: item,
       editing: editing,
       editController: editing ? _editController : null,
       editFocusNode: editing ? _editFocusNode : null,
+      noteController: editing ? _editNoteController : null,
+      noteFocusNode: editing ? _editNoteFocusNode : null,
+      showNoteField: editing && _editNoteOpen,
+      editTapRegionGroupId: editing ? _editTapGroup : null,
       onToggle: (val) => _toggleItem(item, val),
       onEdit: () => _startEdit(item),
+      onEditAt: (offset) => _startEdit(item, caret: offset),
       onSubmitEdit: () => _commitEdit(thenAddNext: true),
-      onDetails: () => _openDetails(item),
-      onRemove: () => _removeEditedItem(item),
+      onSubmitNote: _commitEdit,
       photoUrl: thumbUrl,
-      onPhotoTap: thumbUrl != null
-          ? () => ListItemPhotoViewer.show(context, thumbUrl)
-          : null,
+      onPhotoTap: thumbUrl != null ? () => _viewEditPhoto(item) : null,
       currencySymbol: currencySymbol(_controller.groupCurrency),
       claimed: item.claimedBy != null,
       addedByName: _addedByName(item),
@@ -1510,16 +1666,84 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
           ? () => _onReorder(index, index + 2)
           : null,
     );
+    if (!editing) return line;
+    return TapRegion(
+      groupId: _editTapGroup,
+      onTapOutside: _onTapOutsideEdit,
+      onTapUpOutside: _onTapUpOutsideEdit,
+      child: line,
+    );
   }
 
-  /// Starts editing [item]'s words in place, finishing any other line first.
-  void _startEdit(ListItem item) {
+  /// The item being edited, as the list has it now.
+  ListItem? get _editingItem {
+    final id = _editingItemId;
+    if (id == null) return null;
+    return _itemNow(id);
+  }
+
+  /// [id]'s row on the list now. Just after its create synced the list may
+  /// still show it under the id it had before: that row, under [id].
+  ListItem? _itemNow(String id) {
+    final items = _controller.items;
+    final exact = items.where((i) => i.id == id).firstOrNull;
+    if (exact != null) return exact;
+    final before = items
+        .where((i) => i.id != id && _controller.currentItemId(i.id) == id)
+        .firstOrNull;
+    return before == null ? null : listItemWithId(before, id);
+  }
+
+  /// The amount, unit, price, note, photo and delete controls of the line
+  /// being edited, pinned above the keyboard.
+  Widget _buildEditAccessory(ListItem item) {
+    final photos = _controller.photosFor(item.id);
+    final hasPhoto = photos != null && photos.isNotEmpty;
+    return ListItemEditAccessory(
+      key: ValueKey('list-edit-accessory-${item.id}'),
+      itemName: item.name,
+      quantityController: _editQuantityController,
+      quantityFocusNode: _editQuantityFocusNode,
+      unitController: _editUnitController,
+      unitFocusNode: _editUnitFocusNode,
+      priceController: _editPriceController,
+      priceFocusNode: _editPriceFocusNode,
+      noteController: _editNoteController,
+      currencySymbol: currencySymbol(_controller.groupCurrency),
+      tapRegionGroupId: _editTapGroup,
+      onInteract: _absorbAmountFromName,
+      onReturnFocus: _editFocusNode.requestFocus,
+      onNote: _openEditNote,
+      onDone: _commitEdit,
+      onDelete: () => _removeEditedItem(item),
+      hasPhoto: hasPhoto,
+      onAddPhoto: () => _whileEditPaused(item, () => _addItemPhoto(item)),
+      onViewPhoto: () => _viewEditPhoto(item),
+      onRemovePhoto: () => _removeItemPhoto(item),
+    );
+  }
+
+  /// Starts editing [item] in place, finishing any other line first. The
+  /// caret goes to [caret] (where the name was tapped), else to the end.
+  void _startEdit(ListItem item, {int? caret}) {
     if (_editingItemId == item.id) return;
+    // An undo or redo in flight may still change this row; fields filled
+    // from it now would show (and later diff against) what it is replacing.
+    if (_isOperationActive(_operationKey('undo'))) return;
     if (_editingItemId != null) unawaited(_commitEdit());
+    _editOriginal = item;
     _editController.text = item.name;
-    _editController.selection =
-        TextSelection.collapsed(offset: item.name.length);
-    setState(() => _editingItemId = item.id);
+    _editController.selection = TextSelection.collapsed(
+      offset: (caret ?? item.name.length).clamp(0, item.name.length),
+    );
+    _editNoteController.text = item.note;
+    _editQuantityController.text = formatItemAmount(item.quantity);
+    _editUnitController.text = item.unit;
+    _editPriceController.text = formatPriceInput(item.priceCents);
+    setState(() {
+      _editingItemId = item.id;
+      _editNoteOpen = item.note.isNotEmpty;
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && _editingItemId == item.id) {
         _editFocusNode.requestFocus();
@@ -1527,59 +1751,203 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     });
   }
 
+  /// Focus moved. Within the edit (name to price, price to note) nothing
+  /// happens; once no field of the edit has it, the edit is committed. The
+  /// check waits a frame because a field that is opening takes focus as it
+  /// attaches, after the one it replaces let go.
   void _onEditFocusChanged() {
-    if (!_editFocusNode.hasFocus && _editingItemId != null) {
+    if (_editingItemId == null) return;
+    if (!_editFocusNode.hasFocus) _absorbAmountFromName();
+    if (_editFocusCheckScheduled) return;
+    _editFocusCheckScheduled = true;
+    final session = _editingItemId;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      scheduleMicrotask(() {
+        _editFocusCheckScheduled = false;
+        if (!mounted ||
+            _editingItemId != session ||
+            _editPaused ||
+            _editRekeying) {
+          return;
+        }
+        if (_editFocusNodes.any((node) => node.hasFocus)) return;
+        unawaited(_commitEdit());
+      });
+    });
+    WidgetsBinding.instance.ensureVisualUpdate();
+  }
+
+  void _onTapOutsideEdit(PointerDownEvent event) {
+    // A screen reader's activation elsewhere arrives as one synthetic down
+    // with no up to follow: it is a tap, so commit now.
+    if (event.pointer == 0 && event.timeStamp == Duration.zero) {
       unawaited(_commitEdit());
+      return;
+    }
+    _editTapDownAt = event.position;
+    _editTapDownItem = _editingItemId;
+  }
+
+  /// A tap (not a scroll) outside the line and its controls commits it.
+  void _onTapUpOutsideEdit(PointerUpEvent event) {
+    final downAt = _editTapDownAt;
+    final downItem = _editTapDownItem;
+    _editTapDownAt = null;
+    _editTapDownItem = null;
+    if (downAt == null || downItem == null || downItem != _editingItemId) {
+      return;
+    }
+    if ((event.position - downAt).distance > kTouchSlop) return;
+    unawaited(_commitEdit());
+    // On a phone a touch outside does not unfocus the field, and once the
+    // closed line's field detaches it would hand the keyboard back to the
+    // add line if that had it earlier. A tap elsewhere ends the typing.
+    _dropEditFocus();
+  }
+
+  /// "2 kg flour" typed into the name becomes the name "flour" with an
+  /// amount of 2 kg, the way the add line reads it. Only a name the person
+  /// changed is read, so an item called "7 Up" keeps its name.
+  void _absorbAmountFromName() {
+    final original = _editOriginal;
+    if (original == null || _editingItemId == null) return;
+    final text = _editController.text.trim();
+    if (text == original.name.trim()) return;
+    final parsed = parseComposerItem(text);
+    if (parsed.name == text) return;
+    _editController.value = TextEditingValue(
+      text: parsed.name,
+      selection: TextSelection.collapsed(offset: parsed.name.length),
+    );
+    _editQuantityController.text = formatItemAmount(parsed.quantity);
+    if (parsed.unit.isNotEmpty) _editUnitController.text = parsed.unit;
+  }
+
+  void _openEditNote() {
+    setState(() => _editNoteOpen = true);
+    // Taken as the note field attaches, so the edit never loses focus.
+    _editNoteFocusNode.requestFocus();
+  }
+
+  /// Runs [action] (picking or viewing a photo) with the edit kept open
+  /// while the keyboard is away, then gives the keyboard back to the name.
+  Future<void> _whileEditPaused(
+    ListItem item,
+    Future<void> Function() action,
+  ) async {
+    final editing = _editingItemId == item.id;
+    if (editing) _editPaused = true;
+    try {
+      await action();
+    } finally {
+      if (editing) {
+        _editPaused = false;
+        // The action may have sent the item's create (a photo needs the
+        // server row), moving the edit to the server id.
+        if (mounted &&
+            _editingItemId != null &&
+            _editingItemId == _controller.currentItemId(item.id)) {
+          _editFocusNode.requestFocus();
+        }
+      }
     }
   }
 
-  /// Saves the line being edited and closes it. Emptied words remove the
-  /// item (with undo), like deleting a line of a note. With [thenAddNext],
-  /// the keyboard moves on to the add line, the way return starts the next
-  /// line in a checklist.
-  Future<void> _commitEdit({bool thenAddNext = false}) async {
+  Future<void> _viewEditPhoto(ListItem item) async {
+    final photos = _controller.photosFor(item.id);
+    if (photos == null || photos.isEmpty) return;
+    await _whileEditPaused(
+      item,
+      () => ListItemPhotoViewer.show(context, photos.first.url),
+    );
+  }
+
+  /// Saves the line being edited and closes it, in exactly one write of
+  /// everything the person changed (none when nothing did). Emptied words
+  /// remove the item (with undo), like deleting a line of a note. With
+  /// [thenAddNext], the keyboard moves on to the add line, the way return
+  /// starts the next line in a checklist.
+  Future<void> _commitEdit({bool thenAddNext = false}) {
+    final commit = _commitEditNow(thenAddNext: thenAddNext);
+    _commitsInFlight.add(commit);
+    return commit.whenComplete(() => _commitsInFlight.remove(commit));
+  }
+
+  Future<void> _commitEditNow({bool thenAddNext = false}) async {
     final id = _editingItemId;
-    if (id == null) return;
-    final name = _editController.text.trim();
-    setState(() => _editingItemId = null);
+    final original = _editOriginal;
+    if (id == null || original == null) return;
+    // Everything is read before the first await: a new edit may reuse the
+    // fields as soon as this one is closed.
+    final rawName = _editController.text.trim();
+    final edit = ListItemEdit.diff(
+      original,
+      name: rawName,
+      amount: _editQuantityController.text,
+      unit: _editUnitController.text,
+      note: _editNoteController.text,
+      price: _editPriceController.text,
+    );
+    _endEditSession();
     if (thenAddNext) {
       _composerFocusNode.requestFocus();
     }
-    final item = _controller.items.where((i) => i.id == id).firstOrNull;
+    final item = _itemNow(id);
     if (item == null) return;
-    if (name.isEmpty) {
+    if (rawName.isEmpty) {
       await _deleteItem(item);
       return;
     }
-    if (name == item.name) return;
-    final operation = _operationKey('item:$id');
-    if (!_beginOperation(operation)) return;
+    final l10n = AppLocalizations.of(context)!;
+    if (edit.priceUnreadable) {
+      // An unreadable price is dropped, not guessed at; say so.
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.listDetailCouldNotSetPrice)),
+      );
+    }
+    if (!edit.hasChanges) return;
     try {
-      await _controller.updateItemFields(item, name: name);
+      await _controller.updateItemFields(
+        item,
+        name: edit.name,
+        quantity: edit.quantity,
+        unit: edit.unit,
+        note: edit.note,
+        priceCents: edit.priceCents,
+      );
     } catch (_) {
       if (mounted) {
-        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(l10n.listDetailCouldNotUpdate)),
         );
       }
-    } finally {
-      _finishOperation(operation);
     }
   }
 
-  Future<void> _removeEditedItem(ListItem item) async {
-    setState(() => _editingItemId = null);
-    _editFocusNode.unfocus();
-    await _deleteItem(item);
+  void _endEditSession() {
+    _editOriginal = null;
+    _editTapDownAt = null;
+    _editTapDownItem = null;
+    setState(() {
+      _editingItemId = null;
+      _editNoteOpen = false;
+    });
   }
 
-  Future<void> _openDetails(ListItem item) async {
-    await _commitEdit();
-    if (!mounted) return;
-    final current =
-        _controller.items.where((i) => i.id == item.id).firstOrNull ?? item;
-    await _editItem(current);
+  /// Takes the keyboard from whichever field of the (just closed) edit has
+  /// it. Unfocused explicitly so focus stays on the screen, instead of the
+  /// detaching field handing it back to the add line it came from.
+  void _dropEditFocus() {
+    for (final node in _editFocusNodes) {
+      if (node.hasFocus) node.unfocus();
+    }
+  }
+
+  /// Delete from the edit controls: the edit is dropped, not saved first.
+  Future<void> _removeEditedItem(ListItem item) async {
+    _endEditSession();
+    _dropEditFocus();
+    await _deleteItem(item);
   }
 
   /// Name to credit under the row. Your own additions stay unlabelled: on a

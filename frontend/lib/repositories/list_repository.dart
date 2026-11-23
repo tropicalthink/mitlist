@@ -14,6 +14,7 @@ import '../services/list_service.dart';
 import '../services/error_reporter.dart';
 import '../services/scan/receipt_purchase_matcher.dart' show ReceiptPurchase;
 import '../services/scan/local_item_promotion_service.dart';
+import '../services/scan/resolution/string_sim.dart' show normaliseText;
 import '../services/product_events.dart';
 import '../services/response_cache_interceptor.dart';
 import '../services/sse_service.dart';
@@ -26,6 +27,25 @@ import 'outbox_drainer.dart';
 /// server's. Screens still holding [from] (an open list detail, a route) move
 /// over to [to].
 typedef ListIdChange = ({String from, String to});
+
+/// A list item created on this device that the server has now accepted (or a
+/// restored item an older server could only re-create): [from] is the id it
+/// carried locally, [to] the server's. Anything still holding [from] (the
+/// list screen's undo history) moves over to [to].
+typedef ListItemIdChange = ({String from, String to});
+
+/// What a clear removed: the rows exactly as they were, and the queued op
+/// that tells the server ([opId], null when nothing was removed), so an undo
+/// made before that op syncs can withdraw it instead of restoring each row.
+class ClearedListItems {
+  const ClearedListItems(this.items, this.opId);
+  const ClearedListItems.none()
+      : items = const [],
+        opId = null;
+
+  final List<ListItem> items;
+  final String? opId;
+}
 
 /// A row checked again within this window of its last purchase was unchecked
 /// by mistake, not bought twice.
@@ -100,6 +120,56 @@ class ListRepository {
   /// from the temporary id to the server's.
   Stream<ListIdChange> get listIdChanges => _listIdChanges.stream;
 
+  /// Synchronous, so a listener (the list screen following the line being
+  /// edited) hears of the new id before the watch stream can publish the
+  /// rows without the old one.
+  final StreamController<ListItemIdChange> _itemIdChanges =
+      StreamController<ListItemIdChange>.broadcast(sync: true);
+
+  /// Emits when an item created on this device moves from its temporary id
+  /// to the server's (see [ListItemIdChange]).
+  Stream<ListItemIdChange> get itemIdChanges => _itemIdChanges.stream;
+
+  /// Server id of every item this repository saw adopted, keyed by the id it
+  /// carried before. In memory, like [_syncedListIds].
+  final Map<String, String> _adoptedItemIds = {};
+
+  /// The id [itemId] is stored under now: the server's when it was a
+  /// temporary id that has since synced, otherwise [itemId] itself.
+  String resolveItemId(String itemId) {
+    var id = itemId;
+    for (var hops = 0; hops < 4; hops++) {
+      final next = _adoptedItemIds[id];
+      if (next == null) break;
+      id = next;
+    }
+    return id;
+  }
+
+  /// The ops a delete withdrew from an item the server never heard of (its
+  /// create was still queued), keyed by item id, so undoing that delete
+  /// queues exactly the same create again. In memory: only an open list's
+  /// undo history can still ask for them.
+  final Map<String, List<OutboxOp>> _withdrawnItemOps = {};
+
+  /// What each check-off's purchase signal changed on this device, newest
+  /// last, so undoing the tick can put every count back
+  /// ([withdrawQueuedPurchases]). In memory, bounded: undo history is per
+  /// visit.
+  final List<_PurchaseSignalRecord> _purchaseJournal = [];
+  static const int _purchaseJournalCapacity = 500;
+
+  /// Alias uploads for words a check-off just promoted, sent with the next
+  /// drain instead of at once so an undone tick can still take its promotion
+  /// back. Keyed by the promoted canonical id.
+  final Map<String, Future<void> Function()> _pendingAliasUploads = {};
+
+  /// The drain pass running now, if any.
+  Future<void>? _activeDrain;
+
+  /// While above zero, a drain asked for waits (see [_holdDrains]).
+  int _drainHolds = 0;
+
   /// The id [listId] is stored under now: the server id when it was a
   /// temporary id that has since synced, otherwise [listId] itself.
   String resolveListId(String listId) => _syncedListIds[listId] ?? listId;
@@ -117,6 +187,7 @@ class ListRepository {
     'archiveList',
     'deleteList',
     'setListReminder',
+    'restoreItem',
   ];
 
   ListRepository({
@@ -440,24 +511,7 @@ class ListRepository {
       final updates = <ListItemsTableCompanion>[];
       for (final row in pendingRows) {
         if (row.position != pos) {
-          final item = _toListItem(row);
-          updates.add(_toListItemsRow(
-            ListItem(
-              id: item.id,
-              listId: item.listId,
-              name: item.name,
-              quantity: item.quantity,
-              unit: item.unit,
-              checked: item.checked,
-              position: pos,
-              priceCents: item.priceCents,
-              canonicalItemId: item.canonicalItemId,
-              claimedBy: item.claimedBy,
-              addedBy: item.addedBy,
-              createdAt: item.createdAt,
-              updatedAt: item.updatedAt,
-            ),
-          ));
+          updates.add(_toListItemsRow(_withPosition(_toListItem(row), pos)));
         }
         pos++;
       }
@@ -695,6 +749,7 @@ class ListRepository {
     UpdateListItemRequest req,
   ) async {
     listId = resolveListId(listId);
+    itemId = resolveItemId(itemId);
     // Optimistic local patch
     final existingRow = (await _db.getItemsByListOnce(listId))
         .firstWhereOrNull((e) => e.id == itemId);
@@ -920,38 +975,89 @@ class ListRepository {
     _afterLocalWrite();
   }
 
+  /// Deletes [itemId] locally and queues a `deleteItem`. An item whose
+  /// create has not been sent yet (added this visit, still queued) needs no
+  /// request at all: its queued ops are withdrawn instead, and kept for
+  /// [restoreItemsOfflineFirst] to queue again on undo.
   Future<void> deleteItemOfflineFirst(String listId, String itemId) async {
     listId = resolveListId(listId);
-    // Optimistic local delete
-    await _db.transaction(() async {
-      await (_db.delete(_db.listItemsTable)..where((t) => t.id.equals(itemId)))
-          .go();
-      await _patchListPreviewFromLocalItems(listId);
-      await _db.enqueueOutbox(
-        id: _uuid.v4(),
-        type: 'deleteItem',
-        payload: {'listId': listId, 'itemId': itemId},
-        idempotencyKey: 'deleteItem:$itemId',
-        entityType: 'listItem',
-        entityId: itemId,
-      );
+    itemId = resolveItemId(itemId);
+    var queued = false;
+    await _holdDrains(() async {
+      final canWithdraw = !_isDraining;
+      await _db.transaction(() async {
+        await (_db.delete(_db.listItemsTable)
+              ..where((t) => t.id.equals(itemId)))
+            .go();
+        await _patchListPreviewFromLocalItems(listId);
+        if (canWithdraw && await _withdrawNeverSentItem(itemId)) return;
+        await _db.enqueueOutbox(
+          id: _uuid.v4(),
+          type: 'deleteItem',
+          payload: {'listId': listId, 'itemId': itemId},
+          idempotencyKey: 'deleteItem:$itemId',
+          entityType: 'listItem',
+          entityId: itemId,
+        );
+        queued = true;
+      });
     });
+    if (queued) _afterLocalWrite();
+  }
 
-    _afterLocalWrite();
+  /// When [itemId]'s create is still queued and was never attempted (so the
+  /// server cannot have the row), removes every queued op of the item and
+  /// remembers them in [_withdrawnItemOps]. Runs inside the caller's
+  /// transaction, with no drain running. Returns whether it did.
+  Future<bool> _withdrawNeverSentItem(String itemId) async {
+    final ops = await (_db.select(_db.outboxOps)
+          ..where((t) =>
+              t.entityType.equals('listItem') & t.entityId.equals(itemId))
+          ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
+        .get();
+    final create = ops.firstWhereOrNull((op) =>
+        op.type == 'createItem' ||
+        (op.type == 'addItemAmount' &&
+            _decodePayload(op.payloadJson)?['tempId'] == itemId));
+    if (create == null ||
+        create.lastAttemptAt != null ||
+        create.attemptCount > 0) {
+      return false;
+    }
+    await (_db.delete(_db.outboxOps)
+          ..where((t) => t.id.isIn([for (final op in ops) op.id])))
+        .go();
+    _withdrawnItemOps[itemId] = ops;
+    return true;
   }
 
   /// Offline-first bulk check / uncheck. Flips every row whose `checked`
   /// differs from [checked] in a single local write — one stream emit, so the
   /// whole list updates at once — records a purchase signal for each item that
   /// becomes checked, then queues one `updateItem` per row for the server.
-  Future<void> setAllCheckedOfflineFirst(
+  /// Returns the ids it flipped.
+  Future<List<String>> setAllCheckedOfflineFirst(
     String listId, {
+    required bool checked,
+  }) =>
+      setItemsCheckedOfflineFirst(listId, null, checked: checked);
+
+  /// [setAllCheckedOfflineFirst] for just [itemIds] (every row when null):
+  /// rows already at [checked], or not cached, are left alone. Returns the
+  /// ids it flipped.
+  Future<List<String>> setItemsCheckedOfflineFirst(
+    String listId,
+    Iterable<String>? itemIds, {
     required bool checked,
   }) async {
     listId = resolveListId(listId);
+    final only = itemIds?.toSet();
     final rows = await _db.getItemsByListOnce(listId);
-    final targets = rows.where((r) => r.checked != checked).toList();
-    if (targets.isEmpty) return;
+    final targets = rows
+        .where((r) => r.checked != checked)
+        .where((r) => only == null || only.contains(r.id))
+        .toList();
+    if (targets.isEmpty) return const [];
 
     final now = DateTime.now();
     final patched = <ListItemsTableCompanion>[];
@@ -976,25 +1082,31 @@ class ListRepository {
     }
     // The rows and their sync intents are one atomic change, as for a single
     // edit: a process death between them must not leave checks the server
-    // never hears about.
-    await _db.transaction(() async {
-      await _db.upsertListItemsRows(patched);
-      await _patchListPreviewFromLocalItems(listId);
-      for (final r in targets) {
-        await _db.enqueueOutbox(
-          id: _uuid.v4(),
-          type: 'updateItem',
-          payload: {
-            'listId': listId,
-            'itemId': r.id,
-            'patch': UpdateListItemRequest(checked: checked).toJson(),
-          },
-          idempotencyKey: 'updateItem:${r.id}:${now.toIso8601String()}',
-          entityType: 'listItem',
-          entityId: r.id,
-        );
-      }
-    });
+    // never hears about. A tick (or untick) still queued and unsent that this
+    // change takes straight back is withdrawn instead: the server never hears
+    // of either (the undo arrow on a tick, while the list holds the outbox).
+    await _holdDrains(() => _db.transaction(() async {
+          final canWithdraw = !_isDraining;
+          await _db.upsertListItemsRows(patched);
+          await _patchListPreviewFromLocalItems(listId);
+          for (final r in targets) {
+            if (canWithdraw && await _withdrawQueuedCheck(r.id, !checked)) {
+              continue;
+            }
+            await _db.enqueueOutbox(
+              id: _uuid.v4(),
+              type: 'updateItem',
+              payload: {
+                'listId': listId,
+                'itemId': r.id,
+                'patch': UpdateListItemRequest(checked: checked).toJson(),
+              },
+              idempotencyKey: 'updateItem:${r.id}:${now.toIso8601String()}',
+              entityType: 'listItem',
+              entityId: r.id,
+            );
+          }
+        }));
 
     // Purchase telemetry runs after the commit, for the reason given in
     // [updateItemOfflineFirst].
@@ -1012,12 +1124,38 @@ class ListRepository {
     }
 
     _afterLocalWrite();
+    return [for (final r in targets) r.id];
+  }
+
+  /// Deletes the newest queued op of [itemId] when it is an unsent
+  /// `updateItem` that only set `checked` to [checked]. Runs inside the
+  /// caller's transaction, with no drain running. Returns whether it did.
+  Future<bool> _withdrawQueuedCheck(String itemId, bool checked) async {
+    final newest = await (_db.select(_db.outboxOps)
+          ..where((t) =>
+              t.entityType.equals('listItem') & t.entityId.equals(itemId))
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)])
+          ..limit(1))
+        .getSingleOrNull();
+    if (newest == null ||
+        newest.type != 'updateItem' ||
+        newest.lastAttemptAt != null ||
+        newest.attemptCount > 0) {
+      return false;
+    }
+    final patch = _decodePayload(newest.payloadJson)?['patch'];
+    if (patch is! Map || patch.length != 1 || patch['checked'] != checked) {
+      return false;
+    }
+    await _db.deleteOutboxOp(newest.id);
+    return true;
   }
 
   /// Offline-first clear. Deletes the matching rows locally in one write (one
   /// stream emit, so the list empties instantly) and queues a single
   /// `clearItems` op for the server, so it works offline and syncs when online.
-  Future<void> clearItemsOfflineFirst(
+  /// Returns the rows it removed and that op's id.
+  Future<ClearedListItems> clearItemsOfflineFirst(
     String listId, {
     required bool onlyChecked,
   }) async {
@@ -1025,14 +1163,15 @@ class ListRepository {
     final rows = await _db.getItemsByListOnce(listId);
     final targets =
         (onlyChecked ? rows.where((r) => r.checked) : rows).toList();
-    if (targets.isEmpty) return;
+    if (targets.isEmpty) return const ClearedListItems.none();
     final ids = targets.map((r) => r.id).toList();
+    final opId = _uuid.v4();
 
     await _db.transaction(() async {
       await (_db.delete(_db.listItemsTable)..where((t) => t.id.isIn(ids))).go();
       await _patchListPreviewFromLocalItems(listId);
       await _db.enqueueOutbox(
-        id: _uuid.v4(),
+        id: opId,
         type: 'clearItems',
         payload: {'listId': listId, 'onlyChecked': onlyChecked},
         idempotencyKey:
@@ -1043,7 +1182,244 @@ class ListRepository {
     });
 
     _afterLocalWrite();
+    return ClearedListItems(
+      [for (final row in targets) _toListItem(row)],
+      opId,
+    );
   }
+
+  // ---------------------------------------------------------------------------
+  // Undo (the list screen's undo / redo arrows)
+  // ---------------------------------------------------------------------------
+
+  /// Runs [body] with drains held back, so an op [body] finds still queued
+  /// cannot be picked up by a drain that starts halfway through. A drain
+  /// already running is not stopped: [body] checks [_isDraining] itself and
+  /// leaves ops alone when one is. A drain asked for meanwhile runs after.
+  Future<T> _holdDrains<T>(Future<T> Function() body) async {
+    _drainHolds++;
+    try {
+      return await body();
+    } finally {
+      _drainHolds--;
+      if (_drainHolds == 0 && _drainRequested && !_isDraining) {
+        unawaited(drainOutboxOnce());
+      }
+    }
+  }
+
+  /// Puts [item] back exactly as it was: same id, position, checked state,
+  /// canonical link (and so its photos, which hang off the id on the server).
+  /// See [restoreItemsOfflineFirst].
+  Future<void> restoreItemOfflineFirst(ListItem item) =>
+      restoreItemsOfflineFirst(item.listId, [item]);
+
+  /// Puts deleted or cleared rows back exactly as they were. A delete (or
+  /// the clear [clearOpId]) still queued, with no drain running, is simply
+  /// withdrawn: the server never hears of it. Otherwise the server already
+  /// removed the row (or is about to), and a `restoreItem` op asks it to put
+  /// the same row back; an older server without that route gets the row
+  /// re-created instead, and the new id is announced on [itemIdChanges].
+  ///
+  /// Nothing here records a purchase, even for a checked row.
+  Future<void> restoreItemsOfflineFirst(
+    String listId,
+    List<ListItem> items, {
+    String? clearOpId,
+  }) async {
+    listId = resolveListId(listId);
+    if (items.isEmpty) return;
+    await _holdDrains(() async {
+      final canWithdraw = !_isDraining;
+      await _db.transaction(() async {
+        var clearWithdrawn = false;
+        if (canWithdraw && clearOpId != null) {
+          clearWithdrawn = await (_db.delete(_db.outboxOps)
+                    ..where((t) => t.id.equals(clearOpId)))
+                  .go() >
+              0;
+        }
+        for (final snapshot in items) {
+          final item = snapshot.listId == listId
+              ? snapshot
+              : _withListId(snapshot, listId);
+          await _db.upsertListItemsRows([_toListItemsRow(item)]);
+          // Never reached the server: queue its own create (and edits) again,
+          // exactly as they were, instead of asking the server to restore it.
+          final withdrawnOps = _withdrawnItemOps.remove(item.id);
+          if (withdrawnOps != null) {
+            for (final op in withdrawnOps) {
+              await _db
+                  .into(_db.outboxOps)
+                  .insert(op, mode: InsertMode.insertOrReplace);
+            }
+            continue;
+          }
+          if (canWithdraw) {
+            final withdrawn = await (_db.delete(_db.outboxOps)
+                  ..where((t) =>
+                      t.type.equals('deleteItem') & t.entityId.equals(item.id)))
+                .go();
+            if (withdrawn > 0) continue;
+          }
+          if (clearWithdrawn) continue;
+          await _db.enqueueOutbox(
+            id: _uuid.v4(),
+            type: 'restoreItem',
+            payload: {
+              'listId': listId,
+              'itemId': item.id,
+              'name': item.name,
+              'item': {
+                'name': item.name,
+                'quantity': item.quantity,
+                'unit': item.unit,
+                'note': item.note,
+                if (item.priceCents != null) 'priceCents': item.priceCents,
+                'checked': item.checked,
+                'position': item.position,
+                if (item.canonicalItemId != null)
+                  'canonicalItemId': item.canonicalItemId,
+              },
+            },
+            idempotencyKey:
+                'restoreItem:${item.id}:${DateTime.now().toIso8601String()}',
+            entityType: 'listItem',
+            entityId: item.id,
+          );
+        }
+        await _patchListPreviewFromLocalItems(listId);
+      });
+    });
+    _afterLocalWrite();
+  }
+
+  /// Removes [itemIds] in one local write, queueing a `deleteItem` for each
+  /// (redoing a clear removes exactly the rows it removed the first time).
+  Future<void> deleteItemsOfflineFirst(
+    String listId,
+    Iterable<String> itemIds,
+  ) async {
+    listId = resolveListId(listId);
+    final ids = itemIds.toSet().toList();
+    if (ids.isEmpty) return;
+    var queued = false;
+    await _holdDrains(() async {
+      final canWithdraw = !_isDraining;
+      await _db.transaction(() async {
+        await (_db.delete(_db.listItemsTable)..where((t) => t.id.isIn(ids)))
+            .go();
+        await _patchListPreviewFromLocalItems(listId);
+        for (final itemId in ids) {
+          if (canWithdraw && await _withdrawNeverSentItem(itemId)) continue;
+          await _db.enqueueOutbox(
+            id: _uuid.v4(),
+            type: 'deleteItem',
+            payload: {'listId': listId, 'itemId': itemId},
+            idempotencyKey:
+                'deleteItem:$itemId:${DateTime.now().toIso8601String()}',
+            entityType: 'listItem',
+            entityId: itemId,
+          );
+          queued = true;
+        }
+      });
+    });
+    if (queued) _afterLocalWrite();
+  }
+
+  /// Takes back the purchase signals ticking [itemIds] recorded at or after
+  /// [since] (an undone tick was not a purchase), where that is still
+  /// possible on this device: the queued `recordPurchase` op is withdrawn and
+  /// everything the tick counted locally is put back exactly — the
+  /// purchase-history row, the bought-together pair counts, the
+  /// unrecognised-word tally and a promotion it minted (see [_reverseSignal]).
+  /// A tick that only moved the tally (a word below the promotion threshold)
+  /// has its tally put back too.
+  ///
+  /// A purchase whose op already reached the server (the app was paused
+  /// mid-visit, a flush ran) is left alone, counts included: there is no route
+  /// to withdraw it, and its history row keeps a re-tick within
+  /// [kPurchaseRecheckWindow] from counting twice. Returns how many purchases
+  /// were withdrawn.
+  Future<int> withdrawQueuedPurchases(
+    Iterable<String> itemIds, {
+    required DateTime since,
+  }) async {
+    final ids = itemIds.map(resolveItemId).toSet();
+    final asked = itemIds.toSet();
+    if (ids.isEmpty) return 0;
+    return _holdDrains(() async {
+      if (_isDraining) return 0;
+      return _db.transaction(() async {
+        var withdrawn = 0;
+        final journalled = <String>{};
+        final records = [
+          for (final record in _purchaseJournal.reversed)
+            if ((ids.contains(record.itemId) ||
+                    asked.contains(record.itemId) ||
+                    ids.contains(resolveItemId(record.itemId))) &&
+                !record.at.isBefore(since))
+              record,
+        ];
+        for (final record in records) {
+          final eventId = record.eventId;
+          if (eventId != null) {
+            journalled.add(eventId);
+            final removed = await (_db.delete(_db.outboxOps)
+                  ..where((t) =>
+                      t.type.equals('recordPurchase') &
+                      t.entityId.equals(eventId)))
+                .go();
+            // Already sent: the server counts it, so this device does too.
+            if (removed == 0) continue;
+            withdrawn++;
+          }
+          await _reverseSignal(record);
+          _purchaseJournal.remove(record);
+        }
+
+        // Purchases recorded before this repository's journal (another
+        // instance, a restart): withdraw the row and op as before.
+        final rows = await (_db.select(_db.purchaseHistoryTable)
+              ..where((t) =>
+                  t.listItemId.isIn({...ids, ...asked}.toList()) &
+                  t.purchasedAt.isBiggerOrEqualValue(since)))
+            .get();
+        for (final row in rows) {
+          if (journalled.contains(row.id)) continue;
+          final removed = await (_db.delete(_db.outboxOps)
+                ..where((t) =>
+                    t.type.equals('recordPurchase') &
+                    t.entityId.equals(row.id)))
+              .go();
+          if (removed == 0) continue;
+          await (_db.delete(_db.purchaseHistoryTable)
+                ..where((t) => t.id.equals(row.id)))
+              .go();
+          withdrawn++;
+        }
+        return withdrawn;
+      });
+    });
+  }
+
+  ListItem _withListId(ListItem item, String listId) => ListItem(
+        id: item.id,
+        listId: listId,
+        name: item.name,
+        quantity: item.quantity,
+        unit: item.unit,
+        note: item.note,
+        checked: item.checked,
+        position: item.position,
+        priceCents: item.priceCents,
+        canonicalItemId: item.canonicalItemId,
+        claimedBy: item.claimedBy,
+        addedBy: item.addedBy,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+      );
 
   // ---------------------------------------------------------------------------
   // Offline-first list writes
@@ -1408,22 +1784,85 @@ class ListRepository {
   }
 
   Future<void> drainOutboxOnce() async {
-    if (_isDraining) {
+    if (_isDraining || _drainHolds > 0) {
       _drainRequested = true;
       return;
     }
     _isDraining = true;
+    final done = Completer<void>();
+    _activeDrain = done.future;
     try {
+      _sendPendingAliasUploads();
+      // A list held open for a while can queue more than one batch; the
+      // flush on leaving it sends them all, not one batch per retry tick.
+      // Bounded, since a batch of parked ops (a list still waiting for its
+      // create) reads as full every time.
+      var passes = 0;
+      bool more;
       do {
         _drainRequested = false;
-        await _drainPass();
-      } while (_drainRequested);
+        more = await _drainPass();
+      } while (_drainRequested || (more && ++passes < 8));
     } finally {
       _isDraining = false;
+      _activeDrain = null;
+      done.complete();
     }
   }
 
-  Future<void> _drainPass() async {
+  /// Sends just the queued list ops [where] selects, now, in queue order,
+  /// whatever holds the outbox: what a server-only action needs first (a
+  /// photo needs its item to exist on the server, a reminder is scheduled
+  /// there). Waits for a drain already running. Failures stay queued like in
+  /// any drain; callers check the outcome themselves.
+  Future<void> sendQueuedOpsNow(bool Function(OutboxOp op) where) async {
+    // Never alongside a drain, nor halfway through an undo that is
+    // withdrawing queued ops ([_holdDrains]); both are short.
+    while (_activeDrain != null || _drainHolds > 0) {
+      await (_activeDrain ??
+          Future<void>.delayed(const Duration(milliseconds: 5)));
+    }
+    if (_isDraining) return;
+    _isDraining = true;
+    final done = Completer<void>();
+    _activeDrain = done.future;
+    try {
+      await _drainPass(where: where);
+    } finally {
+      _isDraining = false;
+      _activeDrain = null;
+      done.complete();
+    }
+    if (_drainRequested && _drainHolds == 0) unawaited(drainOutboxOnce());
+  }
+
+  /// Sends [itemId]'s create now if it is still queued (see
+  /// [sendQueuedOpsNow]) and returns the id the item has afterwards: the
+  /// server's once the create went through, [itemId] while it is still
+  /// queued (offline, or the list itself is not on the server yet).
+  Future<String> sendItemCreateNow(String itemId) async {
+    final current = resolveItemId(itemId);
+    await sendQueuedOpsNow((op) =>
+        op.entityId == current &&
+        (op.type == 'createItem' || op.type == 'addItemAmount'));
+    return resolveItemId(current);
+  }
+
+  /// True while [itemId] has a create queued, i.e. the server does not have
+  /// it yet.
+  Future<bool> hasQueuedCreate(String itemId) async {
+    final id = resolveItemId(itemId);
+    final ops = await (_db.select(_db.outboxOps)
+          ..where((t) =>
+              t.entityId.equals(id) &
+              t.type.isIn(const ['createItem', 'addItemAmount'])))
+        .get();
+    return ops.any((op) =>
+        op.type == 'createItem' ||
+        _decodePayload(op.payloadJson)?['tempId'] == id);
+  }
+
+  Future<bool> _drainPass({bool Function(OutboxOp op)? where}) async {
     // List CRUD drains in its own pass, BEFORE the advisory purchase
     // telemetry. The drainer stops a pass on the first transient failure
     // (to preserve per-entity ordering), so a recordPurchase op stuck on a
@@ -1437,7 +1876,8 @@ class ListRepository {
     // list is still waiting (its create backed off or dead-lettered) are
     // parked by [_afterListSynced] instead of being sent to a list the server
     // does not have.
-    await OutboxDrainer(_db).drain(
+    final more = await OutboxDrainer(_db).drain(
+      where: where,
       types: const [
         'createList',
         ..._listScopedOpTypes,
@@ -1467,19 +1907,23 @@ class ListRepository {
             _syncDeleteList(op.id, payload, op.idempotencyKey)),
         'setListReminder': _afterListSynced((op, payload) =>
             _syncSetListReminder(op.id, payload, op.idempotencyKey)),
+        'restoreItem': _afterListSynced((op, payload) =>
+            _syncRestoreItem(op.id, payload, op.idempotencyKey)),
         'createProduct': (op, payload) =>
             _syncCreateProduct(op.id, payload, op.idempotencyKey),
         'createShoppingLocation': (op, payload) =>
             _syncCreateShoppingLocation(op.id, payload, op.idempotencyKey),
       },
     );
-    await OutboxDrainer(_db).drain(
+    if (where != null) return false;
+    final morePurchases = await OutboxDrainer(_db).drain(
       types: const ['recordPurchase'],
       handlers: {
         'recordPurchase': (op, payload) =>
             _syncRecordPurchase(op.id, payload, op.idempotencyKey),
       },
     );
+    return more || morePurchases;
   }
 
   /// Wraps the handler of an op that names a list in its payload so it is
@@ -1742,8 +2186,103 @@ class ListRepository {
     // still reference the temp ID, so subsequent ops in the same drain pass
     // see the server ID when they re-read their payload from the DB.
     await _db.transaction(() => _adoptServerItemId(tempId, created));
+    _announceItemId(tempId, created.id);
     await _db.deleteOutboxOp(opId);
     await _patchListPreviewFromLocalItems(created.listId);
+  }
+
+  void _announceItemId(String from, String to) {
+    if (from == to) return;
+    _adoptedItemIds[from] = to;
+    if (_itemIdChanges.isClosed) return;
+    _itemIdChanges.add((from: from, to: to));
+  }
+
+  /// True for a 404 or 405: a server that predates the restore route (or no
+  /// longer has the item at all).
+  static bool _isMissingRoute(Object error) {
+    final cause = error is ApiException ? error.cause : error;
+    final status = cause is DioException ? cause.response?.statusCode : null;
+    return status == 404 || status == 405;
+  }
+
+  Future<void> _syncRestoreItem(
+      String opId, Map<String, dynamic> payload, String? idempotencyKey) async {
+    final listId = payload['listId'] as String?;
+    final itemId = payload['itemId'] as String?;
+    if (listId == null || itemId == null) {
+      await _db.deleteOutboxOp(opId);
+      return;
+    }
+    final local = await (_db.select(_db.listItemsTable)
+          ..where((t) => t.id.equals(itemId)))
+        .getSingleOrNull();
+    final snapshot = payload['item'] is Map
+        ? (payload['item'] as Map).cast<String, dynamic>()
+        : const <String, dynamic>{};
+    final canonicalId =
+        local?.canonicalItemId ?? snapshot['canonicalItemId'] as String?;
+
+    ListItem server;
+    try {
+      server = await _remote.restoreItem(listId, itemId,
+          idempotencyKey: idempotencyKey);
+    } catch (error) {
+      if (!_isMissingRoute(error)) rethrow;
+      // An older server (self-hosted) without the restore route: put the row
+      // back as a new item and move everything local onto its id.
+      final name = snapshot['name'] as String? ?? local?.name;
+      if (name == null) {
+        await _db.deleteOutboxOp(opId);
+        return;
+      }
+      server = await _remote.createItem(
+        listId,
+        CreateListItemRequest(
+          name: name,
+          quantity: (snapshot['quantity'] as num?)?.toDouble() ??
+              local?.quantity ??
+              1,
+          unit: snapshot['unit'] as String? ?? local?.unit ?? '',
+          note: snapshot['note'] as String? ?? '',
+          priceCents: snapshot['priceCents'] as int? ?? local?.priceCents,
+          canonicalItemId: canonicalId,
+        ),
+        idempotencyKey:
+            idempotencyKey == null ? null : '$idempotencyKey:create',
+      );
+      if (snapshot['checked'] == true) {
+        server = await _remote.updateItem(
+          listId,
+          server.id,
+          const UpdateListItemRequest(checked: true),
+          idempotencyKey:
+              idempotencyKey == null ? null : '$idempotencyKey:check',
+        );
+      }
+      final adopted = _withCanonicalItemId(server, canonicalId);
+      await _db.transaction(() => _adoptServerItemId(itemId, adopted));
+      _announceItemId(itemId, server.id);
+      await _db.deleteOutboxOp(opId);
+      await _patchListPreviewFromLocalItems(listId);
+      return;
+    }
+
+    // Same id. Take the server's row (its updated_at is the base the next
+    // edit is checked against) unless the row is gone again locally or has
+    // its own edit queued behind this op.
+    final hasPendingEdit =
+        await _db.pendingOpCountForEntity('updateItem', itemId) > 0;
+    final stillShown = await (_db.select(_db.listItemsTable)
+              ..where((t) => t.id.equals(itemId)))
+            .getSingleOrNull() !=
+        null;
+    if (stillShown && !hasPendingEdit) {
+      await _db.upsertListItemsRows(
+          [_toListItemsRow(_withCanonicalItemId(server, canonicalId))]);
+    }
+    await _db.deleteOutboxOp(opId);
+    await _patchListPreviewFromLocalItems(listId);
   }
 
   /// Swaps the optimistic row [tempId] for [server] and points queued ops at
@@ -1788,6 +2327,7 @@ class ListRepository {
       // New-row case: swap the optimistic temp id for the server's, the same
       // way createItem reconciles, so later ops in this drain see the real id.
       await _db.transaction(() => _adoptServerItemId(tempId, result));
+      _announceItemId(tempId, result.id);
     }
     // Merge case (tempId == null): the local quantity was already bumped
     // optimistically against a real row, and the server applied the same
@@ -1966,6 +2506,7 @@ class ListRepository {
   /// Releases the repository's own resources (the [listIdChanges] stream).
   void dispose() {
     unawaited(_listIdChanges.close());
+    unawaited(_itemIdChanges.close());
   }
 
   /// Stop the active SSE subscription without closing the service itself.
@@ -1998,8 +2539,11 @@ class ListRepository {
         _scheduleItemsRefresh(listId);
       case 'list:item_deleted':
         // The delete itself is unambiguous, so apply it right away; the
-        // refresh reconciles positions and anything else that moved.
-        if (itemId != null) {
+        // refresh reconciles positions and anything else that moved. Unless
+        // this device has since put the row back (an undo whose restore is
+        // still queued): the event is the late echo of the delete it undid.
+        if (itemId != null &&
+            await _db.pendingOpCountForEntity('restoreItem', itemId) == 0) {
           await (_db.delete(_db.listItemsTable)
                 ..where((t) => t.id.equals(itemId)))
               .go();
@@ -2104,6 +2648,7 @@ class ListRepository {
       priceCents: Value(item.priceCents),
       canonicalItemId: Value(item.canonicalItemId),
       addedBy: Value(item.addedBy),
+      note: Value(item.note),
       createdAt: Value(item.createdAt),
       updatedAt: Value(item.updatedAt),
     );
@@ -2116,7 +2661,7 @@ class ListRepository {
       name: row.name,
       quantity: row.quantity,
       unit: row.unit,
-      note: '',
+      note: row.note,
       checked: row.checked,
       position: row.position,
       priceCents: row.priceCents,
@@ -2318,6 +2863,8 @@ class ListRepository {
     ListItemsTableData row, {
     Set<String> excludedPeerItemIds = const {},
   }) async {
+    // What this signal changes, journalled for an undo of the tick.
+    _PurchaseSignalRecord? record;
     try {
       final rawCanonicalId = row.canonicalItemId;
 
@@ -2332,6 +2879,13 @@ class ListRepository {
         // Unchecked by mistake and checked again: the purchase already counts.
         return;
       }
+      record = _PurchaseSignalRecord(
+        listId: listId,
+        itemId: itemId,
+        groupId: groupId,
+        at: purchasedAt,
+        canonicalBefore: rawCanonicalId,
+      );
 
       // Kept final (not a reassigned var) so it promotes to non-null inside the
       // nested transaction closure below.
@@ -2343,25 +2897,48 @@ class ListRepository {
         // learning nothing, tally it; once the household has checked it off
         // enough times it's promoted to a household-local canonical so it can
         // finally surface in suggestions and feed the loop below.
+        final normalized = normaliseText(row.name);
+        final signalBefore = normalized.isEmpty
+            ? null
+            : await _db.getLocalItemSignal(
+                groupId: groupId, normalizedName: normalized);
         final promoted = await _promotionService.recordUnresolvedCheckoff(
           groupId: groupId,
           rawName: row.name,
         );
+        if (normalized.isNotEmpty) {
+          final signalAfter = await _db.getLocalItemSignal(
+              groupId: groupId, normalizedName: normalized);
+          if (signalAfter != null && signalAfter != signalBefore) {
+            record.signal = (
+              normalized: normalized,
+              before: signalBefore,
+              after: signalAfter,
+            );
+          }
+        }
         if (promoted == null) return; // still below the promotion threshold
         canonicalId = promoted.canonicalItemId;
         // Bind the list item to the minted canonical so future check-offs take
         // the normal path and the purchase-history/co-occurrence rows below
         // record against it.
         await setCanonicalItemIdLocal(listId, itemId, canonicalId);
+        record.linkedCanonicalId = canonicalId;
         final groceryRepo = _groceryRepo;
-        if (promoted.justPromoted && groceryRepo != null) {
-          // One-time cross-device push of the alias (the canonical itself syncs
-          // via the recordPurchase op below). Best-effort; offline is swallowed.
-          unawaited(groceryRepo.uploadCorrection(
-            groupId: groupId,
-            rawText: promoted.normalizedName,
-            canonicalItemId: canonicalId,
-          ));
+        if (promoted.justPromoted) {
+          record.mintedCanonicalId = canonicalId;
+          if (groceryRepo != null) {
+            // One-time cross-device push of the alias (the canonical itself
+            // syncs via the recordPurchase op below). Sent with the next drain
+            // rather than now, so undoing this tick can still take the
+            // promotion back; best-effort, offline is swallowed.
+            _pendingAliasUploads[canonicalId] =
+                () => groceryRepo.uploadCorrection(
+                      groupId: groupId,
+                      rawText: promoted.normalizedName,
+                      canonicalItemId: canonicalId,
+                    );
+          }
         }
       }
       // "Bought together" means bought on the same trip, not "ticked on this
@@ -2399,6 +2976,7 @@ class ListRepository {
         ],
       };
 
+      final journal = record;
       await _db.transaction(() async {
         await _db.insertPurchaseHistory(PurchaseHistoryTableCompanion.insert(
           id: eventId,
@@ -2411,6 +2989,11 @@ class ListRepository {
           purchasedAt: purchasedAt,
         ));
         for (final peerId in peerCanonicalIds) {
+          journal.pairs.add((
+            a: canonicalId,
+            b: peerId,
+            before: await _cooccurrenceRow(groupId, canonicalId, peerId),
+          ));
           await _db.incrementCooccurrence(
             groupId: groupId,
             itemAId: canonicalId,
@@ -2429,6 +3012,7 @@ class ListRepository {
           entityId: eventId,
         );
       });
+      journal.eventId = eventId;
       // No drain here. Both callers run this inside the transaction of the
       // check-off that triggered it, and a drain started from inside a Drift
       // transaction zone keeps using that transaction after it commits: the
@@ -2438,7 +3022,135 @@ class ListRepository {
       // banner reads "Syncing" until the app restarts. The callers drain once
       // their transaction has committed.
     } catch (error, stackTrace) {
+      // A failed write rolled its pair counts back with it.
+      if (record != null && record.eventId == null) record.pairs.clear();
       ErrorReporter().captureException(error, stackTrace: stackTrace);
+    } finally {
+      if (record != null && record.changedAnything) {
+        _purchaseJournal.add(record);
+        if (_purchaseJournal.length > _purchaseJournalCapacity) {
+          _purchaseJournal.removeRange(
+              0, _purchaseJournal.length - _purchaseJournalCapacity);
+        }
+      }
+    }
+  }
+
+  /// The co-occurrence row of the pair (a, b) in [groupId], or null.
+  Future<ItemCooccurrenceTableData?> _cooccurrenceRow(
+    String groupId,
+    String a,
+    String b,
+  ) {
+    final first = a.compareTo(b) <= 0 ? a : b;
+    final second = a.compareTo(b) <= 0 ? b : a;
+    return (_db.select(_db.itemCooccurrenceTable)
+          ..where((t) =>
+              t.groupId.equals(groupId) &
+              t.itemAId.equals(first) &
+              t.itemBId.equals(second)))
+        .getSingleOrNull();
+  }
+
+  /// Puts back what [record] changed on this device, inside the caller's
+  /// transaction: the purchase-history row, each bought-together count, the
+  /// unrecognised-word tally, a promotion it minted (when its alias upload
+  /// has not gone out yet) and the item's grocery link. A count something
+  /// else moved since is decremented rather than reset, so that change
+  /// survives.
+  Future<void> _reverseSignal(_PurchaseSignalRecord record) async {
+    final eventId = record.eventId;
+    if (eventId != null) {
+      await (_db.delete(_db.purchaseHistoryTable)
+            ..where((t) => t.id.equals(eventId)))
+          .go();
+    }
+    for (final pair in record.pairs.reversed) {
+      final now = await _cooccurrenceRow(record.groupId, pair.a, pair.b);
+      if (now == null) continue;
+      final before = pair.before;
+      final untouched = before == null
+          ? now.version == 0 && now.count == 1
+          : now.version == before.version + 1 && now.count == before.count + 1;
+      final where = _db.itemCooccurrenceTable;
+      if (untouched && before == null) {
+        await (_db.delete(where)
+              ..where((t) =>
+                  t.groupId.equals(now.groupId) &
+                  t.itemAId.equals(now.itemAId) &
+                  t.itemBId.equals(now.itemBId)))
+            .go();
+      } else {
+        await _db.into(where).insertOnConflictUpdate(untouched
+            ? before!
+            : now.copyWith(count: now.count > 0 ? now.count - 1 : 0));
+      }
+    }
+    // A promotion this tick minted is taken back while no other device can
+    // have heard of it (its alias upload has not gone out). Once it has, the
+    // minted item stays and only the tally is counted down.
+    final minted = record.mintedCanonicalId;
+    final keepPromotion = minted != null &&
+        _groceryRepo != null &&
+        _pendingAliasUploads.remove(minted) == null;
+    if (minted != null && !keepPromotion) {
+      await (_db.delete(_db.itemAliasesTable)
+            ..where((t) =>
+                t.groupId.equals(record.groupId) &
+                t.canonicalItemId.equals(minted) &
+                t.source.equals('local_promotion')))
+          .go();
+      await (_db.delete(_db.canonicalItemsTable)
+            ..where((t) => t.id.equals(minted)))
+          .go();
+    }
+    final signal = record.signal;
+    if (signal != null) {
+      final now = await _db.getLocalItemSignal(
+          groupId: record.groupId, normalizedName: signal.normalized);
+      if (now != null && now == signal.after && !keepPromotion) {
+        final before = signal.before;
+        if (before == null) {
+          await (_db.delete(_db.localItemSignalsTable)
+                ..where((t) =>
+                    t.groupId.equals(record.groupId) &
+                    t.normalizedName.equals(signal.normalized)))
+              .go();
+        } else {
+          await _db.upsertLocalItemSignal(before.toCompanion(false));
+        }
+      } else if (now != null) {
+        await _db.upsertLocalItemSignal(now
+            .copyWith(count: now.count > 0 ? now.count - 1 : 0)
+            .toCompanion(false));
+      }
+    }
+    final linked = record.linkedCanonicalId;
+    if (linked != null && linked != record.canonicalBefore && !keepPromotion) {
+      final row = await (_db.select(_db.listItemsTable)
+            ..where((t) => t.id.equals(record.itemId)))
+          .getSingleOrNull();
+      if (row != null && row.canonicalItemId == linked) {
+        await (_db.update(_db.listItemsTable)
+              ..where((t) => t.id.equals(record.itemId)))
+            .write(ListItemsTableCompanion(
+                canonicalItemId: Value(record.canonicalBefore)));
+        await _db.updatePendingListItemCanonicalId(
+          entityId: record.itemId,
+          canonicalItemId: record.canonicalBefore,
+        );
+      }
+    }
+  }
+
+  /// Sends the alias uploads promotions queued (see [_pendingAliasUploads]).
+  /// Best-effort, like the upload always was.
+  void _sendPendingAliasUploads() {
+    if (_pendingAliasUploads.isEmpty) return;
+    final uploads = _pendingAliasUploads.values.toList();
+    _pendingAliasUploads.clear();
+    for (final upload in uploads) {
+      unawaited(Future(upload).catchError((Object _) {}));
     }
   }
 
@@ -2549,4 +3261,52 @@ class ListRepository {
         .getSingleOrNull();
     return row?.listId;
   }
+}
+
+/// What one check-off's purchase signal changed on this device (see
+/// [ListRepository.withdrawQueuedPurchases]).
+class _PurchaseSignalRecord {
+  _PurchaseSignalRecord({
+    required this.listId,
+    required this.itemId,
+    required this.groupId,
+    required this.at,
+    required this.canonicalBefore,
+  });
+
+  final String listId;
+  final String itemId;
+  final String groupId;
+  final DateTime at;
+
+  /// The item's grocery link before the signal (null: unrecognised word).
+  final String? canonicalBefore;
+
+  /// The purchase-history row and `recordPurchase` op entity id, once one
+  /// was recorded.
+  String? eventId;
+
+  /// The unrecognised-word tally row before and after this check-off.
+  ({
+    String normalized,
+    LocalItemSignalsTableData? before,
+    LocalItemSignalsTableData after,
+  })? signal;
+
+  /// The canonical id the signal linked the item to (a promoted word).
+  String? linkedCanonicalId;
+
+  /// The household-local canonical this check-off minted, if it crossed the
+  /// promotion threshold.
+  String? mintedCanonicalId;
+
+  /// Every bought-together pair counted, with its row before the count.
+  final List<({String a, String b, ItemCooccurrenceTableData? before})> pairs =
+      [];
+
+  bool get changedAnything =>
+      eventId != null ||
+      signal != null ||
+      linkedCanonicalId != null ||
+      mintedCanonicalId != null;
 }

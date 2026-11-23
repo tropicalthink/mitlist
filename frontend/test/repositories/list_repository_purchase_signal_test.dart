@@ -120,4 +120,57 @@ void main() {
     expect(purchases, hasLength(1));
     expect(purchases.single.canonicalItemId, 'milk');
   });
+
+  group('undoing a tick (withdrawQueuedPurchases)', () {
+    test('withdraws the purchase while its op is still queued', () async {
+      await _insertItem(db, listId, 'i-milk', 'milk');
+      final tickedAt = DateTime.now();
+      await setChecked('i-milk', true);
+      expect(await db.select(db.purchaseHistoryTable).get(), hasLength(1));
+
+      final withdrawn =
+          await repo.withdrawQueuedPurchases(['i-milk'], since: tickedAt);
+
+      expect(withdrawn, 1);
+      expect(await db.select(db.purchaseHistoryTable).get(), isEmpty);
+      final ops = (await db.select(db.outboxOps).get())
+          .where((op) => op.type == 'recordPurchase');
+      expect(ops, isEmpty, reason: 'the server never hears of it');
+    });
+
+    test('a redone tick records its purchase again', () async {
+      await _insertItem(db, listId, 'i-milk', 'milk');
+      final tickedAt = DateTime.now();
+      await setChecked('i-milk', true);
+      await setChecked('i-milk', false);
+      await repo.withdrawQueuedPurchases(['i-milk'], since: tickedAt);
+
+      await setChecked('i-milk', true);
+
+      expect(await db.select(db.purchaseHistoryTable).get(), hasLength(1));
+    });
+
+    test('leaves a purchase that already reached the server', () async {
+      await _insertItem(db, listId, 'i-milk', 'milk');
+      final tickedAt = DateTime.now();
+      await setChecked('i-milk', true);
+      await repo.drainOutboxOnce();
+
+      final withdrawn =
+          await repo.withdrawQueuedPurchases(['i-milk'], since: tickedAt);
+
+      expect(withdrawn, 0);
+      expect(await db.select(db.purchaseHistoryTable).get(), hasLength(1),
+          reason: 'kept, so ticking again soon does not count it twice');
+    });
+
+    test('only touches purchases recorded since the tick', () async {
+      await _insertItem(db, listId, 'i-milk', 'milk');
+      await setChecked('i-milk', true);
+      final later = DateTime.now().add(const Duration(seconds: 1));
+
+      expect(await repo.withdrawQueuedPurchases(['i-milk'], since: later), 0);
+      expect(await db.select(db.purchaseHistoryTable).get(), hasLength(1));
+    });
+  });
 }

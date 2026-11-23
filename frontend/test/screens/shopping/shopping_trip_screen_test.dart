@@ -12,6 +12,7 @@ import 'package:mitlist/providers/group_provider.dart';
 import 'package:mitlist/providers/list_provider.dart';
 import 'package:mitlist/repositories/list_repository.dart';
 import 'package:mitlist/screens/shopping/shopping_trip_screen.dart';
+import 'package:mitlist/services/sync_scheduler.dart';
 import 'package:mitlist/storage/app_database.dart';
 import 'package:mitlist/theme/theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -76,7 +77,7 @@ ListItem _item(String id, String name, {bool checked = false}) => ListItem(
       updatedAt: DateTime.utc(2026, 1, 1),
     );
 
-Future<_Repo> _open(WidgetTester tester) async {
+Future<_Repo> _open(WidgetTester tester, {SyncScheduler? scheduler}) async {
   SharedPreferences.setMockInitialValues({});
   tester.view.physicalSize = const Size(390 * 3, 844 * 3);
   tester.view.devicePixelRatio = 3;
@@ -94,6 +95,7 @@ Future<_Repo> _open(WidgetTester tester) async {
       appDatabaseProvider.overrideWithValue(db),
       grocerySeedProvider.overrideWith((ref) async {}),
       listRepositoryProvider.overrideWith((ref) async => repo),
+      if (scheduler != null) syncSchedulerProvider.overrideWithValue(scheduler),
       cachedGroupsProvider.overrideWith((ref) async => [
             Group(
               id: _gid,
@@ -143,6 +145,26 @@ void main() {
 
     // …and taking it back is saved too.
     expect(repo.writes, [('a', true), ('a', false)]);
+  });
+
+  testWidgets(
+      'the trip never holds the outbox: its ticks go out with the normal '
+      'sync session, not when the person leaves', (tester) async {
+    // Only the list detail screen holds the outbox; the trip's ticks must
+    // keep reaching housemates while the shopper is still in the shop.
+    final scheduler = SyncScheduler();
+    var holds = 0;
+    scheduler.addHoldListener((held) {
+      if (held) holds++;
+    });
+    final repo = await _open(tester, scheduler: scheduler);
+
+    await tester.tap(find.text('Milk'));
+    await _settle(tester);
+
+    expect(repo.writes, [('a', true)]);
+    expect(holds, 0);
+    expect(scheduler.isHeld, isFalse);
   });
 
   testWidgets('a tick that cannot be saved is undone and says so',

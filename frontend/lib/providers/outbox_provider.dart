@@ -36,6 +36,7 @@ final outboxCoordinatorProvider =
   final widgetOpsRepo = await ref.watch(widgetOpsRepositoryProvider.future);
   final groupRepo = await ref.watch(groupRepositoryProvider.future);
   final mealPlanRepo = await ref.watch(mealPlanRepositoryProvider.future);
+  final scheduler = ref.watch(syncSchedulerProvider);
 
   final coordinator = OutboxCoordinator(
     db: db,
@@ -50,12 +51,14 @@ final outboxCoordinatorProvider =
     groupRepo: groupRepo,
     mealPlanRepo: mealPlanRepo,
     isSignedIn: () => ref.read(authStateProvider),
+    // The same scheduler the repositories report writes to, and the list
+    // screen takes its hold on.
+    scheduler: scheduler,
   );
 
   coordinator.start();
   // Repositories were built first and hold the scheduler, not the
   // coordinator; point it here so their writes open a sync session.
-  final scheduler = ref.watch(syncSchedulerProvider);
   scheduler.attach(coordinator.noteLocalWrite);
   ref.onDispose(() {
     scheduler.detach(coordinator.noteLocalWrite);
@@ -196,9 +199,11 @@ final outboxStateProvider = StreamProvider<OutboxState>((ref) async* {
     // sync session waiting to flush means nothing else will pick them up
     // before the next write, resume or connectivity flip. Never nudge while a
     // session is armed — that would turn every write back into an immediate
-    // sync. Idempotent, and the per-op 5s backoff makes repeats cheap.
+    // sync. Idempotent, and the per-op 5s backoff makes repeats cheap. Nor
+    // while the outbox is held: a list being edited sends on leaving it.
     final c = coordinator();
     if (c != null &&
+        !c.isHeld &&
         state.status == OutboxStatus.online &&
         state.pendingCount > 0 &&
         !c.isDraining &&

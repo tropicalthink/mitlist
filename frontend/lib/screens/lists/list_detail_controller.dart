@@ -26,6 +26,7 @@ import '../../theme/animations.dart';
 import '../../utils/haptics.dart';
 import '../../utils/list_composer_parser.dart';
 import '../../services/scan/resolution/string_sim.dart';
+import 'list_undo_stack.dart';
 
 /// What an [ListDetailController.addItem] call actually did, so the screen can
 /// tell the user when the add landed on a row that was already there instead of
@@ -42,6 +43,34 @@ enum AddItemOutcome {
 
   /// An explicit amount was added on top of an existing open row.
   increased,
+}
+
+/// What an undo or redo did.
+enum ListUndoOutcome {
+  /// The step was applied.
+  applied,
+
+  /// A housemate changed or removed what the step would have changed, so it
+  /// was left alone and dropped from the history.
+  changedElsewhere,
+
+  /// There was nothing to undo or redo (or another one is still running).
+  nothing,
+}
+
+/// The result of [ListDetailController.undo] / [ListDetailController.redo].
+class ListUndoResult {
+  const ListUndoResult(this.outcome, {this.restoredCount = 0});
+
+  static const ListUndoResult nothing = ListUndoResult(ListUndoOutcome.nothing);
+  static const ListUndoResult changedElsewhere =
+      ListUndoResult(ListUndoOutcome.changedElsewhere);
+
+  final ListUndoOutcome outcome;
+
+  /// Rows put back on the list (an undone delete or clear), so the screen can
+  /// confirm a bulk restore.
+  final int restoredCount;
 }
 
 /// Thrown by actions that need the server to have the list (generating an
@@ -80,6 +109,31 @@ class ListDetailController extends ChangeNotifier {
   String get listId => _listId;
   String _listId;
   StreamSubscription<ListIdChange>? _listIdSub;
+
+  /// Undo / redo history of this visit (the app bar arrows). Dropped with the
+  /// controller when the person leaves the list.
+  final ListUndoStack undoStack = ListUndoStack();
+
+  /// Told when an item created on this device moves to its server id (its
+  /// create synced, e.g. in the flush when the app is paused), synchronously
+  /// and before the items stream shows the row under the new id.
+  void Function(String from, String to)? onItemIdAdopted;
+  final Map<String, String> _adoptedItemIds = {};
+
+  /// The id [itemId] has now: the server's when it was created on this
+  /// device and its create has synced during this visit.
+  String currentItemId(String itemId) {
+    var id = itemId;
+    for (var hops = 0; hops < 4; hops++) {
+      final next = _adoptedItemIds[id];
+      if (next == null) break;
+      id = next;
+    }
+    return id;
+  }
+
+  StreamSubscription<ListItemIdChange>? _itemIdSub;
+  bool _replaying = false;
 
   /// True while a reminder change made here is still queued, so a refresh
   /// does not show the server's older value over it.
@@ -212,6 +266,8 @@ class ListDetailController extends ChangeNotifier {
       unawaited(_service?.flushListNotifications(listId));
     }
     unawaited(_listIdSub?.cancel());
+    unawaited(_itemIdSub?.cancel());
+    undoStack.dispose();
     for (final timer in _settleTimers.values) {
       timer.cancel();
     }
@@ -268,6 +324,7 @@ class ListDetailController extends ChangeNotifier {
       final repo = await ref.read(listRepositoryProvider.future);
 
       _followListId(repo);
+      _followItemIds(repo);
       await _watchItems(repo);
 
       final cached = await repo.getItemsByListOnce(listId);
@@ -358,6 +415,25 @@ class ListDetailController extends ChangeNotifier {
         _listId = change.to;
         unawaited(_watchItems(repo));
         _notify();
+      });
+    } catch (_) {}
+  }
+
+  /// Keeps the undo history pointing at items whose temporary id moved to
+  /// the server's after their create synced. Best-effort like
+  /// [_followListId].
+  void _followItemIds(ListRepository repo) {
+    if (_itemIdSub != null) return;
+    try {
+      _itemIdSub = repo.itemIdChanges.listen((change) {
+        if (_disposed) return;
+        undoStack.remapItemId(change.from, change.to);
+        _adoptedItemIds[change.from] = change.to;
+        final photos = _photosByItemId.remove(change.from);
+        if (photos != null) _photosByItemId[change.to] = photos;
+        // Before the watch stream drops the old row: the screen moves an
+        // open edit over to the new id instead of closing it.
+        onItemIdAdopted?.call(change.from, change.to);
       });
     } catch (_) {}
   }
@@ -694,11 +770,15 @@ class ListDetailController extends ChangeNotifier {
 
     try {
       final repo = await ref.read(listRepositoryProvider.future);
+      final at = DateTime.now();
       await repo.updateItemOfflineFirst(
         listId,
         item.id,
         UpdateListItemRequest(checked: value),
       );
+      if (item.checked != value) {
+        _record(ItemsCheckedStep(itemIds: [item.id], checked: value, at: at));
+      }
       final groupId = _groupId;
       if (value && groupId != null) _markStep(groupId, HubQuickStartStep.tick);
       if (_disposed) return;
@@ -717,18 +797,21 @@ class ListDetailController extends ChangeNotifier {
     ));
   }
 
-  Future<void> completeAll() async {
-    if (_service == null) return;
-    final repo = await ref.read(listRepositoryProvider.future);
-    await repo.setAllCheckedOfflineFirst(listId, checked: true);
-    if (_disposed) return;
-    _dirty = true;
-  }
+  Future<void> completeAll() => _setAllChecked(true);
 
-  Future<void> uncheckAll() async {
+  Future<void> uncheckAll() => _setAllChecked(false);
+
+  Future<void> _setAllChecked(bool checked) async {
     if (_service == null) return;
     final repo = await ref.read(listRepositoryProvider.future);
-    await repo.setAllCheckedOfflineFirst(listId, checked: false);
+    final at = DateTime.now();
+    final changed = await repo.setAllCheckedOfflineFirst(
+      listId,
+      checked: checked,
+    );
+    if (changed.isNotEmpty) {
+      _record(ItemsCheckedStep(itemIds: changed, checked: checked, at: at));
+    }
     if (_disposed) return;
     _dirty = true;
   }
@@ -829,6 +912,13 @@ class ListDetailController extends ChangeNotifier {
           repo.triggerAutoSync();
         }
       }
+      _record(match != null && created.id == match.id
+          ? QuantityMergedStep(
+              itemId: created.id,
+              before: ListItemFields.of(match),
+              after: ListItemFields.of(created),
+            )
+          : ItemAddedStep(item: created));
       final outcome = match == null
           ? AddItemOutcome.created
           : (match.checked
@@ -927,7 +1017,7 @@ class ListDetailController extends ChangeNotifier {
       (max, candidate) => candidate.position > max ? candidate.position : max,
     );
     final repo = await ref.read(listRepositoryProvider.future);
-    await repo.updateItemOfflineFirst(
+    final restored = await repo.updateItemOfflineFirst(
       listId,
       item.id,
       UpdateListItemRequest(
@@ -935,6 +1025,11 @@ class ListDetailController extends ChangeNotifier {
         position: item.position == maxPosition ? null : maxPosition + 1,
       ),
     );
+    _record(ItemFieldsChangedStep(
+      itemId: item.id,
+      before: ListItemFields.of(item),
+      after: ListItemFields.of(restored),
+    ));
     // Housemates see a restored row exactly as they see a new one, so it feeds
     // the same end-of-session item-added digest.
     _itemsAddedThisSession = true;
@@ -956,7 +1051,7 @@ class ListDetailController extends ChangeNotifier {
       return AddItemOutcome.restored;
     }
     final repo = await ref.read(listRepositoryProvider.future);
-    await repo.createItemOfflineFirst(
+    final created = await repo.createItemOfflineFirst(
       listId,
       CreateListItemRequest(
         name: suggestion.name,
@@ -964,6 +1059,7 @@ class ListDetailController extends ChangeNotifier {
       ),
       addedBy: _userId,
     );
+    _record(ItemAddedStep(item: created));
     _itemsAddedThisSession = true;
     if (_disposed) return AddItemOutcome.created;
     _dirty = true;
@@ -973,7 +1069,17 @@ class ListDetailController extends ChangeNotifier {
   Future<void> clearItems({required bool onlyChecked}) async {
     if (_service == null) return;
     final repo = await ref.read(listRepositoryProvider.future);
-    await repo.clearItemsOfflineFirst(listId, onlyChecked: onlyChecked);
+    final cleared = await repo.clearItemsOfflineFirst(
+      listId,
+      onlyChecked: onlyChecked,
+    );
+    if (cleared.items.isNotEmpty) {
+      _record(ItemsClearedStep(
+        items: cleared.items,
+        onlyChecked: onlyChecked,
+        clearOpId: cleared.opId,
+      ));
+    }
     if (_disposed) return;
     _dirty = true;
   }
@@ -995,6 +1101,7 @@ class ListDetailController extends ChangeNotifier {
     try {
       final repo = await ref.read(listRepositoryProvider.future);
       await repo.deleteItemOfflineFirst(listId, item.id);
+      _record(ItemDeletedStep(item: removedItem ?? item));
     } catch (_) {
       if (!_disposed &&
           removedItem != null &&
@@ -1006,33 +1113,6 @@ class ListDetailController extends ChangeNotifier {
       }
       rethrow;
     }
-  }
-
-  Future<void> restoreDeletedItem(ListItem item) async {
-    final service = _service;
-    if (service == null) return;
-    final repo = await ref.read(listRepositoryProvider.future);
-    final restored = await repo.createItemOfflineFirst(
-      listId,
-      CreateListItemRequest(
-        name: item.name,
-        quantity: item.quantity,
-        unit: item.unit,
-        note: item.note,
-        priceCents: item.priceCents,
-        canonicalItemId: item.canonicalItemId,
-      ),
-      addedBy: item.addedBy ?? _userId,
-    );
-    if (item.checked) {
-      await repo.updateItemOfflineFirst(
-        listId,
-        restored.id,
-        const UpdateListItemRequest(checked: true),
-      );
-    }
-    if (_disposed) return;
-    _dirty = true;
   }
 
   /// Patches name/quantity/unit/note/price on an item through the
@@ -1047,7 +1127,12 @@ class ListDetailController extends ChangeNotifier {
     int? priceCents,
   }) async {
     final repo = await ref.read(listRepositoryProvider.future);
-    await repo.updateItemOfflineFirst(
+    // The row as this edit found it, for the undo step: the live copy when
+    // the list shows one (the caller's may be a stale capture).
+    final before = ListItemFields.of(
+      _items.firstWhere((i) => i.id == item.id, orElse: () => item),
+    );
+    var after = await repo.updateItemOfflineFirst(
       listId,
       item.id,
       UpdateListItemRequest(
@@ -1063,12 +1148,21 @@ class ListDetailController extends ChangeNotifier {
       try {
         final canonicalId = await _resolveHighConfidence(name);
         if (canonicalId != null) {
-          await repo.setCanonicalItemIdLocal(listId, item.id, canonicalId);
+          after =
+              await repo.setCanonicalItemIdLocal(listId, item.id, canonicalId);
         }
       } catch (_) {
         // The rename is already durable; uncertain/failed enrichment remains
         // unlinked instead of restoring the stale canonical id.
       }
+    }
+    final afterFields = ListItemFields.of(after);
+    if (afterFields != before) {
+      _record(ItemFieldsChangedStep(
+        itemId: item.id,
+        before: before,
+        after: afterFields,
+      ));
     }
     if (_disposed) return;
     _dirty = true;
@@ -1143,8 +1237,12 @@ class ListDetailController extends ChangeNotifier {
   /// queued edit syncs.
   Future<void> renameList(String newName) async {
     if (_service == null) return;
+    final before = _listName;
     final repo = await ref.read(listRepositoryProvider.future);
     await repo.updateListOfflineFirst(listId, UpdateListRequest(name: newName));
+    if (before != newName) {
+      _record(ListRenamedStep(before: before, after: newName));
+    }
     if (_disposed) return;
     _listName = newName;
     _notify();
@@ -1155,13 +1253,29 @@ class ListDetailController extends ChangeNotifier {
   /// screen can show its own message.
   Future<void> setReminder(DateTime? remindAt) async {
     if (_service == null) return;
+    final before = hasPendingReminder ? _remindAt : null;
     final repo = await ref.read(listRepositoryProvider.future);
     await repo.setListReminderOfflineFirst(listId, remindAt);
+    _sendReminderNow(repo);
+    if (!_sameInstant(before, remindAt)) {
+      _record(ReminderChangedStep(before: before, after: remindAt));
+    }
     if (_disposed) return;
     _reminderQueued = true;
     _remindAt = remindAt;
     _reminderSentAt = null;
     _notify();
+  }
+
+  /// The server schedules the reminder, so it cannot wait for the person to
+  /// leave the list (the outbox is held while it is open): its op goes out
+  /// now, alone. Best-effort; offline it stays queued like any other op.
+  void _sendReminderNow(ListRepository repo) {
+    final id = listId;
+    unawaited(repo
+        .sendQueuedOpsNow(
+            (op) => op.type == 'setListReminder' && op.entityId == id)
+        .catchError((Object _) {}));
   }
 
   /// Returns true if the archive was performed (false if the list isn't loaded
@@ -1250,6 +1364,20 @@ class ListDetailController extends ChangeNotifier {
     final file = await picker.pickImage(source: ImageSource.gallery);
     if (file == null) return;
 
+    // An item added this visit may still be queued (the list holds the
+    // outbox while open). Send just its create, now, so the photo has a
+    // server row to hang off; the rest of the visit's changes stay queued.
+    // Undoing that add later deletes the server row instead of withdrawing
+    // the create.
+    final repo = await ref.read(listRepositoryProvider.future);
+    var itemId = item.id;
+    if (await repo.hasQueuedCreate(itemId)) {
+      itemId = await repo.sendItemCreateNow(itemId);
+      if (await repo.hasQueuedCreate(itemId)) {
+        throw const ListNotSyncedException();
+      }
+    }
+
     final bytes = await file.readAsBytes();
     final attachmentRepo = await ref.read(attachmentRepositoryProvider.future);
     final attachment = await attachmentRepo.uploadAttachment(
@@ -1262,13 +1390,13 @@ class ListDetailController extends ChangeNotifier {
     final svc = await ref.read(listServiceProviderAsync.future);
     await svc.attachItemPhoto(
       groupId: groupId,
-      itemId: item.id,
+      itemId: itemId,
       attachmentId: attachment.id,
     );
 
-    final photos = await svc.listItemPhotos(groupId: groupId, itemId: item.id);
+    final photos = await svc.listItemPhotos(groupId: groupId, itemId: itemId);
     if (_disposed) return;
-    _photosByItemId[item.id] = photos;
+    _photosByItemId[itemId] = photos;
     _notify();
   }
 
@@ -1351,6 +1479,13 @@ class ListDetailController extends ChangeNotifier {
     try {
       final repo = await ref.read(listRepositoryProvider.future);
       await repo.reorderItemsOfflineFirst(listId, itemIdsInOrder);
+      final before = (originalPositions.entries.toList()
+            ..sort((a, b) => a.value.compareTo(b.value)))
+          .map((entry) => entry.key)
+          .toList(growable: false);
+      if (!listEquals(before, itemIdsInOrder)) {
+        _record(ItemsReorderedStep(before: before, after: itemIdsInOrder));
+      }
     } catch (_) {
       if (!_disposed) {
         for (var index = 0; index < _items.length; index++) {
@@ -1384,6 +1519,328 @@ class ListDetailController extends ChangeNotifier {
         createdAt: item.createdAt,
         updatedAt: item.updatedAt,
       );
+
+  // ---- Undo / redo ----------------------------------------------------------
+
+  /// Adds a change this visit made to the undo history (never one an undo or
+  /// redo is replaying).
+  void _record(ListUndoStep step) {
+    if (_disposed) return;
+    undoStack.push(step);
+  }
+
+  static bool _sameInstant(DateTime? a, DateTime? b) =>
+      a == null ? b == null : (b != null && a.isAtSameMomentAs(b));
+
+  /// Undoes the newest change of this visit. A change a housemate has since
+  /// changed or removed is left alone and dropped
+  /// ([ListUndoOutcome.changedElsewhere]). Throws when the write fails; the
+  /// step then stays on the history to try again.
+  Future<ListUndoResult> undo() => _replay(undo: true);
+
+  /// Re-applies the newest undone change. Same rules as [undo].
+  Future<ListUndoResult> redo() => _replay(undo: false);
+
+  Future<ListUndoResult> _replay({required bool undo}) async {
+    if (_replaying || _service == null) return ListUndoResult.nothing;
+    final step = undo ? undoStack.takeUndo() : undoStack.takeRedo();
+    if (step == null) return ListUndoResult.nothing;
+    _replaying = true;
+    try {
+      final repo = await ref.read(listRepositoryProvider.future);
+      final applied = await _applyStep(repo, step, undo: undo);
+      if (applied == null) {
+        // Someone else moved the target on: this step can no longer be
+        // undone or redone without losing their change.
+        _notify();
+        return ListUndoResult.changedElsewhere;
+      }
+      if (undo) {
+        undoStack.pushRedo(applied.step);
+      } else {
+        undoStack.pushUndo(applied.step);
+      }
+      if (!_disposed) {
+        _dirty = true;
+        _notify();
+      }
+      return ListUndoResult(
+        ListUndoOutcome.applied,
+        restoredCount: applied.restored,
+      );
+    } catch (_) {
+      if (undo) {
+        undoStack.returnUndo(step);
+      } else {
+        undoStack.returnRedo(step);
+      }
+      rethrow;
+    } finally {
+      _replaying = false;
+    }
+  }
+
+  /// Applies [step] backwards ([undo]) or forwards, through the same
+  /// offline-first paths as the original change. Returns the step to keep on
+  /// the other history (narrowed to what was applied, or re-captured with
+  /// the row as it is now), or null when the target no longer holds what this
+  /// visit left it with.
+  Future<({ListUndoStep step, int restored})?> _applyStep(
+    ListRepository repo,
+    ListUndoStep step, {
+    required bool undo,
+  }) async {
+    final rows = await repo.getItemsByListOnce(listId);
+    final byId = {for (final row in rows) row.id: row};
+    final startedAt = DateTime.now();
+
+    switch (step) {
+      case ItemFieldsChangedStep(:final itemId, :final before, :final after):
+      case QuantityMergedStep(:final itemId, :final before, :final after):
+        final from = undo ? after : before;
+        final to = undo ? before : after;
+        final current = byId[itemId];
+        if (current == null || !_holdsFields(current, from, to)) return null;
+        _cancelSettle(itemId);
+        await _writeFields(repo, current, from, to);
+        if (to.checked && !current.checked) {
+          // Going back to ticked is not a new purchase.
+          await repo.withdrawQueuedPurchases([itemId], since: startedAt);
+        }
+        return (step: step, restored: 0);
+
+      case ItemsCheckedStep(:final itemIds, :final checked, :final at):
+        final target = undo ? !checked : checked;
+        final eligible = [
+          for (final id in itemIds)
+            if (byId[id]?.checked == !target) id,
+        ];
+        if (eligible.isEmpty) return null;
+        eligible.forEach(_cancelSettle);
+        await repo.setItemsCheckedOfflineFirst(
+          listId,
+          eligible,
+          checked: target,
+        );
+        if (undo) {
+          // An undone tick was not a purchase; nor is re-ticking an undone
+          // untick. A redone tick records its purchase again.
+          await repo.withdrawQueuedPurchases(
+            eligible,
+            since: checked ? at : startedAt,
+          );
+        }
+        return (
+          step: ItemsCheckedStep(
+            itemIds: eligible,
+            checked: checked,
+            at: undo ? at : startedAt,
+          ),
+          restored: 0,
+        );
+
+      case ItemAddedStep(:final item):
+        if (undo) {
+          final current = byId[item.id];
+          if (current == null ||
+              !ListItemFields.of(current)
+                  .sameContentAs(ListItemFields.of(item))) {
+            return null;
+          }
+          _cancelSettle(item.id);
+          await repo.deleteItemOfflineFirst(listId, item.id);
+          return (step: ItemAddedStep(item: current), restored: 0);
+        }
+        if (byId.containsKey(item.id)) return null;
+        await repo.restoreItemOfflineFirst(_onThisList(item));
+        return (step: step, restored: 0);
+
+      case ItemDeletedStep(:final item):
+        if (undo) {
+          if (byId.containsKey(item.id)) return null;
+          await repo.restoreItemOfflineFirst(_onThisList(item));
+          return (step: step, restored: 1);
+        }
+        final current = byId[item.id];
+        if (current == null ||
+            !ListItemFields.of(current)
+                .sameContentAs(ListItemFields.of(item))) {
+          return null;
+        }
+        _cancelSettle(item.id);
+        await repo.deleteItemOfflineFirst(listId, item.id);
+        return (step: ItemDeletedStep(item: current), restored: 0);
+
+      case ItemsClearedStep(:final items, :final onlyChecked, :final clearOpId):
+        if (undo) {
+          final missing = [
+            for (final item in items)
+              if (!byId.containsKey(item.id)) _onThisList(item),
+          ];
+          if (missing.isEmpty) return null;
+          await repo.restoreItemsOfflineFirst(
+            listId,
+            missing,
+            clearOpId: clearOpId,
+          );
+          return (
+            step: ItemsClearedStep(items: missing, onlyChecked: onlyChecked),
+            restored: missing.length,
+          );
+        }
+        final present = [
+          for (final item in items)
+            if (byId[item.id] case final current?
+                when ListItemFields.of(current)
+                    .sameContentAs(ListItemFields.of(item)))
+              current,
+        ];
+        if (present.isEmpty) return null;
+        present.map((item) => item.id).forEach(_cancelSettle);
+        await repo.deleteItemsOfflineFirst(
+          listId,
+          present.map((item) => item.id),
+        );
+        return (
+          step: ItemsClearedStep(items: present, onlyChecked: onlyChecked),
+          restored: 0,
+        );
+
+      case ItemsReorderedStep(:final before, :final after):
+        final from = undo ? after : before;
+        final to = undo ? before : after;
+        final currentOrder = (rows.toList()
+              ..sort((a, b) => a.position.compareTo(b.position)))
+            .map((row) => row.id)
+            .toList(growable: false);
+        final fromIds = from.toSet();
+        final stillThere = currentOrder.toSet();
+        // The rows this drag moved must still sit in the order it left them;
+        // a housemate's reorder since wins.
+        if (!listEquals(
+          currentOrder.where(fromIds.contains).toList(),
+          from.where(stillThere.contains).toList(),
+        )) {
+          return null;
+        }
+        final toIds = to.toSet();
+        final order = [
+          ...to.where(stillThere.contains),
+          ...currentOrder.where((id) => !toIds.contains(id)),
+        ];
+        await repo.reorderItemsOfflineFirst(listId, order);
+        return (step: step, restored: 0);
+
+      case ListRenamedStep(:final before, :final after):
+        final from = undo ? after : before;
+        final to = undo ? before : after;
+        if (_listName != from) return null;
+        await repo.updateListOfflineFirst(listId, UpdateListRequest(name: to));
+        if (!_disposed) _listName = to;
+        return (step: step, restored: 0);
+
+      case ReminderChangedStep(:final before, :final after):
+        final from = undo ? after : before;
+        var to = undo ? before : after;
+        final current = hasPendingReminder ? _remindAt : null;
+        if (!_sameInstant(current, from)) return null;
+        // A time that has passed since cannot be scheduled again.
+        if (to != null && !to.isAfter(DateTime.now())) to = null;
+        await repo.setListReminderOfflineFirst(listId, to);
+        _sendReminderNow(repo);
+        if (!_disposed) {
+          _reminderQueued = true;
+          _remindAt = to;
+          _reminderSentAt = null;
+        }
+        return (step: step, restored: 0);
+    }
+  }
+
+  /// [item] on this list's current id (a list created offline may have moved
+  /// to its server id since the step was recorded).
+  ListItem _onThisList(ListItem item) => item.listId == listId
+      ? item
+      : ListItem(
+          id: item.id,
+          listId: listId,
+          name: item.name,
+          quantity: item.quantity,
+          unit: item.unit,
+          note: item.note,
+          priceCents: item.priceCents,
+          canonicalItemId: item.canonicalItemId,
+          checked: item.checked,
+          position: item.position,
+          claimedBy: item.claimedBy,
+          addedBy: item.addedBy,
+          createdAt: item.createdAt,
+          updatedAt: item.updatedAt,
+        );
+
+  /// True when every field the step changed (from [from] to [to]) still
+  /// holds [from] on [current]. Fields the step did not touch may have moved
+  /// on (a housemate's own edit) without blocking it.
+  static bool _holdsFields(
+    ListItem current,
+    ListItemFields from,
+    ListItemFields to,
+  ) {
+    final now = ListItemFields.of(current);
+    if (from.name != to.name && now.name != from.name) return false;
+    if (from.quantity != to.quantity && now.quantity != from.quantity) {
+      return false;
+    }
+    if (from.unit != to.unit && now.unit != from.unit) return false;
+    if (from.note != to.note && now.note != from.note) return false;
+    if ((from.priceCents ?? 0) != (to.priceCents ?? 0) &&
+        (now.priceCents ?? 0) != (from.priceCents ?? 0)) {
+      return false;
+    }
+    if (from.checked != to.checked && now.checked != from.checked) {
+      return false;
+    }
+    return true;
+  }
+
+  /// Writes the fields the step changed back to [to], as one edit, and puts
+  /// back the canonical link a rename dropped.
+  Future<void> _writeFields(
+    ListRepository repo,
+    ListItem current,
+    ListItemFields from,
+    ListItemFields to,
+  ) async {
+    bool changed<T>(T a, T b, T now) => a != b && now != b;
+    final fromPrice = from.priceCents ?? 0;
+    final toPrice = to.priceCents ?? 0;
+    final request = UpdateListItemRequest(
+      name: changed(from.name, to.name, current.name) ? to.name : null,
+      quantity: changed(from.quantity, to.quantity, current.quantity)
+          ? to.quantity
+          : null,
+      unit: changed(from.unit, to.unit, current.unit) ? to.unit : null,
+      note: changed(from.note, to.note, current.note) ? to.note : null,
+      priceCents:
+          changed(fromPrice, toPrice, current.priceCents ?? 0) ? toPrice : null,
+      checked: changed(from.checked, to.checked, current.checked)
+          ? to.checked
+          : null,
+      position: changed(from.position, to.position, current.position)
+          ? to.position
+          : null,
+    );
+    if (request.toJson().isNotEmpty) {
+      await repo.updateItemOfflineFirst(listId, current.id, request);
+    }
+    if (request.name != null || from.canonicalItemId != to.canonicalItemId) {
+      await repo.setCanonicalItemIdLocal(
+        listId,
+        current.id,
+        to.canonicalItemId,
+      );
+    }
+  }
 
   // ---- Scan helper ----------------------------------------------------------
 

@@ -43,6 +43,9 @@ class ListItemsTable extends Table {
   TextColumn get canonicalItemId =>
       text().named('canonical_item_id').nullable()();
   TextColumn get addedBy => text().named('added_by').nullable()();
+
+  /// The item's note, as the server or this device last set it.
+  TextColumn get note => text().withDefault(const Constant(''))();
   DateTimeColumn get createdAt => dateTime().named('created_at')();
   DateTimeColumn get updatedAt => dateTime().named('updated_at')();
 
@@ -460,7 +463,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 17;
+  int get schemaVersion => 18;
 
   /// The prebuilt read-only global grocery brain (canonical items, seed/OFF
   /// aliases + FTS, store aisles). Attached by [GroceryReferenceInstaller] once
@@ -836,6 +839,12 @@ FROM recipes_table;
           if (from < 17) {
             // Who put each item on the list, for the "added by" row line.
             await m.addColumn(listItemsTable, listItemsTable.addedBy);
+          }
+          if (from < 18) {
+            // Item notes are cached like every other field, so editing a line
+            // (and undoing that edit) starts from the note it really has.
+            // Existing rows read '' until the next refresh fills them in.
+            await m.addColumn(listItemsTable, listItemsTable.note);
           }
         },
         beforeOpen: (details) async {
@@ -1392,6 +1401,9 @@ FROM recipes_table;
         // The optimistic row already knows who added it; keep that when the
         // server response predates the column or omits it.
         addedBy: Value(server.addedBy ?? local?.addedBy),
+        // A response that leaves the note out (`omitempty`, an older
+        // server) keeps the one the optimistic row carried.
+        note: Value(server.note.isNotEmpty ? server.note : (local?.note ?? '')),
         createdAt: Value(server.createdAt),
         updatedAt: Value(server.updatedAt),
       )

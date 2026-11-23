@@ -14,6 +14,7 @@ import '../repositories/recipe_repository.dart';
 import '../repositories/widget_ops_repository.dart';
 import '../storage/app_database.dart';
 import 'connectivity_service.dart';
+import 'sync_scheduler.dart';
 
 /// How long the app waits after the last local write before draining a sync
 /// session on its own, when nothing else (leaving the screen, pausing the app)
@@ -30,6 +31,15 @@ const kSyncSessionIdleWindow = Duration(seconds: 20);
 /// changes, when the app is paused, or after [sessionIdleWindow] without a new
 /// write. Connectivity restores, app resumes and explicit retries still drain
 /// straight away.
+///
+/// While the outbox is *held* ([hold], counted by the [SyncScheduler]; the
+/// list detail screen holds it for as long as it is the visible route) none
+/// of that happens on its own: the idle timer is not armed, and a route
+/// change, connectivity restore, app resume, retry timer or plain [drain]
+/// only notes that a flush is owed. Releasing the last hold flushes. Only
+/// explicit flushes go through while held: [flushSession] (the app being
+/// paused, a screen that needs the server to have its writes) and the manual
+/// retries ([retryFailed], [retryOp]).
 class OutboxCoordinator {
   final AppDatabase _db;
   final ConnectivityService _connectivity;
@@ -62,6 +72,13 @@ class OutboxCoordinator {
   /// Fallback flush delay for an open sync session; see [noteLocalWrite].
   final Duration sessionIdleWindow;
 
+  /// Counts the holds (see the class doc). Shared with the repositories'
+  /// local-write hook in production; a private one otherwise.
+  final SyncScheduler _scheduler;
+
+  /// A write, drain or flush was asked for while held: release flushes.
+  bool _owedWhileHeld = false;
+
   Timer? _retryTimer;
   Timer? _sessionTimer;
   bool _isDraining = false;
@@ -82,7 +99,9 @@ class OutboxCoordinator {
     MealPlanRepository? mealPlanRepo,
     bool Function()? isSignedIn,
     this.sessionIdleWindow = kSyncSessionIdleWindow,
+    SyncScheduler? scheduler,
   })  : _db = db,
+        _scheduler = scheduler ?? SyncScheduler(),
         _accountRepo = accountRepo,
         _widgetOpsRepo = widgetOpsRepo,
         _groupRepo = groupRepo,
@@ -93,7 +112,31 @@ class OutboxCoordinator {
         _financeRepo = financeRepo,
         _recipeRepo = recipeRepo,
         _choreRepo = choreRepo,
-        _pinwallRepo = pinwallRepo;
+        _pinwallRepo = pinwallRepo {
+    _scheduler.addHoldListener(_onHoldChanged);
+  }
+
+  /// True while a [SyncHold] keeps the outbox from draining on its own.
+  bool get isHeld => _scheduler.isHeld;
+
+  /// Takes a hold on the outbox; see the class doc. Release it with
+  /// [SyncHold.release], which flushes once no hold is left.
+  SyncHold hold(String reason) => _scheduler.hold(reason);
+
+  void _onHoldChanged(bool held) {
+    if (held) {
+      // A session armed before the hold waits for its release instead.
+      if (_sessionTimer?.isActive ?? false) _owedWhileHeld = true;
+      _sessionTimer?.cancel();
+      _sessionTimer = null;
+      return;
+    }
+    // Always flush on release, even when nothing was noted: a drain that
+    // was running when the hold began may have left ops behind it, and a
+    // flush with an empty queue costs one count query.
+    _owedWhileHeld = false;
+    unawaited(flushSession(reason: 'hold released'));
+  }
 
   /// Start listening to connectivity changes and drain when back online.
   ///
@@ -123,8 +166,10 @@ class OutboxCoordinator {
   }
 
   /// Whether a sync session is open: a local write was queued and its
-  /// fallback flush timer is still armed.
-  bool get hasPendingSession => _sessionTimer?.isActive ?? false;
+  /// fallback flush timer is still armed, or the outbox is held and owes a
+  /// flush on release.
+  bool get hasPendingSession =>
+      (_sessionTimer?.isActive ?? false) || (isHeld && _owedWhileHeld);
 
   /// Whether a drain pass is running right now.
   bool get isDraining => _isDraining;
@@ -133,6 +178,11 @@ class OutboxCoordinator {
   /// session by re-arming the idle fallback; never drains by itself, so it is
   /// safe to call from anywhere, including inside a Drift transaction.
   void noteLocalWrite() {
+    if (isHeld) {
+      // Held: the write waits for the release, not for an idle window.
+      _owedWhileHeld = true;
+      return;
+    }
     _sessionTimer?.cancel();
     _sessionTimer = Timer(sessionIdleWindow, () {
       _sessionTimer = null;
@@ -140,12 +190,13 @@ class OutboxCoordinator {
     });
   }
 
-  /// Ends the current sync session and drains now.
+  /// Ends the current sync session and drains now. Explicit, so it goes
+  /// through a hold (which stays in place); see the class doc.
   Future<void> flushSession({String? reason}) {
     _sessionTimer?.cancel();
     _sessionTimer = null;
     _logger.i('Flushing sync session${reason == null ? '' : ' ($reason)'}');
-    return drain();
+    return _drainNow();
   }
 
   /// Tells the coordinator the router moved to [location]. Leaving a screen
@@ -155,14 +206,27 @@ class OutboxCoordinator {
     final previous = _lastLocation;
     _lastLocation = location;
     if (previous == location) return;
+    // Held: the screen holding the outbox flushes when it lets go.
+    if (isHeld) return;
     if (!hasPendingSession) return;
     unawaited(flushSession(reason: 'route change'));
   }
 
   /// Drain all pending outbox operations once.
   ///
-  /// Safe to call multiple times; internally guarded by [_isDraining].
-  Future<void> drain({bool force = false}) async {
+  /// Safe to call multiple times; internally guarded by [_isDraining]. While
+  /// the outbox is held, a plain drain (connectivity restore, app resume, the
+  /// retry timer, the banner's fallback nudge) is deferred to the release;
+  /// [force] (an explicit user retry) still goes through.
+  Future<void> drain({bool force = false}) {
+    if (isHeld && !force) {
+      _owedWhileHeld = true;
+      return Future<void>.value();
+    }
+    return _drainNow(force: force);
+  }
+
+  Future<void> _drainNow({bool force = false}) async {
     if (_isDraining) return;
     if (_isSignedIn?.call() == false) {
       _logger.i('Signed out; skipping outbox drain');
@@ -286,6 +350,7 @@ class OutboxCoordinator {
   }
 
   void dispose() {
+    _scheduler.removeHoldListener(_onHoldChanged);
     _connectivitySub?.cancel();
     _connectivitySub = null;
     _retryTimer?.cancel();

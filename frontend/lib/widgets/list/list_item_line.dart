@@ -8,14 +8,17 @@ import '../../providers/outbox_provider.dart';
 import '../../theme/spacing.dart';
 import '../animated_check_toggle.dart';
 import '../animated_strikethrough.dart';
+import '../../utils/list_item_edit.dart';
 import '../app_icon.dart';
 
 /// One line of a list, written like a note's checklist (Apple Notes, Google
 /// Keep): a checkbox and the words, nothing boxed around them.
 ///
-/// - The checkbox ticks the item off.
-/// - Tapping the words edits them in place; while a line is being edited it
-///   shows its two tools, details (amount, note, price, photo) and remove.
+/// - The checkbox ticks the item off; nothing else on the line does.
+/// - Tapping the words edits them in place, with the caret where the tap
+///   landed. While a line is edited its note can open as a second field
+///   under the name; the screen pins the other details (amount, unit,
+///   price, photo, delete) in a row above the keyboard.
 /// - Long-pressing picks the line up to move it, when the list allows it.
 ///
 /// Amount, note, price and who added it share one quiet line underneath.
@@ -29,8 +32,12 @@ class ListItemLine extends ConsumerWidget {
     this.editController,
     this.editFocusNode,
     this.onSubmitEdit,
-    this.onDetails,
-    this.onRemove,
+    this.onEditAt,
+    this.noteController,
+    this.noteFocusNode,
+    this.showNoteField = false,
+    this.onSubmitNote,
+    this.editTapRegionGroupId,
     this.photoUrl,
     this.onPhotoTap,
     this.currencySymbol = '\$',
@@ -52,8 +59,23 @@ class ListItemLine extends ConsumerWidget {
   final TextEditingController? editController;
   final FocusNode? editFocusNode;
   final VoidCallback? onSubmitEdit;
-  final VoidCallback? onDetails;
-  final VoidCallback? onRemove;
+
+  /// Tap on the name itself: start editing with the caret at that character
+  /// offset. Without it a tap anywhere on the line calls [onEdit].
+  final ValueChanged<int>? onEditAt;
+
+  /// The note's own field, shown under the name while editing when
+  /// [showNoteField] is set.
+  final TextEditingController? noteController;
+  final FocusNode? noteFocusNode;
+  final bool showNoteField;
+
+  /// Return in the note field.
+  final VoidCallback? onSubmitNote;
+
+  /// Shared with the edit controls outside the line, so a tap there counts
+  /// as inside this line's fields.
+  final Object? editTapRegionGroupId;
 
   final String? photoUrl;
   final VoidCallback? onPhotoTap;
@@ -74,12 +96,27 @@ class ListItemLine extends ConsumerWidget {
   /// ticks a line before the cache row it was read from catches up).
   final bool? checked;
 
-  static String formatQuantity(double value) {
-    if (value == value.roundToDouble()) return value.toInt().toString();
-    return value
-        .toStringAsFixed(2)
-        .replaceFirst(RegExp(r'0+$'), '')
-        .replaceFirst(RegExp(r'\.$'), '');
+  static String formatQuantity(double value) => formatItemAmount(value);
+
+  /// The character of [text] under [position] when laid out like the
+  /// line's name in [maxWidth].
+  static int caretOffsetAt(
+    BuildContext context,
+    String text,
+    TextStyle? style,
+    Offset position,
+    double maxWidth,
+  ) {
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+      maxLines: 1,
+      ellipsis: '…',
+    )..layout(maxWidth: maxWidth);
+    final offset = painter.getPositionForOffset(position).offset;
+    painter.dispose();
+    return offset.clamp(0, text.length);
   }
 
   /// "2 l · ripe ones · €3.00 · Sam": everything about the item but its name.
@@ -114,31 +151,68 @@ class ListItemLine extends ConsumerWidget {
       color: failedToSync ? scheme.error : scheme.onSurfaceVariant,
       height: 1.3,
     );
-    final detailText = failedToSync ? l10n.listItemFailedSave : details(l10n);
+    final detailText = failedToSync
+        ? l10n.listItemFailedSave
+        // While editing, the details sit in the controls above the keyboard.
+        : editing
+            ? null
+            : details(l10n);
+    final tapGroup = editTapRegionGroupId ?? EditableText;
+    const bareField = InputDecoration(
+      isCollapsed: true,
+      border: InputBorder.none,
+      enabledBorder: InputBorder.none,
+      focusedBorder: InputBorder.none,
+      filled: false,
+      counterText: '',
+      contentPadding: EdgeInsets.zero,
+    );
 
-    final Widget words;
+    Widget words;
     if (editing && editController != null) {
       words = TextField(
         key: ValueKey('item-line-edit-${item.id}'),
         controller: editController,
         focusNode: editFocusNode,
+        groupId: tapGroup,
         style: nameStyle,
         minLines: 1,
         maxLines: 4,
         maxLength: 200,
         textCapitalization: TextCapitalization.sentences,
         textInputAction: TextInputAction.done,
-        decoration: const InputDecoration(
-          isCollapsed: true,
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: InputBorder.none,
-          filled: false,
-          counterText: '',
-          contentPadding: EdgeInsets.zero,
-        ),
+        decoration: bareField,
         onSubmitted: (_) => onSubmitEdit?.call(),
       );
+      if (showNoteField && noteController != null) {
+        words = Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            words,
+            Padding(
+              padding: const EdgeInsets.only(top: MitlistSpacing.xs),
+              child: TextField(
+                key: ValueKey('item-line-note-${item.id}'),
+                controller: noteController,
+                focusNode: noteFocusNode,
+                groupId: tapGroup,
+                style: detailStyle,
+                minLines: 1,
+                maxLines: 3,
+                maxLength: 500,
+                textCapitalization: TextCapitalization.sentences,
+                textInputAction: TextInputAction.done,
+                decoration: bareField.copyWith(
+                  hintText: l10n.listItemNoteLabel,
+                  hintStyle: detailStyle,
+                ),
+                onSubmitted: (_) => onSubmitNote?.call(),
+              ),
+            ),
+          ],
+        );
+      }
     } else {
       words = AnimatedStrikethrough(
         text: item.name,
@@ -148,6 +222,25 @@ class ListItemLine extends ConsumerWidget {
             ? scheme.onSurfaceVariant
             : scheme.onSurface,
       );
+      if (onEditAt != null) {
+        final shown = words;
+        words = LayoutBuilder(
+          builder: (context, constraints) => GestureDetector(
+            key: ValueKey('item-line-name-${item.id}'),
+            behavior: HitTestBehavior.opaque,
+            onTapUp: (details) => onEditAt!(
+              caretOffsetAt(
+                context,
+                item.name,
+                nameStyle,
+                details.localPosition,
+                constraints.maxWidth,
+              ),
+            ),
+            child: shown,
+          ),
+        );
+      }
     }
 
     final line = Padding(
@@ -218,20 +311,7 @@ class ListItemLine extends ConsumerWidget {
                 ),
               ),
             ),
-          if (editing) ...[
-            IconButton(
-              key: ValueKey('item-line-details-${item.id}'),
-              icon: AppIcon(name: 'tune', color: scheme.onSurfaceVariant),
-              tooltip: l10n.listItemDetails,
-              onPressed: onDetails,
-            ),
-            IconButton(
-              key: ValueKey('item-line-remove-${item.id}'),
-              icon: AppIcon(name: 'xMark', color: scheme.onSurfaceVariant),
-              tooltip: l10n.commonDelete,
-              onPressed: onRemove,
-            ),
-          ] else if (failedToSync)
+          if (failedToSync)
             Padding(
               padding: const EdgeInsets.only(left: MitlistSpacing.sm),
               child: AppIcon(
@@ -244,9 +324,11 @@ class ListItemLine extends ConsumerWidget {
       ),
     );
 
-    // Taps on the tools count as inside the field, so reaching for them
-    // does not end the edit first.
-    Widget body = TextFieldTapRegion(
+    // Taps anywhere on the line (and on the edit controls sharing its
+    // group) count as inside the field, so reaching for them does not end
+    // the edit first.
+    Widget body = TapRegion(
+      groupId: tapGroup,
       child: Material(
         color: editing ? scheme.surfaceContainerLow : Colors.transparent,
         child: InkWell(

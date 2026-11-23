@@ -15,6 +15,7 @@ OutboxOpDomain outboxOpDomain(OutboxOp op) {
     case 'reorderItems':
     case 'addItemAmount':
     case 'clearItems':
+    case 'restoreItem':
     case 'createList':
     case 'updateList':
     case 'archiveList':
@@ -116,6 +117,7 @@ String outboxOpLabel(
     'clearItems' => payload?['onlyChecked'] == true
         ? l10n.outboxOpClearCheckedItems
         : l10n.outboxOpClearItems,
+    'restoreItem' => l10n.listUndoOutboxRestoreItem,
     'recordPurchase' => l10n.outboxOpRecordPurchase,
     'createList' => l10n.outboxOpCreateList,
     'updateList' => l10n.outboxOpUpdateList,
