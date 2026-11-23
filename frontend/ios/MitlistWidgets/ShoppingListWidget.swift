@@ -14,6 +14,7 @@ struct ShoppingListWidget: Widget {
     .configurationDisplayName("Shopping list")
     .description("Tick items off and add new ones.")
     .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .accessoryRectangular, .accessoryInline])
+    .contentMarginsDisabled()
   }
 }
 
@@ -45,72 +46,149 @@ struct ShoppingListWidgetView: View {
           // Locked screens show counts, not item names.
           Text("\(list.openCount) left")
             .font(.subheadline)
+            .invalidatableContent()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .widgetURL(WidgetLinks.list(list.id, household: household.id))
       case .systemSmall:
         SmallListView(entry: entry, household: household, list: list)
+          .mitlistMargins(family)
+      case .systemMedium:
+        MediumListView(entry: entry, household: household, list: list)
+          .mitlistMargins(family)
+          .widgetURL(WidgetLinks.list(list.id, household: household.id))
       default:
-        // A medium widget fits three rows, or two above the footer line.
-        let footer = entry.needsApp || entry.updatedText != nil
-        ListBodyView(
-          entry: entry, household: household, list: list,
-          maxItems: family == .systemLarge ? (footer ? 7 : 8) : (footer ? 2 : 3),
-          showsMore: family == .systemLarge)
+        LargeListView(entry: entry, household: household, list: list)
+          .mitlistMargins(family)
+          .widgetURL(WidgetLinks.list(list.id, household: household.id))
       }
     } else {
       NoListView(householdID: entry.snapshot?.resolveHousehold(nil)?.id)
+        .mitlistMargins(family)
     }
   }
 }
 
+/// List name and count, and the first item names at a glance; "+" opens the
+/// list ready to type.
 private struct SmallListView: View {
   let entry: MitlistEntry
   let household: WidgetHousehold
   let list: WidgetList
 
   var body: some View {
+    let open = list.items.filter { !$0.checked }
     VStack(alignment: .leading, spacing: 2) {
-      Text(verbatim: list.name)
-        .font(.headline)
-        .lineLimit(2)
-      Spacer(minLength: 0)
-      Text(verbatim: "\(list.openCount)")
-        .font(.system(size: 40, weight: .bold, design: .rounded))
-        .minimumScaleFactor(0.6)
-        .lineLimit(1)
-        .contentTransition(.numericText())
-      HStack(alignment: .center) {
-        Text("left")
-          .font(.subheadline)
-          .foregroundStyle(.secondary)
+      HStack(alignment: .firstTextBaseline, spacing: 4) {
+        Text(verbatim: list.name)
+          .font(.headline)
+          .lineLimit(1)
         Spacer(minLength: 0)
-        AddLink(url: WidgetLinks.list(list.id, household: household.id, add: true), size: 32)
+        Text(verbatim: "\(list.openCount)")
+          .font(.headline.monospacedDigit())
+          .foregroundStyle(WidgetTheme.accent)
+          .widgetAccentable()
+          .invalidatableContent()
+          .accessibilityLabel(Text("\(list.openCount) left"))
       }
-      if entry.needsApp {
-        Image(systemName: "exclamationmark.arrow.triangle.2.circlepath")
-          .font(.caption2)
+      if open.isEmpty {
+        Text("Nothing left to buy")
+          .font(.caption)
           .foregroundStyle(.secondary)
-          .accessibilityLabel(Text("Open mitlist to sync"))
+          .lineLimit(2)
+      } else {
+        ForEach(open.prefix(3)) { item in
+          Text(verbatim: item.name)
+            .font(.caption)
+            .foregroundStyle(item.isLocal ? .secondary : .primary)
+            .lineLimit(1)
+        }
+      }
+      Spacer(minLength: 0)
+      HStack(alignment: .bottom, spacing: 4) {
+        let hidden = max(0, list.openCount - min(3, open.count))
+        if entry.needsApp {
+          Image(systemName: "exclamationmark.arrow.triangle.2.circlepath")
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .accessibilityLabel(Text("Open mitlist to sync"))
+        } else if hidden > 0 {
+          Text("+\(hidden) more")
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+        }
+        Spacer(minLength: 0)
+        AddButton(url: WidgetLinks.list(list.id, household: household.id, add: true))
       }
     }
-    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     .widgetURL(WidgetLinks.list(list.id, household: household.id))
   }
 }
 
-private struct ListBodyView: View {
+/// Name, count, "+" and refresh on the left; as many 44pt rows as fit on
+/// the right (three on most phones).
+private struct MediumListView: View {
   let entry: MitlistEntry
   let household: WidgetHousehold
   let list: WidgetList
-  let maxItems: Int
-  /// "+3 more" under the rows; the medium size has no room for it and its
-  /// header already shows the count.
-  let showsMore: Bool
 
   var body: some View {
-    VStack(alignment: .leading, spacing: WidgetTheme.rowSpacing) {
-      HStack(alignment: .center, spacing: 8) {
+    HStack(alignment: .top, spacing: WidgetTheme.columnSpacing) {
+      VStack(alignment: .leading, spacing: 2) {
+        Link(destination: WidgetLinks.list(list.id, household: household.id)) {
+          VStack(alignment: .leading, spacing: 2) {
+            Text(verbatim: list.name)
+              .font(.headline)
+              .lineLimit(2)
+            Text("\(list.openCount) left")
+              .font(.caption.weight(.semibold))
+              .foregroundStyle(WidgetTheme.accent)
+              .widgetAccentable()
+              .invalidatableContent()
+          }
+        }
+        Spacer(minLength: 0)
+        WidgetFooter(entry: entry, showsRefresh: false)
+        HStack(spacing: 4) {
+          AddButton(url: WidgetLinks.list(list.id, household: household.id, add: true))
+          if !entry.needsApp { RefreshButton() }
+        }
+      }
+      .frame(width: 104, alignment: .leading)
+
+      GeometryReader { geometry in
+        let rows = max(1, RowFit.rows(in: geometry.size.height))
+        VStack(alignment: .leading, spacing: 0) {
+          if list.items.isEmpty {
+            Spacer(minLength: 0)
+            Text("Nothing left to buy")
+              .font(.subheadline)
+              .foregroundStyle(.secondary)
+            Spacer(minLength: 0)
+          } else {
+            ForEach(list.items.prefix(rows)) { item in
+              ListItemRow(item: item, listID: list.id, householdID: household.id, showAddedBy: false)
+            }
+            Spacer(minLength: 0)
+          }
+        }
+      }
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+  }
+}
+
+/// Header with "+" and refresh, then as many 44pt rows as fit.
+private struct LargeListView: View {
+  let entry: MitlistEntry
+  let household: WidgetHousehold
+  let list: WidgetList
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 4) {
+      HStack(alignment: .center, spacing: 4) {
         Link(destination: WidgetLinks.list(list.id, household: household.id)) {
           VStack(alignment: .leading, spacing: 0) {
             Text(verbatim: list.name)
@@ -120,33 +198,37 @@ private struct ListBodyView: View {
               .font(.caption.weight(.semibold))
               .foregroundStyle(WidgetTheme.accent)
               .widgetAccentable()
+              .invalidatableContent()
           }
         }
         Spacer(minLength: 0)
-        AddLink(url: WidgetLinks.list(list.id, household: household.id, add: true))
+        if !entry.needsApp { RefreshButton() }
+        AddButton(url: WidgetLinks.list(list.id, household: household.id, add: true))
       }
 
-      if list.items.isEmpty {
-        Spacer(minLength: 0)
-        Text("Nothing left to buy")
-          .font(.subheadline)
-          .foregroundStyle(.secondary)
-        Spacer(minLength: 0)
-      } else {
-        ForEach(list.items.prefix(maxItems)) { item in
-          ListItemRow(item: item, listID: list.id, householdID: household.id, showAddedBy: maxItems > 3)
-        }
-        let hidden = max(0, list.openCount - min(maxItems, list.items.count))
-        if showsMore && hidden > 0 {
-          Link(destination: WidgetLinks.list(list.id, household: household.id)) {
-            Text("+\(hidden) more")
-              .font(.caption)
+      GeometryReader { geometry in
+        // One caption line under the rows: "+3 more" and the footer.
+        let rows = max(1, RowFit.rows(in: geometry.size.height, reserved: 18))
+        let shown = Array(list.items.prefix(rows))
+        let hidden = max(0, list.openCount - shown.filter { !$0.checked }.count)
+        VStack(alignment: .leading, spacing: 0) {
+          if list.items.isEmpty {
+            Spacer(minLength: 0)
+            Text("Nothing left to buy")
+              .font(.subheadline)
               .foregroundStyle(.secondary)
+            Spacer(minLength: 0)
+          } else {
+            ForEach(shown) { item in
+              ListItemRow(item: item, listID: list.id, householdID: household.id, showAddedBy: true)
+            }
+            Spacer(minLength: 0)
           }
+          WidgetFooter(
+            entry: entry, showsRefresh: false,
+            trailing: hidden > 0 ? Text("+\(hidden) more") : nil)
         }
-        Spacer(minLength: 0)
       }
-      WidgetFooter(entry: entry)
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
   }
@@ -173,14 +255,107 @@ private struct NoListView: View {
   }
 }
 
+// MARK: - Quick add
+
+/// "Add to Groceries": one tap opens the list with the composer focused
+/// (`mitlist:///lists/<id>?group=<hh>&add=1`, C5). Home Screen small and a
+/// Lock Screen circle.
+struct QuickAddWidget: Widget {
+  var body: some WidgetConfiguration { Self.configuration() }
+
+  static func configuration() -> some WidgetConfiguration {
+    AppIntentConfiguration(kind: WidgetKinds.quickAdd, intent: ListWidgetConfiguration.self, provider: ListProvider()) {
+      entry in
+      QuickAddWidgetView(entry: entry)
+    }
+    .configurationDisplayName("Quick add")
+    .description("Add to your shopping list in one tap.")
+    .supportedFamilies([.systemSmall, .accessoryCircular])
+    .contentMarginsDisabled()
+  }
+}
+
+struct QuickAddWidgetView: View {
+  let entry: MitlistEntry
+  @Environment(\.widgetFamily) private var systemFamily
+  @Environment(\.mitlistFamilyOverride) private var familyOverride
+  private var family: WidgetFamily { familyOverride ?? systemFamily }
+
+  var body: some View {
+    content.mitlistBackground()
+  }
+
+  @ViewBuilder
+  private var content: some View {
+    if entry.status != .ready {
+      WidgetSetupView(status: entry.status)
+    } else if let (household, list) = entry.snapshot?.resolveList(entry.selection) {
+      let url = WidgetLinks.list(list.id, household: household.id, add: true)
+      if family == .accessoryCircular {
+        ZStack {
+          AccessoryWidgetBackground()
+          Image(systemName: "plus")
+            .font(.title2.weight(.heavy))
+        }
+        .widgetURL(url)
+        .accessibilityLabel(Text("Add to \(list.name)"))
+      } else {
+        VStack(alignment: .leading, spacing: 2) {
+          ZStack {
+            Rectangle()
+              .fill(WidgetTheme.accent)
+              .widgetAccentable()
+            Image(systemName: "plus")
+              .font(.system(size: 30, weight: .heavy))
+              .foregroundStyle(.white)
+          }
+          .frame(width: 64, height: 64)
+          .accessibilityHidden(true)
+          Spacer(minLength: 0)
+          Text("Add to")
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.secondary)
+          Text(verbatim: list.name)
+            .font(.headline)
+            .lineLimit(2)
+            .minimumScaleFactor(0.8)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .mitlistMargins(family)
+        .widgetURL(url)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text("Add to \(list.name)"))
+      }
+    } else {
+      NoListView(householdID: entry.snapshot?.resolveHousehold(nil)?.id)
+        .mitlistMargins(family)
+    }
+  }
+}
+
 #Preview(as: .systemMedium) {
   ShoppingListWidget()
 } timeline: {
   MitlistEntry.preview()
+  MitlistEntry.previewTicked()
 }
 
 #Preview(as: .systemSmall) {
   ShoppingListWidget()
 } timeline: {
   MitlistEntry.preview()
+  MitlistEntry.previewTicked()
+}
+
+#Preview(as: .systemSmall) {
+  QuickAddWidget()
+} timeline: {
+  MitlistEntry.preview()
+  MitlistEntry.previewTicked()
+}
+
+#Preview(as: .systemLarge) {
+  ShoppingListWidget()
+} timeline: {
+  MitlistEntry.previewTicked()
 }

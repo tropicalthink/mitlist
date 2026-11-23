@@ -21,10 +21,18 @@ enum WidgetChannel {
     case "setCredential":
       work(result) { setCredential(args) }
     case "clearAll":
+      // Optional `reason` (e.g. "not_remembered": the session is not to be
+      // remembered, so widgets say they need "Remember me").
+      let reason = args["reason"] as? String
       work(result) {
-        clearAll()
+        clearAll(reason: reason)
         return nil
       }
+    case "installedWidgets":
+      installedWidgets(result)
+    case "isPinWidgetSupported", "pinWidget":
+      // iOS has no API to place a widget for the person.
+      result(false)
     case "hasCredential":
       work(result) { hasCredential() }
     case "writeSnapshot":
@@ -70,15 +78,27 @@ enum WidgetChannel {
     }
     if let storage = WidgetStorage.shared {
       storage.signedOut = false
+      storage.clearReason = nil
       storage.authFailed = false
       runInBackground {
         await queueCurrentPushToken(storage: storage)
-        // Taps that waited for a credential go out now.
-        await WidgetSync.run(storage: storage, fetch: false, timeout: 25)
+        // Taps that waited for a credential go out now; on a first sign-in
+        // the widgets get their data without waiting for the app's snapshot.
+        await WidgetSync.run(storage: storage, fetch: storage.readSnapshot() == nil, timeout: 25)
       }
     }
     WidgetSync.reloadWidgets()
     return nil
+  }
+
+  /// One entry per mitlist widget placed on the Home Screen or Lock Screen:
+  /// "shopping_list", "chores", "quick_add" or "household" (duplicates
+  /// allowed). Balance widgets and Controls are not reported.
+  private static func installedWidgets(_ result: @escaping FlutterResult) {
+    WidgetCenter.shared.getCurrentConfigurations { outcome in
+      let kinds = ((try? outcome.get()) ?? []).compactMap { WidgetKinds.channelKind($0.kind) }
+      DispatchQueue.main.async { result(kinds) }
+    }
   }
 
   /// True when a credential is stored, reads back, and has not expired.
@@ -89,11 +109,12 @@ enum WidgetChannel {
     return expiry > Date()
   }
 
-  private static func clearAll() {
+  private static func clearAll(reason: String?) {
     WidgetCredentialStore.delete()
     if let storage = WidgetStorage.shared {
       storage.deleteAll()
       storage.signedOut = true
+      storage.clearReason = reason
     }
     if #available(iOS 16.2, *) {
       Task { await ShoppingTripActivityController.endAll() }

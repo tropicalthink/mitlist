@@ -41,6 +41,25 @@ public struct WidgetCredential: Codable, Equatable {
   }
 }
 
+/// What to do with a 401 (C3). The app replaces the widget credential every
+/// few days and the server revokes the old one at once, so a request that
+/// was already in flight with the old token gets a 401 although nothing is
+/// wrong: retry it once with the new one, and only report a dead credential
+/// when the token that failed is still the stored one.
+public enum WidgetAuthRetry {
+  /// Retry once when the stored credential is a different, usable one.
+  public static func shouldRetry(usedToken: String, stored: WidgetCredential?, alreadyRetried: Bool) -> Bool {
+    guard !alreadyRetried, let stored, stored.isUsable else { return false }
+    return stored.token != usedToken
+  }
+
+  /// Raise `widget.auth_failed` only when the failing token is still the
+  /// stored one (not replaced meanwhile, not deleted by a sign-out).
+  public static func shouldFlag(usedToken: String, stored: WidgetCredential?) -> Bool {
+    stored?.token == usedToken
+  }
+}
+
 /// Builds the exact HTTP requests widgets send (C4 "Native delivery").
 public enum WidgetRequests {
   public static let timeout: TimeInterval = 8

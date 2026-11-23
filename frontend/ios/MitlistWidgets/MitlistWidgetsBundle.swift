@@ -20,6 +20,7 @@ enum MitlistWidgetsEntry {
 struct MitlistWidgetsBundle: WidgetBundle {
   var body: some Widget {
     ShoppingListWidget()
+    QuickAddWidget()
     ChoresWidget()
     HouseholdTodayWidget()
     BalanceWidget()
@@ -38,6 +39,7 @@ struct MitlistWidgetsBundle: WidgetBundle {
 struct MitlistWidgetsPushBundle: WidgetBundle {
   var body: some Widget {
     PushEnabled.ShoppingList()
+    PushEnabled.QuickAdd()
     PushEnabled.Chores()
     PushEnabled.HouseholdToday()
     PushEnabled.Balance()
@@ -52,6 +54,12 @@ enum PushEnabled {
   struct ShoppingList: Widget {
     var body: some WidgetConfiguration {
       ShoppingListWidget.configuration().pushHandler(MitlistWidgetPushHandler.self)
+    }
+  }
+
+  struct QuickAdd: Widget {
+    var body: some WidgetConfiguration {
+      QuickAddWidget.configuration().pushHandler(MitlistWidgetPushHandler.self)
     }
   }
 

@@ -105,8 +105,6 @@ public final class PendingOpsQueue {
   }
 
   private static func write(_ text: String, to url: URL) {
-    try? FileManager.default.createDirectory(
-      at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-    try? Data(text.utf8).write(to: url, options: [.atomic])
+    WidgetFiles.write(Data(text.utf8), to: url)
   }
 }

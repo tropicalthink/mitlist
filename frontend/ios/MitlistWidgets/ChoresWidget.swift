@@ -1,8 +1,8 @@
 import SwiftUI
 import WidgetKit
 
-/// Chores today: due and overdue chores with a "Done" button each, and who
-/// is next in the rotation (plan 047, C7).
+/// Chores: overdue, today's and upcoming chores, mine first, each with a
+/// "Done" box and its urgency in words (plan 047, C7).
 struct ChoresWidget: Widget {
   var body: some WidgetConfiguration { Self.configuration() }
 
@@ -14,6 +14,7 @@ struct ChoresWidget: Widget {
     .configurationDisplayName("Chores today")
     .description("Due chores, with a Done button for each.")
     .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .accessoryRectangular, .accessoryInline])
+    .contentMarginsDisabled()
   }
 }
 
@@ -32,29 +33,38 @@ struct ChoresWidgetView: View {
     if entry.status != .ready {
       WidgetSetupView(status: entry.status)
     } else if let household = entry.snapshot?.resolveHousehold(entry.selection) {
-      let due = household.choresDue(now: entry.date)
+      let chores = household.orderedChores(now: entry.date)
+      let summary = WidgetFormat.choreSummary(household.choreCounts(now: entry.date))
+      let url = WidgetLinks.chores(household: household.id)
       switch family {
       case .accessoryInline:
-        Text("\(due.count) chores due")
-          .widgetURL(WidgetLinks.chores(household: household.id))
+        Text(verbatim: summary)
+          .widgetURL(url)
       case .accessoryRectangular:
         VStack(alignment: .leading, spacing: 1) {
           Text("Chores")
             .font(.headline)
             .widgetAccentable()
-          Text("\(due.count) chores due")
+          // Counts only: the Lock Screen shows with the phone locked.
+          Text(verbatim: summary)
             .font(.subheadline)
+            .lineLimit(2)
+            .invalidatableContent()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .widgetURL(WidgetLinks.chores(household: household.id))
+        .widgetURL(url)
       case .systemSmall:
-        SmallChoresView(entry: entry, household: household, due: due)
+        SmallChoresView(entry: entry, chores: chores, summary: summary)
+          .mitlistMargins(family)
+          .widgetURL(url)
+      case .systemMedium:
+        MediumChoresView(entry: entry, household: household, chores: chores, summary: summary)
+          .mitlistMargins(family)
+          .widgetURL(url)
       default:
-        let footer = entry.needsApp || entry.updatedText != nil
-        ChoreListView(
-          entry: entry, household: household, due: due,
-          maxRows: family == .systemLarge ? (footer ? 6 : 7) : (footer ? 2 : 3),
-          showsMore: family == .systemLarge)
+        LargeChoresView(entry: entry, household: household, chores: chores, summary: summary)
+          .mitlistMargins(family)
+          .widgetURL(url)
       }
     } else {
       WidgetSetupView(status: .notSetUp)
@@ -62,95 +72,162 @@ struct ChoresWidgetView: View {
   }
 }
 
+/// The summary and the most urgent chores by name, at a glance.
 private struct SmallChoresView: View {
   let entry: MitlistEntry
-  let household: WidgetHousehold
-  let due: [WidgetChore]
+  let chores: [WidgetChore]
+  let summary: String
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 4) {
+    let open = chores.filter { !$0.done }
+    VStack(alignment: .leading, spacing: 3) {
       Text("Chores")
         .font(.headline)
-      if !due.isEmpty {
-        Text("\(due.count) chores due")
-          .font(.caption.weight(.semibold))
-          .foregroundStyle(WidgetTheme.accent)
-          .widgetAccentable()
-      }
+        .lineLimit(1)
+      Text(verbatim: summary)
+        .font(.caption.weight(.semibold))
+        .foregroundStyle(WidgetTheme.accent)
+        .widgetAccentable()
+        .lineLimit(2)
+        .invalidatableContent()
       Spacer(minLength: 0)
-      if let first = due.first {
-        ChoreRow(chore: first, householdID: household.id, now: entry.date)
-      } else {
-        Text("Nothing due")
-          .font(.subheadline)
+      ForEach(open.prefix(3)) { chore in
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
+          Text(verbatim: chore.title)
+            .font(.caption.weight(chore.isMine ? .semibold : .regular))
+            .lineLimit(1)
+          Spacer(minLength: 0)
+          Text(verbatim: WidgetFormat.urgencyLabel(chore, now: entry.date))
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+            .layoutPriority(1)
+        }
+      }
+      if open.isEmpty {
+        Text("Add a chore")
+          .font(.caption)
           .foregroundStyle(.secondary)
+      }
+      if entry.needsApp {
+        Image(systemName: "exclamationmark.arrow.triangle.2.circlepath")
+          .font(.caption2)
+          .foregroundStyle(.secondary)
+          .accessibilityLabel(Text("Open mitlist to sync"))
       }
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    .widgetURL(WidgetLinks.chores(household: household.id))
   }
 }
 
-private struct ChoreListView: View {
+/// Title and summary on the left; as many 44pt rows as fit on the right.
+private struct MediumChoresView: View {
   let entry: MitlistEntry
   let household: WidgetHousehold
-  let due: [WidgetChore]
-  let maxRows: Int
-  let showsMore: Bool
+  let chores: [WidgetChore]
+  let summary: String
 
   var body: some View {
-    VStack(alignment: .leading, spacing: WidgetTheme.rowSpacing) {
-      Link(destination: WidgetLinks.chores(household: household.id)) {
-        HStack(alignment: .firstTextBaseline) {
-          Text("Chores")
-            .font(.headline)
-          Text(verbatim: household.name)
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .lineLimit(1)
-          Spacer(minLength: 0)
-          if !due.isEmpty {
-            Text("\(due.count) chores due")
-              .font(.caption.weight(.semibold))
-              .foregroundStyle(WidgetTheme.accent)
-              .widgetAccentable()
-              .lineLimit(1)
-          }
-        }
+    HStack(alignment: .top, spacing: WidgetTheme.columnSpacing) {
+      VStack(alignment: .leading, spacing: 2) {
+        Text("Chores")
+          .font(.headline)
+          .lineLimit(1)
+        Text(verbatim: household.name)
+          .font(.caption)
+          .foregroundStyle(.secondary)
+          .lineLimit(1)
+        Text(verbatim: summary)
+          .font(.caption.weight(.semibold))
+          .foregroundStyle(WidgetTheme.accent)
+          .widgetAccentable()
+          .lineLimit(2)
+          .invalidatableContent()
+        Spacer(minLength: 0)
+        WidgetFooter(entry: entry, showsRefresh: false)
+        if !entry.needsApp { RefreshButton() }
       }
+      .frame(width: 104, alignment: .leading)
 
-      if due.isEmpty {
-        Spacer(minLength: 0)
-        Text("Nothing due")
-          .font(.subheadline.weight(.semibold))
-        if let upcoming = household.chores.first {
-          Text("Next up: \(upcoming.title), \(WidgetFormat.due(upcoming, now: entry.date))")
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .lineLimit(1)
-        } else {
-          Link(destination: WidgetLinks.chores(household: household.id)) {
-            Text("Add a chore")
-              .font(.caption.weight(.semibold))
-              .foregroundStyle(WidgetTheme.accent)
-              .widgetAccentable()
+      GeometryReader { geometry in
+        let rows = max(1, RowFit.rows(in: geometry.size.height))
+        VStack(alignment: .leading, spacing: 0) {
+          if chores.isEmpty {
+            NothingDueView()
+          } else {
+            ForEach(chores.prefix(rows)) { chore in
+              ChoreRow(chore: chore, householdID: household.id, now: entry.date)
+            }
+            Spacer(minLength: 0)
           }
         }
-        Spacer(minLength: 0)
-      } else {
-        ForEach(due.prefix(maxRows)) { chore in
-          ChoreRow(chore: chore, householdID: household.id, now: entry.date)
-        }
-        if showsMore && due.count > maxRows {
-          Text("+\(due.count - maxRows) more")
-            .font(.caption)
-            .foregroundStyle(.secondary)
-        }
-        Spacer(minLength: 0)
       }
-      WidgetFooter(entry: entry)
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+  }
+}
+
+private struct LargeChoresView: View {
+  let entry: MitlistEntry
+  let household: WidgetHousehold
+  let chores: [WidgetChore]
+  let summary: String
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 4) {
+      HStack(alignment: .center, spacing: 4) {
+        VStack(alignment: .leading, spacing: 0) {
+          HStack(alignment: .firstTextBaseline, spacing: 6) {
+            Text("Chores")
+              .font(.headline)
+            Text(verbatim: household.name)
+              .font(.caption)
+              .foregroundStyle(.secondary)
+              .lineLimit(1)
+          }
+          Text(verbatim: summary)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(WidgetTheme.accent)
+            .widgetAccentable()
+            .lineLimit(1)
+            .invalidatableContent()
+        }
+        Spacer(minLength: 0)
+        if !entry.needsApp { RefreshButton() }
+      }
+
+      GeometryReader { geometry in
+        let rows = max(1, RowFit.rows(in: geometry.size.height, reserved: 18))
+        let hidden = max(0, chores.count - rows)
+        VStack(alignment: .leading, spacing: 0) {
+          if chores.isEmpty {
+            NothingDueView()
+          } else {
+            ForEach(chores.prefix(rows)) { chore in
+              ChoreRow(chore: chore, householdID: household.id, now: entry.date)
+            }
+            Spacer(minLength: 0)
+          }
+          WidgetFooter(entry: entry, showsRefresh: false, trailing: hidden > 0 ? Text("+\(hidden) more") : nil)
+        }
+      }
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+  }
+}
+
+private struct NothingDueView: View {
+  var body: some View {
+    VStack(alignment: .leading, spacing: 2) {
+      Spacer(minLength: 0)
+      Text("Nothing due")
+        .font(.subheadline.weight(.semibold))
+      Text("Add a chore")
+        .font(.caption.weight(.semibold))
+        .foregroundStyle(WidgetTheme.accent)
+        .widgetAccentable()
+      Spacer(minLength: 0)
+    }
   }
 }
 
@@ -158,4 +235,17 @@ private struct ChoreListView: View {
   ChoresWidget()
 } timeline: {
   MitlistEntry.preview()
+  MitlistEntry.previewTicked()
+}
+
+#Preview(as: .systemSmall) {
+  ChoresWidget()
+} timeline: {
+  MitlistEntry.preview()
+}
+
+#Preview(as: .systemLarge) {
+  ChoresWidget()
+} timeline: {
+  MitlistEntry.previewTicked()
 }

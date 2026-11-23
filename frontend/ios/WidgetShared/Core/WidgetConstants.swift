@@ -21,8 +21,22 @@ public enum WidgetConstants {
   /// Response bodies larger than this are not kept on a delivered op.
   public static let maxStoredResponseBytes = 16 * 1024
 
-  /// A widget fetches a new snapshot itself when the one on disk is older.
+  /// Older data is labelled "Updated 20 minutes ago" in the widget.
   public static let staleAfter: TimeInterval = 15 * 60
+
+  /// A timeline reload fetches a new snapshot when the last fetch is older
+  /// than this. Reloads come from WidgetKit pushes, the app, the timeline
+  /// backstop and widget taps, and the system budgets them, so a short
+  /// threshold costs little and makes a push actually show new data.
+  public static let refetchOnReloadAfter: TimeInterval = 60
+
+  /// How long a row ticked on the widget stays on it, ticked and struck
+  /// through, unless a refresh replaces it first.
+  public static let tickFeedbackDuration: TimeInterval = 10 * 60
+
+  /// The smallest touch target for any control on a widget (plan 047
+  /// design rules).
+  public static let minTouchTarget: Double = 44
 
   public static let channelName = "me.mitlist/widgets"
 }
@@ -33,8 +47,21 @@ public enum WidgetKinds {
   public static let chores = "ChoresWidget"
   public static let householdToday = "HouseholdTodayWidget"
   public static let balance = "BalanceWidget"
+  public static let quickAdd = "QuickAddWidget"
   public static let addItemControl = "AddItemControl"
   public static let scanReceiptControl = "ScanReceiptControl"
+
+  /// The `installedWidgets` channel name of a placed widget's kind, or nil
+  /// for kinds the channel does not report (balance, controls).
+  public static func channelKind(_ kind: String) -> String? {
+    switch kind {
+    case shoppingList: return "shopping_list"
+    case chores: return "chores"
+    case quickAdd: return "quick_add"
+    case householdToday: return "household"
+    default: return nil
+    }
+  }
 }
 
 /// `source` values for ops created on iOS (C2).
@@ -75,6 +102,9 @@ public enum WidgetLinks {
   }
 
   public static var scanner: URL { make("/scanner", []) }
+
+  /// The app's Widgets page: where set-up states send people.
+  public static var widgetsSetup: URL { make("/you/widgets", []) }
 
   private static func make(_ path: String, _ query: [URLQueryItem]) -> URL {
     var components = URLComponents()
