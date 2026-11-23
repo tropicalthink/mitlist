@@ -312,6 +312,7 @@ func (s *MealPlanService) GenerateShoppingList(ctx context.Context, user *models
 		if err := s.listRepo.CreateList(ctx, targetList); err != nil {
 			return nil, nil, fmt.Errorf("failed to create list: %w", err)
 		}
+		publishDomainEvent(s.hub, "list:created", groupID, map[string]string{"list_id": targetList.ID.String()})
 	}
 
 	// Get existing items for deduplication
@@ -379,6 +380,12 @@ func (s *MealPlanService) GenerateShoppingList(ctx context.Context, user *models
 		if err := s.listRepo.CreateItems(ctx, toCreate); err != nil {
 			return nil, nil, fmt.Errorf("failed to create items: %w", err)
 		}
+	}
+	for _, item := range toCreate {
+		publishListItemEvent(s.hub, "list:item_created", groupID, targetList.ID, item.ID)
+	}
+	for _, item := range restored {
+		publishListItemEvent(s.hub, "list:item_updated", groupID, targetList.ID, item.ID)
 	}
 	createdItems := append(toCreate, restored...)
 

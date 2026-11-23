@@ -87,6 +87,8 @@ func TestTemplateService_ApplyTemplate(t *testing.T) {
 		groupRepo := new(mocks.MockGroupRepo)
 		listRepo := new(mocks.MockListRepo)
 		svc := NewTemplateService(templateRepo, groupRepo, listRepo)
+		hub, events := recordEvents(t)
+		svc.SetHub(hub)
 
 		templateRepo.On("GetTemplateByID", ctx, templateID).Return(&models.Template{ID: templateID, GroupID: groupID, Name: "TPL"}, nil)
 		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
@@ -99,6 +101,10 @@ func TestTemplateService_ApplyTemplate(t *testing.T) {
 		list, err := svc.ApplyTemplate(ctx, user, templateID, "")
 		require.NoError(t, err)
 		assert.Equal(t, "TPL", list.Name)
+		assert.Equal(t, []string{"list:created", "list:item_created"}, eventTypes(events()))
+		for _, e := range events() {
+			assert.Equal(t, groupID.String(), e.GroupID)
+		}
 	})
 }
 

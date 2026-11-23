@@ -686,6 +686,9 @@ func (s *ChoreService) UndoLastChoreExecution(ctx context.Context, user *models.
 			return fmt.Errorf("failed to restore rotation state: %w", err)
 		}
 	}
+	// The chore is due again: the event the app refreshes current chores on
+	// (and home screen widgets refresh on), as for a reschedule.
+	s.publishChore("chore:rescheduled", chore.GroupID, choreID)
 	return nil
 }
 
@@ -1299,6 +1302,7 @@ func (s *ChoreService) AddSuppliesToList(ctx context.Context, user *models.User,
 		if err := s.listRepo.CreateItem(ctx, item); err != nil {
 			return fmt.Errorf("failed to create list item for supply %s: %w", supply, err)
 		}
+		publishListItemEvent(s.hub, "list:item_created", list.GroupID, listID, item.ID)
 	}
 	return nil
 }

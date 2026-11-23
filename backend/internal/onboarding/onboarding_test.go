@@ -33,9 +33,11 @@ func TestUnsubscribeToken_RejectsTamperingAndWrongSecret(t *testing.T) {
 	if _, ok := ParseUnsubscribeToken([]byte("another-secret"), tok); ok {
 		t.Error("token verified under a different secret")
 	}
-	// Flip a character in the MAC half.
+	// Flip a character in the MAC half. Not the last one: unpadded base64
+	// spends only some of its bits, and the lenient decoder ignores the rest,
+	// so flipping it can decode to the same MAC.
 	b := []byte(tok)
-	last := len(b) - 1
+	last := len(b) - 2
 	if b[last] == 'A' {
 		b[last] = 'B'
 	} else {

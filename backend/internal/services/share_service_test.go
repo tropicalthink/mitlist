@@ -41,6 +41,8 @@ func TestShareService_CreateListFromShare(t *testing.T) {
 		recipeRepo := new(mocks.MockRecipeRepo)
 		groupRepo := new(mocks.MockGroupRepo)
 		svc := NewShareService(listRepo, recipeRepo, groupRepo)
+		hub, events := recordEvents(t)
+		svc.SetHub(hub)
 
 		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{Role: "member"}, nil)
 		listRepo.On("CreateList", ctx, mock.AnythingOfType("*models.List")).Return(nil)
@@ -51,6 +53,10 @@ func TestShareService_CreateListFromShare(t *testing.T) {
 		assert.NotNil(t, list)
 		assert.Equal(t, "Milk", list.Name)
 		assert.Len(t, items, 2)
+		assert.Equal(t, []string{"list:created", "list:item_created", "list:item_created"}, eventTypes(events()))
+		for _, e := range events() {
+			assert.Equal(t, groupID.String(), e.GroupID)
+		}
 	})
 
 	t.Run("not a member", func(t *testing.T) {

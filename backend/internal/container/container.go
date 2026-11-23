@@ -574,6 +574,7 @@ func (c *Container) ListService() *services.ListService {
 func (c *Container) TemplateService() *services.TemplateService {
 	c.templateServiceOnce.Do(func() {
 		c.templateService = services.NewTemplateService(c.TemplateRepo(), c.GroupRepo(), c.ListRepo())
+		c.templateService.SetHub(c.SSEHub())
 	})
 	return c.templateService
 }
@@ -781,6 +782,7 @@ func (c *Container) ListItemPhotoService() *services.ListItemPhotoService {
 func (c *Container) ShareService() *services.ShareService {
 	c.shareServiceOnce.Do(func() {
 		c.shareService = services.NewShareService(c.ListRepo(), c.RecipeRepo(), c.GroupRepo())
+		c.shareService.SetHub(c.SSEHub())
 	})
 	return c.shareService
 }

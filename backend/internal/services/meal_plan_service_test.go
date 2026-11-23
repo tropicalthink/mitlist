@@ -277,6 +277,8 @@ func TestMealPlanService_GenerateShoppingList_MergesSpellingsAndRestoresChecked(
 	recipeRepo := new(mocks.MockRecipeRepo)
 	listRepo := new(mocks.MockListRepo)
 	svc := newMealPlanService(mpRepo, groupRepo, recipeRepo, listRepo)
+	hub, events := recordEvents(t)
+	svc.SetHub(hub)
 
 	plans := []models.MealPlan{
 		{ID: uuid.New(), GroupID: groupID, RecipeID: soupID, Servings: 2, Date: from},
@@ -312,4 +314,7 @@ func TestMealPlanService_GenerateShoppingList_MergesSpellingsAndRestoresChecked(
 	require.NoError(t, err)
 	assert.Len(t, created, 2)
 	listRepo.AssertExpectations(t)
+	// The reused list is not new; the added and the un-ticked rows are.
+	assert.Equal(t, []string{"list:item_created", "list:item_updated"}, eventTypes(events()))
+	assert.Equal(t, onionRowID.String(), events()[1].Payload["item_id"])
 }

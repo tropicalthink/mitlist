@@ -11,6 +11,7 @@ import (
 	"github.com/mitlist-app/mitlist/internal/api"
 	"github.com/mitlist-app/mitlist/internal/models"
 	"github.com/mitlist-app/mitlist/internal/repositories"
+	"github.com/mitlist-app/mitlist/internal/sse"
 )
 
 // TemplateService provides business logic for list and chore templates.
@@ -18,7 +19,12 @@ type TemplateService struct {
 	templateRepo repositories.TemplateRepo
 	groupRepo    repositories.GroupRepo
 	listRepo     repositories.ListRepo
+	hub          *sse.Hub
 }
+
+// SetHub injects the SSE hub so a list made from a template reaches the
+// household's other devices and home screen widgets.
+func (s *TemplateService) SetHub(h *sse.Hub) { s.hub = h }
 
 // NewTemplateService creates a new TemplateService.
 func NewTemplateService(templateRepo repositories.TemplateRepo, groupRepo repositories.GroupRepo, listRepo repositories.ListRepo) *TemplateService {
@@ -163,6 +169,7 @@ func (s *TemplateService) ApplyTemplate(ctx context.Context, user *models.User, 
 	if err := s.listRepo.CreateList(ctx, list); err != nil {
 		return nil, fmt.Errorf("failed to create list: %w", err)
 	}
+	publishDomainEvent(s.hub, "list:created", list.GroupID, map[string]string{"list_id": list.ID.String()})
 
 	for i, ti := range tplItems {
 		item := &models.ListItem{
@@ -176,6 +183,7 @@ func (s *TemplateService) ApplyTemplate(ctx context.Context, user *models.User, 
 		if err := s.listRepo.CreateItem(ctx, item); err != nil {
 			return nil, fmt.Errorf("failed to create list item: %w", err)
 		}
+		publishListItemEvent(s.hub, "list:item_created", list.GroupID, list.ID, item.ID)
 	}
 
 	return list, nil

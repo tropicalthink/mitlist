@@ -136,6 +136,8 @@ func TestChoreService_AddSuppliesToListLinksCanonicalItems(t *testing.T) {
 	groupRepo := new(mocks.MockGroupRepo)
 	listRepo := new(mocks.MockListRepo)
 	svc := NewChoreService(choreRepo, groupRepo, listRepo)
+	hub, events := recordEvents(t)
+	svc.SetHub(hub)
 	svc.SetCanonicalNameResolver(func(_ context.Context, gotGroupID uuid.UUID, name string) (*uuid.UUID, error) {
 		assert.Equal(t, groupID, gotGroupID)
 		assert.Equal(t, "Dish soap", name)
@@ -160,6 +162,11 @@ func TestChoreService_AddSuppliesToListLinksCanonicalItems(t *testing.T) {
 	err := svc.AddSuppliesToList(ctx, user, choreID, listID)
 	require.NoError(t, err)
 	listRepo.AssertExpectations(t)
+	got := events()
+	require.Len(t, got, 1)
+	assert.Equal(t, "list:item_created", got[0].Type)
+	assert.Equal(t, groupID.String(), got[0].GroupID)
+	assert.Equal(t, listID.String(), got[0].Payload["list_id"])
 }
 
 func TestChoreService_GetChoreDetails(t *testing.T) {
@@ -506,6 +513,8 @@ func TestChoreService_UndoLastChoreExecution_RestoresSuccessorRotation(t *testin
 	choreRepo := new(mocks.MockChoreRepo)
 	groupRepo := new(mocks.MockGroupRepo)
 	svc := NewChoreService(choreRepo, groupRepo, nil)
+	hub, events := recordEvents(t)
+	svc.SetHub(hub)
 
 	choreRepo.On("GetChoreByID", ctx, choreID).Return(&models.Chore{ID: choreID, GroupID: groupID}, nil)
 	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
@@ -542,6 +551,10 @@ func TestChoreService_UndoLastChoreExecution_RestoresSuccessorRotation(t *testin
 
 	err := svc.UndoLastChoreExecution(ctx, user, choreID)
 	require.NoError(t, err)
+	assert.Equal(t, []recordedEvent{{
+		Type: "chore:rescheduled", GroupID: groupID.String(),
+		Payload: map[string]string{"chore_id": choreID.String()},
+	}}, events())
 }
 
 func TestChoreService_RebuildMemberOrdersForGroup(t *testing.T) {

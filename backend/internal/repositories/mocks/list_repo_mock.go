@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/mitlist-app/mitlist/internal/models"
+	"github.com/mitlist-app/mitlist/internal/repositories"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -76,9 +77,10 @@ func (m *MockListRepo) CreateItems(ctx context.Context, items []models.ListItem)
 	return args.Error(0)
 }
 
-func (m *MockListRepo) BulkMarkItemsChecked(ctx context.Context, userID uuid.UUID, itemIDs []uuid.UUID) (int64, error) {
+func (m *MockListRepo) BulkMarkItemsChecked(ctx context.Context, userID uuid.UUID, itemIDs []uuid.UUID) ([]repositories.CheckedItemRef, error) {
 	args := m.Called(ctx, userID, itemIDs)
-	return args.Get(0).(int64), args.Error(1)
+	refs, _ := args.Get(0).([]repositories.CheckedItemRef)
+	return refs, args.Error(1)
 }
 
 func (m *MockListRepo) GetItemByID(ctx context.Context, id uuid.UUID) (*models.ListItem, error) {
@@ -131,6 +133,14 @@ func (m *MockListRepo) SoftDeleteItem(ctx context.Context, id uuid.UUID) error {
 func (m *MockListRepo) SoftDeleteItemsByList(ctx context.Context, listID uuid.UUID, onlyChecked bool) (int64, error) {
 	args := m.Called(ctx, listID, onlyChecked)
 	return int64(args.Int(0)), args.Error(1)
+}
+
+func (m *MockListRepo) RestoreItem(ctx context.Context, listID, id uuid.UUID) (*models.ListItem, bool, error) {
+	args := m.Called(ctx, listID, id)
+	if i := args.Get(0); i != nil {
+		return i.(*models.ListItem), args.Bool(1), args.Error(2)
+	}
+	return nil, args.Bool(1), args.Error(2)
 }
 
 func (m *MockListRepo) BatchUpdateItemPositions(ctx context.Context, items []models.ListItem) error {

@@ -113,6 +113,14 @@ type GroupRepo interface {
 	ListMemberEmailsByGroup(ctx context.Context, groupID uuid.UUID) (map[uuid.UUID]string, error)
 }
 
+// CheckedItemRef is a list item BulkMarkItemsChecked ticked, with the list
+// and household it belongs to.
+type CheckedItemRef struct {
+	ItemID  uuid.UUID
+	ListID  uuid.UUID
+	GroupID uuid.UUID
+}
+
 // ListRepo is the interface for list repository operations.
 type ListRepo interface {
 	CreateList(ctx context.Context, list *models.List) error
@@ -128,7 +136,7 @@ type ListRepo interface {
 	SetListArchived(ctx context.Context, id, actorID uuid.UUID, archived bool) error
 	CreateItem(ctx context.Context, item *models.ListItem) error
 	CreateItems(ctx context.Context, items []models.ListItem) error
-	BulkMarkItemsChecked(ctx context.Context, userID uuid.UUID, itemIDs []uuid.UUID) (int64, error)
+	BulkMarkItemsChecked(ctx context.Context, userID uuid.UUID, itemIDs []uuid.UUID) ([]CheckedItemRef, error)
 	GetItemByID(ctx context.Context, id uuid.UUID) (*models.ListItem, error)
 	GetItemByListNameUnit(ctx context.Context, listID uuid.UUID, name, unit string) (*models.ListItem, error)
 	ListItemsByList(ctx context.Context, listID uuid.UUID, limit, offset int) ([]models.ListItem, error)
@@ -137,6 +145,10 @@ type ListRepo interface {
 	HardDeleteItem(ctx context.Context, id uuid.UUID) error
 	SoftDeleteItem(ctx context.Context, id uuid.UUID) error
 	SoftDeleteItemsByList(ctx context.Context, listID uuid.UUID, onlyChecked bool) (int64, error)
+	// RestoreItem undoes a soft delete of an item of listID. restored is false
+	// when the item was not deleted (idempotent repeat); pgx.ErrNoRows when the
+	// list has no such item.
+	RestoreItem(ctx context.Context, listID, id uuid.UUID) (item *models.ListItem, restored bool, err error)
 	BatchUpdateItemPositions(ctx context.Context, items []models.ListItem) error
 	ClaimItem(ctx context.Context, listID, id, userID uuid.UUID) error
 	UnclaimItem(ctx context.Context, listID, id, actorID uuid.UUID) error
