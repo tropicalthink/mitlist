@@ -91,11 +91,27 @@ class WidgetStateStore(context: Context) {
         get() = prefs.getLong(KEY_PREVIEWS_VERSION, -1L)
         set(value) = prefs.edit().putLong(KEY_PREVIEWS_VERSION, value).apply()
 
+    /**
+     * Why the app last wiped the widgets (`clearAll`): [SESSION_SIGNED_OUT],
+     * [SESSION_NOT_REMEMBERED], or null when it never did (a fresh install,
+     * or a credential handed over since). Lets a widget with no data say
+     * what to do instead of a generic "Sign in".
+     */
+    var sessionEndedReason: String?
+        get() = prefs.getString(KEY_SESSION_ENDED, null)
+        set(value) = prefs.edit().apply { if (value == null) remove(KEY_SESSION_ENDED) else putString(KEY_SESSION_ENDED, value) }.apply()
+
+    /** The list last added to or ticked from a widget, for a newly pinned widget. */
+    var lastListId: String?
+        get() = prefs.getString(KEY_LAST_LIST, null)
+        set(value) = prefs.edit().apply { if (value == null) remove(KEY_LAST_LIST) else putString(KEY_LAST_LIST, value) }.apply()
+
     fun clear() {
         prefs.edit()
             .remove(KEY_AUTH_FAILED)
             .remove(KEY_LAST_FETCH_AT)
             .remove(KEY_REFRESH_REQUESTED)
+            .remove(KEY_LAST_LIST)
             .apply()
     }
 
@@ -105,6 +121,11 @@ class WidgetStateStore(context: Context) {
         private const val KEY_LAST_FETCH_AT = "last_fetch_at"
         private const val KEY_REFRESH_REQUESTED = "refresh_requested"
         private const val KEY_PREVIEWS_VERSION = "previews_version"
+        private const val KEY_SESSION_ENDED = "session_ended"
+        private const val KEY_LAST_LIST = "last_list_id"
+
+        const val SESSION_SIGNED_OUT = "signed_out"
+        const val SESSION_NOT_REMEMBERED = "not_remembered"
     }
 }
 

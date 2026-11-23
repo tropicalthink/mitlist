@@ -48,3 +48,15 @@
 # the manifest. setWidgetPreviews() also instantiates each receiver
 # reflectively through its no-argument constructor.
 -keep class me.mitlist.widgets.** extends androidx.glance.appwidget.GlanceAppWidgetReceiver { <init>(); }
+# Glance maps receivers to their GlanceAppWidget by class name in a DataStore
+# that outlives an app update; a name that changes between releases leaves
+# updateAll() finding no widgets until the launcher next updates them.
+-keepnames class me.mitlist.widgets.** extends androidx.glance.appwidget.GlanceAppWidget
+# Glance keeps ActionCallback implementations by name (its consumer rules),
+# and the PendingIntents placed widgets hold name them, so they must not
+# change between releases either. Stated here so it does not hang on a
+# library's rules.
+-keep class me.mitlist.widgets.** implements androidx.glance.appwidget.action.ActionCallback { <init>(); }
+# WorkManager stores the worker's class name in its database: keep it stable
+# across releases so work enqueued before an update still runs after it.
+-keep class me.mitlist.widgets.WidgetSyncWorker { <init>(android.content.Context, androidx.work.WorkerParameters); }

@@ -17,6 +17,8 @@ import java.io.File
  *     --es token ml_int_test --es base_url http://10.0.2.2:8000/api/v1 --es expires_at 2030-01-01T00:00:00Z
  * adb shell am start -n me.mitlist/me.mitlist.widgets.WidgetDebugActivity --ez sync true
  * adb shell am start -n me.mitlist/me.mitlist.widgets.WidgetDebugActivity --ez clear true
+ * adb shell am start -n me.mitlist/me.mitlist.widgets.WidgetDebugActivity --es pin_kind shopping_list   # the channel's pinWidget path
+ * adb shell am start -n me.mitlist/me.mitlist.widgets.WidgetDebugActivity --ez kinds true               # logs installedWidgets
  * ```
  * `snapshot` is a path relative to the app's files dir (copy it there with
  * `adb shell run-as me.mitlist`).
@@ -53,6 +55,12 @@ class WidgetDebugActivity : Activity() {
             }
             WidgetUpdater.updateAll(app)
             if (intent.getBooleanExtra("sync", false)) WidgetSyncScheduler.syncNow(app, forceFetch = true)
+            intent.getStringExtra("pin_kind")?.let { kind ->
+                Log.i(TAG, "pinWidget($kind) supported=${WidgetPinning.isSupported(app)} shown=${WidgetPinning.request(app, kind)}")
+            }
+            if (intent.getBooleanExtra("kinds", false)) {
+                Log.i(TAG, "installedWidgets=${WidgetUpdater.installedKinds(app)}")
+            }
             intent.getStringExtra("pin")?.let { kind ->
                 val receiver = when (kind) {
                     "shopping" -> ShoppingListWidgetReceiver::class.java

@@ -104,6 +104,43 @@ object CredentialStore {
 
     fun has(context: Context): Boolean = load(context) != null
 
+    /** A stored credential whose expiry has passed (one without an expiry never counts as expired). */
+    fun isExpired(credential: WidgetCredential, now: Long = System.currentTimeMillis()): Boolean {
+        val expiresAt = credential.expiresAt?.let(Rfc3339::parseMillis) ?: return false
+        return expiresAt <= now
+    }
+
+    /** Stored and not known to be expired: widget taps can reach the server. */
+    fun isUsable(context: Context, now: Long = System.currentTimeMillis()): Boolean {
+        val credential = load(context) ?: return false
+        return !isExpired(credential, now)
+    }
+
+    /**
+     * The app handed over a new credential: store it and clear the 401 flag
+     * under the same lock [markAuthFailedUnlessReplaced] takes, so a sync
+     * that got a 401 with the old token cannot raise the flag afterwards.
+     */
+    @Synchronized
+    fun replace(context: Context, credential: WidgetCredential) {
+        save(context, credential)
+        WidgetStateStore(context).authFailed = false
+    }
+
+    /**
+     * A request made with [usedToken] got a 401. Raises the auth-failed flag
+     * only if that token is still the stored one; returns false when the app
+     * has replaced it meanwhile (the weekly renewal revokes the old token at
+     * once), so the caller retries with the new one instead.
+     */
+    @Synchronized
+    fun markAuthFailedUnlessReplaced(context: Context, usedToken: String): Boolean {
+        val current = load(context)
+        if (current != null && current.token != usedToken) return false
+        WidgetStateStore(context).authFailed = true
+        return true
+    }
+
     /**
      * A stored credential that decrypts and has not expired. The app re-issues
      * when this is false, e.g. after a restore to a new device.

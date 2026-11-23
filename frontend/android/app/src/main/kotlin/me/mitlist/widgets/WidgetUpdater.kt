@@ -61,6 +61,32 @@ object WidgetUpdater {
     }
 
     /**
+     * The channel's widget kinds (`installedWidgets`, `pinWidget`). The
+     * balance widget has no kind of its own and reports as "household".
+     */
+    val kinds: Map<Class<out GlanceAppWidgetReceiver>, String> = mapOf(
+        ShoppingListWidgetReceiver::class.java to KIND_SHOPPING_LIST,
+        ChoresWidgetReceiver::class.java to KIND_CHORES,
+        QuickAddWidgetReceiver::class.java to KIND_QUICK_ADD,
+        HouseholdTodayWidgetReceiver::class.java to KIND_HOUSEHOLD,
+        BalanceWidgetReceiver::class.java to KIND_HOUSEHOLD,
+    )
+
+    const val KIND_SHOPPING_LIST = "shopping_list"
+    const val KIND_CHORES = "chores"
+    const val KIND_QUICK_ADD = "quick_add"
+    const val KIND_HOUSEHOLD = "household"
+
+    /** One kind per placed widget, duplicates included; empty when none is placed. */
+    fun installedKinds(context: Context): List<String> {
+        val manager = AppWidgetManager.getInstance(context)
+        return receivers.flatMap { receiver ->
+            val kind = kinds[receiver] ?: return@flatMap emptyList()
+            List(manager.getAppWidgetIds(ComponentName(context, receiver)).size) { kind }
+        }
+    }
+
+    /**
      * App start: re-push every widget (Android 15 cancels a widget's
      * PendingIntents when the app is force-stopped) and keep the backstop.
      */
@@ -71,17 +97,56 @@ object WidgetUpdater {
             if (hasAnyWidget(app)) WidgetSyncScheduler.ensurePeriodic(app)
         }
     }
+
+    /**
+     * Boot, app update, locale or time zone change: re-render (strings and
+     * "today" may have changed, an update may have dropped the old views),
+     * keep the backstop, and fetch if the data is old.
+     */
+    suspend fun onSystemEvent(context: Context) {
+        val app = context.applicationContext
+        updateAll(app)
+        if (hasAnyWidget(app)) {
+            WidgetSyncScheduler.ensurePeriodic(app)
+            WidgetSyncScheduler.refreshIfStale(app)
+        }
+    }
 }
 
-/** Shared receiver behaviour: the hourly backstop and per-widget config cleanup. */
+/** Boot, package replaced, locale and time zone changes (see [WidgetUpdater.onSystemEvent]). */
+class WidgetSystemReceiver : android.content.BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        val pending = goAsync()
+        val app = context.applicationContext
+        WidgetScope.launch {
+            try {
+                WidgetUpdater.onSystemEvent(app)
+            } catch (e: Exception) {
+                Log.w("MitlistWidgets", "system event ${intent.action} failed", e)
+            } finally {
+                pending.finish()
+            }
+        }
+    }
+}
+
+/** Shared receiver behaviour: the periodic backstop, refresh on placement and per-widget config cleanup. */
 abstract class MitlistWidgetReceiver : GlanceAppWidgetReceiver() {
     override fun onEnabled(context: Context) {
         super.onEnabled(context)
         WidgetSyncScheduler.ensurePeriodic(context)
-        // A first widget with no data yet: fetch now rather than in an hour.
-        if (CredentialStore.has(context) && WidgetFiles.snapshot(context).read() == null) {
-            WidgetSyncScheduler.syncNow(context, forceFetch = true, expedited = false)
-        }
+    }
+
+    /**
+     * Every placement (also of a second widget of a kind, which gets no
+     * onEnabled), boot and app update: make sure the backstop runs and fetch
+     * now if the data is missing or old, so a new widget never sits on an
+     * hour-old snapshot.
+     */
+    override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
+        super.onUpdate(context, appWidgetManager, appWidgetIds)
+        WidgetSyncScheduler.ensurePeriodic(context)
+        WidgetSyncScheduler.refreshIfStale(context)
     }
 
     override fun onDisabled(context: Context) {
@@ -138,6 +203,7 @@ class RefreshAction : ActionCallback {
 suspend fun enqueue(context: Context, op: PendingOp) {
     val app = context.applicationContext
     WidgetFiles.queue(app).append(op)
+    op.listId?.let { WidgetStateStore(app).lastListId = it }
     // The overlay shows the change at once; delivery follows with network.
     WidgetUpdater.updateAll(app)
     WidgetSyncScheduler.syncNow(app)

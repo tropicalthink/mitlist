@@ -3,7 +3,7 @@
     <string name="widget_shopping_list_name">Einkaufsliste</string>
     <string name="widget_shopping_list_description">Einträge abhaken und neue hinzufügen</string>
     <string name="widget_chores_name">Aufgaben heute</string>
-    <string name="widget_chores_description">Fällige Aufgaben mit Erledigt-Knopf</string>
+    <string name="widget_chores_description">Überfällige und heutige Aufgaben, mit Erledigt-Taste</string>
     <string name="widget_household_today_name">Haushalt heute</string>
     <string name="widget_household_today_description">Aufgaben, Einkauf, Abendessen und dein Saldo</string>
     <string name="widget_balance_name">Saldo</string>
@@ -36,7 +36,7 @@
     <string name="widget_added_by">von %1$s</string>
 
     <string name="widget_chores_title">Aufgaben</string>
-    <string name="widget_chores_nothing_due_short">Nichts fällig</string>
+    <string name="widget_chores_nothing_due_short">Heute nichts fällig</string>
     <plurals name="widget_chores_due">
         <item quantity="one">%1$d Aufgabe fällig</item>
         <item quantity="other">%1$d Aufgaben fällig</item>
@@ -96,4 +96,26 @@
     <string name="widget_sample_chore_1">Müll rausbringen</string>
     <string name="widget_sample_chore_2">Bad putzen</string>
     <string name="widget_sample_meal">Lasagne</string>
+
+    <!-- Ticked/done feedback, set-up states, household headline, scan -->
+    <string name="widget_item_ticked">%1$s, abgehakt</string>
+    <string name="widget_chore_marked_done">%1$s, erledigt</string>
+    <string name="widget_needs_remember_me">Widgets brauchen eine bleibende Anmeldung. Melde dich mit „Angemeldet bleiben“ an.</string>
+    <string name="widget_sign_in_action">Anmelden</string>
+    <string name="widget_set_up">Öffne mitlist, um Widgets einzurichten</string>
+    <string name="widget_set_up_action">Widgets einrichten</string>
+    <string name="widget_scan">Scannen</string>
+    <string name="widget_headline_clear">Heute alles erledigt</string>
+    <plurals name="widget_headline_overdue">
+        <item quantity="one">%1$d überfällig</item>
+        <item quantity="other">%1$d überfällig</item>
+    </plurals>
+    <plurals name="widget_headline_today">
+        <item quantity="one">%1$d heute fällig</item>
+        <item quantity="other">%1$d heute fällig</item>
+    </plurals>
+    <plurals name="widget_headline_to_buy">
+        <item quantity="one">%1$d zu kaufen</item>
+        <item quantity="other">%1$d zu kaufen</item>
+    </plurals>
 </resources>

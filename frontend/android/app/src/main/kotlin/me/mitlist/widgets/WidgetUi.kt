@@ -49,6 +49,7 @@ import androidx.glance.semantics.semantics
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
+import androidx.glance.text.TextDecoration
 import androidx.glance.text.TextStyle
 import me.mitlist.MainActivity
 import me.mitlist.R
@@ -146,6 +147,11 @@ object WidgetLinks {
 
     fun app(context: Context) = open(context, "/home", null)
 
+    /** The app's Widgets page: set-up, sign-in and "Remember me" states point here. */
+    fun setup(context: Context) = open(context, "/you/widgets", null)
+
+    fun scanner(context: Context) = open(context, "/scanner", null)
+
     private fun open(context: Context, path: String, householdId: String?, extra: String? = null): Intent {
         val query = listOfNotNull(householdId?.let { "group=${Uri.encode(it)}" }, extra).joinToString("&")
         val uri = Uri.parse("mitlist://$path" + if (query.isEmpty()) "" else "?$query")
@@ -171,9 +177,24 @@ data class WidgetModel(
     val updatedAt: Long?,
     val configuredHousehold: String?,
     val configuredList: String?,
+    /** The snapshot as the server sent it, before the overlay. */
+    val raw: WidgetSnapshot? = snapshot,
+    /** Items ticked from a widget that the snapshot still lists as open. */
+    val tickedItemIds: Set<String> = emptySet(),
+    /** Chores done from a widget that the snapshot still lists. */
+    val doneChoreIds: Set<String> = emptySet(),
+    /** The stored credential's expiry has passed (the app was not opened for weeks). */
+    val credentialExpired: Boolean = false,
+    /** Why the app last cleared the widgets, see [WidgetStateStore.sessionEndedReason]. */
+    val sessionEnded: String? = null,
 ) {
     /** The widget can show data, but taps cannot reach the server until the app is opened. */
-    val needsApp: Boolean get() = authFailed || !hasCredential
+    val needsApp: Boolean get() = authFailed || !hasCredential || credentialExpired
+
+    fun listRows(list: WidgetList): List<ListRow> = WidgetDisplay.listRows(list, raw, tickedItemIds)
+
+    fun choreRows(household: WidgetHousehold, now: Long = System.currentTimeMillis()): List<ChoreRow> =
+        WidgetDisplay.choreRows(household, raw, doneChoreIds, now)
 
     companion object {
         suspend fun loadAsync(context: Context, appWidgetId: Int): WidgetModel =
@@ -184,13 +205,20 @@ data class WidgetModel(
             val ops = if (raw == null) emptyList() else WidgetFiles.queue(context).readAll()
             val state = WidgetStateStore(context)
             val config = WidgetConfigStore(context)
+            val credential = CredentialStore.load(context)
+            val applied = ops.filter { WidgetOverlay.affects(it, raw?.generatedAt) }
             return WidgetModel(
                 snapshot = raw?.let { WidgetOverlay.apply(it, ops) },
-                hasCredential = CredentialStore.has(context),
+                hasCredential = credential != null,
                 authFailed = state.authFailed,
                 updatedAt = state.lastFetchAt.takeIf { it > 0 } ?: raw?.generatedAt,
                 configuredHousehold = config.householdId(appWidgetId),
                 configuredList = config.listId(appWidgetId),
+                raw = raw,
+                tickedItemIds = applied.filter { it.type == PendingOp.TYPE_CHECK }.mapNotNullTo(HashSet()) { it.itemId },
+                doneChoreIds = applied.filter { it.type == PendingOp.TYPE_COMPLETE_CHORE }.mapNotNullTo(HashSet()) { it.choreId },
+                credentialExpired = credential != null && CredentialStore.isExpired(credential),
+                sessionEnded = state.sessionEndedReason,
             )
         }
     }
@@ -252,6 +280,7 @@ fun WidgetText(
     color: androidx.glance.unit.ColorProvider = GlanceTheme.colors.onSurface,
     maxLines: Int = 1,
     align: TextAlign = TextAlign.Start,
+    strike: Boolean = false,
 ) {
     Text(
         text = text,
@@ -262,6 +291,7 @@ fun WidgetText(
             fontSize = size,
             fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal,
             textAlign = align,
+            textDecoration = if (strike) TextDecoration.LineThrough else null,
         ),
     )
 }
@@ -310,25 +340,47 @@ fun WidgetIconButton(
 }
 
 /**
- * An empty square with a 2dp outline, mitlist's checkbox, in a 48dp touch
- * target. Glance has no border modifier: the outline is a filled square with
- * a smaller square of the background on top.
+ * mitlist's checkbox, a square with a 2dp outline, in a 48dp touch target.
+ * Checked, it fills with the brand orange and shows a tick, so a tap from
+ * the widget visibly lands (the row is struck through too) while the change
+ * is on its way. Glance has no border modifier: the outline is a filled
+ * square with a smaller square of the background on top.
  */
 @Composable
-fun SquareTick(contentDescription: String, onClick: Action?, enabled: Boolean = true) {
-    val outline = if (enabled) GlanceTheme.colors.outline else GlanceTheme.colors.onSurfaceVariant
+fun SquareTick(contentDescription: String, onClick: Action?, enabled: Boolean = true, checked: Boolean = false) {
+    val outline = when {
+        checked -> GlanceTheme.colors.primary
+        enabled -> GlanceTheme.colors.outline
+        else -> GlanceTheme.colors.onSurfaceVariant
+    }
     var modifier = GlanceModifier.size(48.dp).semantics { this.contentDescription = contentDescription }
-    if (onClick != null && enabled) modifier = modifier.clickable(onClick)
+    if (onClick != null && enabled && !checked) modifier = modifier.clickable(onClick)
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
-        Box(modifier = GlanceModifier.size(22.dp).background(outline).padding(2.dp)) {
-            Box(modifier = GlanceModifier.fillMaxSize().background(GlanceTheme.colors.widgetBackground)) {}
+        if (checked) {
+            Box(modifier = GlanceModifier.size(22.dp).background(outline), contentAlignment = Alignment.Center) {
+                Image(
+                    provider = ImageProvider(R.drawable.ic_widget_check),
+                    contentDescription = null,
+                    modifier = GlanceModifier.size(18.dp),
+                    colorFilter = ColorFilter.tint(GlanceTheme.colors.onPrimary),
+                )
+            }
+        } else {
+            Box(modifier = GlanceModifier.size(22.dp).background(outline).padding(2.dp)) {
+                Box(modifier = GlanceModifier.fillMaxSize().background(GlanceTheme.colors.widgetBackground)) {}
+            }
         }
     }
 }
 
-/** A full-widget message with an optional action ("Open mitlist"). */
+/** A full-widget message with an optional action ([actionLabel], "Open mitlist" by default). */
 @Composable
-fun MessageState(message: String, onClick: Action? = null, @DrawableRes icon: Int = R.drawable.ic_widget_list) {
+fun MessageState(
+    message: String,
+    onClick: Action? = null,
+    @DrawableRes icon: Int = R.drawable.ic_widget_list,
+    actionLabel: String? = null,
+) {
     val context = LocalContext.current
     WidgetFrame(modifier = if (onClick != null) GlanceModifier.clickable(onClick) else GlanceModifier) {
         Column(
@@ -347,7 +399,7 @@ fun MessageState(message: String, onClick: Action? = null, @DrawableRes icon: In
             if (onClick != null) {
                 Spacer(GlanceModifier.height(4.dp))
                 WidgetText(
-                    context.getString(R.string.widget_open_app),
+                    actionLabel ?: context.getString(R.string.widget_open_app),
                     bold = true,
                     size = 13.sp,
                     color = GlanceTheme.colors.primary,
@@ -393,17 +445,38 @@ fun StatusLine(model: WidgetModel, now: Long = System.currentTimeMillis()) {
 /** Snapshots older than this get an "updated X ago" line. */
 const val STALE_AFTER_MILLIS = 30L * 60 * 1000
 
-/** The standard "no data yet" states. Returns true when it rendered one. */
+/**
+ * The standard "no data yet" states, each saying what to do and opening the
+ * app's Widgets page. Returns true when it rendered one.
+ */
 @Composable
 fun NoDataStates(model: WidgetModel): Boolean {
     val context = LocalContext.current
     if (model.snapshot != null) return false
-    if (model.hasCredential) {
-        MessageState(context.getString(R.string.widget_loading), null, R.drawable.ic_widget_sync)
-    } else {
-        MessageState(
-            context.getString(R.string.widget_signed_out),
-            androidx.glance.appwidget.action.actionStartActivity(WidgetLinks.app(context)),
+    val setup = androidx.glance.appwidget.action.actionStartActivity(WidgetLinks.setup(context))
+    when {
+        model.hasCredential && !model.needsApp ->
+            MessageState(context.getString(R.string.widget_loading), setup, R.drawable.ic_widget_sync)
+        model.hasCredential ->
+            MessageState(context.getString(R.string.widget_open_app_to_sync), setup, R.drawable.ic_widget_sync)
+        model.sessionEnded == WidgetStateStore.SESSION_NOT_REMEMBERED ->
+            MessageState(
+                context.getString(R.string.widget_needs_remember_me),
+                setup,
+                R.drawable.ic_widget_info,
+                context.getString(R.string.widget_sign_in_action),
+            )
+        model.sessionEnded == WidgetStateStore.SESSION_SIGNED_OUT ->
+            MessageState(
+                context.getString(R.string.widget_signed_out),
+                setup,
+                actionLabel = context.getString(R.string.widget_sign_in_action),
+            )
+        // Never opened since install (or data lost in a restore).
+        else -> MessageState(
+            context.getString(R.string.widget_set_up),
+            setup,
+            actionLabel = context.getString(R.string.widget_set_up_action),
         )
     }
     return true

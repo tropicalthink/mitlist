@@ -67,11 +67,13 @@ private fun HouseholdTodayContent(model: WidgetModel) {
     val snapshot = model.snapshot ?: return
     val household = snapshot.resolveHousehold(model.configuredHousehold)
     if (household == null) {
-        MessageState(context.getString(R.string.widget_no_household), actionStartActivity(WidgetLinks.app(context)))
+        MessageState(context.getString(R.string.widget_no_household), actionStartActivity(WidgetLinks.setup(context)))
         return
     }
     val list = snapshot.resolveList(household.id, model.configuredList)?.second
     val roomy = LocalSize.current.height >= 300.dp
+    val choreRows = model.choreRows(household)
+    val dueRows = choreRows.filter { it.bucket != ChoreBucket.SOON }
     WidgetFrame {
         Column(modifier = GlanceModifier.fillMaxSize()) {
             Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -80,7 +82,13 @@ private fun HouseholdTodayContent(model: WidgetModel) {
                         .clickable(actionStartActivity(WidgetLinks.home(context, household.id))),
                 ) {
                     WidgetText(household.name, bold = true, size = 16.sp)
-                    SecondaryText(context.getString(R.string.widget_today))
+                    // The single most urgent fact first: "2 overdue · 7 to buy".
+                    WidgetText(
+                        householdHeadline(context, choreRows, list?.openCount ?: 0),
+                        size = 13.sp,
+                        bold = true,
+                        color = if (WidgetDisplay.overdueCount(choreRows) > 0) GlanceTheme.colors.error else GlanceTheme.colors.primary,
+                    )
                 }
                 WidgetIconButton(
                     R.drawable.ic_widget_refresh,
@@ -96,19 +104,30 @@ private fun HouseholdTodayContent(model: WidgetModel) {
                 Section(
                     icon = R.drawable.ic_widget_chore,
                     title = context.getString(R.string.widget_chores_title),
-                    count = household.chores.size,
+                    count = WidgetDisplay.dueCount(choreRows),
                     link = WidgetLinks.chores(context, household.id),
                 )
-                if (household.chores.isEmpty()) {
+                if (dueRows.isEmpty()) {
                     SecondaryText(context.getString(R.string.widget_chores_nothing_due_short), GlanceModifier.padding(start = 26.dp))
                 } else {
-                    household.chores.take(if (roomy) 3 else 2).forEach { chore ->
+                    dueRows.take(if (roomy) 3 else 2).forEach { row ->
+                        val chore = row.chore
                         Row(modifier = GlanceModifier.fillMaxWidth().padding(start = 26.dp), verticalAlignment = Alignment.CenterVertically) {
                             Column(modifier = GlanceModifier.defaultWeight()) {
-                                WidgetText(chore.title, size = 13.sp, bold = chore.isMine)
+                                WidgetText(
+                                    chore.title,
+                                    size = 13.sp,
+                                    bold = chore.isMine && !row.done,
+                                    strike = row.done,
+                                    color = if (row.done) GlanceTheme.colors.onSurfaceVariant else GlanceTheme.colors.onSurface,
+                                )
                                 SecondaryText(choreSubtitle(context, chore))
                             }
-                            DoneButton(household, chore)
+                            if (row.done) {
+                                SquareTick(context.getString(R.string.widget_chore_marked_done, chore.title), onClick = null, checked = true)
+                            } else {
+                                DoneButton(household, chore)
+                            }
                         }
                     }
                 }
@@ -263,6 +282,17 @@ private fun BalanceContent(model: WidgetModel) {
             if (!short) StatusLine(model)
         }
     }
+}
+
+/** "2 overdue · 3 due today · 7 to buy", or "All clear today". */
+internal fun householdHeadline(context: Context, rows: List<ChoreRow>, toBuy: Int): String {
+    val overdue = WidgetDisplay.overdueCount(rows)
+    val today = WidgetDisplay.todayCount(rows)
+    val parts = mutableListOf<String>()
+    if (overdue > 0) parts += context.resources.getQuantityString(R.plurals.widget_headline_overdue, overdue, overdue)
+    if (today > 0) parts += context.resources.getQuantityString(R.plurals.widget_headline_today, today, today)
+    if (toBuy > 0) parts += context.resources.getQuantityString(R.plurals.widget_headline_to_buy, toBuy, toBuy)
+    return if (parts.isEmpty()) context.getString(R.string.widget_headline_clear) else parts.joinToString(" · ")
 }
 
 /** "You owe Sam €12.00", "Sam owes you €8.00", "All settled". */
