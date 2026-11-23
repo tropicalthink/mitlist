@@ -27,6 +27,7 @@ import 'widgets/push_permission_sheet.dart';
 import 'providers/billing_provider.dart' show iapServiceProvider;
 import 'providers/initial_sync_provider.dart';
 import 'providers/home_widgets_provider.dart';
+import 'providers/widget_discovery_provider.dart';
 import 'services/iap_service.dart';
 import 'widgets/offline_banner.dart';
 
@@ -198,8 +199,8 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
   }
 
   void _initPushSubscriptions() {
-    // Listeners only; the token is registered when permission is already
-    // granted and otherwise after [_offerPushNotifications] succeeds.
+    // Registers the device token at sign-in, before any permission decision:
+    // the silent widget refresh push needs no permission (plans/047).
     FcmService.init(ref.read(dioProvider)).catchError((Object _) {
       // Push is optional; nothing in the app may depend on it starting.
       return false;
@@ -320,7 +321,10 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
             .then((service) => service.flushAllDigests()),
       );
       // Same for queued writes: the sync session ends with the visit, so push
-      // them now while the OS still lets us use the network.
+      // them now while the OS still lets us use the network. This goes
+      // through an outbox hold (an open list keeps its hold, and undo there
+      // falls back to the server restore paths for what this sent): the OS
+      // may kill a backgrounded app, and housemates must get the changes.
       final coordinator = ref.read(outboxCoordinatorProvider).valueOrNull;
       if (coordinator != null) {
         unawaited(coordinator.flushSession(reason: 'app paused'));
@@ -358,6 +362,8 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
       // so a stale offline bar never survives into the first visible frame.
       ref.invalidate(outboxStateProvider);
       ref.invalidate(unreadNotificationCountProvider);
+      // Someone may have just added (or removed) a home screen widget.
+      ref.invalidate(installedHomeWidgetsProvider);
     }
   }
 

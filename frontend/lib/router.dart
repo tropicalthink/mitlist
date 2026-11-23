@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'providers/app_link_provider.dart';
+import 'providers/home_widgets_provider.dart' show widgetBridgeProvider;
 import 'providers/auth_provider.dart';
 import 'providers/group_provider.dart' show cachedGroupsProvider;
 import 'widgets/mitlist_bottom_nav.dart';
@@ -30,6 +31,7 @@ import 'screens/you/feature_board_detail_screen.dart';
 import 'screens/you/feature_board_screen.dart';
 import 'screens/you/weekly_summary_screen.dart';
 import 'screens/you/home_assistant_connections_screen.dart';
+import 'screens/you/widgets_screen.dart';
 import 'screens/auth/welcome_screen.dart';
 import 'screens/premium/premium_screen.dart';
 import 'screens/tour/tour_screen.dart';
@@ -551,6 +553,15 @@ final routerProvider = Provider<GoRouter>((ref) {
                 ),
               ),
             ],
+          ),
+          // Home screen widgets; also opened by mitlist:///you/widgets. Only
+          // where the platform has widgets (not web or desktop).
+          GoRoute(
+            path: 'widgets',
+            name: 'widgets',
+            redirect: (context, state) =>
+                ref.read(widgetBridgeProvider).isSupported ? null : '/you',
+            builder: (context, state) => const WidgetsScreen(),
           ),
           GoRoute(
             path: 'products',

@@ -19,6 +19,7 @@ import '../../sheets/app_areas_sheet.dart';
 import '../../providers/auth_provider.dart'
     show authServiceProviderAsync, authStateProvider, isGuestProvider;
 import '../../providers/group_provider.dart';
+import '../../providers/home_widgets_provider.dart' show widgetBridgeProvider;
 import '../../providers/oauth_provider.dart';
 import '../../providers/onboarding_provider.dart';
 import '../../providers/theme_provider.dart';
@@ -714,6 +715,15 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             onTap: () => showAppAreasSheet(context),
           ),
           Divider(color: Theme.of(context).colorScheme.outlineVariant),
+          if (ref.watch(widgetBridgeProvider).isSupported) ...[
+            _MenuRow(
+              icon: const AppIcon(name: 'devicePhoneMobile'),
+              label: l10n.widgetsPageTitle,
+              value: l10n.widgetsPageAccountRowValue,
+              onTap: () => context.pushNamed('widgets'),
+            ),
+            Divider(color: Theme.of(context).colorScheme.outlineVariant),
+          ],
           _MenuRow(
             icon: const AppIcon(name: 'inbox'),
             label: l10n.accountNotificationInbox,

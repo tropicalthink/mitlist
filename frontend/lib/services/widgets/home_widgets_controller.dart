@@ -61,7 +61,7 @@ class HomeWidgetsController {
     if (!isSupported || !_isSignedIn()) return;
     if (!await _sessionIsRemembered()) {
       _enabled = false;
-      await _bridge.clearAll();
+      await _bridge.clearAll(reason: WidgetBridge.clearReasonNotRemembered);
       return;
     }
     _enabled = true;

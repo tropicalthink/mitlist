@@ -38,6 +38,7 @@ import '../../widgets/hub/onboarding_card.dart';
 import '../../widgets/hub/pinwall_section.dart';
 import '../../widgets/hub/needs_you_section.dart';
 import '../../widgets/hub/quick_add_sheet.dart';
+import '../../widgets/hub/widget_promo_sheet.dart';
 import '../../providers/meal_plan_provider.dart';
 import '../../widgets/shell_trailing_actions.dart';
 import '../../sheets/create_household_sheet.dart';
@@ -86,6 +87,9 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
   StreamSubscription<(List<ActivityLogModel>, bool)>? _activitySub;
   StreamSubscription<SseEvent>? _liveSub;
   String? _resolvedGroupId;
+
+  /// The home screen widget offer is considered once per visit to Home.
+  bool _widgetPromoChecked = false;
 
   /// The repository behind the current household's feed, kept so a live
   /// event can refresh it in place (its watch repaints the feed).
@@ -342,6 +346,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
         _me ??= me;
         _isLoading = false;
       });
+      _maybeOfferWidgets();
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -349,6 +354,23 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  /// Offers the home screen widgets (the promo sheet decides whether). Home
+  /// with a loaded household means sign-up and the household setup are
+  /// behind this person; the sheet checks that nothing else is on top.
+  void _maybeOfferWidgets() {
+    if (_widgetPromoChecked || _resolvedGroupId == null || _error != null) {
+      return;
+    }
+    _widgetPromoChecked = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(
+        maybeOfferHomeWidgets(context, ref, onboardingDone: true)
+            .catchError((Object _) {}),
+      );
+    });
   }
 
   /// Needs you counts unchecked items across lists from the local cache; a
