@@ -2250,14 +2250,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Kon items niet wissen. Probeer het opnieuw.';
 
   @override
-  String listDetailItemDeleted(String name) {
-    return '$name verwijderd';
-  }
-
-  @override
-  String get listDetailCouldNotRestore => 'Kon item niet herstellen.';
-
-  @override
   String get listDetailCouldNotReorder =>
       'Kon items niet herordenen. Probeer het opnieuw.';
 
@@ -2296,7 +2288,7 @@ class AppLocalizationsNl extends AppLocalizations {
       other: 'items',
       one: 'item',
     );
-    return 'Dit verwijdert alle $count $_temp0. Dit kan niet ongedaan worden gemaakt.';
+    return 'Dit verwijdert alle $count $_temp0. Met de pijl Ongedaan maken zet je het terug zolang je de lijst niet verlaat.';
   }
 
   @override
@@ -3866,9 +3858,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get listItemViewPhoto => 'Foto bekijken';
 
   @override
-  String get listItemReplacePhoto => 'Foto vervangen';
-
-  @override
   String get listItemAddPhoto => 'Foto toevoegen';
 
   @override
@@ -3931,13 +3920,65 @@ class AppLocalizationsNl extends AppLocalizations {
   String get listItemUnit => 'Eenheid';
 
   @override
-  String get listItemDetails => 'Details';
-
-  @override
   String get listItemMoveUp => 'Omhoog';
 
   @override
   String get listItemMoveDown => 'Omlaag';
+
+  @override
+  String listEditDetailsFor(String name) {
+    return 'Details van $name';
+  }
+
+  @override
+  String get listEditUnitAdd => 'Eenheid toevoegen';
+
+  @override
+  String listEditUnitValue(String unit) {
+    return 'Eenheid: $unit';
+  }
+
+  @override
+  String get listEditPriceAdd => 'Prijs toevoegen';
+
+  @override
+  String listEditPriceValue(String price) {
+    return 'Prijs: $price';
+  }
+
+  @override
+  String get listEditNoteAdd => 'Notitie toevoegen';
+
+  @override
+  String listEditNoteValue(String note) {
+    return 'Notitie: $note';
+  }
+
+  @override
+  String get listEditClearUnit => 'Eenheid wissen';
+
+  @override
+  String get listEditClearPrice => 'Prijs wissen';
+
+  @override
+  String get listEditBack => 'Terug naar details';
+
+  @override
+  String listEditDeleteItem(String name) {
+    return '$name verwijderen';
+  }
+
+  @override
+  String get listEditUnitPieces => 'st.';
+
+  @override
+  String get listEditUnitPack => 'pak';
+
+  @override
+  String get listEditUnitCan => 'blik';
+
+  @override
+  String get listEditUnitBottle => 'fles';
 
   @override
   String get listItemOneLess => 'Eén minder';
@@ -7307,4 +7348,181 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get pinwallHubEmptyIntro =>
       'Hier komen notities voor het hele huis. Open het prikbord om er een op te prikken.';
+
+  @override
+  String get widgetsPageTitle => 'Widgets voor je beginscherm';
+
+  @override
+  String get widgetsPageAccountRowValue =>
+      'De lijst en klusjes in één oogopslag';
+
+  @override
+  String get widgetsPageIntro =>
+      'Bekijk de boodschappenlijst en de klusjes van vandaag zonder de app te openen, en vink ze meteen af op je beginscherm.';
+
+  @override
+  String get widgetsPageStepsTitle => 'Zo voeg je een widget toe';
+
+  @override
+  String get widgetsPageIosStep1 =>
+      'Houd een lege plek op je beginscherm ingedrukt en tik op Wijzig en Voeg widget toe.';
+
+  @override
+  String get widgetsPageIosStep2 => 'Zoek naar ‘mitlist’.';
+
+  @override
+  String get widgetsPageIosStep3 =>
+      'Kies een widget, veeg naar het formaat dat je wilt en tik op Voeg widget toe.';
+
+  @override
+  String get widgetsPageIosStep4 =>
+      'Om het huishouden of de lijst te kiezen, houd je de widget ingedrukt en tik je op Wijzig widget.';
+
+  @override
+  String get widgetsPageAndroidStep1 =>
+      'Houd een lege plek op je beginscherm ingedrukt.';
+
+  @override
+  String get widgetsPageAndroidStep2 => 'Tik op Widgets en zoek mitlist.';
+
+  @override
+  String get widgetsPageAndroidStep3 =>
+      'Houd een widget ingedrukt en sleep hem naar de plek die je wilt.';
+
+  @override
+  String get widgetsPageAdd => 'Toevoegen aan beginscherm';
+
+  @override
+  String get widgetsPageAdded => 'Toegevoegd';
+
+  @override
+  String get widgetsPagePinFailed =>
+      'Je beginscherm kon hem niet direct toevoegen. Volg de stappen hieronder.';
+
+  @override
+  String get widgetsPageShoppingListName => 'Boodschappenlijst';
+
+  @override
+  String get widgetsPageShoppingListDesc =>
+      'Vink artikelen af in de winkel en voeg nieuwe toe met +.';
+
+  @override
+  String get widgetsPageChoresName => 'Klusjes vandaag';
+
+  @override
+  String get widgetsPageChoresDesc =>
+      'Wat er vandaag moet en wie er aan de beurt is. Vink een klusje af met één tik.';
+
+  @override
+  String get widgetsPageQuickAddName => 'Snel toevoegen';
+
+  @override
+  String get widgetsPageQuickAddDesc => 'Met één tik iets op de lijst zetten.';
+
+  @override
+  String get widgetsPageHouseholdName => 'Huishouden vandaag';
+
+  @override
+  String get widgetsPageHouseholdDesc =>
+      'De klusjes van vandaag, de boodschappenlijst en het avondeten op één plek.';
+
+  @override
+  String widgetsPagePreviewLabel(String name) {
+    return 'Voorbeeld van de widget $name';
+  }
+
+  @override
+  String get widgetsPageSampleHousehold => 'Ons huis';
+
+  @override
+  String get widgetsPageSampleListName => 'Boodschappen';
+
+  @override
+  String get widgetsPageSampleItem1 => 'Havermelk';
+
+  @override
+  String get widgetsPageSampleItem2 => 'Bananen';
+
+  @override
+  String get widgetsPageSampleItem3 => 'Koffiebonen';
+
+  @override
+  String get widgetsPageSampleItem4 => 'Rijst';
+
+  @override
+  String get widgetsPageSampleChore1 => 'Vuilnis buiten zetten';
+
+  @override
+  String get widgetsPageSampleChore2 => 'Planten water geven';
+
+  @override
+  String get widgetsPageSampleMeal => 'Vanavond: ovenpasta';
+
+  @override
+  String get widgetsPageSampleAddHint => 'Toevoegen aan de lijst';
+
+  @override
+  String get widgetsPageSampleAddTo => 'Toevoegen aan';
+
+  @override
+  String widgetsPageSampleLeft(int count) {
+    return 'Nog $count';
+  }
+
+  @override
+  String widgetsPageSampleDue(int count) {
+    return '$count te doen';
+  }
+
+  @override
+  String get widgetPromoHeadline => 'Je boodschappenlijst op je beginscherm';
+
+  @override
+  String get widgetPromoBody =>
+      'Vink dingen af in de winkel zonder de app te openen. Iedereen thuis ziet het meteen.';
+
+  @override
+  String get widgetPromoAdd => 'Toevoegen aan beginscherm';
+
+  @override
+  String get widgetPromoShowMe => 'Laat zien hoe';
+
+  @override
+  String get widgetPromoNotNow => 'Niet nu';
+
+  @override
+  String get listUndoUndoTooltip => 'Ongedaan maken';
+
+  @override
+  String get listUndoRedoTooltip => 'Opnieuw';
+
+  @override
+  String get listUndoChangedElsewhere =>
+      'Iemand anders heeft dit gewijzigd, dus het is niet ongedaan gemaakt';
+
+  @override
+  String get listUndoRedoChangedElsewhere =>
+      'Iemand anders heeft dit gewijzigd, dus het is niet opnieuw gedaan';
+
+  @override
+  String listUndoRestoredItems(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items hersteld',
+      one: '1 item hersteld',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get listUndoCouldNotUndo =>
+      'Kon niet ongedaan maken. Probeer het opnieuw.';
+
+  @override
+  String get listUndoCouldNotRedo =>
+      'Kon niet opnieuw doen. Probeer het opnieuw.';
+
+  @override
+  String get listUndoOutboxRestoreItem => 'Item herstellen';
 }

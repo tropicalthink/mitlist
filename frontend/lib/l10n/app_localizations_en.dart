@@ -2228,14 +2228,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Couldn\'t clear items. Please try again.';
 
   @override
-  String listDetailItemDeleted(String name) {
-    return '$name deleted';
-  }
-
-  @override
-  String get listDetailCouldNotRestore => 'Couldn\'t restore item.';
-
-  @override
   String get listDetailCouldNotReorder =>
       'Couldn\'t reorder items. Please try again.';
 
@@ -2273,7 +2265,7 @@ class AppLocalizationsEn extends AppLocalizations {
       other: 'items',
       one: 'item',
     );
-    return 'This will remove all $count $_temp0. This cannot be undone.';
+    return 'This will remove all $count $_temp0. You can take it back with the undo arrow until you leave the list.';
   }
 
   @override
@@ -3831,9 +3823,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get listItemViewPhoto => 'View photo';
 
   @override
-  String get listItemReplacePhoto => 'Replace photo';
-
-  @override
   String get listItemAddPhoto => 'Add photo';
 
   @override
@@ -3895,13 +3884,65 @@ class AppLocalizationsEn extends AppLocalizations {
   String get listItemUnit => 'Unit';
 
   @override
-  String get listItemDetails => 'Details';
-
-  @override
   String get listItemMoveUp => 'Move up';
 
   @override
   String get listItemMoveDown => 'Move down';
+
+  @override
+  String listEditDetailsFor(String name) {
+    return 'Details for $name';
+  }
+
+  @override
+  String get listEditUnitAdd => 'Add a unit';
+
+  @override
+  String listEditUnitValue(String unit) {
+    return 'Unit: $unit';
+  }
+
+  @override
+  String get listEditPriceAdd => 'Add a price';
+
+  @override
+  String listEditPriceValue(String price) {
+    return 'Price: $price';
+  }
+
+  @override
+  String get listEditNoteAdd => 'Add a note';
+
+  @override
+  String listEditNoteValue(String note) {
+    return 'Note: $note';
+  }
+
+  @override
+  String get listEditClearUnit => 'Clear unit';
+
+  @override
+  String get listEditClearPrice => 'Clear price';
+
+  @override
+  String get listEditBack => 'Back to details';
+
+  @override
+  String listEditDeleteItem(String name) {
+    return 'Delete $name';
+  }
+
+  @override
+  String get listEditUnitPieces => 'pcs';
+
+  @override
+  String get listEditUnitPack => 'pack';
+
+  @override
+  String get listEditUnitCan => 'can';
+
+  @override
+  String get listEditUnitBottle => 'bottle';
 
   @override
   String get listItemOneLess => 'One less';
@@ -7237,4 +7278,178 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get pinwallHubEmptyIntro =>
       'Notes for the whole house go here. Open the board to pin one.';
+
+  @override
+  String get widgetsPageTitle => 'Home screen widgets';
+
+  @override
+  String get widgetsPageAccountRowValue => 'The list and chores at a glance';
+
+  @override
+  String get widgetsPageIntro =>
+      'See the shopping list and today\'s chores without opening the app, and tick things off right from your home screen.';
+
+  @override
+  String get widgetsPageStepsTitle => 'How to add a widget';
+
+  @override
+  String get widgetsPageIosStep1 =>
+      'Touch and hold an empty spot on your Home Screen, then tap Edit and Add Widget.';
+
+  @override
+  String get widgetsPageIosStep2 => 'Search for “mitlist”.';
+
+  @override
+  String get widgetsPageIosStep3 =>
+      'Pick a widget, swipe to the size you want and tap Add Widget.';
+
+  @override
+  String get widgetsPageIosStep4 =>
+      'To choose the household or list, touch and hold the widget and tap Edit Widget.';
+
+  @override
+  String get widgetsPageAndroidStep1 =>
+      'Touch and hold an empty spot on your home screen.';
+
+  @override
+  String get widgetsPageAndroidStep2 => 'Tap Widgets and find mitlist.';
+
+  @override
+  String get widgetsPageAndroidStep3 =>
+      'Touch and hold a widget and drag it where you want it.';
+
+  @override
+  String get widgetsPageAdd => 'Add to home screen';
+
+  @override
+  String get widgetsPageAdded => 'Added';
+
+  @override
+  String get widgetsPagePinFailed =>
+      'Your home screen couldn\'t add it directly. Follow the steps below.';
+
+  @override
+  String get widgetsPageShoppingListName => 'Shopping list';
+
+  @override
+  String get widgetsPageShoppingListDesc =>
+      'Tick items off in the shop and add new ones with +.';
+
+  @override
+  String get widgetsPageChoresName => 'Chores today';
+
+  @override
+  String get widgetsPageChoresDesc =>
+      'What\'s due today and whose turn it is. Mark a chore done in one tap.';
+
+  @override
+  String get widgetsPageQuickAddName => 'Quick add';
+
+  @override
+  String get widgetsPageQuickAddDesc => 'One tap to put something on the list.';
+
+  @override
+  String get widgetsPageHouseholdName => 'Household today';
+
+  @override
+  String get widgetsPageHouseholdDesc =>
+      'Today\'s chores, the shopping list and tonight\'s meal in one place.';
+
+  @override
+  String widgetsPagePreviewLabel(String name) {
+    return 'Preview of the $name widget';
+  }
+
+  @override
+  String get widgetsPageSampleHousehold => 'Our home';
+
+  @override
+  String get widgetsPageSampleListName => 'Groceries';
+
+  @override
+  String get widgetsPageSampleItem1 => 'Oat milk';
+
+  @override
+  String get widgetsPageSampleItem2 => 'Bananas';
+
+  @override
+  String get widgetsPageSampleItem3 => 'Coffee beans';
+
+  @override
+  String get widgetsPageSampleItem4 => 'Rice';
+
+  @override
+  String get widgetsPageSampleChore1 => 'Take out the bins';
+
+  @override
+  String get widgetsPageSampleChore2 => 'Water the plants';
+
+  @override
+  String get widgetsPageSampleMeal => 'Tonight: pasta bake';
+
+  @override
+  String get widgetsPageSampleAddHint => 'Add to the list';
+
+  @override
+  String get widgetsPageSampleAddTo => 'Add to';
+
+  @override
+  String widgetsPageSampleLeft(int count) {
+    return '$count left';
+  }
+
+  @override
+  String widgetsPageSampleDue(int count) {
+    return '$count due';
+  }
+
+  @override
+  String get widgetPromoHeadline => 'Your shopping list, on your home screen';
+
+  @override
+  String get widgetPromoBody =>
+      'Tick things off in the shop without opening the app. Everyone at home sees it straight away.';
+
+  @override
+  String get widgetPromoAdd => 'Add to home screen';
+
+  @override
+  String get widgetPromoShowMe => 'Show me how';
+
+  @override
+  String get widgetPromoNotNow => 'Not now';
+
+  @override
+  String get listUndoUndoTooltip => 'Undo';
+
+  @override
+  String get listUndoRedoTooltip => 'Redo';
+
+  @override
+  String get listUndoChangedElsewhere =>
+      'Someone else changed this, so it wasn\'t undone';
+
+  @override
+  String get listUndoRedoChangedElsewhere =>
+      'Someone else changed this, so it wasn\'t redone';
+
+  @override
+  String listUndoRestoredItems(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Restored $count items',
+      one: 'Restored 1 item',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get listUndoCouldNotUndo => 'Couldn\'t undo that. Try again.';
+
+  @override
+  String get listUndoCouldNotRedo => 'Couldn\'t redo that. Try again.';
+
+  @override
+  String get listUndoOutboxRestoreItem => 'Restore item';
 }

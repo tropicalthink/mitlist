@@ -2450,19 +2450,6 @@
   "@listDetailCouldNotClear": {
     "description": "Snackbar when clearing items fails"
   },
-  "listDetailItemDeleted": "{name} eliminado",
-  "@listDetailItemDeleted": {
-    "description": "Snackbar when item is deleted",
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "listDetailCouldNotRestore": "No se pudo restaurar el artículo.",
-  "@listDetailCouldNotRestore": {
-    "description": "Snackbar when restore fails"
-  },
   "listDetailCouldNotReorder": "No se pudo reordenar los artículos. Inténtalo de nuevo.",
   "@listDetailCouldNotReorder": {
     "description": "Snackbar when reorder fails"
@@ -2496,7 +2483,7 @@
   "@listDetailClearTitle": {
     "description": "Dialog title for clearing list"
   },
-  "listDetailClearBody": "Esto eliminará {count, plural, =1{el artículo} other{los {count} artículos}}. No se puede deshacer.",
+  "listDetailClearBody": "Esto eliminará {count, plural, =1{el artículo} other{los {count} artículos}}. Puedes deshacerlo con la flecha de deshacer hasta que salgas de la lista.",
   "@listDetailClearBody": {
     "description": "Dialog body for clearing list",
     "placeholders": {
@@ -4124,7 +4111,6 @@
   "composerScanList": "Escanear lista",
   "composerAddItem": "Agregar artículo",
   "listItemViewPhoto": "Ver foto",
-  "listItemReplacePhoto": "Reemplazar foto",
   "listItemAddPhoto": "Agregar foto",
   "listItemRemovePhoto": "Quitar foto",
   "listItemQuantityAmount": "Cantidad",
@@ -4139,9 +4125,23 @@
   "listItemViewPhotoFor": "Ver foto de {name}",
   "listItemFailedSave": "Error al guardar — toca la barra de sincronización para reintentar",
   "listItemUnit": "Unidad",
-  "listItemDetails": "Detalles",
   "listItemMoveUp": "Subir",
   "listItemMoveDown": "Bajar",
+  "listEditDetailsFor": "Detalles de {name}",
+  "listEditUnitAdd": "Añadir una unidad",
+  "listEditUnitValue": "Unidad: {unit}",
+  "listEditPriceAdd": "Añadir un precio",
+  "listEditPriceValue": "Precio: {price}",
+  "listEditNoteAdd": "Añadir una nota",
+  "listEditNoteValue": "Nota: {note}",
+  "listEditClearUnit": "Quitar la unidad",
+  "listEditClearPrice": "Quitar el precio",
+  "listEditBack": "Volver a los detalles",
+  "listEditDeleteItem": "Eliminar {name}",
+  "listEditUnitPieces": "uds.",
+  "listEditUnitPack": "paquete",
+  "listEditUnitCan": "lata",
+  "listEditUnitBottle": "botella",
   "listItemOneLess": "Uno menos",
   "listItemOneMore": "Uno más",
   "scanCheckListPhoto": "Revisar foto de la lista",
@@ -6377,5 +6377,192 @@
   "appAreasBody": "Ocultar una parte no borra nada. Si alguien añade un gasto contigo o te toca una tarea, esa parte aparece igualmente.",
   "appAreasAll": "Todo",
   "hubChecklistLater": "Después:",
-  "pinwallHubEmptyIntro": "Aquí van las notas para toda la casa. Abre el tablón para fijar una."
+  "pinwallHubEmptyIntro": "Aquí van las notas para toda la casa. Abre el tablón para fijar una.",
+  "widgetsPageTitle": "Widgets de la pantalla de inicio",
+  "@widgetsPageTitle": {
+    "description": "Title of the Widgets page (You > Home screen widgets)"
+  },
+  "widgetsPageAccountRowValue": "La lista y las tareas de un vistazo",
+  "@widgetsPageAccountRowValue": {
+    "description": "You screen: subtitle of the row that opens the Widgets page"
+  },
+  "widgetsPageIntro": "Consulta la lista de la compra y las tareas de hoy sin abrir la app, y márcalas directamente desde la pantalla de inicio.",
+  "@widgetsPageIntro": {
+    "description": "Widgets page: intro under the title"
+  },
+  "widgetsPageStepsTitle": "Cómo añadir un widget",
+  "@widgetsPageStepsTitle": {
+    "description": "Widgets page: heading of the numbered how-to steps"
+  },
+  "widgetsPageIosStep1": "Mantén pulsado un espacio vacío de la pantalla de inicio y toca Editar y Añadir widget.",
+  "@widgetsPageIosStep1": {
+    "description": "iOS how-to step 1"
+  },
+  "widgetsPageIosStep2": "Busca «mitlist».",
+  "@widgetsPageIosStep2": {
+    "description": "iOS how-to step 2"
+  },
+  "widgetsPageIosStep3": "Elige un widget, desliza hasta el tamaño que quieras y toca Añadir widget.",
+  "@widgetsPageIosStep3": {
+    "description": "iOS how-to step 3"
+  },
+  "widgetsPageIosStep4": "Para elegir el hogar o la lista, mantén pulsado el widget y toca Editar widget.",
+  "@widgetsPageIosStep4": {
+    "description": "iOS how-to step 4"
+  },
+  "widgetsPageAndroidStep1": "Mantén pulsado un espacio vacío de la pantalla de inicio.",
+  "@widgetsPageAndroidStep1": {
+    "description": "Android how-to step 1"
+  },
+  "widgetsPageAndroidStep2": "Toca Widgets y busca mitlist.",
+  "@widgetsPageAndroidStep2": {
+    "description": "Android how-to step 2"
+  },
+  "widgetsPageAndroidStep3": "Mantén pulsado un widget y arrástralo adonde quieras.",
+  "@widgetsPageAndroidStep3": {
+    "description": "Android how-to step 3"
+  },
+  "widgetsPageAdd": "Añadir a la pantalla de inicio",
+  "@widgetsPageAdd": {
+    "description": "Android button under a widget preview: asks the launcher to pin it"
+  },
+  "widgetsPageAdded": "Añadido",
+  "@widgetsPageAdded": {
+    "description": "Badge on a widget that is already on the home screen"
+  },
+  "widgetsPagePinFailed": "Tu pantalla de inicio no ha podido añadirlo directamente. Sigue los pasos de abajo.",
+  "@widgetsPagePinFailed": {
+    "description": "Toast when the launcher could not pin a widget in one tap"
+  },
+  "widgetsPageShoppingListName": "Lista de la compra",
+  "@widgetsPageShoppingListName": {
+    "description": "Name of the shopping list widget"
+  },
+  "widgetsPageShoppingListDesc": "Marca artículos en la tienda y añade otros con +.",
+  "@widgetsPageShoppingListDesc": {
+    "description": "What the shopping list widget does"
+  },
+  "widgetsPageChoresName": "Tareas de hoy",
+  "@widgetsPageChoresName": {
+    "description": "Name of the chores widget"
+  },
+  "widgetsPageChoresDesc": "Lo que toca hoy y a quién le toca. Marca una tarea como hecha con un toque.",
+  "@widgetsPageChoresDesc": {
+    "description": "What the chores widget does"
+  },
+  "widgetsPageQuickAddName": "Añadir rápido",
+  "@widgetsPageQuickAddName": {
+    "description": "Name of the quick add widget (Android)"
+  },
+  "widgetsPageQuickAddDesc": "Un toque para apuntar algo en la lista.",
+  "@widgetsPageQuickAddDesc": {
+    "description": "What the quick add widget does"
+  },
+  "widgetsPageHouseholdName": "El hogar hoy",
+  "@widgetsPageHouseholdName": {
+    "description": "Name of the household today widget"
+  },
+  "widgetsPageHouseholdDesc": "Las tareas de hoy, la lista de la compra y la cena de esta noche en un solo sitio.",
+  "@widgetsPageHouseholdDesc": {
+    "description": "What the household today widget does"
+  },
+  "widgetsPagePreviewLabel": "Vista previa del widget {name}",
+  "@widgetsPagePreviewLabel": {
+    "description": "Screen reader label of a widget preview",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "widgetsPageSampleHousehold": "Nuestra casa",
+  "@widgetsPageSampleHousehold": {
+    "description": "Sample household name in widget previews when the real one is unknown"
+  },
+  "widgetsPageSampleListName": "Supermercado",
+  "@widgetsPageSampleListName": {
+    "description": "Sample list name in widget previews"
+  },
+  "widgetsPageSampleItem1": "Leche de avena",
+  "@widgetsPageSampleItem1": {
+    "description": "Sample list item in widget previews"
+  },
+  "widgetsPageSampleItem2": "Plátanos",
+  "@widgetsPageSampleItem2": {
+    "description": "Sample list item in widget previews"
+  },
+  "widgetsPageSampleItem3": "Café en grano",
+  "@widgetsPageSampleItem3": {
+    "description": "Sample list item in widget previews"
+  },
+  "widgetsPageSampleItem4": "Arroz",
+  "@widgetsPageSampleItem4": {
+    "description": "Sample list item in widget previews"
+  },
+  "widgetsPageSampleChore1": "Sacar la basura",
+  "@widgetsPageSampleChore1": {
+    "description": "Sample chore in widget previews"
+  },
+  "widgetsPageSampleChore2": "Regar las plantas",
+  "@widgetsPageSampleChore2": {
+    "description": "Sample chore in widget previews"
+  },
+  "widgetsPageSampleMeal": "Esta noche: pasta al horno",
+  "@widgetsPageSampleMeal": {
+    "description": "Sample tonight's meal line in the household widget preview"
+  },
+  "widgetsPageSampleAddHint": "Añadir a la lista",
+  "@widgetsPageSampleAddHint": {
+    "description": "Placeholder text in the quick add widget preview"
+  },
+  "widgetsPageSampleAddTo": "Añadir a",
+  "@widgetsPageSampleAddTo": {
+    "description": "Caption above the list name in the iOS quick add widget preview (\"Add to\" / \"Groceries\")"
+  },
+  "widgetsPageSampleLeft": "Quedan {count}",
+  "@widgetsPageSampleLeft": {
+    "description": "Widget preview: how many list items are still open",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "widgetsPageSampleDue": "{count} pendientes",
+  "@widgetsPageSampleDue": {
+    "description": "Widget preview: how many chores are due",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "widgetPromoHeadline": "Tu lista de la compra, en la pantalla de inicio",
+  "@widgetPromoHeadline": {
+    "description": "Home promo sheet headline for home screen widgets (household benefit, not the feature)"
+  },
+  "widgetPromoBody": "Marca cosas en la tienda sin abrir la app. Todos en casa lo ven al momento.",
+  "@widgetPromoBody": {
+    "description": "Home promo sheet body for home screen widgets"
+  },
+  "widgetPromoAdd": "Añadir a la pantalla de inicio",
+  "@widgetPromoAdd": {
+    "description": "Home promo sheet primary button on Android: pins the shopping list widget"
+  },
+  "widgetPromoShowMe": "Enséñame cómo",
+  "@widgetPromoShowMe": {
+    "description": "Home promo sheet primary button on iOS: opens the Widgets page"
+  },
+  "widgetPromoNotNow": "Ahora no",
+  "@widgetPromoNotNow": {
+    "description": "Home promo sheet: dismiss button"
+  },
+  "listUndoUndoTooltip": "Deshacer",
+  "listUndoRedoTooltip": "Rehacer",
+  "listUndoChangedElsewhere": "Otra persona cambió esto, así que no se deshizo",
+  "listUndoRedoChangedElsewhere": "Otra persona cambió esto, así que no se rehízo",
+  "listUndoRestoredItems": "{count, plural, =1{1 artículo restaurado} other{{count} artículos restaurados}}",
+  "listUndoCouldNotUndo": "No se pudo deshacer. Inténtalo de nuevo.",
+  "listUndoCouldNotRedo": "No se pudo rehacer. Inténtalo de nuevo.",
+  "listUndoOutboxRestoreItem": "Restaurar artículo"
 }

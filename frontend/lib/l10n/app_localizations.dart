@@ -3909,18 +3909,6 @@ abstract class AppLocalizations {
   /// **'Couldn\'t clear items. Please try again.'**
   String get listDetailCouldNotClear;
 
-  /// Snackbar when item is deleted
-  ///
-  /// In en, this message translates to:
-  /// **'{name} deleted'**
-  String listDetailItemDeleted(String name);
-
-  /// Snackbar when restore fails
-  ///
-  /// In en, this message translates to:
-  /// **'Couldn\'t restore item.'**
-  String get listDetailCouldNotRestore;
-
   /// Snackbar when reorder fails
   ///
   /// In en, this message translates to:
@@ -3966,7 +3954,7 @@ abstract class AppLocalizations {
   /// Dialog body for clearing list
   ///
   /// In en, this message translates to:
-  /// **'This will remove all {count} {count, plural, =1{item} other{items}}. This cannot be undone.'**
+  /// **'This will remove all {count} {count, plural, =1{item} other{items}}. You can take it back with the undo arrow until you leave the list.'**
   String listDetailClearBody(num count);
 
   /// Confirmation button to clear list
@@ -6729,12 +6717,6 @@ abstract class AppLocalizations {
   /// **'View photo'**
   String get listItemViewPhoto;
 
-  /// Action: replace attached photo
-  ///
-  /// In en, this message translates to:
-  /// **'Replace photo'**
-  String get listItemReplacePhoto;
-
   /// Action: add photo to item
   ///
   /// In en, this message translates to:
@@ -6819,12 +6801,6 @@ abstract class AppLocalizations {
   /// **'Unit'**
   String get listItemUnit;
 
-  /// Tooltip on the button that opens an item's amount, note, price and photo while its line is being edited
-  ///
-  /// In en, this message translates to:
-  /// **'Details'**
-  String get listItemDetails;
-
   /// Screen-reader action that moves a list item one place up
   ///
   /// In en, this message translates to:
@@ -6836,6 +6812,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Move down'**
   String get listItemMoveDown;
+
+  /// Screen-reader label of the row of controls pinned above the keyboard while a list line is edited
+  ///
+  /// In en, this message translates to:
+  /// **'Details for {name}'**
+  String listEditDetailsFor(String name);
+
+  /// Chip that opens the unit choices while a list line is edited
+  ///
+  /// In en, this message translates to:
+  /// **'Add a unit'**
+  String get listEditUnitAdd;
+
+  /// Tooltip of the unit chip when the item has a unit
+  ///
+  /// In en, this message translates to:
+  /// **'Unit: {unit}'**
+  String listEditUnitValue(String unit);
+
+  /// Chip that opens the price field while a list line is edited
+  ///
+  /// In en, this message translates to:
+  /// **'Add a price'**
+  String get listEditPriceAdd;
+
+  /// Tooltip of the price chip when the item has a price
+  ///
+  /// In en, this message translates to:
+  /// **'Price: {price}'**
+  String listEditPriceValue(String price);
+
+  /// Chip that opens the note field under the item name
+  ///
+  /// In en, this message translates to:
+  /// **'Add a note'**
+  String get listEditNoteAdd;
+
+  /// Tooltip of the note chip when the item has a note
+  ///
+  /// In en, this message translates to:
+  /// **'Note: {note}'**
+  String listEditNoteValue(String note);
+
+  /// Button that removes the unit of a list item
+  ///
+  /// In en, this message translates to:
+  /// **'Clear unit'**
+  String get listEditClearUnit;
+
+  /// Button that removes the price of a list item
+  ///
+  /// In en, this message translates to:
+  /// **'Clear price'**
+  String get listEditClearPrice;
+
+  /// Button that closes the unit or price field and shows the other details again
+  ///
+  /// In en, this message translates to:
+  /// **'Back to details'**
+  String get listEditBack;
+
+  /// Delete button in the edit controls of a list line
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {name}'**
+  String listEditDeleteItem(String name);
+
+  /// Short unit: pieces
+  ///
+  /// In en, this message translates to:
+  /// **'pcs'**
+  String get listEditUnitPieces;
+
+  /// Short unit: pack
+  ///
+  /// In en, this message translates to:
+  /// **'pack'**
+  String get listEditUnitPack;
+
+  /// Short unit: can
+  ///
+  /// In en, this message translates to:
+  /// **'can'**
+  String get listEditUnitCan;
+
+  /// Short unit: bottle
+  ///
+  /// In en, this message translates to:
+  /// **'bottle'**
+  String get listEditUnitBottle;
 
   /// Tooltip on the minus button that lowers a list item's amount by one
   ///
@@ -12368,6 +12434,300 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Notes for the whole house go here. Open the board to pin one.'**
   String get pinwallHubEmptyIntro;
+
+  /// Title of the Widgets page (You > Home screen widgets)
+  ///
+  /// In en, this message translates to:
+  /// **'Home screen widgets'**
+  String get widgetsPageTitle;
+
+  /// You screen: subtitle of the row that opens the Widgets page
+  ///
+  /// In en, this message translates to:
+  /// **'The list and chores at a glance'**
+  String get widgetsPageAccountRowValue;
+
+  /// Widgets page: intro under the title
+  ///
+  /// In en, this message translates to:
+  /// **'See the shopping list and today\'s chores without opening the app, and tick things off right from your home screen.'**
+  String get widgetsPageIntro;
+
+  /// Widgets page: heading of the numbered how-to steps
+  ///
+  /// In en, this message translates to:
+  /// **'How to add a widget'**
+  String get widgetsPageStepsTitle;
+
+  /// iOS how-to step 1
+  ///
+  /// In en, this message translates to:
+  /// **'Touch and hold an empty spot on your Home Screen, then tap Edit and Add Widget.'**
+  String get widgetsPageIosStep1;
+
+  /// iOS how-to step 2
+  ///
+  /// In en, this message translates to:
+  /// **'Search for “mitlist”.'**
+  String get widgetsPageIosStep2;
+
+  /// iOS how-to step 3
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a widget, swipe to the size you want and tap Add Widget.'**
+  String get widgetsPageIosStep3;
+
+  /// iOS how-to step 4
+  ///
+  /// In en, this message translates to:
+  /// **'To choose the household or list, touch and hold the widget and tap Edit Widget.'**
+  String get widgetsPageIosStep4;
+
+  /// Android how-to step 1
+  ///
+  /// In en, this message translates to:
+  /// **'Touch and hold an empty spot on your home screen.'**
+  String get widgetsPageAndroidStep1;
+
+  /// Android how-to step 2
+  ///
+  /// In en, this message translates to:
+  /// **'Tap Widgets and find mitlist.'**
+  String get widgetsPageAndroidStep2;
+
+  /// Android how-to step 3
+  ///
+  /// In en, this message translates to:
+  /// **'Touch and hold a widget and drag it where you want it.'**
+  String get widgetsPageAndroidStep3;
+
+  /// Android button under a widget preview: asks the launcher to pin it
+  ///
+  /// In en, this message translates to:
+  /// **'Add to home screen'**
+  String get widgetsPageAdd;
+
+  /// Badge on a widget that is already on the home screen
+  ///
+  /// In en, this message translates to:
+  /// **'Added'**
+  String get widgetsPageAdded;
+
+  /// Toast when the launcher could not pin a widget in one tap
+  ///
+  /// In en, this message translates to:
+  /// **'Your home screen couldn\'t add it directly. Follow the steps below.'**
+  String get widgetsPagePinFailed;
+
+  /// Name of the shopping list widget
+  ///
+  /// In en, this message translates to:
+  /// **'Shopping list'**
+  String get widgetsPageShoppingListName;
+
+  /// What the shopping list widget does
+  ///
+  /// In en, this message translates to:
+  /// **'Tick items off in the shop and add new ones with +.'**
+  String get widgetsPageShoppingListDesc;
+
+  /// Name of the chores widget
+  ///
+  /// In en, this message translates to:
+  /// **'Chores today'**
+  String get widgetsPageChoresName;
+
+  /// What the chores widget does
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s due today and whose turn it is. Mark a chore done in one tap.'**
+  String get widgetsPageChoresDesc;
+
+  /// Name of the quick add widget (Android)
+  ///
+  /// In en, this message translates to:
+  /// **'Quick add'**
+  String get widgetsPageQuickAddName;
+
+  /// What the quick add widget does
+  ///
+  /// In en, this message translates to:
+  /// **'One tap to put something on the list.'**
+  String get widgetsPageQuickAddDesc;
+
+  /// Name of the household today widget
+  ///
+  /// In en, this message translates to:
+  /// **'Household today'**
+  String get widgetsPageHouseholdName;
+
+  /// What the household today widget does
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s chores, the shopping list and tonight\'s meal in one place.'**
+  String get widgetsPageHouseholdDesc;
+
+  /// Screen reader label of a widget preview
+  ///
+  /// In en, this message translates to:
+  /// **'Preview of the {name} widget'**
+  String widgetsPagePreviewLabel(String name);
+
+  /// Sample household name in widget previews when the real one is unknown
+  ///
+  /// In en, this message translates to:
+  /// **'Our home'**
+  String get widgetsPageSampleHousehold;
+
+  /// Sample list name in widget previews
+  ///
+  /// In en, this message translates to:
+  /// **'Groceries'**
+  String get widgetsPageSampleListName;
+
+  /// Sample list item in widget previews
+  ///
+  /// In en, this message translates to:
+  /// **'Oat milk'**
+  String get widgetsPageSampleItem1;
+
+  /// Sample list item in widget previews
+  ///
+  /// In en, this message translates to:
+  /// **'Bananas'**
+  String get widgetsPageSampleItem2;
+
+  /// Sample list item in widget previews
+  ///
+  /// In en, this message translates to:
+  /// **'Coffee beans'**
+  String get widgetsPageSampleItem3;
+
+  /// Sample list item in widget previews
+  ///
+  /// In en, this message translates to:
+  /// **'Rice'**
+  String get widgetsPageSampleItem4;
+
+  /// Sample chore in widget previews
+  ///
+  /// In en, this message translates to:
+  /// **'Take out the bins'**
+  String get widgetsPageSampleChore1;
+
+  /// Sample chore in widget previews
+  ///
+  /// In en, this message translates to:
+  /// **'Water the plants'**
+  String get widgetsPageSampleChore2;
+
+  /// Sample tonight's meal line in the household widget preview
+  ///
+  /// In en, this message translates to:
+  /// **'Tonight: pasta bake'**
+  String get widgetsPageSampleMeal;
+
+  /// Placeholder text in the quick add widget preview
+  ///
+  /// In en, this message translates to:
+  /// **'Add to the list'**
+  String get widgetsPageSampleAddHint;
+
+  /// Caption above the list name in the iOS quick add widget preview ("Add to" / "Groceries")
+  ///
+  /// In en, this message translates to:
+  /// **'Add to'**
+  String get widgetsPageSampleAddTo;
+
+  /// Widget preview: how many list items are still open
+  ///
+  /// In en, this message translates to:
+  /// **'{count} left'**
+  String widgetsPageSampleLeft(int count);
+
+  /// Widget preview: how many chores are due
+  ///
+  /// In en, this message translates to:
+  /// **'{count} due'**
+  String widgetsPageSampleDue(int count);
+
+  /// Home promo sheet headline for home screen widgets (household benefit, not the feature)
+  ///
+  /// In en, this message translates to:
+  /// **'Your shopping list, on your home screen'**
+  String get widgetPromoHeadline;
+
+  /// Home promo sheet body for home screen widgets
+  ///
+  /// In en, this message translates to:
+  /// **'Tick things off in the shop without opening the app. Everyone at home sees it straight away.'**
+  String get widgetPromoBody;
+
+  /// Home promo sheet primary button on Android: pins the shopping list widget
+  ///
+  /// In en, this message translates to:
+  /// **'Add to home screen'**
+  String get widgetPromoAdd;
+
+  /// Home promo sheet primary button on iOS: opens the Widgets page
+  ///
+  /// In en, this message translates to:
+  /// **'Show me how'**
+  String get widgetPromoShowMe;
+
+  /// Home promo sheet: dismiss button
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get widgetPromoNotNow;
+
+  /// List screen app bar: undo the last change of this visit
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get listUndoUndoTooltip;
+
+  /// List screen app bar: redo the last undone change
+  ///
+  /// In en, this message translates to:
+  /// **'Redo'**
+  String get listUndoRedoTooltip;
+
+  /// Toast when an undo was skipped because a household member changed or removed the item meanwhile
+  ///
+  /// In en, this message translates to:
+  /// **'Someone else changed this, so it wasn\'t undone'**
+  String get listUndoChangedElsewhere;
+
+  /// Toast when a redo was skipped because a household member changed or removed the item meanwhile
+  ///
+  /// In en, this message translates to:
+  /// **'Someone else changed this, so it wasn\'t redone'**
+  String get listUndoRedoChangedElsewhere;
+
+  /// Toast after an undo put several removed list items back
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Restored 1 item} other{Restored {count} items}}'**
+  String listUndoRestoredItems(num count);
+
+  /// Toast when an undo could not be saved
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t undo that. Try again.'**
+  String get listUndoCouldNotUndo;
+
+  /// Toast when a redo could not be saved
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t redo that. Try again.'**
+  String get listUndoCouldNotRedo;
+
+  /// Sync status: a queued op putting a deleted list item back
+  ///
+  /// In en, this message translates to:
+  /// **'Restore item'**
+  String get listUndoOutboxRestoreItem;
 }
 
 class _AppLocalizationsDelegate

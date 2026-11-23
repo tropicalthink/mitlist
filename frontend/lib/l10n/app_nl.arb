@@ -2450,19 +2450,6 @@
   "@listDetailCouldNotClear": {
     "description": "Snackbar when clearing items fails"
   },
-  "listDetailItemDeleted": "{name} verwijderd",
-  "@listDetailItemDeleted": {
-    "description": "Snackbar when item is deleted",
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "listDetailCouldNotRestore": "Kon item niet herstellen.",
-  "@listDetailCouldNotRestore": {
-    "description": "Snackbar when restore fails"
-  },
   "listDetailCouldNotReorder": "Kon items niet herordenen. Probeer het opnieuw.",
   "@listDetailCouldNotReorder": {
     "description": "Snackbar when reorder fails"
@@ -2496,7 +2483,7 @@
   "@listDetailClearTitle": {
     "description": "Dialog title for clearing list"
   },
-  "listDetailClearBody": "Dit verwijdert alle {count} {count, plural, =1{item} other{items}}. Dit kan niet ongedaan worden gemaakt.",
+  "listDetailClearBody": "Dit verwijdert alle {count} {count, plural, =1{item} other{items}}. Met de pijl Ongedaan maken zet je het terug zolang je de lijst niet verlaat.",
   "@listDetailClearBody": {
     "description": "Dialog body for clearing list",
     "placeholders": {
@@ -4124,7 +4111,6 @@
   "composerScanList": "Lijst scannen",
   "composerAddItem": "Item toevoegen",
   "listItemViewPhoto": "Foto bekijken",
-  "listItemReplacePhoto": "Foto vervangen",
   "listItemAddPhoto": "Foto toevoegen",
   "listItemRemovePhoto": "Foto verwijderen",
   "listItemQuantityAmount": "Aantal",
@@ -4139,9 +4125,23 @@
   "listItemViewPhotoFor": "Foto voor {name} bekijken",
   "listItemFailedSave": "Opslaan mislukt — tik op de sync-balk om opnieuw te proberen",
   "listItemUnit": "Eenheid",
-  "listItemDetails": "Details",
   "listItemMoveUp": "Omhoog",
   "listItemMoveDown": "Omlaag",
+  "listEditDetailsFor": "Details van {name}",
+  "listEditUnitAdd": "Eenheid toevoegen",
+  "listEditUnitValue": "Eenheid: {unit}",
+  "listEditPriceAdd": "Prijs toevoegen",
+  "listEditPriceValue": "Prijs: {price}",
+  "listEditNoteAdd": "Notitie toevoegen",
+  "listEditNoteValue": "Notitie: {note}",
+  "listEditClearUnit": "Eenheid wissen",
+  "listEditClearPrice": "Prijs wissen",
+  "listEditBack": "Terug naar details",
+  "listEditDeleteItem": "{name} verwijderen",
+  "listEditUnitPieces": "st.",
+  "listEditUnitPack": "pak",
+  "listEditUnitCan": "blik",
+  "listEditUnitBottle": "fles",
   "listItemOneLess": "Eén minder",
   "listItemOneMore": "Eén meer",
   "scanCheckListPhoto": "Controleer lijstfoto",
@@ -6377,5 +6377,192 @@
   "appAreasBody": "Verbergen wist niets. Voegt iemand een uitgave met jou toe of ben jij aan de beurt voor een klus, dan verschijnt dat deel toch.",
   "appAreasAll": "Alles",
   "hubChecklistLater": "Later:",
-  "pinwallHubEmptyIntro": "Hier komen notities voor het hele huis. Open het prikbord om er een op te prikken."
+  "pinwallHubEmptyIntro": "Hier komen notities voor het hele huis. Open het prikbord om er een op te prikken.",
+  "widgetsPageTitle": "Widgets voor je beginscherm",
+  "@widgetsPageTitle": {
+    "description": "Title of the Widgets page (You > Home screen widgets)"
+  },
+  "widgetsPageAccountRowValue": "De lijst en klusjes in één oogopslag",
+  "@widgetsPageAccountRowValue": {
+    "description": "You screen: subtitle of the row that opens the Widgets page"
+  },
+  "widgetsPageIntro": "Bekijk de boodschappenlijst en de klusjes van vandaag zonder de app te openen, en vink ze meteen af op je beginscherm.",
+  "@widgetsPageIntro": {
+    "description": "Widgets page: intro under the title"
+  },
+  "widgetsPageStepsTitle": "Zo voeg je een widget toe",
+  "@widgetsPageStepsTitle": {
+    "description": "Widgets page: heading of the numbered how-to steps"
+  },
+  "widgetsPageIosStep1": "Houd een lege plek op je beginscherm ingedrukt en tik op Wijzig en Voeg widget toe.",
+  "@widgetsPageIosStep1": {
+    "description": "iOS how-to step 1"
+  },
+  "widgetsPageIosStep2": "Zoek naar ‘mitlist’.",
+  "@widgetsPageIosStep2": {
+    "description": "iOS how-to step 2"
+  },
+  "widgetsPageIosStep3": "Kies een widget, veeg naar het formaat dat je wilt en tik op Voeg widget toe.",
+  "@widgetsPageIosStep3": {
+    "description": "iOS how-to step 3"
+  },
+  "widgetsPageIosStep4": "Om het huishouden of de lijst te kiezen, houd je de widget ingedrukt en tik je op Wijzig widget.",
+  "@widgetsPageIosStep4": {
+    "description": "iOS how-to step 4"
+  },
+  "widgetsPageAndroidStep1": "Houd een lege plek op je beginscherm ingedrukt.",
+  "@widgetsPageAndroidStep1": {
+    "description": "Android how-to step 1"
+  },
+  "widgetsPageAndroidStep2": "Tik op Widgets en zoek mitlist.",
+  "@widgetsPageAndroidStep2": {
+    "description": "Android how-to step 2"
+  },
+  "widgetsPageAndroidStep3": "Houd een widget ingedrukt en sleep hem naar de plek die je wilt.",
+  "@widgetsPageAndroidStep3": {
+    "description": "Android how-to step 3"
+  },
+  "widgetsPageAdd": "Toevoegen aan beginscherm",
+  "@widgetsPageAdd": {
+    "description": "Android button under a widget preview: asks the launcher to pin it"
+  },
+  "widgetsPageAdded": "Toegevoegd",
+  "@widgetsPageAdded": {
+    "description": "Badge on a widget that is already on the home screen"
+  },
+  "widgetsPagePinFailed": "Je beginscherm kon hem niet direct toevoegen. Volg de stappen hieronder.",
+  "@widgetsPagePinFailed": {
+    "description": "Toast when the launcher could not pin a widget in one tap"
+  },
+  "widgetsPageShoppingListName": "Boodschappenlijst",
+  "@widgetsPageShoppingListName": {
+    "description": "Name of the shopping list widget"
+  },
+  "widgetsPageShoppingListDesc": "Vink artikelen af in de winkel en voeg nieuwe toe met +.",
+  "@widgetsPageShoppingListDesc": {
+    "description": "What the shopping list widget does"
+  },
+  "widgetsPageChoresName": "Klusjes vandaag",
+  "@widgetsPageChoresName": {
+    "description": "Name of the chores widget"
+  },
+  "widgetsPageChoresDesc": "Wat er vandaag moet en wie er aan de beurt is. Vink een klusje af met één tik.",
+  "@widgetsPageChoresDesc": {
+    "description": "What the chores widget does"
+  },
+  "widgetsPageQuickAddName": "Snel toevoegen",
+  "@widgetsPageQuickAddName": {
+    "description": "Name of the quick add widget (Android)"
+  },
+  "widgetsPageQuickAddDesc": "Met één tik iets op de lijst zetten.",
+  "@widgetsPageQuickAddDesc": {
+    "description": "What the quick add widget does"
+  },
+  "widgetsPageHouseholdName": "Huishouden vandaag",
+  "@widgetsPageHouseholdName": {
+    "description": "Name of the household today widget"
+  },
+  "widgetsPageHouseholdDesc": "De klusjes van vandaag, de boodschappenlijst en het avondeten op één plek.",
+  "@widgetsPageHouseholdDesc": {
+    "description": "What the household today widget does"
+  },
+  "widgetsPagePreviewLabel": "Voorbeeld van de widget {name}",
+  "@widgetsPagePreviewLabel": {
+    "description": "Screen reader label of a widget preview",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "widgetsPageSampleHousehold": "Ons huis",
+  "@widgetsPageSampleHousehold": {
+    "description": "Sample household name in widget previews when the real one is unknown"
+  },
+  "widgetsPageSampleListName": "Boodschappen",
+  "@widgetsPageSampleListName": {
+    "description": "Sample list name in widget previews"
+  },
+  "widgetsPageSampleItem1": "Havermelk",
+  "@widgetsPageSampleItem1": {
+    "description": "Sample list item in widget previews"
+  },
+  "widgetsPageSampleItem2": "Bananen",
+  "@widgetsPageSampleItem2": {
+    "description": "Sample list item in widget previews"
+  },
+  "widgetsPageSampleItem3": "Koffiebonen",
+  "@widgetsPageSampleItem3": {
+    "description": "Sample list item in widget previews"
+  },
+  "widgetsPageSampleItem4": "Rijst",
+  "@widgetsPageSampleItem4": {
+    "description": "Sample list item in widget previews"
+  },
+  "widgetsPageSampleChore1": "Vuilnis buiten zetten",
+  "@widgetsPageSampleChore1": {
+    "description": "Sample chore in widget previews"
+  },
+  "widgetsPageSampleChore2": "Planten water geven",
+  "@widgetsPageSampleChore2": {
+    "description": "Sample chore in widget previews"
+  },
+  "widgetsPageSampleMeal": "Vanavond: ovenpasta",
+  "@widgetsPageSampleMeal": {
+    "description": "Sample tonight's meal line in the household widget preview"
+  },
+  "widgetsPageSampleAddHint": "Toevoegen aan de lijst",
+  "@widgetsPageSampleAddHint": {
+    "description": "Placeholder text in the quick add widget preview"
+  },
+  "widgetsPageSampleAddTo": "Toevoegen aan",
+  "@widgetsPageSampleAddTo": {
+    "description": "Caption above the list name in the iOS quick add widget preview (\"Add to\" / \"Groceries\")"
+  },
+  "widgetsPageSampleLeft": "Nog {count}",
+  "@widgetsPageSampleLeft": {
+    "description": "Widget preview: how many list items are still open",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "widgetsPageSampleDue": "{count} te doen",
+  "@widgetsPageSampleDue": {
+    "description": "Widget preview: how many chores are due",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "widgetPromoHeadline": "Je boodschappenlijst op je beginscherm",
+  "@widgetPromoHeadline": {
+    "description": "Home promo sheet headline for home screen widgets (household benefit, not the feature)"
+  },
+  "widgetPromoBody": "Vink dingen af in de winkel zonder de app te openen. Iedereen thuis ziet het meteen.",
+  "@widgetPromoBody": {
+    "description": "Home promo sheet body for home screen widgets"
+  },
+  "widgetPromoAdd": "Toevoegen aan beginscherm",
+  "@widgetPromoAdd": {
+    "description": "Home promo sheet primary button on Android: pins the shopping list widget"
+  },
+  "widgetPromoShowMe": "Laat zien hoe",
+  "@widgetPromoShowMe": {
+    "description": "Home promo sheet primary button on iOS: opens the Widgets page"
+  },
+  "widgetPromoNotNow": "Niet nu",
+  "@widgetPromoNotNow": {
+    "description": "Home promo sheet: dismiss button"
+  },
+  "listUndoUndoTooltip": "Ongedaan maken",
+  "listUndoRedoTooltip": "Opnieuw",
+  "listUndoChangedElsewhere": "Iemand anders heeft dit gewijzigd, dus het is niet ongedaan gemaakt",
+  "listUndoRedoChangedElsewhere": "Iemand anders heeft dit gewijzigd, dus het is niet opnieuw gedaan",
+  "listUndoRestoredItems": "{count, plural, =1{1 item hersteld} other{{count} items hersteld}}",
+  "listUndoCouldNotUndo": "Kon niet ongedaan maken. Probeer het opnieuw.",
+  "listUndoCouldNotRedo": "Kon niet opnieuw doen. Probeer het opnieuw.",
+  "listUndoOutboxRestoreItem": "Item herstellen"
 }

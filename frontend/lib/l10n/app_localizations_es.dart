@@ -2240,14 +2240,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'No se pudieron limpiar los artículos. Inténtalo de nuevo.';
 
   @override
-  String listDetailItemDeleted(String name) {
-    return '$name eliminado';
-  }
-
-  @override
-  String get listDetailCouldNotRestore => 'No se pudo restaurar el artículo.';
-
-  @override
   String get listDetailCouldNotReorder =>
       'No se pudo reordenar los artículos. Inténtalo de nuevo.';
 
@@ -2286,7 +2278,7 @@ class AppLocalizationsEs extends AppLocalizations {
       other: 'los $count artículos',
       one: 'el artículo',
     );
-    return 'Esto eliminará $_temp0. No se puede deshacer.';
+    return 'Esto eliminará $_temp0. Puedes deshacerlo con la flecha de deshacer hasta que salgas de la lista.';
   }
 
   @override
@@ -3855,9 +3847,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get listItemViewPhoto => 'Ver foto';
 
   @override
-  String get listItemReplacePhoto => 'Reemplazar foto';
-
-  @override
   String get listItemAddPhoto => 'Agregar foto';
 
   @override
@@ -3920,13 +3909,65 @@ class AppLocalizationsEs extends AppLocalizations {
   String get listItemUnit => 'Unidad';
 
   @override
-  String get listItemDetails => 'Detalles';
-
-  @override
   String get listItemMoveUp => 'Subir';
 
   @override
   String get listItemMoveDown => 'Bajar';
+
+  @override
+  String listEditDetailsFor(String name) {
+    return 'Detalles de $name';
+  }
+
+  @override
+  String get listEditUnitAdd => 'Añadir una unidad';
+
+  @override
+  String listEditUnitValue(String unit) {
+    return 'Unidad: $unit';
+  }
+
+  @override
+  String get listEditPriceAdd => 'Añadir un precio';
+
+  @override
+  String listEditPriceValue(String price) {
+    return 'Precio: $price';
+  }
+
+  @override
+  String get listEditNoteAdd => 'Añadir una nota';
+
+  @override
+  String listEditNoteValue(String note) {
+    return 'Nota: $note';
+  }
+
+  @override
+  String get listEditClearUnit => 'Quitar la unidad';
+
+  @override
+  String get listEditClearPrice => 'Quitar el precio';
+
+  @override
+  String get listEditBack => 'Volver a los detalles';
+
+  @override
+  String listEditDeleteItem(String name) {
+    return 'Eliminar $name';
+  }
+
+  @override
+  String get listEditUnitPieces => 'uds.';
+
+  @override
+  String get listEditUnitPack => 'paquete';
+
+  @override
+  String get listEditUnitCan => 'lata';
+
+  @override
+  String get listEditUnitBottle => 'botella';
 
   @override
   String get listItemOneLess => 'Uno menos';
@@ -7290,4 +7331,181 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get pinwallHubEmptyIntro =>
       'Aquí van las notas para toda la casa. Abre el tablón para fijar una.';
+
+  @override
+  String get widgetsPageTitle => 'Widgets de la pantalla de inicio';
+
+  @override
+  String get widgetsPageAccountRowValue =>
+      'La lista y las tareas de un vistazo';
+
+  @override
+  String get widgetsPageIntro =>
+      'Consulta la lista de la compra y las tareas de hoy sin abrir la app, y márcalas directamente desde la pantalla de inicio.';
+
+  @override
+  String get widgetsPageStepsTitle => 'Cómo añadir un widget';
+
+  @override
+  String get widgetsPageIosStep1 =>
+      'Mantén pulsado un espacio vacío de la pantalla de inicio y toca Editar y Añadir widget.';
+
+  @override
+  String get widgetsPageIosStep2 => 'Busca «mitlist».';
+
+  @override
+  String get widgetsPageIosStep3 =>
+      'Elige un widget, desliza hasta el tamaño que quieras y toca Añadir widget.';
+
+  @override
+  String get widgetsPageIosStep4 =>
+      'Para elegir el hogar o la lista, mantén pulsado el widget y toca Editar widget.';
+
+  @override
+  String get widgetsPageAndroidStep1 =>
+      'Mantén pulsado un espacio vacío de la pantalla de inicio.';
+
+  @override
+  String get widgetsPageAndroidStep2 => 'Toca Widgets y busca mitlist.';
+
+  @override
+  String get widgetsPageAndroidStep3 =>
+      'Mantén pulsado un widget y arrástralo adonde quieras.';
+
+  @override
+  String get widgetsPageAdd => 'Añadir a la pantalla de inicio';
+
+  @override
+  String get widgetsPageAdded => 'Añadido';
+
+  @override
+  String get widgetsPagePinFailed =>
+      'Tu pantalla de inicio no ha podido añadirlo directamente. Sigue los pasos de abajo.';
+
+  @override
+  String get widgetsPageShoppingListName => 'Lista de la compra';
+
+  @override
+  String get widgetsPageShoppingListDesc =>
+      'Marca artículos en la tienda y añade otros con +.';
+
+  @override
+  String get widgetsPageChoresName => 'Tareas de hoy';
+
+  @override
+  String get widgetsPageChoresDesc =>
+      'Lo que toca hoy y a quién le toca. Marca una tarea como hecha con un toque.';
+
+  @override
+  String get widgetsPageQuickAddName => 'Añadir rápido';
+
+  @override
+  String get widgetsPageQuickAddDesc =>
+      'Un toque para apuntar algo en la lista.';
+
+  @override
+  String get widgetsPageHouseholdName => 'El hogar hoy';
+
+  @override
+  String get widgetsPageHouseholdDesc =>
+      'Las tareas de hoy, la lista de la compra y la cena de esta noche en un solo sitio.';
+
+  @override
+  String widgetsPagePreviewLabel(String name) {
+    return 'Vista previa del widget $name';
+  }
+
+  @override
+  String get widgetsPageSampleHousehold => 'Nuestra casa';
+
+  @override
+  String get widgetsPageSampleListName => 'Supermercado';
+
+  @override
+  String get widgetsPageSampleItem1 => 'Leche de avena';
+
+  @override
+  String get widgetsPageSampleItem2 => 'Plátanos';
+
+  @override
+  String get widgetsPageSampleItem3 => 'Café en grano';
+
+  @override
+  String get widgetsPageSampleItem4 => 'Arroz';
+
+  @override
+  String get widgetsPageSampleChore1 => 'Sacar la basura';
+
+  @override
+  String get widgetsPageSampleChore2 => 'Regar las plantas';
+
+  @override
+  String get widgetsPageSampleMeal => 'Esta noche: pasta al horno';
+
+  @override
+  String get widgetsPageSampleAddHint => 'Añadir a la lista';
+
+  @override
+  String get widgetsPageSampleAddTo => 'Añadir a';
+
+  @override
+  String widgetsPageSampleLeft(int count) {
+    return 'Quedan $count';
+  }
+
+  @override
+  String widgetsPageSampleDue(int count) {
+    return '$count pendientes';
+  }
+
+  @override
+  String get widgetPromoHeadline =>
+      'Tu lista de la compra, en la pantalla de inicio';
+
+  @override
+  String get widgetPromoBody =>
+      'Marca cosas en la tienda sin abrir la app. Todos en casa lo ven al momento.';
+
+  @override
+  String get widgetPromoAdd => 'Añadir a la pantalla de inicio';
+
+  @override
+  String get widgetPromoShowMe => 'Enséñame cómo';
+
+  @override
+  String get widgetPromoNotNow => 'Ahora no';
+
+  @override
+  String get listUndoUndoTooltip => 'Deshacer';
+
+  @override
+  String get listUndoRedoTooltip => 'Rehacer';
+
+  @override
+  String get listUndoChangedElsewhere =>
+      'Otra persona cambió esto, así que no se deshizo';
+
+  @override
+  String get listUndoRedoChangedElsewhere =>
+      'Otra persona cambió esto, así que no se rehízo';
+
+  @override
+  String listUndoRestoredItems(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count artículos restaurados',
+      one: '1 artículo restaurado',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get listUndoCouldNotUndo => 'No se pudo deshacer. Inténtalo de nuevo.';
+
+  @override
+  String get listUndoCouldNotRedo => 'No se pudo rehacer. Inténtalo de nuevo.';
+
+  @override
+  String get listUndoOutboxRestoreItem => 'Restaurar artículo';
 }

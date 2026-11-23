@@ -607,8 +607,6 @@
   "listDetailCouldNotUpdate": "Konnte nicht aktualisiert werden. Bitte versuche es erneut.",
   "listDetailCouldNotAddItem": "Eintrag konnte nicht hinzugefügt werden. Bitte versuche es erneut.",
   "listDetailCouldNotClear": "Einträge konnten nicht geleert werden. Bitte versuche es erneut.",
-  "listDetailItemDeleted": "{name} gelöscht",
-  "listDetailCouldNotRestore": "Eintrag konnte nicht wiederhergestellt werden.",
   "listDetailCouldNotReorder": "Einträge konnten nicht neu sortiert werden. Bitte versuche es erneut.",
   "listDetailItemsAdded": "{count, plural, =1{1 Eintrag zur Liste hinzugefügt} other{{count} Einträge zur Liste hinzugefügt}}",
   "listDetailCouldNotStartScan": "Scan konnte nicht gestartet werden. Versuche es erneut.",
@@ -616,7 +614,7 @@
   "listDetailPriceHint": "0,00",
   "listDetailCouldNotSetPrice": "Preis konnte nicht festgelegt werden.",
   "listDetailClearTitle": "Liste leeren",
-  "listDetailClearBody": "Dies entfernt alle {count} {count, plural, =1{Eintrag} other{Einträge}}. Dies kann nicht rückgängig gemacht werden.",
+  "listDetailClearBody": "Dies entfernt alle {count} {count, plural, =1{Eintrag} other{Einträge}}. Bis du die Liste verlässt, kannst du das mit dem Rückgängig-Pfeil zurücknehmen.",
   "listDetailClearConfirm": "Liste leeren",
   "listDetailArchiveTitle": "Liste archivieren",
   "listDetailArchiveBody": "Diese Liste wird für deinen Haushalt ausgeblendet.",
@@ -1069,7 +1067,6 @@
   "composerScanList": "Liste scannen",
   "composerAddItem": "Eintrag hinzufügen",
   "listItemViewPhoto": "Foto ansehen",
-  "listItemReplacePhoto": "Foto ersetzen",
   "listItemAddPhoto": "Foto hinzufügen",
   "listItemRemovePhoto": "Foto entfernen",
   "listItemQuantityAmount": "Menge",
@@ -1084,9 +1081,23 @@
   "listItemViewPhotoFor": "Foto für {name} ansehen",
   "listItemFailedSave": "Speichern fehlgeschlagen – tippe auf die Sync-Leiste zum Wiederholen",
   "listItemUnit": "Einheit",
-  "listItemDetails": "Details",
   "listItemMoveUp": "Nach oben",
   "listItemMoveDown": "Nach unten",
+  "listEditDetailsFor": "Details zu {name}",
+  "listEditUnitAdd": "Einheit hinzufügen",
+  "listEditUnitValue": "Einheit: {unit}",
+  "listEditPriceAdd": "Preis hinzufügen",
+  "listEditPriceValue": "Preis: {price}",
+  "listEditNoteAdd": "Notiz hinzufügen",
+  "listEditNoteValue": "Notiz: {note}",
+  "listEditClearUnit": "Einheit entfernen",
+  "listEditClearPrice": "Preis entfernen",
+  "listEditBack": "Zurück zu den Details",
+  "listEditDeleteItem": "{name} löschen",
+  "listEditUnitPieces": "Stk.",
+  "listEditUnitPack": "Pck.",
+  "listEditUnitCan": "Dose",
+  "listEditUnitBottle": "Flasche",
   "listItemOneLess": "Eins weniger",
   "listItemOneMore": "Eins mehr",
   "scanCheckListPhoto": "Listenfoto prüfen",
@@ -2450,5 +2461,192 @@
   "appAreasBody": "Ausgeblendetes bleibt erhalten. Wenn jemand eine Ausgabe mit dir einträgt oder du bei einer Aufgabe dran bist, erscheint der Bereich trotzdem.",
   "appAreasAll": "Alles",
   "hubChecklistLater": "Später:",
-  "pinwallHubEmptyIntro": "Hier landen Notizen für alle im Haushalt. Öffne die Pinnwand, um eine anzupinnen."
+  "pinwallHubEmptyIntro": "Hier landen Notizen für alle im Haushalt. Öffne die Pinnwand, um eine anzupinnen.",
+  "widgetsPageTitle": "Widgets für den Startbildschirm",
+  "@widgetsPageTitle": {
+    "description": "Title of the Widgets page (You > Home screen widgets)"
+  },
+  "widgetsPageAccountRowValue": "Liste und Aufgaben auf einen Blick",
+  "@widgetsPageAccountRowValue": {
+    "description": "You screen: subtitle of the row that opens the Widgets page"
+  },
+  "widgetsPageIntro": "Sieh die Einkaufsliste und die heutigen Aufgaben, ohne die App zu öffnen, und hake direkt auf dem Startbildschirm ab.",
+  "@widgetsPageIntro": {
+    "description": "Widgets page: intro under the title"
+  },
+  "widgetsPageStepsTitle": "So fügst du ein Widget hinzu",
+  "@widgetsPageStepsTitle": {
+    "description": "Widgets page: heading of the numbered how-to steps"
+  },
+  "widgetsPageIosStep1": "Halte eine freie Stelle auf deinem Home-Bildschirm gedrückt und tippe dann auf „Bearbeiten“ und „Widget hinzufügen“.",
+  "@widgetsPageIosStep1": {
+    "description": "iOS how-to step 1"
+  },
+  "widgetsPageIosStep2": "Suche nach „mitlist“.",
+  "@widgetsPageIosStep2": {
+    "description": "iOS how-to step 2"
+  },
+  "widgetsPageIosStep3": "Wähle ein Widget, wische zur gewünschten Größe und tippe auf „Widget hinzufügen“.",
+  "@widgetsPageIosStep3": {
+    "description": "iOS how-to step 3"
+  },
+  "widgetsPageIosStep4": "Um Haushalt oder Liste zu wählen, halte das Widget gedrückt und tippe auf „Widget bearbeiten“.",
+  "@widgetsPageIosStep4": {
+    "description": "iOS how-to step 4"
+  },
+  "widgetsPageAndroidStep1": "Halte eine freie Stelle auf deinem Startbildschirm gedrückt.",
+  "@widgetsPageAndroidStep1": {
+    "description": "Android how-to step 1"
+  },
+  "widgetsPageAndroidStep2": "Tippe auf „Widgets“ und suche mitlist.",
+  "@widgetsPageAndroidStep2": {
+    "description": "Android how-to step 2"
+  },
+  "widgetsPageAndroidStep3": "Halte ein Widget gedrückt und zieh es an die gewünschte Stelle.",
+  "@widgetsPageAndroidStep3": {
+    "description": "Android how-to step 3"
+  },
+  "widgetsPageAdd": "Zum Startbildschirm hinzufügen",
+  "@widgetsPageAdd": {
+    "description": "Android button under a widget preview: asks the launcher to pin it"
+  },
+  "widgetsPageAdded": "Hinzugefügt",
+  "@widgetsPageAdded": {
+    "description": "Badge on a widget that is already on the home screen"
+  },
+  "widgetsPagePinFailed": "Dein Startbildschirm konnte es nicht direkt hinzufügen. Folge den Schritten unten.",
+  "@widgetsPagePinFailed": {
+    "description": "Toast when the launcher could not pin a widget in one tap"
+  },
+  "widgetsPageShoppingListName": "Einkaufsliste",
+  "@widgetsPageShoppingListName": {
+    "description": "Name of the shopping list widget"
+  },
+  "widgetsPageShoppingListDesc": "Hake im Laden Artikel ab und füge mit + neue hinzu.",
+  "@widgetsPageShoppingListDesc": {
+    "description": "What the shopping list widget does"
+  },
+  "widgetsPageChoresName": "Aufgaben heute",
+  "@widgetsPageChoresName": {
+    "description": "Name of the chores widget"
+  },
+  "widgetsPageChoresDesc": "Was heute fällig ist und wer dran ist. Erledige eine Aufgabe mit einem Tipp.",
+  "@widgetsPageChoresDesc": {
+    "description": "What the chores widget does"
+  },
+  "widgetsPageQuickAddName": "Schnell hinzufügen",
+  "@widgetsPageQuickAddName": {
+    "description": "Name of the quick add widget (Android)"
+  },
+  "widgetsPageQuickAddDesc": "Mit einem Tipp etwas auf die Liste setzen.",
+  "@widgetsPageQuickAddDesc": {
+    "description": "What the quick add widget does"
+  },
+  "widgetsPageHouseholdName": "Haushalt heute",
+  "@widgetsPageHouseholdName": {
+    "description": "Name of the household today widget"
+  },
+  "widgetsPageHouseholdDesc": "Die heutigen Aufgaben, die Einkaufsliste und das Abendessen an einem Ort.",
+  "@widgetsPageHouseholdDesc": {
+    "description": "What the household today widget does"
+  },
+  "widgetsPagePreviewLabel": "Vorschau des Widgets {name}",
+  "@widgetsPagePreviewLabel": {
+    "description": "Screen reader label of a widget preview",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "widgetsPageSampleHousehold": "Unser Zuhause",
+  "@widgetsPageSampleHousehold": {
+    "description": "Sample household name in widget previews when the real one is unknown"
+  },
+  "widgetsPageSampleListName": "Lebensmittel",
+  "@widgetsPageSampleListName": {
+    "description": "Sample list name in widget previews"
+  },
+  "widgetsPageSampleItem1": "Hafermilch",
+  "@widgetsPageSampleItem1": {
+    "description": "Sample list item in widget previews"
+  },
+  "widgetsPageSampleItem2": "Bananen",
+  "@widgetsPageSampleItem2": {
+    "description": "Sample list item in widget previews"
+  },
+  "widgetsPageSampleItem3": "Kaffeebohnen",
+  "@widgetsPageSampleItem3": {
+    "description": "Sample list item in widget previews"
+  },
+  "widgetsPageSampleItem4": "Reis",
+  "@widgetsPageSampleItem4": {
+    "description": "Sample list item in widget previews"
+  },
+  "widgetsPageSampleChore1": "Müll rausbringen",
+  "@widgetsPageSampleChore1": {
+    "description": "Sample chore in widget previews"
+  },
+  "widgetsPageSampleChore2": "Pflanzen gießen",
+  "@widgetsPageSampleChore2": {
+    "description": "Sample chore in widget previews"
+  },
+  "widgetsPageSampleMeal": "Heute Abend: Nudelauflauf",
+  "@widgetsPageSampleMeal": {
+    "description": "Sample tonight's meal line in the household widget preview"
+  },
+  "widgetsPageSampleAddHint": "Zur Liste hinzufügen",
+  "@widgetsPageSampleAddHint": {
+    "description": "Placeholder text in the quick add widget preview"
+  },
+  "widgetsPageSampleAddTo": "Hinzufügen zu",
+  "@widgetsPageSampleAddTo": {
+    "description": "Caption above the list name in the iOS quick add widget preview (\"Add to\" / \"Groceries\")"
+  },
+  "widgetsPageSampleLeft": "{count} offen",
+  "@widgetsPageSampleLeft": {
+    "description": "Widget preview: how many list items are still open",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "widgetsPageSampleDue": "{count} fällig",
+  "@widgetsPageSampleDue": {
+    "description": "Widget preview: how many chores are due",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "widgetPromoHeadline": "Deine Einkaufsliste auf dem Startbildschirm",
+  "@widgetPromoHeadline": {
+    "description": "Home promo sheet headline for home screen widgets (household benefit, not the feature)"
+  },
+  "widgetPromoBody": "Hake im Laden ab, ohne die App zu öffnen. Alle zu Hause sehen es sofort.",
+  "@widgetPromoBody": {
+    "description": "Home promo sheet body for home screen widgets"
+  },
+  "widgetPromoAdd": "Zum Startbildschirm hinzufügen",
+  "@widgetPromoAdd": {
+    "description": "Home promo sheet primary button on Android: pins the shopping list widget"
+  },
+  "widgetPromoShowMe": "Zeig mir, wie's geht",
+  "@widgetPromoShowMe": {
+    "description": "Home promo sheet primary button on iOS: opens the Widgets page"
+  },
+  "widgetPromoNotNow": "Nicht jetzt",
+  "@widgetPromoNotNow": {
+    "description": "Home promo sheet: dismiss button"
+  },
+  "listUndoUndoTooltip": "Rückgängig",
+  "listUndoRedoTooltip": "Wiederholen",
+  "listUndoChangedElsewhere": "Jemand anderes hat das geändert, deshalb wurde es nicht rückgängig gemacht",
+  "listUndoRedoChangedElsewhere": "Jemand anderes hat das geändert, deshalb wurde es nicht wiederholt",
+  "listUndoRestoredItems": "{count, plural, =1{1 Eintrag wiederhergestellt} other{{count} Einträge wiederhergestellt}}",
+  "listUndoCouldNotUndo": "Das konnte nicht rückgängig gemacht werden. Bitte versuche es erneut.",
+  "listUndoCouldNotRedo": "Das konnte nicht wiederholt werden. Bitte versuche es erneut.",
+  "listUndoOutboxRestoreItem": "Eintrag wiederherstellen"
 }
