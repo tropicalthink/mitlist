@@ -7544,4 +7544,354 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get listUndoOutboxRestoreItem => 'Restaurer l\'élément';
+
+  @override
+  String get calendarExternalBusy => 'Occupé';
+
+  @override
+  String get calendarExternalAllDay => 'Toute la journée';
+
+  @override
+  String calendarExternalTimeRange(String start, String end) {
+    return '$start – $end';
+  }
+
+  @override
+  String calendarExternalFrom(String time) {
+    return 'à partir de $time';
+  }
+
+  @override
+  String calendarExternalUntil(String time) {
+    return 'jusqu\'à $time';
+  }
+
+  @override
+  String get calendarExternalFree => 'libre';
+
+  @override
+  String get calendarExternalYou => 'Vous';
+
+  @override
+  String get calendarExternalSomeone => 'Un colocataire';
+
+  @override
+  String calendarExternalSemantics(String person, String what, String when) {
+    return '$person : $what, $when';
+  }
+
+  @override
+  String calendarExternalSemanticsFree(
+      String person, String what, String when) {
+    return '$person : $what, $when, marqué libre';
+  }
+
+  @override
+  String calendarWhosAroundTitle(String day) {
+    return 'Qui est là · $day';
+  }
+
+  @override
+  String get calendarWhosAroundFree => 'Libre';
+
+  @override
+  String get calendarWhosAroundAway => 'Absent toute la journée';
+
+  @override
+  String calendarWhosAroundBusy(String times) {
+    return 'Occupé $times';
+  }
+
+  @override
+  String get calendarWhosAroundSelectDay => 'Voir qui est là ce jour-là';
+
+  @override
+  String get calendarShareHintTitle => 'Voyez quand tout le monde est là';
+
+  @override
+  String get calendarShareHintBody =>
+      'Partagez votre agenda Google, Apple ou Outlook avec le foyer, en créneaux occupés seulement ou avec les titres. Vous choisissez ce qu\'ils voient.';
+
+  @override
+  String get calendarShareHintAction => 'Partager mon agenda';
+
+  @override
+  String get sharedCalendarsTitle => 'Agendas partagés';
+
+  @override
+  String get sharedCalendarsAccountRowValue =>
+      'Montrez au foyer quand vous êtes occupé';
+
+  @override
+  String get sharedCalendarsIntro =>
+      'Connectez vos agendas pour que votre foyer voie quand vous êtes occupé ou absent. Rien n\'est partagé tant que vous ne le choisissez pas ci-dessous pour un foyer.';
+
+  @override
+  String get sharedCalendarsNoHouseholds =>
+      'Rejoignez ou créez un foyer pour y partager un agenda.';
+
+  @override
+  String get sharedCalendarsEmpty => 'Aucun agenda connecté pour l\'instant.';
+
+  @override
+  String get sharedCalendarsKindThisPhone => 'Sur ce téléphone';
+
+  @override
+  String get sharedCalendarsKindOtherPhone => 'Sur un autre téléphone';
+
+  @override
+  String get sharedCalendarsKindLink => 'Lien d\'agenda';
+
+  @override
+  String get sharedCalendarsSyncing => 'Synchronisation…';
+
+  @override
+  String get sharedCalendarsNeverSynced => 'Pas encore synchronisé';
+
+  @override
+  String sharedCalendarsSyncedAt(String time) {
+    return 'Synchronisé $time';
+  }
+
+  @override
+  String get sharedCalendarsSyncNow => 'Synchroniser maintenant';
+
+  @override
+  String get sharedCalendarsSyncTooSoon =>
+      'Déjà à jour. Réessayez dans une minute.';
+
+  @override
+  String get sharedCalendarsSyncFailed =>
+      'Impossible de mettre à jour les agendas de ce téléphone. Nous réessaierons plus tard.';
+
+  @override
+  String get sharedCalendarsOtherPhoneNote =>
+      'Lu sur un autre téléphone. Vos choix s\'appliquent tout de suite ; ses événements se mettent à jour quand ce téléphone ouvre mitlist.';
+
+  @override
+  String get sharedCalendarsNoCalendars =>
+      'Aucun agenda trouvé pour l\'instant.';
+
+  @override
+  String get sharedCalendarsUnnamed => 'Agenda';
+
+  @override
+  String get sharedCalendarsShareBusy => 'Occupé seulement';
+
+  @override
+  String get sharedCalendarsShareDetails => 'Avec les titres';
+
+  @override
+  String get sharedCalendarsShareNone => 'Non partagé';
+
+  @override
+  String sharedCalendarsExplainBusy(String household) {
+    return '$household voit quand vous êtes occupé, jamais de quoi il s\'agit.';
+  }
+
+  @override
+  String sharedCalendarsExplainDetails(String household) {
+    return '$household voit les titres et horaires de vos événements. Les événements marqués privés restent affichés comme occupés.';
+  }
+
+  @override
+  String sharedCalendarsExplainNone(String household) {
+    return '$household ne voit rien de cet agenda.';
+  }
+
+  @override
+  String get sharedCalendarsAdd => 'Ajouter un agenda';
+
+  @override
+  String get sharedCalendarsAddPhone => 'Agendas de ce téléphone';
+
+  @override
+  String get sharedCalendarsAddPhoneDesc =>
+      'Tous les comptes de ce téléphone : Google, iCloud, Outlook et plus. Lus sur le téléphone ; seul ce que vous partagez en sort.';
+
+  @override
+  String get sharedCalendarsAddLinkDesc =>
+      'Collez un lien iCal privé de Google, iCloud ou Outlook. Fonctionne sur tous les appareils.';
+
+  @override
+  String get sharedCalendarsAddedNotShared =>
+      'Agenda ajouté. Choisissez ci-dessous ce que voit chaque foyer.';
+
+  @override
+  String get sharedCalendarsPhoneDefaultName => 'Ce téléphone';
+
+  @override
+  String get sharedCalendarsPermissionDeniedTitle =>
+      'L\'accès à l\'agenda est désactivé';
+
+  @override
+  String get sharedCalendarsPermissionDeniedBody =>
+      'Pour partager les agendas de ce téléphone, autorisez mitlist à lire vos agendas dans les Réglages. Ou ajoutez plutôt un lien d\'agenda.';
+
+  @override
+  String get sharedCalendarsPermissionRestricted =>
+      'L\'accès à l\'agenda est bloqué sur ce téléphone (par exemple par Temps d\'écran ou la gestion de l\'appareil). Vous pouvez ajouter un lien d\'agenda à la place.';
+
+  @override
+  String get sharedCalendarsOpenSettings => 'Ouvrir les Réglages';
+
+  @override
+  String get sharedCalendarsRenameTitle => 'Renommer l\'agenda';
+
+  @override
+  String sharedCalendarsRemoveTitle(String name) {
+    return 'Retirer $name ?';
+  }
+
+  @override
+  String get sharedCalendarsRemoveBody =>
+      'Ses événements disparaissent de tous les agendas du foyer. Votre agenda lui-même n\'est pas modifié.';
+
+  @override
+  String get sharedCalendarsUpcomingTitle => 'Événements à venir';
+
+  @override
+  String get sharedCalendarsUpcomingIntro =>
+      'Ce que le foyer voit de vos deux prochaines semaines. Touchez un événement pour le masquer ou en montrer plus ou moins. Un événement récurrent compte comme un seul.';
+
+  @override
+  String get sharedCalendarsUpcomingFailed =>
+      'Impossible de charger les événements à venir.';
+
+  @override
+  String get sharedCalendarsUpcomingEmpty =>
+      'Aucun événement à venir dans vos agendas partagés.';
+
+  @override
+  String sharedCalendarsSeesDetails(String households) {
+    return '$households : titre et horaire';
+  }
+
+  @override
+  String sharedCalendarsSeesBusy(String households) {
+    return '$households : occupé seulement';
+  }
+
+  @override
+  String get sharedCalendarsSeesNothing => 'Le foyer ne voit pas ceci';
+
+  @override
+  String get sharedCalendarsOverrideCalendar => 'Réglage de l\'agenda';
+
+  @override
+  String get sharedCalendarsOverrideHidden => 'Masqué';
+
+  @override
+  String get sharedCalendarsOverrideBusy => 'Occupé';
+
+  @override
+  String get sharedCalendarsOverrideDetails => 'Avec le titre';
+
+  @override
+  String get sharedCalendarsOverrideCalendarDesc =>
+      'Comme l\'agenda est partagé avec chaque foyer.';
+
+  @override
+  String get sharedCalendarsOverrideHiddenDesc => 'Aucun foyer ne le voit.';
+
+  @override
+  String get sharedCalendarsOverrideBusyDesc =>
+      'Les foyers qui voient cet agenda voient un créneau occupé, sans titre.';
+
+  @override
+  String get sharedCalendarsOverrideDetailsDesc =>
+      'Les foyers qui voient cet agenda voient le titre, même s\'il est privé dans votre agenda.';
+
+  @override
+  String get sharedCalendarsEventNoTitle => '(Sans titre)';
+
+  @override
+  String get sharedCalendarsEventPrivate => 'privé';
+
+  @override
+  String get sharedCalendarsEventFree => 'marqué libre';
+
+  @override
+  String sharedCalendarsEventChoice(String choice) {
+    return 'Réglage : $choice';
+  }
+
+  @override
+  String get calendarConnectionErrorFetchFailed =>
+      'Impossible de charger cet agenda la dernière fois. Nous continuons d\'essayer.';
+
+  @override
+  String get calendarConnectionErrorNotCalendar =>
+      'Ce lien ne renvoie plus d\'agenda. Retirez-le et ajoutez le lien actuel.';
+
+  @override
+  String get calendarConnectionErrorTooLarge =>
+      'Cet agenda est trop volumineux pour être synchronisé. Essayez un agenda plus petit.';
+
+  @override
+  String get calendarConnectionErrorUnauthorized =>
+      'Ce lien ne fonctionne plus. Il a peut-être été réinitialisé ou supprimé ; ajoutez le nouveau lien.';
+
+  @override
+  String get calendarConnectionErrorOther =>
+      'Cet agenda n\'a pas pu être synchronisé.';
+
+  @override
+  String get calendarLinkSheetTitle => 'Ajouter un lien d\'agenda';
+
+  @override
+  String get calendarLinkAddAction => 'Lien d\'agenda';
+
+  @override
+  String get calendarLinkNameHint => 'Facultatif, p. ex. Travail';
+
+  @override
+  String get calendarLinkUrlLabel => 'Lien iCal privé';
+
+  @override
+  String get calendarLinkUrlHint => 'https:// ou webcal://';
+
+  @override
+  String get calendarLinkPrivacyNote =>
+      'Traitez ce lien comme un mot de passe : quiconque l\'a peut lire l\'agenda. mitlist le conserve chiffré et ne l\'affiche plus jamais.';
+
+  @override
+  String get calendarLinkErrorUrl =>
+      'Saisissez un lien qui commence par https:// ou webcal://.';
+
+  @override
+  String get calendarLinkErrorNotCalendar =>
+      'Ce lien n\'est pas un agenda. Copiez l\'adresse iCal (.ics), pas le lien vers la page web de l\'agenda.';
+
+  @override
+  String get calendarLinkErrorFetch =>
+      'Impossible de charger cet agenda. Vérifiez le lien et que l\'agenda est toujours partagé ou publié.';
+
+  @override
+  String get calendarLinkStepsTitle => 'Où trouver le lien';
+
+  @override
+  String get calendarLinkStepsGoogleTitle => 'Google Agenda';
+
+  @override
+  String get calendarLinkStepsGoogle =>
+      'Sur un ordinateur, ouvrez Paramètres, choisissez votre agenda sous « Paramètres de mes agendas », puis copiez l\'« Adresse secrète au format iCal » sous Intégrer l\'agenda.';
+
+  @override
+  String get calendarLinkStepsAppleTitle => 'Calendrier Apple iCloud';
+
+  @override
+  String get calendarLinkStepsApple =>
+      'Dans l\'app Calendrier, touchez Calendriers, puis ⓘ à côté du calendrier, activez Calendrier public et copiez le lien. Toute personne ayant le lien peut le voir. Sur ce téléphone, « Agendas de ce téléphone » est plus privé.';
+
+  @override
+  String get calendarLinkStepsOutlookTitle => 'Outlook';
+
+  @override
+  String get calendarLinkStepsOutlook =>
+      'Dans Outlook sur le web, ouvrez Paramètres > Calendrier > Calendriers partagés, publiez le calendrier (« Peut afficher tous les détails » ou « Peut voir quand je suis occupé ») et copiez le lien ICS.';
+
+  @override
+  String get sharedCalendarsLimitReached =>
+      'Vous avez connecté 10 agendas, le maximum. Retirez-en un pour en ajouter un autre.';
 }

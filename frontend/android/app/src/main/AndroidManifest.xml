@@ -7,6 +7,9 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <!-- Widgets re-render and refresh after a reboot (WidgetSystemReceiver). -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <!-- Shared household calendars: read this phone's calendars, only after
+         the person chose "Calendars on this phone". Read only, never write. -->
+    <uses-permission android:name="android.permission.READ_CALENDAR"/>
 
     <application
         android:label="mitlist"

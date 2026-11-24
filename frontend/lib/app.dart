@@ -26,6 +26,8 @@ import 'services/push_prompt_gate.dart';
 import 'widgets/push_permission_sheet.dart';
 import 'providers/billing_provider.dart' show iapServiceProvider;
 import 'providers/initial_sync_provider.dart';
+import 'providers/external_calendar_provider.dart'
+    show deviceCalendarSyncProvider;
 import 'providers/home_widgets_provider.dart';
 import 'providers/widget_discovery_provider.dart';
 import 'services/iap_service.dart';
@@ -106,6 +108,10 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
     _startPushPromptGate();
     _queueLanguageReport();
     _startHomeWidgets();
+    // Shared household calendars: upload this phone's shared calendars if
+    // this install has a device connection (at most every 15 minutes).
+    // Fire-and-forget; it never blocks startup and touches no database.
+    unawaited(ref.read(deviceCalendarSyncProvider).syncIfDue());
   }
 
   /// Home screen widgets, Siri, Controls, the Android quick add and app icon
@@ -364,6 +370,9 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
       ref.invalidate(unreadNotificationCountProvider);
       // Someone may have just added (or removed) a home screen widget.
       ref.invalidate(installedHomeWidgetsProvider);
+      if (ref.read(authStateProvider)) {
+        unawaited(ref.read(deviceCalendarSyncProvider).syncIfDue());
+      }
     }
   }
 
@@ -380,6 +389,8 @@ class _MitlistAppState extends ConsumerState<MitlistApp>
         _fcmTapSub = null;
         unawaited(ref.read(appShortcutsProvider).clear());
         ref.invalidate(homeWidgetsControllerProvider);
+        // Stops any calendar upload in flight; a new sign-in gets a new one.
+        ref.invalidate(deviceCalendarSyncProvider);
       } else if (previous == false) {
         _ensureDeferredInit();
       }

@@ -7,7 +7,14 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/calendar_models.dart';
+import '../../models/group_models.dart';
 import '../../providers/calendar_provider.dart';
+import '../../providers/external_calendar_provider.dart';
+import '../../providers/list_provider.dart' show sseServiceProvider;
+import '../../providers/presence_provider.dart' show boardMembersProvider;
+import '../../services/sse_service.dart';
+import '../../utils/household_availability.dart';
+import '../../utils/hub_helpers.dart' show avatarInitials;
 import '../../providers/chore_provider.dart';
 import '../../providers/finance_provider.dart' show financeServiceProviderAsync;
 import '../../providers/group_provider.dart';
@@ -62,7 +69,45 @@ enum _CalendarView { week, month, agenda }
         icon: Icons.notifications_active_outlined,
         color: cs.error
       ),
+    CalendarEventType.externalEvent => (
+        icon: Icons.event_available_outlined,
+        color: cs.tertiary
+      ),
   };
+}
+
+/// The words a housemate's shared event shows: its title when the household
+/// may see it, otherwise the localized "Busy". Never anything else.
+String _externalEventText(CalendarEvent event, AppLocalizations l10n) {
+  final busyOnly = event.external?.busyOnly ?? true;
+  if (busyOnly || event.title.trim().isEmpty) return l10n.calendarExternalBusy;
+  return event.title;
+}
+
+/// When a shared event happens on [day]: "All day", a time range, or "from"
+/// / "until" for the first and last day of an event that spans midnight.
+String _externalTimeLabel(
+  CalendarExternalEvent x,
+  DateTime day,
+  String localeName,
+  AppLocalizations l10n,
+) {
+  if (x.allDay) return l10n.calendarExternalAllDay;
+  final dayStart = DateTime(day.year, day.month, day.day);
+  final dayEnd = DateTime(day.year, day.month, day.day + 1);
+  final start = x.startsAt.toLocal();
+  final end = x.endsAt.toLocal();
+  final startsBefore = start.isBefore(dayStart);
+  final endsAfter = end.isAfter(dayEnd);
+  final fmt = DateFormat.jm(localeName);
+  if (startsBefore && (endsAfter || end == dayEnd)) {
+    return l10n.calendarExternalAllDay;
+  }
+  if (startsBefore) return l10n.calendarExternalUntil(fmt.format(end));
+  if (endsAfter || (end == dayEnd && end.isAfter(start))) {
+    return l10n.calendarExternalFrom(fmt.format(start));
+  }
+  return l10n.calendarExternalTimeRange(fmt.format(start), fmt.format(end));
 }
 
 class CalendarScreen extends ConsumerStatefulWidget {
@@ -93,6 +138,47 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   List<MapEntry<DateTime, List<CalendarEvent>>> _sortedDays = const [];
   Object? _lastErrorShown;
 
+  /// The day the "who's around" summary describes (week view).
+  late DateTime _selectedDay;
+
+  // Live updates: a housemate's shared calendar changed.
+  StreamSubscription<SseEvent>? _liveSub;
+  String? _liveGroupId;
+  Timer? _liveDebounce;
+  bool _shareHintDismissed = true;
+
+  static const _shareHintPref = 'calendar_share_hint_dismissed';
+
+  // Who is who, for housemates' shared events (refreshed every build).
+  Map<String, String> _memberNames = const {};
+  String? _meId;
+
+  String _personName(String userId, AppLocalizations l10n) {
+    if (userId == _meId) return l10n.calendarExternalYou;
+    final name = _memberNames[userId];
+    return name == null || name.isEmpty ? l10n.calendarExternalSomeone : name;
+  }
+
+  /// Members who share a calendar with this household, in roster order.
+  List<String> _sharers(String? groupId) {
+    final ids = <String>{
+      for (final e in _lastEvents ?? const <CalendarEvent>[])
+        if (e.type == CalendarEventType.externalEvent && e.external != null)
+          e.external!.userId,
+    };
+    if (groupId != null && _meId != null && _iShareWith(groupId) == true) {
+      ids.add(_meId!);
+    }
+    final ordered = <String>[
+      for (final id in _memberNames.keys)
+        if (ids.contains(id)) id,
+    ];
+    for (final id in ids) {
+      if (!ordered.contains(id)) ordered.add(id);
+    }
+    return ordered;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -101,9 +187,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     _weekAnchor = today;
     _monthStart = DateTime(now.year, now.month, 1);
     _agendaAnchor = today;
+    _selectedDay = today;
     SharedPreferences.getInstance().then((prefs) {
       final saved = prefs.getString('calendar_view_mode');
       if (!mounted) return;
+      final dismissed = prefs.getBool(_shareHintPref) ?? false;
+      if (dismissed != _shareHintDismissed) {
+        setState(() => _shareHintDismissed = dismissed);
+      }
       if (saved == 'month') setState(() => _viewMode = _CalendarView.month);
       if (saved == 'agenda') setState(() => _viewMode = _CalendarView.agenda);
     });
@@ -152,6 +243,15 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   void _rebuildIndex(List<CalendarEvent> events) {
     final map = <DateTime, List<CalendarEvent>>{};
     for (final e in events) {
+      // A housemate's shared event arrives once; it belongs on every day it
+      // covers (a weekend away, an overnight shift).
+      final x = e.external;
+      if (e.type == CalendarEventType.externalEvent && x != null) {
+        for (final d in x.days) {
+          map.putIfAbsent(d, () => []).add(e);
+        }
+        continue;
+      }
       // Bucket by LOCAL day. The server sends full timestamps (often UTC), so
       // without toLocal() an event late in the day lands on the wrong calendar
       // day relative to the local "today".
@@ -170,6 +270,56 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       if (!mounted) return;
       AppToast.error(context, friendlyErrorMessage(err, l10n));
     });
+  }
+
+  @override
+  void dispose() {
+    _liveSub?.cancel();
+    _liveDebounce?.cancel();
+    super.dispose();
+  }
+
+  /// Refetch when a housemate's shared calendar changes for [groupId].
+  void _attachLive(String groupId) {
+    if (_liveGroupId == groupId) return;
+    _liveGroupId = groupId;
+    unawaited(_liveSub?.cancel());
+    final sse = ref.read(sseServiceProvider);
+    unawaited(sse.connect(groupId));
+    _liveSub = sse.events.listen((event) {
+      if (event.type != 'calendar:external_changed' ||
+          event.groupId != groupId) {
+        return;
+      }
+      // A sync can touch several households at once; refetch once.
+      _liveDebounce?.cancel();
+      _liveDebounce = Timer(const Duration(milliseconds: 400), () {
+        if (mounted) ref.invalidate(calendarEventsProvider);
+      });
+    });
+  }
+
+  /// Whether the person shares any calendar with [groupId] (null: unknown).
+  bool? _iShareWith(String groupId) {
+    final connections = ref.watch(calendarConnectionsProvider).valueOrNull;
+    if (connections == null) return null;
+    for (final c in connections) {
+      for (final cal in c.calendars) {
+        if (cal.shareFor(groupId) != null) return true;
+      }
+    }
+    return false;
+  }
+
+  Future<void> _dismissShareHint() async {
+    setState(() => _shareHintDismissed = true);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_shareHintPref, true);
+  }
+
+  void _openSharedCalendars() {
+    unawaited(Haptics.light());
+    context.pushNamed('sharedCalendars');
   }
 
   // ── Navigation (no fetch — the watched provider re-keys and caches) ────────
@@ -207,6 +357,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final now = DateTime.now();
     setState(() {
       _weekAnchor = DateTime(now.year, now.month, now.day);
+      _selectedDay = DateTime(now.year, now.month, now.day);
       _monthStart = DateTime(now.year, now.month, 1);
     });
   }
@@ -223,6 +374,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   void _openWeekForDay(DateTime day) {
     setState(() {
       _weekAnchor = DateTime(day.year, day.month, day.day);
+      _selectedDay = DateTime(day.year, day.month, day.day);
       _viewMode = _CalendarView.week;
     });
   }
@@ -282,6 +434,11 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         l10n.calendarAppBarTitle,
         showStandardActions: false,
         actions: [
+          IconButton(
+            icon: const AppIcon(name: 'userGroup'),
+            tooltip: l10n.sharedCalendarsTitle,
+            onPressed: _openSharedCalendars,
+          ),
           TextButton(
             onPressed: _goToToday,
             child: Text(l10n.calendarToday),
@@ -308,6 +465,12 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
     final range = _rangeFor(groupId!);
     final eventsAsync = ref.watch(calendarEventsProvider(range));
+    _attachLive(groupId);
+    final members = ref.watch(boardMembersProvider(groupId)).valueOrNull ??
+        const <GroupMemberProfile>[];
+    _memberNames = {for (final m in members) m.userId: m.displayName};
+    _meId = ref.watch(currentUserIdProvider).valueOrNull;
+    final iShare = _iShareWith(groupId);
 
     // Adopt new data + reindex only when it actually changes.
     final data = eventsAsync.valueOrNull;
@@ -325,9 +488,18 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     }
 
     final refreshing = eventsAsync.isLoading;
+    final anyoneShares =
+        _lastEvents!.any((e) => e.type == CalendarEventType.externalEvent);
+    final showShareHint =
+        !_shareHintDismissed && iShare == false && !anyoneShares;
     return Column(
       children: [
         _buildViewToggle(),
+        if (showShareHint)
+          _ShareCalendarHint(
+            onOpen: _openSharedCalendars,
+            onDismiss: () => unawaited(_dismissShareHint()),
+          ),
         // Thin, non-destructive refresh hint: the last-good calendar stays put
         // while the next range loads instead of blanking to skeletons.
         SizedBox(
@@ -540,6 +712,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         ],
       );
     }
+    final sharers = _sharers(_liveGroupId);
+    final weekDays = [for (var i = 0; i < 7; i++) ws.add(Duration(days: i))];
+    final today = DateTime.now();
+    final todayDay = DateTime(today.year, today.month, today.day);
+    final selected = weekDays.contains(_selectedDay)
+        ? _selectedDay
+        : (weekDays.contains(todayDay) ? todayDay : ws);
+    final hasAround = sharers.isNotEmpty;
     return Column(
       children: [
         _weekHeader(l10n),
@@ -547,14 +727,29 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: MitlistSpacing.md),
             physics: const AlwaysScrollableScrollPhysics(),
-            itemCount: 7,
+            itemCount: 7 + (hasAround ? 1 : 0),
             itemBuilder: (context, index) {
-              final day = ws.add(Duration(days: index));
+              if (hasAround && index == 0) {
+                return _WhosAroundCard(
+                  day: selected,
+                  around: whosAround(
+                    selected,
+                    _eventsByDay[selected] ?? const [],
+                    sharers,
+                  ),
+                  nameFor: (id) => _personName(id, l10n),
+                );
+              }
+              final day = weekDays[index - (hasAround ? 1 : 0)];
               final dayEvents = _eventsByDay[day] ?? const [];
               return _DayCard(
                 day: day,
                 events: dayEvents,
                 isToday: _isToday(day),
+                isSelected: hasAround && day == selected,
+                onSelect:
+                    hasAround ? () => setState(() => _selectedDay = day) : null,
+                personName: (id) => _personName(id, l10n),
                 onEventTap: (e) => _showEventDetail(context, e),
               );
             },
@@ -754,7 +949,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         ),
         if (events.isNotEmpty)
           ...events.map((e) {
-            final label = e.title.isNotEmpty ? e.title : e.type.name;
+            final label = e.type == CalendarEventType.externalEvent
+                ? '${_personName(e.external!.userId, l10n)}: '
+                    '${_externalEventText(e, l10n)}'
+                : (e.title.isNotEmpty ? e.title : e.type.name);
             return PopupMenuItem<String>(
               value: 'event_${e.id}',
               onTap: () => _showEventDetail(context, e),
@@ -878,7 +1076,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 ],
               ),
               const SizedBox(height: MitlistSpacing.sm),
-              ..._agendaDayEvents(dayEvents, l10n),
+              ..._agendaDayEvents(day, dayEvents, l10n),
             ],
           ),
         );
@@ -898,8 +1096,19 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   }
 
   List<Widget> _agendaDayEvents(
-      List<CalendarEvent> events, AppLocalizations l10n) {
+      DateTime day, List<CalendarEvent> events, AppLocalizations l10n) {
     return events.map((e) {
+      if (e.type == CalendarEventType.externalEvent && e.external != null) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
+          child: _ExternalEventRow(
+            event: e,
+            day: day,
+            personName: _personName(e.external!.userId, l10n),
+            onTap: () => _showEventDetail(context, e),
+          ),
+        );
+      }
       final (icon, color, label) = _eventMeta(context, e, l10n);
       return Padding(
         padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
@@ -959,6 +1168,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       CalendarEventType.expense => l10n.calendarEventExpense,
       CalendarEventType.pinwallReminder => l10n.calendarEventReminder,
       CalendarEventType.listReminder => l10n.calendarEventListReminder,
+      CalendarEventType.externalEvent => l10n.calendarExternalBusy,
     };
     return (visual.icon, visual.color, label);
   }
@@ -998,6 +1208,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         if (listId != null && listId.isNotEmpty) {
           context.pushNamed('listDetail', pathParameters: {'listId': listId});
         }
+      case CalendarEventType.externalEvent:
+        // Only the owner can do anything with it: open their settings.
+        // A housemate's block has nothing more to show.
+        if (event.external?.userId == _meId) _openSharedCalendars();
     }
   }
 
@@ -1105,12 +1319,20 @@ class _DayCard extends StatelessWidget {
   final DateTime day;
   final List<CalendarEvent> events;
   final bool isToday;
+  final bool isSelected;
+
+  /// Shows this day in the "who's around" summary; null when nobody shares.
+  final VoidCallback? onSelect;
+  final String Function(String userId) personName;
   final void Function(CalendarEvent)? onEventTap;
 
   const _DayCard({
     required this.day,
     required this.events,
     required this.isToday,
+    required this.personName,
+    this.isSelected = false,
+    this.onSelect,
     this.onEventTap,
   });
 
@@ -1129,40 +1351,52 @@ class _DayCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Text(
-                  weekday,
-                  style: textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
+            _maybeSelectable(
+              context,
+              l10n,
+              Row(
+                children: [
+                  if (isSelected) ...[
+                    AppIcon(
+                      name: 'userGroup',
+                      size: 16,
+                      color: Theme.of(context).colorScheme.tertiary,
+                    ),
+                    const SizedBox(width: MitlistSpacing.xs),
+                  ],
+                  Text(
+                    weekday,
+                    style: textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-                const SizedBox(width: MitlistSpacing.sm),
-                Text(
-                  DateFormat.MMMd(localeName).format(day),
-                  style: MitlistTypography.labelXSmall(),
-                ),
-                if (isToday) ...[
                   const SizedBox(width: MitlistSpacing.sm),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: MitlistSpacing.sm,
-                      vertical: MitlistSpacing.space1,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary,
-                      borderRadius:
-                          BorderRadius.circular(MitlistTheme.radiusSm),
-                    ),
-                    child: Text(
-                      l10n.calendarToday,
-                      style: MitlistTypography.labelXSmall(
-                        color: Theme.of(context).colorScheme.onPrimary,
+                  Text(
+                    DateFormat.MMMd(localeName).format(day),
+                    style: MitlistTypography.labelXSmall(),
+                  ),
+                  if (isToday) ...[
+                    const SizedBox(width: MitlistSpacing.sm),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: MitlistSpacing.sm,
+                        vertical: MitlistSpacing.space1,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary,
+                        borderRadius:
+                            BorderRadius.circular(MitlistTheme.radiusSm),
+                      ),
+                      child: Text(
+                        l10n.calendarToday,
+                        style: MitlistTypography.labelXSmall(
+                          color: Theme.of(context).colorScheme.onPrimary,
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ],
-              ],
+              ),
             ),
             if (events.isEmpty)
               Padding(
@@ -1177,10 +1411,319 @@ class _DayCard extends StatelessWidget {
                 ),
               )
             else
-              ...events.map((e) => _EventRow(
-                    event: e,
-                    onTap: onEventTap != null ? () => onEventTap!(e) : null,
-                  )),
+              ...events.map((e) {
+                final tap = onEventTap != null ? () => onEventTap!(e) : null;
+                if (e.type == CalendarEventType.externalEvent &&
+                    e.external != null) {
+                  return Padding(
+                    padding: const EdgeInsets.only(top: MitlistSpacing.sm),
+                    child: _ExternalEventRow(
+                      event: e,
+                      day: day,
+                      personName: personName(e.external!.userId),
+                      onTap: tap,
+                    ),
+                  );
+                }
+                return _EventRow(event: e, onTap: tap);
+              }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _maybeSelectable(
+      BuildContext context, AppLocalizations l10n, Widget header) {
+    final select = onSelect;
+    if (select == null) return header;
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      hint: l10n.calendarWhosAroundSelectDay,
+      child: InkWell(
+        onTap: select,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 44),
+          child: Align(alignment: Alignment.centerLeft, child: header),
+        ),
+      ),
+    );
+  }
+}
+
+/// A small initials badge for the person a shared event belongs to.
+class _PersonBadge extends StatelessWidget {
+  const _PersonBadge({required this.userId, required this.name});
+
+  final String userId;
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final palette = [
+      (cs.primary, cs.onPrimary),
+      (cs.secondary, cs.onSecondary),
+      (cs.tertiary, cs.onTertiary),
+    ];
+    final (bg, fg) = palette[userId.hashCode.abs() % palette.length];
+    return ExcludeSemantics(
+      child: Container(
+        width: MitlistSpacing.space6,
+        height: MitlistSpacing.space6,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: bg,
+          shape: BoxShape.circle,
+          border: Border.all(color: cs.outline, width: 1),
+        ),
+        child: Text(
+          name.isEmpty ? '?' : avatarInitials(name),
+          maxLines: 1,
+          style: MitlistTypography.labelXSmall(color: fg),
+        ),
+      ),
+    );
+  }
+}
+
+/// A housemate's shared event: who, when, and the title only when the
+/// household may see it ("Busy" otherwise). Free events are drawn lighter.
+class _ExternalEventRow extends StatelessWidget {
+  const _ExternalEventRow({
+    required this.event,
+    required this.day,
+    required this.personName,
+    this.onTap,
+  });
+
+  final CalendarEvent event;
+  final DateTime day;
+  final String personName;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final cs = Theme.of(context).colorScheme;
+    final x = event.external!;
+    final localeName = Localizations.localeOf(context).toString();
+    final what = _externalEventText(event, l10n);
+    final when = _externalTimeLabel(x, day, localeName, l10n);
+    final textColor = x.free ? cs.onSurfaceVariant : cs.onSurface;
+    final label = x.free
+        ? l10n.calendarExternalSemanticsFree(personName, what, when)
+        : l10n.calendarExternalSemantics(personName, what, when);
+
+    final row = Row(
+      children: [
+        _PersonBadge(userId: x.userId, name: personName),
+        const SizedBox(width: MitlistSpacing.sm),
+        Expanded(
+          child: Text.rich(
+            TextSpan(children: [
+              TextSpan(
+                text: '$personName · ',
+                style: TextStyle(color: cs.onSurfaceVariant),
+              ),
+              TextSpan(
+                text: what,
+                style: TextStyle(
+                  fontStyle: x.busyOnly ? FontStyle.italic : null,
+                ),
+              ),
+            ]),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: textColor,
+                  fontWeight: x.free ? FontWeight.w400 : FontWeight.w500,
+                ),
+          ),
+        ),
+        const SizedBox(width: MitlistSpacing.sm),
+        Flexible(
+          flex: 0,
+          child: Text(
+            x.free ? '$when · ${l10n.calendarExternalFree}' : when,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: MitlistTypography.labelXSmall(color: cs.onSurfaceVariant),
+          ),
+        ),
+      ],
+    );
+
+    return Semantics(
+      label: label,
+      button: onTap != null,
+      excludeSemantics: true,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(MitlistTheme.radiusSm),
+        child: Opacity(
+          opacity: x.free ? 0.7 : 1,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 44),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                vertical: MitlistSpacing.xs,
+                horizontal: MitlistSpacing.xs,
+              ),
+              child: row,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// For the selected day: each member who shares a calendar, free, busy (with
+/// times) or away all day, so a free evening is easy to spot.
+class _WhosAroundCard extends StatelessWidget {
+  const _WhosAroundCard({
+    required this.day,
+    required this.around,
+    required this.nameFor,
+  });
+
+  final DateTime day;
+  final List<MemberAround> around;
+  final String Function(String userId) nameFor;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final localeName = Localizations.localeOf(context).toString();
+    final fmt = DateFormat.jm(localeName);
+    final dayLabel = DateFormat.MMMEd(localeName).format(day);
+
+    String statusText(MemberAround m) => switch (m.status) {
+          AroundStatus.free => l10n.calendarWhosAroundFree,
+          AroundStatus.away => l10n.calendarWhosAroundAway,
+          AroundStatus.busy => l10n.calendarWhosAroundBusy(m.busy
+              .map((r) => l10n.calendarExternalTimeRange(
+                  fmt.format(r.start), fmt.format(r.end)))
+              .join(', ')),
+        };
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
+      child: AppCard(
+        key: const ValueKey('calendar-whos-around'),
+        variant: AppCardVariant.outlined,
+        padding: AppCardPadding.md,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.calendarWhosAroundTitle(dayLabel),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.titleSmall
+                  ?.copyWith(fontWeight: FontWeight.w600),
+            ),
+            for (final m in around)
+              Padding(
+                padding: const EdgeInsets.only(top: MitlistSpacing.sm),
+                child: Semantics(
+                  label: '${nameFor(m.userId)}: ${statusText(m)}',
+                  excludeSemantics: true,
+                  child: Row(
+                    children: [
+                      _PersonBadge(userId: m.userId, name: nameFor(m.userId)),
+                      const SizedBox(width: MitlistSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          nameFor(m.userId),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                      ),
+                      const SizedBox(width: MitlistSpacing.sm),
+                      Flexible(
+                        child: Text(
+                          statusText(m),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.end,
+                          style: MitlistTypography.labelXSmall(
+                            color: switch (m.status) {
+                              AroundStatus.free => cs.primary,
+                              AroundStatus.busy => cs.onSurfaceVariant,
+                              AroundStatus.away => cs.error,
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// First run: nobody in the household shares a calendar yet.
+class _ShareCalendarHint extends StatelessWidget {
+  const _ShareCalendarHint({required this.onOpen, required this.onDismiss});
+
+  final VoidCallback onOpen;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+          MitlistSpacing.md, MitlistSpacing.sm, MitlistSpacing.md, 0),
+      child: AppCard(
+        key: const ValueKey('calendar-share-hint'),
+        variant: AppCardVariant.outlined,
+        padding: AppCardPadding.md,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.calendarShareHintTitle,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.titleSmall
+                  ?.copyWith(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: MitlistSpacing.xs),
+            Text(
+              l10n.calendarShareHintBody,
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: MitlistSpacing.sm),
+            Wrap(
+              spacing: MitlistSpacing.sm,
+              runSpacing: MitlistSpacing.sm,
+              children: [
+                AppButton(
+                  text: l10n.calendarShareHintAction,
+                  size: AppButtonSize.sm,
+                  onPressed: onOpen,
+                ),
+                AppButton(
+                  text: l10n.commonNotNow,
+                  size: AppButtonSize.sm,
+                  variant: AppButtonVariant.ghost,
+                  onPressed: onDismiss,
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -1208,6 +1751,7 @@ class _EventRow extends StatelessWidget {
       CalendarEventType.expense => l10n.calendarEventExpense,
       CalendarEventType.pinwallReminder => l10n.calendarEventReminder,
       CalendarEventType.listReminder => l10n.calendarEventListReminder,
+      CalendarEventType.externalEvent => l10n.calendarExternalBusy,
     };
 
     return Padding(

@@ -31,6 +31,7 @@ import 'screens/you/feature_board_detail_screen.dart';
 import 'screens/you/feature_board_screen.dart';
 import 'screens/you/weekly_summary_screen.dart';
 import 'screens/you/home_assistant_connections_screen.dart';
+import 'screens/you/shared_calendars_screen.dart';
 import 'screens/you/widgets_screen.dart';
 import 'screens/auth/welcome_screen.dart';
 import 'screens/premium/premium_screen.dart';
@@ -562,6 +563,13 @@ final routerProvider = Provider<GoRouter>((ref) {
             redirect: (context, state) =>
                 ref.read(widgetBridgeProvider).isSupported ? null : '/you',
             builder: (context, state) => const WidgetsScreen(),
+          ),
+          // Shared household calendars: connect calendars, choose what each
+          // household sees. A full page (more than a sheet's worth).
+          GoRoute(
+            path: 'calendars',
+            name: 'sharedCalendars',
+            builder: (context, state) => const SharedCalendarsScreen(),
           ),
           GoRoute(
             path: 'products',

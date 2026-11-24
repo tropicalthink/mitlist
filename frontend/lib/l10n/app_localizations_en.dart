@@ -7452,4 +7452,351 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get listUndoOutboxRestoreItem => 'Restore item';
+
+  @override
+  String get calendarExternalBusy => 'Busy';
+
+  @override
+  String get calendarExternalAllDay => 'All day';
+
+  @override
+  String calendarExternalTimeRange(String start, String end) {
+    return '$start – $end';
+  }
+
+  @override
+  String calendarExternalFrom(String time) {
+    return 'from $time';
+  }
+
+  @override
+  String calendarExternalUntil(String time) {
+    return 'until $time';
+  }
+
+  @override
+  String get calendarExternalFree => 'free';
+
+  @override
+  String get calendarExternalYou => 'You';
+
+  @override
+  String get calendarExternalSomeone => 'A housemate';
+
+  @override
+  String calendarExternalSemantics(String person, String what, String when) {
+    return '$person: $what, $when';
+  }
+
+  @override
+  String calendarExternalSemanticsFree(
+      String person, String what, String when) {
+    return '$person: $what, $when, marked free';
+  }
+
+  @override
+  String calendarWhosAroundTitle(String day) {
+    return 'Who\'s around · $day';
+  }
+
+  @override
+  String get calendarWhosAroundFree => 'Free';
+
+  @override
+  String get calendarWhosAroundAway => 'Away all day';
+
+  @override
+  String calendarWhosAroundBusy(String times) {
+    return 'Busy $times';
+  }
+
+  @override
+  String get calendarWhosAroundSelectDay => 'Show who\'s around this day';
+
+  @override
+  String get calendarShareHintTitle => 'See when everyone\'s around';
+
+  @override
+  String get calendarShareHintBody =>
+      'Share your Google, Apple or Outlook calendar with the household, as busy times only or with titles. You choose what they see.';
+
+  @override
+  String get calendarShareHintAction => 'Share my calendar';
+
+  @override
+  String get sharedCalendarsTitle => 'Shared calendars';
+
+  @override
+  String get sharedCalendarsAccountRowValue =>
+      'Show the household when you\'re busy';
+
+  @override
+  String get sharedCalendarsIntro =>
+      'Connect your calendars so your household can see when you\'re busy or away. Nothing is shared until you choose it for a household below.';
+
+  @override
+  String get sharedCalendarsNoHouseholds =>
+      'Join or create a household to share a calendar with it.';
+
+  @override
+  String get sharedCalendarsEmpty => 'No calendars connected yet.';
+
+  @override
+  String get sharedCalendarsKindThisPhone => 'On this phone';
+
+  @override
+  String get sharedCalendarsKindOtherPhone => 'On another phone';
+
+  @override
+  String get sharedCalendarsKindLink => 'Calendar link';
+
+  @override
+  String get sharedCalendarsSyncing => 'Syncing…';
+
+  @override
+  String get sharedCalendarsNeverSynced => 'Not synced yet';
+
+  @override
+  String sharedCalendarsSyncedAt(String time) {
+    return 'Synced $time';
+  }
+
+  @override
+  String get sharedCalendarsSyncNow => 'Sync now';
+
+  @override
+  String get sharedCalendarsSyncTooSoon =>
+      'Already up to date. Try again in a minute.';
+
+  @override
+  String get sharedCalendarsSyncFailed =>
+      'Couldn\'t update this phone\'s calendars. We\'ll try again later.';
+
+  @override
+  String get sharedCalendarsOtherPhoneNote =>
+      'Read on another phone. Your choices here apply right away; its events update when that phone opens mitlist.';
+
+  @override
+  String get sharedCalendarsNoCalendars => 'No calendars found yet.';
+
+  @override
+  String get sharedCalendarsUnnamed => 'Calendar';
+
+  @override
+  String get sharedCalendarsShareBusy => 'Busy only';
+
+  @override
+  String get sharedCalendarsShareDetails => 'With titles';
+
+  @override
+  String get sharedCalendarsShareNone => 'Not shared';
+
+  @override
+  String sharedCalendarsExplainBusy(String household) {
+    return '$household sees when you\'re busy, never what it is.';
+  }
+
+  @override
+  String sharedCalendarsExplainDetails(String household) {
+    return '$household sees your events\' titles and times. Events marked private still show as busy.';
+  }
+
+  @override
+  String sharedCalendarsExplainNone(String household) {
+    return '$household sees nothing from this calendar.';
+  }
+
+  @override
+  String get sharedCalendarsAdd => 'Add a calendar';
+
+  @override
+  String get sharedCalendarsAddPhone => 'Calendars on this phone';
+
+  @override
+  String get sharedCalendarsAddPhoneDesc =>
+      'Every account on this phone: Google, iCloud, Outlook and more. Read on the phone; only what you share leaves it.';
+
+  @override
+  String get sharedCalendarsAddLinkDesc =>
+      'Paste a private iCal link from Google, iCloud or Outlook. Works on every device.';
+
+  @override
+  String get sharedCalendarsAddedNotShared =>
+      'Calendar added. Choose below what each household sees.';
+
+  @override
+  String get sharedCalendarsPhoneDefaultName => 'This phone';
+
+  @override
+  String get sharedCalendarsPermissionDeniedTitle => 'Calendar access is off';
+
+  @override
+  String get sharedCalendarsPermissionDeniedBody =>
+      'To share calendars from this phone, allow mitlist to read your calendars in Settings. Or add a calendar link instead.';
+
+  @override
+  String get sharedCalendarsPermissionRestricted =>
+      'Calendar access is blocked on this phone (for example by Screen Time or device management). You can add a calendar link instead.';
+
+  @override
+  String get sharedCalendarsOpenSettings => 'Open Settings';
+
+  @override
+  String get sharedCalendarsRenameTitle => 'Rename calendar';
+
+  @override
+  String sharedCalendarsRemoveTitle(String name) {
+    return 'Remove $name?';
+  }
+
+  @override
+  String get sharedCalendarsRemoveBody =>
+      'Its events disappear from every household calendar. Your calendar itself is not changed.';
+
+  @override
+  String get sharedCalendarsUpcomingTitle => 'Upcoming events';
+
+  @override
+  String get sharedCalendarsUpcomingIntro =>
+      'What housemates see of your next two weeks. Tap an event to hide it or show more or less of it. A repeating event counts as one.';
+
+  @override
+  String get sharedCalendarsUpcomingFailed => 'Couldn\'t load upcoming events.';
+
+  @override
+  String get sharedCalendarsUpcomingEmpty =>
+      'No upcoming events in your shared calendars.';
+
+  @override
+  String sharedCalendarsSeesDetails(String households) {
+    return '$households: title and time';
+  }
+
+  @override
+  String sharedCalendarsSeesBusy(String households) {
+    return '$households: busy only';
+  }
+
+  @override
+  String get sharedCalendarsSeesNothing => 'Housemates don\'t see this';
+
+  @override
+  String get sharedCalendarsOverrideCalendar => 'Calendar\'s setting';
+
+  @override
+  String get sharedCalendarsOverrideHidden => 'Hidden';
+
+  @override
+  String get sharedCalendarsOverrideBusy => 'Busy';
+
+  @override
+  String get sharedCalendarsOverrideDetails => 'With title';
+
+  @override
+  String get sharedCalendarsOverrideCalendarDesc =>
+      'Shown as this calendar is shared with each household.';
+
+  @override
+  String get sharedCalendarsOverrideHiddenDesc =>
+      'No household sees it at all.';
+
+  @override
+  String get sharedCalendarsOverrideBusyDesc =>
+      'Households that see this calendar see a busy block, no title.';
+
+  @override
+  String get sharedCalendarsOverrideDetailsDesc =>
+      'Households that see this calendar see the title, even if it\'s private in your calendar.';
+
+  @override
+  String get sharedCalendarsEventNoTitle => '(No title)';
+
+  @override
+  String get sharedCalendarsEventPrivate => 'private';
+
+  @override
+  String get sharedCalendarsEventFree => 'marked free';
+
+  @override
+  String sharedCalendarsEventChoice(String choice) {
+    return 'Setting: $choice';
+  }
+
+  @override
+  String get calendarConnectionErrorFetchFailed =>
+      'Couldn\'t load this calendar on the last try. We\'ll keep trying.';
+
+  @override
+  String get calendarConnectionErrorNotCalendar =>
+      'This link no longer returns a calendar. Remove it and add the current link.';
+
+  @override
+  String get calendarConnectionErrorTooLarge =>
+      'This calendar is too big to sync. Try a link to a smaller calendar.';
+
+  @override
+  String get calendarConnectionErrorUnauthorized =>
+      'This link no longer works. It may have been reset or removed; add the new link.';
+
+  @override
+  String get calendarConnectionErrorOther => 'This calendar couldn\'t sync.';
+
+  @override
+  String get calendarLinkSheetTitle => 'Add a calendar link';
+
+  @override
+  String get calendarLinkAddAction => 'Calendar link';
+
+  @override
+  String get calendarLinkNameHint => 'Optional, e.g. Work';
+
+  @override
+  String get calendarLinkUrlLabel => 'Private iCal link';
+
+  @override
+  String get calendarLinkUrlHint => 'https:// or webcal://';
+
+  @override
+  String get calendarLinkPrivacyNote =>
+      'Treat this link like a password: anyone with it can read the calendar. mitlist keeps it encrypted and never shows it again.';
+
+  @override
+  String get calendarLinkErrorUrl =>
+      'Enter a link that starts with https:// or webcal://.';
+
+  @override
+  String get calendarLinkErrorNotCalendar =>
+      'That link isn\'t a calendar. Copy the iCal (.ics) address, not the link to the calendar\'s web page.';
+
+  @override
+  String get calendarLinkErrorFetch =>
+      'We couldn\'t load that calendar. Check the link and that the calendar is still shared or published.';
+
+  @override
+  String get calendarLinkStepsTitle => 'Where to find the link';
+
+  @override
+  String get calendarLinkStepsGoogleTitle => 'Google Calendar';
+
+  @override
+  String get calendarLinkStepsGoogle =>
+      'On a computer, open Settings, pick your calendar under \"Settings for my calendars\", then copy \"Secret address in iCal format\" under Integrate calendar.';
+
+  @override
+  String get calendarLinkStepsAppleTitle => 'Apple iCloud Calendar';
+
+  @override
+  String get calendarLinkStepsApple =>
+      'In the Calendar app, tap Calendars, tap ⓘ next to the calendar, turn on Public Calendar and copy the link. Anyone with the link can see it. On this phone, \"Calendars on this phone\" is more private.';
+
+  @override
+  String get calendarLinkStepsOutlookTitle => 'Outlook';
+
+  @override
+  String get calendarLinkStepsOutlook =>
+      'In Outlook on the web, open Settings > Calendar > Shared calendars, publish the calendar (\"Can view all details\" or \"Can view when I\'m busy\") and copy the ICS link.';
+
+  @override
+  String get sharedCalendarsLimitReached =>
+      'You\'ve connected 10 calendars, the most there can be. Remove one to add another.';
 }

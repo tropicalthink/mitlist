@@ -41,6 +41,10 @@
 	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>mitlist reads the calendars you choose to share so your household can see when you are busy or away. You decide what each household sees; nothing is changed in your calendars.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>mitlist reads the calendars you choose to share so your household can see when you are busy or away. You decide what each household sees; nothing is changed in your calendars.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>mitlist uses the camera to scan receipts, shopping lists, and household invite QR codes.</string>
 	<key>NSMicrophoneUsageDescription</key>

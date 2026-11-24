@@ -715,6 +715,13 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             onTap: () => showAppAreasSheet(context),
           ),
           Divider(color: Theme.of(context).colorScheme.outlineVariant),
+          _MenuRow(
+            icon: const AppIcon(name: 'calendarDays'),
+            label: l10n.sharedCalendarsTitle,
+            value: l10n.sharedCalendarsAccountRowValue,
+            onTap: () => context.pushNamed('sharedCalendars'),
+          ),
+          Divider(color: Theme.of(context).colorScheme.outlineVariant),
           if (ref.watch(widgetBridgeProvider).isSupported) ...[
             _MenuRow(
               icon: const AppIcon(name: 'devicePhoneMobile'),

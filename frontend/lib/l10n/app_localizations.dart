@@ -12728,6 +12728,576 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Restore item'**
   String get listUndoOutboxRestoreItem;
+
+  /// A housemate's shared calendar event whose title is not shared
+  ///
+  /// In en, this message translates to:
+  /// **'Busy'**
+  String get calendarExternalBusy;
+
+  /// Shared calendar event lasting the whole day
+  ///
+  /// In en, this message translates to:
+  /// **'All day'**
+  String get calendarExternalAllDay;
+
+  /// Time range of a shared calendar event
+  ///
+  /// In en, this message translates to:
+  /// **'{start} – {end}'**
+  String calendarExternalTimeRange(String start, String end);
+
+  /// First day of an event that continues past midnight
+  ///
+  /// In en, this message translates to:
+  /// **'from {time}'**
+  String calendarExternalFrom(String time);
+
+  /// Last day of an event that began on an earlier day
+  ///
+  /// In en, this message translates to:
+  /// **'until {time}'**
+  String calendarExternalUntil(String time);
+
+  /// Marker for an event marked free (transparent) in its calendar
+  ///
+  /// In en, this message translates to:
+  /// **'free'**
+  String get calendarExternalFree;
+
+  /// The viewer, in place of their own name
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get calendarExternalYou;
+
+  /// A member whose name is not known yet
+  ///
+  /// In en, this message translates to:
+  /// **'A housemate'**
+  String get calendarExternalSomeone;
+
+  /// Screen reader label of a shared event
+  ///
+  /// In en, this message translates to:
+  /// **'{person}: {what}, {when}'**
+  String calendarExternalSemantics(String person, String what, String when);
+
+  /// Screen reader label of a shared event marked free
+  ///
+  /// In en, this message translates to:
+  /// **'{person}: {what}, {when}, marked free'**
+  String calendarExternalSemanticsFree(String person, String what, String when);
+
+  /// Heading of the who's-around summary for a day
+  ///
+  /// In en, this message translates to:
+  /// **'Who\'s around · {day}'**
+  String calendarWhosAroundTitle(String day);
+
+  /// Member has nothing busy that day
+  ///
+  /// In en, this message translates to:
+  /// **'Free'**
+  String get calendarWhosAroundFree;
+
+  /// Member has an all-day event
+  ///
+  /// In en, this message translates to:
+  /// **'Away all day'**
+  String get calendarWhosAroundAway;
+
+  /// Member is busy at these times
+  ///
+  /// In en, this message translates to:
+  /// **'Busy {times}'**
+  String calendarWhosAroundBusy(String times);
+
+  /// Screen reader hint on a day header
+  ///
+  /// In en, this message translates to:
+  /// **'Show who\'s around this day'**
+  String get calendarWhosAroundSelectDay;
+
+  /// First-run hint on the calendar
+  ///
+  /// In en, this message translates to:
+  /// **'See when everyone\'s around'**
+  String get calendarShareHintTitle;
+
+  /// First-run hint body
+  ///
+  /// In en, this message translates to:
+  /// **'Share your Google, Apple or Outlook calendar with the household, as busy times only or with titles. You choose what they see.'**
+  String get calendarShareHintBody;
+
+  /// Button to the shared calendars page
+  ///
+  /// In en, this message translates to:
+  /// **'Share my calendar'**
+  String get calendarShareHintAction;
+
+  /// Shared calendars page title
+  ///
+  /// In en, this message translates to:
+  /// **'Shared calendars'**
+  String get sharedCalendarsTitle;
+
+  /// Subtitle of the You screen row
+  ///
+  /// In en, this message translates to:
+  /// **'Show the household when you\'re busy'**
+  String get sharedCalendarsAccountRowValue;
+
+  /// Intro on the shared calendars page
+  ///
+  /// In en, this message translates to:
+  /// **'Connect your calendars so your household can see when you\'re busy or away. Nothing is shared until you choose it for a household below.'**
+  String get sharedCalendarsIntro;
+
+  /// Shown when the person has no household
+  ///
+  /// In en, this message translates to:
+  /// **'Join or create a household to share a calendar with it.'**
+  String get sharedCalendarsNoHouseholds;
+
+  /// Empty state
+  ///
+  /// In en, this message translates to:
+  /// **'No calendars connected yet.'**
+  String get sharedCalendarsEmpty;
+
+  /// Connection kind: this phone's calendars
+  ///
+  /// In en, this message translates to:
+  /// **'On this phone'**
+  String get sharedCalendarsKindThisPhone;
+
+  /// Connection kind: another phone's calendars
+  ///
+  /// In en, this message translates to:
+  /// **'On another phone'**
+  String get sharedCalendarsKindOtherPhone;
+
+  /// Connection kind: iCal link
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar link'**
+  String get sharedCalendarsKindLink;
+
+  /// Sync in progress
+  ///
+  /// In en, this message translates to:
+  /// **'Syncing…'**
+  String get sharedCalendarsSyncing;
+
+  /// Never synced
+  ///
+  /// In en, this message translates to:
+  /// **'Not synced yet'**
+  String get sharedCalendarsNeverSynced;
+
+  /// Last sync time
+  ///
+  /// In en, this message translates to:
+  /// **'Synced {time}'**
+  String sharedCalendarsSyncedAt(String time);
+
+  /// Tooltip of the sync button
+  ///
+  /// In en, this message translates to:
+  /// **'Sync now'**
+  String get sharedCalendarsSyncNow;
+
+  /// Sync refused because the last one was under a minute ago
+  ///
+  /// In en, this message translates to:
+  /// **'Already up to date. Try again in a minute.'**
+  String get sharedCalendarsSyncTooSoon;
+
+  /// Device upload failed
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t update this phone\'s calendars. We\'ll try again later.'**
+  String get sharedCalendarsSyncFailed;
+
+  /// Note on another phone's connection
+  ///
+  /// In en, this message translates to:
+  /// **'Read on another phone. Your choices here apply right away; its events update when that phone opens mitlist.'**
+  String get sharedCalendarsOtherPhoneNote;
+
+  /// Connection without calendars
+  ///
+  /// In en, this message translates to:
+  /// **'No calendars found yet.'**
+  String get sharedCalendarsNoCalendars;
+
+  /// Fallback name for an unnamed calendar
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar'**
+  String get sharedCalendarsUnnamed;
+
+  /// Share choice: time blocks only
+  ///
+  /// In en, this message translates to:
+  /// **'Busy only'**
+  String get sharedCalendarsShareBusy;
+
+  /// Share choice: titles too
+  ///
+  /// In en, this message translates to:
+  /// **'With titles'**
+  String get sharedCalendarsShareDetails;
+
+  /// Share choice: nothing
+  ///
+  /// In en, this message translates to:
+  /// **'Not shared'**
+  String get sharedCalendarsShareNone;
+
+  /// Plain explanation of busy-only sharing
+  ///
+  /// In en, this message translates to:
+  /// **'{household} sees when you\'re busy, never what it is.'**
+  String sharedCalendarsExplainBusy(String household);
+
+  /// Plain explanation of sharing with titles
+  ///
+  /// In en, this message translates to:
+  /// **'{household} sees your events\' titles and times. Events marked private still show as busy.'**
+  String sharedCalendarsExplainDetails(String household);
+
+  /// Plain explanation of not sharing
+  ///
+  /// In en, this message translates to:
+  /// **'{household} sees nothing from this calendar.'**
+  String sharedCalendarsExplainNone(String household);
+
+  /// Add section heading
+  ///
+  /// In en, this message translates to:
+  /// **'Add a calendar'**
+  String get sharedCalendarsAdd;
+
+  /// Add the phone's calendars
+  ///
+  /// In en, this message translates to:
+  /// **'Calendars on this phone'**
+  String get sharedCalendarsAddPhone;
+
+  /// Description of the phone option
+  ///
+  /// In en, this message translates to:
+  /// **'Every account on this phone: Google, iCloud, Outlook and more. Read on the phone; only what you share leaves it.'**
+  String get sharedCalendarsAddPhoneDesc;
+
+  /// Description of the link option
+  ///
+  /// In en, this message translates to:
+  /// **'Paste a private iCal link from Google, iCloud or Outlook. Works on every device.'**
+  String get sharedCalendarsAddLinkDesc;
+
+  /// After adding a link: it is not shared yet
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar added. Choose below what each household sees.'**
+  String get sharedCalendarsAddedNotShared;
+
+  /// Default name of the phone connection
+  ///
+  /// In en, this message translates to:
+  /// **'This phone'**
+  String get sharedCalendarsPhoneDefaultName;
+
+  /// Dialog title when permission is missing
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar access is off'**
+  String get sharedCalendarsPermissionDeniedTitle;
+
+  /// Dialog body when permission was denied
+  ///
+  /// In en, this message translates to:
+  /// **'To share calendars from this phone, allow mitlist to read your calendars in Settings. Or add a calendar link instead.'**
+  String get sharedCalendarsPermissionDeniedBody;
+
+  /// Dialog body when access is restricted
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar access is blocked on this phone (for example by Screen Time or device management). You can add a calendar link instead.'**
+  String get sharedCalendarsPermissionRestricted;
+
+  /// Open system settings
+  ///
+  /// In en, this message translates to:
+  /// **'Open Settings'**
+  String get sharedCalendarsOpenSettings;
+
+  /// Rename dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Rename calendar'**
+  String get sharedCalendarsRenameTitle;
+
+  /// Remove dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name}?'**
+  String sharedCalendarsRemoveTitle(String name);
+
+  /// Remove dialog body
+  ///
+  /// In en, this message translates to:
+  /// **'Its events disappear from every household calendar. Your calendar itself is not changed.'**
+  String get sharedCalendarsRemoveBody;
+
+  /// Upcoming section title
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming events'**
+  String get sharedCalendarsUpcomingTitle;
+
+  /// Upcoming section intro
+  ///
+  /// In en, this message translates to:
+  /// **'What housemates see of your next two weeks. Tap an event to hide it or show more or less of it. A repeating event counts as one.'**
+  String get sharedCalendarsUpcomingIntro;
+
+  /// Upcoming events failed to load
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load upcoming events.'**
+  String get sharedCalendarsUpcomingFailed;
+
+  /// No upcoming events
+  ///
+  /// In en, this message translates to:
+  /// **'No upcoming events in your shared calendars.'**
+  String get sharedCalendarsUpcomingEmpty;
+
+  /// Which households see an event with its title
+  ///
+  /// In en, this message translates to:
+  /// **'{households}: title and time'**
+  String sharedCalendarsSeesDetails(String households);
+
+  /// Which households see an event as busy
+  ///
+  /// In en, this message translates to:
+  /// **'{households}: busy only'**
+  String sharedCalendarsSeesBusy(String households);
+
+  /// Nobody sees this event
+  ///
+  /// In en, this message translates to:
+  /// **'Housemates don\'t see this'**
+  String get sharedCalendarsSeesNothing;
+
+  /// Event follows its calendar's sharing
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar\'s setting'**
+  String get sharedCalendarsOverrideCalendar;
+
+  /// Event hidden from everyone
+  ///
+  /// In en, this message translates to:
+  /// **'Hidden'**
+  String get sharedCalendarsOverrideHidden;
+
+  /// Event shown as busy
+  ///
+  /// In en, this message translates to:
+  /// **'Busy'**
+  String get sharedCalendarsOverrideBusy;
+
+  /// Event shown with its title
+  ///
+  /// In en, this message translates to:
+  /// **'With title'**
+  String get sharedCalendarsOverrideDetails;
+
+  /// Override option description
+  ///
+  /// In en, this message translates to:
+  /// **'Shown as this calendar is shared with each household.'**
+  String get sharedCalendarsOverrideCalendarDesc;
+
+  /// Override option description
+  ///
+  /// In en, this message translates to:
+  /// **'No household sees it at all.'**
+  String get sharedCalendarsOverrideHiddenDesc;
+
+  /// Override option description
+  ///
+  /// In en, this message translates to:
+  /// **'Households that see this calendar see a busy block, no title.'**
+  String get sharedCalendarsOverrideBusyDesc;
+
+  /// Override option description
+  ///
+  /// In en, this message translates to:
+  /// **'Households that see this calendar see the title, even if it\'s private in your calendar.'**
+  String get sharedCalendarsOverrideDetailsDesc;
+
+  /// Event without a title
+  ///
+  /// In en, this message translates to:
+  /// **'(No title)'**
+  String get sharedCalendarsEventNoTitle;
+
+  /// Event is private in its source calendar
+  ///
+  /// In en, this message translates to:
+  /// **'private'**
+  String get sharedCalendarsEventPrivate;
+
+  /// Event is marked free in its calendar
+  ///
+  /// In en, this message translates to:
+  /// **'marked free'**
+  String get sharedCalendarsEventFree;
+
+  /// Screen reader: the event's current choice
+  ///
+  /// In en, this message translates to:
+  /// **'Setting: {choice}'**
+  String sharedCalendarsEventChoice(String choice);
+
+  /// last_error fetch_failed
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load this calendar on the last try. We\'ll keep trying.'**
+  String get calendarConnectionErrorFetchFailed;
+
+  /// last_error not_calendar
+  ///
+  /// In en, this message translates to:
+  /// **'This link no longer returns a calendar. Remove it and add the current link.'**
+  String get calendarConnectionErrorNotCalendar;
+
+  /// last_error too_large
+  ///
+  /// In en, this message translates to:
+  /// **'This calendar is too big to sync. Try a link to a smaller calendar.'**
+  String get calendarConnectionErrorTooLarge;
+
+  /// last_error unauthorized
+  ///
+  /// In en, this message translates to:
+  /// **'This link no longer works. It may have been reset or removed; add the new link.'**
+  String get calendarConnectionErrorUnauthorized;
+
+  /// Unknown last_error
+  ///
+  /// In en, this message translates to:
+  /// **'This calendar couldn\'t sync.'**
+  String get calendarConnectionErrorOther;
+
+  /// Add link sheet title
+  ///
+  /// In en, this message translates to:
+  /// **'Add a calendar link'**
+  String get calendarLinkSheetTitle;
+
+  /// Button: add a calendar link
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar link'**
+  String get calendarLinkAddAction;
+
+  /// Name field hint
+  ///
+  /// In en, this message translates to:
+  /// **'Optional, e.g. Work'**
+  String get calendarLinkNameHint;
+
+  /// URL field label
+  ///
+  /// In en, this message translates to:
+  /// **'Private iCal link'**
+  String get calendarLinkUrlLabel;
+
+  /// URL field hint
+  ///
+  /// In en, this message translates to:
+  /// **'https:// or webcal://'**
+  String get calendarLinkUrlHint;
+
+  /// Privacy note under the URL field
+  ///
+  /// In en, this message translates to:
+  /// **'Treat this link like a password: anyone with it can read the calendar. mitlist keeps it encrypted and never shows it again.'**
+  String get calendarLinkPrivacyNote;
+
+  /// Invalid URL
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a link that starts with https:// or webcal://.'**
+  String get calendarLinkErrorUrl;
+
+  /// Server said not_calendar
+  ///
+  /// In en, this message translates to:
+  /// **'That link isn\'t a calendar. Copy the iCal (.ics) address, not the link to the calendar\'s web page.'**
+  String get calendarLinkErrorNotCalendar;
+
+  /// Server could not fetch the link
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t load that calendar. Check the link and that the calendar is still shared or published.'**
+  String get calendarLinkErrorFetch;
+
+  /// Steps heading
+  ///
+  /// In en, this message translates to:
+  /// **'Where to find the link'**
+  String get calendarLinkStepsTitle;
+
+  /// Provider name
+  ///
+  /// In en, this message translates to:
+  /// **'Google Calendar'**
+  String get calendarLinkStepsGoogleTitle;
+
+  /// Google steps
+  ///
+  /// In en, this message translates to:
+  /// **'On a computer, open Settings, pick your calendar under \"Settings for my calendars\", then copy \"Secret address in iCal format\" under Integrate calendar.'**
+  String get calendarLinkStepsGoogle;
+
+  /// Provider name
+  ///
+  /// In en, this message translates to:
+  /// **'Apple iCloud Calendar'**
+  String get calendarLinkStepsAppleTitle;
+
+  /// Apple steps
+  ///
+  /// In en, this message translates to:
+  /// **'In the Calendar app, tap Calendars, tap ⓘ next to the calendar, turn on Public Calendar and copy the link. Anyone with the link can see it. On this phone, \"Calendars on this phone\" is more private.'**
+  String get calendarLinkStepsApple;
+
+  /// Provider name
+  ///
+  /// In en, this message translates to:
+  /// **'Outlook'**
+  String get calendarLinkStepsOutlookTitle;
+
+  /// Outlook steps
+  ///
+  /// In en, this message translates to:
+  /// **'In Outlook on the web, open Settings > Calendar > Shared calendars, publish the calendar (\"Can view all details\" or \"Can view when I\'m busy\") and copy the ICS link.'**
+  String get calendarLinkStepsOutlook;
+
+  /// Shown at the 10-connection limit
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve connected 10 calendars, the most there can be. Remove one to add another.'**
+  String get sharedCalendarsLimitReached;
 }
 
 class _AppLocalizationsDelegate

@@ -7525,4 +7525,353 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get listUndoOutboxRestoreItem => 'Item herstellen';
+
+  @override
+  String get calendarExternalBusy => 'Bezet';
+
+  @override
+  String get calendarExternalAllDay => 'Hele dag';
+
+  @override
+  String calendarExternalTimeRange(String start, String end) {
+    return '$start – $end';
+  }
+
+  @override
+  String calendarExternalFrom(String time) {
+    return 'vanaf $time';
+  }
+
+  @override
+  String calendarExternalUntil(String time) {
+    return 'tot $time';
+  }
+
+  @override
+  String get calendarExternalFree => 'vrij';
+
+  @override
+  String get calendarExternalYou => 'Jij';
+
+  @override
+  String get calendarExternalSomeone => 'Een huisgenoot';
+
+  @override
+  String calendarExternalSemantics(String person, String what, String when) {
+    return '$person: $what, $when';
+  }
+
+  @override
+  String calendarExternalSemanticsFree(
+      String person, String what, String when) {
+    return '$person: $what, $when, gemarkeerd als vrij';
+  }
+
+  @override
+  String calendarWhosAroundTitle(String day) {
+    return 'Wie is er · $day';
+  }
+
+  @override
+  String get calendarWhosAroundFree => 'Vrij';
+
+  @override
+  String get calendarWhosAroundAway => 'Hele dag weg';
+
+  @override
+  String calendarWhosAroundBusy(String times) {
+    return 'Bezet $times';
+  }
+
+  @override
+  String get calendarWhosAroundSelectDay => 'Laat zien wie er deze dag is';
+
+  @override
+  String get calendarShareHintTitle => 'Zie wanneer iedereen er is';
+
+  @override
+  String get calendarShareHintBody =>
+      'Deel je Google-, Apple- of Outlook-agenda met het huishouden, alleen als bezette tijden of met titels. Jij kiest wat ze zien.';
+
+  @override
+  String get calendarShareHintAction => 'Mijn agenda delen';
+
+  @override
+  String get sharedCalendarsTitle => 'Gedeelde agenda\'s';
+
+  @override
+  String get sharedCalendarsAccountRowValue =>
+      'Laat het huishouden zien wanneer je bezet bent';
+
+  @override
+  String get sharedCalendarsIntro =>
+      'Koppel je agenda\'s zodat je huishouden ziet wanneer je bezet of weg bent. Er wordt niets gedeeld tot je dat hieronder per huishouden kiest.';
+
+  @override
+  String get sharedCalendarsNoHouseholds =>
+      'Word lid van een huishouden of maak er een om een agenda te delen.';
+
+  @override
+  String get sharedCalendarsEmpty => 'Nog geen agenda\'s gekoppeld.';
+
+  @override
+  String get sharedCalendarsKindThisPhone => 'Op deze telefoon';
+
+  @override
+  String get sharedCalendarsKindOtherPhone => 'Op een andere telefoon';
+
+  @override
+  String get sharedCalendarsKindLink => 'Agendalink';
+
+  @override
+  String get sharedCalendarsSyncing => 'Synchroniseren…';
+
+  @override
+  String get sharedCalendarsNeverSynced => 'Nog niet gesynchroniseerd';
+
+  @override
+  String sharedCalendarsSyncedAt(String time) {
+    return 'Gesynchroniseerd $time';
+  }
+
+  @override
+  String get sharedCalendarsSyncNow => 'Nu synchroniseren';
+
+  @override
+  String get sharedCalendarsSyncTooSoon =>
+      'Al bijgewerkt. Probeer het over een minuut opnieuw.';
+
+  @override
+  String get sharedCalendarsSyncFailed =>
+      'De agenda\'s van deze telefoon konden niet worden bijgewerkt. We proberen het later opnieuw.';
+
+  @override
+  String get sharedCalendarsOtherPhoneNote =>
+      'Wordt op een andere telefoon gelezen. Je keuzes gelden meteen; de afspraken worden bijgewerkt als die telefoon mitlist opent.';
+
+  @override
+  String get sharedCalendarsNoCalendars => 'Nog geen agenda\'s gevonden.';
+
+  @override
+  String get sharedCalendarsUnnamed => 'Agenda';
+
+  @override
+  String get sharedCalendarsShareBusy => 'Alleen bezet';
+
+  @override
+  String get sharedCalendarsShareDetails => 'Met titels';
+
+  @override
+  String get sharedCalendarsShareNone => 'Niet gedeeld';
+
+  @override
+  String sharedCalendarsExplainBusy(String household) {
+    return '$household ziet wanneer je bezet bent, nooit wat het is.';
+  }
+
+  @override
+  String sharedCalendarsExplainDetails(String household) {
+    return '$household ziet de titels en tijden van je afspraken. Afspraken die privé zijn gemarkeerd, blijven als bezet zichtbaar.';
+  }
+
+  @override
+  String sharedCalendarsExplainNone(String household) {
+    return '$household ziet niets van deze agenda.';
+  }
+
+  @override
+  String get sharedCalendarsAdd => 'Agenda toevoegen';
+
+  @override
+  String get sharedCalendarsAddPhone => 'Agenda\'s op deze telefoon';
+
+  @override
+  String get sharedCalendarsAddPhoneDesc =>
+      'Alle accounts op deze telefoon: Google, iCloud, Outlook en meer. Gelezen op de telefoon; alleen wat je deelt, gaat eruit.';
+
+  @override
+  String get sharedCalendarsAddLinkDesc =>
+      'Plak een privé-iCal-link uit Google, iCloud of Outlook. Werkt op elk apparaat.';
+
+  @override
+  String get sharedCalendarsAddedNotShared =>
+      'Agenda toegevoegd. Kies hieronder wat elk huishouden ziet.';
+
+  @override
+  String get sharedCalendarsPhoneDefaultName => 'Deze telefoon';
+
+  @override
+  String get sharedCalendarsPermissionDeniedTitle => 'Agendatoegang staat uit';
+
+  @override
+  String get sharedCalendarsPermissionDeniedBody =>
+      'Sta mitlist in Instellingen toe je agenda\'s te lezen om agenda\'s van deze telefoon te delen. Of voeg een agendalink toe.';
+
+  @override
+  String get sharedCalendarsPermissionRestricted =>
+      'Agendatoegang is op deze telefoon geblokkeerd (bijvoorbeeld door Schermtijd of apparaatbeheer). Je kunt in plaats daarvan een agendalink toevoegen.';
+
+  @override
+  String get sharedCalendarsOpenSettings => 'Instellingen openen';
+
+  @override
+  String get sharedCalendarsRenameTitle => 'Agenda hernoemen';
+
+  @override
+  String sharedCalendarsRemoveTitle(String name) {
+    return '$name verwijderen?';
+  }
+
+  @override
+  String get sharedCalendarsRemoveBody =>
+      'De afspraken verdwijnen uit elke huishoudagenda. Je agenda zelf verandert niet.';
+
+  @override
+  String get sharedCalendarsUpcomingTitle => 'Komende afspraken';
+
+  @override
+  String get sharedCalendarsUpcomingIntro =>
+      'Wat huisgenoten van je komende twee weken zien. Tik op een afspraak om hem te verbergen of meer of minder te tonen. Een terugkerende afspraak telt als één.';
+
+  @override
+  String get sharedCalendarsUpcomingFailed =>
+      'Komende afspraken konden niet worden geladen.';
+
+  @override
+  String get sharedCalendarsUpcomingEmpty =>
+      'Geen komende afspraken in je gedeelde agenda\'s.';
+
+  @override
+  String sharedCalendarsSeesDetails(String households) {
+    return '$households: titel en tijd';
+  }
+
+  @override
+  String sharedCalendarsSeesBusy(String households) {
+    return '$households: alleen bezet';
+  }
+
+  @override
+  String get sharedCalendarsSeesNothing => 'Huisgenoten zien dit niet';
+
+  @override
+  String get sharedCalendarsOverrideCalendar => 'Agenda-instelling';
+
+  @override
+  String get sharedCalendarsOverrideHidden => 'Verborgen';
+
+  @override
+  String get sharedCalendarsOverrideBusy => 'Bezet';
+
+  @override
+  String get sharedCalendarsOverrideDetails => 'Met titel';
+
+  @override
+  String get sharedCalendarsOverrideCalendarDesc =>
+      'Zoals de agenda met elk huishouden wordt gedeeld.';
+
+  @override
+  String get sharedCalendarsOverrideHiddenDesc =>
+      'Geen enkel huishouden ziet het.';
+
+  @override
+  String get sharedCalendarsOverrideBusyDesc =>
+      'Huishoudens die deze agenda zien, zien een bezet blok zonder titel.';
+
+  @override
+  String get sharedCalendarsOverrideDetailsDesc =>
+      'Huishoudens die deze agenda zien, zien de titel, ook als die in je agenda privé is.';
+
+  @override
+  String get sharedCalendarsEventNoTitle => '(Geen titel)';
+
+  @override
+  String get sharedCalendarsEventPrivate => 'privé';
+
+  @override
+  String get sharedCalendarsEventFree => 'gemarkeerd als vrij';
+
+  @override
+  String sharedCalendarsEventChoice(String choice) {
+    return 'Instelling: $choice';
+  }
+
+  @override
+  String get calendarConnectionErrorFetchFailed =>
+      'Deze agenda kon de laatste keer niet worden geladen. We blijven het proberen.';
+
+  @override
+  String get calendarConnectionErrorNotCalendar =>
+      'Deze link geeft geen agenda meer. Verwijder hem en voeg de huidige link toe.';
+
+  @override
+  String get calendarConnectionErrorTooLarge =>
+      'Deze agenda is te groot om te synchroniseren. Probeer een kleinere agenda.';
+
+  @override
+  String get calendarConnectionErrorUnauthorized =>
+      'Deze link werkt niet meer. Hij is misschien vernieuwd of verwijderd; voeg de nieuwe link toe.';
+
+  @override
+  String get calendarConnectionErrorOther =>
+      'Deze agenda kon niet worden gesynchroniseerd.';
+
+  @override
+  String get calendarLinkSheetTitle => 'Agendalink toevoegen';
+
+  @override
+  String get calendarLinkAddAction => 'Agendalink';
+
+  @override
+  String get calendarLinkNameHint => 'Optioneel, bijv. Werk';
+
+  @override
+  String get calendarLinkUrlLabel => 'Privé-iCal-link';
+
+  @override
+  String get calendarLinkUrlHint => 'https:// of webcal://';
+
+  @override
+  String get calendarLinkPrivacyNote =>
+      'Behandel deze link als een wachtwoord: iedereen die hem heeft, kan de agenda lezen. mitlist bewaart hem versleuteld en toont hem nooit meer.';
+
+  @override
+  String get calendarLinkErrorUrl =>
+      'Voer een link in die begint met https:// of webcal://.';
+
+  @override
+  String get calendarLinkErrorNotCalendar =>
+      'Die link is geen agenda. Kopieer het iCal-adres (.ics), niet de link naar de webpagina van de agenda.';
+
+  @override
+  String get calendarLinkErrorFetch =>
+      'We konden die agenda niet laden. Controleer de link en of de agenda nog gedeeld of gepubliceerd is.';
+
+  @override
+  String get calendarLinkStepsTitle => 'Waar je de link vindt';
+
+  @override
+  String get calendarLinkStepsGoogleTitle => 'Google Agenda';
+
+  @override
+  String get calendarLinkStepsGoogle =>
+      'Open op een computer Instellingen, kies je agenda onder \'Instellingen voor mijn agenda\'s\' en kopieer bij Agenda integreren het \'Geheim adres in iCal-indeling\'.';
+
+  @override
+  String get calendarLinkStepsAppleTitle => 'Apple iCloud-agenda';
+
+  @override
+  String get calendarLinkStepsApple =>
+      'Tik in de Agenda-app op Agenda\'s, tik op ⓘ naast de agenda, zet Openbare agenda aan en kopieer de link. Iedereen met de link kan hem zien. Op deze telefoon is \'Agenda\'s op deze telefoon\' privéer.';
+
+  @override
+  String get calendarLinkStepsOutlookTitle => 'Outlook';
+
+  @override
+  String get calendarLinkStepsOutlook =>
+      'Open in Outlook op het web Instellingen > Agenda > Gedeelde agenda\'s, publiceer de agenda (\'Kan alle details bekijken\' of \'Kan zien wanneer ik bezet ben\') en kopieer de ICS-link.';
+
+  @override
+  String get sharedCalendarsLimitReached =>
+      'Je hebt 10 agenda\'s gekoppeld, het maximum. Verwijder er een om een andere toe te voegen.';
 }

@@ -42,6 +42,9 @@ class CalendarService {
         'group_id': groupId,
         'from': _formatDate(from),
         'to': _formatDate(to),
+        // Housemates' shared calendars. Opt-in on the server because older
+        // builds read unknown event types as meal plans.
+        'include': 'external',
       });
       final data = r.data as Map<String, dynamic>;
       return data['events'] as List<dynamic>? ?? [];
@@ -55,6 +58,10 @@ class CalendarService {
     return raw
         .whereType<Map>()
         .map((e) => CalendarEvent.fromJson(e.cast<String, dynamic>()))
+        // A shared-calendar event without its block (who, when) cannot be
+        // placed; drop it rather than guess.
+        .where((e) =>
+            e.type != CalendarEventType.externalEvent || e.external != null)
         .toList();
   }
 
