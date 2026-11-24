@@ -7,6 +7,7 @@ import 'package:mitlist/models/group_models.dart';
 import 'package:mitlist/models/list_models.dart';
 import 'package:mitlist/models/chore_models.dart';
 import 'package:mitlist/services/chore_service.dart';
+import 'package:mitlist/services/api_error_mapper.dart';
 import 'package:mitlist/services/connectivity_service.dart';
 import 'package:mitlist/services/finance_service.dart';
 import 'package:mitlist/services/group_service.dart';
@@ -289,6 +290,45 @@ class FakeListService implements ListService {
   Future<void> deleteItem(String listId, String itemId,
       {String? idempotencyKey}) async {
     deleteItemCalls.add(itemId);
+  }
+
+  /// Item ids sent to [restoreItem], in order.
+  final List<String> restoreItemCalls = [];
+
+  /// When set, [restoreItem] fails with this HTTP status, as a server that
+  /// predates the restore route does (404 or 405).
+  int? restoreItemStatus;
+
+  /// Rows [restoreItem] answers with, by id (the server's copy of a deleted
+  /// item). Unknown ids get a placeholder row.
+  final Map<String, ListItem> restorableItems = {};
+
+  @override
+  Future<ListItem> restoreItem(String listId, String itemId,
+      {String? idempotencyKey}) async {
+    restoreItemCalls.add(itemId);
+    final status = restoreItemStatus;
+    if (status != null) {
+      final options = RequestOptions(path: '/lists/$listId/items/$itemId');
+      throw apiException(DioException(
+        requestOptions: options,
+        response: Response(requestOptions: options, statusCode: status),
+        type: DioExceptionType.badResponse,
+      ));
+    }
+    final known = restorableItems[itemId];
+    if (known != null) return known;
+    return ListItem(
+      id: itemId,
+      listId: listId,
+      name: 'Restored',
+      quantity: 1,
+      unit: '',
+      checked: false,
+      position: 0,
+      createdAt: DateTime.utc(2026, 1, 1),
+      updatedAt: DateTime.utc(2026, 2, 1),
+    );
   }
 
   @override

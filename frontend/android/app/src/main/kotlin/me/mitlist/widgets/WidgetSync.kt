@@ -45,7 +45,27 @@ object WidgetSync {
             WidgetUpdater.updateAll(context)
             return Result.DONE
         }
-        val api = WidgetApi(credential)
+        var api = WidgetApi(credential)
+        var switched = false
+
+        /**
+         * After a 401: the app renews the credential weekly and the server
+         * revokes the old one at once, so a request already in flight with
+         * the old token fails. If the stored token has changed since, switch
+         * to it (once per pass) instead of telling the user to open the app.
+         */
+        fun switchToReplacement(): Boolean {
+            if (switched) {
+                CredentialStore.markAuthFailedUnlessReplaced(context, api.token)
+                return false
+            }
+            if (CredentialStore.markAuthFailedUnlessReplaced(context, api.token)) return false
+            val fresh = CredentialStore.load(context) ?: return false
+            api = WidgetApi(fresh)
+            switched = true
+            Log.i(TAG, "credential was replaced during the pass; retrying with the new one")
+            return true
+        }
 
         var delivered = false
         var result = Result.DONE
@@ -83,8 +103,12 @@ object WidgetSync {
             }
             WidgetData.bump()
             if (outcome == DeliveryOutcome.AUTH_FAILED) {
+                if (switchToReplacement()) {
+                    // Same op again, with the new token.
+                    attempted -= op.opId
+                    continue
+                }
                 // The credential is dead: stop, keep everything for the app.
-                state.authFailed = true
                 WidgetUpdater.updateAll(context)
                 return Result.DONE
             }
@@ -98,7 +122,8 @@ object WidgetSync {
         val stale = now - state.lastFetchAt > FRESH_MILLIS
         if (result == Result.DONE && (forceFetch || delivered || state.refreshRequested || stale)) {
             try {
-                val response = api.fetchSnapshot()
+                var response = api.fetchSnapshot()
+                if (response.status == 401 && switchToReplacement()) response = api.fetchSnapshot()
                 when {
                     response.status == 200 && response.body != null -> {
                         WidgetFiles.snapshot(context).write(response.body)
@@ -106,7 +131,9 @@ object WidgetSync {
                         state.lastFetchAt = System.currentTimeMillis()
                         state.authFailed = false
                     }
-                    response.status == 401 -> state.authFailed = true
+                    // switchToReplacement (or the check inside it) has
+                    // already raised the flag when the token is still ours.
+                    response.status == 401 -> CredentialStore.markAuthFailedUnlessReplaced(context, api.token)
                     response.status >= 500 -> result = Result.RETRY
                     else -> Log.w(TAG, "snapshot fetch returned ${response.status}")
                 }

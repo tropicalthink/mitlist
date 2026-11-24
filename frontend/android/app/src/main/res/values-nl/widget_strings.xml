@@ -3,7 +3,7 @@
     <string name="widget_shopping_list_name">Boodschappenlijst</string>
     <string name="widget_shopping_list_description">Vink items af en voeg nieuwe toe</string>
     <string name="widget_chores_name">Klusjes vandaag</string>
-    <string name="widget_chores_description">Klusjes die aan de beurt zijn, met een Klaar-knop</string>
+    <string name="widget_chores_description">Taken die te laat zijn of vandaag moeten, met een Klaar-knop</string>
     <string name="widget_household_today_name">Huishouden vandaag</string>
     <string name="widget_household_today_description">Klusjes, boodschappen, het avondeten en je saldo</string>
     <string name="widget_balance_name">Saldo</string>
@@ -36,7 +36,7 @@
     <string name="widget_added_by">toegevoegd door %1$s</string>
 
     <string name="widget_chores_title">Klusjes</string>
-    <string name="widget_chores_nothing_due_short">Niets te doen</string>
+    <string name="widget_chores_nothing_due_short">Vandaag niets te doen</string>
     <plurals name="widget_chores_due">
         <item quantity="one">%1$d klusje te doen</item>
         <item quantity="other">%1$d klusjes te doen</item>
@@ -96,4 +96,26 @@
     <string name="widget_sample_chore_1">Vuilnis buiten zetten</string>
     <string name="widget_sample_chore_2">Badkamer schoonmaken</string>
     <string name="widget_sample_meal">Lasagne</string>
+
+    <!-- Ticked/done feedback, set-up states, household headline, scan -->
+    <string name="widget_item_ticked">%1$s, afgevinkt</string>
+    <string name="widget_chore_marked_done">%1$s, gedaan</string>
+    <string name="widget_needs_remember_me">Widgets werken alleen als je ingelogd blijft. Log in met „Onthoud mij” aan.</string>
+    <string name="widget_sign_in_action">Inloggen</string>
+    <string name="widget_set_up">Open mitlist om widgets in te stellen</string>
+    <string name="widget_set_up_action">Widgets instellen</string>
+    <string name="widget_scan">Scannen</string>
+    <string name="widget_headline_clear">Vandaag alles gedaan</string>
+    <plurals name="widget_headline_overdue">
+        <item quantity="one">%1$d te laat</item>
+        <item quantity="other">%1$d te laat</item>
+    </plurals>
+    <plurals name="widget_headline_today">
+        <item quantity="one">%1$d vandaag</item>
+        <item quantity="other">%1$d vandaag</item>
+    </plurals>
+    <plurals name="widget_headline_to_buy">
+        <item quantity="one">%1$d te kopen</item>
+        <item quantity="other">%1$d te kopen</item>
+    </plurals>
 </resources>

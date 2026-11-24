@@ -57,6 +57,12 @@ func (r *stubAuthRepo) UpdatePasswordAndRevokeSessions(_ context.Context, _ uuid
 func (r *stubAuthRepo) CreateUnverifiedUser(_ context.Context, _ *models.User, _ string, _ time.Time) error {
 	panic("not impl")
 }
+func (r *stubAuthRepo) CreateUnprovenUser(_ context.Context, _ *models.User) error {
+	panic("not impl")
+}
+func (r *stubAuthRepo) IsEmailUnproven(_ context.Context, _ uuid.UUID) (bool, error) {
+	panic("not impl")
+}
 func (r *stubAuthRepo) CreateEmailVerification(_ context.Context, _ uuid.UUID, _ string, _ time.Time) error {
 	panic("not impl")
 }

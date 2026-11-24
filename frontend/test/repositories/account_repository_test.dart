@@ -68,8 +68,8 @@ void main() {
 
     await AccountRepository.discardQueued(db);
 
-    expect(await db.getOutboxOpsByType(AccountRepository.setLanguageOp),
-        isEmpty);
+    expect(
+        await db.getOutboxOpsByType(AccountRepository.setLanguageOp), isEmpty);
     expect(await db.outboxCount(), 1, reason: "the person's data stays");
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getString(kQueuedServerLanguageKey), isNull,

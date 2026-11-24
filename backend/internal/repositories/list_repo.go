@@ -2,10 +2,12 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/mitlist-app/mitlist/internal/models"
 )
@@ -299,22 +301,34 @@ func (r *ListRepository) CreateItems(ctx context.Context, items []models.ListIte
 	return err
 }
 
-// BulkMarkItemsChecked marks items checked when the user is a member of the list's group.
-func (r *ListRepository) BulkMarkItemsChecked(ctx context.Context, userID uuid.UUID, itemIDs []uuid.UUID) (int64, error) {
+// BulkMarkItemsChecked marks items checked when the user is a member of the
+// list's group, and returns the rows it changed with their household so the
+// caller can tell each household what moved.
+func (r *ListRepository) BulkMarkItemsChecked(ctx context.Context, userID uuid.UUID, itemIDs []uuid.UUID) ([]CheckedItemRef, error) {
 	if len(itemIDs) == 0 {
-		return 0, nil
+		return nil, nil
 	}
-	res, err := r.pool.Exec(ctx, `
+	rows, err := r.pool.Query(ctx, `
 		UPDATE list_items li
 		SET checked = true, updated_at = NOW()
 		FROM lists l
 		JOIN group_memberships gm ON gm.group_id = l.group_id AND gm.user_id = $1 AND gm.left_at IS NULL
 		WHERE li.id = ANY($2) AND li.list_id = l.id AND li.deleted_at IS NULL
+		RETURNING li.id, li.list_id, l.group_id
 	`, userID, itemIDs)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	return res.RowsAffected(), nil
+	defer rows.Close()
+	var refs []CheckedItemRef
+	for rows.Next() {
+		var ref CheckedItemRef
+		if err := rows.Scan(&ref.ItemID, &ref.ListID, &ref.GroupID); err != nil {
+			return nil, err
+		}
+		refs = append(refs, ref)
+	}
+	return refs, rows.Err()
 }
 
 // GetItemByID retrieves a list item by its ID.
@@ -432,6 +446,28 @@ func (r *ListRepository) SoftDeleteItemsByID(ctx context.Context, ids []uuid.UUI
 	}
 	_, err := r.pool.Exec(ctx, query, args...)
 	return err
+}
+
+// RestoreItem clears deleted_at on an item of listID, putting the row back
+// exactly as it was (position, checked state, photos all stay attached to the
+// same id). Idempotent: an item that is not deleted is returned unchanged with
+// restored=false. pgx.ErrNoRows when the list has no such item at all.
+func (r *ListRepository) RestoreItem(ctx context.Context, listID, id uuid.UUID) (*models.ListItem, bool, error) {
+	var i models.ListItem
+	scan := func(row pgx.Row) error {
+		return row.Scan(&i.ID, &i.ListID, &i.Name, &i.Quantity, &i.Unit, &i.Note, &i.PriceCents, &i.ProductID, &i.StoreID, &i.AddedBy, &i.ClaimedBy, &i.Checked, &i.Position, &i.CreatedAt, &i.UpdatedAt)
+	}
+	err := scan(r.pool.QueryRow(ctx, `UPDATE list_items SET deleted_at = NULL, updated_at = NOW() WHERE id = $1 AND list_id = $2 AND deleted_at IS NOT NULL RETURNING id, list_id, name, quantity, unit, COALESCE(note,''), price_cents, product_id, store_id, added_by, claimed_by, checked, position, created_at, updated_at`, id, listID))
+	if err == nil {
+		return &i, true, nil
+	}
+	if !errors.Is(err, pgx.ErrNoRows) {
+		return nil, false, err
+	}
+	if err := scan(r.pool.QueryRow(ctx, `SELECT id, list_id, name, quantity, unit, COALESCE(note,''), price_cents, product_id, store_id, added_by, claimed_by, checked, position, created_at, updated_at FROM list_items WHERE id = $1 AND list_id = $2 AND deleted_at IS NULL`, id, listID)); err != nil {
+		return nil, false, err
+	}
+	return &i, false, nil
 }
 
 // SoftDeleteItemsByList marks all or checked items in a list as deleted.

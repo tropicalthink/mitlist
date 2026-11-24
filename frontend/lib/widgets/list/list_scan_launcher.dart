@@ -12,10 +12,6 @@ import '../../providers/store_provider.dart';
 import '../../screens/scanner/scan_review_screen.dart';
 import '../../screens/scanner/smart_capture_launcher.dart';
 import '../../services/scan/scan_models.dart' show GroceryScanResult;
-import '../../theme/spacing.dart';
-import '../app_bottom_sheet.dart';
-import '../app_icon.dart';
-import '../spinner.dart';
 
 import '../app_toast.dart';
 
@@ -34,7 +30,8 @@ Future<int?> launchListScan(
   ImageSource? source,
 }) async {
   final l10n = AppLocalizations.of(context)!;
-  final pickedSource = source ?? await _pickImageSource(context);
+  final pickedSource =
+      source ?? await pickCaptureSource(context, title: l10n.scanSnapYourList);
   if (pickedSource == null || !context.mounted) return null;
 
   final capture = await pickSmartCapture(
@@ -45,40 +42,7 @@ Future<int?> launchListScan(
   if (capture == null || !context.mounted) return null;
 
   if (!context.mounted) return null;
-  unawaited(showDialog<void>(
-    context: context,
-    barrierDismissible: false,
-    builder: (dialogContext) {
-      final colorScheme = Theme.of(dialogContext).colorScheme;
-      final textTheme = Theme.of(dialogContext).textTheme;
-      return PopScope(
-        canPop: false,
-        child: Center(
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: MitlistSpacing.lg,
-              vertical: MitlistSpacing.md,
-            ),
-            decoration: BoxDecoration(
-              color: colorScheme.surface,
-              border: Border.all(color: colorScheme.outline, width: 2),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const AppSpinner(size: AppSpinnerSize.lg),
-                const SizedBox(height: MitlistSpacing.md),
-                Text(
-                  l10n.scanReadingList,
-                  style: textTheme.bodyMedium,
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    },
-  ));
+  showScanProgress(context, l10n.scanReadingList);
 
   final GroceryScanResult result;
   try {
@@ -105,7 +69,6 @@ Future<int?> launchListScan(
       isOnline: isOnline,
       cropHint: capture.cropHint,
     );
-
   } catch (e, stack) {
     // Keep the user-facing copy generic, but never lose the real cause.
     debugPrint('list scan failed: $e\n$stack');
@@ -129,29 +92,6 @@ Future<int?> launchListScan(
         targetListId: listId,
         targetListName: listName,
       ),
-    ),
-  );
-}
-
-Future<ImageSource?> _pickImageSource(BuildContext context) {
-  final l10n = AppLocalizations.of(context)!;
-  return showAppBottomSheet<ImageSource>(
-    context: context,
-    title: l10n.scanSnapYourList,
-    body: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        ListTile(
-          leading: const AppIcon(name: 'devicePhoneMobile'),
-          title: Text(l10n.scanTakePhoto),
-          onTap: () => Navigator.of(context).pop(ImageSource.camera),
-        ),
-        ListTile(
-          leading: const AppIcon(name: 'eye'),
-          title: Text(l10n.scanChooseFromGallery),
-          onTap: () => Navigator.of(context).pop(ImageSource.gallery),
-        ),
-      ],
     ),
   );
 }

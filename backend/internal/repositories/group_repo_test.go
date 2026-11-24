@@ -255,10 +255,11 @@ func TestGroupRepository_EndMembership(t *testing.T) {
 	id := fixedUUID()
 
 	// Soft removal: the row is stamped, never deleted, so the person's
-	// history in the group keeps its name.
-	mock.ExpectExec("UPDATE group_memberships SET left_at = now\\(\\) WHERE id = .* AND left_at IS NULL").
+	// history in the group keeps its name. The same statement drops their
+	// calendar shares with the household.
+	mock.ExpectExec("(?s)WITH ended AS \\(\\s*UPDATE group_memberships SET left_at = now\\(\\) WHERE id = .* AND left_at IS NULL.*DELETE FROM external_calendar_shares").
 		WithArgs(id).
-		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
+		WillReturnResult(pgxmock.NewResult("DELETE", 1))
 
 	err := repo.EndMembership(context.Background(), id)
 	require.NoError(t, err)

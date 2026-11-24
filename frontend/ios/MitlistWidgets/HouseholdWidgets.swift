@@ -15,6 +15,7 @@ struct HouseholdTodayWidget: Widget {
     .configurationDisplayName("Household today")
     .description("Chores, the shopping list, tonight's meal and who owes whom.")
     .supportedFamilies([.systemLarge, .systemExtraLarge])
+    .contentMarginsDisabled()
   }
 }
 
@@ -34,39 +35,49 @@ struct HouseholdTodayView: View {
       WidgetSetupView(status: entry.status)
     } else if let household = entry.snapshot?.resolveHousehold(entry.selection) {
       let list = household.lists.first { $0.type == "shopping" } ?? household.lists.first
-      VStack(alignment: .leading, spacing: 10) {
+      let counts = household.choreCounts(now: entry.date)
+      VStack(alignment: .leading, spacing: 4) {
         Link(destination: WidgetLinks.home(household: household.id)) {
-          HStack(alignment: .firstTextBaseline) {
-            Text(verbatim: household.name)
-              .font(.headline)
+          VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .firstTextBaseline) {
+              Text(verbatim: household.name)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+              Spacer(minLength: 0)
+              Text(entry.date, format: .dateTime.weekday(.wide).day().month())
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+            }
+            // The single most urgent fact first.
+            Text(verbatim: WidgetFormat.householdLead(counts, openItems: list?.openCount ?? 0))
+              .font(.title3.weight(.bold))
               .lineLimit(1)
-            Spacer(minLength: 0)
-            Text(entry.date, format: .dateTime.weekday(.wide).day().month())
-              .font(.caption)
-              .foregroundStyle(.secondary)
+              .minimumScaleFactor(0.7)
+              .invalidatableContent()
           }
         }
         // Large and extra large are the same height: stacked sections get
-        // two chores and three items (two above a footer line); side by
-        // side they get three and four.
-        let footer = entry.needsApp || entry.updatedText != nil
+        // two 44pt rows each; side by side they get four.
         if family == .systemExtraLarge {
           HStack(alignment: .top, spacing: 16) {
-            ChoresSection(entry: entry, household: household, maxRows: 3)
+            ChoresSection(entry: entry, household: household, maxRows: 4)
             if let list { ListSection(household: household, list: list, maxItems: 4) }
           }
         } else {
           ChoresSection(entry: entry, household: household, maxRows: 2)
-          if let list { ListSection(household: household, list: list, maxItems: footer ? 2 : 3) }
+          if let list { ListSection(household: household, list: list, maxItems: entry.hasFooter ? 1 : 2) }
         }
         Spacer(minLength: 0)
         HStack(alignment: .top, spacing: 12) {
           MealCell(household: household)
           BalanceCell(household: household)
         }
-        WidgetFooter(entry: entry)
+        if entry.hasFooter { WidgetFooter(entry: entry) }
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+      .mitlistMargins(family)
     } else {
       WidgetSetupView(status: .notSetUp)
     }
@@ -89,6 +100,7 @@ private struct SectionHeader: View {
           .font(.caption.weight(.semibold))
           .foregroundStyle(WidgetTheme.accent)
           .widgetAccentable()
+          .lineLimit(1)
       }
     }
   }
@@ -100,17 +112,18 @@ private struct ChoresSection: View {
   let maxRows: Int
 
   var body: some View {
-    let due = household.choresDue(now: entry.date)
-    VStack(alignment: .leading, spacing: WidgetTheme.rowSpacing) {
+    let chores = household.orderedChores(now: entry.date)
+    VStack(alignment: .leading, spacing: 0) {
       SectionHeader(
-        title: Text("Chores"), detail: due.isEmpty ? Text(verbatim: "") : Text("\(due.count) chores due"),
+        title: Text("Chores"),
+        detail: Text(verbatim: WidgetFormat.choreSummary(household.choreCounts(now: entry.date))),
         url: WidgetLinks.chores(household: household.id))
-      if due.isEmpty {
+      if chores.isEmpty {
         Text("Nothing due")
           .font(.caption)
           .foregroundStyle(.secondary)
       } else {
-        ForEach(due.prefix(maxRows)) { chore in
+        ForEach(chores.prefix(maxRows)) { chore in
           ChoreRow(chore: chore, householdID: household.id, now: entry.date)
         }
       }
@@ -125,12 +138,12 @@ private struct ListSection: View {
   let maxItems: Int
 
   var body: some View {
-    VStack(alignment: .leading, spacing: WidgetTheme.rowSpacing) {
-      HStack(alignment: .center) {
+    VStack(alignment: .leading, spacing: 0) {
+      HStack(alignment: .center, spacing: 8) {
         SectionHeader(
           title: Text(verbatim: list.name), detail: Text("\(list.openCount) left"),
           url: WidgetLinks.list(list.id, household: household.id))
-        AddLink(url: WidgetLinks.list(list.id, household: household.id, add: true), size: 24)
+        AddButton(url: WidgetLinks.list(list.id, household: household.id, add: true))
       }
       if list.items.isEmpty {
         Text("Nothing left to buy")
@@ -202,6 +215,7 @@ struct BalanceWidget: Widget {
     .configurationDisplayName("Balance")
     .description("Who owes whom in your household.")
     .supportedFamilies([.systemSmall])
+    .contentMarginsDisabled()
   }
 }
 
@@ -241,6 +255,7 @@ struct BalanceWidgetView: View {
         }
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+      .padding(WidgetTheme.margins)
       .widgetURL(WidgetLinks.money(household: household.id))
     } else {
       WidgetSetupView(status: .notSetUp)
@@ -256,10 +271,12 @@ struct BalanceWidgetView: View {
   HouseholdTodayWidget()
 } timeline: {
   MitlistEntry.preview()
+  MitlistEntry.previewTicked()
 }
 
 #Preview(as: .systemSmall) {
   BalanceWidget()
 } timeline: {
   MitlistEntry.preview()
+  MitlistEntry.previewTicked()
 }

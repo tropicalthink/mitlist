@@ -232,8 +232,20 @@ func (r *GroupRepository) UpdateMembership(ctx context.Context, m *models.GroupM
 // EndMembership retires a membership by ID. The row stays so the person's
 // history in the group keeps resolving to their name; every active-member
 // query filters on left_at IS NULL.
+//
+// The same statement deletes the person's calendar shares with that
+// household, so rejoining later does not quietly start sharing their
+// calendars again; they choose afresh. (Calendar reads also check
+// membership at query time.)
 func (r *GroupRepository) EndMembership(ctx context.Context, id uuid.UUID) error {
-	query := `UPDATE group_memberships SET left_at = now() WHERE id = $1 AND left_at IS NULL`
+	query := `
+		WITH ended AS (
+			UPDATE group_memberships SET left_at = now() WHERE id = $1 AND left_at IS NULL
+			RETURNING group_id, user_id
+		)
+		DELETE FROM external_calendar_shares s
+		USING ended, external_calendars c
+		WHERE s.calendar_id = c.id AND c.user_id = ended.user_id AND s.group_id = ended.group_id`
 	_, err := r.pool.Exec(ctx, query, id)
 	return err
 }

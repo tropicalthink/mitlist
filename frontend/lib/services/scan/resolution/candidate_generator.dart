@@ -10,6 +10,9 @@ import 'string_sim.dart';
 /// their raw scores. This replaces the old sequential first-hit logic: nothing
 /// is discarded here, so the scorer sees every contender (and source agreement
 /// becomes a signal).
+/// Shortest query whose unshared exact alias counts as strong evidence.
+const int kMinUniqueAliasLength = 4;
+
 class CandidateGenerator {
   final AppDatabase _db;
   final GroceryClassifierService? _classifier;
@@ -47,10 +50,17 @@ class CandidateGenerator {
     // 1. Exact alias hits — ALL of them (collisions are the point).
     final exact =
         await _db.findAliasesByText(groupId: groupId, aliasText: normalised);
+    final exactItems = {for (final a in exact) a.canonicalItemId};
+    // Three-letter tokens ("app", "prn") are what OCR fragments look like, and
+    // the seed's generated abbreviations of that length are arbitrary, so an
+    // unshared hit only counts from four characters.
+    final uniqueExact =
+        exactItems.length == 1 && normalised.length >= kMinUniqueAliasLength;
     for (final a in exact) {
       final c = at(a.canonicalItemId);
       c.aliasStringSim = 1.0;
       c.isExactAlias = true;
+      c.isUniqueExactAlias = uniqueExact;
       if (a.groupId == groupId && groupId != '__global__') {
         c.isHouseholdAlias = true;
         c.sources.add('household_alias');
@@ -138,6 +148,7 @@ class CandidateGenerator {
         embedderCosine: a.embedderCosine,
         sources: a.sources,
         isExactAlias: a.isExactAlias,
+        isUniqueExactAlias: a.isUniqueExactAlias,
         isHouseholdAlias: a.isHouseholdAlias,
       ));
     }
@@ -151,5 +162,6 @@ class _Accum {
   double embedderCosine = 0;
   final Set<String> sources = {};
   bool isExactAlias = false;
+  bool isUniqueExactAlias = false;
   bool isHouseholdAlias = false;
 }

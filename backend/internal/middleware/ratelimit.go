@@ -261,5 +261,10 @@ func authIdentifier(r *http.Request) string {
 }
 
 func shouldSkip(path, apiPrefix string) bool {
-	return path == "/healthz" || path == "/readyz" || strings.HasPrefix(path, "/internal/health")
+	return path == "/healthz" || path == "/readyz" || strings.HasPrefix(path, "/internal/health") ||
+		// Local-disk file storage: a household's photo grid loads one signed
+		// URL per image, which against S3 never touches this API and here
+		// would drain the shared per-IP budget. Each request is HMAC-verified
+		// before any disk access, so an unsigned flood costs one hash apiece.
+		strings.HasPrefix(path, apiPrefix+"/v1/files/")
 }

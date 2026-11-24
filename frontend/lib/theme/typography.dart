@@ -32,7 +32,8 @@ class MitlistTypography {
   static TextStyle? _heavier(TextStyle? style) {
     if (style == null) return style;
     return switch (style.fontWeight) {
-      FontWeight.w400 || FontWeight.w500 =>
+      FontWeight.w400 ||
+      FontWeight.w500 =>
         style.copyWith(fontWeight: FontWeight.w600),
       FontWeight.w600 => style.copyWith(fontWeight: FontWeight.w700),
       _ => style,

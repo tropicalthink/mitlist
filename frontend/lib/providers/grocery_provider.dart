@@ -14,6 +14,7 @@ import '../services/scan/scan_pipeline_service.dart';
 import '../services/scan/static_embedding_service.dart';
 export 'outbox_provider.dart' show connectivityServiceProvider;
 import 'list_provider.dart';
+import 'ocr_provider.dart';
 
 /// On-device static semantic embedder (pure Dart, no ML runtime).
 ///
@@ -39,9 +40,13 @@ final canonicalResolverServiceProvider =
     Provider<CanonicalResolverService>((ref) {
   return CanonicalResolverService(
     ref.watch(appDatabaseProvider),
-    classifier: ref.watch(groceryClassifierServiceProvider),
+    // No classifier voter: its labels stop short of the current catalog, it
+    // cannot run in tests, and resolution/gold_test measures the shipped
+    // catalog + embedder without it (0 confident-wrong). An unmeasured voter
+    // on top would make that gate describe a different system.
     embedder: ref.watch(staticEmbeddingServiceProvider),
     useEnsemble: true,
+    prior: ref.watch(householdPriorServiceProvider),
   );
 });
 
@@ -88,6 +93,7 @@ final scanPipelineProvider = FutureProvider<ScanPipelineService>((ref) async {
   return ScanPipelineService(
     db: db,
     resolver: ref.watch(canonicalResolverServiceProvider),
+    ocr: ref.watch(ocrServiceProvider),
   );
 });
 
@@ -103,10 +109,17 @@ final groceryRepositoryProvider =
   return GroceryRepository.create(db, ref);
 });
 
+/// Changes whenever [groupId]'s purchase history does.
+final purchaseRevisionProvider =
+    StreamProvider.autoDispose.family<String, String>((ref, groupId) {
+  return ref.watch(appDatabaseProvider).watchGroupPurchaseRevision(groupId);
+});
+
 /// Household-prior restock predictions for [groupId], computed on-device.
-final runningLowProvider =
-    FutureProvider.family<List<RestockSuggestion>, String>(
-        (ref, groupId) async {
+/// Recomputed after every purchase so a just-checked item leaves the strip.
+final runningLowProvider = FutureProvider.autoDispose
+    .family<List<RestockSuggestion>, String>((ref, groupId) async {
+  await ref.watch(purchaseRevisionProvider(groupId).future);
   return ref.read(restockServiceProvider).due(groupId: groupId, limit: 8);
 });
 

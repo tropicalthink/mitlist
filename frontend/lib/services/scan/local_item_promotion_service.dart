@@ -45,18 +45,33 @@ class LocalPromotionResult {
 /// check-offs off-device, and once a word crosses [kLocalPromotionThreshold],
 /// mint a group-scoped canonical + alias for it. Everything downstream then
 /// lights up unchanged, for that household only.
+/// Check-offs of the same word closer together than this count once: a row
+/// unchecked by mistake and checked again is not a second purchase.
+const Duration kPromotionRecheckWindow = Duration(hours: 12);
+
+/// Suggests a category and unit for a word about to be minted, from the
+/// closest catalog name. Null when nothing is close enough.
+typedef PromotionShelfHint = Future<({String category, String unit})?> Function(
+    String name);
+
 class LocalItemPromotionService {
   final AppDatabase _db;
   final CorrectionMemoryService _corrections;
   final Uuid _uuid;
+  final DateTime Function() _clock;
+  final PromotionShelfHint? _shelfHint;
 
   LocalItemPromotionService(
     AppDatabase db, {
     CorrectionMemoryService? corrections,
     Uuid? uuid,
+    DateTime Function()? clock,
+    PromotionShelfHint? shelfHint,
   })  : _db = db,
         _corrections = corrections ?? CorrectionMemoryService(db),
-        _uuid = uuid ?? const Uuid();
+        _uuid = uuid ?? const Uuid(),
+        _clock = clock ?? DateTime.now,
+        _shelfHint = shelfHint;
 
   /// Records one unresolved check-off of [rawName] for [groupId].
   ///
@@ -73,7 +88,7 @@ class LocalItemPromotionService {
     final normalized = normaliseText(rawName);
     if (normalized.isEmpty) return null;
 
-    final now = DateTime.now();
+    final now = _clock();
     final existing = await _db.getLocalItemSignal(
       groupId: groupId,
       normalizedName: normalized,
@@ -103,6 +118,13 @@ class LocalItemPromotionService {
       );
     }
 
+    if (existing != null &&
+        now.difference(existing.lastSeen) < kPromotionRecheckWindow) {
+      // Same shopping trip: checked, unchecked, checked again. Not evidence
+      // that the household buys this word regularly.
+      return null;
+    }
+
     final newCount = (existing?.count ?? 0) + 1;
     if (newCount < kLocalPromotionThreshold) {
       await _writeSignal(
@@ -117,8 +139,16 @@ class LocalItemPromotionService {
       return null;
     }
 
-    // Threshold reached — mint a household-local canonical + alias.
+    // Threshold reached — mint a household-local canonical + alias. It takes
+    // the shelf of the closest catalog name ("Fassi" gelato → frozen), so it
+    // still sorts into an aisle and an expense category.
     final canonicalId = _localCanonicalId(groupId, normalized);
+    ({String category, String unit})? shelf;
+    try {
+      shelf = await _shelfHint?.call(displayName);
+    } catch (_) {
+      shelf = null;
+    }
     await _db.upsertCanonicalItems([
       CanonicalItemsTableCompanion.insert(
         id: canonicalId,
@@ -129,6 +159,8 @@ class LocalItemPromotionService {
         nameEn: Value(displayName),
         nameFr: Value(displayName),
         nameEs: Value(displayName),
+        category: Value(shelf?.category ?? ''),
+        defaultUnit: Value(shelf?.unit ?? ''),
         // isGlobal false keeps it out of the shared brain and makes
         // clearAllUserData reclaim it on logout.
         isGlobal: const Value(false),

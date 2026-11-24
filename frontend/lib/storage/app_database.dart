@@ -43,6 +43,9 @@ class ListItemsTable extends Table {
   TextColumn get canonicalItemId =>
       text().named('canonical_item_id').nullable()();
   TextColumn get addedBy => text().named('added_by').nullable()();
+
+  /// The item's note, as the server or this device last set it.
+  TextColumn get note => text().withDefault(const Constant(''))();
   DateTimeColumn get createdAt => dateTime().named('created_at')();
   DateTimeColumn get updatedAt => dateTime().named('updated_at')();
 
@@ -460,7 +463,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 17;
+  int get schemaVersion => 18;
 
   /// The prebuilt read-only global grocery brain (canonical items, seed/OFF
   /// aliases + FTS, store aisles). Attached by [GroceryReferenceInstaller] once
@@ -836,6 +839,12 @@ FROM recipes_table;
           if (from < 17) {
             // Who put each item on the list, for the "added by" row line.
             await m.addColumn(listItemsTable, listItemsTable.addedBy);
+          }
+          if (from < 18) {
+            // Item notes are cached like every other field, so editing a line
+            // (and undoing that edit) starts from the note it really has.
+            // Existing rows read '' until the next refresh fills them in.
+            await m.addColumn(listItemsTable, listItemsTable.note);
           }
         },
         beforeOpen: (details) async {
@@ -1236,8 +1245,7 @@ FROM recipes_table;
     return (select(outboxOps)
           ..where((t) => t.attemptCount.isSmallerThanValue(maxAttempts))
           ..orderBy([
-            (t) =>
-                OrderingTerm(expression: t.createdAt, mode: OrderingMode.asc)
+            (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.asc)
           ]))
         .watch();
   }
@@ -1393,6 +1401,9 @@ FROM recipes_table;
         // The optimistic row already knows who added it; keep that when the
         // server response predates the column or omits it.
         addedBy: Value(server.addedBy ?? local?.addedBy),
+        // A response that leaves the note out (`omitempty`, an older
+        // server) keeps the one the optimistic row carried.
+        note: Value(server.note.isNotEmpty ? server.note : (local?.note ?? '')),
         createdAt: Value(server.createdAt),
         updatedAt: Value(server.updatedAt),
       )
@@ -1518,6 +1529,12 @@ FROM recipes_table;
           ..where(
               (t) => t.groupId.equals(groupId) & t.rangeKey.equals(rangeKey)))
         .getSingleOrNull();
+  }
+
+  /// Every cached calendar window of [groupId].
+  Future<List<CalendarCache>> getCalendarRanges(String groupId) {
+    return (select(calendarCaches)..where((t) => t.groupId.equals(groupId)))
+        .get();
   }
 
   Future<void> upsertCalendarRange({
@@ -2279,7 +2296,10 @@ INSERT INTO item_aliases_table
               t.storeId.equals(storeId) &
               t.canonicalItemId.equals(canonicalItemId) &
               t.deletedAt.isNull())
-          ..orderBy([(t) => OrderingTerm.desc(t.groupId)])
+          ..orderBy([
+            (t) => OrderingTerm.desc(t.groupId),
+            (t) => OrderingTerm.desc(t.updatedAt),
+          ])
           ..limit(1))
         .getSingleOrNull();
     if (main != null) return main;
@@ -2327,6 +2347,32 @@ INSERT INTO item_aliases_table
     });
   }
 
+  /// Writes household aisle rows keyed by (group, store, item) rather than by
+  /// row id: a local drag and the server's copy of it carry different ids, and
+  /// keeping both left [getStoreAisle] choosing between stale duplicates.
+  Future<void> upsertHouseholdStoreAisles(
+      Iterable<StoreAislesTableCompanion> rows) async {
+    final list = rows.toList(growable: false);
+    if (list.isEmpty) return;
+    await transaction(() async {
+      for (final row in list) {
+        final storeId = row.storeId.present ? row.storeId.value : null;
+        await (delete(storeAislesTable)
+              ..where((t) =>
+                  t.groupId.equals(row.groupId.value) &
+                  t.canonicalItemId.equals(row.canonicalItemId.value) &
+                  (storeId == null
+                      ? t.storeId.isNull()
+                      : t.storeId.equals(storeId)) &
+                  t.id.equals(row.id.value).not()))
+            .go();
+      }
+      await batch((b) {
+        b.insertAllOnConflictUpdate(storeAislesTable, list);
+      });
+    });
+  }
+
   // ---------------------------------------------------------------------------
   // Grocery graph — purchase history
   // ---------------------------------------------------------------------------
@@ -2342,6 +2388,35 @@ INSERT INTO item_aliases_table
       b.insertAllOnConflictUpdate(
           purchaseHistoryTable, rows.toList(growable: false));
     });
+  }
+
+  /// Whether [listItemId] already produced a purchase at or after [since]: a
+  /// check, uncheck, re-check of one row is one purchase, not two.
+  Future<bool> hasPurchaseForListItemSince({
+    required String listItemId,
+    required DateTime since,
+  }) async {
+    final row = await (select(purchaseHistoryTable)
+          ..where((t) =>
+              t.listItemId.equals(listItemId) &
+              t.purchasedAt.isBiggerOrEqualValue(since))
+          ..limit(1))
+        .getSingleOrNull();
+    return row != null;
+  }
+
+  /// The household's purchases at or after [since], across all lists — the
+  /// items bought on the same trip.
+  Future<List<PurchaseHistoryTableData>> getGroupPurchasesSince({
+    required String groupId,
+    required DateTime since,
+  }) {
+    return (select(purchaseHistoryTable)
+          ..where((t) =>
+              t.groupId.equals(groupId) &
+              t.canonicalItemId.isNotNull() &
+              t.purchasedAt.isBiggerOrEqualValue(since)))
+        .get();
   }
 
   Future<List<PurchaseHistoryTableData>> getRecentPurchases({
@@ -2430,6 +2505,95 @@ INSERT INTO item_aliases_table
         return dateOrder != 0 ? dateOrder : b.id.compareTo(a.id);
       });
     return merged;
+  }
+
+  /// A value that changes whenever the household's purchase history does
+  /// (new check-off, synced purchase, cleared data): count plus newest time.
+  Future<String> getGroupPurchaseRevision(String groupId) =>
+      _purchaseRevisionQuery(groupId).getSingle();
+
+  Stream<String> watchGroupPurchaseRevision(String groupId) =>
+      _purchaseRevisionQuery(groupId).watchSingle();
+
+  Selectable<String> _purchaseRevisionQuery(String groupId) => customSelect(
+        '''SELECT COUNT(*) AS n, COALESCE(MAX(purchased_at), 0) AS latest
+             FROM purchase_history_table
+            WHERE group_id = ?''',
+        variables: [Variable.withString(groupId)],
+        readsFrom: {purchaseHistoryTable},
+      ).map((row) => '${row.read<int>('n')}:${row.read<int>('latest')}');
+
+  /// Every spelling this household has used for groceries, with how often:
+  /// names written on its lists, its own aliases and corrections, and the
+  /// names of items it has bought. The scanner reads handwriting against this
+  /// vocabulary first.
+  Future<Map<String, int>> getHouseholdVocabulary(String groupId) async {
+    final vocabulary = <String, int>{};
+    void add(String text, int count) {
+      final trimmed = text.trim();
+      if (trimmed.isEmpty || count <= 0) return;
+      vocabulary[trimmed] = (vocabulary[trimmed] ?? 0) + count;
+    }
+
+    final written = await customSelect(
+      '''SELECT MIN(li.name) AS name, COUNT(*) AS uses
+           FROM list_items_table li
+           JOIN lists_table l ON l.id = li.list_id
+          WHERE l.group_id = ?
+          GROUP BY lower(trim(li.name))''',
+      variables: [Variable.withString(groupId)],
+      readsFrom: {listItemsTable, listsTable},
+    ).get();
+    for (final row in written) {
+      add(row.read<String>('name'), row.read<int>('uses'));
+    }
+
+    final aliases = await (select(itemAliasesTable)
+          ..where((t) => t.groupId.equals(groupId) & t.deletedAt.isNull()))
+        .get();
+    for (final alias in aliases) {
+      add(alias.aliasText, alias.weight);
+    }
+
+    final bought = await getGroupPurchaseCountsForPrior(groupId: groupId);
+    if (bought.isNotEmpty) {
+      final items = await getCanonicalItemsByIds(bought.keys);
+      for (final item in items) {
+        final count = bought[item.id] ?? 0;
+        add(item.nameDe, count);
+        if (item.nameEn != item.nameDe) add(item.nameEn, count);
+      }
+    }
+    return vocabulary;
+  }
+
+  /// The grocery items this household already keeps track of: bought
+  /// before, linked from one of its lists, or named by its own aliases. A
+  /// receipt only confirms purchases of these; it never introduces new ones.
+  Future<Set<String>> getHouseholdCanonicalIds(String groupId) async {
+    final rows = await customSelect(
+      '''SELECT canonical_item_id AS id FROM purchase_history_table
+          WHERE group_id = ? AND canonical_item_id IS NOT NULL
+         UNION
+         SELECT li.canonical_item_id FROM list_items_table li
+           JOIN lists_table l ON l.id = li.list_id
+          WHERE l.group_id = ? AND li.canonical_item_id IS NOT NULL
+         UNION
+         SELECT canonical_item_id FROM item_aliases_table
+          WHERE group_id = ? AND deleted_at IS NULL''',
+      variables: [
+        Variable.withString(groupId),
+        Variable.withString(groupId),
+        Variable.withString(groupId),
+      ],
+      readsFrom: {
+        purchaseHistoryTable,
+        listItemsTable,
+        listsTable,
+        itemAliasesTable
+      },
+    ).get();
+    return {for (final row in rows) row.read<String>('id')};
   }
 
   Future<Map<String, int>> getGroupPurchaseCountsForPrior({

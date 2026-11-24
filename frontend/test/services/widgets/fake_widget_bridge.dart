@@ -41,8 +41,12 @@ class FakeWidgetBridge extends WidgetBridge {
   @override
   Future<void> writeSnapshot(String json) async => snapshots.add(json);
 
+  /// The reason of every [clearAll] call, in order (null: sign-out).
+  final List<String?> clearReasons = [];
+
   @override
-  Future<void> clearAll() async {
+  Future<void> clearAll({String? reason}) async {
+    clearReasons.add(reason);
     cleared = true;
     credential = null;
     queue.clear();
@@ -50,4 +54,24 @@ class FakeWidgetBridge extends WidgetBridge {
 
   @override
   Future<void> requestRefresh() async => refreshRequests++;
+
+  /// What `installedWidgets` reports; null for "cannot tell".
+  List<String>? installed = const [];
+  bool pinSupported = false;
+
+  /// What `pinWidget` answers.
+  bool pinShown = true;
+  final List<String> pinRequests = [];
+
+  @override
+  Future<List<String>?> installedWidgets() async => installed;
+
+  @override
+  Future<bool> isPinWidgetSupported() async => pinSupported;
+
+  @override
+  Future<bool> pinWidget(String kind) async {
+    pinRequests.add(kind);
+    return pinShown;
+  }
 }

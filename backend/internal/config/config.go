@@ -98,7 +98,11 @@ type Config struct {
 	TurnstileSecretKey string `env:"TURNSTILE_SECRET_KEY"`
 
 	// Email. Setting AWS_SES_REGION opts into Amazon SES as the primary
-	// provider; leave it empty to fall back to the SMTP providers below.
+	// provider. Otherwise mail goes out over SMTP: the generic SMTP_* server
+	// below when SMTP_HOST is set (any provider or your own relay), then the
+	// SendGrid and Brevo relays the hosted service uses. With none of them
+	// configured the server runs without email, and password sign-up skips
+	// address verification (see EmailConfigured).
 	//
 	// SES gets its own credential pair rather than sharing the AWS_* keys
 	// under "File Storage": those point at whatever S3-compatible provider is
@@ -110,7 +114,18 @@ type Config struct {
 	SESAccessKeyID      string `env:"AWS_SES_ACCESS_KEY_ID"`
 	SESSecretAccessKey  string `env:"AWS_SES_SECRET_ACCESS_KEY"`
 
-	// Email SMTP
+	// Generic SMTP server, tried before SendGrid and Brevo. SMTP_TLS picks
+	// how the connection is protected: "starttls" (the default; submission
+	// on 587 upgraded with STARTTLS, which the server must offer), "tls"
+	// (implicit TLS from the first byte, usually port 465), or "none" (a
+	// plaintext trusted relay; credentials are then only sent to localhost).
+	SMTPHost     string `env:"SMTP_HOST"`
+	SMTPPort     int    `env:"SMTP_PORT" default:"587"`
+	SMTPUsername string `env:"SMTP_USERNAME"`
+	SMTPPassword string `env:"SMTP_PASSWORD"`
+	SMTPTLS      string `env:"SMTP_TLS" default:"starttls"`
+
+	// SendGrid and Brevo SMTP relays (the hosted service's providers).
 	SendGridSMTPHost string `env:"SENDGRID_SMTP_HOST" default:"smtp.sendgrid.net"`
 	SendGridSMTPPort int    `env:"SENDGRID_SMTP_PORT" default:"587"`
 	SendGridSMTPUser string `env:"SENDGRID_SMTP_USER"`
@@ -147,6 +162,11 @@ type Config struct {
 	AWSRegion          string `env:"AWS_REGION" default:"us-east-1"`
 	S3BucketName       string `env:"S3_BUCKET_NAME"`
 	S3EndpointURL      string `env:"S3_ENDPOINT_URL"`
+	// StorageLocalPath stores files on local disk when S3_BUCKET_NAME is
+	// empty, for a self-host without object storage. The API then serves
+	// uploads and downloads itself through signed URLs on PUBLIC_API_URL,
+	// which must be set. The production image defaults it to /app/data/uploads.
+	StorageLocalPath string `env:"STORAGE_LOCAL_PATH"`
 
 	// Network
 	TrustedProxies string `env:"TRUSTED_PROXIES" default:""`
@@ -288,14 +308,14 @@ func (c *Config) LogMasked() {
 // operator can see at a glance what works on a fresh deployment. It never fails;
 // unconfigured integrations are expected and merely reported.
 func (c *Config) LogIntegrationStatus() {
-	// Gate on credential fields (which have no struct default) rather than the
-	// SMTP host fields, which default to non-empty values and would otherwise
-	// mask a fresh self-host that has not configured any email credentials.
-	emailOn := c.SESRegion != "" || c.SendGridSMTPUser != "" || c.BrevoSMTPUser != ""
+	emailOn := c.EmailConfigured()
 	webPushOn := c.VapidPublicKey != "" && c.VapidPrivateKey != ""
 	mobilePushOn := c.FirebaseProjectID != "" && c.FirebaseServiceAccount != ""
 	appCheckOn := c.FirebaseAppCheckRequired
-	storageOn := c.S3BucketName != ""
+	// Local disk storage issues URLs on the API's own origin, so it only
+	// works once PUBLIC_API_URL is known.
+	localStorageOn := c.StorageLocalPath != "" && c.PublicAPIURL != ""
+	storageOn := c.S3BucketName != "" || localStorageOn
 	oauthOn := c.GoogleClientID != "" || c.AppleClientID != ""
 	passwordOn := c.PasswordAuthEnabled
 	guestOn := c.GuestAuthEnabled
@@ -321,13 +341,17 @@ func (c *Config) LogIntegrationStatus() {
 
 	var disabled []string
 	if !emailOn {
-		disabled = append(disabled, "email (set AWS_SES_REGION, or SENDGRID_SMTP_USER/PASS, or BREVO_SMTP_USER/PASS)")
+		disabled = append(disabled, "email (set SMTP_HOST and SMTP_USERNAME/SMTP_PASSWORD for your mail server, or AWS_SES_REGION, or SENDGRID_SMTP_USER/PASS, or BREVO_SMTP_USER/PASS)")
 	}
 	if !webPushOn {
 		disabled = append(disabled, "web_push (set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY)")
 	}
 	if !storageOn {
-		disabled = append(disabled, "file_storage (set S3_BUCKET_NAME and AWS_* credentials)")
+		if c.StorageLocalPath != "" {
+			disabled = append(disabled, "file_storage (STORAGE_LOCAL_PATH is set but PUBLIC_API_URL is empty; set PUBLIC_API_URL to the API's public origin)")
+		} else {
+			disabled = append(disabled, "file_storage (set S3_BUCKET_NAME and AWS_* credentials, or on a self-host STORAGE_LOCAL_PATH plus PUBLIC_API_URL to keep files on local disk)")
+		}
 	}
 	if !passwordOn {
 		disabled = append(disabled, "password_auth (set PASSWORD_AUTH_ENABLED=true for email + password sign-in)")
@@ -344,6 +368,9 @@ func (c *Config) LogIntegrationStatus() {
 	if len(disabled) > 0 {
 		log.Warn().Strs("disabled_integrations", disabled).
 			Msg("some optional integrations are disabled; features depending on them will not work")
+	}
+	if passwordOn && !emailOn {
+		log.Warn().Msg("email verification and password reset are disabled because no email provider is configured: new password accounts are signed in straight away without proving their address, and a forgotten password cannot be reset from the app. Set SMTP_HOST (or another email provider) to turn them on")
 	}
 	if !oauthOn && !passwordOn {
 		if guestOn {
@@ -364,6 +391,7 @@ func (c Config) MaskSecrets() Config {
 	masked.ApplePrivateKey = mask(masked.ApplePrivateKey)
 	masked.VapidPrivateKey = mask(masked.VapidPrivateKey)
 	masked.FirebaseServiceAccount = mask(masked.FirebaseServiceAccount)
+	masked.SMTPPassword = mask(masked.SMTPPassword)
 	masked.SendGridSMTPPass = mask(masked.SendGridSMTPPass)
 	masked.BrevoSMTPPass = mask(masked.BrevoSMTPPass)
 	masked.SentryDSN = mask(masked.SentryDSN)
@@ -373,6 +401,17 @@ func (c Config) MaskSecrets() Config {
 	masked.PolarWebhookSecret = mask(masked.PolarWebhookSecret)
 	masked.GooglePlayServiceAccountJSON = mask(masked.GooglePlayServiceAccountJSON)
 	return masked
+}
+
+// EmailConfigured reports whether any email provider is set up, which is
+// what decides whether password sign-up verifies the address and whether
+// password reset is offered. It gates on settings without a struct default:
+// SMTP_HOST, the SES region, or the SendGrid/Brevo credentials. Their hosts
+// default to non-empty values, so gating on those would report email on for
+// a fresh self-host that never configured any.
+func (c *Config) EmailConfigured() bool {
+	return strings.TrimSpace(c.SMTPHost) != "" || c.SESRegion != "" ||
+		c.SendGridSMTPUser != "" || c.BrevoSMTPUser != ""
 }
 
 // AppleIAPEnabled reports whether Apple In-App Purchase verification is
@@ -439,6 +478,14 @@ func (c *Config) Validate() error {
 		if _, err := polar.NewWebhookVerifier(c.PolarWebhookSecret); err != nil {
 			return fmt.Errorf("POLAR_WEBHOOK_SECRET is not usable (%w) — paste the whsec_ value from the Polar dashboard verbatim", err)
 		}
+	}
+	switch strings.ToLower(strings.TrimSpace(c.SMTPTLS)) {
+	case "", "starttls", "tls", "none":
+	default:
+		return fmt.Errorf("invalid SMTP_TLS %q: must be starttls, tls, or none", c.SMTPTLS)
+	}
+	if strings.TrimSpace(c.SMTPHost) != "" && c.SMTPPort <= 0 {
+		return fmt.Errorf("SMTP_PORT must be a positive port number when SMTP_HOST is set")
 	}
 	if (c.GooglePubSubAudience == "") != (c.GooglePubSubServiceAccount == "") {
 		return fmt.Errorf("GOOGLE_PUBSUB_AUDIENCE and GOOGLE_PUBSUB_SERVICE_ACCOUNT must be set together")

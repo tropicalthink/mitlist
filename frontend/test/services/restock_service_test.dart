@@ -161,7 +161,7 @@ void main() {
     test('one recent purchase uses the household fallback cadence', () async {
       await seedPurchases(
         canonicalItemId,
-        currentNow.subtract(const Duration(days: 2)),
+        currentNow.subtract(const Duration(days: 5)),
         count: 1,
         gapDays: 7,
       );
@@ -170,7 +170,7 @@ void main() {
         (result) => result.canonicalItemId == canonicalItemId,
       );
       expect(milk.intervalDays, 14);
-      expect(milk.daysSince, 2);
+      expect(milk.daysSince, 5);
     });
 
     test('abandoned one-off outside the familiarity window is excluded',
@@ -276,7 +276,7 @@ void main() {
       for (final itemId in ['c', 'a', 'b']) {
         await seedPurchases(
           itemId,
-          currentNow.subtract(const Duration(days: 2)),
+          currentNow.subtract(const Duration(days: 5)),
           count: 1,
           gapDays: 7,
         );
@@ -284,6 +284,57 @@ void main() {
 
       final results = await service.due(groupId: groupId, limit: 2);
       expect(results.map((result) => result.canonicalItemId), ['a', 'b']);
+    });
+
+    test('an overdue staple is labelled due', () async {
+      final lastPurchase = currentNow.subtract(const Duration(days: 9));
+      await seedPurchases(canonicalItemId, lastPurchase, count: 4, gapDays: 7);
+
+      final milk = (await service.due(groupId: groupId)).singleWhere(
+        (result) => result.canonicalItemId == canonicalItemId,
+      );
+      expect(milk.reason, RestockReason.due);
+    });
+
+    test('a weekly staple bought yesterday is not suggested', () async {
+      final lastPurchase = currentNow.subtract(const Duration(days: 1));
+      await seedPurchases(canonicalItemId, lastPurchase, count: 4, gapDays: 7);
+
+      final results = await service.due(groupId: groupId);
+      expect(results.map((r) => r.canonicalItemId),
+          isNot(contains(canonicalItemId)));
+    });
+
+    test('an item already on the list under another name is skipped', () async {
+      final lastPurchase = currentNow.subtract(const Duration(days: 9));
+      await seedPurchases(canonicalItemId, lastPurchase, count: 4, gapDays: 7);
+
+      final results = await service.due(
+        groupId: groupId,
+        currentItemNames: {'milch'},
+        currentCanonicalIds: {canonicalItemId},
+      );
+      expect(results.map((r) => r.canonicalItemId),
+          isNot(contains(canonicalItemId)));
+    });
+
+    test('a new purchase is seen without waiting for the cache to expire',
+        () async {
+      final lastPurchase = currentNow.subtract(const Duration(days: 9));
+      await seedPurchases(canonicalItemId, lastPurchase, count: 4, gapDays: 7);
+      expect(
+          (await service.due(groupId: groupId)).map((r) => r.canonicalItemId),
+          contains(canonicalItemId));
+
+      await db.insertPurchaseHistory(PurchaseHistoryTableCompanion.insert(
+        id: 'milk_today',
+        groupId: groupId,
+        canonicalItemId: const drift.Value(canonicalItemId),
+        purchasedAt: currentNow,
+      ));
+      expect(
+          (await service.due(groupId: groupId)).map((r) => r.canonicalItemId),
+          isNot(contains(canonicalItemId)));
     });
   });
 }

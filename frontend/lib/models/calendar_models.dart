@@ -4,7 +4,11 @@ enum CalendarEventType {
   recurringExpense,
   pinwallReminder,
   listReminder,
-  expense
+  expense,
+
+  /// A housemate's own calendar event, shared with the household (server
+  /// `external_event`, only sent with `include=external`).
+  externalEvent
 }
 
 class CalendarEvent {
@@ -19,6 +23,7 @@ class CalendarEvent {
   final CalendarExpense? expense;
   final CalendarPinwallReminder? pinwallReminder;
   final CalendarListReminder? listReminder;
+  final CalendarExternalEvent? external;
 
   const CalendarEvent({
     required this.id,
@@ -32,6 +37,7 @@ class CalendarEvent {
     this.expense,
     this.pinwallReminder,
     this.listReminder,
+    this.external,
   });
 
   factory CalendarEvent.fromJson(Map<String, dynamic> json) {
@@ -43,10 +49,20 @@ class CalendarEvent {
       (e) => e.name.toLowerCase() == wanted,
       orElse: () => CalendarEventType.mealPlan,
     );
+    final external = json['external'] is Map
+        ? CalendarExternalEvent.fromJson(
+            (json['external'] as Map).cast<String, dynamic>())
+        : null;
+    // A busy-only block never carries a title, whatever the payload says.
+    final rawTitle = json['title'] as String? ?? '';
+    final title = type == CalendarEventType.externalEvent &&
+            (external == null || external.busyOnly)
+        ? ''
+        : rawTitle;
     return CalendarEvent(
       id: json['id'] as String,
       type: type,
-      title: json['title'] as String? ?? '',
+      title: title,
       date: DateTime.parse(json['date'] as String),
       groupId: json['group_id'] as String,
       mealPlan: json['meal_plan'] != null
@@ -73,8 +89,93 @@ class CalendarEvent {
           ? CalendarListReminder.fromJson(
               (json['list_reminder'] as Map).cast<String, dynamic>())
           : null,
+      external: external,
     );
   }
+}
+
+/// What a housemate's shared calendar says about one event. All-day events
+/// carry UTC midnights of their local dates, [endsAt] exclusive; use
+/// [startDay] and [endDayExclusive] rather than converting them.
+class CalendarExternalEvent {
+  final String userId;
+  final DateTime startsAt;
+  final DateTime endsAt;
+  final bool allDay;
+
+  /// True when the household may see only that the person is busy.
+  final bool busyOnly;
+
+  /// Marked "free" (transparent) in the source calendar.
+  final bool free;
+
+  const CalendarExternalEvent({
+    required this.userId,
+    required this.startsAt,
+    required this.endsAt,
+    required this.allDay,
+    required this.busyOnly,
+    required this.free,
+  });
+
+  factory CalendarExternalEvent.fromJson(Map<String, dynamic> json) {
+    final starts = DateTime.parse(json['starts_at'] as String);
+    final ends = DateTime.tryParse(json['ends_at'] as String? ?? '') ?? starts;
+    return CalendarExternalEvent(
+      userId: json['user_id'] as String? ?? '',
+      startsAt: starts,
+      endsAt: ends.isBefore(starts) ? starts : ends,
+      allDay: json['all_day'] as bool? ?? false,
+      // Missing means the server did not say titles are allowed: busy.
+      busyOnly: json['busy_only'] as bool? ?? true,
+      free: json['free'] as bool? ?? false,
+    );
+  }
+
+  /// First local calendar day the event covers.
+  DateTime get startDay {
+    if (allDay) {
+      final u = startsAt.toUtc();
+      return DateTime(u.year, u.month, u.day);
+    }
+    final l = startsAt.toLocal();
+    return DateTime(l.year, l.month, l.day);
+  }
+
+  /// The local day after the last day the event covers.
+  DateTime get endDayExclusive {
+    if (allDay) {
+      final u = endsAt.toUtc();
+      final end = DateTime(u.year, u.month, u.day);
+      return end.isAfter(startDay) ? end : _nextDay(startDay);
+    }
+    final l = endsAt.toLocal();
+    final endDay = DateTime(l.year, l.month, l.day);
+    // A timed event ending exactly at midnight does not cover that day.
+    final endsAtMidnight = l.hour == 0 &&
+        l.minute == 0 &&
+        l.second == 0 &&
+        l.millisecond == 0 &&
+        l.microsecond == 0;
+    final last =
+        endsAtMidnight && endDay.isAfter(startDay) ? endDay : _nextDay(endDay);
+    return last.isAfter(startDay) ? last : _nextDay(startDay);
+  }
+
+  /// Every local day the event covers, in order (capped at a year so a bad
+  /// payload cannot spin).
+  List<DateTime> get days {
+    final out = <DateTime>[];
+    var d = startDay;
+    final end = endDayExclusive;
+    while (d.isBefore(end) && out.length < 366) {
+      out.add(d);
+      d = _nextDay(d);
+    }
+    return out;
+  }
+
+  static DateTime _nextDay(DateTime d) => DateTime(d.year, d.month, d.day + 1);
 }
 
 class CalendarMealPlan {

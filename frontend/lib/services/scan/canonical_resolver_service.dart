@@ -1,5 +1,6 @@
 import '../../storage/app_database.dart';
 import '../canonical_display.dart';
+import '../household_prior_service.dart';
 import 'grocery_classifier_service.dart';
 import 'resolution/ensemble_resolver.dart';
 import 'resolution/resolution_features.dart' show ResolutionContext;
@@ -57,6 +58,7 @@ class CanonicalResolverService {
   final GroceryClassifierService? _classifier;
   final StaticEmbeddingService? _embedder;
   final bool _useEnsemble;
+  final HouseholdPriorService? _prior;
   EnsembleResolver? _ensemble;
 
   CanonicalResolverService(
@@ -64,9 +66,18 @@ class CanonicalResolverService {
     GroceryClassifierService? classifier,
     StaticEmbeddingService? embedder,
     bool useEnsemble = false,
+    HouseholdPriorService? prior,
   })  : _classifier = classifier,
         _embedder = embedder,
-        _useEnsemble = useEnsemble;
+        _useEnsemble = useEnsemble,
+        _prior = prior;
+
+  EnsembleResolver get _ensembleResolver => _ensemble ??= EnsembleResolver(
+        _db,
+        classifier: _classifier,
+        embedder: _embedder,
+        prior: _prior,
+      );
 
   /// Builds the household resolution context once (purchase history +
   /// co-occurrence) so callers can share it across multiple `resolve` calls in
@@ -79,9 +90,7 @@ class CanonicalResolverService {
     List<String> listContext = const [],
   }) async {
     if (!_useEnsemble) return null;
-    _ensemble ??=
-        EnsembleResolver(_db, classifier: _classifier, embedder: _embedder);
-    return _ensemble!.buildContext(groupId, listContext);
+    return _ensembleResolver.buildContext(groupId, listContext);
   }
 
   Future<ResolveResult> resolve(
@@ -91,12 +100,7 @@ class CanonicalResolverService {
     ResolutionContext? context,
   }) async {
     if (_useEnsemble) {
-      _ensemble ??= EnsembleResolver(
-        _db,
-        classifier: _classifier,
-        embedder: _embedder,
-      );
-      return _ensemble!.resolve(
+      return _ensembleResolver.resolve(
         itemName,
         groupId,
         listContext: listContext,

@@ -59,12 +59,97 @@ class CalendarRepository {
         rangeKey: key,
         eventsJson: jsonEncode(raw),
       );
+      // Other cached windows overlapping this one must not keep showing a
+      // housemate's event the server no longer returns (unshared, hidden,
+      // deleted). Best effort: the fresh window is already saved.
+      try {
+        await _dropStaleExternal(groupId, key, from, to, raw);
+      } catch (_) {}
       return await _withPendingMeals(
           CalendarService.parseCalendarEvents(raw), groupId, from, to);
     } catch (_) {
       final cached = await getCached(groupId, from, to);
       if (cached != null) return cached;
       rethrow;
+    }
+  }
+
+  /// Forgets every housemate's shared-calendar event in [groupId]'s cached
+  /// windows (sent `calendar:external_changed`): what they share has
+  /// changed, so nothing cached about it may be shown any more. The next
+  /// fetch of each window brings back what is still shared.
+  Future<void> forgetExternal(String groupId) async {
+    for (final row in await _db.getCalendarRanges(groupId)) {
+      final decoded = _decode(row.eventsJson);
+      if (decoded == null) continue;
+      final kept = decoded.where((e) => !_isExternal(e)).toList();
+      if (kept.length == decoded.length) continue;
+      await _db.upsertCalendarRange(
+        groupId: groupId,
+        rangeKey: row.rangeKey,
+        eventsJson: jsonEncode(kept),
+      );
+    }
+  }
+
+  Future<void> _dropStaleExternal(
+    String groupId,
+    String freshKey,
+    DateTime from,
+    DateTime to,
+    List<dynamic> fresh,
+  ) async {
+    final freshIds = <String>{
+      for (final e in fresh)
+        if (_isExternal(e) && (e as Map)['id'] is String) e['id'] as String,
+    };
+    // The server returns events overlapping [from, to + 1 day).
+    final windowStart = DateTime(from.year, from.month, from.day);
+    final windowEnd = DateTime(to.year, to.month, to.day + 1);
+    for (final row in await _db.getCalendarRanges(groupId)) {
+      if (row.rangeKey == freshKey) continue;
+      final decoded = _decode(row.eventsJson);
+      if (decoded == null) continue;
+      final kept = decoded.where((e) {
+        if (!_isExternal(e)) return true;
+        final id = (e as Map)['id'];
+        if (id is String && freshIds.contains(id)) return true;
+        // Outside the fresh window the server said nothing about it.
+        return !_overlaps(e, windowStart, windowEnd);
+      }).toList();
+      if (kept.length == decoded.length) continue;
+      await _db.upsertCalendarRange(
+        groupId: groupId,
+        rangeKey: row.rangeKey,
+        eventsJson: jsonEncode(kept),
+      );
+    }
+  }
+
+  static List<dynamic>? _decode(String json) {
+    try {
+      final decoded = jsonDecode(json);
+      return decoded is List ? decoded : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static bool _isExternal(Object? e) =>
+      e is Map && e['type'] == 'external_event';
+
+  /// Whether a raw external event overlaps [start, end) (local days). An
+  /// event whose times cannot be read counts as overlapping, so it goes.
+  static bool _overlaps(Object? e, DateTime start, DateTime end) {
+    try {
+      final parsed = CalendarEvent.fromJson((e as Map).cast<String, dynamic>());
+      final x = parsed.external;
+      if (x == null) return true;
+      final s = x.startDay;
+      final en = x.endDayExclusive;
+      return s.isBefore(end) && en.isAfter(start);
+    } catch (_) {
+      return true;
     }
   }
 

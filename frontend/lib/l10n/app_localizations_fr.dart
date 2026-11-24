@@ -1367,6 +1367,79 @@ class AppLocalizationsFr extends AppLocalizations {
       'Commence avec un titre et ajoute les ingrédients plus tard';
 
   @override
+  String get recipeCreationFromPhoto => 'Lire une photo';
+
+  @override
+  String get recipeCreationFromPhotoDesc =>
+      'Photographie une fiche recette ou une page de livre. Elle est lue sur ton téléphone';
+
+  @override
+  String get recipePhotoTitle => 'Photographier la recette';
+
+  @override
+  String get recipePhotoReading => 'Lecture de la recette…';
+
+  @override
+  String get recipePhotoNothingFound =>
+      'Aucune recette trouvée sur la photo. Essaie plus près et plus droit.';
+
+  @override
+  String recipePhotoRead(int ingredients, int steps) {
+    String _temp0 = intl.Intl.pluralLogic(
+      ingredients,
+      locale: localeName,
+      other: '$ingredients ingrédients',
+      one: '1 ingrédient',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      steps,
+      locale: localeName,
+      other: '$steps étapes',
+      one: '1 étape',
+    );
+    return '$_temp0 et $_temp1 lus. Vérifie-les avant d’enregistrer.';
+  }
+
+  @override
+  String get receiptScanTitle => 'Photographier le ticket';
+
+  @override
+  String get receiptScanReading => 'Lecture du ticket…';
+
+  @override
+  String get receiptScanNoTotal =>
+      'Aucun total trouvé sur le ticket. Saisis le montant toi-même.';
+
+  @override
+  String get receiptScanCheckTotal =>
+      'Les lignes du ticket ne correspondent pas à son total. Vérifie le montant et les notes.';
+
+  @override
+  String get receiptRememberPurchases => 'Retenir les achats';
+
+  @override
+  String receiptRememberPurchasesDesc(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count articles habituels',
+      one: '1 article habituel',
+    );
+    return 'Compter $_temp0 comme achetés, pour le réassort et les suggestions';
+  }
+
+  @override
+  String receiptTickListItems(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count articles',
+      one: '1 article',
+    );
+    return 'Cocher $_temp0 sur vos listes';
+  }
+
+  @override
   String get recipeCreationScanning => 'Scan en cours…';
 
   @override
@@ -2159,19 +2232,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get listDetailCheckedOff => 'Cochés';
 
   @override
-  String get listDetailNothingHere => 'Rien ici pour l\'instant';
-
-  @override
-  String get listDetailNothingHereDesc =>
-      'Photographie une liste manuscrite, une note sur le frigo ou une capture d\'écran. On extrait les éléments.';
-
-  @override
-  String get listDetailScanThisList => 'Scanner cette liste';
-
-  @override
-  String get listDetailTypeItem => 'Saisir un élément';
-
-  @override
   String get listDetailNoMatch => 'Aucun élément ne correspond à ton filtre';
 
   @override
@@ -2188,14 +2248,6 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get listDetailCouldNotClear =>
       'Impossible d\'effacer les éléments. Réessaie.';
-
-  @override
-  String listDetailItemDeleted(String name) {
-    return '$name supprimé';
-  }
-
-  @override
-  String get listDetailCouldNotRestore => 'Impossible de restaurer l\'élément.';
 
   @override
   String get listDetailCouldNotReorder =>
@@ -2217,9 +2269,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Impossible de lancer le scan. Réessaie.';
 
   @override
-  String get listDetailSetPrice => 'Définir le prix';
-
-  @override
   String get listDetailPriceInput => 'Prix';
 
   @override
@@ -2239,7 +2288,7 @@ class AppLocalizationsFr extends AppLocalizations {
       other: 'les $count éléments',
       one: 'l\'élément',
     );
-    return 'Cela supprimera $_temp0. Cette action est irréversible.';
+    return 'Cela supprimera $_temp0. Tu peux l\'annuler avec la flèche d\'annulation tant que tu ne quittes pas la liste.';
   }
 
   @override
@@ -2950,7 +2999,7 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get shoppingTripMarkDone => 'Marquer comme acheté';
+  String get shoppingTripFinish => 'Terminer les courses';
 
   @override
   String shoppingTripBasketBar(num collected, String price) {
@@ -3813,9 +3862,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get offlineBannerRetry => 'Réessayer';
 
   @override
-  String get composerNewItem => 'Nouvel article';
-
-  @override
   String get composerScanList => 'Scanner la liste';
 
   @override
@@ -3825,31 +3871,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get listItemViewPhoto => 'Voir la photo';
 
   @override
-  String get listItemReplacePhoto => 'Remplacer la photo';
-
-  @override
   String get listItemAddPhoto => 'Ajouter une photo';
 
   @override
   String get listItemRemovePhoto => 'Supprimer la photo';
 
   @override
-  String get listItemSetPrice => 'Définir le prix';
-
-  @override
-  String get listItemChangeQuantity => 'Modifier la quantité';
-
-  @override
   String get listItemQuantityAmount => 'Quantité';
-
-  @override
-  String get listItemQuantityUnit => 'Unité (facultatif)';
-
-  @override
-  String get listItemAddNote => 'Ajouter une note';
-
-  @override
-  String get listItemEditNote => 'Modifier la note';
 
   @override
   String get listItemNoteLabel => 'Note';
@@ -3883,9 +3911,6 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get listItemReorder => 'Réorganiser';
-
-  @override
   String listItemMarkUnchecked(String name) {
     return 'Marquer $name comme non coché';
   }
@@ -3905,7 +3930,74 @@ class AppLocalizationsFr extends AppLocalizations {
       'Échec de l\'enregistrement — appuyez sur la barre de synchronisation pour réessayer';
 
   @override
-  String get listItemLongPressHint => 'Appui long pour plus d\'options';
+  String get listItemUnit => 'Unité';
+
+  @override
+  String get listItemMoveUp => 'Monter';
+
+  @override
+  String get listItemMoveDown => 'Descendre';
+
+  @override
+  String listEditDetailsFor(String name) {
+    return 'Détails de $name';
+  }
+
+  @override
+  String get listEditUnitAdd => 'Ajouter une unité';
+
+  @override
+  String listEditUnitValue(String unit) {
+    return 'Unité : $unit';
+  }
+
+  @override
+  String get listEditPriceAdd => 'Ajouter un prix';
+
+  @override
+  String listEditPriceValue(String price) {
+    return 'Prix : $price';
+  }
+
+  @override
+  String get listEditNoteAdd => 'Ajouter une note';
+
+  @override
+  String listEditNoteValue(String note) {
+    return 'Note : $note';
+  }
+
+  @override
+  String get listEditClearUnit => 'Effacer l\'unité';
+
+  @override
+  String get listEditClearPrice => 'Effacer le prix';
+
+  @override
+  String get listEditBack => 'Retour aux détails';
+
+  @override
+  String listEditDeleteItem(String name) {
+    return 'Supprimer $name';
+  }
+
+  @override
+  String get listEditUnitPieces => 'pcs';
+
+  @override
+  String get listEditUnitPack => 'paquet';
+
+  @override
+  String get listEditUnitCan => 'boîte';
+
+  @override
+  String get listEditUnitBottle => 'bouteille';
+
+  @override
+  String get listItemOneLess => 'Un de moins';
+
+  @override
+  String get listItemOneMore => 'Un de plus';
 
   @override
   String get scanCheckListPhoto => 'Vérifier la photo de la liste';
@@ -4171,6 +4263,14 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get authLoginResetCodeSent =>
       'Si cet e-mail existe, un code de réinitialisation a été envoyé.';
+
+  @override
+  String get authLoginResetUnavailable =>
+      'Ce serveur ne peut pas envoyer d\'e-mails, le mot de passe ne peut donc pas être réinitialisé ici. Demande de l\'aide à la personne qui l\'administre.';
+
+  @override
+  String get authSignupEmailTaken =>
+      'Un compte existe déjà avec cet e-mail. Connecte-toi plutôt.';
 
   @override
   String get authLoginResetFillAllFields =>
@@ -5562,9 +5662,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get pinwallCouldNotLoad => 'Impossible de charger le pinwall.';
-
-  @override
-  String get composerItemHint => 'ex. Lait, 2 avocats ou 500 g de farine';
 
   @override
   String get aisleOther => 'Autre';
@@ -7240,4 +7337,729 @@ class AppLocalizationsFr extends AppLocalizations {
   String activityMemberJoined(String name, String when) {
     return '$name a rejoint le foyer · $when';
   }
+
+  @override
+  String get authOnboardingAreasTitle => 'Pour quoi vas-tu utiliser mitlist ?';
+
+  @override
+  String get authOnboardingAreasBody =>
+      'Choisis-en autant que tu veux. Tu ne verras que celles-là ; active le reste quand tu veux dans Toi.';
+
+  @override
+  String get authOnboardingAreasKitchen => 'Recettes et repas';
+
+  @override
+  String get authOnboardingAreasAll => 'Montre-moi tout';
+
+  @override
+  String get appAreasTitle => 'Ce que tu utilises';
+
+  @override
+  String get appAreasBody =>
+      'Masquer une partie ne supprime rien. Si quelqu\'un ajoute une dépense avec toi ou si c\'est ton tour pour une tâche, elle s\'affiche quand même.';
+
+  @override
+  String get appAreasAll => 'Tout';
+
+  @override
+  String get hubChecklistLater => 'Ensuite :';
+
+  @override
+  String get pinwallHubEmptyIntro =>
+      'Les notes pour toute la maison vont ici. Ouvrez le tableau pour en épingler une.';
+
+  @override
+  String get widgetsPageTitle => 'Widgets de l\'écran d\'accueil';
+
+  @override
+  String get widgetsPageAccountRowValue =>
+      'La liste et les tâches en un coup d\'œil';
+
+  @override
+  String get widgetsPageIntro =>
+      'Consultez la liste de courses et les tâches du jour sans ouvrir l\'app, et cochez-les directement depuis l\'écran d\'accueil.';
+
+  @override
+  String get widgetsPageStepsTitle => 'Comment ajouter un widget';
+
+  @override
+  String get widgetsPageIosStep1 =>
+      'Maintenez le doigt sur un espace vide de l\'écran d\'accueil, puis touchez Modifier et Ajouter un widget.';
+
+  @override
+  String get widgetsPageIosStep2 => 'Recherchez « mitlist ».';
+
+  @override
+  String get widgetsPageIosStep3 =>
+      'Choisissez un widget, balayez jusqu’à la taille voulue et touchez Ajouter un widget.';
+
+  @override
+  String get widgetsPageIosStep4 =>
+      'Pour choisir le foyer ou la liste, maintenez le doigt sur le widget et touchez Modifier le widget.';
+
+  @override
+  String get widgetsPageAndroidStep1 =>
+      'Maintenez le doigt sur un espace vide de l\'écran d\'accueil.';
+
+  @override
+  String get widgetsPageAndroidStep2 => 'Touchez Widgets et trouvez mitlist.';
+
+  @override
+  String get widgetsPageAndroidStep3 =>
+      'Maintenez le doigt sur un widget et faites-le glisser à l\'endroit voulu.';
+
+  @override
+  String get widgetsPageAdd => 'Ajouter à l\'écran d\'accueil';
+
+  @override
+  String get widgetsPageAdded => 'Ajouté';
+
+  @override
+  String get widgetsPagePinFailed =>
+      'Votre écran d\'accueil n\'a pas pu l\'ajouter directement. Suivez les étapes ci-dessous.';
+
+  @override
+  String get widgetsPageShoppingListName => 'Liste de courses';
+
+  @override
+  String get widgetsPageShoppingListDesc =>
+      'Cochez les articles au magasin et ajoutez-en avec +.';
+
+  @override
+  String get widgetsPageChoresName => 'Tâches du jour';
+
+  @override
+  String get widgetsPageChoresDesc =>
+      'Ce qui est à faire aujourd\'hui et à qui c\'est le tour. Marquez une tâche faite d\'un geste.';
+
+  @override
+  String get widgetsPageQuickAddName => 'Ajout rapide';
+
+  @override
+  String get widgetsPageQuickAddDesc =>
+      'Un geste pour ajouter quelque chose à la liste.';
+
+  @override
+  String get widgetsPageHouseholdName => 'Le foyer aujourd\'hui';
+
+  @override
+  String get widgetsPageHouseholdDesc =>
+      'Les tâches du jour, la liste de courses et le dîner de ce soir au même endroit.';
+
+  @override
+  String widgetsPagePreviewLabel(String name) {
+    return 'Aperçu du widget $name';
+  }
+
+  @override
+  String get widgetsPageSampleHousehold => 'Notre maison';
+
+  @override
+  String get widgetsPageSampleListName => 'Courses';
+
+  @override
+  String get widgetsPageSampleItem1 => 'Lait d\'avoine';
+
+  @override
+  String get widgetsPageSampleItem2 => 'Bananes';
+
+  @override
+  String get widgetsPageSampleItem3 => 'Café en grains';
+
+  @override
+  String get widgetsPageSampleItem4 => 'Riz';
+
+  @override
+  String get widgetsPageSampleChore1 => 'Sortir les poubelles';
+
+  @override
+  String get widgetsPageSampleChore2 => 'Arroser les plantes';
+
+  @override
+  String get widgetsPageSampleMeal => 'Ce soir : gratin de pâtes';
+
+  @override
+  String get widgetsPageSampleAddHint => 'Ajouter à la liste';
+
+  @override
+  String get widgetsPageSampleAddTo => 'Ajouter à';
+
+  @override
+  String widgetsPageSampleLeft(int count) {
+    return '$count restants';
+  }
+
+  @override
+  String widgetsPageSampleDue(int count) {
+    return '$count à faire';
+  }
+
+  @override
+  String get widgetPromoHeadline =>
+      'Votre liste de courses, sur l\'écran d\'accueil';
+
+  @override
+  String get widgetPromoBody =>
+      'Cochez au magasin sans ouvrir l\'app. Toute la maison le voit aussitôt.';
+
+  @override
+  String get widgetPromoAdd => 'Ajouter à l\'écran d\'accueil';
+
+  @override
+  String get widgetPromoShowMe => 'Montrez-moi comment';
+
+  @override
+  String get widgetPromoNotNow => 'Pas maintenant';
+
+  @override
+  String get listUndoUndoTooltip => 'Annuler';
+
+  @override
+  String get listUndoRedoTooltip => 'Rétablir';
+
+  @override
+  String get listUndoChangedElsewhere =>
+      'Quelqu\'un d\'autre a modifié cet élément, il n\'a donc pas été annulé';
+
+  @override
+  String get listUndoRedoChangedElsewhere =>
+      'Quelqu\'un d\'autre a modifié cet élément, il n\'a donc pas été rétabli';
+
+  @override
+  String listUndoRestoredItems(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count éléments restaurés',
+      one: '1 élément restauré',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get listUndoCouldNotUndo => 'Impossible d\'annuler. Réessaie.';
+
+  @override
+  String get listUndoCouldNotRedo => 'Impossible de rétablir. Réessaie.';
+
+  @override
+  String get listUndoOutboxRestoreItem => 'Restaurer l\'élément';
+
+  @override
+  String get calendarExternalBusy => 'Occupé';
+
+  @override
+  String get calendarExternalAllDay => 'Toute la journée';
+
+  @override
+  String calendarExternalTimeRange(String start, String end) {
+    return '$start – $end';
+  }
+
+  @override
+  String calendarExternalFrom(String time) {
+    return 'à partir de $time';
+  }
+
+  @override
+  String calendarExternalUntil(String time) {
+    return 'jusqu\'à $time';
+  }
+
+  @override
+  String get calendarExternalFree => 'libre';
+
+  @override
+  String get calendarExternalYou => 'Vous';
+
+  @override
+  String get calendarExternalSomeone => 'Un colocataire';
+
+  @override
+  String calendarExternalSemantics(String person, String what, String when) {
+    return '$person : $what, $when';
+  }
+
+  @override
+  String calendarExternalSemanticsFree(
+      String person, String what, String when) {
+    return '$person : $what, $when, marqué libre';
+  }
+
+  @override
+  String calendarWhosAroundTitle(String day) {
+    return 'Qui est là · $day';
+  }
+
+  @override
+  String get calendarWhosAroundFree => 'Libre';
+
+  @override
+  String get calendarWhosAroundAway => 'Absent toute la journée';
+
+  @override
+  String calendarWhosAroundBusy(String times) {
+    return 'Occupé $times';
+  }
+
+  @override
+  String get calendarWhosAroundSelectDay => 'Voir qui est là ce jour-là';
+
+  @override
+  String get calendarShareHintTitle => 'Voyez quand tout le monde est là';
+
+  @override
+  String get calendarShareHintBody =>
+      'Partagez votre agenda Google, Apple ou Outlook avec le foyer, en créneaux occupés seulement ou avec les titres. Vous choisissez ce qu\'ils voient.';
+
+  @override
+  String get calendarShareHintAction => 'Partager mon agenda';
+
+  @override
+  String get sharedCalendarsTitle => 'Agendas partagés';
+
+  @override
+  String get sharedCalendarsAccountRowValue =>
+      'Montrez au foyer quand vous êtes occupé';
+
+  @override
+  String get sharedCalendarsIntro =>
+      'Connectez vos agendas pour que votre foyer voie quand vous êtes occupé ou absent. Rien n\'est partagé tant que vous ne le choisissez pas ci-dessous pour un foyer.';
+
+  @override
+  String get sharedCalendarsNoHouseholds =>
+      'Rejoignez ou créez un foyer pour y partager un agenda.';
+
+  @override
+  String get sharedCalendarsEmpty => 'Aucun agenda connecté pour l\'instant.';
+
+  @override
+  String get sharedCalendarsKindThisPhone => 'Sur ce téléphone';
+
+  @override
+  String get sharedCalendarsKindOtherPhone => 'Sur un autre téléphone';
+
+  @override
+  String get sharedCalendarsKindLink => 'Lien d\'agenda';
+
+  @override
+  String get sharedCalendarsSyncing => 'Synchronisation…';
+
+  @override
+  String get sharedCalendarsNeverSynced => 'Pas encore synchronisé';
+
+  @override
+  String sharedCalendarsSyncedAt(String time) {
+    return 'Synchronisé $time';
+  }
+
+  @override
+  String get sharedCalendarsSyncNow => 'Synchroniser maintenant';
+
+  @override
+  String get sharedCalendarsSyncTooSoon =>
+      'Déjà à jour. Réessayez dans une minute.';
+
+  @override
+  String get sharedCalendarsSyncFailed =>
+      'Impossible de mettre à jour les agendas de ce téléphone. Nous réessaierons plus tard.';
+
+  @override
+  String get sharedCalendarsOtherPhoneNote =>
+      'Lu sur un autre téléphone. Vos choix s\'appliquent tout de suite ; ses événements se mettent à jour quand ce téléphone ouvre mitlist.';
+
+  @override
+  String get sharedCalendarsNoCalendars =>
+      'Aucun agenda trouvé pour l\'instant.';
+
+  @override
+  String get sharedCalendarsUnnamed => 'Agenda';
+
+  @override
+  String get sharedCalendarsShareBusy => 'Occupé seulement';
+
+  @override
+  String get sharedCalendarsShareDetails => 'Avec les titres';
+
+  @override
+  String get sharedCalendarsShareNone => 'Non partagé';
+
+  @override
+  String sharedCalendarsExplainBusy(String household) {
+    return '$household voit quand vous êtes occupé, jamais de quoi il s\'agit.';
+  }
+
+  @override
+  String sharedCalendarsExplainDetails(String household) {
+    return '$household voit les titres et horaires de vos événements. Les événements marqués privés restent affichés comme occupés.';
+  }
+
+  @override
+  String sharedCalendarsExplainNone(String household) {
+    return '$household ne voit rien de cet agenda.';
+  }
+
+  @override
+  String get sharedCalendarsAdd => 'Ajouter un agenda';
+
+  @override
+  String get sharedCalendarsAddPhone => 'Agendas de ce téléphone';
+
+  @override
+  String get sharedCalendarsAddPhoneDesc =>
+      'Tous les comptes de ce téléphone : Google, iCloud, Outlook et plus. Lus sur le téléphone ; seul ce que vous partagez en sort.';
+
+  @override
+  String get sharedCalendarsAddLinkDesc =>
+      'Collez un lien iCal privé de Google, iCloud ou Outlook. Fonctionne sur tous les appareils.';
+
+  @override
+  String get sharedCalendarsAddedNotShared =>
+      'Agenda ajouté. Choisissez ci-dessous ce que voit chaque foyer.';
+
+  @override
+  String get sharedCalendarsPhoneDefaultName => 'Ce téléphone';
+
+  @override
+  String get sharedCalendarsPermissionDeniedTitle =>
+      'L\'accès à l\'agenda est désactivé';
+
+  @override
+  String get sharedCalendarsPermissionDeniedBody =>
+      'Pour partager les agendas de ce téléphone, autorisez mitlist à lire vos agendas dans les Réglages. Ou ajoutez plutôt un lien d\'agenda.';
+
+  @override
+  String get sharedCalendarsPermissionRestricted =>
+      'L\'accès à l\'agenda est bloqué sur ce téléphone (par exemple par Temps d\'écran ou la gestion de l\'appareil). Vous pouvez ajouter un lien d\'agenda à la place.';
+
+  @override
+  String get sharedCalendarsOpenSettings => 'Ouvrir les Réglages';
+
+  @override
+  String get sharedCalendarsRenameTitle => 'Renommer l\'agenda';
+
+  @override
+  String sharedCalendarsRemoveTitle(String name) {
+    return 'Retirer $name ?';
+  }
+
+  @override
+  String get sharedCalendarsRemoveBody =>
+      'Ses événements disparaissent de tous les agendas du foyer. Votre agenda lui-même n\'est pas modifié.';
+
+  @override
+  String get sharedCalendarsUpcomingTitle => 'Événements à venir';
+
+  @override
+  String get sharedCalendarsUpcomingIntro =>
+      'Ce que le foyer voit de vos deux prochaines semaines. Touchez un événement pour le masquer ou en montrer plus ou moins. Un événement récurrent compte comme un seul.';
+
+  @override
+  String get sharedCalendarsUpcomingFailed =>
+      'Impossible de charger les événements à venir.';
+
+  @override
+  String get sharedCalendarsUpcomingEmpty =>
+      'Aucun événement à venir dans vos agendas partagés.';
+
+  @override
+  String sharedCalendarsSeesDetails(String households) {
+    return '$households : titre et horaire';
+  }
+
+  @override
+  String sharedCalendarsSeesBusy(String households) {
+    return '$households : occupé seulement';
+  }
+
+  @override
+  String get sharedCalendarsSeesNothing => 'Le foyer ne voit pas ceci';
+
+  @override
+  String get sharedCalendarsOverrideCalendar => 'Réglage de l\'agenda';
+
+  @override
+  String get sharedCalendarsOverrideHidden => 'Masqué';
+
+  @override
+  String get sharedCalendarsOverrideBusy => 'Occupé';
+
+  @override
+  String get sharedCalendarsOverrideDetails => 'Avec le titre';
+
+  @override
+  String get sharedCalendarsOverrideCalendarDesc =>
+      'Comme l\'agenda est partagé avec chaque foyer.';
+
+  @override
+  String get sharedCalendarsOverrideHiddenDesc => 'Aucun foyer ne le voit.';
+
+  @override
+  String get sharedCalendarsOverrideBusyDesc =>
+      'Les foyers qui voient cet agenda voient un créneau occupé, sans titre.';
+
+  @override
+  String get sharedCalendarsOverrideDetailsDesc =>
+      'Les foyers qui voient cet agenda voient le titre, même s\'il est privé dans votre agenda.';
+
+  @override
+  String get sharedCalendarsEventNoTitle => '(Sans titre)';
+
+  @override
+  String get sharedCalendarsEventPrivate => 'privé';
+
+  @override
+  String get sharedCalendarsEventFree => 'marqué libre';
+
+  @override
+  String sharedCalendarsEventChoice(String choice) {
+    return 'Réglage : $choice';
+  }
+
+  @override
+  String get calendarConnectionErrorFetchFailed =>
+      'Impossible de charger cet agenda la dernière fois. Nous continuons d\'essayer.';
+
+  @override
+  String get calendarConnectionErrorNotCalendar =>
+      'Ce lien ne renvoie plus d\'agenda. Retirez-le et ajoutez le lien actuel.';
+
+  @override
+  String get calendarConnectionErrorTooLarge =>
+      'Cet agenda est trop volumineux pour être synchronisé. Essayez un agenda plus petit.';
+
+  @override
+  String get calendarConnectionErrorUnauthorized =>
+      'Ce lien ne fonctionne plus. Il a peut-être été réinitialisé ou supprimé ; ajoutez le nouveau lien.';
+
+  @override
+  String get calendarConnectionErrorOther =>
+      'Cet agenda n\'a pas pu être synchronisé.';
+
+  @override
+  String get calendarLinkSheetTitle => 'Ajouter un lien d\'agenda';
+
+  @override
+  String get calendarLinkAddAction => 'Lien d\'agenda';
+
+  @override
+  String get calendarLinkNameHint => 'Facultatif, p. ex. Travail';
+
+  @override
+  String get calendarLinkUrlLabel => 'Lien iCal privé';
+
+  @override
+  String get calendarLinkUrlHint => 'https:// ou webcal://';
+
+  @override
+  String get calendarLinkPrivacyNote =>
+      'Traitez ce lien comme un mot de passe : quiconque l\'a peut lire l\'agenda. mitlist le conserve chiffré et ne l\'affiche plus jamais.';
+
+  @override
+  String get calendarLinkErrorUrl =>
+      'Saisissez un lien qui commence par https:// ou webcal://.';
+
+  @override
+  String get calendarLinkErrorNotCalendar =>
+      'Ce lien n\'est pas un agenda. Copiez l\'adresse iCal (.ics), pas le lien vers la page web de l\'agenda.';
+
+  @override
+  String get calendarLinkErrorFetch =>
+      'Impossible de charger cet agenda. Vérifiez le lien et que l\'agenda est toujours partagé ou publié.';
+
+  @override
+  String get calendarLinkStepsTitle => 'Où trouver le lien';
+
+  @override
+  String get calendarLinkStepsGoogleTitle => 'Google Agenda';
+
+  @override
+  String get calendarLinkStepsGoogle =>
+      'Sur un ordinateur, ouvrez Paramètres, choisissez votre agenda sous « Paramètres de mes agendas », puis copiez l\'« Adresse secrète au format iCal » sous Intégrer l\'agenda.';
+
+  @override
+  String get calendarLinkStepsAppleTitle => 'Calendrier Apple iCloud';
+
+  @override
+  String get calendarLinkStepsApple =>
+      'Dans l\'app Calendrier, touchez Calendriers, puis le bouton d\'information à côté du calendrier. Activez Calendrier public et copiez le lien. Toute personne ayant le lien peut le voir ; sur ce téléphone, « Agendas de ce téléphone » est plus privé.';
+
+  @override
+  String get calendarLinkStepsOutlookTitle => 'Outlook';
+
+  @override
+  String get calendarLinkStepsOutlook =>
+      'Dans Outlook sur le web, ouvrez Paramètres > Calendrier > Calendriers partagés, publiez le calendrier (« Peut afficher tous les détails » ou « Peut voir quand je suis occupé ») et copiez le lien ICS.';
+
+  @override
+  String get sharedCalendarsLimitReached =>
+      'Vous avez connecté 10 agendas, le maximum. Retirez-en un pour en ajouter un autre.';
+
+  @override
+  String get calendarWhosAroundFreeAllDay => 'Libre toute la journée';
+
+  @override
+  String calendarWhosAroundFreeFrom(String time) {
+    return 'Libre à partir de $time';
+  }
+
+  @override
+  String calendarWhosAroundBusyUntil(String time) {
+    return 'Occupé jusqu\'à $time';
+  }
+
+  @override
+  String calendarWhosAroundBusyFrom(String time) {
+    return 'Occupé à partir de $time';
+  }
+
+  @override
+  String get calendarWhosAroundNotSharing => 'Ne partage pas d\'agenda';
+
+  @override
+  String get calendarWhosAroundEveningAll =>
+      'Tout le monde est libre toute la soirée';
+
+  @override
+  String get calendarWhosAroundSharersEveningAll =>
+      'Tous ceux qui partagent sont libres toute la soirée';
+
+  @override
+  String calendarWhosAroundEveningFrom(String time) {
+    return 'Tout le monde est libre à partir de $time';
+  }
+
+  @override
+  String calendarWhosAroundSharersEveningFrom(String time) {
+    return 'Tous ceux qui partagent sont libres à partir de $time';
+  }
+
+  @override
+  String calendarWhosAroundEveningBetween(String start, String end) {
+    return 'Tout le monde est libre de $start à $end';
+  }
+
+  @override
+  String calendarWhosAroundSharersEveningBetween(String start, String end) {
+    return 'Tous ceux qui partagent sont libres de $start à $end';
+  }
+
+  @override
+  String get calendarWhosAroundEveningNone =>
+      'Tout le monde n\'est pas libre en soirée';
+
+  @override
+  String get calendarWhosAroundSharersEveningNone =>
+      'Tous ceux qui partagent ne sont pas libres en soirée';
+
+  @override
+  String get calendarWhosAroundTapHint => 'Touchez un jour pour le consulter.';
+
+  @override
+  String get calendarTourHome =>
+      'Nouveau : voyez quand tout le monde est là. Ouvrez l\'agenda.';
+
+  @override
+  String get calendarTourShare =>
+      'Partagez votre agenda ici pour que le foyer sache quand vous êtes occupé.';
+
+  @override
+  String get calendarTourAdd =>
+      'Ajoutez les agendas de votre téléphone ou un lien. Rien n\'est partagé avant votre choix.';
+
+  @override
+  String get calendarTourChoices =>
+      'Choisissez ce que voit chaque foyer : occupé seulement ou avec les titres.';
+
+  @override
+  String get calendarTourUpcoming =>
+      'Masquez ce qui est privé, un événement à la fois.';
+
+  @override
+  String get coachMarkNext => 'Suivant';
+
+  @override
+  String get coachMarkSkip => 'Passer';
+
+  @override
+  String get coachMarkDone => 'Compris';
+
+  @override
+  String get sharedCalendarsShowMeHow => 'Montrez-moi';
+
+  @override
+  String get sharedCalendarsIosPrivateNote =>
+      'L\'iPhone ne sait pas quels événements sont privés : ils peuvent apparaître avec leur titre. Masquez-en ci-dessous.';
+
+  @override
+  String get sharedCalendarsHideEvent => 'Masquer au foyer';
+
+  @override
+  String get sharedCalendarsShowAgain => 'Afficher à nouveau';
+
+  @override
+  String get sharedCalendarsEventPrivateNote => 'Privé dans votre agenda';
+
+  @override
+  String get sharedCalendarsEventFreeNote => 'Marqué libre dans votre agenda';
+
+  @override
+  String get sharedCalendarsNotSharedAnywhere =>
+      'Aucun foyer ne voit cet agenda.';
+
+  @override
+  String get sharedCalendarsSyncedJustNow => 'Synchronisé à l\'instant';
+
+  @override
+  String get sharedCalendarsSyncedYesterday => 'Synchronisé hier';
+
+  @override
+  String coachMarkStepLabel(int step, int total) {
+    return 'Astuce $step sur $total';
+  }
+
+  @override
+  String sharedCalendarsSyncedMinutes(int minutes) {
+    return 'Synchronisé il y a $minutes min';
+  }
+
+  @override
+  String sharedCalendarsSyncedHours(int hours) {
+    return 'Synchronisé il y a $hours h';
+  }
+
+  @override
+  String sharedCalendarsExplainDetailsNoPrivate(String household) {
+    return '$household voit les titres et horaires de vos événements.';
+  }
+
+  @override
+  String get calendarWhosAroundExpand => 'Voir les horaires de chacun';
+
+  @override
+  String get calendarWhosAroundCollapse => 'Afficher moins';
+
+  @override
+  String sharedCalendarsSummaryBusy(String household) {
+    return '$household : occupé seulement';
+  }
+
+  @override
+  String sharedCalendarsSummaryDetails(String household) {
+    return '$household : avec les titres';
+  }
+
+  @override
+  String sharedCalendarsSummaryNone(String household) {
+    return '$household : non partagé';
+  }
+
+  @override
+  String get sharedCalendarsSummaryNotShared => 'Non partagé';
+
+  @override
+  String get sharedCalendarsShowChoices => 'Afficher les choix de partage';
+
+  @override
+  String get sharedCalendarsHideChoices => 'Masquer les choix de partage';
 }

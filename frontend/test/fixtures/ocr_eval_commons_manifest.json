@@ -1,0 +1,711 @@
+{
+  "schema_version": 1,
+  "locale": "de-DE,en,nl,es",
+  "samples": [
+    {
+      "id": "commons-00",
+      "filename": "commons/c00.jpg",
+      "input_type": "handwriting",
+      "language": "de",
+      "lines": [
+        {
+          "text": "Eis",
+          "status": "active"
+        },
+        {
+          "text": "Käse",
+          "status": "active"
+        },
+        {
+          "text": "Rhabarber",
+          "status": "active"
+        },
+        {
+          "text": "1 Bund Basilikum",
+          "status": "active"
+        },
+        {
+          "text": "1 reife Avocado",
+          "status": "active"
+        },
+        {
+          "text": "Pinienkerne",
+          "status": "active"
+        },
+        {
+          "text": "1 Limette",
+          "status": "active"
+        },
+        {
+          "text": "Tomatenmark",
+          "status": "active"
+        },
+        {
+          "text": "Olivenöl",
+          "status": "active"
+        },
+        {
+          "text": "Toast",
+          "status": "active"
+        },
+        {
+          "text": "Aufbackbrötchen",
+          "status": "active"
+        }
+      ]
+    },
+    {
+      "id": "commons-01",
+      "filename": "commons/c01.jpg",
+      "input_type": "handwriting",
+      "language": "de",
+      "lines": [
+        {
+          "text": "Butter Opa",
+          "status": "crossed_out"
+        },
+        {
+          "text": "Zucker",
+          "status": "active"
+        },
+        {
+          "text": "Kaffee Papa",
+          "status": "active"
+        },
+        {
+          "text": "1 Tüte",
+          "status": "active"
+        },
+        {
+          "text": "Brot",
+          "status": "crossed_out"
+        },
+        {
+          "text": "Bratwürstchen",
+          "status": "active"
+        },
+        {
+          "text": "Mettwurst 5x",
+          "status": "active"
+        },
+        {
+          "text": "Salatkrönung",
+          "status": "active"
+        }
+      ],
+      "note": "Printed letterhead and a sweet wrapper on the page."
+    },
+    {
+      "id": "commons-05",
+      "filename": "commons/c05.jpg",
+      "input_type": "handwriting",
+      "language": "nl",
+      "lines": [
+        {
+          "text": "1 pot jam aardbeien",
+          "status": "active"
+        },
+        {
+          "text": null,
+          "status": "illegible"
+        },
+        {
+          "text": "1 pakje jonge kaas",
+          "status": "active"
+        },
+        {
+          "text": "1 pakje ham",
+          "status": "active"
+        },
+        {
+          "text": "2 pakken vla",
+          "status": "active"
+        },
+        {
+          "text": "1 rol biscuit",
+          "status": "active"
+        },
+        {
+          "text": "1 pak frisdrank",
+          "status": "active"
+        },
+        {
+          "text": "1 pak theezakjes (1 kops 40 stuks)",
+          "status": "active"
+        },
+        {
+          "text": "1 zak mandarijnen",
+          "status": "active"
+        },
+        {
+          "text": "2453 code",
+          "status": "active"
+        }
+      ],
+      "note": "Dutch. Line 2 is uncertain and excluded."
+    },
+    {
+      "id": "commons-09",
+      "filename": "commons/c09.jpg",
+      "input_type": "handwriting",
+      "language": "de",
+      "lines": [
+        {
+          "text": "Klopapier",
+          "status": "active"
+        },
+        {
+          "text": "PENNY",
+          "status": "active"
+        },
+        {
+          "text": "Tomaten",
+          "status": "active"
+        },
+        {
+          "text": "Zahnpasta",
+          "status": "active"
+        },
+        {
+          "text": "Gurke",
+          "status": "active"
+        },
+        {
+          "text": "Margarine",
+          "status": "active"
+        },
+        {
+          "text": "Butter",
+          "status": "active"
+        },
+        {
+          "text": "Toast",
+          "status": "active"
+        },
+        {
+          "text": "Brötchen",
+          "status": "active"
+        },
+        {
+          "text": "Feta-Käse",
+          "status": "active"
+        },
+        {
+          "text": "Goudablock",
+          "status": "active"
+        },
+        {
+          "text": "Wurst",
+          "status": "active"
+        },
+        {
+          "text": "Jogurt bzw Optiwellpudding",
+          "status": "active"
+        },
+        {
+          "text": "Äpfel/Obst",
+          "status": "active"
+        },
+        {
+          "text": "SPAR",
+          "status": "active"
+        },
+        {
+          "text": "Hackfleisch-Lauchsuppe + Zutaten",
+          "status": "active"
+        },
+        {
+          "text": "Backmischung",
+          "status": "active"
+        }
+      ],
+      "note": "Low resolution (400 px). Store names are written headers."
+    },
+    {
+      "id": "commons-11",
+      "filename": "commons/c11.jpg",
+      "input_type": "handwriting",
+      "language": "de",
+      "lines": [
+        {
+          "text": "Lidl",
+          "status": "active"
+        },
+        {
+          "text": "Schmand!",
+          "status": "active"
+        },
+        {
+          "text": "od Creme Fraiche",
+          "status": "active"
+        },
+        {
+          "text": "Serrano",
+          "status": "active"
+        },
+        {
+          "text": "Milch 2x",
+          "status": "active"
+        },
+        {
+          "text": "Butter 2x",
+          "status": "active"
+        },
+        {
+          "text": "Ciabatta",
+          "status": "active"
+        },
+        {
+          "text": "Wallnuss",
+          "status": "active"
+        },
+        {
+          "text": "Kidney Bohn",
+          "status": "active"
+        },
+        {
+          "text": "Tomatenmark",
+          "status": "active"
+        },
+        {
+          "text": "Schokolade",
+          "status": "active"
+        }
+      ],
+      "note": "Two columns; the right column words wrap over two lines."
+    },
+    {
+      "id": "commons-12",
+      "filename": "commons/c12.jpg",
+      "input_type": "handwriting",
+      "language": "de",
+      "lines": [
+        {
+          "text": "DM",
+          "status": "active"
+        },
+        {
+          "text": "Kerzen",
+          "status": "active"
+        },
+        {
+          "text": "Zahnpasta",
+          "status": "active"
+        },
+        {
+          "text": "Nivea Shampo",
+          "status": "active"
+        },
+        {
+          "text": "Handcreme",
+          "status": "active"
+        },
+        {
+          "text": "Deo",
+          "status": "active"
+        },
+        {
+          "text": null,
+          "status": "illegible"
+        },
+        {
+          "text": null,
+          "status": "illegible"
+        },
+        {
+          "text": null,
+          "status": "illegible"
+        },
+        {
+          "text": "Abschminktücher",
+          "status": "active"
+        },
+        {
+          "text": "Duschgel",
+          "status": "active"
+        }
+      ],
+      "note": "Very low resolution (350 px). Three uncertain lines excluded."
+    },
+    {
+      "id": "commons-13",
+      "filename": "commons/c13.jpg",
+      "input_type": "handwriting",
+      "language": "de",
+      "lines": [
+        {
+          "text": "Honig",
+          "status": "active"
+        },
+        {
+          "text": "Esskastanien",
+          "status": "active"
+        },
+        {
+          "text": "Joghurt 1,5 + 3,5",
+          "status": "active"
+        },
+        {
+          "text": "Ei, Quark",
+          "status": "active"
+        },
+        {
+          "text": "Schwarzwaldmilch",
+          "status": "active"
+        },
+        {
+          "text": null,
+          "status": "illegible"
+        },
+        {
+          "text": "Zwiebeln",
+          "status": "active"
+        }
+      ],
+      "note": "Very low resolution (320 px). A small annotation is excluded."
+    },
+    {
+      "id": "commons-16",
+      "filename": "commons/c16.jpg",
+      "input_type": "handwriting",
+      "language": "de",
+      "lines": [
+        {
+          "text": "Salami",
+          "status": "active"
+        },
+        {
+          "text": "Chorizo",
+          "status": "active"
+        },
+        {
+          "text": "Kräuter",
+          "status": "active"
+        },
+        {
+          "text": "Rosen x 4",
+          "status": "active"
+        },
+        {
+          "text": "Marmelade",
+          "status": "active"
+        },
+        {
+          "text": "Leberwurst",
+          "status": "active"
+        },
+        {
+          "text": "Stumpfkerzen",
+          "status": "active"
+        },
+        {
+          "text": "Brauner Zucker",
+          "status": "active"
+        },
+        {
+          "text": "Schwarze Tücher",
+          "status": "active"
+        },
+        {
+          "text": "WC-Hänger",
+          "status": "active"
+        },
+        {
+          "text": "Lachs",
+          "status": "active"
+        },
+        {
+          "text": "Süßkram",
+          "status": "active"
+        },
+        {
+          "text": "Sahne",
+          "status": "active"
+        },
+        {
+          "text": "Kandis",
+          "status": "active"
+        },
+        {
+          "text": "kleine Gemüsekonserven / Reis",
+          "status": "active"
+        },
+        {
+          "text": "Käse",
+          "status": "active"
+        },
+        {
+          "text": "Suppe",
+          "status": "active"
+        }
+      ],
+      "note": "Printed posters in the background."
+    },
+    {
+      "id": "commons-29",
+      "filename": "commons/c29.jpg",
+      "input_type": "handwriting",
+      "language": "es",
+      "lines": [
+        {
+          "text": "COMPRAS: leche",
+          "status": "active"
+        },
+        {
+          "text": "huevos",
+          "status": "active"
+        },
+        {
+          "text": "mantequilla",
+          "status": "active"
+        },
+        {
+          "text": "harina",
+          "status": "active"
+        },
+        {
+          "text": "sal",
+          "status": "active"
+        },
+        {
+          "text": "lechuga",
+          "status": "active"
+        },
+        {
+          "text": "arroz",
+          "status": "active"
+        },
+        {
+          "text": "manzanas",
+          "status": "active"
+        },
+        {
+          "text": "chocolate",
+          "status": "active"
+        }
+      ],
+      "note": "Spanish."
+    },
+    {
+      "id": "commons-39",
+      "filename": "commons/c39.jpg",
+      "input_type": "handwriting",
+      "language": "en",
+      "lines": [
+        {
+          "text": "Sam Adams",
+          "status": "active"
+        },
+        {
+          "text": "Goose Island",
+          "status": "active"
+        },
+        {
+          "text": "+ Burgers",
+          "status": "active"
+        },
+        {
+          "text": "Coronas",
+          "status": "active"
+        },
+        {
+          "text": "Blue Moon",
+          "status": "active"
+        }
+      ],
+      "note": "Whiteboard, slightly blurred."
+    },
+    {
+      "id": "commons-40",
+      "filename": "commons/c40.jpg",
+      "input_type": "handwriting",
+      "language": "en",
+      "lines": [
+        {
+          "text": "Shopping list",
+          "status": "active"
+        },
+        {
+          "text": "Milk",
+          "status": "active"
+        },
+        {
+          "text": "Beer",
+          "status": "active"
+        },
+        {
+          "text": "Bread",
+          "status": "active"
+        },
+        {
+          "text": "Onions",
+          "status": "active"
+        },
+        {
+          "text": "Salad",
+          "status": "active"
+        },
+        {
+          "text": "Tomatoes",
+          "status": "active"
+        },
+        {
+          "text": "Eggs",
+          "status": "active"
+        },
+        {
+          "text": "Cheese",
+          "status": "active"
+        },
+        {
+          "text": "Apples",
+          "status": "active"
+        }
+      ],
+      "note": "Held in front of a fridge; small in frame."
+    },
+    {
+      "id": "commons-41",
+      "filename": "commons/c41.jpg",
+      "input_type": "handwriting",
+      "language": "en",
+      "lines": [
+        {
+          "text": "zero",
+          "status": "crossed_out"
+        },
+        {
+          "text": "peas(5)",
+          "status": "crossed_out"
+        },
+        {
+          "text": "apples(3)",
+          "status": "crossed_out"
+        },
+        {
+          "text": "Double Stuf",
+          "status": "crossed_out"
+        },
+        {
+          "text": "bologna",
+          "status": "crossed_out"
+        },
+        {
+          "text": "saltines",
+          "status": "crossed_out"
+        },
+        {
+          "text": "Triscuits",
+          "status": "crossed_out"
+        },
+        {
+          "text": "pizza",
+          "status": "crossed_out"
+        }
+      ],
+      "note": "The same list as c42 after the errands: every line crossed out."
+    },
+    {
+      "id": "commons-42",
+      "filename": "commons/c42.jpg",
+      "input_type": "handwriting",
+      "language": "en",
+      "lines": [
+        {
+          "text": "zero",
+          "status": "active"
+        },
+        {
+          "text": "peas(5)",
+          "status": "active"
+        },
+        {
+          "text": "apples(3)",
+          "status": "active"
+        },
+        {
+          "text": "Double Stuf",
+          "status": "active"
+        },
+        {
+          "text": "bologna",
+          "status": "active"
+        },
+        {
+          "text": "saltines",
+          "status": "active"
+        },
+        {
+          "text": "Triscuits",
+          "status": "active"
+        },
+        {
+          "text": "pizza",
+          "status": "active"
+        }
+      ],
+      "note": "The same list as c41 before the errands."
+    },
+    {
+      "id": "commons-96",
+      "filename": "commons/c96.jpg",
+      "input_type": "handwriting",
+      "language": "de",
+      "lines": [
+        {
+          "text": "Brot",
+          "status": "active"
+        },
+        {
+          "text": "Sahne",
+          "status": "active"
+        },
+        {
+          "text": "S. Sahne",
+          "status": "active"
+        },
+        {
+          "text": "Obst",
+          "status": "active"
+        },
+        {
+          "text": "Saft f. Oma",
+          "status": "active"
+        },
+        {
+          "text": "Haselnüsse",
+          "status": "active"
+        },
+        {
+          "text": "Pril",
+          "status": "active"
+        },
+        {
+          "text": "Waschpulver Wattestäbchen",
+          "status": "active"
+        },
+        {
+          "text": "Geschenk für Oma",
+          "status": "active"
+        },
+        {
+          "text": "Schwamm für Besteck",
+          "status": "active"
+        },
+        {
+          "text": "Wurst",
+          "status": "active"
+        },
+        {
+          "text": "Käse",
+          "status": "active"
+        },
+        {
+          "text": "Schinken",
+          "status": "active"
+        }
+      ],
+      "note": "Crumpled, photographed on gravel at an angle."
+    }
+  ]
+}

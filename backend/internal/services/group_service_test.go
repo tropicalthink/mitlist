@@ -15,6 +15,7 @@ import (
 	"github.com/mitlist-app/mitlist/internal/api"
 	"github.com/mitlist-app/mitlist/internal/models"
 	"github.com/mitlist-app/mitlist/internal/repositories/mocks"
+	"github.com/mitlist-app/mitlist/internal/sse"
 )
 
 func TestGroupService_CreateGroup(t *testing.T) {
@@ -874,5 +875,66 @@ func TestGroupService_IsLastAdmin(t *testing.T) {
 		isLast, err := svc.isLastAdmin(ctx, groupID, userID)
 		require.NoError(t, err)
 		assert.False(t, isLast)
+	})
+}
+
+// Ending a membership tells the household to refetch the person's
+// calendar: their shares with it ended in the same statement.
+func TestGroupService_EndingAMembershipRefreshesSharedCalendars(t *testing.T) {
+	ctx := context.Background()
+	userID, adminID, groupID := uuid.New(), uuid.New(), uuid.New()
+	capture := func(svc *GroupService) *[]sse.Event {
+		var seen []sse.Event
+		hub := sse.New()
+		hub.OnPublish(func(e sse.Event) { seen = append(seen, e) })
+		svc.SetHub(hub)
+		return &seen
+	}
+	calendarEvent := func(t *testing.T, seen []sse.Event, user uuid.UUID) {
+		t.Helper()
+		for _, e := range seen {
+			if e.Type == EventCalendarExternalChanged {
+				assert.Equal(t, groupID.String(), e.GroupID)
+				assert.JSONEq(t, `{"user_id":"`+user.String()+`"}`, string(e.Payload))
+				return
+			}
+		}
+		t.Fatalf("no %s event in %+v", EventCalendarExternalChanged, seen)
+	}
+
+	t.Run("leave", func(t *testing.T) {
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewGroupService(groupRepo, nil)
+		seen := capture(svc)
+		groupRepo.On("WithTx", ctx, mock.Anything).Return(nil)
+		groupRepo.On("LockGroup", ctx, groupID).Return(nil)
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{ID: uuid.New(), Role: "member"}, nil)
+		groupRepo.On("EndMembership", ctx, mock.AnythingOfType("uuid.UUID")).Return(nil)
+		groupRepo.On("ListMembershipsByGroup", mock.Anything, groupID).Return([]models.GroupMembership{}, nil).Maybe()
+		require.NoError(t, svc.LeaveGroup(ctx, userID, groupID))
+		calendarEvent(t, *seen, userID)
+	})
+	t.Run("removal", func(t *testing.T) {
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewGroupService(groupRepo, nil)
+		seen := capture(svc)
+		groupRepo.On("WithTx", ctx, mock.Anything).Return(nil)
+		groupRepo.On("LockGroup", ctx, groupID).Return(nil)
+		groupRepo.On("GetMembership", ctx, groupID, adminID).Return(&models.GroupMembership{ID: uuid.New(), Role: "admin"}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(&models.GroupMembership{ID: uuid.New(), Role: "member"}, nil)
+		groupRepo.On("EndMembership", ctx, mock.AnythingOfType("uuid.UUID")).Return(nil)
+		groupRepo.On("ListMembershipsByGroup", mock.Anything, groupID).Return([]models.GroupMembership{}, nil).Maybe()
+		require.NoError(t, svc.RemoveMember(ctx, adminID, groupID, userID))
+		calendarEvent(t, *seen, userID)
+	})
+	t.Run("a refused leave tells nobody", func(t *testing.T) {
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewGroupService(groupRepo, nil)
+		seen := capture(svc)
+		groupRepo.On("WithTx", ctx, mock.Anything).Return(nil)
+		groupRepo.On("LockGroup", ctx, groupID).Return(nil)
+		groupRepo.On("GetMembership", ctx, groupID, userID).Return(nil, pgx.ErrNoRows)
+		require.Error(t, svc.LeaveGroup(ctx, userID, groupID))
+		assert.Empty(t, *seen)
 	})
 }

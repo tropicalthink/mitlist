@@ -411,6 +411,38 @@ func (s *ListService) DeleteItem(ctx context.Context, user *models.User, itemID 
 	return nil
 }
 
+// RestoreItem undoes the soft delete of an item on listID (an undo in the
+// app). The row comes back with its id, position, checked state and photos.
+// Idempotent: restoring an item that is not deleted returns it unchanged and
+// publishes nothing. Housemates' apps refetch on the item_created event, which
+// apps that predate this route already handle.
+func (s *ListService) RestoreItem(ctx context.Context, user *models.User, listID, itemID uuid.UUID) (*models.ListItem, error) {
+	if err := s.requireActiveVerifiedUser(user); err != nil {
+		return nil, err
+	}
+	list, err := s.listRepo.GetListByID(ctx, listID)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, &api.NotFoundError{Resource: "list", ID: listID.String()}
+		}
+		return nil, fmt.Errorf("failed to get list: %w", err)
+	}
+	if err := s.requireMembership(ctx, user.ID, list.GroupID); err != nil {
+		return nil, err
+	}
+	item, restored, err := s.listRepo.RestoreItem(ctx, listID, itemID)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, &api.NotFoundError{Resource: "list item", ID: itemID.String()}
+		}
+		return nil, fmt.Errorf("failed to restore item: %w", err)
+	}
+	if restored {
+		s.publishItem("list:item_created", list.GroupID, item)
+	}
+	return item, nil
+}
+
 // ListItems returns all items in a list, enforcing group membership.
 func (s *ListService) ListItems(ctx context.Context, user *models.User, listID uuid.UUID, limit, offset int) ([]models.ListItem, error) {
 	if err := s.requireActiveVerifiedUser(user); err != nil {
@@ -551,9 +583,15 @@ func (s *ListService) AddItemsBatch(ctx context.Context, user *models.User, list
 		name string
 		unit string
 	}
+	// Rows match on case- and space-insensitive name and unit, so "Onion" from
+	// a recipe tops up the "onion" already on the list. An open row wins over a
+	// checked one with the same name.
 	existingByKey := make(map[itemKey]*models.ListItem, len(existingItems))
 	for i := range existingItems {
-		key := itemKey{name: strings.TrimSpace(existingItems[i].Name), unit: strings.TrimSpace(existingItems[i].Unit)}
+		key := itemKey{name: normalizeItemName(existingItems[i].Name), unit: normalizeItemName(existingItems[i].Unit)}
+		if current, ok := existingByKey[key]; ok && !current.Checked {
+			continue
+		}
 		existingByKey[key] = &existingItems[i]
 	}
 
@@ -568,9 +606,14 @@ func (s *ListService) AddItemsBatch(ctx context.Context, user *models.User, list
 		if input.Amount <= 0 {
 			return nil, &api.ValidationError{Field: "amount", Message: "amount must be greater than zero"}
 		}
-		key := itemKey{name: name, unit: unit}
+		key := itemKey{name: normalizeItemName(name), unit: normalizeItemName(unit)}
 		if item, ok := existingByKey[key]; ok {
-			item.Quantity += input.Amount
+			if item.Checked {
+				// Bought last time: this is a fresh need, not more of the old one.
+				item.Quantity = input.Amount
+			} else {
+				item.Quantity += input.Amount
+			}
 			item.Checked = false
 			if note != "" {
 				item.Note = note
@@ -924,7 +967,11 @@ func (s *ListService) BulkCompleteItems(ctx context.Context, user *models.User, 
 	if err != nil {
 		return 0, fmt.Errorf("failed to bulk complete items: %w", err)
 	}
-	return int(completed), nil
+	// Like ticking each one: other devices and home screen widgets refresh.
+	for _, ref := range completed {
+		publishListItemEvent(s.hub, "list:item_updated", ref.GroupID, ref.ListID, ref.ItemID)
+	}
+	return len(completed), nil
 }
 
 // SetListArchived archives or unarchives a list.

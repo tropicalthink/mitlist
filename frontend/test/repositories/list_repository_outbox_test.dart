@@ -802,4 +802,218 @@ void main() {
       expect(await db.outboxCount(), equals(0));
     });
   });
+
+  group('ListRepository undo —', () {
+    late AppDatabase db;
+    late FakeListService remote;
+    late ListRepository repo;
+    const listId = 'list-undo';
+
+    setUp(() async {
+      db = _memoryDb();
+      remote = FakeListService();
+      repo = ListRepository(db: db, remote: remote, autoSync: false);
+      await _insertList(db, listId);
+    });
+
+    tearDown(() => db.close());
+
+    Future<ListItem> seed(String id,
+        {bool checked = false, int position = 0}) async {
+      await db.upsertListItemsRows([
+        _itemRow(listId, id, checked: checked, position: position)
+            .copyWith(canonicalItemId: const drift.Value('milk')),
+      ]);
+      return (await repo.getItemsByListOnce(listId))
+          .singleWhere((item) => item.id == id);
+    }
+
+    Future<List<String>> opTypes() async =>
+        [for (final op in await db.getOutboxBatch()) op.type];
+
+    test('restoring while the delete is still queued withdraws it', () async {
+      await seed('a', position: 0);
+      final b = await seed('b', checked: true, position: 1);
+      await seed('c', position: 2);
+
+      await repo.deleteItemOfflineFirst(listId, 'b');
+      await repo.restoreItemOfflineFirst(b);
+
+      final items = await repo.getItemsByListOnce(listId);
+      final restored = items.singleWhere((item) => item.id == 'b');
+      expect(restored.position, 1, reason: 'back in its own place');
+      expect(restored.checked, isTrue);
+      expect(restored.canonicalItemId, 'milk');
+      expect(await opTypes(), isEmpty, reason: 'the delete never leaves');
+
+      await repo.drainOutboxOnce();
+      expect(remote.deleteItemCalls, isEmpty);
+      expect(remote.restoreItemCalls, isEmpty);
+    });
+
+    test('restoring after the delete synced asks the server for the same row',
+        () async {
+      final b = await seed('b', checked: true, position: 1);
+      await repo.deleteItemOfflineFirst(listId, 'b');
+      await repo.drainOutboxOnce();
+      expect(remote.deleteItemCalls, ['b']);
+
+      await repo.restoreItemOfflineFirst(b);
+      expect(await opTypes(), ['restoreItem']);
+      expect(
+        (await repo.getItemsByListOnce(listId)).map((item) => item.id),
+        ['b'],
+        reason: 'shown at once, before the restore syncs',
+      );
+
+      remote.restorableItems['b'] = ListItem(
+        id: 'b',
+        listId: listId,
+        name: 'Item b',
+        quantity: 1,
+        unit: '',
+        checked: true,
+        position: 1,
+        createdAt: DateTime.utc(2026, 1, 5),
+        updatedAt: DateTime.utc(2026, 3, 1),
+      );
+      await repo.drainOutboxOnce();
+
+      expect(remote.restoreItemCalls, ['b']);
+      expect(remote.createItemCalls, isEmpty);
+      expect(await db.outboxCount(), 0);
+      final restored = (await repo.getItemsByListOnce(listId)).single;
+      expect(restored.id, 'b');
+      expect(
+          restored.updatedAt.isAtSameMomentAs(DateTime.utc(2026, 3, 1)), isTrue,
+          reason: "the server's row is the base for the next edit");
+      expect(restored.canonicalItemId, 'milk',
+          reason: 'the on-device link survives the server copy');
+    });
+
+    test('an older server without the restore route gets the row re-created',
+        () async {
+      final b = await seed('b', checked: true, position: 1);
+      await repo.deleteItemOfflineFirst(listId, 'b');
+      await repo.drainOutboxOnce();
+      final changes = <ListItemIdChange>[];
+      final sub = repo.itemIdChanges.listen(changes.add);
+      addTearDown(sub.cancel);
+
+      remote.restoreItemStatus = 404;
+      await repo.restoreItemOfflineFirst(b);
+      await repo.drainOutboxOnce();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(remote.createItemCalls.single.req.name, 'Item b');
+      expect(remote.updateItemCalls.single.req.checked, isTrue,
+          reason: 'it comes back ticked, as it was');
+      final restored = (await repo.getItemsByListOnce(listId)).single;
+      expect(restored.id, '${remote.serverItemIdPrefix}1');
+      expect(changes, [(from: 'b', to: '${remote.serverItemIdPrefix}1')]);
+      expect(await db.outboxCount(), 0);
+    });
+
+    test('405 is read as an older server too', () async {
+      final b = await seed('b');
+      await repo.deleteItemOfflineFirst(listId, 'b');
+      await repo.drainOutboxOnce();
+      remote.restoreItemStatus = 405;
+      await repo.restoreItemOfflineFirst(b);
+      await repo.drainOutboxOnce();
+      expect(remote.createItemCalls, hasLength(1));
+      expect(await db.outboxCount(), 0);
+    });
+
+    test('a synced create announces its server id', () async {
+      final changes = <ListItemIdChange>[];
+      final sub = repo.itemIdChanges.listen(changes.add);
+      addTearDown(sub.cancel);
+      final local = await repo.createItemOfflineFirst(
+        listId,
+        const CreateListItemRequest(name: 'Milk'),
+      );
+      await repo.drainOutboxOnce();
+      await Future<void>.delayed(Duration.zero);
+      expect(changes, [(from: local.id, to: '${remote.serverItemIdPrefix}1')]);
+    });
+
+    test('clear returns what it removed; undo before sync withdraws the clear',
+        () async {
+      await seed('a', position: 0);
+      await seed('b', checked: true, position: 1);
+      await seed('c', checked: true, position: 2);
+
+      final cleared =
+          await repo.clearItemsOfflineFirst(listId, onlyChecked: true);
+      expect(cleared.items.map((item) => item.id), unorderedEquals(['b', 'c']));
+      expect(cleared.opId, isNotNull);
+
+      await repo.restoreItemsOfflineFirst(listId, cleared.items,
+          clearOpId: cleared.opId);
+
+      final items = await repo.getItemsByListOnce(listId);
+      expect(items.map((item) => item.id), ['a', 'b', 'c']);
+      expect(await db.outboxCount(), 0);
+      await repo.drainOutboxOnce();
+      expect(remote.clearItemsCalls, isEmpty);
+    });
+
+    test('undoing a clear that already synced restores each row', () async {
+      await seed('a', checked: true, position: 0);
+      await seed('b', checked: true, position: 1);
+      final cleared =
+          await repo.clearItemsOfflineFirst(listId, onlyChecked: true);
+      await repo.drainOutboxOnce();
+      expect(remote.clearItemsCalls, hasLength(1));
+
+      await repo.restoreItemsOfflineFirst(listId, cleared.items,
+          clearOpId: cleared.opId);
+      expect(await opTypes(), ['restoreItem', 'restoreItem']);
+      await repo.drainOutboxOnce();
+      expect(remote.restoreItemCalls, unorderedEquals(['a', 'b']));
+    });
+
+    test('a refresh while a restore is queued keeps the row', () async {
+      final b = await seed('b');
+      await repo.deleteItemOfflineFirst(listId, 'b');
+      await repo.drainOutboxOnce();
+      await repo.restoreItemOfflineFirst(b);
+
+      remote.itemsToReturn = const []; // the server still has it deleted
+      await repo.refreshItems(listId);
+
+      expect((await repo.getItemsByListOnce(listId)).map((i) => i.id), ['b']);
+    });
+
+    test('setItemsCheckedOfflineFirst flips only the named rows that differ',
+        () async {
+      await seed('a');
+      await seed('b', checked: true, position: 1);
+      await seed('c', position: 2);
+
+      final flipped = await repo.setItemsCheckedOfflineFirst(listId, ['a', 'b'],
+          checked: true);
+
+      expect(flipped, ['a']);
+      final byId = {
+        for (final item in await repo.getItemsByListOnce(listId)) item.id: item
+      };
+      expect(byId['a']!.checked, isTrue);
+      expect(byId['c']!.checked, isFalse);
+      expect(await repo.setAllCheckedOfflineFirst(listId, checked: false),
+          unorderedEquals(['a', 'b']));
+    });
+
+    test('deleteItemsOfflineFirst removes the rows and queues a delete each',
+        () async {
+      await seed('a');
+      await seed('b', position: 1);
+      await repo.deleteItemsOfflineFirst(listId, ['a', 'b']);
+      expect(await repo.getItemsByListOnce(listId), isEmpty);
+      expect(await opTypes(), ['deleteItem', 'deleteItem']);
+      await repo.drainOutboxOnce();
+      expect(remote.deleteItemCalls, unorderedEquals(['a', 'b']));
+    });
+  });
 }

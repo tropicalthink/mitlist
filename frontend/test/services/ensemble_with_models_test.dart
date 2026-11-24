@@ -103,6 +103,7 @@ CalibratedScorer _modelScorer() => CalibratedScorer(
         0, // recency
         0, // listCooccurrence
         0, // isExactAlias
+        0, // isUniqueExactAlias
       ],
       bias: -1,
       tauAuto: 0.85,

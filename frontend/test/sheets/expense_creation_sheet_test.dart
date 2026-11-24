@@ -21,6 +21,7 @@ import 'package:mitlist/providers/grocery_provider.dart';
 import 'package:mitlist/providers/list_provider.dart' show grocerySeedProvider;
 import 'package:mitlist/repositories/finance_repository.dart';
 import 'package:mitlist/sheets/expense_creation_sheet.dart';
+import 'package:mitlist/widgets/app_switch.dart';
 import 'package:mitlist/services/api_error_mapper.dart';
 import 'package:mitlist/services/auth_service.dart';
 import 'package:mitlist/services/grocery_expense_category_service.dart';
@@ -68,6 +69,12 @@ void main() {
   Future<void> pumpSheet(
     WidgetTester tester, {
     String? initialDescription,
+    DateTime? initialDate,
+    String? initialNotes,
+    int receiptPurchaseCount = 0,
+    ValueNotifier<bool>? rememberReceiptPurchases,
+    List<String> receiptListItemNames = const [],
+    ValueNotifier<bool>? tickReceiptListItems,
     List<Override> extraOverrides = const [],
     GroupService? groupService,
     AuthService? authService,
@@ -87,8 +94,8 @@ void main() {
                 groupService ??
                 FakeGroupService(groups: [group], members: members),
           ),
-          authServiceProviderAsync.overrideWith((ref) async =>
-              authService ?? FakeAuthService(currentUser: user)),
+          authServiceProviderAsync.overrideWith(
+              (ref) async => authService ?? FakeAuthService(currentUser: user)),
           ...extraOverrides,
         ],
         child: MaterialApp(
@@ -98,6 +105,12 @@ void main() {
             body: SingleChildScrollView(
               child: ExpenseCreationSheet(
                 initialDescription: initialDescription,
+                initialDate: initialDate,
+                initialNotes: initialNotes,
+                receiptPurchaseCount: receiptPurchaseCount,
+                rememberReceiptPurchases: rememberReceiptPurchases,
+                receiptListItemNames: receiptListItemNames,
+                tickReceiptListItems: tickReceiptListItems,
               ),
             ),
           ),
@@ -122,6 +135,81 @@ void main() {
     expect(find.text('Shares'), findsNothing);
     // The per-member "Paid by" picker is also folded away.
     expect(find.text('Sam'), findsNothing);
+  });
+
+  testWidgets('a scanned receipt fills in its date and lines', (tester) async {
+    await pumpSheet(
+      tester,
+      initialDescription: 'Lidl',
+      initialDate: DateTime(2026, 10, 3),
+      initialNotes: 'Gemüsemais 0.98\nMilchbrötchen 0.99',
+    );
+
+    expect(find.textContaining('Oct 3'), findsOneWidget);
+    expect(find.text('Gemüsemais 0.98\nMilchbrötchen 0.99'), findsOneWidget);
+  });
+
+  testWidgets('a receipt with household items offers to remember them',
+      (tester) async {
+    final remember = ValueNotifier(true);
+    addTearDown(remember.dispose);
+    await pumpSheet(
+      tester,
+      receiptPurchaseCount: 9,
+      rememberReceiptPurchases: remember,
+    );
+
+    expect(find.text('Remember what was bought'), findsOneWidget);
+    expect(find.textContaining('9 items you usually buy'), findsOneWidget);
+
+    final toggle = find.byType(AppSwitch);
+    await tester.ensureVisible(toggle);
+    await tester.pump();
+    await tester.tap(toggle);
+    await tester.pump();
+    expect(remember.value, isFalse);
+  });
+
+  testWidgets('no household items on the receipt, no switch', (tester) async {
+    final remember = ValueNotifier(true);
+    addTearDown(remember.dispose);
+    await pumpSheet(tester, rememberReceiptPurchases: remember);
+
+    expect(find.text('Remember what was bought'), findsNothing);
+  });
+
+  testWidgets('a receipt offers to tick off what it covers on the lists',
+      (tester) async {
+    final remember = ValueNotifier(true);
+    final tick = ValueNotifier(true);
+    addTearDown(remember.dispose);
+    addTearDown(tick.dispose);
+    await pumpSheet(
+      tester,
+      receiptPurchaseCount: 2,
+      rememberReceiptPurchases: remember,
+      receiptListItemNames: const ['Apples', 'Bananas'],
+      tickReceiptListItems: tick,
+    );
+
+    expect(find.text('Tick off 2 items on your lists'), findsOneWidget);
+    expect(find.text('Apples, Bananas'), findsOneWidget);
+
+    final toggle = find.byType(AppSwitch).last;
+    await tester.ensureVisible(toggle);
+    await tester.pump();
+    await tester.tap(toggle);
+    await tester.pump();
+    expect(tick.value, isFalse);
+    expect(remember.value, isTrue);
+  });
+
+  testWidgets('nothing open on the lists, no tick-off switch', (tester) async {
+    final tick = ValueNotifier(true);
+    addTearDown(tick.dispose);
+    await pumpSheet(tester, tickReceiptListItems: tick);
+
+    expect(find.textContaining('on your lists'), findsNothing);
   });
 
   testWidgets('tapping the summary unfolds the full split editor',

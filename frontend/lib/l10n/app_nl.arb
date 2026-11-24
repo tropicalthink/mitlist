@@ -1371,6 +1371,19 @@
     "description": "Card title: type recipe manually"
   },
   "recipeCreationTypeItInDesc": "Begin met een titel en voeg later ingrediënten toe",
+  "recipeCreationFromPhoto": "Foto lezen",
+  "recipeCreationFromPhotoDesc": "Fotografeer een receptkaart of kookboekpagina. Hij wordt op je telefoon gelezen",
+  "recipePhotoTitle": "Fotografeer het recept",
+  "recipePhotoReading": "Recept wordt gelezen…",
+  "recipePhotoNothingFound": "Geen recept gevonden op de foto. Probeer het dichterbij en rechter.",
+  "recipePhotoRead": "{ingredients, plural, =1{1 ingrediënt} other{{ingredients} ingrediënten}} en {steps, plural, =1{1 stap} other{{steps} stappen}} gelezen. Controleer ze voor het opslaan.",
+  "receiptScanTitle": "Fotografeer de kassabon",
+  "receiptScanReading": "Kassabon wordt gelezen…",
+  "receiptScanNoTotal": "Geen totaal gevonden op de bon. Vul het bedrag zelf in.",
+  "receiptScanCheckTotal": "De regels van de bon tellen niet op tot het totaal. Controleer bedrag en notities.",
+  "receiptRememberPurchases": "Aankopen onthouden",
+  "receiptRememberPurchasesDesc": "{count, plural, =1{1 vast artikel} other{{count} vaste artikelen}} als gekocht tellen, voor aanvullen en suggesties",
+  "receiptTickListItems": "{count, plural, =1{1 item} other{{count} items}} op je lijsten afvinken",
   "@recipeCreationTypeItInDesc": {
     "description": "Card subtitle: type manually"
   },
@@ -2417,22 +2430,6 @@
   "@listDetailCheckedOff": {
     "description": "Section header for completed items"
   },
-  "listDetailNothingHere": "Nog niets hier",
-  "@listDetailNothingHere": {
-    "description": "Empty state when list has no items"
-  },
-  "listDetailNothingHereDesc": "Fotografeer een handgeschreven lijst, koelkastbriefje of screenshot. Wij halen de items eruit.",
-  "@listDetailNothingHereDesc": {
-    "description": "Description for empty list"
-  },
-  "listDetailScanThisList": "Scan deze lijst",
-  "@listDetailScanThisList": {
-    "description": "CTA to scan list content"
-  },
-  "listDetailTypeItem": "Typ een item",
-  "@listDetailTypeItem": {
-    "description": "CTA to type an item manually"
-  },
   "listDetailNoMatch": "Geen items komen overeen met je filter",
   "@listDetailNoMatch": {
     "description": "Search empty result for items"
@@ -2453,19 +2450,6 @@
   "@listDetailCouldNotClear": {
     "description": "Snackbar when clearing items fails"
   },
-  "listDetailItemDeleted": "{name} verwijderd",
-  "@listDetailItemDeleted": {
-    "description": "Snackbar when item is deleted",
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "listDetailCouldNotRestore": "Kon item niet herstellen.",
-  "@listDetailCouldNotRestore": {
-    "description": "Snackbar when restore fails"
-  },
   "listDetailCouldNotReorder": "Kon items niet herordenen. Probeer het opnieuw.",
   "@listDetailCouldNotReorder": {
     "description": "Snackbar when reorder fails"
@@ -2483,10 +2467,6 @@
   "@listDetailCouldNotStartScan": {
     "description": "Snackbar when scan fails to start"
   },
-  "listDetailSetPrice": "Prijs instellen",
-  "@listDetailSetPrice": {
-    "description": "Dialog title for setting item price"
-  },
   "listDetailPriceInput": "Prijs",
   "@listDetailPriceInput": {
     "description": "Input label for price"
@@ -2503,7 +2483,7 @@
   "@listDetailClearTitle": {
     "description": "Dialog title for clearing list"
   },
-  "listDetailClearBody": "Dit verwijdert alle {count} {count, plural, =1{item} other{items}}. Dit kan niet ongedaan worden gemaakt.",
+  "listDetailClearBody": "Dit verwijdert alle {count} {count, plural, =1{item} other{items}}. Met de pijl Ongedaan maken zet je het terug zolang je de lijst niet verlaat.",
   "@listDetailClearBody": {
     "description": "Dialog body for clearing list",
     "placeholders": {
@@ -3362,10 +3342,7 @@
       }
     }
   },
-  "shoppingTripMarkDone": "Markeren als gedaan",
-  "@shoppingTripMarkDone": {
-    "description": "Button to mark item as purchased"
-  },
+  "shoppingTripFinish": "Boodschappen afronden",
   "shoppingTripBasketBar": "/ {collected} verzameld{price}",
   "@shoppingTripBasketBar": {
     "description": "Basket bar: collected count and price",
@@ -4131,31 +4108,42 @@
   "offlineBannerConflictCount": "{count} wijzigingen vereisen uw beoordeling",
   "offlineBannerConflictOne": "Een wijziging vereist uw beoordeling",
   "offlineBannerRetry": "Opnieuw",
-  "composerNewItem": "Nieuw item",
   "composerScanList": "Lijst scannen",
   "composerAddItem": "Item toevoegen",
   "listItemViewPhoto": "Foto bekijken",
-  "listItemReplacePhoto": "Foto vervangen",
   "listItemAddPhoto": "Foto toevoegen",
   "listItemRemovePhoto": "Foto verwijderen",
-  "listItemSetPrice": "Prijs instellen",
-  "listItemChangeQuantity": "Aantal wijzigen",
   "listItemQuantityAmount": "Aantal",
-  "listItemQuantityUnit": "Eenheid (optioneel)",
-  "listItemAddNote": "Notitie toevoegen",
-  "listItemEditNote": "Notitie bewerken",
   "listItemNoteLabel": "Notitie",
   "listDetailProgress": "{done} van {total} klaar",
   "listOpenCount": "{count, plural, =0{Alles klaar} =1{1 te gaan} other{{count} te gaan}}",
   "listSortListView": "Lijstweergave",
   "listItemDeleteAction": "Verwijderen",
   "listItemAddedBy": "Toegevoegd door {name}",
-  "listItemReorder": "Herschikken",
   "listItemMarkUnchecked": "{name} als niet-afgevinkt markeren",
   "listItemMarkChecked": "{name} als afgevinkt markeren",
   "listItemViewPhotoFor": "Foto voor {name} bekijken",
   "listItemFailedSave": "Opslaan mislukt — tik op de sync-balk om opnieuw te proberen",
-  "listItemLongPressHint": "Lang indrukken voor meer opties",
+  "listItemUnit": "Eenheid",
+  "listItemMoveUp": "Omhoog",
+  "listItemMoveDown": "Omlaag",
+  "listEditDetailsFor": "Details van {name}",
+  "listEditUnitAdd": "Eenheid toevoegen",
+  "listEditUnitValue": "Eenheid: {unit}",
+  "listEditPriceAdd": "Prijs toevoegen",
+  "listEditPriceValue": "Prijs: {price}",
+  "listEditNoteAdd": "Notitie toevoegen",
+  "listEditNoteValue": "Notitie: {note}",
+  "listEditClearUnit": "Eenheid wissen",
+  "listEditClearPrice": "Prijs wissen",
+  "listEditBack": "Terug naar details",
+  "listEditDeleteItem": "{name} verwijderen",
+  "listEditUnitPieces": "st.",
+  "listEditUnitPack": "pak",
+  "listEditUnitCan": "blik",
+  "listEditUnitBottle": "fles",
+  "listItemOneLess": "Eén minder",
+  "listItemOneMore": "Eén meer",
   "scanCheckListPhoto": "Controleer lijstfoto",
   "scanReadingList": "Je lijst lezen…",
   "scanCouldNotProcess": "Kon de afbeelding niet verwerken. Probeer het opnieuw.",
@@ -4490,6 +4478,8 @@
   "@authLoginResetCodeSent": {
     "description": "Success message after requesting reset code"
   },
+  "authLoginResetUnavailable": "Deze server kan geen e-mail versturen, dus je wachtwoord kan hier niet worden hersteld. Vraag de beheerder om hulp.",
+  "authSignupEmailTaken": "Er bestaat al een account met dit e-mailadres. Log in plaats daarvan in.",
   "authLoginResetFillAllFields": "Vul de code en beide wachtwoordvelden in.",
   "@authLoginResetFillAllFields": {
     "description": "Validation: all reset fields required"
@@ -4780,10 +4770,6 @@
   "listReminderChipTooltip": "Huishoudherinnering. Tik om te wijzigen.",
   "@commonView": {
     "description": "Generic view button"
-  },
-  "composerItemHint": "bijv. Melk, 2 avocado's of 500 g bloem",
-  "@composerItemHint": {
-    "description": "Hint for list composer input"
   },
   "conflictItemChanged": "Item gewijzigd",
   "@conflictItemChanged": {
@@ -6382,5 +6368,339 @@
   "welcomeInviteJoin": "Word lid van {household} om lijsten, klusjes en geld te delen.",
   "welcomeInviteExpiredTitle": "Deze uitnodiging is verlopen",
   "welcomeInviteExpiredBody": "Vraag degene die hem stuurde om een nieuwe link.",
-  "activityMemberJoined": "{name} is lid geworden · {when}"
+  "activityMemberJoined": "{name} is lid geworden · {when}",
+  "authOnboardingAreasTitle": "Waarvoor ga je mitlist gebruiken?",
+  "authOnboardingAreasBody": "Kies er zoveel als je wilt. Je ziet alleen die; zet de rest wanneer je wilt aan onder Jij.",
+  "authOnboardingAreasKitchen": "Recepten en maaltijden",
+  "authOnboardingAreasAll": "Laat alles zien",
+  "appAreasTitle": "Wat je gebruikt",
+  "appAreasBody": "Verbergen wist niets. Voegt iemand een uitgave met jou toe of ben jij aan de beurt voor een klus, dan verschijnt dat deel toch.",
+  "appAreasAll": "Alles",
+  "hubChecklistLater": "Later:",
+  "pinwallHubEmptyIntro": "Hier komen notities voor het hele huis. Open het prikbord om er een op te prikken.",
+  "widgetsPageTitle": "Widgets voor je beginscherm",
+  "@widgetsPageTitle": {
+    "description": "Title of the Widgets page (You > Home screen widgets)"
+  },
+  "widgetsPageAccountRowValue": "De lijst en klusjes in één oogopslag",
+  "@widgetsPageAccountRowValue": {
+    "description": "You screen: subtitle of the row that opens the Widgets page"
+  },
+  "widgetsPageIntro": "Bekijk de boodschappenlijst en de klusjes van vandaag zonder de app te openen, en vink ze meteen af op je beginscherm.",
+  "@widgetsPageIntro": {
+    "description": "Widgets page: intro under the title"
+  },
+  "widgetsPageStepsTitle": "Zo voeg je een widget toe",
+  "@widgetsPageStepsTitle": {
+    "description": "Widgets page: heading of the numbered how-to steps"
+  },
+  "widgetsPageIosStep1": "Houd een lege plek op je beginscherm ingedrukt en tik op Wijzig en Voeg widget toe.",
+  "@widgetsPageIosStep1": {
+    "description": "iOS how-to step 1"
+  },
+  "widgetsPageIosStep2": "Zoek naar ‘mitlist’.",
+  "@widgetsPageIosStep2": {
+    "description": "iOS how-to step 2"
+  },
+  "widgetsPageIosStep3": "Kies een widget, veeg naar het formaat dat je wilt en tik op Voeg widget toe.",
+  "@widgetsPageIosStep3": {
+    "description": "iOS how-to step 3"
+  },
+  "widgetsPageIosStep4": "Om het huishouden of de lijst te kiezen, houd je de widget ingedrukt en tik je op Wijzig widget.",
+  "@widgetsPageIosStep4": {
+    "description": "iOS how-to step 4"
+  },
+  "widgetsPageAndroidStep1": "Houd een lege plek op je beginscherm ingedrukt.",
+  "@widgetsPageAndroidStep1": {
+    "description": "Android how-to step 1"
+  },
+  "widgetsPageAndroidStep2": "Tik op Widgets en zoek mitlist.",
+  "@widgetsPageAndroidStep2": {
+    "description": "Android how-to step 2"
+  },
+  "widgetsPageAndroidStep3": "Houd een widget ingedrukt en sleep hem naar de plek die je wilt.",
+  "@widgetsPageAndroidStep3": {
+    "description": "Android how-to step 3"
+  },
+  "widgetsPageAdd": "Toevoegen aan beginscherm",
+  "@widgetsPageAdd": {
+    "description": "Android button under a widget preview: asks the launcher to pin it"
+  },
+  "widgetsPageAdded": "Toegevoegd",
+  "@widgetsPageAdded": {
+    "description": "Badge on a widget that is already on the home screen"
+  },
+  "widgetsPagePinFailed": "Je beginscherm kon hem niet direct toevoegen. Volg de stappen hieronder.",
+  "@widgetsPagePinFailed": {
+    "description": "Toast when the launcher could not pin a widget in one tap"
+  },
+  "widgetsPageShoppingListName": "Boodschappenlijst",
+  "@widgetsPageShoppingListName": {
+    "description": "Name of the shopping list widget"
+  },
+  "widgetsPageShoppingListDesc": "Vink artikelen af in de winkel en voeg nieuwe toe met +.",
+  "@widgetsPageShoppingListDesc": {
+    "description": "What the shopping list widget does"
+  },
+  "widgetsPageChoresName": "Klusjes vandaag",
+  "@widgetsPageChoresName": {
+    "description": "Name of the chores widget"
+  },
+  "widgetsPageChoresDesc": "Wat er vandaag moet en wie er aan de beurt is. Vink een klusje af met één tik.",
+  "@widgetsPageChoresDesc": {
+    "description": "What the chores widget does"
+  },
+  "widgetsPageQuickAddName": "Snel toevoegen",
+  "@widgetsPageQuickAddName": {
+    "description": "Name of the quick add widget (Android)"
+  },
+  "widgetsPageQuickAddDesc": "Met één tik iets op de lijst zetten.",
+  "@widgetsPageQuickAddDesc": {
+    "description": "What the quick add widget does"
+  },
+  "widgetsPageHouseholdName": "Huishouden vandaag",
+  "@widgetsPageHouseholdName": {
+    "description": "Name of the household today widget"
+  },
+  "widgetsPageHouseholdDesc": "De klusjes van vandaag, de boodschappenlijst en het avondeten op één plek.",
+  "@widgetsPageHouseholdDesc": {
+    "description": "What the household today widget does"
+  },
+  "widgetsPagePreviewLabel": "Voorbeeld van de widget {name}",
+  "@widgetsPagePreviewLabel": {
+    "description": "Screen reader label of a widget preview",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "widgetsPageSampleHousehold": "Ons huis",
+  "@widgetsPageSampleHousehold": {
+    "description": "Sample household name in widget previews when the real one is unknown"
+  },
+  "widgetsPageSampleListName": "Boodschappen",
+  "@widgetsPageSampleListName": {
+    "description": "Sample list name in widget previews"
+  },
+  "widgetsPageSampleItem1": "Havermelk",
+  "@widgetsPageSampleItem1": {
+    "description": "Sample list item in widget previews"
+  },
+  "widgetsPageSampleItem2": "Bananen",
+  "@widgetsPageSampleItem2": {
+    "description": "Sample list item in widget previews"
+  },
+  "widgetsPageSampleItem3": "Koffiebonen",
+  "@widgetsPageSampleItem3": {
+    "description": "Sample list item in widget previews"
+  },
+  "widgetsPageSampleItem4": "Rijst",
+  "@widgetsPageSampleItem4": {
+    "description": "Sample list item in widget previews"
+  },
+  "widgetsPageSampleChore1": "Vuilnis buiten zetten",
+  "@widgetsPageSampleChore1": {
+    "description": "Sample chore in widget previews"
+  },
+  "widgetsPageSampleChore2": "Planten water geven",
+  "@widgetsPageSampleChore2": {
+    "description": "Sample chore in widget previews"
+  },
+  "widgetsPageSampleMeal": "Vanavond: ovenpasta",
+  "@widgetsPageSampleMeal": {
+    "description": "Sample tonight's meal line in the household widget preview"
+  },
+  "widgetsPageSampleAddHint": "Toevoegen aan de lijst",
+  "@widgetsPageSampleAddHint": {
+    "description": "Placeholder text in the quick add widget preview"
+  },
+  "widgetsPageSampleAddTo": "Toevoegen aan",
+  "@widgetsPageSampleAddTo": {
+    "description": "Caption above the list name in the iOS quick add widget preview (\"Add to\" / \"Groceries\")"
+  },
+  "widgetsPageSampleLeft": "Nog {count}",
+  "@widgetsPageSampleLeft": {
+    "description": "Widget preview: how many list items are still open",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "widgetsPageSampleDue": "{count} te doen",
+  "@widgetsPageSampleDue": {
+    "description": "Widget preview: how many chores are due",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "widgetPromoHeadline": "Je boodschappenlijst op je beginscherm",
+  "@widgetPromoHeadline": {
+    "description": "Home promo sheet headline for home screen widgets (household benefit, not the feature)"
+  },
+  "widgetPromoBody": "Vink dingen af in de winkel zonder de app te openen. Iedereen thuis ziet het meteen.",
+  "@widgetPromoBody": {
+    "description": "Home promo sheet body for home screen widgets"
+  },
+  "widgetPromoAdd": "Toevoegen aan beginscherm",
+  "@widgetPromoAdd": {
+    "description": "Home promo sheet primary button on Android: pins the shopping list widget"
+  },
+  "widgetPromoShowMe": "Laat zien hoe",
+  "@widgetPromoShowMe": {
+    "description": "Home promo sheet primary button on iOS: opens the Widgets page"
+  },
+  "widgetPromoNotNow": "Niet nu",
+  "@widgetPromoNotNow": {
+    "description": "Home promo sheet: dismiss button"
+  },
+  "listUndoUndoTooltip": "Ongedaan maken",
+  "listUndoRedoTooltip": "Opnieuw",
+  "listUndoChangedElsewhere": "Iemand anders heeft dit gewijzigd, dus het is niet ongedaan gemaakt",
+  "listUndoRedoChangedElsewhere": "Iemand anders heeft dit gewijzigd, dus het is niet opnieuw gedaan",
+  "listUndoRestoredItems": "{count, plural, =1{1 item hersteld} other{{count} items hersteld}}",
+  "listUndoCouldNotUndo": "Kon niet ongedaan maken. Probeer het opnieuw.",
+  "listUndoCouldNotRedo": "Kon niet opnieuw doen. Probeer het opnieuw.",
+  "listUndoOutboxRestoreItem": "Item herstellen",
+  "calendarExternalBusy": "Bezet",
+  "calendarExternalAllDay": "Hele dag",
+  "calendarExternalTimeRange": "{start} – {end}",
+  "calendarExternalFrom": "vanaf {time}",
+  "calendarExternalUntil": "tot {time}",
+  "calendarExternalFree": "vrij",
+  "calendarExternalYou": "Jij",
+  "calendarExternalSomeone": "Een huisgenoot",
+  "calendarExternalSemantics": "{person}: {what}, {when}",
+  "calendarExternalSemanticsFree": "{person}: {what}, {when}, gemarkeerd als vrij",
+  "calendarWhosAroundTitle": "Wie is er · {day}",
+  "calendarWhosAroundFree": "Vrij",
+  "calendarWhosAroundAway": "Hele dag weg",
+  "calendarWhosAroundBusy": "Bezet {times}",
+  "calendarWhosAroundSelectDay": "Laat zien wie er deze dag is",
+  "calendarShareHintTitle": "Zie wanneer iedereen er is",
+  "calendarShareHintBody": "Deel je Google-, Apple- of Outlook-agenda met het huishouden, alleen als bezette tijden of met titels. Jij kiest wat ze zien.",
+  "calendarShareHintAction": "Mijn agenda delen",
+  "sharedCalendarsTitle": "Gedeelde agenda's",
+  "sharedCalendarsAccountRowValue": "Laat het huishouden zien wanneer je bezet bent",
+  "sharedCalendarsIntro": "Koppel je agenda's zodat je huishouden ziet wanneer je bezet of weg bent. Er wordt niets gedeeld tot je dat hieronder per huishouden kiest.",
+  "sharedCalendarsNoHouseholds": "Word lid van een huishouden of maak er een om een agenda te delen.",
+  "sharedCalendarsEmpty": "Nog geen agenda's gekoppeld.",
+  "sharedCalendarsKindThisPhone": "Op deze telefoon",
+  "sharedCalendarsKindOtherPhone": "Op een andere telefoon",
+  "sharedCalendarsKindLink": "Agendalink",
+  "sharedCalendarsSyncing": "Synchroniseren…",
+  "sharedCalendarsNeverSynced": "Nog niet gesynchroniseerd",
+  "sharedCalendarsSyncedAt": "Gesynchroniseerd {time}",
+  "sharedCalendarsSyncNow": "Nu synchroniseren",
+  "sharedCalendarsSyncTooSoon": "Al bijgewerkt. Probeer het over een minuut opnieuw.",
+  "sharedCalendarsSyncFailed": "De agenda's van deze telefoon konden niet worden bijgewerkt. We proberen het later opnieuw.",
+  "sharedCalendarsOtherPhoneNote": "Wordt op een andere telefoon gelezen. Je keuzes gelden meteen; de afspraken worden bijgewerkt als die telefoon mitlist opent.",
+  "sharedCalendarsNoCalendars": "Nog geen agenda's gevonden.",
+  "sharedCalendarsUnnamed": "Agenda",
+  "sharedCalendarsShareBusy": "Alleen bezet",
+  "sharedCalendarsShareDetails": "Met titels",
+  "sharedCalendarsShareNone": "Niet gedeeld",
+  "sharedCalendarsExplainBusy": "{household} ziet wanneer je bezet bent, nooit wat het is.",
+  "sharedCalendarsExplainDetails": "{household} ziet de titels en tijden van je afspraken. Afspraken die privé zijn gemarkeerd, blijven als bezet zichtbaar.",
+  "sharedCalendarsExplainNone": "{household} ziet niets van deze agenda.",
+  "sharedCalendarsAdd": "Agenda toevoegen",
+  "sharedCalendarsAddPhone": "Agenda's op deze telefoon",
+  "sharedCalendarsAddPhoneDesc": "Alle accounts op deze telefoon: Google, iCloud, Outlook en meer. Gelezen op de telefoon; alleen wat je deelt, gaat eruit.",
+  "sharedCalendarsAddLinkDesc": "Plak een privé-iCal-link uit Google, iCloud of Outlook. Werkt op elk apparaat.",
+  "sharedCalendarsAddedNotShared": "Agenda toegevoegd. Kies hieronder wat elk huishouden ziet.",
+  "sharedCalendarsPhoneDefaultName": "Deze telefoon",
+  "sharedCalendarsPermissionDeniedTitle": "Agendatoegang staat uit",
+  "sharedCalendarsPermissionDeniedBody": "Sta mitlist in Instellingen toe je agenda's te lezen om agenda's van deze telefoon te delen. Of voeg een agendalink toe.",
+  "sharedCalendarsPermissionRestricted": "Agendatoegang is op deze telefoon geblokkeerd (bijvoorbeeld door Schermtijd of apparaatbeheer). Je kunt in plaats daarvan een agendalink toevoegen.",
+  "sharedCalendarsOpenSettings": "Instellingen openen",
+  "sharedCalendarsRenameTitle": "Agenda hernoemen",
+  "sharedCalendarsRemoveTitle": "{name} verwijderen?",
+  "sharedCalendarsRemoveBody": "De afspraken verdwijnen uit elke huishoudagenda. Je agenda zelf verandert niet.",
+  "sharedCalendarsUpcomingTitle": "Komende afspraken",
+  "sharedCalendarsUpcomingIntro": "Wat huisgenoten van je komende twee weken zien. Tik op een afspraak om hem te verbergen of meer of minder te tonen. Een terugkerende afspraak telt als één.",
+  "sharedCalendarsUpcomingFailed": "Komende afspraken konden niet worden geladen.",
+  "sharedCalendarsUpcomingEmpty": "Geen komende afspraken in je gedeelde agenda's.",
+  "sharedCalendarsSeesDetails": "{households}: titel en tijd",
+  "sharedCalendarsSeesBusy": "{households}: alleen bezet",
+  "sharedCalendarsSeesNothing": "Huisgenoten zien dit niet",
+  "sharedCalendarsOverrideCalendar": "Agenda-instelling",
+  "sharedCalendarsOverrideHidden": "Verborgen",
+  "sharedCalendarsOverrideBusy": "Bezet",
+  "sharedCalendarsOverrideDetails": "Met titel",
+  "sharedCalendarsOverrideCalendarDesc": "Zoals de agenda met elk huishouden wordt gedeeld.",
+  "sharedCalendarsOverrideHiddenDesc": "Geen enkel huishouden ziet het.",
+  "sharedCalendarsOverrideBusyDesc": "Huishoudens die deze agenda zien, zien een bezet blok zonder titel.",
+  "sharedCalendarsOverrideDetailsDesc": "Huishoudens die deze agenda zien, zien de titel, ook als die in je agenda privé is.",
+  "sharedCalendarsEventNoTitle": "(Geen titel)",
+  "sharedCalendarsEventPrivate": "privé",
+  "sharedCalendarsEventFree": "gemarkeerd als vrij",
+  "sharedCalendarsEventChoice": "Instelling: {choice}",
+  "calendarConnectionErrorFetchFailed": "Deze agenda kon de laatste keer niet worden geladen. We blijven het proberen.",
+  "calendarConnectionErrorNotCalendar": "Deze link geeft geen agenda meer. Verwijder hem en voeg de huidige link toe.",
+  "calendarConnectionErrorTooLarge": "Deze agenda is te groot om te synchroniseren. Probeer een kleinere agenda.",
+  "calendarConnectionErrorUnauthorized": "Deze link werkt niet meer. Hij is misschien vernieuwd of verwijderd; voeg de nieuwe link toe.",
+  "calendarConnectionErrorOther": "Deze agenda kon niet worden gesynchroniseerd.",
+  "calendarLinkSheetTitle": "Agendalink toevoegen",
+  "calendarLinkAddAction": "Agendalink",
+  "calendarLinkNameHint": "Optioneel, bijv. Werk",
+  "calendarLinkUrlLabel": "Privé-iCal-link",
+  "calendarLinkUrlHint": "https:// of webcal://",
+  "calendarLinkPrivacyNote": "Behandel deze link als een wachtwoord: iedereen die hem heeft, kan de agenda lezen. mitlist bewaart hem versleuteld en toont hem nooit meer.",
+  "calendarLinkErrorUrl": "Voer een link in die begint met https:// of webcal://.",
+  "calendarLinkErrorNotCalendar": "Die link is geen agenda. Kopieer het iCal-adres (.ics), niet de link naar de webpagina van de agenda.",
+  "calendarLinkErrorFetch": "We konden die agenda niet laden. Controleer de link en of de agenda nog gedeeld of gepubliceerd is.",
+  "calendarLinkStepsTitle": "Waar je de link vindt",
+  "calendarLinkStepsGoogleTitle": "Google Agenda",
+  "calendarLinkStepsGoogle": "Open op een computer Instellingen, kies je agenda onder 'Instellingen voor mijn agenda's' en kopieer bij Agenda integreren het 'Geheim adres in iCal-indeling'.",
+  "calendarLinkStepsAppleTitle": "Apple iCloud-agenda",
+  "calendarLinkStepsApple": "Tik in de Agenda-app op Agenda's en daarna op de infoknop naast de agenda. Zet Openbare agenda aan en kopieer de link. Iedereen met de link kan hem zien; op deze telefoon is 'Agenda's op deze telefoon' privéer.",
+  "calendarLinkStepsOutlookTitle": "Outlook",
+  "calendarLinkStepsOutlook": "Open in Outlook op het web Instellingen > Agenda > Gedeelde agenda's, publiceer de agenda ('Kan alle details bekijken' of 'Kan zien wanneer ik bezet ben') en kopieer de ICS-link.",
+  "sharedCalendarsLimitReached": "Je hebt 10 agenda's gekoppeld, het maximum. Verwijder er een om een andere toe te voegen.",
+  "calendarWhosAroundFreeAllDay": "Hele dag vrij",
+  "calendarWhosAroundFreeFrom": "Vrij vanaf {time}",
+  "calendarWhosAroundBusyUntil": "Bezet tot {time}",
+  "calendarWhosAroundBusyFrom": "Bezet vanaf {time}",
+  "calendarWhosAroundNotSharing": "Deelt geen agenda",
+  "calendarWhosAroundEveningAll": "Iedereen is de hele avond vrij",
+  "calendarWhosAroundSharersEveningAll": "Iedereen die deelt is de hele avond vrij",
+  "calendarWhosAroundEveningFrom": "Iedereen is vrij vanaf {time}",
+  "calendarWhosAroundSharersEveningFrom": "Iedereen die deelt is vrij vanaf {time}",
+  "calendarWhosAroundEveningBetween": "Iedereen is vrij van {start} tot {end}",
+  "calendarWhosAroundSharersEveningBetween": "Iedereen die deelt is vrij van {start} tot {end}",
+  "calendarWhosAroundEveningNone": "'s Avonds is niet iedereen vrij",
+  "calendarWhosAroundSharersEveningNone": "'s Avonds is niet iedereen die deelt vrij",
+  "calendarWhosAroundTapHint": "Tik op een dag om die te bekijken.",
+  "calendarTourHome": "Nieuw: zie wanneer iedereen er is. Open de agenda.",
+  "calendarTourShare": "Deel hier je agenda, zodat het huishouden weet wanneer je bezet bent.",
+  "calendarTourAdd": "Voeg de agenda's van je telefoon of een link toe. Er wordt niets gedeeld tot je kiest.",
+  "calendarTourChoices": "Kies wat elk huishouden ziet: alleen bezet of met titels.",
+  "calendarTourUpcoming": "Verberg wat privé is, afspraak voor afspraak.",
+  "coachMarkNext": "Volgende",
+  "coachMarkSkip": "Overslaan",
+  "coachMarkDone": "Begrepen",
+  "sharedCalendarsShowMeHow": "Laat zien hoe",
+  "sharedCalendarsIosPrivateNote": "Een iPhone weet niet welke afspraken privé zijn, dus ze kunnen met titel verschijnen. Verberg hieronder wat je wilt.",
+  "sharedCalendarsHideEvent": "Verbergen voor huisgenoten",
+  "sharedCalendarsShowAgain": "Weer tonen",
+  "sharedCalendarsEventPrivateNote": "Privé in je agenda",
+  "sharedCalendarsEventFreeNote": "Als vrij gemarkeerd in je agenda",
+  "sharedCalendarsNotSharedAnywhere": "Geen huishouden ziet deze agenda.",
+  "sharedCalendarsSyncedJustNow": "Zojuist gesynchroniseerd",
+  "sharedCalendarsSyncedYesterday": "Gisteren gesynchroniseerd",
+  "coachMarkStepLabel": "Tip {step} van {total}",
+  "sharedCalendarsSyncedMinutes": "{minutes} min geleden gesynchroniseerd",
+  "sharedCalendarsSyncedHours": "{hours} uur geleden gesynchroniseerd",
+  "sharedCalendarsExplainDetailsNoPrivate": "{household} ziet de titels en tijden van je afspraken.",
+  "calendarWhosAroundExpand": "Ieders tijden tonen",
+  "calendarWhosAroundCollapse": "Minder tonen",
+  "sharedCalendarsSummaryBusy": "{household}: alleen bezet",
+  "sharedCalendarsSummaryDetails": "{household}: met titels",
+  "sharedCalendarsSummaryNone": "{household}: niet gedeeld",
+  "sharedCalendarsSummaryNotShared": "Niet gedeeld",
+  "sharedCalendarsShowChoices": "Deelkeuzes tonen",
+  "sharedCalendarsHideChoices": "Deelkeuzes verbergen"
 }

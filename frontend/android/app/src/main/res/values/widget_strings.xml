@@ -6,7 +6,7 @@
     <string name="widget_shopping_list_name">Shopping list</string>
     <string name="widget_shopping_list_description">Tick items off and add new ones</string>
     <string name="widget_chores_name">Chores today</string>
-    <string name="widget_chores_description">Due chores with a Done button</string>
+    <string name="widget_chores_description">Overdue and today\'s chores, with a Done button</string>
     <string name="widget_household_today_name">Household today</string>
     <string name="widget_household_today_description">Chores, shopping, tonight\'s meal and your balance</string>
     <string name="widget_balance_name">Balance</string>
@@ -42,7 +42,7 @@
 
     <!-- Chores -->
     <string name="widget_chores_title">Chores</string>
-    <string name="widget_chores_nothing_due_short">Nothing due</string>
+    <string name="widget_chores_nothing_due_short">Nothing due today</string>
     <plurals name="widget_chores_due">
         <item quantity="one">%1$d chore due</item>
         <item quantity="other">%1$d chores due</item>
@@ -108,4 +108,26 @@
     <string name="widget_sample_meal">Lasagne</string>
     <string name="widget_sample_person_1">Sam</string>
     <string name="widget_sample_person_2">Alex</string>
+
+    <!-- Ticked/done feedback, set-up states, household headline, scan -->
+    <string name="widget_item_ticked">%1$s, ticked off</string>
+    <string name="widget_chore_marked_done">%1$s, done</string>
+    <string name="widget_needs_remember_me">Widgets need you to stay signed in. Sign in with “Remember me” on.</string>
+    <string name="widget_sign_in_action">Sign in</string>
+    <string name="widget_set_up">Open mitlist to set up widgets</string>
+    <string name="widget_set_up_action">Set up widgets</string>
+    <string name="widget_scan">Scan</string>
+    <string name="widget_headline_clear">All clear today</string>
+    <plurals name="widget_headline_overdue">
+        <item quantity="one">%1$d overdue</item>
+        <item quantity="other">%1$d overdue</item>
+    </plurals>
+    <plurals name="widget_headline_today">
+        <item quantity="one">%1$d due today</item>
+        <item quantity="other">%1$d due today</item>
+    </plurals>
+    <plurals name="widget_headline_to_buy">
+        <item quantity="one">%1$d to buy</item>
+        <item quantity="other">%1$d to buy</item>
+    </plurals>
 </resources>

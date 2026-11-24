@@ -5,6 +5,11 @@
     <!-- The widget sync worker is expedited work, which runs as a foreground
          service before Android 12. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <!-- Widgets re-render and refresh after a reboot (WidgetSystemReceiver). -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <!-- Shared household calendars: read this phone's calendars, only after
+         the person chose "Calendars on this phone". Read only, never write. -->
+    <uses-permission android:name="android.permission.READ_CALENDAR"/>
 
     <application
         android:label="mitlist"
@@ -179,8 +184,9 @@
             </intent-filter>
         </service>
         <!-- The "household changed" data push (contract C6). FCM delivers
-             data messages as this broadcast to every matching receiver in
-             the app, FlutterFire's included, so both see it. -->
+             data messages as this broadcast, addressed to the package, to
+             every matching receiver in the app: firebase-messaging's,
+             FlutterFire's and this one. See WidgetPushReceiver. -->
         <receiver
             android:name=".widgets.WidgetPushReceiver"
             android:exported="true"
@@ -189,6 +195,23 @@
                 <action android:name="com.google.android.c2dm.intent.RECEIVE" />
             </intent-filter>
         </receiver>
+        <!-- Widgets after a reboot, an app update, a language or time zone
+             change: re-render, keep the backstop, refresh old data. -->
+        <receiver
+            android:name=".widgets.WidgetSystemReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.LOCALE_CHANGED" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+            </intent-filter>
+        </receiver>
+        <!-- The launcher's callback after "Add to home screen" from the app
+             (pinWidget): binds the new widget to the current household. -->
+        <receiver
+            android:name=".widgets.WidgetPinnedReceiver"
+            android:exported="false" />
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

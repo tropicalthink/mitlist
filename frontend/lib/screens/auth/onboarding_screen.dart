@@ -12,6 +12,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../models/group_models.dart';
+import '../../providers/app_areas_provider.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/onboarding_provider.dart';
 import '../../router.dart' show currentGroupIdProvider, resetLastShellTab;
@@ -42,10 +43,10 @@ import '../../widgets/board/cork_board.dart';
 ///    asked for behind "Change".
 /// 3. Invite — a slip with the invite code (and its QR) is torn off for the
 ///    rest of the house. "Later" skips it; Home's checklist asks again.
-/// 4. Intent — "What do you want to sort out first?" puts that step first
-///    on Home's checklist (plans/048 stage 6). "Just looking" changes nothing.
-///    It replaces the old "three things to know" recap: Home itself now shows
-///    what needs you.
+/// 4. Areas — "What will you use mitlist for?": lists, chores, money,
+///    kitchen, as many as apply. The bottom bar, Home and Quick add only show
+///    those (see `providers/app_areas_provider.dart`); the first one tapped
+///    goes first on Home's checklist. "Show me everything" keeps all of it.
 ///
 /// Under reduced motion every beat is simply already in place.
 enum _Stage { choose, name, invite, intent }
@@ -471,9 +472,34 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     _toStage(_Stage.intent);
   }
 
-  Future<void> _answerIntent(HubQuickStartIntent? intent, String answer) async {
+  /// What this person picked on the last beat, in the order they tapped.
+  final Set<AppArea> _pickedAreas = {};
+
+  void _toggleArea(AppArea area) {
+    unawaited(Haptics.light());
+    setState(() {
+      if (!_pickedAreas.remove(area)) _pickedAreas.add(area);
+    });
+  }
+
+  /// Saves which areas this person uses ([areas] null: all of them) and
+  /// opens Home. The first area they tapped that has a checklist step goes
+  /// first on it.
+  Future<void> _answerAreas(Set<AppArea>? areas) async {
+    final notifier = ref.read(appAreasProvider.notifier);
+    await notifier.reload();
+    await notifier.choose(areas == null ? null : {...areas});
     final group = _createdGroup;
     if (group != null) {
+      final intent = areas
+          ?.map((a) => switch (a) {
+                AppArea.lists => HubQuickStartIntent.lists,
+                AppArea.money => HubQuickStartIntent.money,
+                AppArea.chores => HubQuickStartIntent.chores,
+                AppArea.kitchen => null,
+              })
+          .nonNulls
+          .firstOrNull;
       if (intent != null) {
         await setHubQuickStartIntent(group.id, intent);
         ref.invalidate(hubQuickStartPrefsProvider(group.id));
@@ -481,7 +507,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
       ProductEvents.instance.track(
         ProductEventName.intentAnswered,
         groupId: group.id,
-        props: {'intent': answer},
+        props: {
+          'intent': areas == null ? 'everything' : intent?.name ?? 'kitchen',
+          'areas': areas == null
+              ? 'all'
+              : [
+                  for (final a in AppArea.values)
+                    if (areas.contains(a)) a.name
+                ].join(','),
+        },
       );
     }
     await _goToBoard();
@@ -622,8 +656,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
           l10n.authOnboardingInviteBody,
         ),
       _Stage.intent => (
-          l10n.authOnboardingIntentTitle,
-          l10n.authOnboardingIntentBody,
+          l10n.authOnboardingAreasTitle,
+          l10n.authOnboardingAreasBody,
         ),
     };
 
@@ -1022,13 +1056,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     );
   }
 
-  // ── Final beat: what first ─────────────────────────────────────────────────
+  // ── Final beat: what you'll use ───────────────────────────────────────────
 
   Widget _intentStage(AppLocalizations l10n, double noteWidth) {
     final options = [
-      (HubQuickStartIntent.lists, l10n.authOnboardingIntentLists, 'lists'),
-      (HubQuickStartIntent.money, l10n.authOnboardingIntentMoney, 'money'),
-      (HubQuickStartIntent.chores, l10n.authOnboardingIntentChores, 'chores'),
+      (AppArea.lists, l10n.authOnboardingIntentLists),
+      (AppArea.chores, l10n.authOnboardingIntentChores),
+      (AppArea.money, l10n.authOnboardingIntentMoney),
+      (AppArea.kitchen, l10n.authOnboardingAreasKitchen),
     ];
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1049,17 +1084,29 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    for (final (i, (intent, label, answer)) in options.indexed)
+                    for (final (i, (area, label)) in options.indexed)
                       Padding(
                         padding: EdgeInsets.only(
                           top: i == 0 ? 0 : MitlistSpacing.space3,
                         ),
-                        child: AppButton(
-                          variant: AppButtonVariant.outline,
-                          color: AppButtonColor.neutral,
-                          size: AppButtonSize.lg,
-                          text: label,
-                          onPressed: () => _answerIntent(intent, answer),
+                        child: Semantics(
+                          toggled: _pickedAreas.contains(area),
+                          child: AppButton(
+                            key: ValueKey('onboarding-area-${area.name}'),
+                            // Picked reads as the brand outline with a
+                            // check; a filled neutral washed the label out
+                            // on the note.
+                            variant: AppButtonVariant.outline,
+                            color: _pickedAreas.contains(area)
+                                ? AppButtonColor.primary
+                                : AppButtonColor.neutral,
+                            size: AppButtonSize.lg,
+                            icon: _pickedAreas.contains(area)
+                                ? const AppIcon(name: 'check')
+                                : null,
+                            text: label,
+                            onPressed: () => _toggleArea(area),
+                          ),
                         ),
                       ),
                   ],
@@ -1070,10 +1117,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
         ),
         const SizedBox(height: MitlistSpacing.space4),
         AppButton(
+          key: const ValueKey('onboarding-areas-continue'),
+          size: AppButtonSize.lg,
+          text: l10n.authOnboardingGoToBoard,
+          onPressed:
+              _pickedAreas.isEmpty ? null : () => _answerAreas(_pickedAreas),
+        ),
+        const SizedBox(height: MitlistSpacing.sm),
+        AppButton(
           variant: AppButtonVariant.ghost,
           color: AppButtonColor.neutral,
-          text: l10n.authOnboardingIntentJustLooking,
-          onPressed: () => _answerIntent(null, 'just_looking'),
+          text: l10n.authOnboardingAreasAll,
+          onPressed: () => _answerAreas(null),
         ),
       ],
     );

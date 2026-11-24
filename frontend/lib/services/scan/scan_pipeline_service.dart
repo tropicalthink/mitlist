@@ -8,12 +8,16 @@ import 'confidence_service.dart';
 import 'correction_memory_service.dart';
 import 'document_rectifier_service.dart';
 import 'extraction_service.dart';
-import 'grocery_classifier_service.dart';
+import 'ocr_lexicon.dart';
 import 'ocr_service.dart';
 import 'static_embedding_service.dart';
+import 'scan_line_filter.dart';
 import 'scan_models.dart';
 
 const _uuid = Uuid();
+
+/// Below this recognizer confidence a line is never auto-accepted.
+const double kMinOcrConfidenceForAutoAccept = 0.7;
 
 /// Single entry point for the grocery scan pipeline.
 ///
@@ -29,13 +33,14 @@ class ScanPipelineService {
   ScanPipelineService({
     required AppDatabase db,
     CanonicalResolverService? resolver,
+    OcrService? ocr,
   })  : _db = db,
-        _ocr = OcrService(),
+        _ocr = ocr ?? OcrService(),
         _extraction = ExtractionService(),
         _resolver = resolver ??
             CanonicalResolverService(
               db,
-              classifier: GroceryClassifierService(),
+              // Same configuration as canonicalResolverServiceProvider.
               embedder: StaticEmbeddingService(),
               // Plan 037: the calibrated ensemble (candidate-union + household
               // prior + canonicalNameSim) — on the eval it lifts precision@auto
@@ -63,10 +68,30 @@ class ScanPipelineService {
 
     // 2. PP-OCRv6 receives the natural color image and performs its own exact
     //    model normalization. Preview enhancement is deliberately separate.
-    final lines = await _ocr.recognise(cropped);
+    //    Lines are read against what this household writes and buys: a list
+    //    is mostly its own vocabulary in its own handwriting.
+    final lines = await _ocr.recognise(
+      cropped,
+      lexicon: householdLexiconEntries(
+        await _db.getHouseholdVocabulary(groupId),
+      ),
+    );
 
-    // 3. Extract qty / unit / price / name.
-    final parsed = _extraction.extractAll(lines);
+    // 3. Set aside print and smudges around the list, then extract qty /
+    //    unit / price / name.
+    final notList = likelyNotListLines(lines);
+    final parsed = _extraction.extractAll([
+      for (var i = 0; i < lines.length; i++)
+        notList.contains(i) && lines[i].markStatus == MarkStatus.normal
+            ? OcrLine(
+                text: lines[i].text,
+                bbox: lines[i].bbox,
+                confidence: lines[i].confidence,
+                markStatus: MarkStatus.notList,
+                alternatives: lines[i].alternatives,
+              )
+            : lines[i],
+    ]);
 
     // 4. Canonical resolve + confidence.
     final predictions = <GroceryPrediction>[];
@@ -144,10 +169,11 @@ class ScanPipelineService {
         }
       }
 
-      final prediction = _confidence.applyTo(
+      var prediction = _confidence.applyTo(
         GroceryPrediction(
           id: _uuid.v4(),
           rawText: item.rawText,
+          itemName: item.itemName,
           displayName: resolved.displayName,
           bbox: item.bbox,
           canonicalItemId: resolved.canonicalItemId,
@@ -163,9 +189,17 @@ class ScanPipelineService {
         autoThreshold: resolved.autoThreshold,
         reviewThreshold: resolved.reviewThreshold,
       );
+      // A shaky reading can still collide with a real alias. The resolver
+      // only sees the text, so the recognizer's doubt caps it at review.
+      final ocrConfidence = item.ocrConfidence;
+      if (ocrConfidence != null &&
+          ocrConfidence < kMinOcrConfidenceForAutoAccept &&
+          prediction.confidenceLevel == ConfidenceLevel.autoAccept) {
+        prediction =
+            prediction.copyWith(confidenceLevel: ConfidenceLevel.review);
+      }
 
-      if (item.markStatus == MarkStatus.crossedOut ||
-          item.markStatus == MarkStatus.checked) {
+      if (item.markStatus != MarkStatus.normal) {
         ignored.add(prediction);
       } else {
         predictions.add(prediction);

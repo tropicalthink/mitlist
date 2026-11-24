@@ -34,6 +34,7 @@ import '../utils/friendly_error.dart';
 import '../widgets/chip.dart';
 import '../widgets/skeleton.dart';
 
+import '../widgets/app_switch.dart';
 import '../widgets/app_toast.dart';
 
 /// The single editor for money leaving the household — whether it happens once
@@ -43,7 +44,23 @@ import '../widgets/app_toast.dart';
 class ExpenseCreationSheet extends ConsumerStatefulWidget {
   final String? initialDescription;
   final String? initialAmount;
+
+  /// When the expense happened, e.g. the date printed on a scanned receipt.
+  final DateTime? initialDate;
+  final String? initialNotes;
   final File? receiptImage;
+
+  /// How many of the household's own items a scanned receipt lists. With
+  /// [rememberReceiptPurchases], the sheet offers to record them as bought;
+  /// the caller records them once the expense is saved.
+  final int receiptPurchaseCount;
+  final ValueNotifier<bool>? rememberReceiptPurchases;
+
+  /// Open shopping-list items the scanned receipt shows were bought. With
+  /// [tickReceiptListItems], the sheet offers to tick them off; the caller
+  /// does so once the expense is saved.
+  final List<String> receiptListItemNames;
+  final ValueNotifier<bool>? tickReceiptListItems;
   final ValueNotifier<bool>? dirtyNotifier;
 
   /// The recurring rule being edited, when opened from the recurring list.
@@ -59,7 +76,13 @@ class ExpenseCreationSheet extends ConsumerStatefulWidget {
     super.key,
     this.initialDescription,
     this.initialAmount,
+    this.initialDate,
+    this.initialNotes,
     this.receiptImage,
+    this.receiptPurchaseCount = 0,
+    this.rememberReceiptPurchases,
+    this.receiptListItemNames = const [],
+    this.tickReceiptListItems,
     this.dirtyNotifier,
     this.initialRecurring,
     this.recurringOnly = false,
@@ -69,7 +92,13 @@ class ExpenseCreationSheet extends ConsumerStatefulWidget {
     BuildContext context, {
     String? initialDescription,
     String? initialAmount,
+    DateTime? initialDate,
+    String? initialNotes,
     File? receiptImage,
+    int receiptPurchaseCount = 0,
+    ValueNotifier<bool>? rememberReceiptPurchases,
+    List<String> receiptListItemNames = const [],
+    ValueNotifier<bool>? tickReceiptListItems,
   }) async {
     final l10n = AppLocalizations.of(context)!;
     final dirty = ValueNotifier<bool>(false);
@@ -80,7 +109,13 @@ class ExpenseCreationSheet extends ConsumerStatefulWidget {
       body: ExpenseCreationSheet(
         initialDescription: initialDescription,
         initialAmount: initialAmount,
+        initialDate: initialDate,
+        initialNotes: initialNotes,
         receiptImage: receiptImage,
+        receiptPurchaseCount: receiptPurchaseCount,
+        rememberReceiptPurchases: rememberReceiptPurchases,
+        receiptListItemNames: receiptListItemNames,
+        tickReceiptListItems: tickReceiptListItems,
         dirtyNotifier: dirty,
       ),
     );
@@ -215,6 +250,10 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
       _amountController.selection = TextSelection.fromPosition(
         TextPosition(offset: widget.initialAmount!.length),
       );
+    }
+    if (widget.initialDate != null) _date = widget.initialDate!;
+    if (widget.initialNotes != null) {
+      _notesController.text = widget.initialNotes!;
     }
     final recurring = widget.initialRecurring;
     if (recurring != null) {
@@ -881,6 +920,17 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
     return points;
   }
 
+  /// The household has only this person: known from the member list once
+  /// it loads, and from the cached household before that, so the split line
+  /// neither pops in nor out.
+  bool get _aloneInHousehold {
+    if (!_membersLoading) return _members.length == 1;
+    final groups = ref.read(cachedGroupsProvider).valueOrNull;
+    final group = groups?.where((g) => g.id == _groupId).firstOrNull ??
+        (_groupId == null && groups?.length == 1 ? groups!.first : null);
+    return group?.memberCount == 1;
+  }
+
   List<CreateExpenseSplitRequest> _buildSplitRequests() {
     final percentages = _splitMode == 'percentage'
         ? _percentageBasisPoints()
@@ -1150,7 +1200,9 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
             onMemberChanged: _onSplitMemberChanged,
             onValueChanged: _onSplitValueChanged,
           ),
-        ] else ...[
+        ] else if (!_aloneInHousehold) ...[
+          // Alone in the house, "Paid by you · split equally" with yourself
+          // is a line that says nothing; it appears with a second member.
           const SizedBox(height: MitlistSpacing.md),
           _SummaryLine(
             text: l10n.expenseCreationSummaryPaidBySplit(
@@ -1295,6 +1347,34 @@ class _ExpenseCreationSheetState extends ConsumerState<ExpenseCreationSheet> {
             maxLines: 4,
             onChanged: (_) => _markDirty(),
           ),
+          if (widget.rememberReceiptPurchases case final remember?
+              when widget.receiptPurchaseCount > 0) ...[
+            const SizedBox(height: MitlistSpacing.md),
+            ValueListenableBuilder<bool>(
+              valueListenable: remember,
+              builder: (context, value, _) => AppSwitchListTile(
+                title: l10n.receiptRememberPurchases,
+                subtitle: l10n
+                    .receiptRememberPurchasesDesc(widget.receiptPurchaseCount),
+                value: value,
+                onChanged: (next) => remember.value = next,
+              ),
+            ),
+          ],
+          if (widget.tickReceiptListItems case final tick?
+              when widget.receiptListItemNames.isNotEmpty) ...[
+            const SizedBox(height: MitlistSpacing.md),
+            ValueListenableBuilder<bool>(
+              valueListenable: tick,
+              builder: (context, value, _) => AppSwitchListTile(
+                title: l10n
+                    .receiptTickListItems(widget.receiptListItemNames.length),
+                subtitle: widget.receiptListItemNames.join(', '),
+                value: value,
+                onChanged: (next) => tick.value = next,
+              ),
+            ),
+          ],
         ],
         const SizedBox(height: MitlistSpacing.lg),
         SizedBox(

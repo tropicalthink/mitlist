@@ -81,14 +81,26 @@ private fun Content(model: WidgetModel) {
     }
 }
 
-/** 2x2 and lock screen: name, count, "+". */
+/**
+ * 2x2 and lock screen. Home screen: the list's first few item names, so it is
+ * useful at a glance, and "+". Lock screen: name and count only.
+ */
 @Composable
 private fun ListTile(model: WidgetModel, household: WidgetHousehold, list: WidgetList, countsOnly: Boolean) {
     val context = LocalContext.current
     WidgetFrame(modifier = GlanceModifier.clickable(actionStartActivity(WidgetLinks.list(context, household.id, list.id)))) {
         Column(modifier = GlanceModifier.fillMaxSize()) {
             WidgetText(list.name, bold = true, size = 15.sp)
-            if (!countsOnly) SecondaryText(household.name)
+            if (!countsOnly) {
+                // 2x2: about 3 names fit above the count row; taller tiles show 4.
+                val rows = if (LocalSize.current.height >= 150.dp) 4 else 3
+                val open = list.items.filterNot { it.local }.take(rows)
+                if (open.isEmpty()) {
+                    SecondaryText(household.name)
+                } else {
+                    open.forEach { WidgetText(it.name, size = 13.sp) }
+                }
+            }
             Spacer(GlanceModifier.defaultWeight())
             Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
                 Column(modifier = GlanceModifier.defaultWeight()) {
@@ -141,7 +153,7 @@ private fun ListWithItems(model: WidgetModel, household: WidgetHousehold, list: 
                     filled = true,
                 )
             }
-            if (list.items.isEmpty()) {
+            if (model.listRows(list).isEmpty()) {
                 Column(
                     modifier = GlanceModifier.fillMaxWidth().defaultWeight()
                         .clickable(actionStartActivity(WidgetLinks.list(context, household.id, list.id, add = true))),
@@ -152,9 +164,26 @@ private fun ListWithItems(model: WidgetModel, household: WidgetHousehold, list: 
                     SecondaryText(context.getString(R.string.widget_list_empty_action))
                 }
             } else {
+                val rows = model.listRows(list)
+                // Wide but short (4x2): two items per row, so two ticks fit
+                // instead of one, each still a 48dp target.
+                val twoUp = LocalSize.current.height < 180.dp
                 LazyColumn(modifier = GlanceModifier.fillMaxWidth().defaultWeight()) {
-                    items(list.items, itemId = { stableId(it.id) }) { item ->
-                        ItemRow(household, list, item)
+                    if (twoUp) {
+                        items(rows.chunked(2), itemId = { pair -> stableId(pair.joinToString("|") { it.item.id }) }) { pair ->
+                            Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                pair.forEach { row ->
+                                    Row(modifier = GlanceModifier.defaultWeight(), verticalAlignment = Alignment.CenterVertically) {
+                                        ItemRow(household, list, row, compact = true)
+                                    }
+                                }
+                                if (pair.size == 1) Spacer(GlanceModifier.defaultWeight())
+                            }
+                        }
+                    } else {
+                        items(rows, itemId = { stableId(it.item.id) }) { row ->
+                            ItemRow(household, list, row)
+                        }
                     }
                     if (list.openCount > list.items.size) {
                         item(stableId("more:${list.id}")) {
@@ -173,14 +202,15 @@ private fun ListWithItems(model: WidgetModel, household: WidgetHousehold, list: 
 }
 
 @Composable
-private fun ItemRow(household: WidgetHousehold, list: WidgetList, item: WidgetListItem) {
+private fun ItemRow(household: WidgetHousehold, list: WidgetList, row: ListRow, compact: Boolean = false) {
     val context = LocalContext.current
+    val item = row.item
     Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         SquareTick(
-            contentDescription = if (item.local) {
-                context.getString(R.string.widget_item_waiting, item.name)
-            } else {
-                context.getString(R.string.widget_tick_off, item.name)
+            contentDescription = when {
+                row.ticked -> context.getString(R.string.widget_item_ticked, item.name)
+                item.local -> context.getString(R.string.widget_item_waiting, item.name)
+                else -> context.getString(R.string.widget_tick_off, item.name)
             },
             onClick = actionRunCallback<ToggleItemAction>(
                 actionParametersOf(
@@ -191,6 +221,7 @@ private fun ItemRow(household: WidgetHousehold, list: WidgetList, item: WidgetLi
             ),
             // An add still waiting for the server has no server id to tick.
             enabled = !item.local,
+            checked = row.ticked,
         )
         Column(
             modifier = GlanceModifier.defaultWeight().padding(end = 8.dp)
@@ -198,11 +229,13 @@ private fun ItemRow(household: WidgetHousehold, list: WidgetList, item: WidgetLi
         ) {
             WidgetText(
                 itemLabel(item),
-                color = if (item.local) GlanceTheme.colors.onSurfaceVariant else GlanceTheme.colors.onSurface,
+                color = if (item.local || row.ticked) GlanceTheme.colors.onSurfaceVariant else GlanceTheme.colors.onSurface,
+                strike = row.ticked,
             )
             when {
+                compact -> Unit
                 item.local -> SecondaryText(context.getString(R.string.widget_waiting_to_sync))
-                item.addedByName != null -> SecondaryText(context.getString(R.string.widget_added_by, item.addedByName))
+                item.addedByName != null && !row.ticked -> SecondaryText(context.getString(R.string.widget_added_by, item.addedByName))
             }
         }
     }

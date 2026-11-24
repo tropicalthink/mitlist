@@ -9,6 +9,7 @@ class AppIcons {
 
   // Heroicons-solid placeholders
   static const IconData plus = Icons.add;
+  static const IconData minus = Icons.remove;
   static const IconData arrowLeft = Icons.arrow_back;
   static const IconData arrowRight = Icons.arrow_forward;
   static const IconData arrowDown = Icons.arrow_downward;
@@ -29,6 +30,8 @@ class AppIcons {
   static const IconData clipboardDocumentList = Icons.assignment;
   static const IconData xMark = Icons.close;
   static const IconData magnifyingGlass = Icons.search;
+  static const IconData arrowUturnLeft = Icons.undo;
+  static const IconData arrowUturnRight = Icons.redo;
   static const IconData funnel = Icons.filter_list;
   static const IconData squares2x2 = Icons.grid_view;
   static const IconData listBullet = Icons.format_list_bulleted;
@@ -147,6 +150,7 @@ class AppIcons {
   static IconData? resolve(String name) {
     return switch (name) {
       'plus' => plus,
+      'minus' => minus,
       'arrowLeft' => arrowLeft,
       'arrowRight' => arrowRight,
       'arrowDown' => arrowDown,
@@ -167,6 +171,8 @@ class AppIcons {
       'clipboardDocumentList' => clipboardDocumentList,
       'xMark' => xMark,
       'magnifyingGlass' => magnifyingGlass,
+      'arrowUturnLeft' => arrowUturnLeft,
+      'arrowUturnRight' => arrowUturnRight,
       'funnel' => funnel,
       'squares2x2' => squares2x2,
       'listBullet' => listBullet,

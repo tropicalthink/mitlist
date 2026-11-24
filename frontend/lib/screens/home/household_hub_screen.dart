@@ -16,6 +16,7 @@ import '../../providers/group_provider.dart';
 import '../../providers/home_provider.dart';
 import '../../providers/pinwall_provider.dart';
 import '../../providers/recipe_provider.dart';
+import '../../providers/onboarding_provider.dart';
 import '../../l10n/app_localizations.dart';
 import '../../repositories/hub_repository.dart';
 import '../../router.dart' show currentGroupIdProvider;
@@ -37,6 +38,8 @@ import '../../widgets/hub/onboarding_card.dart';
 import '../../widgets/hub/pinwall_section.dart';
 import '../../widgets/hub/needs_you_section.dart';
 import '../../widgets/hub/quick_add_sheet.dart';
+import '../../widgets/calendar_tour.dart';
+import '../../widgets/hub/widget_promo_sheet.dart';
 import '../../providers/meal_plan_provider.dart';
 import '../../widgets/shell_trailing_actions.dart';
 import '../../sheets/create_household_sheet.dart';
@@ -75,6 +78,8 @@ const Set<String> _kMembershipEvents = {
 };
 
 class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
+  /// The calendar button: the shared calendars tour starts there.
+  final _calendarButtonKey = GlobalKey(debugLabel: 'hub-calendar-button');
   bool _isLoading = true;
   Object? _error;
   Group? _data;
@@ -85,6 +90,9 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
   StreamSubscription<(List<ActivityLogModel>, bool)>? _activitySub;
   StreamSubscription<SseEvent>? _liveSub;
   String? _resolvedGroupId;
+
+  /// The home screen widget offer is considered once per visit to Home.
+  bool _widgetPromoChecked = false;
 
   /// The repository behind the current household's feed, kept so a live
   /// event can refresh it in place (its watch repaints the feed).
@@ -341,6 +349,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
         _me ??= me;
         _isLoading = false;
       });
+      _maybeOfferWidgets();
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -348,6 +357,39 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  /// Offers the home screen widgets (the promo sheet decides whether). Home
+  /// with a loaded household means sign-up and the household setup are
+  /// behind this person; the sheet checks that nothing else is on top.
+  void _maybeOfferWidgets() {
+    if (_widgetPromoChecked || _resolvedGroupId == null || _error != null) {
+      return;
+    }
+    _widgetPromoChecked = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      // One thing per Home visit: the widget promo first; when it did not
+      // show, the shared calendars tour may (each waits for a later visit
+      // otherwise).
+      unawaited(() async {
+        var shown = false;
+        try {
+          shown =
+              await maybeOfferHomeWidgets(context, ref, onboardingDone: true);
+        } catch (_) {}
+        if (!mounted) return;
+        try {
+          await maybeStartCalendarTour(
+            context,
+            ref,
+            calendarButton: _calendarButtonKey,
+            onboardingDone: true,
+            otherPromoThisVisit: shown,
+          );
+        } catch (_) {}
+      }());
+    });
   }
 
   /// Needs you counts unchecked items across lists from the local cache; a
@@ -732,20 +774,24 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
 
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      floatingActionButton:
-          _isLoading || _error != null || _resolvedGroupId == null
-              ? null
-              : AppButton(
-                  size: AppButtonSize.lg,
-                  onPressed: () {
-                    final groupId = _resolvedGroupId;
-                    if (groupId == null) return;
-                    showQuickAddSheet(context, ref, groupId: groupId, me: _me);
-                  },
-                  icon: const AppIcon(name: 'plus'),
-                  text: l10n.hubQuickAdd,
-                  tooltip: l10n.hubQuickAdd,
-                ),
+      // Quick add offers what the quick start already asks for; a household
+      // with nothing in it gets the one button there instead of two.
+      floatingActionButton: _isLoading ||
+              _error != null ||
+              _resolvedGroupId == null ||
+              ref.watch(householdInUseProvider(_resolvedGroupId!)) != true
+          ? null
+          : AppButton(
+              size: AppButtonSize.lg,
+              onPressed: () {
+                final groupId = _resolvedGroupId;
+                if (groupId == null) return;
+                showQuickAddSheet(context, ref, groupId: groupId, me: _me);
+              },
+              icon: const AppIcon(name: 'plus'),
+              text: l10n.hubQuickAdd,
+              tooltip: l10n.hubQuickAdd,
+            ),
       body: DismissKeyboardOnTap(child: _buildBody(l10n)),
     );
   }
@@ -824,6 +870,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                               title: _buildAppBarTitle(context),
                               actions: [
                                 IconButton(
+                                  key: _calendarButtonKey,
                                   tooltip: l10n.hubCalendarTooltip,
                                   icon: const AppIcon(name: 'calendarDays'),
                                   onPressed: () =>
@@ -841,21 +888,24 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                                     groupId: _resolvedGroupId!,
                                     me: _me,
                                   ),
-                                  const SizedBox(height: MitlistSpacing.lg),
-                                  // Both bring their own bottom gap and
-                                  // vanish once there is nothing to ask.
+                                  // Brings its own bottom gap; once done it
+                                  // becomes the solo invite card, then
+                                  // nothing.
                                   HubQuickStart(groupId: _resolvedGroupId!),
-                                  HubSoloInviteCard(
-                                    groupId: _resolvedGroupId!,
-                                  ),
                                   PinwallSection(
                                       groupId: _resolvedGroupId!, me: _me),
-                                  const SizedBox(height: MitlistSpacing.lg),
-                                  ActivityWall(
-                                    activities: _snapshot!.activities,
-                                    activityError: _snapshot!.activityError,
-                                    currentUserId: _me?.id,
-                                  ),
+                                  // An empty feed is one more section saying
+                                  // "nothing yet"; it arrives with the first
+                                  // thing that happens.
+                                  if (_snapshot!.activities.isNotEmpty ||
+                                      _snapshot!.activityError) ...[
+                                    const SizedBox(height: MitlistSpacing.lg),
+                                    ActivityWall(
+                                      activities: _snapshot!.activities,
+                                      activityError: _snapshot!.activityError,
+                                      currentUserId: _me?.id,
+                                    ),
+                                  ],
                                   // Clear the Quick add FAB so it never sits
                                   // on the last activity row.
                                   const SizedBox(

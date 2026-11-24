@@ -44,7 +44,8 @@ String formatActivityLine(ActivityLogModel a, AppLocalizations l10n) {
         (n) => n != null && n.trim().isNotEmpty,
         orElse: () => null,
       );
-      return l10n.activityMemberJoined(who?.trim() ?? l10n.activityMember, when);
+      return l10n.activityMemberJoined(
+          who?.trim() ?? l10n.activityMember, when);
     default:
       return '${a.action} \u00b7 $when';
   }

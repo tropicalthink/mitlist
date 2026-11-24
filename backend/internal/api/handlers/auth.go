@@ -311,7 +311,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		api.RespondError(w, &api.ValidationError{Message: "invalid request body"})
 		return
 	}
-	_, err := h.userService.Register(r.Context(), services.RegisterInput{
+	user, err := h.userService.Register(r.Context(), services.RegisterInput{
 		Email:     req.Email,
 		Password:  req.Password,
 		FirstName: req.FirstName,
@@ -321,7 +321,13 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		// Do not turn registration into an account-enumeration oracle. The
 		// address may already belong to an active account, a pending account,
 		// or a deleted tombstone; callers receive the same acknowledgement.
-		if errors.Is(err, api.ErrConflict) {
+		//
+		// That only works where a code goes out by email. With no email
+		// provider the acknowledgement would strand the person on a code
+		// that never arrives, so the conflict is reported as one (409) and
+		// they can sign in instead. Such a server already lets anyone create
+		// an account for any address, so the existence signal adds little.
+		if errors.Is(err, api.ErrConflict) && h.userService.EmailConfigured() {
 			// A previous provider failure may have left a legitimate pending
 			// registration without its code. Retry delivery without exposing
 			// whether the address exists or is already verified.
@@ -336,6 +342,17 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		api.RespondError(w, err)
+		return
+	}
+	if user.IsVerified {
+		// No email provider: the account was created verified, so sign it in
+		// exactly as Login would (201, same body, same web refresh cookie).
+		access, refresh, err := h.jwtService.GenerateTokenPair(user.ID.String(), nil)
+		if err != nil {
+			api.RespondError(w, err)
+			return
+		}
+		tokenResponse(w, r, http.StatusCreated, user, access, refresh)
 		return
 	}
 	api.RespondJSON(w, http.StatusAccepted, map[string]any{
@@ -468,6 +485,12 @@ func (h *AuthHandler) PasswordReset(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.userService.RequestPasswordReset(r.Context(), req.Email); err != nil {
+		if errors.Is(err, api.ErrEmailUnavailable) {
+			// Every address gets this on a server without email, so it
+			// reveals nothing; it beats claiming a code was sent.
+			api.RespondError(w, err)
+			return
+		}
 		log.Error().Err(err).Msg("password reset delivery failed")
 	}
 	api.RespondJSON(w, http.StatusAccepted, map[string]string{"message": "if the email exists, a reset link has been sent"})

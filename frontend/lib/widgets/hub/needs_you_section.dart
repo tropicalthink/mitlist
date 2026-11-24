@@ -11,6 +11,7 @@ import '../../models/auth_models.dart';
 import '../../models/chore_models.dart';
 import '../../models/finance_models.dart';
 import '../../models/pinwall_models.dart';
+import '../../providers/app_areas_provider.dart';
 import '../../providers/chore_provider.dart';
 import '../../providers/finance_provider.dart';
 import '../../providers/group_provider.dart';
@@ -65,7 +66,21 @@ class _NeedsYouSectionState extends ConsumerState<NeedsYouSection> {
 
   @override
   Widget build(BuildContext context) {
+    final card = _buildCard(context);
+    if (card == null) return const SizedBox.shrink();
+    // The card brings its own gap below, so nothing is left behind when it
+    // has nothing to say.
+    return Padding(
+      padding: const EdgeInsets.only(bottom: MitlistSpacing.lg),
+      child: card,
+    );
+  }
+
+  /// Null while the household has nothing in it yet: a card of zeros and
+  /// "not set up" told a new household nothing the quick start below doesn't.
+  Widget? _buildCard(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final areas = ref.watch(visibleAreasProvider);
     final chores = ref.watch(cachedCurrentChoresByGroupProvider(_groupId));
     final finance = ref.watch(cachedFinanceSummaryByGroupProvider(_groupId));
     final lists = ref.watch(cachedListsByGroupProvider(_groupId));
@@ -178,7 +193,7 @@ class _NeedsYouSectionState extends ConsumerState<NeedsYouSection> {
         ref.watch(hubQuickStartPrefsProvider(_groupId)).valueOrNull?.joined ??
             false;
     final freshJoiner = onYou == 0 && hasData && joined;
-    if (freshJoiner) {
+    if (freshJoiner && areas.contains(AppArea.chores)) {
       final houseChores = [
         for (final c in chores.value!)
           if (!c.assignedToMe &&
@@ -207,7 +222,7 @@ class _NeedsYouSectionState extends ConsumerState<NeedsYouSection> {
       }
     }
 
-    final busiest = items.busiest;
+    final busiest = areas.contains(AppArea.lists) ? items.busiest : null;
     if (busiest != null) {
       void openList() {
         _trackAction('list_open');
@@ -230,7 +245,8 @@ class _NeedsYouSectionState extends ConsumerState<NeedsYouSection> {
       ));
     }
 
-    final tonight = _tonightsMeal(meals);
+    final tonight =
+        areas.contains(AppArea.kitchen) ? _tonightsMeal(meals) : null;
     if (tonight != null) {
       void openMealPlan() {
         _trackAction('meal_open');
@@ -249,6 +265,33 @@ class _NeedsYouSectionState extends ConsumerState<NeedsYouSection> {
       ));
     }
 
+    if (rows.isEmpty && !hasData) return null;
+
+    final tiles = [
+      if (areas.contains(AppArea.chores))
+        PinwallChoresStatRow(
+          groupId: _groupId,
+          style: PinwallStatRowStyle.tile,
+          ink: scheme.onSurface,
+          muted: scheme.onSurfaceVariant,
+        ),
+      if (areas.contains(AppArea.money))
+        PinwallFinanceStatRow(
+          groupId: _groupId,
+          currentUserId: userId,
+          style: PinwallStatRowStyle.tile,
+          ink: scheme.onSurface,
+          muted: scheme.onSurfaceVariant,
+        ),
+      if (areas.contains(AppArea.lists))
+        PinwallListsStatRow(
+          groupId: _groupId,
+          style: PinwallStatRowStyle.tile,
+          ink: scheme.onSurface,
+          muted: scheme.onSurfaceVariant,
+        ),
+    ];
+
     return _NeedsYouCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -261,19 +304,12 @@ class _NeedsYouSectionState extends ConsumerState<NeedsYouSection> {
               description: l10n.needsYouNothingYetDesc,
             )
           else if (onYou == 0)
-            hasData
-                ? _ZeroState(
-                    key: const ValueKey('needs-you-caught-up'),
-                    icon: Icons.check_circle_outline,
-                    title: l10n.needsYouAllCaughtUp,
-                    description: l10n.needsYouAllCaughtUpDesc,
-                  )
-                : _ZeroState(
-                    key: const ValueKey('needs-you-not-set-up'),
-                    icon: Icons.flag_outlined,
-                    title: l10n.needsYouNotSetUp,
-                    description: l10n.needsYouNotSetUpDesc,
-                  ),
+            _ZeroState(
+              key: const ValueKey('needs-you-caught-up'),
+              icon: Icons.check_circle_outline,
+              title: l10n.needsYouAllCaughtUp,
+              description: l10n.needsYouAllCaughtUpDesc,
+            ),
           for (final (i, row) in rows.take(kNeedsYouMaxRows).indexed) ...[
             if (i > 0 || onYou == 0)
               Divider(height: 1, color: scheme.outlineVariant),
@@ -283,37 +319,13 @@ class _NeedsYouSectionState extends ConsumerState<NeedsYouSection> {
               busy: _busy.contains(row.id),
             ),
           ],
-          Divider(height: MitlistSpacing.md, color: scheme.outlineVariant),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: PinwallChoresStatRow(
-                  groupId: _groupId,
-                  style: PinwallStatRowStyle.tile,
-                  ink: scheme.onSurface,
-                  muted: scheme.onSurfaceVariant,
-                ),
-              ),
-              Expanded(
-                child: PinwallFinanceStatRow(
-                  groupId: _groupId,
-                  currentUserId: userId,
-                  style: PinwallStatRowStyle.tile,
-                  ink: scheme.onSurface,
-                  muted: scheme.onSurfaceVariant,
-                ),
-              ),
-              Expanded(
-                child: PinwallListsStatRow(
-                  groupId: _groupId,
-                  style: PinwallStatRowStyle.tile,
-                  ink: scheme.onSurface,
-                  muted: scheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
+          if (tiles.isNotEmpty) ...[
+            Divider(height: MitlistSpacing.md, color: scheme.outlineVariant),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [for (final t in tiles) Expanded(child: t)],
+            ),
+          ],
         ],
       ),
     );

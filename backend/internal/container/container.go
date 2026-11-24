@@ -139,6 +139,9 @@ type Container struct {
 	calendarServiceOnce sync.Once
 	calendarService     *services.CalendarService
 
+	externalCalendarServiceOnce sync.Once
+	externalCalendarService     *services.ExternalCalendarService
+
 	shareServiceOnce sync.Once
 	shareService     *services.ShareService
 
@@ -419,6 +422,7 @@ func (c *Container) UserService() *services.UserService {
 	c.userServiceOnce.Do(func() {
 		c.userService = services.NewUserService(c.UserRepo(), c.AuthRepo(), c.JWT(), c.Password(), c.Mail())
 		c.userService.SetFrontendURL(c.cfg.FrontendURL)
+		c.userService.SetEmailConfigured(c.cfg.EmailConfigured())
 	})
 	return c.userService
 }
@@ -573,6 +577,7 @@ func (c *Container) ListService() *services.ListService {
 func (c *Container) TemplateService() *services.TemplateService {
 	c.templateServiceOnce.Do(func() {
 		c.templateService = services.NewTemplateService(c.TemplateRepo(), c.GroupRepo(), c.ListRepo())
+		c.templateService.SetHub(c.SSEHub())
 	})
 	return c.templateService
 }
@@ -622,8 +627,27 @@ func (c *Container) MealPlanService() *services.MealPlanService {
 func (c *Container) CalendarService() *services.CalendarService {
 	c.calendarServiceOnce.Do(func() {
 		c.calendarService = services.NewCalendarService(c.MealPlanRepo(), c.RecipeRepo(), c.ChoreRepo(), c.FinanceRepo(), c.GroupRepo(), c.PinwallRepo(), c.ListRepo())
+		c.calendarService.SetExternalEvents(c.ExternalCalendarService())
 	})
 	return c.calendarService
+}
+
+// ExternalCalendarService returns the singleton service behind members'
+// synced calendars. The ICS URL key derives from SECRET_KEY.
+func (c *Container) ExternalCalendarService() *services.ExternalCalendarService {
+	c.externalCalendarServiceOnce.Do(func() {
+		svc, err := services.NewExternalCalendarService(
+			repositories.NewExternalCalendarRepository(c.db), c.GroupRepo(), c.cfg.SecretKey,
+		)
+		if err != nil {
+			// Only fails if AES or HKDF are unavailable: nothing to run without.
+			panic("external calendar service: " + err.Error())
+		}
+		svc.SetHub(c.SSEHub())
+		svc.SetLogger(c.logger)
+		c.externalCalendarService = svc
+	})
+	return c.externalCalendarService
 }
 
 // NotificationService returns the singleton notification service.
@@ -780,6 +804,7 @@ func (c *Container) ListItemPhotoService() *services.ListItemPhotoService {
 func (c *Container) ShareService() *services.ShareService {
 	c.shareServiceOnce.Do(func() {
 		c.shareService = services.NewShareService(c.ListRepo(), c.RecipeRepo(), c.GroupRepo())
+		c.shareService.SetHub(c.SSEHub())
 	})
 	return c.shareService
 }

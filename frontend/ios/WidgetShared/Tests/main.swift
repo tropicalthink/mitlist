@@ -219,5 +219,135 @@ check(WidgetLinks.list(groceries, household: household1, add: true).absoluteStri
 check(WidgetLinks.scanner.absoluteString == "mitlist:///scanner", "scanner link")
 check(WidgetLinks.money(household: "h", add: true, amountCents: 2340).absoluteString == "mitlist:///money?group=h&add=1&amount_cents=2340", "money link")
 
+// MARK: Widget kinds for the installedWidgets channel call
+
+check(WidgetKinds.channelKind(WidgetKinds.shoppingList) == "shopping_list", "shopping list kind")
+check(WidgetKinds.channelKind(WidgetKinds.chores) == "chores", "chores kind")
+check(WidgetKinds.channelKind(WidgetKinds.quickAdd) == "quick_add", "quick add kind")
+check(WidgetKinds.channelKind(WidgetKinds.householdToday) == "household", "household kind")
+check(WidgetKinds.channelKind(WidgetKinds.balance) == nil && WidgetKinds.channelKind("Other") == nil, "unreported kinds")
+check(WidgetLinks.widgetsSetup.absoluteString == "mitlist:///you/widgets", "widgets set-up link")
+check(WidgetLinks.list(groceries, household: household1, add: true).path == "/lists/\(groceries)", "quick add path")
+
+// MARK: Credential rotation (401 while the app replaced the credential)
+
+let oldCredential = WidgetCredential(token: "old", expiresAt: "2099-01-01T00:00:00Z", apiBaseURL: "https://x/api/v1", userID: nil, deviceID: nil)
+var newCredential = oldCredential
+newCredential.token = "new"
+check(WidgetAuthRetry.shouldRetry(usedToken: "old", stored: newCredential, alreadyRetried: false), "retry with the replaced credential")
+check(!WidgetAuthRetry.shouldRetry(usedToken: "old", stored: newCredential, alreadyRetried: true), "retry only once")
+check(!WidgetAuthRetry.shouldRetry(usedToken: "old", stored: oldCredential, alreadyRetried: false), "same credential: no retry")
+check(!WidgetAuthRetry.shouldRetry(usedToken: "old", stored: nil, alreadyRetried: false), "deleted credential: no retry")
+var expiredNew = newCredential
+expiredNew.expiresAt = "2020-01-01T00:00:00Z"
+check(!WidgetAuthRetry.shouldRetry(usedToken: "old", stored: expiredNew, alreadyRetried: false), "expired replacement: no retry")
+check(WidgetAuthRetry.shouldFlag(usedToken: "old", stored: oldCredential), "flag when the failing token is still stored")
+check(!WidgetAuthRetry.shouldFlag(usedToken: "old", stored: newCredential), "no flag after a replacement")
+check(!WidgetAuthRetry.shouldFlag(usedToken: "old", stored: nil), "no flag after sign-out")
+
+// MARK: Display overlay: ticked rows stay, struck through
+
+let display = WidgetOverlay.display(snapshot, ops: ops, ticks: [], now: noon)
+let displayList = display.household(household1)!.lists.first { $0.id == groceries }!
+check(displayList.openCount == renderedList.openCount, "display open_count matches the C2 overlay")
+let checkedID = ops[0].itemID!
+check(displayList.items.first { $0.id == checkedID }?.checked == true, "pending check stays, ticked")
+check(displayList.items.filter { !$0.checked }.map(\.id) == renderedList.items.map(\.id), "unticked rows equal the C2 overlay rows")
+let completedChore = ops[3].choreID!
+check(display.household(household1)!.chores.first { $0.id == completedChore }?.done == true, "completed chore stays, done")
+check(WidgetChores.counts(display.household(household1)!.chores, now: noon, calendar: utc).due
+  == WidgetChores.counts(rendered.household(household1)!.chores, now: noon, calendar: utc).due, "done chores not counted")
+
+// A newer snapshot no longer has the ticked item: the tick puts it back,
+// ticked, in place, without counting it as open.
+let tickedItem = flat.lists[0].items[1]
+var afterServer = snapshot
+afterServer.generatedAt = "2026-10-02T09:10:00Z"
+afterServer.households[0].lists[0].items.remove(at: 1)
+afterServer.households[0].lists[0].openCount = 2
+let tick = WidgetTick.item(tickedItem, listID: groceries, householdID: household1, index: 1, at: noon)
+let shown = WidgetOverlay.display(afterServer, ops: [], ticks: [tick], now: noon.addingTimeInterval(30))
+check(shown.households[0].lists[0].items.map(\.id) == flat.lists[0].items.map(\.id), "ticked item back in place")
+check(shown.households[0].lists[0].items[1].checked, "ticked item flagged")
+check(shown.households[0].lists[0].openCount == 2, "ticked item not counted")
+let expired = WidgetOverlay.display(afterServer, ops: [], ticks: [tick], now: noon.addingTimeInterval(WidgetConstants.tickFeedbackDuration + 1))
+check(expired.households[0].lists[0].items.count == 2, "expired tick dropped")
+let tickedStill = WidgetOverlay.display(snapshot, ops: [], ticks: [tick], now: noon)
+check(tickedStill.households[0].lists[0].items.count == 3 && !tickedStill.households[0].lists[0].items[1].checked, "tick never duplicates a row the snapshot has")
+let tickRoundTrip = WidgetTick.decode(WidgetTick.encode([tick]))
+check(tickRoundTrip == [tick], "ticks round trip")
+
+// A completed chore whose next turn (same id) is in the newer snapshot shows that turn.
+let chore0 = flat.chores[0]
+let choreTick = WidgetTick.chore(chore0, householdID: household1, index: 0, at: noon)
+var nextTurn = snapshot
+nextTurn.households[0].chores[0].dueAt = "2026-10-03T09:00:00Z"
+let shownNext = WidgetOverlay.display(nextTurn, ops: [], ticks: [choreTick], now: noon)
+check(shownNext.households[0].chores.filter { $0.id == chore0.id }.count == 1 && !shownNext.households[0].chores[0].done, "next turn shown, not done")
+var choreGone = snapshot
+choreGone.households[0].chores.remove(at: 0)
+let shownGone = WidgetOverlay.display(choreGone, ops: [], ticks: [choreTick], now: noon)
+check(shownGone.households[0].chores.first?.id == chore0.id && shownGone.households[0].chores.first?.done == true, "completed chore back, done")
+
+// Ticks in storage: cleared by a refresh, kept by the fetch after a tap.
+let tickDir = FileManager.default.temporaryDirectory.appendingPathComponent("mitlist-widget-ticks-\(UUID().uuidString)")
+let tickDefaults = UserDefaults(suiteName: "mitlist-widget-tests-\(UUID().uuidString)")!
+let tickStorage = WidgetStorage(directory: tickDir, defaults: tickDefaults)
+tickStorage.recordTick(tick, now: noon)
+tickStorage.recordTick(tick, now: noon)
+check(tickStorage.ticks.count == 1, "same row ticked twice is one tick")
+check(tickStorage.nextTickExpiry(now: noon) == noon.addingTimeInterval(WidgetConstants.tickFeedbackDuration), "tick expiry")
+check(tickStorage.writeSnapshot(snapshotData, now: noon, keepTicks: true) && tickStorage.ticks.count == 1, "fetch after a tap keeps ticks")
+check(tickStorage.writeSnapshot(snapshotData, now: noon) && tickStorage.ticks.isEmpty, "refresh clears ticks")
+check(tickStorage.renderedSnapshot(now: noon) != nil, "rendered snapshot reads the file")
+
+// MARK: Refresh threshold
+
+check(!tickStorage.needsRefresh(now: noon.addingTimeInterval(30)), "fresh: no refetch")
+check(tickStorage.needsRefresh(now: noon.addingTimeInterval(WidgetConstants.refetchOnReloadAfter + 1)), "a minute old: refetch on reload")
+check(tickStorage.needsRefresh(now: noon.addingTimeInterval(-120)), "clock set back: refetch")
+tickStorage.refreshRequested = true
+check(tickStorage.needsRefresh(now: noon), "requested: refetch")
+tickStorage.clearReason = "not_remembered"
+tickStorage.deleteAll()
+check(tickStorage.clearReason == nil && tickStorage.readSnapshot() == nil, "deleteAll clears reason and snapshot")
+try? FileManager.default.removeItem(at: tickDir)
+
+// MARK: Chores: Overdue / Today / Soon, mine first (both platforms)
+
+func chore(_ id: String, _ due: String?, status: String? = nil, mine: Bool = false) -> WidgetChore {
+  WidgetChore(id: id, title: id, dueAt: due, dueStatus: status, isMine: mine)
+}
+let mixed = [
+  chore("soon-mine", "2026-10-04T08:00:00Z", status: "due_soon", mine: true),
+  chore("today-theirs", "2026-10-02T18:00:00Z", status: "due_today"),
+  chore("overdue-theirs", "2026-10-01T08:00:00Z", status: "overdue"),
+  chore("today-mine", "2026-10-02T20:00:00Z", status: "due_today", mine: true),
+  chore("overdue-mine", "2026-09-30T08:00:00Z", status: "overdue", mine: true),
+  chore("no-date-today", nil, status: "due_today"),
+]
+check(WidgetChores.ordered(mixed, now: noon, calendar: utc).map(\.id) == [
+  "overdue-mine", "overdue-theirs", "today-mine", "today-theirs", "no-date-today", "soon-mine",
+], "chore order \(WidgetChores.ordered(mixed, now: noon, calendar: utc).map(\.id))")
+let counts = WidgetChores.counts(mixed, now: noon, calendar: utc)
+check(counts == ChoreCounts(overdue: 2, today: 3, soon: 1) && counts.due == 5, "chore counts")
+// Device time zone decides "today": 23:30 UTC on the 2nd is the 3rd in Berlin.
+var berlin = Calendar(identifier: .gregorian)
+berlin.timeZone = TimeZone(identifier: "Europe/Berlin")!
+let late = chore("late", "2026-10-02T23:30:00Z", status: "due_today")
+check(WidgetChores.urgency(late, now: noon, calendar: berlin) == .soon && WidgetChores.urgency(late, now: noon, calendar: utc) == .today, "local day decides")
+var doneChore = mixed[2]
+doneChore.done = true
+check(WidgetChores.counts([doneChore], now: noon, calendar: utc).due == 0, "done chore not counted")
+
+let en = Locale(identifier: "en")
+_ = en
+check(WidgetFormat.choreSummary(ChoreCounts()) == "Nothing due", "summary nothing")
+check(WidgetFormat.choreSummary(ChoreCounts(overdue: 2, today: 1)) == "2 overdue · 1 due today", "summary \(WidgetFormat.choreSummary(ChoreCounts(overdue: 2, today: 1)))")
+check(WidgetFormat.choreSummary(ChoreCounts(soon: 3)) == "3 coming up", "summary soon")
+check(WidgetFormat.householdLead(ChoreCounts(overdue: 2, today: 4), openItems: 7) == "2 overdue · 7 to buy", "household lead \(WidgetFormat.householdLead(ChoreCounts(overdue: 2, today: 4), openItems: 7))")
+check(WidgetFormat.householdLead(ChoreCounts(today: 1), openItems: 0) == "1 due today", "lead today")
+check(WidgetFormat.householdLead(ChoreCounts(soon: 1), openItems: 0) == "All done for today", "lead nothing")
+
 print("\(passes) passed, \(failures) failed")
 exit(failures == 0 ? 0 : 1)

@@ -18,11 +18,24 @@ class MainActivity: FlutterActivity() {
         WidgetUpdater.onAppStart(this)
     }
 
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray,
+    ) {
+        if (DeviceCalendarChannel.onRequestPermissionsResult(requestCode, grantResults)) return
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    }
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
         // Home screen widgets bridge (plans/047, contract C4).
         WidgetChannel.register(flutterEngine.dartExecutor.binaryMessenger, this)
+
+        // Shared household calendars: read-only access to this phone's
+        // calendars.
+        DeviceCalendarChannel.register(flutterEngine.dartExecutor.binaryMessenger, this)
 
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,

@@ -753,8 +753,13 @@ void main() {
       overrides: [
         authServiceProviderAsync.overrideWith((ref) async => authService),
         oauthProvidersProvider.overrideWith(
-          (ref) async =>
-              (google: true, apple: true, password: true, guest: false),
+          (ref) async => (
+            google: true,
+            apple: true,
+            password: true,
+            guest: false,
+            passwordReset: true,
+          ),
         ),
       ],
     );
@@ -920,8 +925,13 @@ void main() {
       overrides: [
         authServiceProviderAsync.overrideWith((ref) async => authService),
         oauthProvidersProvider.overrideWith(
-          (ref) async =>
-              (google: false, apple: false, password: true, guest: false),
+          (ref) async => (
+            google: false,
+            apple: false,
+            password: true,
+            guest: false,
+            passwordReset: true,
+          ),
         ),
       ],
     );
@@ -962,8 +972,13 @@ void main() {
       overrides: [
         authServiceProviderAsync.overrideWith((ref) async => authService),
         oauthProvidersProvider.overrideWith(
-          (ref) async =>
-              (google: false, apple: false, password: true, guest: false),
+          (ref) async => (
+            google: false,
+            apple: false,
+            password: true,
+            guest: false,
+            passwordReset: true,
+          ),
         ),
       ],
     );
@@ -1001,8 +1016,13 @@ void main() {
       overrides: [
         authServiceProviderAsync.overrideWith((ref) async => authService),
         oauthProvidersProvider.overrideWith(
-          (ref) async =>
-              (google: true, apple: false, password: false, guest: false),
+          (ref) async => (
+            google: true,
+            apple: false,
+            password: false,
+            guest: false,
+            passwordReset: true,
+          ),
         ),
       ],
     );
@@ -1019,6 +1039,35 @@ void main() {
     expect(find.text('Remember me'), findsOneWidget);
   });
 
+  testWidgets(
+      'login screen hides forgot password when the server cannot '
+      'send email', (tester) async {
+    await _setLargeSurface(tester);
+    final authService = FakeAuthService(currentUser: user);
+
+    await _pumpScreen(
+      tester,
+      child: const LoginScreen(),
+      overrides: [
+        authServiceProviderAsync.overrideWith((ref) async => authService),
+        oauthProvidersProvider.overrideWith(
+          (ref) async => (
+            google: false,
+            apple: false,
+            password: true,
+            guest: false,
+            passwordReset: false,
+          ),
+        ),
+      ],
+    );
+
+    // Signing in and creating an account still work; only reset is gone.
+    expect(find.text('SIGN IN'), findsOneWidget);
+    expect(find.text('Create account'), findsOneWidget);
+    expect(find.text('Forgot password?'), findsNothing);
+  });
+
   testWidgets('login screen puts the password form after the OAuth buttons',
       (tester) async {
     await _setLargeSurface(tester);
@@ -1030,8 +1079,13 @@ void main() {
       overrides: [
         authServiceProviderAsync.overrideWith((ref) async => authService),
         oauthProvidersProvider.overrideWith(
-          (ref) async =>
-              (google: true, apple: false, password: true, guest: false),
+          (ref) async => (
+            google: true,
+            apple: false,
+            password: true,
+            guest: false,
+            passwordReset: true,
+          ),
         ),
       ],
     );
@@ -1062,8 +1116,13 @@ void main() {
       overrides: [
         authServiceProviderAsync.overrideWith((ref) async => authService),
         oauthProvidersProvider.overrideWith(
-          (ref) async =>
-              (google: false, apple: false, password: false, guest: false),
+          (ref) async => (
+            google: false,
+            apple: false,
+            password: false,
+            guest: false,
+            passwordReset: true,
+          ),
         ),
       ],
     );
@@ -1230,8 +1289,13 @@ void main() {
       child: const SignupScreen(),
       overrides: [
         oauthProvidersProvider.overrideWith(
-          (ref) async =>
-              (google: true, apple: true, password: true, guest: false),
+          (ref) async => (
+            google: true,
+            apple: true,
+            password: true,
+            guest: false,
+            passwordReset: true,
+          ),
         ),
       ],
     );
@@ -1260,8 +1324,13 @@ void main() {
       child: const SignupScreen(),
       overrides: [
         oauthProvidersProvider.overrideWith(
-          (ref) async =>
-              (google: false, apple: false, password: true, guest: false),
+          (ref) async => (
+            google: false,
+            apple: false,
+            password: true,
+            guest: false,
+            passwordReset: true,
+          ),
         ),
       ],
     );
@@ -1481,7 +1550,8 @@ void main() {
     );
 
     expect(find.text('Pinwall'), findsOneWidget);
-    expect(find.text('Activity'), findsOneWidget);
+    // No activity yet, so no empty feed; it arrives with the first event.
+    expect(find.text('Activity'), findsNothing);
     // Home opens with what needs you; the pinwall comes after it.
     expect(find.text('Needs you'), findsOneWidget);
     expect(
@@ -1497,8 +1567,8 @@ void main() {
       'without the skeleton', (tester) async {
     await _setLargeSurface(tester);
     SharedPreferences.setMockInitialValues({});
-    addTearDown(() => SharedPreferences.setMockInitialValues(
-        {'current_group_id': groupId}));
+    addTearDown(() =>
+        SharedPreferences.setMockInitialValues({'current_group_id': groupId}));
 
     Group household(int members) => Group(
           id: groupId,
@@ -1533,10 +1603,15 @@ void main() {
         financeRepositoryProvider.overrideWith(
             (ref) async => FakeFinanceRepository(FakeFinanceService())),
         sseServiceProvider.overrideWithValue(sse),
+        // The fake list repository's stream never emits; the quick start
+        // waits for every cache, as it should with a real database.
+        cachedListsByGroupProvider
+            .overrideWith((ref, id) => Stream.value(const <ItemList>[])),
       ],
     );
 
-    expect(find.text("You're the only one here"), findsOneWidget);
+    // Alone in the household: the quick start asks for the invite.
+    expect(find.text('INVITE SOMEONE'), findsOneWidget);
     final snapshotsBefore = home.calls;
 
     // Another household's news is not this one's.
@@ -1575,7 +1650,8 @@ void main() {
 
     expect(home.calls, greaterThan(snapshotsBefore));
     expect(find.byType(HubSkeleton), findsNothing);
-    expect(find.text("You're the only one here"), findsNothing);
+    // Sam's arrival ticks the invite step and starts the activity feed.
+    expect(find.text('INVITE SOMEONE'), findsNothing);
     expect(find.text('Sam joined \u00b7 today'), findsOneWidget);
   });
 
@@ -1585,8 +1661,8 @@ void main() {
     await _setLargeSurface(tester);
     // A fresh install.
     SharedPreferences.setMockInitialValues({});
-    addTearDown(() => SharedPreferences.setMockInitialValues(
-        {'current_group_id': groupId}));
+    addTearDown(() =>
+        SharedPreferences.setMockInitialValues({'current_group_id': groupId}));
 
     const flatId = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee';
     final flat = Group(
@@ -1674,8 +1750,7 @@ void main() {
         GoRoute(
           path: '/onboarding',
           name: 'onboarding',
-          builder: (context, state) =>
-              const Scaffold(body: Text('ONBOARDING')),
+          builder: (context, state) => const Scaffold(body: Text('ONBOARDING')),
         ),
       ],
     );
@@ -1687,8 +1762,13 @@ void main() {
           appDatabaseProvider.overrideWithValue(db),
           authServiceProviderAsync.overrideWith((ref) async => authService),
           oauthProvidersProvider.overrideWith(
-            (ref) async =>
-                (google: false, apple: false, password: true, guest: false),
+            (ref) async => (
+              google: false,
+              apple: false,
+              password: true,
+              guest: false,
+              passwordReset: true,
+            ),
           ),
           groupServiceProviderAsync.overrideWith((ref) async => groupService),
           activityServiceProviderAsync
@@ -1713,8 +1793,8 @@ void main() {
           listItemCountsProvider.overrideWith((ref, id) => Stream.value({
                 groceries.id: (open: 3, total: 4),
               })),
-          cachedCurrentChoresByGroupProvider.overrideWith(
-              (ref, id) => Stream.value(const <CurrentChore>[])),
+          cachedCurrentChoresByGroupProvider
+              .overrideWith((ref, id) => Stream.value(const <CurrentChore>[])),
           cachedExpensesByGroupProvider
               .overrideWith((ref, id) => Stream.value(const <Expense>[])),
           cachedFinanceSummaryByGroupProvider.overrideWith((ref, id) =>
@@ -1769,12 +1849,12 @@ void main() {
     expect(find.text('ONBOARDING'), findsNothing);
     expect(find.text('Needs you'), findsOneWidget);
     expect(find.text('Nothing on you yet'), findsOneWidget);
-    expect(find.text('Joined Flat 3B'), findsOneWidget);
-    expect(find.text('Tick something off a list'), findsOneWidget);
+    // One next step, the other two as small buttons under it.
+    expect(find.text('TICK SOMETHING OFF A LIST'), findsOneWidget);
     expect(find.text('Take or complete a chore'), findsOneWidget);
     expect(find.text('Check your balance'), findsOneWidget);
     expect(find.text('1 of 4 done'), findsOneWidget);
-    expect(find.text('Household created'), findsNothing);
+    expect(find.text('INVITE SOMEONE'), findsNothing);
   });
 
   test('logout wipes expenses and lists tables from local database', () async {
@@ -2846,16 +2926,18 @@ class FakeListRepository implements ListRepository {
   ) async {}
 
   @override
-  Future<void> setAllCheckedOfflineFirst(
+  Future<List<String>> setAllCheckedOfflineFirst(
     String listId, {
     required bool checked,
-  }) async {}
+  }) async =>
+      const [];
 
   @override
-  Future<void> clearItemsOfflineFirst(
+  Future<ClearedListItems> clearItemsOfflineFirst(
     String listId, {
     required bool onlyChecked,
-  }) async {}
+  }) async =>
+      const ClearedListItems.none();
 
   @override
   Future<void> deleteListLocal(String listId) async {}

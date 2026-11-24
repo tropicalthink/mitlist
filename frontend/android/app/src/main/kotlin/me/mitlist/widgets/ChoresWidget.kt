@@ -73,45 +73,61 @@ private fun Content(model: WidgetModel) {
     val snapshot = model.snapshot ?: return
     val household = snapshot.resolveHousehold(model.configuredHousehold)
     if (household == null) {
-        MessageState(context.getString(R.string.widget_no_household), actionStartActivity(WidgetLinks.app(context)))
+        MessageState(context.getString(R.string.widget_no_household), actionStartActivity(WidgetLinks.setup(context)))
         return
     }
     val size = LocalSize.current
     val keyguard = isKeyguardHost()
+    val rows = model.choreRows(household)
     if (keyguard || (size.width < 180.dp && size.height < 180.dp)) {
-        ChoresTile(household, countsOnly = keyguard)
+        ChoresTile(household, rows, countsOnly = keyguard)
     } else {
-        ChoresList(model, household)
+        ChoresList(model, household, rows)
     }
 }
 
+/** "3 due" or "Nothing due today": the header counts exactly what it says (overdue and today). */
+internal fun dueHeadline(context: Context, rows: List<ChoreRow>): String {
+    val due = WidgetDisplay.dueCount(rows)
+    return if (due == 0) {
+        context.getString(R.string.widget_chores_nothing_due_short)
+    } else {
+        context.resources.getQuantityString(R.plurals.widget_chores_due, due, due)
+    }
+}
+
+/** 2x2: the count of due chores and the most urgent ones by name (lock screen: the count only). */
 @Composable
-private fun ChoresTile(household: WidgetHousehold, countsOnly: Boolean) {
+private fun ChoresTile(household: WidgetHousehold, rows: List<ChoreRow>, countsOnly: Boolean) {
     val context = LocalContext.current
-    val chores = household.chores
-    val mine = chores.count { it.isMine }
+    val due = WidgetDisplay.dueCount(rows)
+    val open = rows.filterNot { it.done }
     WidgetFrame(modifier = GlanceModifier.clickable(actionStartActivity(WidgetLinks.chores(context, household.id)))) {
         Column(modifier = GlanceModifier.fillMaxSize()) {
-            WidgetText(context.getString(R.string.widget_chores_title), bold = true, size = 15.sp)
-            if (!countsOnly) SecondaryText(household.name)
-            Spacer(GlanceModifier.defaultWeight())
-            WidgetText(chores.size.toString(), bold = true, size = 30.sp, color = GlanceTheme.colors.primary)
-            SecondaryText(
-                if (chores.isEmpty()) {
-                    context.getString(R.string.widget_chores_nothing_due_short)
-                } else {
-                    context.resources.getQuantityString(R.plurals.widget_chores_due, chores.size, chores.size)
-                },
-            )
-            if (!countsOnly && mine > 0) {
-                SecondaryText(context.resources.getQuantityString(R.plurals.widget_chores_mine, mine, mine))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                WidgetText(context.getString(R.string.widget_chores_title), bold = true, size = 15.sp)
+                Spacer(GlanceModifier.width(6.dp))
+                WidgetText(due.toString(), bold = true, size = 15.sp, color = GlanceTheme.colors.primary)
+            }
+            SecondaryText(dueHeadline(context, rows))
+            Spacer(GlanceModifier.height(4.dp))
+            if (!countsOnly) {
+                val take = if (LocalSize.current.height >= 150.dp) 3 else 2
+                open.take(take).forEach { row ->
+                    // Text label first, never colour alone.
+                    WidgetText(
+                        "${bucketLabel(context, row)} · ${row.chore.title}",
+                        size = 13.sp,
+                        bold = row.chore.isMine,
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun ChoresList(model: WidgetModel, household: WidgetHousehold) {
+private fun ChoresList(model: WidgetModel, household: WidgetHousehold, rows: List<ChoreRow>) {
     val context = LocalContext.current
     WidgetFrame(padding = 8.dp) {
         Column(modifier = GlanceModifier.fillMaxSize()) {
@@ -126,9 +142,9 @@ private fun ChoresList(model: WidgetModel, household: WidgetHousehold) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         WidgetText(context.getString(R.string.widget_chores_title), bold = true, size = 15.sp)
                         Spacer(GlanceModifier.width(6.dp))
-                        CountBadge(household.chores.size)
+                        CountBadge(WidgetDisplay.dueCount(rows))
                     }
-                    SecondaryText(household.name)
+                    SecondaryText(dueHeadline(context, rows) + " · " + household.name)
                 }
                 WidgetIconButton(
                     R.drawable.ic_widget_refresh,
@@ -137,7 +153,7 @@ private fun ChoresList(model: WidgetModel, household: WidgetHousehold) {
                     tint = GlanceTheme.colors.onSurfaceVariant,
                 )
             }
-            if (household.chores.isEmpty()) {
+            if (rows.isEmpty()) {
                 Column(
                     modifier = GlanceModifier.fillMaxWidth().defaultWeight()
                         .clickable(actionStartActivity(WidgetLinks.chores(context, household.id))),
@@ -149,8 +165,14 @@ private fun ChoresList(model: WidgetModel, household: WidgetHousehold) {
                 }
             } else {
                 LazyColumn(modifier = GlanceModifier.fillMaxWidth().defaultWeight()) {
-                    items(household.chores, itemId = { stableId(it.id) }) { chore ->
-                        ChoreRow(household, chore)
+                    var previous: ChoreBucket? = null
+                    rows.forEach { row ->
+                        if (row.bucket != previous) {
+                            val bucket = row.bucket
+                            item(stableId("bucket:${bucket.name}")) { BucketHeader(bucket) }
+                            previous = bucket
+                        }
+                        item(stableId(row.chore.id)) { ChoreRowView(household, row) }
                     }
                 }
             }
@@ -159,18 +181,50 @@ private fun ChoresList(model: WidgetModel, household: WidgetHousehold) {
     }
 }
 
+internal fun bucketName(context: Context, bucket: ChoreBucket): String = when (bucket) {
+    ChoreBucket.OVERDUE -> context.getString(R.string.widget_due_overdue)
+    ChoreBucket.TODAY -> context.getString(R.string.widget_due_today)
+    ChoreBucket.SOON -> context.getString(R.string.widget_due_soon)
+}
+
+/** "Overdue", "Today", or for later chores the day ("Tomorrow", "Thu"). */
+internal fun bucketLabel(context: Context, row: ChoreRow, now: Long = System.currentTimeMillis()): String =
+    if (row.bucket == ChoreBucket.SOON) dueLabel(context, row.chore, now) else bucketName(context, row.bucket)
+
 @Composable
-private fun ChoreRow(household: WidgetHousehold, chore: WidgetChore) {
+private fun BucketHeader(bucket: ChoreBucket) {
     val context = LocalContext.current
+    WidgetText(
+        bucketName(context, bucket).uppercase(),
+        modifier = GlanceModifier.fillMaxWidth().padding(start = 8.dp, top = 6.dp, bottom = 2.dp),
+        size = 11.sp,
+        bold = true,
+        color = if (bucket == ChoreBucket.OVERDUE) GlanceTheme.colors.error else GlanceTheme.colors.onSurfaceVariant,
+    )
+}
+
+@Composable
+private fun ChoreRowView(household: WidgetHousehold, row: ChoreRow) {
+    val context = LocalContext.current
+    val chore = row.chore
     Row(modifier = GlanceModifier.fillMaxWidth().padding(start = 8.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(
             modifier = GlanceModifier.defaultWeight()
                 .clickable(actionStartActivity(WidgetLinks.chores(context, household.id))),
         ) {
-            WidgetText(chore.title, bold = chore.isMine)
+            WidgetText(
+                chore.title,
+                bold = chore.isMine && !row.done,
+                strike = row.done,
+                color = if (row.done) GlanceTheme.colors.onSurfaceVariant else GlanceTheme.colors.onSurface,
+            )
             SecondaryText(choreSubtitle(context, chore))
         }
-        DoneButton(household, chore)
+        if (row.done) {
+            SquareTick(context.getString(R.string.widget_chore_marked_done, chore.title), onClick = null, checked = true)
+        } else {
+            DoneButton(household, chore)
+        }
     }
 }
 

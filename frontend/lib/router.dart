@@ -5,11 +5,13 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'providers/app_link_provider.dart';
+import 'providers/home_widgets_provider.dart' show widgetBridgeProvider;
 import 'providers/auth_provider.dart';
 import 'providers/group_provider.dart' show cachedGroupsProvider;
 import 'widgets/mitlist_bottom_nav.dart';
 import 'widgets/shell_branch_switcher.dart';
 import 'providers/nav_badge_provider.dart';
+import 'providers/app_areas_provider.dart';
 import 'providers/outbox_provider.dart' show outboxCoordinatorProvider;
 import 'providers/grocery_provider.dart' show groceryGraphSyncProvider;
 import 'theme/animations.dart';
@@ -29,6 +31,8 @@ import 'screens/you/feature_board_detail_screen.dart';
 import 'screens/you/feature_board_screen.dart';
 import 'screens/you/weekly_summary_screen.dart';
 import 'screens/you/home_assistant_connections_screen.dart';
+import 'screens/you/shared_calendars_screen.dart';
+import 'screens/you/widgets_screen.dart';
 import 'screens/auth/welcome_screen.dart';
 import 'screens/premium/premium_screen.dart';
 import 'screens/tour/tour_screen.dart';
@@ -551,6 +555,22 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
+          // Home screen widgets; also opened by mitlist:///you/widgets. Only
+          // where the platform has widgets (not web or desktop).
+          GoRoute(
+            path: 'widgets',
+            name: 'widgets',
+            redirect: (context, state) =>
+                ref.read(widgetBridgeProvider).isSupported ? null : '/you',
+            builder: (context, state) => const WidgetsScreen(),
+          ),
+          // Shared household calendars: connect calendars, choose what each
+          // household sees. A full page (more than a sheet's worth).
+          GoRoute(
+            path: 'calendars',
+            name: 'sharedCalendars',
+            builder: (context, state) => const SharedCalendarsScreen(),
+          ),
           GoRoute(
             path: 'products',
             name: 'products',
@@ -623,6 +643,23 @@ const _lastShellTabKey = 'nav_last_tab_index';
 Future<void> resetLastShellTab() async {
   final prefs = await SharedPreferences.getInstance();
   await prefs.setInt(_lastShellTabKey, 0);
+}
+
+/// The area a shell branch shows; null for Home (branch 0), which is always
+/// in the bar. Branches follow [AppArea]'s order after Home.
+AppArea? areaForShellBranch(int branch) =>
+    branch <= 0 || branch > AppArea.values.length
+        ? null
+        : AppArea.values[branch - 1];
+
+/// Forgets the remembered tab when it is [area]'s, so a cold start doesn't
+/// reopen an area the person just took out of their bar.
+Future<void> forgetLastShellTabIf(AppArea area) async {
+  final prefs = await SharedPreferences.getInstance();
+  final saved = prefs.getInt(_lastShellTabKey) ?? 0;
+  if (areaForShellBranch(saved) == area) {
+    await prefs.setInt(_lastShellTabKey, 0);
+  }
 }
 
 class BottomNavScaffold extends ConsumerStatefulWidget {
@@ -720,8 +757,36 @@ class _BottomNavScaffoldState extends ConsumerState<BottomNavScaffold> {
       ref.watch(groceryGraphSyncProvider(groupId));
     }
     final badgeData = ref.watch(navBadgeCountsProvider);
+    final visibleAreas = ref.watch(visibleAreasProvider);
+    final current = widget.navigationShell.currentIndex;
 
     final l10n = AppLocalizations.of(context)!;
+
+    // Home, then the areas this person uses. A branch reached some other way
+    // (a notification, a deep link) keeps its tab while it is open, so the
+    // bar never highlights a tab that isn't the screen on show.
+    final allItems = [
+      MitlistNavItem(iconName: 'home', label: l10n.navHome),
+      MitlistNavItem(
+        iconName: 'clipboardDocumentList',
+        label: l10n.navChores,
+        badgeCount: badgeData.choreCount,
+      ),
+      MitlistNavItem(iconName: 'queueList', label: l10n.navKitchen),
+      MitlistNavItem(
+        iconName: 'banknotes',
+        label: l10n.navMoney,
+        badgeCount: badgeData.settlementCount,
+      ),
+      MitlistNavItem(iconName: 'listBullet', label: l10n.navLists),
+    ];
+    final branches = [
+      for (var b = 0; b < allItems.length; b++)
+        if (b == 0 ||
+            b == current ||
+            visibleAreas.contains(areaForShellBranch(b)))
+          b,
+    ];
 
     // Android back handling for the bottom-nav shell. Without this, pressing
     // system-back at the root of a tab falls through to the root navigator and
@@ -742,24 +807,10 @@ class _BottomNavScaffoldState extends ConsumerState<BottomNavScaffold> {
           child: widget.navigationShell,
         ),
         bottomNavigationBar: MitlistBottomNav(
-          currentIndex: widget.navigationShell.currentIndex,
+          currentIndex: branches.indexOf(current),
           animate: _navMotionArmed,
-          onTap: _onTap,
-          items: [
-            MitlistNavItem(iconName: 'home', label: l10n.navHome),
-            MitlistNavItem(
-              iconName: 'clipboardDocumentList',
-              label: l10n.navChores,
-              badgeCount: badgeData.choreCount,
-            ),
-            MitlistNavItem(iconName: 'queueList', label: l10n.navKitchen),
-            MitlistNavItem(
-              iconName: 'banknotes',
-              label: l10n.navMoney,
-              badgeCount: badgeData.settlementCount,
-            ),
-            MitlistNavItem(iconName: 'listBullet', label: l10n.navLists),
-          ],
+          onTap: (i) => _onTap(branches[i]),
+          items: [for (final b in branches) allItems[b]],
         ),
       ),
     );

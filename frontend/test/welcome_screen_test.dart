@@ -297,8 +297,7 @@ void main() {
   });
 
   group('WelcomeScreen invite preview', () {
-    testWidgets('names who sent the invite and where it leads',
-        (tester) async {
+    testWidgets('names who sent the invite and where it leads', (tester) async {
       final service = _PreviewGroupService(const PublicInvitePreview(
         householdName: 'Flat 3B',
         inviterName: 'Sam',

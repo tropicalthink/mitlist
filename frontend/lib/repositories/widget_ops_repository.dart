@@ -144,6 +144,11 @@ class WidgetOpsRepository {
 
   Future<void> _applyDelivered(WidgetOp op) async {
     final item = _serverItem(op.responseJson);
+    if (op.type == WidgetOp.checkItem &&
+        op.listId != null &&
+        op.itemId != null) {
+      await _listRepo.recordExternalPurchase(op.listId!, op.itemId!);
+    }
     switch (op.type) {
       case WidgetOp.checkItem || WidgetOp.addItem:
         if (item != null) {

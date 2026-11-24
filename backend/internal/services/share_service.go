@@ -12,6 +12,7 @@ import (
 	"github.com/mitlist-app/mitlist/internal/api"
 	"github.com/mitlist-app/mitlist/internal/models"
 	"github.com/mitlist-app/mitlist/internal/repositories"
+	"github.com/mitlist-app/mitlist/internal/sse"
 )
 
 var (
@@ -31,7 +32,12 @@ type ShareService struct {
 	listRepo   repositories.ListRepo
 	recipeRepo repositories.RecipeRepoIface
 	groupRepo  repositories.GroupRepo
+	hub        *sse.Hub
 }
+
+// SetHub injects the SSE hub so a list created from shared text reaches the
+// household's other devices and home screen widgets.
+func (s *ShareService) SetHub(h *sse.Hub) { s.hub = h }
 
 // NewShareService creates a new ShareService.
 func NewShareService(listRepo repositories.ListRepo, recipeRepo repositories.RecipeRepoIface, groupRepo repositories.GroupRepo) *ShareService {
@@ -112,6 +118,7 @@ func (s *ShareService) CreateListFromShare(ctx context.Context, userID uuid.UUID
 	if err := s.listRepo.CreateList(ctx, list); err != nil {
 		return nil, nil, fmt.Errorf("create list: %w", err)
 	}
+	publishDomainEvent(s.hub, "list:created", groupID, map[string]string{"list_id": list.ID.String()})
 
 	var items []models.ListItem
 	for i, line := range parsed.Lines {
@@ -125,6 +132,7 @@ func (s *ShareService) CreateListFromShare(ctx context.Context, userID uuid.UUID
 		if err := s.listRepo.CreateItem(ctx, item); err != nil {
 			return nil, nil, fmt.Errorf("create list item: %w", err)
 		}
+		publishListItemEvent(s.hub, "list:item_created", groupID, list.ID, item.ID)
 		items = append(items, *item)
 	}
 

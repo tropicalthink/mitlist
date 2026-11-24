@@ -32,8 +32,8 @@ class WidgetChannel private constructor(private val context: Context) : MethodCh
             "setCredential" -> {
                 val args = call.arguments as? Map<*, *> ?: throw IllegalArgumentException("credential map required")
                 val credential = WidgetCredential.fromMap(args) ?: throw IllegalArgumentException("token and api_base_url required")
-                CredentialStore.save(context, credential)
-                state.authFailed = false
+                CredentialStore.replace(context, credential)
+                state.sessionEndedReason = null
                 WidgetUpdater.updateAll(context)
                 // Anything a widget queued while the credential was missing or
                 // dead can go now.
@@ -48,6 +48,15 @@ class WidgetChannel private constructor(private val context: Context) : MethodCh
                 WidgetFiles.snapshot(context).delete()
                 WidgetFiles.queue(context).clear()
                 state.clear()
+                // Optional {"reason": "not_remembered"}: the session was not
+                // kept ("Remember me" off), so the widgets ask for that
+                // rather than a plain sign-in. No argument: signed out.
+                val reason = (call.arguments as? Map<*, *>)?.get("reason") as? String
+                state.sessionEndedReason = if (reason == WidgetStateStore.SESSION_NOT_REMEMBERED) {
+                    WidgetStateStore.SESSION_NOT_REMEMBERED
+                } else {
+                    WidgetStateStore.SESSION_SIGNED_OUT
+                }
                 WidgetUpdater.updateAll(context)
                 null
             }
@@ -56,6 +65,7 @@ class WidgetChannel private constructor(private val context: Context) : MethodCh
                 WidgetFiles.snapshot(context).write(json)
                 state.refreshRequested = false
                 state.lastFetchAt = System.currentTimeMillis()
+                state.sessionEndedReason = null
                 WidgetUpdater.updateAll(context)
                 if (WidgetUpdater.hasAnyWidget(context)) WidgetSyncScheduler.ensurePeriodic(context)
                 WidgetPreviews.publishIfNeeded(context)
@@ -87,6 +97,12 @@ class WidgetChannel private constructor(private val context: Context) : MethodCh
                 state.refreshRequested = true
                 WidgetSyncScheduler.syncNow(context, forceFetch = true, expedited = false)
                 null
+            }
+            "installedWidgets" -> WidgetUpdater.installedKinds(context)
+            "isPinWidgetSupported" -> WidgetPinning.isSupported(context)
+            "pinWidget" -> {
+                val kind = call.argument<String>("kind") ?: throw IllegalArgumentException("kind required")
+                WidgetPinning.request(context, kind)
             }
             // Live Activities are iOS only (C4).
             "startShoppingTrip", "updateShoppingTrip", "endShoppingTrip" -> null

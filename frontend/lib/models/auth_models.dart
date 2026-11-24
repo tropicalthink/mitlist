@@ -101,14 +101,26 @@ class TokenPair {
   }
 }
 
+/// What `POST /auth/register` answered. Normally the address must be proven
+/// first (`verification_required`, no session). A server with no email
+/// provider cannot send the code, so it creates the account verified and
+/// answers like a login instead: then [session] holds the issued tokens.
 class RegistrationResult {
   final bool verificationRequired;
+  final TokenPair? session;
 
   const RegistrationResult({
     required this.verificationRequired,
+    this.session,
   });
 
   factory RegistrationResult.fromJson(Map<String, dynamic> json) {
+    if (json['access_token'] is String) {
+      return RegistrationResult(
+        verificationRequired: false,
+        session: TokenPair.fromJson(json),
+      );
+    }
     return RegistrationResult(
       verificationRequired: json['verification_required'] as bool? ?? true,
     );

@@ -180,6 +180,9 @@ public struct WidgetListItem: Codable, Equatable, Identifiable {
   public var addedByName: String?
   /// Set only by the native overlay for a queued, undelivered add (C1).
   public var local: Bool?
+  /// Display only, never read or written as JSON: ticked on this widget and
+  /// shown struck through until the next refresh.
+  public var checked = false
 
   enum CodingKeys: String, CodingKey {
     case id, name, quantity, unit
@@ -222,6 +225,9 @@ public struct WidgetChore: Codable, Equatable, Identifiable {
   public var isMine: Bool
   public var assigneeName: String?
   public var nextAssigneeName: String?
+  /// Display only, never read or written as JSON: marked done on this
+  /// widget and shown struck through until the next refresh.
+  public var done = false
 
   enum CodingKeys: String, CodingKey {
     case id, title

@@ -122,6 +122,8 @@ func (j *GuestCleanup) Run() {
 	for _, table := range []string{
 		"auth_sessions", "password_reset_tokens", "email_verification_tokens",
 		"push_subscriptions", "device_tokens", "oauth_accounts",
+		// Synced calendars; their calendars, events and overrides cascade.
+		"calendar_connections",
 	} {
 		if _, err := tx.Exec(ctx, "DELETE FROM "+table+" WHERE user_id = ANY($1)", retiredIDs); err != nil {
 			j.log.WithField("table", table).WithError(err).Error().Msg("clean expired guest records failed")

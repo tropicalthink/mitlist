@@ -1798,6 +1798,76 @@
   "@recipeCreationTypeItInDesc": {
     "description": "Card subtitle: type manually"
   },
+  "recipeCreationFromPhoto": "Read a photo",
+  "@recipeCreationFromPhoto": {
+    "description": "Recipe creation entry card: read a recipe from a photo"
+  },
+  "recipeCreationFromPhotoDesc": "Snap a recipe card or cookbook page. It is read on your phone",
+  "@recipeCreationFromPhotoDesc": {
+    "description": "Card subtitle: photo of a recipe card or cookbook page, read on-device"
+  },
+  "recipePhotoTitle": "Photograph the recipe",
+  "@recipePhotoTitle": {
+    "description": "Capture screen title when photographing a recipe"
+  },
+  "recipePhotoReading": "Reading the recipe…",
+  "@recipePhotoReading": {
+    "description": "Progress message while a recipe photo is read"
+  },
+  "recipePhotoNothingFound": "Couldn't find a recipe in that photo. Try a closer, straighter shot.",
+  "@recipePhotoNothingFound": {
+    "description": "Error toast: no recipe text found in the photo"
+  },
+  "recipePhotoRead": "Read {ingredients, plural, =1{1 ingredient} other{{ingredients} ingredients}} and {steps, plural, =1{1 step} other{{steps} steps}}. Check them before saving.",
+  "@recipePhotoRead": {
+    "description": "Toast after a recipe photo filled the form",
+    "placeholders": {
+      "ingredients": {
+        "type": "int"
+      },
+      "steps": {
+        "type": "int"
+      }
+    }
+  },
+  "receiptScanTitle": "Photograph the receipt",
+  "@receiptScanTitle": {
+    "description": "Capture screen title when photographing a receipt"
+  },
+  "receiptScanReading": "Reading the receipt…",
+  "@receiptScanReading": {
+    "description": "Progress message while a receipt photo is read"
+  },
+  "receiptScanNoTotal": "Couldn't find a total on the receipt. Enter the amount yourself.",
+  "@receiptScanNoTotal": {
+    "description": "Toast: no total found on a scanned receipt"
+  },
+  "receiptScanCheckTotal": "The receipt lines don't add up to its total. Check the amount and notes.",
+  "@receiptScanCheckTotal": {
+    "description": "Toast: a scanned receipt's lines don't sum to its total"
+  },
+  "receiptRememberPurchases": "Remember what was bought",
+  "@receiptRememberPurchases": {
+    "description": "Expense sheet switch after a receipt scan: record its household items as purchases"
+  },
+  "receiptRememberPurchasesDesc": "Count {count, plural, =1{1 item} other{{count} items}} you usually buy as bought, for restock and suggestions",
+  "@receiptRememberPurchasesDesc": {
+    "description": "Subtitle of the remember-purchases switch",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "receiptTickListItems": "Tick off {count, plural, =1{1 item} other{{count} items}} on your lists",
+  "@receiptTickListItems": {
+    "description": "Expense sheet switch after a receipt scan: tick off the open shopping-list items the receipt shows were bought",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "recipeCreationScanning": "Scanning…",
   "@recipeCreationScanning": {
     "description": "Card title: scanning in progress"
@@ -2882,22 +2952,6 @@
   "@listDetailCheckedOff": {
     "description": "Section header for completed items"
   },
-  "listDetailNothingHere": "Nothing here yet",
-  "@listDetailNothingHere": {
-    "description": "Empty state when list has no items"
-  },
-  "listDetailNothingHereDesc": "Photograph a handwritten list, fridge note, or screenshot. We'll pull out the items.",
-  "@listDetailNothingHereDesc": {
-    "description": "Description for empty list"
-  },
-  "listDetailScanThisList": "Scan this list",
-  "@listDetailScanThisList": {
-    "description": "CTA to scan list content"
-  },
-  "listDetailTypeItem": "Type an item",
-  "@listDetailTypeItem": {
-    "description": "CTA to type an item manually"
-  },
   "listDetailNoMatch": "No items match your filter",
   "@listDetailNoMatch": {
     "description": "Search empty result for items"
@@ -2918,19 +2972,6 @@
   "@listDetailCouldNotClear": {
     "description": "Snackbar when clearing items fails"
   },
-  "listDetailItemDeleted": "{name} deleted",
-  "@listDetailItemDeleted": {
-    "description": "Snackbar when item is deleted",
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "listDetailCouldNotRestore": "Couldn't restore item.",
-  "@listDetailCouldNotRestore": {
-    "description": "Snackbar when restore fails"
-  },
   "listDetailCouldNotReorder": "Couldn't reorder items. Please try again.",
   "@listDetailCouldNotReorder": {
     "description": "Snackbar when reorder fails"
@@ -2948,10 +2989,6 @@
   "@listDetailCouldNotStartScan": {
     "description": "Snackbar when scan fails to start"
   },
-  "listDetailSetPrice": "Set price",
-  "@listDetailSetPrice": {
-    "description": "Dialog title for setting item price"
-  },
   "listDetailPriceInput": "Price",
   "@listDetailPriceInput": {
     "description": "Input label for price"
@@ -2968,7 +3005,7 @@
   "@listDetailClearTitle": {
     "description": "Dialog title for clearing list"
   },
-  "listDetailClearBody": "This will remove all {count} {count, plural, =1{item} other{items}}. This cannot be undone.",
+  "listDetailClearBody": "This will remove all {count} {count, plural, =1{item} other{items}}. You can take it back with the undo arrow until you leave the list.",
   "@listDetailClearBody": {
     "description": "Dialog body for clearing list",
     "placeholders": {
@@ -3912,10 +3949,8 @@
       }
     }
   },
-  "shoppingTripMarkDone": "Mark done",
-  "@shoppingTripMarkDone": {
-    "description": "Button to mark item as purchased"
-  },
+  "shoppingTripFinish": "Finish trip",
+  "@shoppingTripFinish": {"description": "Button that ends a shopping trip; each tick was already saved"},
   "shoppingTripBasketBar": "/ {collected} collected{price}",
   "@shoppingTripBasketBar": {
     "description": "Basket bar: collected count and price",
@@ -5068,10 +5103,6 @@
   "@offlineBannerRetry": {
     "description": "Retry button in offline banner"
   },
-  "composerNewItem": "New item",
-  "@composerNewItem": {
-    "description": "Placeholder for the list composer input"
-  },
   "composerScanList": "Scan list",
   "@composerScanList": {
     "description": "Tooltip for scanning a list from composer"
@@ -5084,10 +5115,6 @@
   "@listItemViewPhoto": {
     "description": "Action: view attached photo"
   },
-  "listItemReplacePhoto": "Replace photo",
-  "@listItemReplacePhoto": {
-    "description": "Action: replace attached photo"
-  },
   "listItemAddPhoto": "Add photo",
   "@listItemAddPhoto": {
     "description": "Action: add photo to item"
@@ -5096,29 +5123,9 @@
   "@listItemRemovePhoto": {
     "description": "Action: remove attached photo"
   },
-  "listItemSetPrice": "Set price",
-  "@listItemSetPrice": {
-    "description": "Action: set price on item"
-  },
-  "listItemChangeQuantity": "Change quantity",
-  "@listItemChangeQuantity": {
-    "description": "Action: change item quantity/unit"
-  },
   "listItemQuantityAmount": "Amount",
   "@listItemQuantityAmount": {
     "description": "Input label for item quantity"
-  },
-  "listItemQuantityUnit": "Unit (optional)",
-  "@listItemQuantityUnit": {
-    "description": "Input label for item unit"
-  },
-  "listItemAddNote": "Add note",
-  "@listItemAddNote": {
-    "description": "Action: add a note to an item"
-  },
-  "listItemEditNote": "Edit note",
-  "@listItemEditNote": {
-    "description": "Action: edit an item's note"
   },
   "listItemNoteLabel": "Note",
   "@listItemNoteLabel": {
@@ -5162,10 +5169,6 @@
       }
     }
   },
-  "listItemReorder": "Reorder",
-  "@listItemReorder": {
-    "description": "Semantics label for reorder handle"
-  },
   "listItemMarkUnchecked": "Mark {name} as unchecked",
   "@listItemMarkUnchecked": {
     "description": "Semantics: mark item unchecked",
@@ -5197,10 +5200,46 @@
   "@listItemFailedSave": {
     "description": "Error shown when item save fails locally"
   },
-  "listItemLongPressHint": "Long press for more options",
-  "@listItemLongPressHint": {
-    "description": "Accessibility hint for list item long press"
-  },
+  "listItemUnit": "Unit",
+  "@listItemUnit": {"description": "Short label for the unit field (kg, l, pack) in the list item editor"},
+  "listItemMoveUp": "Move up",
+  "@listItemMoveUp": {"description": "Screen-reader action that moves a list item one place up"},
+  "listItemMoveDown": "Move down",
+  "@listItemMoveDown": {"description": "Screen-reader action that moves a list item one place down"},
+  "listEditDetailsFor": "Details for {name}",
+  "@listEditDetailsFor": {"description":"Screen-reader label of the row of controls pinned above the keyboard while a list line is edited","placeholders":{"name":{"type":"String"}}},
+  "listEditUnitAdd": "Add a unit",
+  "@listEditUnitAdd": {"description":"Chip that opens the unit choices while a list line is edited"},
+  "listEditUnitValue": "Unit: {unit}",
+  "@listEditUnitValue": {"description":"Tooltip of the unit chip when the item has a unit","placeholders":{"unit":{"type":"String"}}},
+  "listEditPriceAdd": "Add a price",
+  "@listEditPriceAdd": {"description":"Chip that opens the price field while a list line is edited"},
+  "listEditPriceValue": "Price: {price}",
+  "@listEditPriceValue": {"description":"Tooltip of the price chip when the item has a price","placeholders":{"price":{"type":"String"}}},
+  "listEditNoteAdd": "Add a note",
+  "@listEditNoteAdd": {"description":"Chip that opens the note field under the item name"},
+  "listEditNoteValue": "Note: {note}",
+  "@listEditNoteValue": {"description":"Tooltip of the note chip when the item has a note","placeholders":{"note":{"type":"String"}}},
+  "listEditClearUnit": "Clear unit",
+  "@listEditClearUnit": {"description":"Button that removes the unit of a list item"},
+  "listEditClearPrice": "Clear price",
+  "@listEditClearPrice": {"description":"Button that removes the price of a list item"},
+  "listEditBack": "Back to details",
+  "@listEditBack": {"description":"Button that closes the unit or price field and shows the other details again"},
+  "listEditDeleteItem": "Delete {name}",
+  "@listEditDeleteItem": {"description":"Delete button in the edit controls of a list line","placeholders":{"name":{"type":"String"}}},
+  "listEditUnitPieces": "pcs",
+  "@listEditUnitPieces": {"description":"Short unit: pieces"},
+  "listEditUnitPack": "pack",
+  "@listEditUnitPack": {"description":"Short unit: pack"},
+  "listEditUnitCan": "can",
+  "@listEditUnitCan": {"description":"Short unit: can"},
+  "listEditUnitBottle": "bottle",
+  "@listEditUnitBottle": {"description":"Short unit: bottle"},
+  "listItemOneLess": "One less",
+  "@listItemOneLess": {"description": "Tooltip on the minus button that lowers a list item's amount by one"},
+  "listItemOneMore": "One more",
+  "@listItemOneMore": {"description": "Tooltip on the plus button that raises a list item's amount by one"},
   "scanCheckListPhoto": "Check list photo",
   "@scanCheckListPhoto": {
     "description": "Smart capture review title for a list photo"
@@ -5549,6 +5588,14 @@
   "authLoginResetCodeSent": "If that email exists, a reset code has been sent.",
   "@authLoginResetCodeSent": {
     "description": "Success message after requesting reset code"
+  },
+  "authLoginResetUnavailable": "This server can't send email, so passwords can't be reset here. Ask whoever runs it for help.",
+  "@authLoginResetUnavailable": {
+    "description": "Shown instead of sending a reset code when the server has no email provider configured"
+  },
+  "authSignupEmailTaken": "An account with this email already exists. Sign in instead.",
+  "@authSignupEmailTaken": {
+    "description": "Sign-up error on a server without email when the address already has an account"
   },
   "authLoginResetFillAllFields": "Fill out the reset code and both password fields.",
   "@authLoginResetFillAllFields": {
@@ -7464,10 +7511,6 @@
   "pinwallCouldNotLoad": "Couldn't load the pinwall.",
   "@pinwallCouldNotLoad": {
     "description": "Error when pinwall posts fail to load"
-  },
-  "composerItemHint": "e.g. Milk, 2 avocados, or 500g flour",
-  "@composerItemHint": {
-    "description": "Hint for list composer input"
   },
   "aisleOther": "Other",
   "@aisleOther": {
@@ -9690,5 +9733,533 @@
         "type": "String"
       }
     }
-  }
+  },
+  "authOnboardingAreasTitle": "What will you use mitlist for?",
+  "@authOnboardingAreasTitle": {
+    "description": "First run, last step: question; the answers decide which tabs this person sees"
+  },
+  "authOnboardingAreasBody": "Pick as many as you like. You'll only see those; turn the rest on any time under You.",
+  "@authOnboardingAreasBody": {
+    "description": "First run, last step: line under the question"
+  },
+  "authOnboardingAreasKitchen": "Recipes and meals",
+  "@authOnboardingAreasKitchen": {
+    "description": "First run, last step: answer for the Kitchen tab"
+  },
+  "authOnboardingAreasAll": "Show me everything",
+  "@authOnboardingAreasAll": {
+    "description": "First run, last step: keeps every tab"
+  },
+  "appAreasTitle": "What you use",
+  "@appAreasTitle": {
+    "description": "You screen row and sheet title: which parts of the app (tabs) this person sees"
+  },
+  "appAreasBody": "Hiding a part keeps everything in it. If someone adds an expense with you or it's your turn for a chore, that part shows up for you anyway.",
+  "@appAreasBody": {
+    "description": "Sheet explaining that hidden tabs keep their data and come back when something involves you"
+  },
+  "appAreasAll": "Everything",
+  "@appAreasAll": {
+    "description": "You screen row value when every part of the app is shown"
+  },
+  "hubChecklistLater": "Later:",
+  "@hubChecklistLater": {
+    "description": "Home quick start: label before the other open steps, shown as small buttons under the next step"
+  },
+  "pinwallHubEmptyIntro": "Notes for the whole house go here. Open the board to pin one.",
+  "@pinwallHubEmptyIntro": {
+    "description": "Home pinwall in a household with nothing in it yet (no note box shown)"
+  },
+  "widgetsPageTitle": "Home screen widgets",
+  "@widgetsPageTitle": {
+    "description": "Title of the Widgets page (You > Home screen widgets)"
+  },
+  "widgetsPageAccountRowValue": "The list and chores at a glance",
+  "@widgetsPageAccountRowValue": {
+    "description": "You screen: subtitle of the row that opens the Widgets page"
+  },
+  "widgetsPageIntro": "See the shopping list and today's chores without opening the app, and tick things off right from your home screen.",
+  "@widgetsPageIntro": {
+    "description": "Widgets page: intro under the title"
+  },
+  "widgetsPageStepsTitle": "How to add a widget",
+  "@widgetsPageStepsTitle": {
+    "description": "Widgets page: heading of the numbered how-to steps"
+  },
+  "widgetsPageIosStep1": "Touch and hold an empty spot on your Home Screen, then tap Edit and Add Widget.",
+  "@widgetsPageIosStep1": {
+    "description": "iOS how-to step 1"
+  },
+  "widgetsPageIosStep2": "Search for “mitlist”.",
+  "@widgetsPageIosStep2": {
+    "description": "iOS how-to step 2"
+  },
+  "widgetsPageIosStep3": "Pick a widget, swipe to the size you want and tap Add Widget.",
+  "@widgetsPageIosStep3": {
+    "description": "iOS how-to step 3"
+  },
+  "widgetsPageIosStep4": "To choose the household or list, touch and hold the widget and tap Edit Widget.",
+  "@widgetsPageIosStep4": {
+    "description": "iOS how-to step 4"
+  },
+  "widgetsPageAndroidStep1": "Touch and hold an empty spot on your home screen.",
+  "@widgetsPageAndroidStep1": {
+    "description": "Android how-to step 1"
+  },
+  "widgetsPageAndroidStep2": "Tap Widgets and find mitlist.",
+  "@widgetsPageAndroidStep2": {
+    "description": "Android how-to step 2"
+  },
+  "widgetsPageAndroidStep3": "Touch and hold a widget and drag it where you want it.",
+  "@widgetsPageAndroidStep3": {
+    "description": "Android how-to step 3"
+  },
+  "widgetsPageAdd": "Add to home screen",
+  "@widgetsPageAdd": {
+    "description": "Android button under a widget preview: asks the launcher to pin it"
+  },
+  "widgetsPageAdded": "Added",
+  "@widgetsPageAdded": {
+    "description": "Badge on a widget that is already on the home screen"
+  },
+  "widgetsPagePinFailed": "Your home screen couldn't add it directly. Follow the steps below.",
+  "@widgetsPagePinFailed": {
+    "description": "Toast when the launcher could not pin a widget in one tap"
+  },
+  "widgetsPageShoppingListName": "Shopping list",
+  "@widgetsPageShoppingListName": {
+    "description": "Name of the shopping list widget"
+  },
+  "widgetsPageShoppingListDesc": "Tick items off in the shop and add new ones with +.",
+  "@widgetsPageShoppingListDesc": {
+    "description": "What the shopping list widget does"
+  },
+  "widgetsPageChoresName": "Chores today",
+  "@widgetsPageChoresName": {
+    "description": "Name of the chores widget"
+  },
+  "widgetsPageChoresDesc": "What's due today and whose turn it is. Mark a chore done in one tap.",
+  "@widgetsPageChoresDesc": {
+    "description": "What the chores widget does"
+  },
+  "widgetsPageQuickAddName": "Quick add",
+  "@widgetsPageQuickAddName": {
+    "description": "Name of the quick add widget (Android)"
+  },
+  "widgetsPageQuickAddDesc": "One tap to put something on the list.",
+  "@widgetsPageQuickAddDesc": {
+    "description": "What the quick add widget does"
+  },
+  "widgetsPageHouseholdName": "Household today",
+  "@widgetsPageHouseholdName": {
+    "description": "Name of the household today widget"
+  },
+  "widgetsPageHouseholdDesc": "Today's chores, the shopping list and tonight's meal in one place.",
+  "@widgetsPageHouseholdDesc": {
+    "description": "What the household today widget does"
+  },
+  "widgetsPagePreviewLabel": "Preview of the {name} widget",
+  "@widgetsPagePreviewLabel": {
+    "description": "Screen reader label of a widget preview",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "widgetsPageSampleHousehold": "Our home",
+  "@widgetsPageSampleHousehold": {
+    "description": "Sample household name in widget previews when the real one is unknown"
+  },
+  "widgetsPageSampleListName": "Groceries",
+  "@widgetsPageSampleListName": {
+    "description": "Sample list name in widget previews"
+  },
+  "widgetsPageSampleItem1": "Oat milk",
+  "@widgetsPageSampleItem1": {
+    "description": "Sample list item in widget previews"
+  },
+  "widgetsPageSampleItem2": "Bananas",
+  "@widgetsPageSampleItem2": {
+    "description": "Sample list item in widget previews"
+  },
+  "widgetsPageSampleItem3": "Coffee beans",
+  "@widgetsPageSampleItem3": {
+    "description": "Sample list item in widget previews"
+  },
+  "widgetsPageSampleItem4": "Rice",
+  "@widgetsPageSampleItem4": {
+    "description": "Sample list item in widget previews"
+  },
+  "widgetsPageSampleChore1": "Take out the bins",
+  "@widgetsPageSampleChore1": {
+    "description": "Sample chore in widget previews"
+  },
+  "widgetsPageSampleChore2": "Water the plants",
+  "@widgetsPageSampleChore2": {
+    "description": "Sample chore in widget previews"
+  },
+  "widgetsPageSampleMeal": "Tonight: pasta bake",
+  "@widgetsPageSampleMeal": {
+    "description": "Sample tonight's meal line in the household widget preview"
+  },
+  "widgetsPageSampleAddHint": "Add to the list",
+  "@widgetsPageSampleAddHint": {
+    "description": "Placeholder text in the quick add widget preview"
+  },
+  "widgetsPageSampleAddTo": "Add to",
+  "@widgetsPageSampleAddTo": {
+    "description": "Caption above the list name in the iOS quick add widget preview (\"Add to\" / \"Groceries\")"
+  },
+  "widgetsPageSampleLeft": "{count} left",
+  "@widgetsPageSampleLeft": {
+    "description": "Widget preview: how many list items are still open",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "widgetsPageSampleDue": "{count} due",
+  "@widgetsPageSampleDue": {
+    "description": "Widget preview: how many chores are due",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "widgetPromoHeadline": "Your shopping list, on your home screen",
+  "@widgetPromoHeadline": {
+    "description": "Home promo sheet headline for home screen widgets (household benefit, not the feature)"
+  },
+  "widgetPromoBody": "Tick things off in the shop without opening the app. Everyone at home sees it straight away.",
+  "@widgetPromoBody": {
+    "description": "Home promo sheet body for home screen widgets"
+  },
+  "widgetPromoAdd": "Add to home screen",
+  "@widgetPromoAdd": {
+    "description": "Home promo sheet primary button on Android: pins the shopping list widget"
+  },
+  "widgetPromoShowMe": "Show me how",
+  "@widgetPromoShowMe": {
+    "description": "Home promo sheet primary button on iOS: opens the Widgets page"
+  },
+  "widgetPromoNotNow": "Not now",
+  "@widgetPromoNotNow": {
+    "description": "Home promo sheet: dismiss button"
+  },
+  "listUndoUndoTooltip": "Undo",
+  "@listUndoUndoTooltip": {
+    "description": "List screen app bar: undo the last change of this visit"
+  },
+  "listUndoRedoTooltip": "Redo",
+  "@listUndoRedoTooltip": {
+    "description": "List screen app bar: redo the last undone change"
+  },
+  "listUndoChangedElsewhere": "Someone else changed this, so it wasn't undone",
+  "@listUndoChangedElsewhere": {
+    "description": "Toast when an undo was skipped because a household member changed or removed the item meanwhile"
+  },
+  "listUndoRedoChangedElsewhere": "Someone else changed this, so it wasn't redone",
+  "@listUndoRedoChangedElsewhere": {
+    "description": "Toast when a redo was skipped because a household member changed or removed the item meanwhile"
+  },
+  "listUndoRestoredItems": "{count, plural, =1{Restored 1 item} other{Restored {count} items}}",
+  "@listUndoRestoredItems": {
+    "description": "Toast after an undo put several removed list items back",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "listUndoCouldNotUndo": "Couldn't undo that. Try again.",
+  "@listUndoCouldNotUndo": {
+    "description": "Toast when an undo could not be saved"
+  },
+  "listUndoCouldNotRedo": "Couldn't redo that. Try again.",
+  "@listUndoCouldNotRedo": {
+    "description": "Toast when a redo could not be saved"
+  },
+  "listUndoOutboxRestoreItem": "Restore item",
+  "@listUndoOutboxRestoreItem": {
+    "description": "Sync status: a queued op putting a deleted list item back"
+  },
+  "calendarExternalBusy": "Busy",
+  "@calendarExternalBusy": {"description":"A housemate's shared calendar event whose title is not shared"},
+  "calendarExternalAllDay": "All day",
+  "@calendarExternalAllDay": {"description":"Shared calendar event lasting the whole day"},
+  "calendarExternalTimeRange": "{start} – {end}",
+  "@calendarExternalTimeRange": {"description":"Time range of a shared calendar event","placeholders":{"start":{"type":"String"},"end":{"type":"String"}}},
+  "calendarExternalFrom": "from {time}",
+  "@calendarExternalFrom": {"description":"First day of an event that continues past midnight","placeholders":{"time":{"type":"String"}}},
+  "calendarExternalUntil": "until {time}",
+  "@calendarExternalUntil": {"description":"Last day of an event that began on an earlier day","placeholders":{"time":{"type":"String"}}},
+  "calendarExternalFree": "free",
+  "@calendarExternalFree": {"description":"Marker for an event marked free (transparent) in its calendar"},
+  "calendarExternalYou": "You",
+  "@calendarExternalYou": {"description":"The viewer, in place of their own name"},
+  "calendarExternalSomeone": "A housemate",
+  "@calendarExternalSomeone": {"description":"A member whose name is not known yet"},
+  "calendarExternalSemantics": "{person}: {what}, {when}",
+  "@calendarExternalSemantics": {"description":"Screen reader label of a shared event","placeholders":{"person":{"type":"String"},"what":{"type":"String"},"when":{"type":"String"}}},
+  "calendarExternalSemanticsFree": "{person}: {what}, {when}, marked free",
+  "@calendarExternalSemanticsFree": {"description":"Screen reader label of a shared event marked free","placeholders":{"person":{"type":"String"},"what":{"type":"String"},"when":{"type":"String"}}},
+  "calendarWhosAroundTitle": "Who's around · {day}",
+  "@calendarWhosAroundTitle": {"description":"Heading of the who's-around summary for a day","placeholders":{"day":{"type":"String"}}},
+  "calendarWhosAroundFree": "Free",
+  "@calendarWhosAroundFree": {"description":"Member has nothing busy that day"},
+  "calendarWhosAroundAway": "Away all day",
+  "@calendarWhosAroundAway": {"description":"Member has an all-day event"},
+  "calendarWhosAroundBusy": "Busy {times}",
+  "@calendarWhosAroundBusy": {"description":"Member is busy at these times","placeholders":{"times":{"type":"String"}}},
+  "calendarWhosAroundSelectDay": "Show who's around this day",
+  "@calendarWhosAroundSelectDay": {"description":"Screen reader hint on a day header"},
+  "calendarShareHintTitle": "See when everyone's around",
+  "@calendarShareHintTitle": {"description":"First-run hint on the calendar"},
+  "calendarShareHintBody": "Share your Google, Apple or Outlook calendar with the household, as busy times only or with titles. You choose what they see.",
+  "@calendarShareHintBody": {"description":"First-run hint body"},
+  "calendarShareHintAction": "Share my calendar",
+  "@calendarShareHintAction": {"description":"Button to the shared calendars page"},
+  "sharedCalendarsTitle": "Shared calendars",
+  "@sharedCalendarsTitle": {"description":"Shared calendars page title"},
+  "sharedCalendarsAccountRowValue": "Show the household when you're busy",
+  "@sharedCalendarsAccountRowValue": {"description":"Subtitle of the You screen row"},
+  "sharedCalendarsIntro": "Connect your calendars so your household can see when you're busy or away. Nothing is shared until you choose it for a household below.",
+  "@sharedCalendarsIntro": {"description":"Intro on the shared calendars page"},
+  "sharedCalendarsNoHouseholds": "Join or create a household to share a calendar with it.",
+  "@sharedCalendarsNoHouseholds": {"description":"Shown when the person has no household"},
+  "sharedCalendarsEmpty": "No calendars connected yet.",
+  "@sharedCalendarsEmpty": {"description":"Empty state"},
+  "sharedCalendarsKindThisPhone": "On this phone",
+  "@sharedCalendarsKindThisPhone": {"description":"Connection kind: this phone's calendars"},
+  "sharedCalendarsKindOtherPhone": "On another phone",
+  "@sharedCalendarsKindOtherPhone": {"description":"Connection kind: another phone's calendars"},
+  "sharedCalendarsKindLink": "Calendar link",
+  "@sharedCalendarsKindLink": {"description":"Connection kind: iCal link"},
+  "sharedCalendarsSyncing": "Syncing…",
+  "@sharedCalendarsSyncing": {"description":"Sync in progress"},
+  "sharedCalendarsNeverSynced": "Not synced yet",
+  "@sharedCalendarsNeverSynced": {"description":"Never synced"},
+  "sharedCalendarsSyncedAt": "Synced {time}",
+  "@sharedCalendarsSyncedAt": {"description":"Last sync time","placeholders":{"time":{"type":"String"}}},
+  "sharedCalendarsSyncNow": "Sync now",
+  "@sharedCalendarsSyncNow": {"description":"Tooltip of the sync button"},
+  "sharedCalendarsSyncTooSoon": "Already up to date. Try again in a minute.",
+  "@sharedCalendarsSyncTooSoon": {"description":"Sync refused because the last one was under a minute ago"},
+  "sharedCalendarsSyncFailed": "Couldn't update this phone's calendars. We'll try again later.",
+  "@sharedCalendarsSyncFailed": {"description":"Device upload failed"},
+  "sharedCalendarsOtherPhoneNote": "Read on another phone. Your choices here apply right away; its events update when that phone opens mitlist.",
+  "@sharedCalendarsOtherPhoneNote": {"description":"Note on another phone's connection"},
+  "sharedCalendarsNoCalendars": "No calendars found yet.",
+  "@sharedCalendarsNoCalendars": {"description":"Connection without calendars"},
+  "sharedCalendarsUnnamed": "Calendar",
+  "@sharedCalendarsUnnamed": {"description":"Fallback name for an unnamed calendar"},
+  "sharedCalendarsShareBusy": "Busy only",
+  "@sharedCalendarsShareBusy": {"description":"Share choice: time blocks only"},
+  "sharedCalendarsShareDetails": "With titles",
+  "@sharedCalendarsShareDetails": {"description":"Share choice: titles too"},
+  "sharedCalendarsShareNone": "Not shared",
+  "@sharedCalendarsShareNone": {"description":"Share choice: nothing"},
+  "sharedCalendarsExplainBusy": "{household} sees when you're busy, never what it is.",
+  "@sharedCalendarsExplainBusy": {"description":"Plain explanation of busy-only sharing","placeholders":{"household":{"type":"String"}}},
+  "sharedCalendarsExplainDetails": "{household} sees your events' titles and times. Events marked private still show as busy.",
+  "@sharedCalendarsExplainDetails": {"description":"Plain explanation of sharing with titles","placeholders":{"household":{"type":"String"}}},
+  "sharedCalendarsExplainNone": "{household} sees nothing from this calendar.",
+  "@sharedCalendarsExplainNone": {"description":"Plain explanation of not sharing","placeholders":{"household":{"type":"String"}}},
+  "sharedCalendarsAdd": "Add a calendar",
+  "@sharedCalendarsAdd": {"description":"Add section heading"},
+  "sharedCalendarsAddPhone": "Calendars on this phone",
+  "@sharedCalendarsAddPhone": {"description":"Add the phone's calendars"},
+  "sharedCalendarsAddPhoneDesc": "Every account on this phone: Google, iCloud, Outlook and more. Read on the phone; only what you share leaves it.",
+  "@sharedCalendarsAddPhoneDesc": {"description":"Description of the phone option"},
+  "sharedCalendarsAddLinkDesc": "Paste a private iCal link from Google, iCloud or Outlook. Works on every device.",
+  "@sharedCalendarsAddLinkDesc": {"description":"Description of the link option"},
+  "sharedCalendarsAddedNotShared": "Calendar added. Choose below what each household sees.",
+  "@sharedCalendarsAddedNotShared": {"description":"After adding a link: it is not shared yet"},
+  "sharedCalendarsPhoneDefaultName": "This phone",
+  "@sharedCalendarsPhoneDefaultName": {"description":"Default name of the phone connection"},
+  "sharedCalendarsPermissionDeniedTitle": "Calendar access is off",
+  "@sharedCalendarsPermissionDeniedTitle": {"description":"Dialog title when permission is missing"},
+  "sharedCalendarsPermissionDeniedBody": "To share calendars from this phone, allow mitlist to read your calendars in Settings. Or add a calendar link instead.",
+  "@sharedCalendarsPermissionDeniedBody": {"description":"Dialog body when permission was denied"},
+  "sharedCalendarsPermissionRestricted": "Calendar access is blocked on this phone (for example by Screen Time or device management). You can add a calendar link instead.",
+  "@sharedCalendarsPermissionRestricted": {"description":"Dialog body when access is restricted"},
+  "sharedCalendarsOpenSettings": "Open Settings",
+  "@sharedCalendarsOpenSettings": {"description":"Open system settings"},
+  "sharedCalendarsRenameTitle": "Rename calendar",
+  "@sharedCalendarsRenameTitle": {"description":"Rename dialog title"},
+  "sharedCalendarsRemoveTitle": "Remove {name}?",
+  "@sharedCalendarsRemoveTitle": {"description":"Remove dialog title","placeholders":{"name":{"type":"String"}}},
+  "sharedCalendarsRemoveBody": "Its events disappear from every household calendar. Your calendar itself is not changed.",
+  "@sharedCalendarsRemoveBody": {"description":"Remove dialog body"},
+  "sharedCalendarsUpcomingTitle": "Upcoming events",
+  "@sharedCalendarsUpcomingTitle": {"description":"Upcoming section title"},
+  "sharedCalendarsUpcomingIntro": "What housemates see of your next two weeks. Tap an event to hide it or show more or less of it. A repeating event counts as one.",
+  "@sharedCalendarsUpcomingIntro": {"description":"Upcoming section intro"},
+  "sharedCalendarsUpcomingFailed": "Couldn't load upcoming events.",
+  "@sharedCalendarsUpcomingFailed": {"description":"Upcoming events failed to load"},
+  "sharedCalendarsUpcomingEmpty": "No upcoming events in your shared calendars.",
+  "@sharedCalendarsUpcomingEmpty": {"description":"No upcoming events"},
+  "sharedCalendarsSeesDetails": "{households}: title and time",
+  "@sharedCalendarsSeesDetails": {"description":"Which households see an event with its title","placeholders":{"households":{"type":"String"}}},
+  "sharedCalendarsSeesBusy": "{households}: busy only",
+  "@sharedCalendarsSeesBusy": {"description":"Which households see an event as busy","placeholders":{"households":{"type":"String"}}},
+  "sharedCalendarsSeesNothing": "Housemates don't see this",
+  "@sharedCalendarsSeesNothing": {"description":"Nobody sees this event"},
+  "sharedCalendarsOverrideCalendar": "Calendar's setting",
+  "@sharedCalendarsOverrideCalendar": {"description":"Event follows its calendar's sharing"},
+  "sharedCalendarsOverrideHidden": "Hidden",
+  "@sharedCalendarsOverrideHidden": {"description":"Event hidden from everyone"},
+  "sharedCalendarsOverrideBusy": "Busy",
+  "@sharedCalendarsOverrideBusy": {"description":"Event shown as busy"},
+  "sharedCalendarsOverrideDetails": "With title",
+  "@sharedCalendarsOverrideDetails": {"description":"Event shown with its title"},
+  "sharedCalendarsOverrideCalendarDesc": "Shown as this calendar is shared with each household.",
+  "@sharedCalendarsOverrideCalendarDesc": {"description":"Override option description"},
+  "sharedCalendarsOverrideHiddenDesc": "No household sees it at all.",
+  "@sharedCalendarsOverrideHiddenDesc": {"description":"Override option description"},
+  "sharedCalendarsOverrideBusyDesc": "Households that see this calendar see a busy block, no title.",
+  "@sharedCalendarsOverrideBusyDesc": {"description":"Override option description"},
+  "sharedCalendarsOverrideDetailsDesc": "Households that see this calendar see the title, even if it's private in your calendar.",
+  "@sharedCalendarsOverrideDetailsDesc": {"description":"Override option description"},
+  "sharedCalendarsEventNoTitle": "(No title)",
+  "@sharedCalendarsEventNoTitle": {"description":"Event without a title"},
+  "sharedCalendarsEventPrivate": "private",
+  "@sharedCalendarsEventPrivate": {"description":"Event is private in its source calendar"},
+  "sharedCalendarsEventFree": "marked free",
+  "@sharedCalendarsEventFree": {"description":"Event is marked free in its calendar"},
+  "sharedCalendarsEventChoice": "Setting: {choice}",
+  "@sharedCalendarsEventChoice": {"description":"Screen reader: the event's current choice","placeholders":{"choice":{"type":"String"}}},
+  "calendarConnectionErrorFetchFailed": "Couldn't load this calendar on the last try. We'll keep trying.",
+  "@calendarConnectionErrorFetchFailed": {"description":"last_error fetch_failed"},
+  "calendarConnectionErrorNotCalendar": "This link no longer returns a calendar. Remove it and add the current link.",
+  "@calendarConnectionErrorNotCalendar": {"description":"last_error not_calendar"},
+  "calendarConnectionErrorTooLarge": "This calendar is too big to sync. Try a link to a smaller calendar.",
+  "@calendarConnectionErrorTooLarge": {"description":"last_error too_large"},
+  "calendarConnectionErrorUnauthorized": "This link no longer works. It may have been reset or removed; add the new link.",
+  "@calendarConnectionErrorUnauthorized": {"description":"last_error unauthorized"},
+  "calendarConnectionErrorOther": "This calendar couldn't sync.",
+  "@calendarConnectionErrorOther": {"description":"Unknown last_error"},
+  "calendarLinkSheetTitle": "Add a calendar link",
+  "@calendarLinkSheetTitle": {"description":"Add link sheet title"},
+  "calendarLinkAddAction": "Calendar link",
+  "@calendarLinkAddAction": {"description":"Button: add a calendar link"},
+  "calendarLinkNameHint": "Optional, e.g. Work",
+  "@calendarLinkNameHint": {"description":"Name field hint"},
+  "calendarLinkUrlLabel": "Private iCal link",
+  "@calendarLinkUrlLabel": {"description":"URL field label"},
+  "calendarLinkUrlHint": "https:// or webcal://",
+  "@calendarLinkUrlHint": {"description":"URL field hint"},
+  "calendarLinkPrivacyNote": "Treat this link like a password: anyone with it can read the calendar. mitlist keeps it encrypted and never shows it again.",
+  "@calendarLinkPrivacyNote": {"description":"Privacy note under the URL field"},
+  "calendarLinkErrorUrl": "Enter a link that starts with https:// or webcal://.",
+  "@calendarLinkErrorUrl": {"description":"Invalid URL"},
+  "calendarLinkErrorNotCalendar": "That link isn't a calendar. Copy the iCal (.ics) address, not the link to the calendar's web page.",
+  "@calendarLinkErrorNotCalendar": {"description":"Server said not_calendar"},
+  "calendarLinkErrorFetch": "We couldn't load that calendar. Check the link and that the calendar is still shared or published.",
+  "@calendarLinkErrorFetch": {"description":"Server could not fetch the link"},
+  "calendarLinkStepsTitle": "Where to find the link",
+  "@calendarLinkStepsTitle": {"description":"Steps heading"},
+  "calendarLinkStepsGoogleTitle": "Google Calendar",
+  "@calendarLinkStepsGoogleTitle": {"description":"Provider name"},
+  "calendarLinkStepsGoogle": "On a computer, open Settings, pick your calendar under \"Settings for my calendars\", then copy \"Secret address in iCal format\" under Integrate calendar.",
+  "@calendarLinkStepsGoogle": {"description":"Google steps"},
+  "calendarLinkStepsAppleTitle": "Apple iCloud Calendar",
+  "@calendarLinkStepsAppleTitle": {"description":"Provider name"},
+  "calendarLinkStepsApple": "In the Calendar app, tap Calendars, then the info button next to the calendar. Turn on Public Calendar and copy the link. Anyone with the link can see it; on this phone, \"Calendars on this phone\" is more private.",
+  "@calendarLinkStepsApple": {"description":"Apple steps"},
+  "calendarLinkStepsOutlookTitle": "Outlook",
+  "@calendarLinkStepsOutlookTitle": {"description":"Provider name"},
+  "calendarLinkStepsOutlook": "In Outlook on the web, open Settings > Calendar > Shared calendars, publish the calendar (\"Can view all details\" or \"Can view when I'm busy\") and copy the ICS link.",
+  "@calendarLinkStepsOutlook": {"description":"Outlook steps"},
+  "sharedCalendarsLimitReached": "You've connected 10 calendars, the most there can be. Remove one to add another.",
+  "@sharedCalendarsLimitReached": {"description":"Shown at the 10-connection limit"},
+  "calendarWhosAroundFreeAllDay": "Free all day",
+  "@calendarWhosAroundFreeAllDay": {"description":"Who's around: nothing busy that day"},
+  "calendarWhosAroundFreeFrom": "Free from {time}",
+  "@calendarWhosAroundFreeFrom": {"description":"Who's around: free after their last busy stretch","placeholders":{"time":{"type":"String"}}},
+  "calendarWhosAroundBusyUntil": "Busy until {time}",
+  "@calendarWhosAroundBusyUntil": {"description":"Who's around, today: busy right now until","placeholders":{"time":{"type":"String"}}},
+  "calendarWhosAroundBusyFrom": "Busy from {time}",
+  "@calendarWhosAroundBusyFrom": {"description":"Who's around: busy from this time until midnight","placeholders":{"time":{"type":"String"}}},
+  "calendarWhosAroundNotSharing": "Doesn't share a calendar",
+  "@calendarWhosAroundNotSharing": {"description":"Who's around: member who shares no calendar"},
+  "calendarWhosAroundEveningAll": "Everyone's free all evening",
+  "@calendarWhosAroundEveningAll": {"description":"Household summary: everyone free 18-23h"},
+  "calendarWhosAroundSharersEveningAll": "Everyone who shares is free all evening",
+  "@calendarWhosAroundSharersEveningAll": {"description":"Household summary when some members share nothing"},
+  "calendarWhosAroundEveningFrom": "Everyone's free from {time}",
+  "@calendarWhosAroundEveningFrom": {"description":"Household summary: everyone free from a time","placeholders":{"time":{"type":"String"}}},
+  "calendarWhosAroundSharersEveningFrom": "Everyone who shares is free from {time}",
+  "@calendarWhosAroundSharersEveningFrom": {"description":"Household summary (sharers only): free from","placeholders":{"time":{"type":"String"}}},
+  "calendarWhosAroundEveningBetween": "Everyone's free {start} – {end}",
+  "@calendarWhosAroundEveningBetween": {"description":"Household summary: everyone free during a stretch","placeholders":{"start":{"type":"String"},"end":{"type":"String"}}},
+  "calendarWhosAroundSharersEveningBetween": "Everyone who shares is free {start} – {end}",
+  "@calendarWhosAroundSharersEveningBetween": {"description":"Household summary (sharers only): free during a stretch","placeholders":{"start":{"type":"String"},"end":{"type":"String"}}},
+  "calendarWhosAroundEveningNone": "Not everyone's free in the evening",
+  "@calendarWhosAroundEveningNone": {"description":"Household summary: no common free evening"},
+  "calendarWhosAroundSharersEveningNone": "Not everyone who shares is free in the evening",
+  "@calendarWhosAroundSharersEveningNone": {"description":"Household summary (sharers only): no common free evening"},
+  "calendarWhosAroundTapHint": "Tap a day to check another one.",
+  "@calendarWhosAroundTapHint": {"description":"Hint under the who's around card"},
+  "calendarTourHome": "New: see when everyone's around. Open the calendar.",
+  "@calendarTourHome": {"description":"Tour step 1, pointing at Home's calendar button"},
+  "calendarTourShare": "Share your calendar here, so the household knows when you're busy.",
+  "@calendarTourShare": {"description":"Tour step on the calendar, pointing at the shared calendars button"},
+  "calendarTourAdd": "Add your phone's calendars or a calendar link. Nothing is shared until you choose.",
+  "@calendarTourAdd": {"description":"Tour step pointing at the add-a-calendar buttons"},
+  "calendarTourChoices": "Choose what each household sees: busy only, or with titles.",
+  "@calendarTourChoices": {"description":"Tour step pointing at the per-household choice"},
+  "calendarTourUpcoming": "Hide anything private, one event at a time.",
+  "@calendarTourUpcoming": {"description":"Tour step pointing at Upcoming events"},
+  "coachMarkNext": "Next",
+  "@coachMarkNext": {"description":"Coach mark: next tip"},
+  "coachMarkSkip": "Skip",
+  "@coachMarkSkip": {"description":"Coach mark: end the tour"},
+  "coachMarkDone": "Got it",
+  "@coachMarkDone": {"description":"Coach mark: last tip"},
+  "sharedCalendarsShowMeHow": "Show me how",
+  "@sharedCalendarsShowMeHow": {"description":"Replays the shared calendars tour"},
+  "sharedCalendarsIosPrivateNote": "iPhone can't tell which events are private, so events can show with titles. Hide any event below.",
+  "@sharedCalendarsIosPrivateNote": {"description":"iOS: no private flag on phone calendars"},
+  "sharedCalendarsHideEvent": "Hide from housemates",
+  "@sharedCalendarsHideEvent": {"description":"Tooltip: one tap hides an event"},
+  "sharedCalendarsShowAgain": "Show again",
+  "@sharedCalendarsShowAgain": {"description":"Tooltip: undo hiding an event"},
+  "sharedCalendarsEventPrivateNote": "Private in your calendar",
+  "@sharedCalendarsEventPrivateNote": {"description":"Upcoming: event is private at source"},
+  "sharedCalendarsEventFreeNote": "Marked free in your calendar",
+  "@sharedCalendarsEventFreeNote": {"description":"Upcoming: event is marked free"},
+  "sharedCalendarsNotSharedAnywhere": "No household sees this calendar.",
+  "@sharedCalendarsNotSharedAnywhere": {"description":"Calendar shared with nobody"},
+  "sharedCalendarsSyncedJustNow": "Synced just now",
+  "@sharedCalendarsSyncedJustNow": {"description":"Last sync under a minute ago"},
+  "sharedCalendarsSyncedYesterday": "Synced yesterday",
+  "@sharedCalendarsSyncedYesterday": {"description":"Last sync yesterday"},
+  "coachMarkStepLabel": "Tip {step} of {total}",
+  "@coachMarkStepLabel": {"description":"Screen reader name of a coach mark","placeholders":{"step":{"type":"int"},"total":{"type":"int"}}},
+  "sharedCalendarsSyncedMinutes": "Synced {minutes} min ago",
+  "@sharedCalendarsSyncedMinutes": {"description":"Last sync minutes ago","placeholders":{"minutes":{"type":"int"}}},
+  "sharedCalendarsSyncedHours": "Synced {hours} h ago",
+  "@sharedCalendarsSyncedHours": {"description":"Last sync hours ago","placeholders":{"hours":{"type":"int"}}},
+  "sharedCalendarsExplainDetailsNoPrivate": "{household} sees your events' titles and times.",
+  "@sharedCalendarsExplainDetailsNoPrivate": {"description":"With titles, for iPhone calendars (no private flag)","placeholders":{"household":{"type":"String"}}},
+  "calendarWhosAroundExpand": "Show everyone's times",
+  "@calendarWhosAroundExpand": {"description":"Tooltip: expand who's around"},
+  "calendarWhosAroundCollapse": "Show less",
+  "@calendarWhosAroundCollapse": {"description":"Tooltip: collapse who's around"},
+  "sharedCalendarsSummaryBusy": "{household}: busy only",
+  "@sharedCalendarsSummaryBusy": {"description":"Calendar summary row","placeholders":{"household":{"type":"String"}}},
+  "sharedCalendarsSummaryDetails": "{household}: with titles",
+  "@sharedCalendarsSummaryDetails": {"description":"Calendar summary row","placeholders":{"household":{"type":"String"}}},
+  "sharedCalendarsSummaryNone": "{household}: not shared",
+  "@sharedCalendarsSummaryNone": {"description":"Calendar summary row","placeholders":{"household":{"type":"String"}}},
+  "sharedCalendarsSummaryNotShared": "Not shared",
+  "@sharedCalendarsSummaryNotShared": {"description":"Calendar shared with no household"},
+  "sharedCalendarsShowChoices": "Show sharing choices",
+  "@sharedCalendarsShowChoices": {"description":"Expand a calendar's choices"},
+  "sharedCalendarsHideChoices": "Hide sharing choices",
+  "@sharedCalendarsHideChoices": {"description":"Collapse a calendar's choices"}
 }

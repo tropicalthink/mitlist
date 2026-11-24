@@ -175,11 +175,17 @@ class GrocerySuggestionService {
       final item = itemsById[entry.key]!;
       for (final name in _canonicalNames(item)) {
         final normalized = normaliseText(name);
-        if (normalized == q) entry.value.isExact = true;
+        if (normalized == q) {
+          entry.value.isExact = true;
+          entry.value.isNameExact = true;
+        }
         if (normalized.startsWith(q)) entry.value.lexPrefix = 1;
         final similarity = stringSimilarity(q, normalized);
         if (similarity > entry.value.lexSim) {
           entry.value.lexSim = similarity;
+        }
+        if (similarity > entry.value.nameSim) {
+          entry.value.nameSim = similarity;
         }
       }
     }
@@ -215,7 +221,11 @@ class GrocerySuggestionService {
         evidence.lexSim = evidence.lexSim > stringSimilarity(query, normalized)
             ? evidence.lexSim
             : stringSimilarity(query, normalized);
-        if (normalized == query) evidence.isExact = true;
+        evidence.nameSim = evidence.lexSim;
+        if (normalized == query) {
+          evidence.isExact = true;
+          evidence.isNameExact = true;
+        }
       }
       if (evidence.lexPrefix > 0) candidates.add(evidence);
     }
@@ -277,9 +287,18 @@ class GrocerySuggestionService {
               .compareTo(b.suggestion.canonicalItemId);
     }
 
+    // Seed aliases collide heavily ("sugar" is also an alias of sugar apple,
+    // "rice" of rice pudding), so "exact" alone says little. The household's
+    // own history decides first; without one, the item whose own name was
+    // typed leads, then the closest name.
     exact.sort((a, b) {
       final priorOrder = b.priorScore.compareTo(a.priorScore);
-      return priorOrder != 0 ? priorOrder : stableTie(a, b);
+      if (priorOrder != 0) return priorOrder;
+      if (a.evidence.isNameExact != b.evidence.isNameExact) {
+        return a.evidence.isNameExact ? -1 : 1;
+      }
+      final nameOrder = b.evidence.nameSim.compareTo(a.evidence.nameSim);
+      return nameOrder != 0 ? nameOrder : stableTie(a, b);
     });
     blended.sort((a, b) {
       final scoreOrder = b.score.compareTo(a.score);
@@ -360,6 +379,12 @@ class _CandidateEvidence {
   double lexSim = 0;
   double lexSemantic = 0;
   bool isExact = false;
+
+  /// The query equals one of the item's own canonical names, not an alias.
+  bool isNameExact = false;
+
+  /// Best similarity of the query to the item's own canonical names.
+  double nameSim = 0;
 }
 
 class _ScoredSuggestion {

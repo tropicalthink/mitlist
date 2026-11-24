@@ -171,6 +171,11 @@ class HouseholdPriorContext {
   final int vocabularySize;
 
   Set<String> get repertoireIds => lifetimeCounts.keys.toSet();
+
+  /// Whole days since the household last bought [canonicalItemId], or null if
+  /// it is not in the recent history.
+  int? daysSince(String canonicalItemId) =>
+      _itemStats[canonicalItemId]?.daysSince;
 }
 
 class HouseholdPriorService {
@@ -198,6 +203,9 @@ class HouseholdPriorService {
 
   Future<HouseholdPriorContext> baseContext(String groupId) async {
     final now = _clock();
+    // A check-off or synced purchase must show up at once (a just-bought item
+    // must stop being suggested), so the cache also keys on the history.
+    final revision = await _db.getGroupPurchaseRevision(groupId);
     final cached = _cache[groupId];
     if (cached != null) {
       if (cached.loading case final loading?) return loading;
@@ -205,12 +213,13 @@ class HouseholdPriorService {
       final loadedAt = cached.loadedAt;
       if (value != null &&
           loadedAt != null &&
+          cached.revision == revision &&
           now.difference(loadedAt) < defaults.cacheTtl) {
         return value;
       }
     }
 
-    final entry = _PriorCacheEntry();
+    final entry = _PriorCacheEntry()..revision = revision;
     final loading = _loadContext(groupId, now);
     entry.loading = loading;
     _cache[groupId] = entry;
@@ -347,7 +356,9 @@ class HouseholdPriorService {
       for (var i = 1; i < sorted.length; i++) {
         final days = sorted[i].difference(sorted[i - 1]).inMicroseconds /
             Duration.microsecondsPerDay;
-        if (days > 0) gaps.add(days);
+        // Two purchases on the same trip (two lists, two phones) are one
+        // restock, not a cadence of hours.
+        if (days >= 0.5) gaps.add(days);
       }
       gapsByItem[entry.key] = gaps;
       if (gaps.isNotEmpty) observedMedianByItem[entry.key] = _median(gaps);
@@ -456,4 +467,5 @@ class _PriorCacheEntry {
   Future<HouseholdPriorContext>? loading;
   HouseholdPriorContext? value;
   DateTime? loadedAt;
+  String? revision;
 }

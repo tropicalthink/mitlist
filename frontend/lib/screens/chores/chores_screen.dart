@@ -11,12 +11,16 @@ import '../../models/chore_models.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/chore_provider.dart';
 import '../../providers/group_provider.dart';
+import '../../providers/grocery_provider.dart'
+    show canonicalLinkServiceProvider;
 import '../../providers/list_provider.dart';
 import '../../providers/onboarding_provider.dart';
-import '../../models/list_models.dart' show CreateListItemRequest;
+import '../../models/list_models.dart'
+    show CreateListItemRequest, ListItem, UpdateListItemRequest;
 import '../../repositories/outbox_error_classifier.dart';
 import '../../router.dart' show BottomNavScaffold, currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
+import '../../services/scan/resolution/string_sim.dart' show normaliseText;
 import '../../services/sse_service.dart' show SseEvent;
 import '../../sheets/chore_creation_sheet.dart';
 import '../../sheets/chore_detail_sheet.dart';
@@ -779,12 +783,48 @@ class _ChoresScreenState extends ConsumerState<ChoresScreen> {
         ),
       );
       if (selectedList == null) return;
-      for (var i = 0; i < names.length; i++) {
+      // Adding the same chore's supplies twice must not double the list: a
+      // supply still waiting to be bought is left alone, and one checked off
+      // last time is put back.
+      final existing = await listRepo.getItemsByListOnce(selectedList);
+      final byName = <String, ListItem>{};
+      for (final row in existing) {
+        final key = normaliseText(row.name);
+        final current = byName[key];
+        if (current == null || (current.checked && !row.checked)) {
+          byName[key] = row;
+        }
+      }
+      final links = ref.read(canonicalLinkServiceProvider);
+      final toCreate = <String>[];
+      for (final name in names) {
+        final row = byName[normaliseText(name)];
+        if (row == null) {
+          toCreate.add(name);
+        } else if (row.checked) {
+          await listRepo.updateItemOfflineFirst(
+            selectedList,
+            row.id,
+            const UpdateListItemRequest(checked: false),
+          );
+        }
+      }
+      for (var i = 0; i < toCreate.length; i++) {
+        String? canonicalItemId;
+        try {
+          await ref.read(grocerySeedProvider.future);
+          // Linked like a typed item, so supplies feed restock and aisles.
+          canonicalItemId =
+              await links.resolveHighConfidence(toCreate[i], groupId);
+        } catch (_) {}
         await listRepo.createItemOfflineFirst(
           selectedList,
-          CreateListItemRequest(name: names[i]),
+          CreateListItemRequest(
+            name: toCreate[i],
+            canonicalItemId: canonicalItemId,
+          ),
           // One sync for the batch, after the last item.
-          deferImmediateSync: i < names.length - 1,
+          deferImmediateSync: i < toCreate.length - 1,
           addedBy: _myUserId,
         );
       }

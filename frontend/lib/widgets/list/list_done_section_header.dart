@@ -26,22 +26,27 @@ class ListDoneSectionHeader extends StatelessWidget {
           fontWeight: FontWeight.w700,
         ) ??
         const TextStyle(fontWeight: FontWeight.w700);
+    final scheme = Theme.of(context).colorScheme;
+    final quietStyle = headerStyle.copyWith(color: scheme.onSurfaceVariant);
+    // A divider and a quiet count, like a note's ticked items: the done
+    // part of the list should read as finished, not as another heading.
     return Material(
-      color: Theme.of(context).brightness == Brightness.dark
-          ? Theme.of(context).colorScheme.surfaceContainerHighest
-          : Theme.of(context).colorScheme.surfaceContainerLow,
+      color: Colors.transparent,
       child: InkWell(
         onTap: onToggle,
-        child: Padding(
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border(top: BorderSide(color: scheme.outlineVariant)),
+          ),
           padding: const EdgeInsets.symmetric(
             horizontal: MitlistSpacing.md,
             vertical: MitlistSpacing.sm,
           ),
           child: Row(
             children: [
-              Text(l10n.listDetailCheckedOff, style: headerStyle),
+              Text(l10n.listDetailCheckedOff, style: quietStyle),
               const SizedBox(width: MitlistSpacing.sm),
-              MitlistOdometer(value: doneCount, textStyle: headerStyle),
+              MitlistOdometer(value: doneCount, textStyle: quietStyle),
               const Spacer(),
               AppIcon(
                 name: expanded ? 'chevronUp' : 'chevronDown',

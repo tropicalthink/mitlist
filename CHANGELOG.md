@@ -8,6 +8,17 @@ follow [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Self-hosting works out of the box. `scripts/selfhost-setup.sh` writes the
+  one root `.env` (public URL, generated database password, signing keys and
+  web push keys) and `docker compose up -d --build` builds and starts the
+  stack; the guide is `docs/SELF_HOSTING.md`. One URL serves the web app and
+  the API: a web build made without `API_BASE_URL` calls its own origin, and
+  the web image's nginx proxies `/api`, `/healthz` and `/readyz` to the
+  backend (`MITLIST_API_UPSTREAM`). Attachments are stored on local disk
+  (`STORAGE_LOCAL_PATH`, signed `/api/v1/files/...` URLs) when S3 is not
+  configured. An optional `https` compose profile adds Caddy with automatic
+  certificates.
+
 - List reminders: a list's ⋮ menu now has "Set reminder", which picks a date
   and time; the household then gets a push and inbox notification ("List
   reminder · Groceries · 3 items left") that opens the list. A chip under the
@@ -53,6 +64,15 @@ follow [Semantic Versioning](https://semver.org/).
   phone browser the landing page offers to hand over to the installed app.
 
 ### Changed
+
+- **Self-host operators:** the `prod` compose profile changed shape. The API
+  is no longer published on port 8000; the frontend container
+  (`MITLIST_BIND`:`MITLIST_PORT`, default `127.0.0.1:8080`) serves both, so
+  point your reverse proxy at it alone. `FRONTEND_URL` and `PUBLIC_API_URL`
+  now come from `MITLIST_URL` in the root `.env`. FlareSolverr only starts
+  with the `scraper` profile. Images build from the checkout unless
+  `MITLIST_IMAGE`/`MITLIST_TAG` name published ones. Attachments need the new
+  `uploads` volume, which compose creates.
 
 - Notifications follow the editing session instead of every change. A visit
   to a screen yields one notification for the household: meal plan edits and

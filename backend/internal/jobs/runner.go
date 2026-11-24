@@ -153,6 +153,16 @@ func (r *Runner) RegisterReengagement(job *Reengagement) {
 	r.register("reengagement", "40 16 * * *", job.Run, true)
 }
 
+// RegisterExternalCalendarRefresh adds the ICS poller for shared household
+// calendars, every 30 minutes. Separate from RegisterAll because it needs
+// the external calendar service (its URL key and the SSE hub).
+func (r *Runner) RegisterExternalCalendarRefresh(job *ExternalCalendarRefresh) {
+	if job == nil {
+		return
+	}
+	r.register("external-calendar-refresh", "*/30 * * * *", job.Run, true)
+}
+
 // RegisterAttachmentCleanup adds the storage reservation sweeper. It is kept
 // separate from RegisterAll because it depends on the configured object store.
 func (r *Runner) RegisterAttachmentCleanup(fn func()) {

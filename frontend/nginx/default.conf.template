@@ -1,0 +1,116 @@
+# Serves Flutter web as an installable PWA. Cache hashed assets aggressively;
+# never long-cache the service worker, bootstrap, or app HTML so updates apply.
+#
+# This is an nginx template: the image's entrypoint substitutes
+# ${MITLIST_API_UPSTREAM} (default http://backend:8000, set in Dockerfile.prod)
+# at container start and leaves nginx's own $variables alone.
+
+# Behind a TLS-terminating proxy (Caddy, Traefik, a tunnel) nginx itself sees
+# plain http; keep the outer proxy's answer so the API marks cookies Secure.
+map $http_x_forwarded_proto $mitlist_forwarded_proto {
+    default $http_x_forwarded_proto;
+    ""      $scheme;
+}
+
+server {
+    listen 80;
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+    charset utf-8;
+
+    # Same-origin API for self-hosting. A web build made without API_BASE_URL
+    # calls the origin that served it (lib/config/api_config.dart), so one
+    # public URL serves the app and the API. Builds with API_BASE_URL baked in
+    # (the hosted service) never send requests here.
+    #
+    # The upstream goes through a variable so nginx resolves it per request: a
+    # literal proxy_pass host must resolve at startup, and the container would
+    # refuse to boot wherever no "backend" service exists. The resolver is the
+    # container's own (Docker's embedded DNS under compose), which the image's
+    # entrypoint reads from /etc/resolv.conf (NGINX_ENTRYPOINT_LOCAL_RESOLVERS).
+    resolver ${NGINX_LOCAL_RESOLVERS} valid=30s ipv6=off;
+    set $mitlist_api ${MITLIST_API_UPSTREAM};
+
+    # Attachments go up through the API on a self-host without S3; leave room
+    # above MAX_FILE_SIZE_MB.
+    client_max_body_size 32m;
+
+    location /api/ {
+        proxy_pass $mitlist_api;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $mitlist_forwarded_proto;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        # The API prefers X-Real-IP over X-Forwarded-For from a trusted proxy,
+        # and nginx would otherwise pass a client-supplied one straight through.
+        proxy_set_header X-Real-IP "";
+        proxy_set_header Connection "";
+        # Live updates are a long-lived SSE stream; the API already sends
+        # X-Accel-Buffering: no, these cover the idle gaps between events.
+        proxy_buffering off;
+        proxy_read_timeout 1h;
+        proxy_send_timeout 1h;
+    }
+
+    location ~ ^/(healthz|readyz)$ {
+        proxy_pass $mitlist_api;
+        proxy_set_header Host $host;
+    }
+
+    location = /flutter_service_worker.js {
+        add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+        add_header Pragma "no-cache" always;
+    }
+
+    location = /index.html {
+        add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+    }
+
+    location = /flutter_bootstrap.js {
+        add_header Cache-Control "no-cache, must-revalidate" always;
+    }
+
+    location = /flutter.js {
+        add_header Cache-Control "no-cache, must-revalidate" always;
+    }
+
+    location = /version.json {
+        add_header Cache-Control "no-cache, must-revalidate" always;
+    }
+
+    location = /manifest.json {
+        add_header Cache-Control "no-cache, must-revalidate" always;
+        default_type application/manifest+json;
+    }
+
+    location = /drift_worker.dart.js {
+        add_header Cache-Control "no-cache, must-revalidate" always;
+        default_type application/javascript;
+    }
+
+    location = /sqlite3.wasm {
+        default_type application/wasm;
+    }
+
+    location /assets/ {
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+    }
+
+    location = /.well-known/assetlinks.json {
+        default_type application/json;
+        add_header Cache-Control "no-cache" always;
+    }
+
+    location = /.well-known/apple-app-site-association {
+        default_type application/json;
+        add_header Cache-Control "no-cache" always;
+    }
+
+    location / {
+        # Flutter's client-side router owns /join/<code>, /r/<token> and
+        # /auth/callback; keep those links working when the browser requests
+        # the path directly (the app uses path URLs, not #/ fragments).
+        try_files $uri $uri/ /index.html;
+    }
+}

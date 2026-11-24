@@ -173,8 +173,7 @@ class _ShareTargetScreenState extends ConsumerState<ShareTargetScreen> {
           repo.noteLocalWrite();
         } else {
           // Media has to be uploaded, which needs a connection.
-          final pinwallSvc =
-              await ref.read(pinwallServiceProviderAsync.future);
+          final pinwallSvc = await ref.read(pinwallServiceProviderAsync.future);
           final post = await pinwallSvc.createPost(
             groupId,
             content: text.isEmpty ? ' ' : text,

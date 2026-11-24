@@ -445,6 +445,77 @@ func TestList_DeleteItem(t *testing.T) {
 	requireStatus(t, rec, http.StatusNoContent)
 }
 
+func TestList_RestoreItem(t *testing.T) {
+	clearTables(t)
+	router, _ := newListRouter(t)
+	user := createTestUser(t, "restoreitem@example.com", "Password123!")
+	token := generateTestToken(user.ID)
+	outsider := createTestUser(t, "restoreoutsider@example.com", "Password123!")
+	outsiderToken := generateTestToken(outsider.ID)
+
+	groupRepo := newTestGroupRepo()
+	group := &models.Group{
+		ID:        uuid.New(),
+		Name:      "G",
+		CreatedBy: user.ID,
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
+	}
+	require.NoError(t, groupRepo.CreateGroup(context.Background(), group))
+	addTestMembership(t, group.ID, user.ID, "admin")
+	listRepo := newTestListRepo()
+	list := &models.List{
+		ID:        uuid.New(),
+		GroupID:   group.ID,
+		Name:      "My List",
+		Type:      "shopping",
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
+	}
+	require.NoError(t, listRepo.CreateList(context.Background(), list))
+	item := &models.ListItem{
+		ID:        uuid.New(),
+		ListID:    list.ID,
+		Name:      "Butter",
+		Quantity:  2,
+		Unit:      "pack",
+		Checked:   true,
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
+	}
+	require.NoError(t, listRepo.CreateItem(context.Background(), item))
+	stored, err := listRepo.GetItemByID(context.Background(), item.ID)
+	require.NoError(t, err)
+
+	itemURL := "/api/v1/lists/" + list.ID.String() + "/items/" + item.ID.String()
+	rec := execRequest(t, router, "DELETE", itemURL, nil, token)
+	requireStatus(t, rec, http.StatusNoContent)
+
+	// A non-member cannot bring it back.
+	rec = execRequest(t, router, "POST", itemURL+"/restore", nil, outsiderToken)
+	assert.NotEqual(t, http.StatusOK, rec.Code)
+
+	rec = execRequest(t, router, "POST", itemURL+"/restore", nil, token)
+	requireStatus(t, rec, http.StatusOK)
+	var resp map[string]any
+	parseJSONResponse(t, rec, &resp)
+	assert.Equal(t, item.ID.String(), resp["id"])
+
+	restored, err := listRepo.GetItemByID(context.Background(), item.ID)
+	require.NoError(t, err, "the same row is back, under the same id")
+	assert.Equal(t, stored.Position, restored.Position)
+	assert.True(t, restored.Checked)
+	assert.Equal(t, 2.0, restored.Quantity)
+
+	// Idempotent: a repeat (a retried outbox op) succeeds too.
+	rec = execRequest(t, router, "POST", itemURL+"/restore", nil, token)
+	requireStatus(t, rec, http.StatusOK)
+
+	// An item the list never had is a 404, which the app reads as "re-create".
+	rec = execRequest(t, router, "POST", "/api/v1/lists/"+list.ID.String()+"/items/"+uuid.New().String()+"/restore", nil, token)
+	requireStatus(t, rec, http.StatusNotFound)
+}
+
 func TestList_AddRemoveAndClearItems(t *testing.T) {
 	clearTables(t)
 	router, _ := newListRouter(t)

@@ -210,8 +210,7 @@ void main() {
     await tester.pump(const Duration(seconds: 3));
   });
 
-  testWidgets('lays out without overflow at a 1.3x text scale',
-      (tester) async {
+  testWidgets('lays out without overflow at a 1.3x text scale', (tester) async {
     await pumpBoard(
       tester,
       surface: const Size(400, 800),

@@ -134,6 +134,8 @@ void main() {
     await controller().start();
     expect(adapter.paths, isEmpty, reason: 'no credential is issued');
     expect(bridge.cleared, isTrue);
+    expect(bridge.clearReasons, ['not_remembered'],
+        reason: 'widgets say they need Remember me, not "Sign in"');
     expect(bridge.queue, isEmpty);
     expect(await db.outboxCount(), 0);
   });

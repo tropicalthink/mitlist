@@ -242,6 +242,21 @@ class ListService {
     }
   }
 
+  /// Puts a deleted item back (the list screen's undo): same id, position,
+  /// checked state and photos. Idempotent. A server that predates the route
+  /// answers 404 or 405; see [ListRepository.restoreItemsOfflineFirst].
+  Future<ListItem> restoreItem(String listId, String itemId,
+      {String? idempotencyKey}) async {
+    try {
+      final r = await _dio.post('/lists/$listId/items/$itemId/restore',
+          options: outboxOptions(idempotencyKey));
+      return ListItem.fromJson(r.data);
+    } on DioException catch (e) {
+      _logger.e('Restore item failed: ${e.response?.data}');
+      throw apiException(e);
+    }
+  }
+
   Future<void> claimItem(String listId, String itemId) async {
     try {
       await _dio.post('/lists/$listId/items/$itemId/claim');

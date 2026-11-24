@@ -119,7 +119,7 @@ private struct ShoppingTripProgress: View {
             .font(.subheadline.weight(.bold))
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity, minHeight: 44)
-            .background(RoundedRectangle(cornerRadius: 10).fill(WidgetTheme.accent))
+            .background(Rectangle().fill(WidgetTheme.accent))
         }
       } else {
         Text(verbatim: amount)

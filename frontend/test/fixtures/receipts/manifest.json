@@ -1,0 +1,95 @@
+{
+  "receipts": [
+    {
+      "id": "aldi_2006",
+      "store": "ALDI",
+      "date": "2006-12-18",
+      "total": 5723,
+      "items": [
+        ["Apfelschorle", 139],
+        ["Pfand 6 x 0,25 EUR", 150],
+        ["Apfelschorle", 139],
+        ["Pfand 6 x 0,25 EUR", 150],
+        ["Elektr. Wörterbuch", 3999],
+        ["Traubendirektsaft", 65],
+        ["Apfeldirektsaft naturtrüb", 69],
+        ["Quark-Dessert mit Frucht", 129],
+        ["Müsli Riegel", 99],
+        ["Direktsaft Premium", 516],
+        ["Traubendirektsaft", 65],
+        ["Traubendirektsaft", 65],
+        ["Apfeldirektsaft naturtrüb", 69],
+        ["Apfeldirektsaft naturtrüb", 69]
+      ]
+    },
+    {
+      "id": "lidl_aurich_2019",
+      "store": "Lidl",
+      "date": "2019-05-04",
+      "total": 1802,
+      "items": [
+        ["Dattelcherrytomaten", 149],
+        ["Grüne Oliven o. Kern", 399],
+        ["Erbsen extra fein", 59],
+        ["Gemüsemais", 98],
+        ["Milchbrötchen", 99],
+        ["B Schlafover 0301558", 499],
+        ["B Schlafover 0301438", 499]
+      ]
+    },
+    {
+      "id": "tesco_1994",
+      "store": "Tesco",
+      "date": "1994-04-19",
+      "total": 671,
+      "items": [
+        ["6 JAM DOUGHNTS", 55],
+        ["6 JAM DOUGHNTS", 55],
+        ["MLD WHT CHDR", 145],
+        ["RICH TEA", 39],
+        ["C/CHP COOKIE", 44],
+        ["4 TEACAKES", 50],
+        ["18 BROWN ROLLS", 85],
+        ["TUNA STEAKS", 55],
+        ["L/GRAIN RICE", 64],
+        ["ORANGE NET", 79]
+      ]
+    },
+    {
+      "id": "savemart_2010",
+      "store": "Save Mart",
+      "date": "2010-10-23",
+      "total": 399,
+      "items": [["APPLES FUJI BAG OR", 399]]
+    },
+    {
+      "id": "woolworths",
+      "store": "Woolworths",
+      "date": null,
+      "total": 1648,
+      "items": [
+        ["WW SANDWICH CLASSIC EGG & LETTUCE", 600],
+        ["APPLE PINK LADY", 85],
+        ["MACRO ORGANC FRESH MILK LOW FAT 1L", 220],
+        ["BANANA CAVENDISH", 143],
+        ["GOLDEN PIKELET BITES 16PK 140GM", 399],
+        ["GOLDEN PIKELETS 8 PK200GM", 399],
+        ["GOLDEN PANCAK OFFER", -198]
+      ]
+    },
+    {
+      "id": "italian_iva",
+      "store": null,
+      "date": null,
+      "total": 1185,
+      "items": [
+        ["ACQUA S.ANGELO NATUR", 132],
+        ["MILK PRO PORRIDGE AV", 165],
+        ["MILK PRO PORRIDGE AV", 165],
+        ["LINDT TAVOLETTA LATT", 285],
+        ["CRIK CROK STILE FATT", 285],
+        ["MELE GRANNY SMITH [C", 153]
+      ]
+    }
+  ]
+}

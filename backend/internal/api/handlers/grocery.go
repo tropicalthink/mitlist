@@ -18,6 +18,7 @@ const (
 	maxCorrectionLangLength    = 8
 	maxAisleFeedbackBatchSize  = 200
 	maxAisleNameLength         = 64
+	maxAisleStoreKeyLength     = 64
 	maxAisleSortOrder          = 100000
 	maxPurchaseBatchSize       = 200
 	maxPurchasePeers           = 100
@@ -232,6 +233,12 @@ func validateAisleFeedback(req services.AisleFeedbackRequest) error {
 			return &api.ValidationError{
 				Field:   "aisles",
 				Message: fmt.Sprintf("aisles[%d].sort_order must be between 0 and %d", i, maxAisleSortOrder),
+			}
+		}
+		if item.StoreKey != nil && len(*item.StoreKey) > maxAisleStoreKeyLength {
+			return &api.ValidationError{
+				Field:   "aisles",
+				Message: fmt.Sprintf("aisles[%d].store_key exceeds maximum length", i),
 			}
 		}
 	}

@@ -27,6 +27,8 @@ import '../../widgets/mitlist_app_bar.dart';
 import 'expense_format.dart';
 import 'expenses_controller.dart';
 import 'widgets/expense_balance_card.dart';
+import '../scanner/document_photo_reader.dart';
+import 'receipt_scan.dart';
 import 'widgets/expense_chip_bar.dart';
 import 'widgets/expense_settlements_body.dart';
 import 'widgets/expense_states.dart';
@@ -214,8 +216,19 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
 
   Future<void> _openCreateExpense({String? initialAmount}) async {
     unawaited(Haptics.light());
-    final created =
-        await ExpenseCreationSheet.show(context, initialAmount: initialAmount);
+    await _afterExpenseSheet(
+      await ExpenseCreationSheet.show(context, initialAmount: initialAmount),
+    );
+  }
+
+  /// The receipt flow ends in the same sheet as "Add expense", so a saved
+  /// receipt lands like any other new expense.
+  Future<void> _scanReceipt() async {
+    unawaited(Haptics.light());
+    await _afterExpenseSheet(await scanReceiptToExpense(context, ref));
+  }
+
+  Future<void> _afterExpenseSheet(bool? created) async {
     if (created == true && mounted) {
       final groupId = _controller.groupId;
       if (groupId != null) {
@@ -330,16 +343,21 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
         _controller.errorMessage == null;
     final showSettlementsNudge =
         canSettle && (_controller.suggestions.isNotEmpty);
+    // Before the first expense, a $0.00 balance and a Settlements tab only
+    // add things to read around the one thing to do: add an expense.
+    final showBalance = !canSettle || _controller.hasMoneyActivity;
+    final selectedTab = showBalance ? _selectedTab : 0;
 
     return Scaffold(
       appBar: MitlistAppBar.titleText(
         l10n.expenseAppBarTitle,
         actions: [
-          IconButton(
-            icon: const AppIcon(name: 'camera'),
-            tooltip: l10n.expenseScanReceiptTooltip,
-            onPressed: () => context.pushNamed('scanner'),
-          ),
+          if (canReadDocumentPhotos)
+            IconButton(
+              icon: const AppIcon(name: 'camera'),
+              tooltip: l10n.expenseScanReceiptTooltip,
+              onPressed: _scanReceipt,
+            ),
           IconButton(
             icon: const AppIcon(name: 'repeat'),
             tooltip: l10n.expenseRecurringTooltip,
@@ -347,30 +365,34 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
           ),
         ],
       ),
+      // Stretch: the Scaffold hands its body a loose width, and an empty
+      // state alone would otherwise shrink the whole column to its own width.
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Sticky top section
-          Padding(
-            padding: const EdgeInsets.all(MitlistSpacing.md),
-            child: Column(
-              children: [
-                ExpenseBalanceCard(
-                  balance: _controller.balance,
-                  currency: _controller.groupCurrency,
-                  balanceColor: _balanceColor,
-                  isLoading: _controller.isLoading,
-                  openBalanceCount: _controller.openBalanceCount,
-                  suggestionCount: _controller.suggestions.length,
-                  onTap: showSettlementsNudge ? () => _onTabChanged(1) : null,
-                ),
-                const SizedBox(height: MitlistSpacing.md),
-                ExpenseChipBar(
-                  selectedTab: _selectedTab,
-                  onTabChanged: _onTabChanged,
-                ),
-              ],
+          if (showBalance)
+            Padding(
+              padding: const EdgeInsets.all(MitlistSpacing.md),
+              child: Column(
+                children: [
+                  ExpenseBalanceCard(
+                    balance: _controller.balance,
+                    currency: _controller.groupCurrency,
+                    balanceColor: _balanceColor,
+                    isLoading: _controller.isLoading,
+                    openBalanceCount: _controller.openBalanceCount,
+                    suggestionCount: _controller.suggestions.length,
+                    onTap: showSettlementsNudge ? () => _onTabChanged(1) : null,
+                  ),
+                  const SizedBox(height: MitlistSpacing.md),
+                  ExpenseChipBar(
+                    selectedTab: _selectedTab,
+                    onTabChanged: _onTabChanged,
+                  ),
+                ],
+              ),
             ),
-          ),
           // Body
           Expanded(
             child: _controller.isLoading
@@ -386,7 +408,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                             onOpenHouseholds: () =>
                                 context.goNamed('groupsList'),
                           )
-                        : _selectedTab == 0
+                        : selectedTab == 0
                             ? ExpenseTimelineBody(
                                 groups: _controller.timelineGroups,
                                 controller: _timelineScrollController,

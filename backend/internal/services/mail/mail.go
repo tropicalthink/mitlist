@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"html/template"
 	"mime/multipart"
-	"net/smtp"
 	"net/textproto"
 	"strings"
 	"time"
@@ -15,12 +14,17 @@ import (
 )
 
 // Service sends emails through Amazon SES when it is configured, falling back
-// to SMTP providers otherwise.
+// to SMTP otherwise: the generic SMTP_HOST server first, then SendGrid and
+// Brevo.
 type Service struct {
 	cfg *config.Config
 	log *logger.Logger
 
 	sesState sesState
+
+	// smtpSend delivers one message to one SMTP provider. Nil means the real
+	// network path, sendViaSMTP; tests swap it to observe provider order.
+	smtpSend func(p smtpProvider, from string, to []string, msg []byte) error
 }
 
 // New creates a new mail service.
@@ -142,8 +146,8 @@ func buildMultipartMessage(from, to, subject, text, html string, extra ...Header
 
 // Send delivers an email before returning. Authentication flows must not report
 // that a verification or recovery message was sent when the provider rejected
-// it. AWS_SES_REGION opts into Amazon SES; SMTP remains available as a fallback
-// for self-hosted deployments.
+// it. AWS_SES_REGION opts into Amazon SES; SMTP (SMTP_HOST, then SendGrid and
+// Brevo) remains available as a fallback and is what a self-host normally uses.
 func (s *Service) Send(to, subject, body string, isHTML bool) error {
 	return s.send(to, subject, body, isHTML)
 }
@@ -185,19 +189,11 @@ func (s *Service) SendHTMLWithHeadersOnce(to, subject, html, text string, header
 	}
 
 	msg := buildMultipartMessage(s.fromHeader(), to, subject, text, html, headers...)
-	type smtpProvider struct {
-		name, host, user, pass string
-		port                   int
-	}
-	providers := []smtpProvider{
-		{"sendgrid", s.cfg.SendGridSMTPHost, s.cfg.SendGridSMTPUser, s.cfg.SendGridSMTPPass, s.cfg.SendGridSMTPPort},
-		{"brevo", s.cfg.BrevoSMTPHost, s.cfg.BrevoSMTPUser, s.cfg.BrevoSMTPPass, s.cfg.BrevoSMTPPort},
-	}
-	for _, provider := range providers {
-		if provider.host == "" || provider.port == 0 {
+	for _, provider := range s.smtpProviders() {
+		if !provider.configured() {
 			continue
 		}
-		if err := s.sendViaSMTP(provider.host, provider.port, provider.user, provider.pass, s.fromAddress(), []string{to}, msg); err != nil {
+		if err := s.deliverSMTP(provider, s.fromAddress(), []string{to}, msg); err != nil {
 			return fmt.Errorf("send email via %s: %w", provider.name, err)
 		}
 		s.log.Info().Str("provider", provider.name).Str("to", to).Msg("email sent")
@@ -257,50 +253,22 @@ func (s *Service) send(to, subject, body string, isHTML bool) error {
 	return s.sendSMTPWithFallback(s.fromAddress(), to, msg)
 }
 
-// sendSMTPWithFallback tries the primary SMTP provider and falls back to the
-// secondary one, so a single provider outage does not lose a sign-up code.
+// sendSMTPWithFallback tries each SMTP provider in order and stops at the
+// first that accepts the message, so a single provider outage does not lose a
+// sign-up code.
 func (s *Service) sendSMTPWithFallback(from, to string, msg []byte) error {
-	sendGridErr := s.sendViaSMTP(
-		s.cfg.SendGridSMTPHost,
-		s.cfg.SendGridSMTPPort,
-		s.cfg.SendGridSMTPUser,
-		s.cfg.SendGridSMTPPass,
-		from,
-		[]string{to},
-		msg,
-	)
-	if sendGridErr != nil {
-		s.log.WithError(sendGridErr).Error().Str("provider", "sendgrid").Msg("smtp send failed, trying brevo")
-
-		brevoErr := s.sendViaSMTP(
-			s.cfg.BrevoSMTPHost,
-			s.cfg.BrevoSMTPPort,
-			s.cfg.BrevoSMTPUser,
-			s.cfg.BrevoSMTPPass,
-			from,
-			[]string{to},
-			msg,
-		)
-		if brevoErr != nil {
-			s.log.WithError(brevoErr).Error().Str("provider", "brevo").Msg("smtp fallback send failed")
-			return fmt.Errorf("send email via smtp providers: sendgrid: %v; brevo: %w", sendGridErr, brevoErr)
-		} else {
-			s.log.Info().Str("provider", "brevo").Str("to", to).Msg("email sent")
+	var failures []string
+	for _, provider := range s.smtpProviders() {
+		err := s.deliverSMTP(provider, from, []string{to}, msg)
+		if err == nil {
+			s.log.Info().Str("provider", provider.name).Str("to", to).Msg("email sent")
+			return nil
 		}
-	} else {
-		s.log.Info().Str("provider", "sendgrid").Str("to", to).Msg("email sent")
+		s.log.WithError(err).Error().Str("provider", provider.name).Msg("smtp send failed")
+		failures = append(failures, fmt.Sprintf("%s: %v", provider.name, err))
 	}
-	return nil
-}
-
-func (s *Service) sendViaSMTP(host string, port int, user, pass, from string, to []string, msg []byte) error {
-	if host == "" || port == 0 {
-		return fmt.Errorf("invalid smtp configuration: host=%q port=%d", host, port)
+	if len(failures) == 0 {
+		return fmt.Errorf("send email: no mail provider configured")
 	}
-	addr := fmt.Sprintf("%s:%d", host, port)
-	var auth smtp.Auth
-	if user != "" && pass != "" {
-		auth = smtp.PlainAuth("", user, pass, host)
-	}
-	return smtp.SendMail(addr, auth, from, to, msg)
+	return fmt.Errorf("send email via smtp providers: %s", strings.Join(failures, "; "))
 }

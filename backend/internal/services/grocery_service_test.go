@@ -177,6 +177,7 @@ func TestGroceryService_UpdateAislesUsesTransaction(t *testing.T) {
 			pgxmock.AnyArg(),
 			pgxmock.AnyArg(),
 			[]*uuid.UUID{nil},
+			[]*string{nil},
 			[]uuid.UUID{canonicalID},
 			[]string{"dairy"},
 			[]int32{3},

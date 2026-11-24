@@ -141,7 +141,8 @@ func (r *AuthRepository) ConsumePasswordReset(ctx context.Context, tokenHash, pa
 	if err != nil {
 		return uuid.Nil, err
 	}
-	if _, err = tx.Exec(ctx, `UPDATE users SET password_hash = $1, auth_valid_after = NOW(), updated_at = NOW() WHERE id = $2 AND deleted_at IS NULL`, passwordHash, userID); err != nil {
+	// The code arrived by email, so the address is proven from here on.
+	if _, err = tx.Exec(ctx, `UPDATE users SET password_hash = $1, email_unproven = FALSE, auth_valid_after = NOW(), updated_at = NOW() WHERE id = $2 AND deleted_at IS NULL`, passwordHash, userID); err != nil {
 		return uuid.Nil, err
 	}
 	if _, err = tx.Exec(ctx, `UPDATE auth_sessions SET revoked_at = NOW() WHERE user_id = $1 AND revoked_at IS NULL`, userID); err != nil {
@@ -202,6 +203,35 @@ func (r *AuthRepository) CreateUnverifiedUser(ctx context.Context, user *models.
 	return tx.Commit(ctx)
 }
 
+// CreateUnprovenUser creates an account that can sign in at once although
+// its address was never proven: the path for a server with no email provider,
+// where a verification code could not be delivered. email_unproven keeps the
+// address from being trusted for OAuth account linking.
+func (r *AuthRepository) CreateUnprovenUser(ctx context.Context, user *models.User) error {
+	if user.ID == uuid.Nil {
+		user.ID = uuid.New()
+	}
+	now := time.Now().UTC()
+	user.CreatedAt, user.UpdatedAt = now, now
+	return r.db.QueryRow(ctx, `
+		INSERT INTO users (id, email, password_hash, first_name, last_name, avatar_url, is_active, is_verified, is_guest, tips_emails_enabled, email_unproven, created_at, updated_at)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,TRUE,FALSE,$8,TRUE,$9,$10)
+		RETURNING id, email, password_hash, first_name, last_name, avatar_url, is_active, is_verified, is_guest, tips_emails_enabled, created_at, updated_at
+	`, user.ID, user.Email, user.PasswordHash, user.FirstName, user.LastName, user.AvatarURL,
+		user.IsActive, user.TipsEmailsEnabled, user.CreatedAt, user.UpdatedAt).Scan(
+		&user.ID, &user.Email, &user.PasswordHash, &user.FirstName, &user.LastName,
+		&user.AvatarURL, &user.IsActive, &user.IsVerified, &user.IsGuest, &user.TipsEmailsEnabled, &user.CreatedAt, &user.UpdatedAt,
+	)
+}
+
+// IsEmailUnproven reports whether the account's address was only claimed,
+// never proven by an emailed code or an identity provider.
+func (r *AuthRepository) IsEmailUnproven(ctx context.Context, userID uuid.UUID) (bool, error) {
+	var unproven bool
+	err := r.db.QueryRow(ctx, `SELECT email_unproven FROM users WHERE id = $1`, userID).Scan(&unproven)
+	return unproven, err
+}
+
 func (r *AuthRepository) CreateEmailVerification(ctx context.Context, userID uuid.UUID, tokenHash string, expiresAt time.Time) error {
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
@@ -233,7 +263,7 @@ func (r *AuthRepository) ConsumeEmailVerification(ctx context.Context, tokenHash
 	}
 	// Verification is also the point at which a converted guest becomes a
 	// durable account. Ordinary registrations already have is_guest = FALSE.
-	cmd, err := tx.Exec(ctx, `UPDATE users SET is_verified = TRUE, is_guest = FALSE, updated_at = NOW() WHERE id = $1 AND is_active AND deleted_at IS NULL`, userID)
+	cmd, err := tx.Exec(ctx, `UPDATE users SET is_verified = TRUE, is_guest = FALSE, email_unproven = FALSE, updated_at = NOW() WHERE id = $1 AND is_active AND deleted_at IS NULL`, userID)
 	if err != nil || cmd.RowsAffected() != 1 {
 		if err != nil {
 			return uuid.Nil, err

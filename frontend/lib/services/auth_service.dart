@@ -102,7 +102,10 @@ class AuthService {
 
   /// Registers a new user.
   ///
-  /// Registration does not create a session until email ownership is proven.
+  /// Registration normally creates no session until email ownership is
+  /// proven. A server without an email provider signs the account in at once
+  /// and answers with tokens; those are saved here exactly as [login] saves
+  /// them, and the result carries them in [RegistrationResult.session].
   Future<RegistrationResult> register(
     RegisterRequest request, {
     bool rememberMe = true,
@@ -113,7 +116,12 @@ class AuthService {
         data: request.toJson(),
       );
 
-      return RegistrationResult.fromJson(response.data);
+      final result = RegistrationResult.fromJson(response.data);
+      final session = result.session;
+      if (session != null) {
+        await _saveTokens(session, persistSession: rememberMe);
+      }
+      return result;
     } on DioException catch (e) {
       _logFailure('Registration', e);
       throw apiException(e);

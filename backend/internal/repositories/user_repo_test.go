@@ -395,6 +395,7 @@ func TestUserRepository_SoftDelete(t *testing.T) {
 		"DELETE FROM device_tokens WHERE user_id =",
 		"DELETE FROM oauth_accounts WHERE user_id =",
 		"DELETE FROM product_events WHERE user_id =",
+		"DELETE FROM calendar_connections WHERE user_id =",
 	} {
 		mock.ExpectExec(query).WithArgs(id).WillReturnResult(pgxmock.NewResult("DELETE", 0))
 	}

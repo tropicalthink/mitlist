@@ -890,13 +890,9 @@ class _RecipesScreenState extends ConsumerState<RecipesScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _QuickActions(
-                      collectionCount: _collections.length,
-                      groupId: _groupId,
-                      onCookbooks: _openCookbooks,
-                      onMealPlan: _openMealPlan,
-                    ),
-                    const SizedBox(height: MitlistSpacing.lg),
+                    // No cookbook or meal-plan tiles yet: both need a recipe
+                    // to hold, so before the first one they only lead to
+                    // another empty screen.
                     AppEmptyState(
                       lottieAsset: 'assets/animations/lottie/Recipes.lottie',
                       icon: const AppIcon(name: 'restaurantMenu', size: 56),

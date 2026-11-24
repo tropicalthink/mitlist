@@ -13,7 +13,9 @@ import (
 
 	"github.com/mitlist-app/mitlist/internal/api"
 	"github.com/mitlist-app/mitlist/internal/models"
+	"github.com/mitlist-app/mitlist/internal/repositories"
 	"github.com/mitlist-app/mitlist/internal/repositories/mocks"
+	"github.com/mitlist-app/mitlist/internal/sse"
 )
 
 func validUser() *models.User {
@@ -333,6 +335,92 @@ func TestListService_DeleteItem(t *testing.T) {
 	})
 }
 
+func TestListService_RestoreItem(t *testing.T) {
+	ctx := context.Background()
+	user := validUser()
+	itemID := uuid.New()
+	listID := uuid.New()
+	groupID := uuid.New()
+
+	var events func() []recordedEvent
+	setup := func() (*mocks.MockListRepo, *mocks.MockGroupRepo, *ListService) {
+		listRepo := new(mocks.MockListRepo)
+		groupRepo := new(mocks.MockGroupRepo)
+		svc := NewListService(listRepo, groupRepo)
+		var hub *sse.Hub
+		hub, events = recordEvents(t)
+		svc.SetHub(hub)
+		return listRepo, groupRepo, svc
+	}
+
+	t.Run("restores a deleted item", func(t *testing.T) {
+		listRepo, groupRepo, svc := setup()
+		listRepo.On("GetListByID", ctx, listID).Return(&models.List{ID: listID, GroupID: groupID}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
+		listRepo.On("RestoreItem", ctx, listID, itemID).Return(&models.ListItem{ID: itemID, ListID: listID, Name: "Milk", Position: 3, Checked: true}, true, nil)
+
+		item, err := svc.RestoreItem(ctx, user, listID, itemID)
+		require.NoError(t, err)
+		assert.Equal(t, itemID, item.ID)
+		assert.Equal(t, 3, item.Position)
+		assert.True(t, item.Checked)
+		assert.Equal(t, []recordedEvent{{
+			Type: "list:item_created", GroupID: groupID.String(),
+			Payload: map[string]string{"list_id": listID.String(), "item_id": itemID.String()},
+		}}, events())
+	})
+
+	t.Run("an item that is not deleted comes back unchanged", func(t *testing.T) {
+		listRepo, groupRepo, svc := setup()
+		listRepo.On("GetListByID", ctx, listID).Return(&models.List{ID: listID, GroupID: groupID}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
+		listRepo.On("RestoreItem", ctx, listID, itemID).Return(&models.ListItem{ID: itemID, ListID: listID}, false, nil)
+
+		item, err := svc.RestoreItem(ctx, user, listID, itemID)
+		require.NoError(t, err)
+		assert.Equal(t, itemID, item.ID)
+		assert.Empty(t, events(), "nothing changed, nothing to announce")
+	})
+
+	t.Run("unknown item is not found", func(t *testing.T) {
+		listRepo, groupRepo, svc := setup()
+		listRepo.On("GetListByID", ctx, listID).Return(&models.List{ID: listID, GroupID: groupID}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
+		listRepo.On("RestoreItem", ctx, listID, itemID).Return(nil, false, pgx.ErrNoRows)
+
+		_, err := svc.RestoreItem(ctx, user, listID, itemID)
+		require.Error(t, err)
+		assert.IsType(t, &api.NotFoundError{}, err)
+	})
+
+	t.Run("unknown list is not found", func(t *testing.T) {
+		listRepo, _, svc := setup()
+		listRepo.On("GetListByID", ctx, listID).Return(nil, pgx.ErrNoRows)
+
+		_, err := svc.RestoreItem(ctx, user, listID, itemID)
+		require.Error(t, err)
+		assert.IsType(t, &api.NotFoundError{}, err)
+		listRepo.AssertNotCalled(t, "RestoreItem", mock.Anything, mock.Anything, mock.Anything)
+	})
+
+	t.Run("non-member cannot restore", func(t *testing.T) {
+		listRepo, groupRepo, svc := setup()
+		listRepo.On("GetListByID", ctx, listID).Return(&models.List{ID: listID, GroupID: groupID}, nil)
+		groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(nil, pgx.ErrNoRows)
+
+		_, err := svc.RestoreItem(ctx, user, listID, itemID)
+		require.Error(t, err)
+		listRepo.AssertNotCalled(t, "RestoreItem", mock.Anything, mock.Anything, mock.Anything)
+	})
+
+	t.Run("inactive user", func(t *testing.T) {
+		svc := NewListService(nil, nil)
+		_, err := svc.RestoreItem(ctx, &models.User{IsActive: false, IsVerified: true}, listID, itemID)
+		require.Error(t, err)
+		assert.IsType(t, &api.PermissionDeniedError{}, err)
+	})
+}
+
 func TestListService_ClearItems(t *testing.T) {
 	ctx := context.Background()
 	user := validUser()
@@ -471,12 +559,24 @@ func TestListService_BulkCompleteItems(t *testing.T) {
 
 	listRepo := new(mocks.MockListRepo)
 	svc := NewListService(listRepo, nil)
+	hub, events := recordEvents(t)
+	svc.SetHub(hub)
+	home, cottage := uuid.New(), uuid.New()
+	homeList, cottageList := uuid.New(), uuid.New()
 
-	listRepo.On("BulkMarkItemsChecked", ctx, user.ID, itemIDs).Return(int64(2), nil)
+	listRepo.On("BulkMarkItemsChecked", ctx, user.ID, itemIDs).Return([]repositories.CheckedItemRef{
+		{ItemID: itemIDs[0], ListID: homeList, GroupID: home},
+		{ItemID: itemIDs[1], ListID: cottageList, GroupID: cottage},
+	}, nil)
 
 	count, err := svc.BulkCompleteItems(ctx, user, itemIDs)
 	require.NoError(t, err)
 	assert.Equal(t, 2, count)
+	// Each household hears about its own ticked rows (widgets refresh on it).
+	assert.Equal(t, []recordedEvent{
+		{Type: "list:item_updated", GroupID: home.String(), Payload: map[string]string{"list_id": homeList.String(), "item_id": itemIDs[0].String()}},
+		{Type: "list:item_updated", GroupID: cottage.String(), Payload: map[string]string{"list_id": cottageList.String(), "item_id": itemIDs[1].String()}},
+	}, events())
 	listRepo.AssertNotCalled(t, "GetItemByID", ctx, mock.Anything)
 	listRepo.AssertNotCalled(t, "UpdateItem", ctx, mock.Anything)
 }
@@ -548,4 +648,40 @@ func TestListService_AddItemsBatch_SingleListFetch(t *testing.T) {
 	require.Len(t, items, 2)
 	listRepo.AssertNumberOfCalls(t, "GetListByID", 1)
 	listRepo.AssertNotCalled(t, "GetItemByListNameUnit", ctx, mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+}
+
+// A recipe's "onion " tops up the list's open "Onion" row, and a row checked
+// off last trip comes back with the new amount instead of last week's plus it.
+func TestListService_AddItemsBatch_MergesByNormalisedNameAndRestoresChecked(t *testing.T) {
+	ctx := context.Background()
+	user := validUser()
+	listID := uuid.New()
+	groupID := uuid.New()
+	onionID := uuid.New()
+	milkID := uuid.New()
+
+	listRepo := new(mocks.MockListRepo)
+	groupRepo := new(mocks.MockGroupRepo)
+	svc := NewListService(listRepo, groupRepo)
+
+	listRepo.On("GetListByID", ctx, listID).Return(&models.List{ID: listID, GroupID: groupID}, nil)
+	groupRepo.On("GetMembership", ctx, groupID, user.ID).Return(&models.GroupMembership{Role: "member"}, nil)
+	listRepo.On("ListItemsByList", ctx, listID, 0, 0).Return([]models.ListItem{
+		{ID: onionID, ListID: listID, Name: "Onion", Quantity: 1},
+		{ID: milkID, ListID: listID, Name: "Milk", Unit: "L", Quantity: 4, Checked: true},
+	}, nil)
+	listRepo.On("UpdateItem", ctx, mock.MatchedBy(func(item *models.ListItem) bool {
+		return item.ID == onionID && item.Quantity == 3 && !item.Checked
+	})).Return(nil)
+	listRepo.On("UpdateItem", ctx, mock.MatchedBy(func(item *models.ListItem) bool {
+		return item.ID == milkID && item.Quantity == 1 && !item.Checked
+	})).Return(nil)
+
+	items, err := svc.AddItemsBatch(ctx, user, listID, []ListItemAmountInput{
+		{Name: "onion ", Amount: 2},
+		{Name: "milk", Amount: 1, Unit: "l"},
+	})
+	require.NoError(t, err)
+	require.Len(t, items, 2)
+	listRepo.AssertNotCalled(t, "CreateItem", ctx, mock.Anything)
 }

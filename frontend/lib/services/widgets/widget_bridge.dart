@@ -25,7 +25,11 @@ class WidgetBridge {
 
   final MethodChannel _channel;
   final bool _supported;
-  Future<void>? _clearing;
+  _PendingClear? _clearing;
+
+  /// [clearAll]'s reason when the session is not remembered ("Remember me"
+  /// off): widgets then say they need Remember me instead of "Sign in".
+  static const clearReasonNotRemembered = 'not_remembered';
 
   /// Whether this platform has home screen widgets at all.
   bool get isSupported => _supported;
@@ -52,10 +56,31 @@ class WidgetBridge {
       await _invoke<bool>('hasCredential') ?? false;
 
   /// Removes the credential, snapshot, queued ops and flags; widgets then
-  /// show their signed-out state.
-  /// A sign-out cascade can ask several times at once; they share one call.
-  Future<void> clearAll() => _clearing ??=
-      _invoke<void>('clearAll').whenComplete(() => _clearing = null);
+  /// show their signed-out state, or the one [reason] names (see
+  /// [clearReasonNotRemembered]). Sign-out passes no reason.
+  ///
+  /// A sign-out cascade can ask several times at once; calls with the same
+  /// reason share one native call. A call with another reason is not folded
+  /// into the one in flight (its reason would be lost): it runs after it, so
+  /// the widgets end on the state the last caller asked for.
+  Future<void> clearAll({String? reason}) {
+    final pending = _clearing;
+    if (pending != null && pending.reason == reason) return pending.future;
+    final before =
+        pending?.future.catchError((Object _) {}) ?? Future<void>.value();
+    late final _PendingClear entry;
+    final future = before
+        .then((_) => _invoke<void>(
+              'clearAll',
+              reason == null ? null : <String, Object?>{'reason': reason},
+            ))
+        .whenComplete(() {
+      if (identical(_clearing, entry)) _clearing = null;
+    });
+    entry = _PendingClear(reason, future);
+    _clearing = entry;
+    return future;
+  }
 
   /// Writes a server snapshot (C1) and reloads every widget.
   Future<void> writeSnapshot(String json) =>
@@ -82,6 +107,29 @@ class WidgetBridge {
       await _invoke<bool>('consumeAuthFailure') ?? false;
 
   Future<void> reloadWidgets() => _invoke<void>('reloadWidgets');
+
+  /// Kinds of mitlist widgets on the home screen right now, each one of
+  /// `HomeWidgetKind`'s ids (duplicates when a kind is placed twice; empty
+  /// when there are none). Null when native code cannot tell: unsupported
+  /// platform, an app build without the method, or a native failure.
+  Future<List<String>?> installedWidgets() async {
+    final kinds = await _invoke<List<Object?>>('installedWidgets');
+    if (kinds == null) return null;
+    return [
+      for (final kind in kinds)
+        if (kind is String) kind,
+    ];
+  }
+
+  /// Whether the launcher can pin a widget in one tap (Android 8+ launchers
+  /// that support it). Always false on iOS.
+  Future<bool> isPinWidgetSupported() async =>
+      await _invoke<bool>('isPinWidgetSupported') ?? false;
+
+  /// Asks the launcher to pin a widget of [kind] (a `HomeWidgetKind` id).
+  /// True when the launcher showed its request; false when it could not.
+  Future<bool> pinWidget(String kind) async =>
+      await _invoke<bool>('pinWidget', {'kind': kind}) ?? false;
 
   /// Lets native code deliver its queue and refetch the snapshot with the
   /// widget credential in the background.
@@ -126,4 +174,12 @@ class WidgetBridge {
         'currency': currency,
         'add_expense_url': addExpenseUrl,
       });
+}
+
+/// A [WidgetBridge.clearAll] in flight, with the reason it was sent with.
+class _PendingClear {
+  _PendingClear(this.reason, this.future);
+
+  final String? reason;
+  final Future<void> future;
 }

@@ -11,11 +11,11 @@ class HomeMeal {
   final Recipe? recipe;
 
   factory HomeMeal.fromJson(Map<String, dynamic> json) => HomeMeal(
-    plan: MealPlan.fromJson((json['plan'] as Map).cast<String, dynamic>()),
-    recipe: json['recipe'] is Map
-        ? Recipe.fromJson((json['recipe'] as Map).cast<String, dynamic>())
-        : null,
-  );
+        plan: MealPlan.fromJson((json['plan'] as Map).cast<String, dynamic>()),
+        recipe: json['recipe'] is Map
+            ? Recipe.fromJson((json['recipe'] as Map).cast<String, dynamic>())
+            : null,
+      );
 }
 
 class HomeSnapshot {
@@ -38,14 +38,14 @@ class HomeSnapshot {
   final bool todayMealError;
 
   factory HomeSnapshot.fromJson(Map<String, dynamic> json) => HomeSnapshot(
-    group: Group.fromJson((json['group'] as Map).cast<String, dynamic>()),
-    activities: _list(json['activities'], ActivityLogModel.fromJson),
-    activityError: json['activity_error'] as bool? ?? false,
-    pinwallPosts: _list(json['pinwall_posts'], PinwallPost.fromJson),
-    pinwallError: json['pinwall_error'] as bool? ?? false,
-    todayMeals: _list(json['today_meals'], HomeMeal.fromJson),
-    todayMealError: json['today_meal_error'] as bool? ?? false,
-  );
+        group: Group.fromJson((json['group'] as Map).cast<String, dynamic>()),
+        activities: _list(json['activities'], ActivityLogModel.fromJson),
+        activityError: json['activity_error'] as bool? ?? false,
+        pinwallPosts: _list(json['pinwall_posts'], PinwallPost.fromJson),
+        pinwallError: json['pinwall_error'] as bool? ?? false,
+        todayMeals: _list(json['today_meals'], HomeMeal.fromJson),
+        todayMealError: json['today_meal_error'] as bool? ?? false,
+      );
 }
 
 List<T> _list<T>(dynamic value, T Function(Map<String, dynamic>) decode) {

@@ -31,6 +31,23 @@ void main() {
     );
   });
 
+  test('commons manifest names real photos with attributed licenses', () {
+    final commons = OcrEvalManifest.decode(
+      File('test/fixtures/ocr_eval_commons_manifest.json').readAsStringSync(),
+    );
+    final attribution =
+        File('../samples/commons/ATTRIBUTION.md').readAsStringSync();
+    expect(commons.samples, hasLength(14));
+    for (final sample in commons.samples) {
+      expect(File('../samples/${sample.filename}').existsSync(), isTrue,
+          reason: sample.filename);
+      expect(attribution, contains('`${sample.filename.split('/').last}`'));
+    }
+    final lines = commons.samples.expand((sample) => sample.lines);
+    expect(lines.where((l) => l.status == GroundTruthStatus.active),
+        hasLength(130));
+  });
+
   test('perfect device output scores perfectly', () {
     final results = <String, dynamic>{
       'backend': 'perfect_stub',

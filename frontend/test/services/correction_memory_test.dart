@@ -146,4 +146,22 @@ void main() {
     expect(householdRows.single.canonicalItemId, equals('spaghetti_new'));
     expect(householdRows.single.weight, equals(2));
   });
+
+  group('isLearnablePick', () {
+    const names = ['Chocolate Hazelnut Spread', 'Nuss-Nougat-Creme'];
+
+    test('a brand picked for an item is learned', () {
+      expect(CorrectionMemoryService.isLearnablePick('nutella', names), isTrue);
+    });
+
+    test('a fragment of the name is not learned', () {
+      expect(CorrectionMemoryService.isLearnablePick('choc', names), isFalse);
+      expect(CorrectionMemoryService.isLearnablePick('nu', names), isFalse);
+    });
+
+    test('a near-spelling of the name is not learned', () {
+      expect(CorrectionMemoryService.isLearnablePick('milc', const ['Milk']),
+          isFalse);
+    });
+  });
 }

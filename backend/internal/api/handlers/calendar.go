@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/mitlist-app/mitlist/internal/api"
+	"github.com/mitlist-app/mitlist/internal/middleware"
 	"github.com/mitlist-app/mitlist/internal/services"
 )
 
@@ -60,7 +61,13 @@ func (h *CalendarHandler) GetCalendar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	events, err := h.service.GetCalendar(r.Context(), user, groupID, from, to)
+	// Members' synced calendars only reach clients that ask for them (old
+	// builds read unknown types as meal plans) and only interactive
+	// sessions: never a widget or integration credential.
+	opts := services.CalendarOptions{
+		IncludeExternal: wantsExternal(r) && !middleware.IsIntegrationCredential(r.Context()),
+	}
+	events, err := h.service.GetCalendarWithOptions(r.Context(), user, groupID, from, to, opts)
 	if err != nil {
 		api.RespondError(w, err)
 		return
@@ -127,6 +134,18 @@ func (h *CalendarHandler) ExportICal(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Disposition", "attachment; filename=mitlist.ics")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(b.String()))
+}
+
+// wantsExternal reports include=external (also within a comma list).
+func wantsExternal(r *http.Request) bool {
+	for _, v := range r.URL.Query()["include"] {
+		for _, part := range strings.Split(v, ",") {
+			if strings.TrimSpace(part) == "external" {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func icalEscape(s string) string {

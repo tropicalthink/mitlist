@@ -16,6 +16,9 @@ const (
 	EventTypeExpense          CalendarEventType = "expense"
 	EventTypePinwallReminder  CalendarEventType = "pinwall_reminder"
 	EventTypeListReminder     CalendarEventType = "list_reminder"
+	// EventTypeExternalEvent is a housemate's synced calendar event. Only
+	// sent to clients that ask for it (GET /calendar?include=external).
+	EventTypeExternalEvent CalendarEventType = "external_event"
 )
 
 // CalendarEvent is a unified event for the household calendar.
@@ -32,6 +35,18 @@ type CalendarEvent struct {
 	Expense          *CalendarExpense          `json:"expense,omitempty"`
 	PinwallReminder  *CalendarPinwallReminder  `json:"pinwall_reminder,omitempty"`
 	ListReminder     *CalendarListReminder     `json:"list_reminder,omitempty"`
+	External         *CalendarExternal         `json:"external,omitempty"`
+}
+
+// CalendarExternal is what a household sees of a member's synced calendar
+// event. BusyOnly events carry no title (the event's Title is empty).
+type CalendarExternal struct {
+	UserID   uuid.UUID `json:"user_id"`
+	StartsAt time.Time `json:"starts_at"`
+	EndsAt   time.Time `json:"ends_at"`
+	AllDay   bool      `json:"all_day"`
+	BusyOnly bool      `json:"busy_only"`
+	Free     bool      `json:"free"`
 }
 
 // CalendarMealPlan holds meal-plan-specific calendar data.

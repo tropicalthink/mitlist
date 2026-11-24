@@ -81,7 +81,8 @@ Options _withSession(String token) => Options(headers: {
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  test('a 401 on a request sent without a session neither refreshes nor '
+  test(
+      'a 401 on a request sent without a session neither refreshes nor '
       'signs out', () async {
     // A queued op sent while signed out (or racing a sign-in) used to run the
     // refresh-failure path and wipe whatever session was saved by then.

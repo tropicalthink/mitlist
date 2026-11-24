@@ -357,6 +357,19 @@
   "recipeCreationImportURLDesc": "Füge einen Rezeptlink ein und wir holen die Details",
   "recipeCreationTypeItIn": "Selbst eintippen",
   "recipeCreationTypeItInDesc": "Beginne mit einem Titel und füge später Zutaten hinzu",
+  "recipeCreationFromPhoto": "Foto lesen",
+  "recipeCreationFromPhotoDesc": "Fotografiere eine Rezeptkarte oder Kochbuchseite. Sie wird auf deinem Handy gelesen",
+  "recipePhotoTitle": "Rezept fotografieren",
+  "recipePhotoReading": "Rezept wird gelesen…",
+  "recipePhotoNothingFound": "Auf dem Foto wurde kein Rezept gefunden. Versuch es näher und gerader.",
+  "recipePhotoRead": "{ingredients, plural, =1{1 Zutat} other{{ingredients} Zutaten}} und {steps, plural, =1{1 Schritt} other{{steps} Schritte}} gelesen. Prüfe sie vor dem Speichern.",
+  "receiptScanTitle": "Kassenbon fotografieren",
+  "receiptScanReading": "Kassenbon wird gelesen…",
+  "receiptScanNoTotal": "Auf dem Bon wurde keine Summe gefunden. Gib den Betrag selbst ein.",
+  "receiptScanCheckTotal": "Die Positionen ergeben nicht die Summe des Bons. Prüfe Betrag und Notizen.",
+  "receiptRememberPurchases": "Einkauf merken",
+  "receiptRememberPurchasesDesc": "{count, plural, =1{1 Artikel} other{{count} Artikel}}, die ihr sonst kauft, als gekauft zählen – für Nachkauf und Vorschläge",
+  "receiptTickListItems": "{count, plural, =1{1 Eintrag} other{{count} Einträge}} auf euren Listen abhaken",
   "recipeCreationScanning": "Wird gescannt…",
   "recipeCreationScanPhoto": "Foto scannen",
   "recipeCreationScanPhotoDesc": "Fotografiere eine Rezeptkarte oder Kochbuchseite",
@@ -589,26 +602,19 @@
   "listDetailAllCheckedOff": "Alles abgehakt",
   "listDetailClearChecked": "Erledigte leeren",
   "listDetailCheckedOff": "Erledigt",
-  "listDetailNothingHere": "Noch nichts hier",
-  "listDetailNothingHereDesc": "Fotografiere eine handgeschriebene Liste, einen Kühlschrankzettel oder Screenshot. Wir extrahieren die Einträge.",
-  "listDetailScanThisList": "Diese Liste scannen",
-  "listDetailTypeItem": "Eintrag eintippen",
   "listDetailNoMatch": "Keine Einträge zu deinem Filter",
   "listDetailCouldNotLoad": "Liste konnte nicht geladen werden.",
   "listDetailCouldNotUpdate": "Konnte nicht aktualisiert werden. Bitte versuche es erneut.",
   "listDetailCouldNotAddItem": "Eintrag konnte nicht hinzugefügt werden. Bitte versuche es erneut.",
   "listDetailCouldNotClear": "Einträge konnten nicht geleert werden. Bitte versuche es erneut.",
-  "listDetailItemDeleted": "{name} gelöscht",
-  "listDetailCouldNotRestore": "Eintrag konnte nicht wiederhergestellt werden.",
   "listDetailCouldNotReorder": "Einträge konnten nicht neu sortiert werden. Bitte versuche es erneut.",
   "listDetailItemsAdded": "{count, plural, =1{1 Eintrag zur Liste hinzugefügt} other{{count} Einträge zur Liste hinzugefügt}}",
   "listDetailCouldNotStartScan": "Scan konnte nicht gestartet werden. Versuche es erneut.",
-  "listDetailSetPrice": "Preis festlegen",
   "listDetailPriceInput": "Preis",
   "listDetailPriceHint": "0,00",
   "listDetailCouldNotSetPrice": "Preis konnte nicht festgelegt werden.",
   "listDetailClearTitle": "Liste leeren",
-  "listDetailClearBody": "Dies entfernt alle {count} {count, plural, =1{Eintrag} other{Einträge}}. Dies kann nicht rückgängig gemacht werden.",
+  "listDetailClearBody": "Dies entfernt alle {count} {count, plural, =1{Eintrag} other{Einträge}}. Bis du die Liste verlässt, kannst du das mit dem Rückgängig-Pfeil zurücknehmen.",
   "listDetailClearConfirm": "Liste leeren",
   "listDetailArchiveTitle": "Liste archivieren",
   "listDetailArchiveBody": "Diese Liste wird für deinen Haushalt ausgeblendet.",
@@ -817,7 +823,7 @@
   "shoppingTripAllCaughtUpDesc": "Keine offenen Einträge in deinen Listen. Füge Einträge hinzu, um sie hier zu sehen.",
   "shoppingTripSortedByAisles": "Nach Gängen sortiert",
   "shoppingTripSortedByStoreAisles": "Nach {store}-Gängen sortiert",
-  "shoppingTripMarkDone": "Als gekauft markieren",
+  "shoppingTripFinish": "Einkauf beenden",
   "shoppingTripBasketBar": "/ {collected} gesammelt{price}",
   "shoppingTripItemsWorthDone": "{amount} an Artikeln als gekauft markiert",
   "shoppingTripAddExpense": "Ausgabe hinzufügen",
@@ -1058,31 +1064,42 @@
   "offlineBannerConflictCount": "{count} Änderungen erfordern Ihre Überprüfung",
   "offlineBannerConflictOne": "Eine Änderung erfordert Ihre Überprüfung",
   "offlineBannerRetry": "Wiederholen",
-  "composerNewItem": "Neuer Eintrag",
   "composerScanList": "Liste scannen",
   "composerAddItem": "Eintrag hinzufügen",
   "listItemViewPhoto": "Foto ansehen",
-  "listItemReplacePhoto": "Foto ersetzen",
   "listItemAddPhoto": "Foto hinzufügen",
   "listItemRemovePhoto": "Foto entfernen",
-  "listItemSetPrice": "Preis festlegen",
-  "listItemChangeQuantity": "Menge ändern",
   "listItemQuantityAmount": "Menge",
-  "listItemQuantityUnit": "Einheit (optional)",
-  "listItemAddNote": "Notiz hinzufügen",
-  "listItemEditNote": "Notiz bearbeiten",
   "listItemNoteLabel": "Notiz",
   "listDetailProgress": "{done} von {total} erledigt",
   "listOpenCount": "{count, plural, =0{Alles erledigt} =1{1 offen} other{{count} offen}}",
   "listSortListView": "Listenansicht",
   "listItemDeleteAction": "Löschen",
   "listItemAddedBy": "Von {name} eingetragen",
-  "listItemReorder": "Neu anordnen",
   "listItemMarkUnchecked": "{name} als unerledigt markieren",
   "listItemMarkChecked": "{name} als erledigt markieren",
   "listItemViewPhotoFor": "Foto für {name} ansehen",
   "listItemFailedSave": "Speichern fehlgeschlagen – tippe auf die Sync-Leiste zum Wiederholen",
-  "listItemLongPressHint": "Lang drücken für weitere Optionen",
+  "listItemUnit": "Einheit",
+  "listItemMoveUp": "Nach oben",
+  "listItemMoveDown": "Nach unten",
+  "listEditDetailsFor": "Details zu {name}",
+  "listEditUnitAdd": "Einheit hinzufügen",
+  "listEditUnitValue": "Einheit: {unit}",
+  "listEditPriceAdd": "Preis hinzufügen",
+  "listEditPriceValue": "Preis: {price}",
+  "listEditNoteAdd": "Notiz hinzufügen",
+  "listEditNoteValue": "Notiz: {note}",
+  "listEditClearUnit": "Einheit entfernen",
+  "listEditClearPrice": "Preis entfernen",
+  "listEditBack": "Zurück zu den Details",
+  "listEditDeleteItem": "{name} löschen",
+  "listEditUnitPieces": "Stk.",
+  "listEditUnitPack": "Pck.",
+  "listEditUnitCan": "Dose",
+  "listEditUnitBottle": "Flasche",
+  "listItemOneLess": "Eins weniger",
+  "listItemOneMore": "Eins mehr",
   "scanCheckListPhoto": "Listenfoto prüfen",
   "scanReadingList": "Liste wird gelesen…",
   "scanCouldNotProcess": "Bild konnte nicht verarbeitet werden. Bitte versuche es erneut.",
@@ -1166,6 +1183,8 @@
   "accountSupportRow": "mitlist unterstützen",
   "accountServerRow": "Server",
   "authLoginResetCodeSent": "Falls diese E-Mail existiert, wurde ein Code gesendet.",
+  "authLoginResetUnavailable": "Dieser Server kann keine E-Mails senden, daher lässt sich das Passwort hier nicht zurücksetzen. Wende dich an die Person, die ihn betreibt.",
+  "authSignupEmailTaken": "Mit dieser E-Mail gibt es schon ein Konto. Melde dich stattdessen an.",
   "authLoginResetFillAllFields": "Fülle den Code und beide Passwortfelder aus.",
   "authLoginResetSuccess": "Passwort aktualisiert. Du bist angemeldet.",
   "authLinkOpenInApp": "In der mitlist-App öffnen",
@@ -1484,10 +1503,6 @@
   "appBottomSheetKeepEditing": "Weiter bearbeiten",
   "@appBottomSheetKeepEditing": {
     "description": "Keep editing button"
-  },
-  "composerItemHint": "z. B. Milch, 2 Avocados oder 500 g Mehl",
-  "@composerItemHint": {
-    "description": "Hint for list composer input"
   },
   "costSummaryNotAvailable": "k. A.",
   "@costSummaryNotAvailable": {
@@ -2437,5 +2452,339 @@
   "welcomeInviteJoin": "Tritt {household} bei, um Listen, Aufgaben und Geld zu teilen.",
   "welcomeInviteExpiredTitle": "Diese Einladung ist abgelaufen",
   "welcomeInviteExpiredBody": "Bitte die Person, die sie geschickt hat, um einen neuen Link.",
-  "activityMemberJoined": "{name} ist beigetreten · {when}"
+  "activityMemberJoined": "{name} ist beigetreten · {when}",
+  "authOnboardingAreasTitle": "Wofür nutzt du mitlist?",
+  "authOnboardingAreasBody": "Wähle so viele du willst. Nur die siehst du; den Rest kannst du jederzeit unter Du einschalten.",
+  "authOnboardingAreasKitchen": "Rezepte und Mahlzeiten",
+  "authOnboardingAreasAll": "Zeig mir alles",
+  "appAreasTitle": "Was du nutzt",
+  "appAreasBody": "Ausgeblendetes bleibt erhalten. Wenn jemand eine Ausgabe mit dir einträgt oder du bei einer Aufgabe dran bist, erscheint der Bereich trotzdem.",
+  "appAreasAll": "Alles",
+  "hubChecklistLater": "Später:",
+  "pinwallHubEmptyIntro": "Hier landen Notizen für alle im Haushalt. Öffne die Pinnwand, um eine anzupinnen.",
+  "widgetsPageTitle": "Widgets für den Startbildschirm",
+  "@widgetsPageTitle": {
+    "description": "Title of the Widgets page (You > Home screen widgets)"
+  },
+  "widgetsPageAccountRowValue": "Liste und Aufgaben auf einen Blick",
+  "@widgetsPageAccountRowValue": {
+    "description": "You screen: subtitle of the row that opens the Widgets page"
+  },
+  "widgetsPageIntro": "Sieh die Einkaufsliste und die heutigen Aufgaben, ohne die App zu öffnen, und hake direkt auf dem Startbildschirm ab.",
+  "@widgetsPageIntro": {
+    "description": "Widgets page: intro under the title"
+  },
+  "widgetsPageStepsTitle": "So fügst du ein Widget hinzu",
+  "@widgetsPageStepsTitle": {
+    "description": "Widgets page: heading of the numbered how-to steps"
+  },
+  "widgetsPageIosStep1": "Halte eine freie Stelle auf deinem Home-Bildschirm gedrückt und tippe dann auf „Bearbeiten“ und „Widget hinzufügen“.",
+  "@widgetsPageIosStep1": {
+    "description": "iOS how-to step 1"
+  },
+  "widgetsPageIosStep2": "Suche nach „mitlist“.",
+  "@widgetsPageIosStep2": {
+    "description": "iOS how-to step 2"
+  },
+  "widgetsPageIosStep3": "Wähle ein Widget, wische zur gewünschten Größe und tippe auf „Widget hinzufügen“.",
+  "@widgetsPageIosStep3": {
+    "description": "iOS how-to step 3"
+  },
+  "widgetsPageIosStep4": "Um Haushalt oder Liste zu wählen, halte das Widget gedrückt und tippe auf „Widget bearbeiten“.",
+  "@widgetsPageIosStep4": {
+    "description": "iOS how-to step 4"
+  },
+  "widgetsPageAndroidStep1": "Halte eine freie Stelle auf deinem Startbildschirm gedrückt.",
+  "@widgetsPageAndroidStep1": {
+    "description": "Android how-to step 1"
+  },
+  "widgetsPageAndroidStep2": "Tippe auf „Widgets“ und suche mitlist.",
+  "@widgetsPageAndroidStep2": {
+    "description": "Android how-to step 2"
+  },
+  "widgetsPageAndroidStep3": "Halte ein Widget gedrückt und zieh es an die gewünschte Stelle.",
+  "@widgetsPageAndroidStep3": {
+    "description": "Android how-to step 3"
+  },
+  "widgetsPageAdd": "Zum Startbildschirm hinzufügen",
+  "@widgetsPageAdd": {
+    "description": "Android button under a widget preview: asks the launcher to pin it"
+  },
+  "widgetsPageAdded": "Hinzugefügt",
+  "@widgetsPageAdded": {
+    "description": "Badge on a widget that is already on the home screen"
+  },
+  "widgetsPagePinFailed": "Dein Startbildschirm konnte es nicht direkt hinzufügen. Folge den Schritten unten.",
+  "@widgetsPagePinFailed": {
+    "description": "Toast when the launcher could not pin a widget in one tap"
+  },
+  "widgetsPageShoppingListName": "Einkaufsliste",
+  "@widgetsPageShoppingListName": {
+    "description": "Name of the shopping list widget"
+  },
+  "widgetsPageShoppingListDesc": "Hake im Laden Artikel ab und füge mit + neue hinzu.",
+  "@widgetsPageShoppingListDesc": {
+    "description": "What the shopping list widget does"
+  },
+  "widgetsPageChoresName": "Aufgaben heute",
+  "@widgetsPageChoresName": {
+    "description": "Name of the chores widget"
+  },
+  "widgetsPageChoresDesc": "Was heute fällig ist und wer dran ist. Erledige eine Aufgabe mit einem Tipp.",
+  "@widgetsPageChoresDesc": {
+    "description": "What the chores widget does"
+  },
+  "widgetsPageQuickAddName": "Schnell hinzufügen",
+  "@widgetsPageQuickAddName": {
+    "description": "Name of the quick add widget (Android)"
+  },
+  "widgetsPageQuickAddDesc": "Mit einem Tipp etwas auf die Liste setzen.",
+  "@widgetsPageQuickAddDesc": {
+    "description": "What the quick add widget does"
+  },
+  "widgetsPageHouseholdName": "Haushalt heute",
+  "@widgetsPageHouseholdName": {
+    "description": "Name of the household today widget"
+  },
+  "widgetsPageHouseholdDesc": "Die heutigen Aufgaben, die Einkaufsliste und das Abendessen an einem Ort.",
+  "@widgetsPageHouseholdDesc": {
+    "description": "What the household today widget does"
+  },
+  "widgetsPagePreviewLabel": "Vorschau des Widgets {name}",
+  "@widgetsPagePreviewLabel": {
+    "description": "Screen reader label of a widget preview",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "widgetsPageSampleHousehold": "Unser Zuhause",
+  "@widgetsPageSampleHousehold": {
+    "description": "Sample household name in widget previews when the real one is unknown"
+  },
+  "widgetsPageSampleListName": "Lebensmittel",
+  "@widgetsPageSampleListName": {
+    "description": "Sample list name in widget previews"
+  },
+  "widgetsPageSampleItem1": "Hafermilch",
+  "@widgetsPageSampleItem1": {
+    "description": "Sample list item in widget previews"
+  },
+  "widgetsPageSampleItem2": "Bananen",
+  "@widgetsPageSampleItem2": {
+    "description": "Sample list item in widget previews"
+  },
+  "widgetsPageSampleItem3": "Kaffeebohnen",
+  "@widgetsPageSampleItem3": {
+    "description": "Sample list item in widget previews"
+  },
+  "widgetsPageSampleItem4": "Reis",
+  "@widgetsPageSampleItem4": {
+    "description": "Sample list item in widget previews"
+  },
+  "widgetsPageSampleChore1": "Müll rausbringen",
+  "@widgetsPageSampleChore1": {
+    "description": "Sample chore in widget previews"
+  },
+  "widgetsPageSampleChore2": "Pflanzen gießen",
+  "@widgetsPageSampleChore2": {
+    "description": "Sample chore in widget previews"
+  },
+  "widgetsPageSampleMeal": "Heute Abend: Nudelauflauf",
+  "@widgetsPageSampleMeal": {
+    "description": "Sample tonight's meal line in the household widget preview"
+  },
+  "widgetsPageSampleAddHint": "Zur Liste hinzufügen",
+  "@widgetsPageSampleAddHint": {
+    "description": "Placeholder text in the quick add widget preview"
+  },
+  "widgetsPageSampleAddTo": "Hinzufügen zu",
+  "@widgetsPageSampleAddTo": {
+    "description": "Caption above the list name in the iOS quick add widget preview (\"Add to\" / \"Groceries\")"
+  },
+  "widgetsPageSampleLeft": "{count} offen",
+  "@widgetsPageSampleLeft": {
+    "description": "Widget preview: how many list items are still open",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "widgetsPageSampleDue": "{count} fällig",
+  "@widgetsPageSampleDue": {
+    "description": "Widget preview: how many chores are due",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "widgetPromoHeadline": "Deine Einkaufsliste auf dem Startbildschirm",
+  "@widgetPromoHeadline": {
+    "description": "Home promo sheet headline for home screen widgets (household benefit, not the feature)"
+  },
+  "widgetPromoBody": "Hake im Laden ab, ohne die App zu öffnen. Alle zu Hause sehen es sofort.",
+  "@widgetPromoBody": {
+    "description": "Home promo sheet body for home screen widgets"
+  },
+  "widgetPromoAdd": "Zum Startbildschirm hinzufügen",
+  "@widgetPromoAdd": {
+    "description": "Home promo sheet primary button on Android: pins the shopping list widget"
+  },
+  "widgetPromoShowMe": "Zeig mir, wie's geht",
+  "@widgetPromoShowMe": {
+    "description": "Home promo sheet primary button on iOS: opens the Widgets page"
+  },
+  "widgetPromoNotNow": "Nicht jetzt",
+  "@widgetPromoNotNow": {
+    "description": "Home promo sheet: dismiss button"
+  },
+  "listUndoUndoTooltip": "Rückgängig",
+  "listUndoRedoTooltip": "Wiederholen",
+  "listUndoChangedElsewhere": "Jemand anderes hat das geändert, deshalb wurde es nicht rückgängig gemacht",
+  "listUndoRedoChangedElsewhere": "Jemand anderes hat das geändert, deshalb wurde es nicht wiederholt",
+  "listUndoRestoredItems": "{count, plural, =1{1 Eintrag wiederhergestellt} other{{count} Einträge wiederhergestellt}}",
+  "listUndoCouldNotUndo": "Das konnte nicht rückgängig gemacht werden. Bitte versuche es erneut.",
+  "listUndoCouldNotRedo": "Das konnte nicht wiederholt werden. Bitte versuche es erneut.",
+  "listUndoOutboxRestoreItem": "Eintrag wiederherstellen",
+  "calendarExternalBusy": "Beschäftigt",
+  "calendarExternalAllDay": "Ganztägig",
+  "calendarExternalTimeRange": "{start} – {end}",
+  "calendarExternalFrom": "ab {time}",
+  "calendarExternalUntil": "bis {time}",
+  "calendarExternalFree": "frei",
+  "calendarExternalYou": "Du",
+  "calendarExternalSomeone": "Jemand aus dem Haushalt",
+  "calendarExternalSemantics": "{person}: {what}, {when}",
+  "calendarExternalSemanticsFree": "{person}: {what}, {when}, als frei markiert",
+  "calendarWhosAroundTitle": "Wer ist da · {day}",
+  "calendarWhosAroundFree": "Frei",
+  "calendarWhosAroundAway": "Den ganzen Tag weg",
+  "calendarWhosAroundBusy": "Beschäftigt {times}",
+  "calendarWhosAroundSelectDay": "Zeigen, wer an diesem Tag da ist",
+  "calendarShareHintTitle": "Seht, wann alle da sind",
+  "calendarShareHintBody": "Teile deinen Google-, Apple- oder Outlook-Kalender mit dem Haushalt, nur als belegte Zeiten oder mit Titeln. Du entscheidest, was die anderen sehen.",
+  "calendarShareHintAction": "Meinen Kalender teilen",
+  "sharedCalendarsTitle": "Geteilte Kalender",
+  "sharedCalendarsAccountRowValue": "Zeig dem Haushalt, wann du beschäftigt bist",
+  "sharedCalendarsIntro": "Verbinde deine Kalender, damit dein Haushalt sieht, wann du beschäftigt oder weg bist. Geteilt wird erst, wenn du es unten für einen Haushalt auswählst.",
+  "sharedCalendarsNoHouseholds": "Tritt einem Haushalt bei oder erstelle einen, um einen Kalender zu teilen.",
+  "sharedCalendarsEmpty": "Noch keine Kalender verbunden.",
+  "sharedCalendarsKindThisPhone": "Auf diesem Handy",
+  "sharedCalendarsKindOtherPhone": "Auf einem anderen Handy",
+  "sharedCalendarsKindLink": "Kalenderlink",
+  "sharedCalendarsSyncing": "Wird synchronisiert …",
+  "sharedCalendarsNeverSynced": "Noch nicht synchronisiert",
+  "sharedCalendarsSyncedAt": "Synchronisiert {time}",
+  "sharedCalendarsSyncNow": "Jetzt synchronisieren",
+  "sharedCalendarsSyncTooSoon": "Schon aktuell. Versuch es in einer Minute noch einmal.",
+  "sharedCalendarsSyncFailed": "Die Kalender dieses Handys konnten nicht aktualisiert werden. Wir versuchen es später erneut.",
+  "sharedCalendarsOtherPhoneNote": "Wird auf einem anderen Handy gelesen. Deine Auswahl gilt sofort; die Termine aktualisieren sich, wenn das Handy mitlist öffnet.",
+  "sharedCalendarsNoCalendars": "Noch keine Kalender gefunden.",
+  "sharedCalendarsUnnamed": "Kalender",
+  "sharedCalendarsShareBusy": "Nur beschäftigt",
+  "sharedCalendarsShareDetails": "Mit Titeln",
+  "sharedCalendarsShareNone": "Nicht geteilt",
+  "sharedCalendarsExplainBusy": "{household} sieht, wann du beschäftigt bist, aber nie, was es ist.",
+  "sharedCalendarsExplainDetails": "{household} sieht Titel und Zeiten deiner Termine. Als privat markierte Termine erscheinen trotzdem nur als beschäftigt.",
+  "sharedCalendarsExplainNone": "{household} sieht nichts aus diesem Kalender.",
+  "sharedCalendarsAdd": "Kalender hinzufügen",
+  "sharedCalendarsAddPhone": "Kalender auf diesem Handy",
+  "sharedCalendarsAddPhoneDesc": "Alle Konten auf diesem Handy: Google, iCloud, Outlook und mehr. Gelesen wird auf dem Handy; nur was du teilst, verlässt es.",
+  "sharedCalendarsAddLinkDesc": "Füge einen privaten iCal-Link aus Google, iCloud oder Outlook ein. Funktioniert auf jedem Gerät.",
+  "sharedCalendarsAddedNotShared": "Kalender hinzugefügt. Wähle unten, was jeder Haushalt sieht.",
+  "sharedCalendarsPhoneDefaultName": "Dieses Handy",
+  "sharedCalendarsPermissionDeniedTitle": "Kalenderzugriff ist aus",
+  "sharedCalendarsPermissionDeniedBody": "Um Kalender von diesem Handy zu teilen, erlaube mitlist in den Einstellungen, deine Kalender zu lesen. Oder füge stattdessen einen Kalenderlink hinzu.",
+  "sharedCalendarsPermissionRestricted": "Der Kalenderzugriff ist auf diesem Handy gesperrt (etwa durch Bildschirmzeit oder Geräteverwaltung). Du kannst stattdessen einen Kalenderlink hinzufügen.",
+  "sharedCalendarsOpenSettings": "Einstellungen öffnen",
+  "sharedCalendarsRenameTitle": "Kalender umbenennen",
+  "sharedCalendarsRemoveTitle": "{name} entfernen?",
+  "sharedCalendarsRemoveBody": "Die Termine verschwinden aus allen Haushaltskalendern. Dein Kalender selbst bleibt unverändert.",
+  "sharedCalendarsUpcomingTitle": "Kommende Termine",
+  "sharedCalendarsUpcomingIntro": "Was andere im Haushalt von deinen nächsten zwei Wochen sehen. Tippe auf einen Termin, um ihn auszublenden oder mehr oder weniger zu zeigen. Ein wiederkehrender Termin zählt als einer.",
+  "sharedCalendarsUpcomingFailed": "Kommende Termine konnten nicht geladen werden.",
+  "sharedCalendarsUpcomingEmpty": "Keine kommenden Termine in deinen geteilten Kalendern.",
+  "sharedCalendarsSeesDetails": "{households}: Titel und Zeit",
+  "sharedCalendarsSeesBusy": "{households}: nur beschäftigt",
+  "sharedCalendarsSeesNothing": "Der Haushalt sieht das nicht",
+  "sharedCalendarsOverrideCalendar": "Kalendereinstellung",
+  "sharedCalendarsOverrideHidden": "Ausgeblendet",
+  "sharedCalendarsOverrideBusy": "Beschäftigt",
+  "sharedCalendarsOverrideDetails": "Mit Titel",
+  "sharedCalendarsOverrideCalendarDesc": "So, wie der Kalender mit jedem Haushalt geteilt ist.",
+  "sharedCalendarsOverrideHiddenDesc": "Kein Haushalt sieht ihn.",
+  "sharedCalendarsOverrideBusyDesc": "Haushalte, die diesen Kalender sehen, sehen nur einen belegten Block ohne Titel.",
+  "sharedCalendarsOverrideDetailsDesc": "Haushalte, die diesen Kalender sehen, sehen den Titel, auch wenn der Termin in deinem Kalender privat ist.",
+  "sharedCalendarsEventNoTitle": "(Kein Titel)",
+  "sharedCalendarsEventPrivate": "privat",
+  "sharedCalendarsEventFree": "als frei markiert",
+  "sharedCalendarsEventChoice": "Einstellung: {choice}",
+  "calendarConnectionErrorFetchFailed": "Der Kalender konnte zuletzt nicht geladen werden. Wir versuchen es weiter.",
+  "calendarConnectionErrorNotCalendar": "Dieser Link liefert keinen Kalender mehr. Entferne ihn und füge den aktuellen Link hinzu.",
+  "calendarConnectionErrorTooLarge": "Dieser Kalender ist zu groß zum Synchronisieren. Versuch es mit einem kleineren Kalender.",
+  "calendarConnectionErrorUnauthorized": "Dieser Link funktioniert nicht mehr. Er wurde vielleicht zurückgesetzt oder entfernt; füge den neuen Link hinzu.",
+  "calendarConnectionErrorOther": "Dieser Kalender konnte nicht synchronisiert werden.",
+  "calendarLinkSheetTitle": "Kalenderlink hinzufügen",
+  "calendarLinkAddAction": "Kalenderlink",
+  "calendarLinkNameHint": "Optional, z. B. Arbeit",
+  "calendarLinkUrlLabel": "Privater iCal-Link",
+  "calendarLinkUrlHint": "https:// oder webcal://",
+  "calendarLinkPrivacyNote": "Behandle den Link wie ein Passwort: Wer ihn hat, kann den Kalender lesen. mitlist speichert ihn verschlüsselt und zeigt ihn nie wieder an.",
+  "calendarLinkErrorUrl": "Gib einen Link ein, der mit https:// oder webcal:// beginnt.",
+  "calendarLinkErrorNotCalendar": "Dieser Link ist kein Kalender. Kopiere die iCal-Adresse (.ics), nicht den Link zur Webseite des Kalenders.",
+  "calendarLinkErrorFetch": "Der Kalender konnte nicht geladen werden. Prüfe den Link und ob der Kalender noch geteilt oder veröffentlicht ist.",
+  "calendarLinkStepsTitle": "Wo du den Link findest",
+  "calendarLinkStepsGoogleTitle": "Google Kalender",
+  "calendarLinkStepsGoogle": "Öffne am Computer die Einstellungen, wähle unter „Einstellungen für meine Kalender“ deinen Kalender und kopiere unter „Kalender integrieren“ die „Privatadresse im iCal-Format“.",
+  "calendarLinkStepsAppleTitle": "Apple iCloud-Kalender",
+  "calendarLinkStepsApple": "Tippe in der Kalender-App auf „Kalender“ und dann auf die Info-Taste neben dem Kalender. Aktiviere „Öffentlicher Kalender“ und kopiere den Link. Jeder mit dem Link kann ihn sehen; auf diesem Handy ist „Kalender auf diesem Handy“ privater.",
+  "calendarLinkStepsOutlookTitle": "Outlook",
+  "calendarLinkStepsOutlook": "Öffne in Outlook im Web Einstellungen > Kalender > Freigegebene Kalender, veröffentliche den Kalender („Kann alle Details anzeigen“ oder „Kann sehen, wann ich beschäftigt bin“) und kopiere den ICS-Link.",
+  "sharedCalendarsLimitReached": "Du hast 10 Kalender verbunden, mehr geht nicht. Entferne einen, um einen neuen hinzuzufügen.",
+  "calendarWhosAroundFreeAllDay": "Den ganzen Tag frei",
+  "calendarWhosAroundFreeFrom": "Frei ab {time}",
+  "calendarWhosAroundBusyUntil": "Beschäftigt bis {time}",
+  "calendarWhosAroundBusyFrom": "Beschäftigt ab {time}",
+  "calendarWhosAroundNotSharing": "Teilt keinen Kalender",
+  "calendarWhosAroundEveningAll": "Alle haben den ganzen Abend Zeit",
+  "calendarWhosAroundSharersEveningAll": "Alle, die teilen, haben den ganzen Abend Zeit",
+  "calendarWhosAroundEveningFrom": "Alle haben ab {time} Zeit",
+  "calendarWhosAroundSharersEveningFrom": "Alle, die teilen, haben ab {time} Zeit",
+  "calendarWhosAroundEveningBetween": "Alle haben {start} – {end} Zeit",
+  "calendarWhosAroundSharersEveningBetween": "Alle, die teilen, haben {start} – {end} Zeit",
+  "calendarWhosAroundEveningNone": "Abends haben nicht alle Zeit",
+  "calendarWhosAroundSharersEveningNone": "Abends haben nicht alle, die teilen, Zeit",
+  "calendarWhosAroundTapHint": "Tippe auf einen Tag, um ihn zu prüfen.",
+  "calendarTourHome": "Neu: Sieh, wann alle da sind. Öffne den Kalender.",
+  "calendarTourShare": "Teile hier deinen Kalender, damit der Haushalt weiß, wann du beschäftigt bist.",
+  "calendarTourAdd": "Füge die Kalender deines Handys oder einen Kalenderlink hinzu. Geteilt wird erst, wenn du es auswählst.",
+  "calendarTourChoices": "Wähle, was jeder Haushalt sieht: nur beschäftigt oder mit Titeln.",
+  "calendarTourUpcoming": "Blende Privates aus, Termin für Termin.",
+  "coachMarkNext": "Weiter",
+  "coachMarkSkip": "Überspringen",
+  "coachMarkDone": "Verstanden",
+  "sharedCalendarsShowMeHow": "Zeig mir, wie",
+  "sharedCalendarsIosPrivateNote": "Das iPhone erkennt keine privaten Termine, Termine können also mit Titel erscheinen. Blende einzelne Termine unten aus.",
+  "sharedCalendarsHideEvent": "Vor dem Haushalt verbergen",
+  "sharedCalendarsShowAgain": "Wieder zeigen",
+  "sharedCalendarsEventPrivateNote": "Privat in deinem Kalender",
+  "sharedCalendarsEventFreeNote": "In deinem Kalender als frei markiert",
+  "sharedCalendarsNotSharedAnywhere": "Kein Haushalt sieht diesen Kalender.",
+  "sharedCalendarsSyncedJustNow": "Gerade synchronisiert",
+  "sharedCalendarsSyncedYesterday": "Gestern synchronisiert",
+  "coachMarkStepLabel": "Tipp {step} von {total}",
+  "sharedCalendarsSyncedMinutes": "Vor {minutes} Min. synchronisiert",
+  "sharedCalendarsSyncedHours": "Vor {hours} Std. synchronisiert",
+  "sharedCalendarsExplainDetailsNoPrivate": "{household} sieht Titel und Zeiten deiner Termine.",
+  "calendarWhosAroundExpand": "Zeiten aller anzeigen",
+  "calendarWhosAroundCollapse": "Weniger anzeigen",
+  "sharedCalendarsSummaryBusy": "{household}: nur beschäftigt",
+  "sharedCalendarsSummaryDetails": "{household}: mit Titeln",
+  "sharedCalendarsSummaryNone": "{household}: nicht geteilt",
+  "sharedCalendarsSummaryNotShared": "Nicht geteilt",
+  "sharedCalendarsShowChoices": "Freigaben anzeigen",
+  "sharedCalendarsHideChoices": "Freigaben ausblenden"
 }

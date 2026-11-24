@@ -22,6 +22,12 @@ class ResolutionCandidate {
   /// The query exactly equals one of this item's aliases.
   final bool isExactAlias;
 
+  /// The query is an exact alias of this item and of no other item. Most
+  /// seed words are shared ("milk" alone named 35 items before alias pruning),
+  /// so a plain exact hit says little; an unshared one ("pringles",
+  /// "klopapier") is strong evidence.
+  final bool isUniqueExactAlias;
+
   /// A household-scoped alias/correction (not a global seed alias) maps here —
   /// i.e. this household has confirmed this mapping before.
   final bool isHouseholdAlias;
@@ -33,6 +39,7 @@ class ResolutionCandidate {
     required this.embedderCosine,
     required this.sources,
     required this.isExactAlias,
+    this.isUniqueExactAlias = false,
     required this.isHouseholdAlias,
   });
 

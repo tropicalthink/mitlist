@@ -53,5 +53,42 @@ void main() {
       expect(await service.suggest('Train ticket', 'group-1'), isNull);
       expect(await service.suggest(' ', 'group-1'), isNull);
     });
+
+    test('food words in a bill or a night out are not groceries', () async {
+      // The resolver would call every one of these a grocery item.
+      final service = GroceryExpenseCategoryService.withResolver(
+        (text, groupId) async => 'canonical-anything',
+      );
+
+      for (final description in [
+        'Water bill',
+        'Coffee at the café',
+        'Beers at the bar',
+        'Pizza takeaway',
+        'Wasserrechnung',
+        'Abendessen Pizza',
+      ]) {
+        expect(await service.suggest(description, 'group-1'), isNull,
+            reason: description);
+      }
+    });
+
+    test('a grocery delivery is still groceries', () async {
+      final service = GroceryExpenseCategoryService.withResolver(
+        (text, groupId) async => text == 'Milk delivery' ? 'milk' : null,
+      );
+      expect(await service.suggest('Milk delivery', 'group-1'), 'groceries');
+    });
+
+    test('chain names that are ordinary words only count alone', () async {
+      final service = GroceryExpenseCategoryService.withResolver(
+        (text, groupId) async => null,
+      );
+
+      expect(await service.suggest('Penny', 'group-1'), 'groceries');
+      expect(await service.suggest('Netto Markt', 'group-1'), 'groceries');
+      expect(await service.suggest('Penny stocks', 'group-1'), isNull);
+      expect(await service.suggest('Netto Gehalt Juni', 'group-1'), isNull);
+    });
   });
 }

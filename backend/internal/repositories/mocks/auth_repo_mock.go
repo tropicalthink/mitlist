@@ -19,6 +19,16 @@ func (m *MockAuthRepo) CreateUnverifiedUser(ctx context.Context, user *models.Us
 	return args.Error(0)
 }
 
+func (m *MockAuthRepo) CreateUnprovenUser(ctx context.Context, user *models.User) error {
+	args := m.Called(ctx, user)
+	return args.Error(0)
+}
+
+func (m *MockAuthRepo) IsEmailUnproven(ctx context.Context, userID uuid.UUID) (bool, error) {
+	args := m.Called(ctx, userID)
+	return args.Bool(0), args.Error(1)
+}
+
 func (m *MockAuthRepo) CreateEmailVerification(ctx context.Context, userID uuid.UUID, tokenHash string, expiresAt time.Time) error {
 	args := m.Called(ctx, userID, tokenHash, expiresAt)
 	return args.Error(0)

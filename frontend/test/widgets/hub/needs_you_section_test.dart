@@ -313,14 +313,15 @@ void main() {
     expect(find.text('Groceries'), findsOneWidget);
   });
 
-  testWidgets('"Not set up yet" when the household has nothing in it',
+  testWidgets('says nothing while the household has nothing in it',
       (tester) async {
     await _pump(tester);
 
-    expect(find.text('Not set up yet'), findsOneWidget);
+    // A card of zeros told a new household nothing the quick start doesn't.
+    expect(find.text('Needs you'), findsNothing);
+    expect(find.text('Not set up yet'), findsNothing);
     expect(find.text('All caught up'), findsNothing);
-    expect(find.text('No expenses yet'), findsOneWidget);
-    expect(find.text('Lists are empty'), findsOneWidget);
+    expect(find.text('Lists are empty'), findsNothing);
   });
 
   testWidgets('a payment already waiting for confirmation is not asked again',
@@ -453,11 +454,10 @@ void main() {
       expect(_rows('house-chore'), findsNothing);
     });
 
-    testWidgets('a household with nothing in it is "Not set up yet"',
-        (tester) async {
+    testWidgets('a household with nothing in it shows no card', (tester) async {
       await _pump(tester);
 
-      expect(find.text('Not set up yet'), findsOneWidget);
+      expect(find.text('Needs you'), findsNothing);
       expect(find.text('Nothing on you yet'), findsNothing);
     });
   });

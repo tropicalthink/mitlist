@@ -45,7 +45,7 @@ class QuickAddWidgetReceiver : MitlistWidgetReceiver() {
  * the native [QuickAddActivity]; widgets cannot take typed text.
  */
 class QuickAddWidget : GlanceAppWidget() {
-    override val sizeMode = SizeMode.Responsive(setOf(DpSize(50.dp, 50.dp), DpSize(200.dp, 50.dp)))
+    override val sizeMode = SizeMode.Responsive(setOf(SQUARE, BAR_2, BAR_3, BAR_4))
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val appWidgetId = GlanceAppWidgetManager(context).getAppWidgetId(id)
@@ -59,13 +59,28 @@ class QuickAddWidget : GlanceAppWidget() {
     override suspend fun providePreview(context: Context, widgetCategory: Int) {
         provideContent { MitlistWidgetTheme { QuickAddContent(SampleData.model(context), android.appwidget.AppWidgetManager.INVALID_APPWIDGET_ID) } }
     }
+
+    companion object {
+        /** 1x1: just "+". */
+        val SQUARE = DpSize(50.dp, 50.dp)
+
+        /** 2x1: "+ Add to Groceries". */
+        val BAR_2 = DpSize(110.dp, 50.dp)
+
+        /** 3x1: adds the mic. */
+        val BAR_3 = DpSize(180.dp, 50.dp)
+
+        /** 4x1: adds the receipt/list scanner. */
+        val BAR_4 = DpSize(250.dp, 50.dp)
+    }
 }
 
 @Composable
 private fun QuickAddContent(model: WidgetModel, appWidgetId: Int) {
     val context = LocalContext.current
     val list = model.snapshot?.resolveList(model.configuredHousehold, model.configuredList)?.second
-    val wide = LocalSize.current.width >= 200.dp
+    val width = LocalSize.current.width
+    val wide = width >= QuickAddWidget.BAR_2.width
     val open = actionStartActivity(QuickAddActivity.intent(context, appWidgetId, voice = false))
     val label = list?.let { context.getString(R.string.widget_add_to, it.name) }
         ?: context.getString(R.string.quick_add_title)
@@ -106,11 +121,19 @@ private fun QuickAddContent(model: WidgetModel, appWidgetId: Int) {
                     )
                 }
                 Spacer(GlanceModifier.width(10.dp))
-                Column {
-                    WidgetText(label, bold = true, size = 14.sp, align = TextAlign.Start)
+                Column(modifier = GlanceModifier.defaultWeight()) {
+                    WidgetText(label, bold = true, size = 14.sp, align = TextAlign.Start, maxLines = if (width < QuickAddWidget.BAR_3.width) 2 else 1)
                 }
             }
-            WidgetIconButton(
+            if (width >= QuickAddWidget.BAR_4.width) {
+                WidgetIconButton(
+                    R.drawable.ic_widget_scan,
+                    context.getString(R.string.widget_scan),
+                    actionStartActivity(WidgetLinks.scanner(context)),
+                    tint = GlanceTheme.colors.primary,
+                )
+            }
+            if (width >= QuickAddWidget.BAR_3.width) WidgetIconButton(
                 R.drawable.ic_widget_mic,
                 context.getString(R.string.quick_add_voice),
                 actionStartActivity(QuickAddActivity.intent(context, appWidgetId, voice = true)),

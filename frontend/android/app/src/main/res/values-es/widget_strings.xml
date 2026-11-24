@@ -3,7 +3,7 @@
     <string name="widget_shopping_list_name">Lista de la compra</string>
     <string name="widget_shopping_list_description">Marca artículos y añade otros nuevos</string>
     <string name="widget_chores_name">Tareas de hoy</string>
-    <string name="widget_chores_description">Tareas pendientes con un botón Hecho</string>
+    <string name="widget_chores_description">Tareas atrasadas y de hoy, con botón Hecho</string>
     <string name="widget_household_today_name">El hogar hoy</string>
     <string name="widget_household_today_description">Tareas, compra, la cena y tu saldo</string>
     <string name="widget_balance_name">Saldo</string>
@@ -37,7 +37,7 @@
     <string name="widget_added_by">añadido por %1$s</string>
 
     <string name="widget_chores_title">Tareas</string>
-    <string name="widget_chores_nothing_due_short">Nada pendiente</string>
+    <string name="widget_chores_nothing_due_short">Nada pendiente hoy</string>
     <plurals name="widget_chores_due">
         <item quantity="one">%1$d tarea pendiente</item>
         <item quantity="many">%1$d tareas pendientes</item>
@@ -99,4 +99,26 @@
     <string name="widget_sample_chore_1">Sacar la basura</string>
     <string name="widget_sample_chore_2">Limpiar el baño</string>
     <string name="widget_sample_meal">Lasaña</string>
+
+    <!-- Ticked/done feedback, set-up states, household headline, scan -->
+    <string name="widget_item_ticked">%1$s, marcado</string>
+    <string name="widget_chore_marked_done">%1$s, hecha</string>
+    <string name="widget_needs_remember_me">Los widgets necesitan que sigas con la sesión iniciada. Inicia sesión con «Recordarme» activado.</string>
+    <string name="widget_sign_in_action">Iniciar sesión</string>
+    <string name="widget_set_up">Abre mitlist para configurar los widgets</string>
+    <string name="widget_set_up_action">Configurar widgets</string>
+    <string name="widget_scan">Escanear</string>
+    <string name="widget_headline_clear">Todo al día hoy</string>
+    <plurals name="widget_headline_overdue">
+        <item quantity="one">%1$d atrasada</item>
+        <item quantity="other">%1$d atrasadas</item>
+    </plurals>
+    <plurals name="widget_headline_today">
+        <item quantity="one">%1$d para hoy</item>
+        <item quantity="other">%1$d para hoy</item>
+    </plurals>
+    <plurals name="widget_headline_to_buy">
+        <item quantity="one">%1$d por comprar</item>
+        <item quantity="other">%1$d por comprar</item>
+    </plurals>
 </resources>

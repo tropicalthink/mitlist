@@ -19,10 +19,21 @@ public enum WidgetCredentialStore {
   @discardableResult
   public static func save(_ credential: WidgetCredential) -> Bool {
     guard let data = try? JSONEncoder().encode(credential) else { return false }
-    SecItemDelete(baseQuery as CFDictionary)
+    // Update in place: deleting first would leave a moment in which the
+    // widget extension, reading at the same time, finds no credential.
+    let attributes: [String: Any] = [
+      kSecValueData as String: data,
+      kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
+    ]
+    let updated = SecItemUpdate(baseQuery as CFDictionary, attributes as CFDictionary)
+    if updated == errSecSuccess { return true }
+    if updated != errSecItemNotFound {
+      // Unreadable or stale item (for example one restored from another
+      // device): replace it.
+      SecItemDelete(baseQuery as CFDictionary)
+    }
     var query = baseQuery
-    query[kSecValueData as String] = data
-    query[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+    query.merge(attributes) { _, new in new }
     return SecItemAdd(query as CFDictionary, nil) == errSecSuccess
   }
 

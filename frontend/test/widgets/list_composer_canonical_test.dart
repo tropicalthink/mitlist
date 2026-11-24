@@ -7,8 +7,8 @@ import 'package:mitlist/l10n/app_localizations.dart';
 import 'package:mitlist/repositories/list_repository.dart';
 import 'package:mitlist/services/scan/household_suggestion_engine.dart';
 import 'package:mitlist/storage/app_database.dart';
-import 'package:mitlist/widgets/app_card.dart';
 import 'package:mitlist/widgets/list/list_composer_bar.dart';
+import 'package:mitlist/widgets/list/list_suggestion_line.dart';
 
 import '../support/fakes.dart';
 
@@ -71,20 +71,15 @@ void main() {
   testWidgets('grocery card exposes canonical id before add',
       (WidgetTester tester) async {
     final controller = TextEditingController();
-    final focusNode = FocusNode();
     final events = <String>[];
 
     addTearDown(controller.dispose);
-    addTearDown(focusNode.dispose);
 
     await tester.pumpWidget(
       _host(
-        ListComposerBar(
+        ListComposerSuggestions(
           controller: controller,
-          focusNode: focusNode,
           onAdd: () => events.add('add:${controller.text}'),
-          onScan: () {},
-          showProductSuggestions: true,
           suggestions: const [
             HouseholdSuggestion(
               canonicalItemId: 'milk',
@@ -94,20 +89,21 @@ void main() {
               sources: {HouseholdSuggestionSource.catalog},
             ),
           ],
-          onSuggestionSelected: (s) =>
-              events.add('selected:${s.canonicalItemId}'),
+          onSuggestionSelected: (s, typed) =>
+              events.add('selected:${s.canonicalItemId}:$typed'),
         ),
       ),
     );
 
+    controller.text = 'mlk';
     await tester.tap(find.text('Milch'));
     await tester.pump();
 
     expect(controller.text, equals('Milch'));
-    expect(events, equals(['selected:milk', 'add:Milch']));
-    final cardSize = tester.getSize(find.byType(AppCard));
-    expect(cardSize.width, 160);
-    expect(cardSize.height, greaterThanOrEqualTo(56));
+    expect(events, equals(['selected:milk:mlk', 'add:Milch']));
+    // A suggestion is a full-width line with a comfortable tap target.
+    expect(tester.getSize(find.byType(ListSuggestionLine)).height,
+        greaterThanOrEqualTo(44));
   });
 
   group('addItemAmountOfflineFirst canonical id', () {

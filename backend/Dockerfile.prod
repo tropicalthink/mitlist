@@ -19,6 +19,12 @@ WORKDIR /app
 COPY --from=build /out/mitlist-api /app/mitlist-api
 COPY migrations /app/migrations
 ENV MIGRATIONS_PATH=/app/migrations
+# Local-disk file storage for self-hosts without S3: set
+# STORAGE_LOCAL_PATH=/app/data/uploads (the compose prod profile does) and mount
+# a volume here. Deliberately not an image default, so a deployment that never
+# asked for it cannot start writing uploads into a container with no volume. A
+# named volume inherits the nobody ownership set below.
+RUN mkdir -p /app/data/uploads && chown -R nobody:nobody /app/data
 USER nobody
 EXPOSE 8000
 ENTRYPOINT ["/app/mitlist-api"]

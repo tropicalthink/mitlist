@@ -1368,6 +1368,79 @@ class AppLocalizationsNl extends AppLocalizations {
       'Begin met een titel en voeg later ingrediënten toe';
 
   @override
+  String get recipeCreationFromPhoto => 'Foto lezen';
+
+  @override
+  String get recipeCreationFromPhotoDesc =>
+      'Fotografeer een receptkaart of kookboekpagina. Hij wordt op je telefoon gelezen';
+
+  @override
+  String get recipePhotoTitle => 'Fotografeer het recept';
+
+  @override
+  String get recipePhotoReading => 'Recept wordt gelezen…';
+
+  @override
+  String get recipePhotoNothingFound =>
+      'Geen recept gevonden op de foto. Probeer het dichterbij en rechter.';
+
+  @override
+  String recipePhotoRead(int ingredients, int steps) {
+    String _temp0 = intl.Intl.pluralLogic(
+      ingredients,
+      locale: localeName,
+      other: '$ingredients ingrediënten',
+      one: '1 ingrediënt',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      steps,
+      locale: localeName,
+      other: '$steps stappen',
+      one: '1 stap',
+    );
+    return '$_temp0 en $_temp1 gelezen. Controleer ze voor het opslaan.';
+  }
+
+  @override
+  String get receiptScanTitle => 'Fotografeer de kassabon';
+
+  @override
+  String get receiptScanReading => 'Kassabon wordt gelezen…';
+
+  @override
+  String get receiptScanNoTotal =>
+      'Geen totaal gevonden op de bon. Vul het bedrag zelf in.';
+
+  @override
+  String get receiptScanCheckTotal =>
+      'De regels van de bon tellen niet op tot het totaal. Controleer bedrag en notities.';
+
+  @override
+  String get receiptRememberPurchases => 'Aankopen onthouden';
+
+  @override
+  String receiptRememberPurchasesDesc(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count vaste artikelen',
+      one: '1 vast artikel',
+    );
+    return '$_temp0 als gekocht tellen, voor aanvullen en suggesties';
+  }
+
+  @override
+  String receiptTickListItems(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items',
+      one: '1 item',
+    );
+    return '$_temp0 op je lijsten afvinken';
+  }
+
+  @override
   String get recipeCreationScanning => 'Scannen…';
 
   @override
@@ -2159,19 +2232,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get listDetailCheckedOff => 'Afgevinkt';
 
   @override
-  String get listDetailNothingHere => 'Nog niets hier';
-
-  @override
-  String get listDetailNothingHereDesc =>
-      'Fotografeer een handgeschreven lijst, koelkastbriefje of screenshot. Wij halen de items eruit.';
-
-  @override
-  String get listDetailScanThisList => 'Scan deze lijst';
-
-  @override
-  String get listDetailTypeItem => 'Typ een item';
-
-  @override
   String get listDetailNoMatch => 'Geen items komen overeen met je filter';
 
   @override
@@ -2188,14 +2248,6 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get listDetailCouldNotClear =>
       'Kon items niet wissen. Probeer het opnieuw.';
-
-  @override
-  String listDetailItemDeleted(String name) {
-    return '$name verwijderd';
-  }
-
-  @override
-  String get listDetailCouldNotRestore => 'Kon item niet herstellen.';
 
   @override
   String get listDetailCouldNotReorder =>
@@ -2217,9 +2269,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Kon scan niet starten. Probeer opnieuw.';
 
   @override
-  String get listDetailSetPrice => 'Prijs instellen';
-
-  @override
   String get listDetailPriceInput => 'Prijs';
 
   @override
@@ -2239,7 +2288,7 @@ class AppLocalizationsNl extends AppLocalizations {
       other: 'items',
       one: 'item',
     );
-    return 'Dit verwijdert alle $count $_temp0. Dit kan niet ongedaan worden gemaakt.';
+    return 'Dit verwijdert alle $count $_temp0. Met de pijl Ongedaan maken zet je het terug zolang je de lijst niet verlaat.';
   }
 
   @override
@@ -2946,7 +2995,7 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get shoppingTripMarkDone => 'Markeren als gedaan';
+  String get shoppingTripFinish => 'Boodschappen afronden';
 
   @override
   String shoppingTripBasketBar(num collected, String price) {
@@ -3800,9 +3849,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get offlineBannerRetry => 'Opnieuw';
 
   @override
-  String get composerNewItem => 'Nieuw item';
-
-  @override
   String get composerScanList => 'Lijst scannen';
 
   @override
@@ -3812,31 +3858,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get listItemViewPhoto => 'Foto bekijken';
 
   @override
-  String get listItemReplacePhoto => 'Foto vervangen';
-
-  @override
   String get listItemAddPhoto => 'Foto toevoegen';
 
   @override
   String get listItemRemovePhoto => 'Foto verwijderen';
 
   @override
-  String get listItemSetPrice => 'Prijs instellen';
-
-  @override
-  String get listItemChangeQuantity => 'Aantal wijzigen';
-
-  @override
   String get listItemQuantityAmount => 'Aantal';
-
-  @override
-  String get listItemQuantityUnit => 'Eenheid (optioneel)';
-
-  @override
-  String get listItemAddNote => 'Notitie toevoegen';
-
-  @override
-  String get listItemEditNote => 'Notitie bewerken';
 
   @override
   String get listItemNoteLabel => 'Notitie';
@@ -3870,9 +3898,6 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get listItemReorder => 'Herschikken';
-
-  @override
   String listItemMarkUnchecked(String name) {
     return '$name als niet-afgevinkt markeren';
   }
@@ -3892,7 +3917,74 @@ class AppLocalizationsNl extends AppLocalizations {
       'Opslaan mislukt — tik op de sync-balk om opnieuw te proberen';
 
   @override
-  String get listItemLongPressHint => 'Lang indrukken voor meer opties';
+  String get listItemUnit => 'Eenheid';
+
+  @override
+  String get listItemMoveUp => 'Omhoog';
+
+  @override
+  String get listItemMoveDown => 'Omlaag';
+
+  @override
+  String listEditDetailsFor(String name) {
+    return 'Details van $name';
+  }
+
+  @override
+  String get listEditUnitAdd => 'Eenheid toevoegen';
+
+  @override
+  String listEditUnitValue(String unit) {
+    return 'Eenheid: $unit';
+  }
+
+  @override
+  String get listEditPriceAdd => 'Prijs toevoegen';
+
+  @override
+  String listEditPriceValue(String price) {
+    return 'Prijs: $price';
+  }
+
+  @override
+  String get listEditNoteAdd => 'Notitie toevoegen';
+
+  @override
+  String listEditNoteValue(String note) {
+    return 'Notitie: $note';
+  }
+
+  @override
+  String get listEditClearUnit => 'Eenheid wissen';
+
+  @override
+  String get listEditClearPrice => 'Prijs wissen';
+
+  @override
+  String get listEditBack => 'Terug naar details';
+
+  @override
+  String listEditDeleteItem(String name) {
+    return '$name verwijderen';
+  }
+
+  @override
+  String get listEditUnitPieces => 'st.';
+
+  @override
+  String get listEditUnitPack => 'pak';
+
+  @override
+  String get listEditUnitCan => 'blik';
+
+  @override
+  String get listEditUnitBottle => 'fles';
+
+  @override
+  String get listItemOneLess => 'Eén minder';
+
+  @override
+  String get listItemOneMore => 'Eén meer';
 
   @override
   String get scanCheckListPhoto => 'Controleer lijstfoto';
@@ -4157,6 +4249,14 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get authLoginResetCodeSent =>
       'Als dat e-mailadres bestaat, is er een herstelcode verstuurd.';
+
+  @override
+  String get authLoginResetUnavailable =>
+      'Deze server kan geen e-mail versturen, dus je wachtwoord kan hier niet worden hersteld. Vraag de beheerder om hulp.';
+
+  @override
+  String get authSignupEmailTaken =>
+      'Er bestaat al een account met dit e-mailadres. Log in plaats daarvan in.';
 
   @override
   String get authLoginResetFillAllFields =>
@@ -5547,9 +5647,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get pinwallCouldNotLoad => 'Prikbord kon niet worden geladen.';
-
-  @override
-  String get composerItemHint => 'bijv. Melk, 2 avocado\'s of 500 g bloem';
 
   @override
   String get aisleOther => 'Overig';
@@ -7221,4 +7318,727 @@ class AppLocalizationsNl extends AppLocalizations {
   String activityMemberJoined(String name, String when) {
     return '$name is lid geworden · $when';
   }
+
+  @override
+  String get authOnboardingAreasTitle => 'Waarvoor ga je mitlist gebruiken?';
+
+  @override
+  String get authOnboardingAreasBody =>
+      'Kies er zoveel als je wilt. Je ziet alleen die; zet de rest wanneer je wilt aan onder Jij.';
+
+  @override
+  String get authOnboardingAreasKitchen => 'Recepten en maaltijden';
+
+  @override
+  String get authOnboardingAreasAll => 'Laat alles zien';
+
+  @override
+  String get appAreasTitle => 'Wat je gebruikt';
+
+  @override
+  String get appAreasBody =>
+      'Verbergen wist niets. Voegt iemand een uitgave met jou toe of ben jij aan de beurt voor een klus, dan verschijnt dat deel toch.';
+
+  @override
+  String get appAreasAll => 'Alles';
+
+  @override
+  String get hubChecklistLater => 'Later:';
+
+  @override
+  String get pinwallHubEmptyIntro =>
+      'Hier komen notities voor het hele huis. Open het prikbord om er een op te prikken.';
+
+  @override
+  String get widgetsPageTitle => 'Widgets voor je beginscherm';
+
+  @override
+  String get widgetsPageAccountRowValue =>
+      'De lijst en klusjes in één oogopslag';
+
+  @override
+  String get widgetsPageIntro =>
+      'Bekijk de boodschappenlijst en de klusjes van vandaag zonder de app te openen, en vink ze meteen af op je beginscherm.';
+
+  @override
+  String get widgetsPageStepsTitle => 'Zo voeg je een widget toe';
+
+  @override
+  String get widgetsPageIosStep1 =>
+      'Houd een lege plek op je beginscherm ingedrukt en tik op Wijzig en Voeg widget toe.';
+
+  @override
+  String get widgetsPageIosStep2 => 'Zoek naar ‘mitlist’.';
+
+  @override
+  String get widgetsPageIosStep3 =>
+      'Kies een widget, veeg naar het formaat dat je wilt en tik op Voeg widget toe.';
+
+  @override
+  String get widgetsPageIosStep4 =>
+      'Om het huishouden of de lijst te kiezen, houd je de widget ingedrukt en tik je op Wijzig widget.';
+
+  @override
+  String get widgetsPageAndroidStep1 =>
+      'Houd een lege plek op je beginscherm ingedrukt.';
+
+  @override
+  String get widgetsPageAndroidStep2 => 'Tik op Widgets en zoek mitlist.';
+
+  @override
+  String get widgetsPageAndroidStep3 =>
+      'Houd een widget ingedrukt en sleep hem naar de plek die je wilt.';
+
+  @override
+  String get widgetsPageAdd => 'Toevoegen aan beginscherm';
+
+  @override
+  String get widgetsPageAdded => 'Toegevoegd';
+
+  @override
+  String get widgetsPagePinFailed =>
+      'Je beginscherm kon hem niet direct toevoegen. Volg de stappen hieronder.';
+
+  @override
+  String get widgetsPageShoppingListName => 'Boodschappenlijst';
+
+  @override
+  String get widgetsPageShoppingListDesc =>
+      'Vink artikelen af in de winkel en voeg nieuwe toe met +.';
+
+  @override
+  String get widgetsPageChoresName => 'Klusjes vandaag';
+
+  @override
+  String get widgetsPageChoresDesc =>
+      'Wat er vandaag moet en wie er aan de beurt is. Vink een klusje af met één tik.';
+
+  @override
+  String get widgetsPageQuickAddName => 'Snel toevoegen';
+
+  @override
+  String get widgetsPageQuickAddDesc => 'Met één tik iets op de lijst zetten.';
+
+  @override
+  String get widgetsPageHouseholdName => 'Huishouden vandaag';
+
+  @override
+  String get widgetsPageHouseholdDesc =>
+      'De klusjes van vandaag, de boodschappenlijst en het avondeten op één plek.';
+
+  @override
+  String widgetsPagePreviewLabel(String name) {
+    return 'Voorbeeld van de widget $name';
+  }
+
+  @override
+  String get widgetsPageSampleHousehold => 'Ons huis';
+
+  @override
+  String get widgetsPageSampleListName => 'Boodschappen';
+
+  @override
+  String get widgetsPageSampleItem1 => 'Havermelk';
+
+  @override
+  String get widgetsPageSampleItem2 => 'Bananen';
+
+  @override
+  String get widgetsPageSampleItem3 => 'Koffiebonen';
+
+  @override
+  String get widgetsPageSampleItem4 => 'Rijst';
+
+  @override
+  String get widgetsPageSampleChore1 => 'Vuilnis buiten zetten';
+
+  @override
+  String get widgetsPageSampleChore2 => 'Planten water geven';
+
+  @override
+  String get widgetsPageSampleMeal => 'Vanavond: ovenpasta';
+
+  @override
+  String get widgetsPageSampleAddHint => 'Toevoegen aan de lijst';
+
+  @override
+  String get widgetsPageSampleAddTo => 'Toevoegen aan';
+
+  @override
+  String widgetsPageSampleLeft(int count) {
+    return 'Nog $count';
+  }
+
+  @override
+  String widgetsPageSampleDue(int count) {
+    return '$count te doen';
+  }
+
+  @override
+  String get widgetPromoHeadline => 'Je boodschappenlijst op je beginscherm';
+
+  @override
+  String get widgetPromoBody =>
+      'Vink dingen af in de winkel zonder de app te openen. Iedereen thuis ziet het meteen.';
+
+  @override
+  String get widgetPromoAdd => 'Toevoegen aan beginscherm';
+
+  @override
+  String get widgetPromoShowMe => 'Laat zien hoe';
+
+  @override
+  String get widgetPromoNotNow => 'Niet nu';
+
+  @override
+  String get listUndoUndoTooltip => 'Ongedaan maken';
+
+  @override
+  String get listUndoRedoTooltip => 'Opnieuw';
+
+  @override
+  String get listUndoChangedElsewhere =>
+      'Iemand anders heeft dit gewijzigd, dus het is niet ongedaan gemaakt';
+
+  @override
+  String get listUndoRedoChangedElsewhere =>
+      'Iemand anders heeft dit gewijzigd, dus het is niet opnieuw gedaan';
+
+  @override
+  String listUndoRestoredItems(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items hersteld',
+      one: '1 item hersteld',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get listUndoCouldNotUndo =>
+      'Kon niet ongedaan maken. Probeer het opnieuw.';
+
+  @override
+  String get listUndoCouldNotRedo =>
+      'Kon niet opnieuw doen. Probeer het opnieuw.';
+
+  @override
+  String get listUndoOutboxRestoreItem => 'Item herstellen';
+
+  @override
+  String get calendarExternalBusy => 'Bezet';
+
+  @override
+  String get calendarExternalAllDay => 'Hele dag';
+
+  @override
+  String calendarExternalTimeRange(String start, String end) {
+    return '$start – $end';
+  }
+
+  @override
+  String calendarExternalFrom(String time) {
+    return 'vanaf $time';
+  }
+
+  @override
+  String calendarExternalUntil(String time) {
+    return 'tot $time';
+  }
+
+  @override
+  String get calendarExternalFree => 'vrij';
+
+  @override
+  String get calendarExternalYou => 'Jij';
+
+  @override
+  String get calendarExternalSomeone => 'Een huisgenoot';
+
+  @override
+  String calendarExternalSemantics(String person, String what, String when) {
+    return '$person: $what, $when';
+  }
+
+  @override
+  String calendarExternalSemanticsFree(
+      String person, String what, String when) {
+    return '$person: $what, $when, gemarkeerd als vrij';
+  }
+
+  @override
+  String calendarWhosAroundTitle(String day) {
+    return 'Wie is er · $day';
+  }
+
+  @override
+  String get calendarWhosAroundFree => 'Vrij';
+
+  @override
+  String get calendarWhosAroundAway => 'Hele dag weg';
+
+  @override
+  String calendarWhosAroundBusy(String times) {
+    return 'Bezet $times';
+  }
+
+  @override
+  String get calendarWhosAroundSelectDay => 'Laat zien wie er deze dag is';
+
+  @override
+  String get calendarShareHintTitle => 'Zie wanneer iedereen er is';
+
+  @override
+  String get calendarShareHintBody =>
+      'Deel je Google-, Apple- of Outlook-agenda met het huishouden, alleen als bezette tijden of met titels. Jij kiest wat ze zien.';
+
+  @override
+  String get calendarShareHintAction => 'Mijn agenda delen';
+
+  @override
+  String get sharedCalendarsTitle => 'Gedeelde agenda\'s';
+
+  @override
+  String get sharedCalendarsAccountRowValue =>
+      'Laat het huishouden zien wanneer je bezet bent';
+
+  @override
+  String get sharedCalendarsIntro =>
+      'Koppel je agenda\'s zodat je huishouden ziet wanneer je bezet of weg bent. Er wordt niets gedeeld tot je dat hieronder per huishouden kiest.';
+
+  @override
+  String get sharedCalendarsNoHouseholds =>
+      'Word lid van een huishouden of maak er een om een agenda te delen.';
+
+  @override
+  String get sharedCalendarsEmpty => 'Nog geen agenda\'s gekoppeld.';
+
+  @override
+  String get sharedCalendarsKindThisPhone => 'Op deze telefoon';
+
+  @override
+  String get sharedCalendarsKindOtherPhone => 'Op een andere telefoon';
+
+  @override
+  String get sharedCalendarsKindLink => 'Agendalink';
+
+  @override
+  String get sharedCalendarsSyncing => 'Synchroniseren…';
+
+  @override
+  String get sharedCalendarsNeverSynced => 'Nog niet gesynchroniseerd';
+
+  @override
+  String sharedCalendarsSyncedAt(String time) {
+    return 'Gesynchroniseerd $time';
+  }
+
+  @override
+  String get sharedCalendarsSyncNow => 'Nu synchroniseren';
+
+  @override
+  String get sharedCalendarsSyncTooSoon =>
+      'Al bijgewerkt. Probeer het over een minuut opnieuw.';
+
+  @override
+  String get sharedCalendarsSyncFailed =>
+      'De agenda\'s van deze telefoon konden niet worden bijgewerkt. We proberen het later opnieuw.';
+
+  @override
+  String get sharedCalendarsOtherPhoneNote =>
+      'Wordt op een andere telefoon gelezen. Je keuzes gelden meteen; de afspraken worden bijgewerkt als die telefoon mitlist opent.';
+
+  @override
+  String get sharedCalendarsNoCalendars => 'Nog geen agenda\'s gevonden.';
+
+  @override
+  String get sharedCalendarsUnnamed => 'Agenda';
+
+  @override
+  String get sharedCalendarsShareBusy => 'Alleen bezet';
+
+  @override
+  String get sharedCalendarsShareDetails => 'Met titels';
+
+  @override
+  String get sharedCalendarsShareNone => 'Niet gedeeld';
+
+  @override
+  String sharedCalendarsExplainBusy(String household) {
+    return '$household ziet wanneer je bezet bent, nooit wat het is.';
+  }
+
+  @override
+  String sharedCalendarsExplainDetails(String household) {
+    return '$household ziet de titels en tijden van je afspraken. Afspraken die privé zijn gemarkeerd, blijven als bezet zichtbaar.';
+  }
+
+  @override
+  String sharedCalendarsExplainNone(String household) {
+    return '$household ziet niets van deze agenda.';
+  }
+
+  @override
+  String get sharedCalendarsAdd => 'Agenda toevoegen';
+
+  @override
+  String get sharedCalendarsAddPhone => 'Agenda\'s op deze telefoon';
+
+  @override
+  String get sharedCalendarsAddPhoneDesc =>
+      'Alle accounts op deze telefoon: Google, iCloud, Outlook en meer. Gelezen op de telefoon; alleen wat je deelt, gaat eruit.';
+
+  @override
+  String get sharedCalendarsAddLinkDesc =>
+      'Plak een privé-iCal-link uit Google, iCloud of Outlook. Werkt op elk apparaat.';
+
+  @override
+  String get sharedCalendarsAddedNotShared =>
+      'Agenda toegevoegd. Kies hieronder wat elk huishouden ziet.';
+
+  @override
+  String get sharedCalendarsPhoneDefaultName => 'Deze telefoon';
+
+  @override
+  String get sharedCalendarsPermissionDeniedTitle => 'Agendatoegang staat uit';
+
+  @override
+  String get sharedCalendarsPermissionDeniedBody =>
+      'Sta mitlist in Instellingen toe je agenda\'s te lezen om agenda\'s van deze telefoon te delen. Of voeg een agendalink toe.';
+
+  @override
+  String get sharedCalendarsPermissionRestricted =>
+      'Agendatoegang is op deze telefoon geblokkeerd (bijvoorbeeld door Schermtijd of apparaatbeheer). Je kunt in plaats daarvan een agendalink toevoegen.';
+
+  @override
+  String get sharedCalendarsOpenSettings => 'Instellingen openen';
+
+  @override
+  String get sharedCalendarsRenameTitle => 'Agenda hernoemen';
+
+  @override
+  String sharedCalendarsRemoveTitle(String name) {
+    return '$name verwijderen?';
+  }
+
+  @override
+  String get sharedCalendarsRemoveBody =>
+      'De afspraken verdwijnen uit elke huishoudagenda. Je agenda zelf verandert niet.';
+
+  @override
+  String get sharedCalendarsUpcomingTitle => 'Komende afspraken';
+
+  @override
+  String get sharedCalendarsUpcomingIntro =>
+      'Wat huisgenoten van je komende twee weken zien. Tik op een afspraak om hem te verbergen of meer of minder te tonen. Een terugkerende afspraak telt als één.';
+
+  @override
+  String get sharedCalendarsUpcomingFailed =>
+      'Komende afspraken konden niet worden geladen.';
+
+  @override
+  String get sharedCalendarsUpcomingEmpty =>
+      'Geen komende afspraken in je gedeelde agenda\'s.';
+
+  @override
+  String sharedCalendarsSeesDetails(String households) {
+    return '$households: titel en tijd';
+  }
+
+  @override
+  String sharedCalendarsSeesBusy(String households) {
+    return '$households: alleen bezet';
+  }
+
+  @override
+  String get sharedCalendarsSeesNothing => 'Huisgenoten zien dit niet';
+
+  @override
+  String get sharedCalendarsOverrideCalendar => 'Agenda-instelling';
+
+  @override
+  String get sharedCalendarsOverrideHidden => 'Verborgen';
+
+  @override
+  String get sharedCalendarsOverrideBusy => 'Bezet';
+
+  @override
+  String get sharedCalendarsOverrideDetails => 'Met titel';
+
+  @override
+  String get sharedCalendarsOverrideCalendarDesc =>
+      'Zoals de agenda met elk huishouden wordt gedeeld.';
+
+  @override
+  String get sharedCalendarsOverrideHiddenDesc =>
+      'Geen enkel huishouden ziet het.';
+
+  @override
+  String get sharedCalendarsOverrideBusyDesc =>
+      'Huishoudens die deze agenda zien, zien een bezet blok zonder titel.';
+
+  @override
+  String get sharedCalendarsOverrideDetailsDesc =>
+      'Huishoudens die deze agenda zien, zien de titel, ook als die in je agenda privé is.';
+
+  @override
+  String get sharedCalendarsEventNoTitle => '(Geen titel)';
+
+  @override
+  String get sharedCalendarsEventPrivate => 'privé';
+
+  @override
+  String get sharedCalendarsEventFree => 'gemarkeerd als vrij';
+
+  @override
+  String sharedCalendarsEventChoice(String choice) {
+    return 'Instelling: $choice';
+  }
+
+  @override
+  String get calendarConnectionErrorFetchFailed =>
+      'Deze agenda kon de laatste keer niet worden geladen. We blijven het proberen.';
+
+  @override
+  String get calendarConnectionErrorNotCalendar =>
+      'Deze link geeft geen agenda meer. Verwijder hem en voeg de huidige link toe.';
+
+  @override
+  String get calendarConnectionErrorTooLarge =>
+      'Deze agenda is te groot om te synchroniseren. Probeer een kleinere agenda.';
+
+  @override
+  String get calendarConnectionErrorUnauthorized =>
+      'Deze link werkt niet meer. Hij is misschien vernieuwd of verwijderd; voeg de nieuwe link toe.';
+
+  @override
+  String get calendarConnectionErrorOther =>
+      'Deze agenda kon niet worden gesynchroniseerd.';
+
+  @override
+  String get calendarLinkSheetTitle => 'Agendalink toevoegen';
+
+  @override
+  String get calendarLinkAddAction => 'Agendalink';
+
+  @override
+  String get calendarLinkNameHint => 'Optioneel, bijv. Werk';
+
+  @override
+  String get calendarLinkUrlLabel => 'Privé-iCal-link';
+
+  @override
+  String get calendarLinkUrlHint => 'https:// of webcal://';
+
+  @override
+  String get calendarLinkPrivacyNote =>
+      'Behandel deze link als een wachtwoord: iedereen die hem heeft, kan de agenda lezen. mitlist bewaart hem versleuteld en toont hem nooit meer.';
+
+  @override
+  String get calendarLinkErrorUrl =>
+      'Voer een link in die begint met https:// of webcal://.';
+
+  @override
+  String get calendarLinkErrorNotCalendar =>
+      'Die link is geen agenda. Kopieer het iCal-adres (.ics), niet de link naar de webpagina van de agenda.';
+
+  @override
+  String get calendarLinkErrorFetch =>
+      'We konden die agenda niet laden. Controleer de link en of de agenda nog gedeeld of gepubliceerd is.';
+
+  @override
+  String get calendarLinkStepsTitle => 'Waar je de link vindt';
+
+  @override
+  String get calendarLinkStepsGoogleTitle => 'Google Agenda';
+
+  @override
+  String get calendarLinkStepsGoogle =>
+      'Open op een computer Instellingen, kies je agenda onder \'Instellingen voor mijn agenda\'s\' en kopieer bij Agenda integreren het \'Geheim adres in iCal-indeling\'.';
+
+  @override
+  String get calendarLinkStepsAppleTitle => 'Apple iCloud-agenda';
+
+  @override
+  String get calendarLinkStepsApple =>
+      'Tik in de Agenda-app op Agenda\'s en daarna op de infoknop naast de agenda. Zet Openbare agenda aan en kopieer de link. Iedereen met de link kan hem zien; op deze telefoon is \'Agenda\'s op deze telefoon\' privéer.';
+
+  @override
+  String get calendarLinkStepsOutlookTitle => 'Outlook';
+
+  @override
+  String get calendarLinkStepsOutlook =>
+      'Open in Outlook op het web Instellingen > Agenda > Gedeelde agenda\'s, publiceer de agenda (\'Kan alle details bekijken\' of \'Kan zien wanneer ik bezet ben\') en kopieer de ICS-link.';
+
+  @override
+  String get sharedCalendarsLimitReached =>
+      'Je hebt 10 agenda\'s gekoppeld, het maximum. Verwijder er een om een andere toe te voegen.';
+
+  @override
+  String get calendarWhosAroundFreeAllDay => 'Hele dag vrij';
+
+  @override
+  String calendarWhosAroundFreeFrom(String time) {
+    return 'Vrij vanaf $time';
+  }
+
+  @override
+  String calendarWhosAroundBusyUntil(String time) {
+    return 'Bezet tot $time';
+  }
+
+  @override
+  String calendarWhosAroundBusyFrom(String time) {
+    return 'Bezet vanaf $time';
+  }
+
+  @override
+  String get calendarWhosAroundNotSharing => 'Deelt geen agenda';
+
+  @override
+  String get calendarWhosAroundEveningAll => 'Iedereen is de hele avond vrij';
+
+  @override
+  String get calendarWhosAroundSharersEveningAll =>
+      'Iedereen die deelt is de hele avond vrij';
+
+  @override
+  String calendarWhosAroundEveningFrom(String time) {
+    return 'Iedereen is vrij vanaf $time';
+  }
+
+  @override
+  String calendarWhosAroundSharersEveningFrom(String time) {
+    return 'Iedereen die deelt is vrij vanaf $time';
+  }
+
+  @override
+  String calendarWhosAroundEveningBetween(String start, String end) {
+    return 'Iedereen is vrij van $start tot $end';
+  }
+
+  @override
+  String calendarWhosAroundSharersEveningBetween(String start, String end) {
+    return 'Iedereen die deelt is vrij van $start tot $end';
+  }
+
+  @override
+  String get calendarWhosAroundEveningNone =>
+      '\'s Avonds is niet iedereen vrij';
+
+  @override
+  String get calendarWhosAroundSharersEveningNone =>
+      '\'s Avonds is niet iedereen die deelt vrij';
+
+  @override
+  String get calendarWhosAroundTapHint => 'Tik op een dag om die te bekijken.';
+
+  @override
+  String get calendarTourHome =>
+      'Nieuw: zie wanneer iedereen er is. Open de agenda.';
+
+  @override
+  String get calendarTourShare =>
+      'Deel hier je agenda, zodat het huishouden weet wanneer je bezet bent.';
+
+  @override
+  String get calendarTourAdd =>
+      'Voeg de agenda\'s van je telefoon of een link toe. Er wordt niets gedeeld tot je kiest.';
+
+  @override
+  String get calendarTourChoices =>
+      'Kies wat elk huishouden ziet: alleen bezet of met titels.';
+
+  @override
+  String get calendarTourUpcoming =>
+      'Verberg wat privé is, afspraak voor afspraak.';
+
+  @override
+  String get coachMarkNext => 'Volgende';
+
+  @override
+  String get coachMarkSkip => 'Overslaan';
+
+  @override
+  String get coachMarkDone => 'Begrepen';
+
+  @override
+  String get sharedCalendarsShowMeHow => 'Laat zien hoe';
+
+  @override
+  String get sharedCalendarsIosPrivateNote =>
+      'Een iPhone weet niet welke afspraken privé zijn, dus ze kunnen met titel verschijnen. Verberg hieronder wat je wilt.';
+
+  @override
+  String get sharedCalendarsHideEvent => 'Verbergen voor huisgenoten';
+
+  @override
+  String get sharedCalendarsShowAgain => 'Weer tonen';
+
+  @override
+  String get sharedCalendarsEventPrivateNote => 'Privé in je agenda';
+
+  @override
+  String get sharedCalendarsEventFreeNote => 'Als vrij gemarkeerd in je agenda';
+
+  @override
+  String get sharedCalendarsNotSharedAnywhere =>
+      'Geen huishouden ziet deze agenda.';
+
+  @override
+  String get sharedCalendarsSyncedJustNow => 'Zojuist gesynchroniseerd';
+
+  @override
+  String get sharedCalendarsSyncedYesterday => 'Gisteren gesynchroniseerd';
+
+  @override
+  String coachMarkStepLabel(int step, int total) {
+    return 'Tip $step van $total';
+  }
+
+  @override
+  String sharedCalendarsSyncedMinutes(int minutes) {
+    return '$minutes min geleden gesynchroniseerd';
+  }
+
+  @override
+  String sharedCalendarsSyncedHours(int hours) {
+    return '$hours uur geleden gesynchroniseerd';
+  }
+
+  @override
+  String sharedCalendarsExplainDetailsNoPrivate(String household) {
+    return '$household ziet de titels en tijden van je afspraken.';
+  }
+
+  @override
+  String get calendarWhosAroundExpand => 'Ieders tijden tonen';
+
+  @override
+  String get calendarWhosAroundCollapse => 'Minder tonen';
+
+  @override
+  String sharedCalendarsSummaryBusy(String household) {
+    return '$household: alleen bezet';
+  }
+
+  @override
+  String sharedCalendarsSummaryDetails(String household) {
+    return '$household: met titels';
+  }
+
+  @override
+  String sharedCalendarsSummaryNone(String household) {
+    return '$household: niet gedeeld';
+  }
+
+  @override
+  String get sharedCalendarsSummaryNotShared => 'Niet gedeeld';
+
+  @override
+  String get sharedCalendarsShowChoices => 'Deelkeuzes tonen';
+
+  @override
+  String get sharedCalendarsHideChoices => 'Deelkeuzes verbergen';
 }

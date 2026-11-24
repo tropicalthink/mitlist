@@ -302,6 +302,68 @@ func TestListRepository_SoftDeleteItem(t *testing.T) {
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
+func restoreItemRows(id, listID uuid.UUID) *pgxmock.Rows {
+	return pgxmock.NewRows([]string{"id", "list_id", "name", "quantity", "unit", "note", "price_cents", "product_id", "store_id", "added_by", "claimed_by", "checked", "position", "created_at", "updated_at"}).
+		AddRow(id, listID, "Milk", 2.0, "l", "", nil, nil, nil, nil, nil, true, 4, fixedTime(), fixedTime())
+}
+
+func TestListRepository_RestoreItem(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewListRepository(mock)
+	id := uuid.New()
+	listID := uuid.New()
+
+	mock.ExpectQuery("UPDATE list_items SET deleted_at = NULL.*WHERE id = .* AND list_id = .* AND deleted_at IS NOT NULL RETURNING").
+		WithArgs(id, listID).
+		WillReturnRows(restoreItemRows(id, listID))
+
+	item, restored, err := repo.RestoreItem(context.Background(), listID, id)
+	require.NoError(t, err)
+	assert.True(t, restored)
+	assert.Equal(t, id, item.ID)
+	assert.Equal(t, 4, item.Position)
+	assert.True(t, item.Checked)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestListRepository_RestoreItem_AlreadyActive(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewListRepository(mock)
+	id := uuid.New()
+	listID := uuid.New()
+
+	mock.ExpectQuery("UPDATE list_items SET deleted_at = NULL").
+		WithArgs(id, listID).
+		WillReturnError(pgx.ErrNoRows)
+	mock.ExpectQuery("SELECT .* FROM list_items WHERE id = .* AND list_id = .* AND deleted_at IS NULL").
+		WithArgs(id, listID).
+		WillReturnRows(restoreItemRows(id, listID))
+
+	item, restored, err := repo.RestoreItem(context.Background(), listID, id)
+	require.NoError(t, err)
+	assert.False(t, restored)
+	assert.Equal(t, id, item.ID)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestListRepository_RestoreItem_Missing(t *testing.T) {
+	mock := newMockDB(t)
+	repo := NewListRepository(mock)
+	id := uuid.New()
+	listID := uuid.New()
+
+	mock.ExpectQuery("UPDATE list_items SET deleted_at = NULL").
+		WithArgs(id, listID).
+		WillReturnError(pgx.ErrNoRows)
+	mock.ExpectQuery("SELECT .* FROM list_items").
+		WithArgs(id, listID).
+		WillReturnError(pgx.ErrNoRows)
+
+	_, _, err := repo.RestoreItem(context.Background(), listID, id)
+	require.ErrorIs(t, err, pgx.ErrNoRows)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
 func TestListRepository_SoftDeleteItemsByList(t *testing.T) {
 	mock := newMockDB(t)
 	repo := NewListRepository(mock)
@@ -361,13 +423,16 @@ func TestListRepository_BulkMarkItemsChecked(t *testing.T) {
 	userID := fixedUUID()
 	itemID := fixedUUID()
 
-	mock.ExpectExec("UPDATE list_items li").
-		WithArgs(userID, []uuid.UUID{itemID}).
-		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
+	listID := uuid.New()
+	groupID := uuid.New()
 
-	affected, err := repo.BulkMarkItemsChecked(context.Background(), userID, []uuid.UUID{itemID})
+	mock.ExpectQuery("UPDATE list_items li").
+		WithArgs(userID, []uuid.UUID{itemID}).
+		WillReturnRows(pgxmock.NewRows([]string{"id", "list_id", "group_id"}).AddRow(itemID, listID, groupID))
+
+	refs, err := repo.BulkMarkItemsChecked(context.Background(), userID, []uuid.UUID{itemID})
 	require.NoError(t, err)
-	assert.EqualValues(t, 1, affected)
+	assert.Equal(t, []CheckedItemRef{{ItemID: itemID, ListID: listID, GroupID: groupID}}, refs)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 

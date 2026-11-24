@@ -1,0 +1,8 @@
+# Runtime secrets never belong in an image, not even in a build stage.
+.env
+.env.*
+!.env.example
+
+# air's dev build output and test binaries.
+tmp/
+*.test

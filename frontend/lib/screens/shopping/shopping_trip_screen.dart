@@ -1,7 +1,5 @@
 import 'dart:async';
 
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,6 +15,7 @@ import '../../providers/list_provider.dart';
 import '../../providers/store_provider.dart';
 import '../../repositories/list_repository.dart';
 import '../../repositories/outbox_error_classifier.dart';
+import '../../storage/app_database.dart' show AppDatabase, kGlobalGroupId;
 import '../../router.dart' show currentGroupIdProvider;
 import '../../theme/animations.dart';
 import '../../theme/shadows.dart';
@@ -27,7 +26,6 @@ import '../../utils/format_currency.dart';
 import '../../utils/friendly_error.dart';
 import '../../utils/latest_request_guard.dart';
 import '../../widgets/app_button.dart';
-import '../../widgets/app_card.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/hub/hub_create_actions.dart';
@@ -35,7 +33,7 @@ import '../../widgets/mitlist_app_bar.dart';
 import '../../widgets/odometer.dart';
 import '../../widgets/skeleton.dart';
 import '../../widgets/store_picker_sheet.dart';
-import '../../widgets/shopping/shopping_trip_item_card.dart';
+import '../../widgets/list/list_item_line.dart';
 
 /// An item's aisle for the selected store: a display name plus its shopping-path
 /// sort order (lower = earlier in the store).
@@ -67,8 +65,11 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
   String? _error;
   final List<ItemList> _lists = [];
   final Map<String, List<ListItem>> _itemsByList = {};
+
+  /// Items ticked during this trip. Each tick is saved the moment it is made
+  /// (the list, housemates and a killed app all see it); this set only keeps
+  /// those lines on screen, struck through, so a mis-tap can be undone.
   final Set<String> _checkedItemIds = {};
-  bool _isSubmitting = false;
   final LatestRequestGuard _loadGuard = LatestRequestGuard();
   final LatestRequestGuard _aisleGuard = LatestRequestGuard();
 
@@ -84,7 +85,6 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
   /// chosen (the trip then groups by list). Recomputed when items or store
   /// change.
   Map<String, _ItemAisle> _aisleByItemId = {};
-  Map<String, String> _categoryByCanonicalId = {};
   String? _groupId;
 
   @override
@@ -160,7 +160,6 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
         setState(() {
           _lists.clear();
           _itemsByList.clear();
-          _categoryByCanonicalId = {};
           _hasHousehold = false;
           _isLoading = false;
         });
@@ -251,7 +250,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
     final itemsByList = <String, List<ListItem>>{};
     for (final list in lists) {
       final open = (await repo.getItemsByListOnce(list.id))
-          .where((i) => !i.checked)
+          .where((i) => !i.checked || _checkedItemIds.contains(i.id))
           .toList()
         ..sort((a, b) => a.position.compareTo(b.position));
       if (open.isNotEmpty) itemsByList[list.id] = open;
@@ -269,61 +268,23 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
       _itemsByList
         ..clear()
         ..addAll(itemsByList);
-      // Items that left the trip (checked elsewhere, or synced under their
-      // server id) drop out of the basket.
-      _checkedItemIds.removeWhere((id) => !shownIds.contains(id));
-      final activeCanonicalIds = {
+      // Items that left the trip (deleted, or synced under their server id)
+      // drop out of the basket, and so does one a housemate un-ticked.
+      final uncheckedIds = {
         for (final items in itemsByList.values)
           for (final item in items)
-            if (item.canonicalItemId != null) item.canonicalItemId!,
+            if (!item.checked) item.id,
       };
-      _categoryByCanonicalId.removeWhere(
-        (id, _) => !activeCanonicalIds.contains(id),
+      _checkedItemIds.removeWhere(
+        (id) => !shownIds.contains(id) || uncheckedIds.contains(id),
       );
       _hasHousehold = true;
       _isLoading = false;
       _error = null;
     });
-    unawaited(
-      _loadCategories(
-        itemsByList.values.expand((items) => items),
-        request,
-      ),
-    );
     unawaited(_recomputeAisles());
     _syncLiveActivity();
     return lists.isNotEmpty;
-  }
-
-  Future<void> _loadCategories(
-    Iterable<ListItem> items,
-    int loadRequest,
-  ) async {
-    final ids = items
-        .map((item) => item.canonicalItemId)
-        .whereType<String>()
-        .where((id) => !_categoryByCanonicalId.containsKey(id))
-        .toSet();
-    if (ids.isEmpty) return;
-    try {
-      await ref.read(grocerySeedProvider.future);
-      if (!mounted || !_loadGuard.isCurrent(loadRequest)) return;
-      final groceryRepo = await ref.read(groceryRepositoryProvider.future);
-      final categories = await groceryRepo.getCanonicalCategories(ids);
-      if (!mounted ||
-          !_loadGuard.isCurrent(loadRequest) ||
-          categories.isEmpty) {
-        return;
-      }
-      setState(() => _categoryByCanonicalId.addAll(categories));
-    } catch (_) {
-      // Category color is optional decoration; trip actions remain available.
-    }
-  }
-
-  String? _categoryFor(ListItem item) {
-    final canonicalId = item.canonicalItemId;
-    return canonicalId == null ? null : _categoryByCanonicalId[canonicalId];
   }
 
   /// Resolves each open item to an aisle for the selected store so the trip can
@@ -353,6 +314,8 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
     ];
     final ctx = await resolver.prepareContext(groupId, listContext: linkedIds);
     final result = <String, _ItemAisle>{};
+    final categoryAisles = await _categoryAislesFor(db, storeId);
+    final pending = <String, String>{};
 
     for (final items in _itemsByList.values) {
       for (final item in items) {
@@ -371,12 +334,65 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
         );
         if (row != null && row.aisle.isNotEmpty) {
           result[item.id] = _ItemAisle(row.aisle, row.sortOrder);
+        } else {
+          pending[item.id] = canonicalId;
         }
+      }
+    }
+
+    // Shipped layouts list only a few hundred items per store. Anything not
+    // listed walks with its category: it joins the aisle where most of that
+    // category's listed items are, instead of piling up under "Other".
+    if (pending.isNotEmpty && categoryAisles.isNotEmpty) {
+      final items = await db.getCanonicalItemsByIds(pending.values.toSet());
+      final categoryById = {for (final item in items) item.id: item.category};
+      for (final entry in pending.entries) {
+        final aisle = categoryAisles[categoryById[entry.value]];
+        if (aisle != null) result[entry.key] = aisle;
       }
     }
 
     if (!mounted || !_aisleGuard.isCurrent(request)) return;
     setState(() => _aisleByItemId = result);
+  }
+
+  /// For each category, the aisle holding most of its items in this store's
+  /// layout (household overrides included), at that aisle's first position.
+  Future<Map<String, _ItemAisle>> _categoryAislesFor(
+    AppDatabase db,
+    String storeId,
+  ) async {
+    final groupId = _groupId;
+    final rows = [
+      if (groupId != null)
+        ...await db.getStoreAisles(groupId: groupId, storeId: storeId),
+      ...await db.getStoreAisles(groupId: kGlobalGroupId, storeId: storeId),
+    ];
+    if (rows.isEmpty) return const {};
+    final items =
+        await db.getCanonicalItemsByIds(rows.map((r) => r.canonicalItemId));
+    final categoryById = {for (final item in items) item.id: item.category};
+    final votes = <String, Map<String, int>>{};
+    final firstSort = <String, int>{};
+    for (final row in rows) {
+      final category = categoryById[row.canonicalItemId];
+      if (category == null || category.isEmpty || row.aisle.isEmpty) continue;
+      final counts = votes.putIfAbsent(category, () => {});
+      counts[row.aisle] = (counts[row.aisle] ?? 0) + 1;
+      final sort = firstSort[row.aisle];
+      if (sort == null || row.sortOrder < sort) {
+        firstSort[row.aisle] = row.sortOrder;
+      }
+    }
+    return {
+      for (final entry in votes.entries)
+        entry.key: () {
+          final aisle = entry.value.entries
+              .reduce((a, b) => b.value > a.value ? b : a)
+              .key;
+          return _ItemAisle(aisle, firstSort[aisle] ?? 100000);
+        }(),
+    };
   }
 
   /// Groups all open items by aisle, ordered by shopping path. Items without a
@@ -415,81 +431,74 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
     return groups;
   }
 
-  void _toggleItem(String itemId) {
+  /// Ticks or un-ticks an item and saves it at once, offline-first like a
+  /// tick on the list itself. The line stays on the trip either way.
+  Future<void> _toggleItem(String itemId) async {
+    String? listId;
+    for (final entry in _itemsByList.entries) {
+      if (entry.value.any((i) => i.id == itemId)) listId = entry.key;
+    }
+    if (listId == null) return;
+    final checked = !_checkedItemIds.contains(itemId);
     // A light tap of feedback every time something lands in the basket.
-    HapticFeedback.selectionClick();
+    unawaited(HapticFeedback.selectionClick());
     setState(() {
-      if (_checkedItemIds.contains(itemId)) {
-        _checkedItemIds.remove(itemId);
-      } else {
-        _checkedItemIds.add(itemId);
-      }
+      checked ? _checkedItemIds.add(itemId) : _checkedItemIds.remove(itemId);
     });
     _syncLiveActivity();
+    try {
+      final repo = await ref.read(listRepositoryProvider.future);
+      await repo.updateItemOfflineFirst(
+        listId,
+        itemId,
+        UpdateListItemRequest(checked: checked),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        checked ? _checkedItemIds.remove(itemId) : _checkedItemIds.add(itemId);
+      });
+      _syncLiveActivity();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(friendlyErrorMessage(e, AppLocalizations.of(context)!)),
+        ),
+      );
+    }
   }
 
-  Future<void> _completeChecked() async {
+  /// Wraps the trip up. Every tick is already saved, so this only closes it:
+  /// the stamp, the Live Activity, an offer to log what it cost, and the
+  /// ticked lines leave the trip.
+  Future<void> _finishTrip() async {
     if (_checkedItemIds.isEmpty) return;
-    setState(() => _isSubmitting = true);
-
-    final checkedItems = <ListItem>[];
+    var count = 0;
+    var totalCents = 0;
     for (final items in _itemsByList.values) {
       for (final item in items) {
         if (_checkedItemIds.contains(item.id)) {
-          checkedItems.add(item);
+          count++;
+          totalCents += item.priceCents ?? 0;
         }
       }
     }
-    final completedCount = checkedItems.length;
-    final totalCents =
-        checkedItems.fold<int>(0, (sum, item) => sum + (item.priceCents ?? 0));
-
-    try {
-      // Offline-first, item by item, like checking them off on the list:
-      // the basket empties at once and the checks sync when they can.
-      final repo = await ref.read(listRepositoryProvider.future);
-      await repo.completeItemsOfflineFirst({
-        for (final entry in _itemsByList.entries)
-          entry.key: [
-            for (final item in entry.value)
-              if (_checkedItemIds.contains(item.id)) item.id,
-          ],
-      });
-
-      if (!mounted) return;
-      // The trip is done: a heavy stamp and the matching thwack.
-      unawaited(HapticFeedback.heavyImpact());
-      _showDoneStamp(completedCount, totalCents);
-      _endLiveActivity(totalCents);
-
-      setState(() => _checkedItemIds.clear());
-      await _load();
-      if (!mounted) return;
-
-      if (totalCents > 0) {
-        final l10n = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.shoppingTripItemsWorthDone(
-                formatCurrency(totalCents, _currency))),
-            action: SnackBarAction(
-              label: l10n.shoppingTripAddExpense,
-              onPressed: () => context.pushNamed('money'),
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content:
-                  Text(friendlyErrorMessage(e, AppLocalizations.of(context)!))),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isSubmitting = false);
-    }
+    unawaited(HapticFeedback.heavyImpact());
+    _showDoneStamp(count, totalCents);
+    _endLiveActivity(totalCents);
+    setState(() => _checkedItemIds.clear());
+    await _load();
+    if (!mounted || totalCents <= 0) return;
+    final l10n = AppLocalizations.of(context)!;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(l10n
+            .shoppingTripItemsWorthDone(formatCurrency(totalCents, _currency))),
+        action: SnackBarAction(
+          label: l10n.shoppingTripAddExpense,
+          onPressed: () => context.pushNamed('money'),
+        ),
+      ),
+    );
   }
 
   /// The trip's empty state: make a shopping list, put something on it, and
@@ -558,6 +567,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
 
     return Scaffold(
       appBar: MitlistAppBar(
+        showStandardActions: false,
         leading: IconButton(
           icon: const AppIcon(name: 'arrowLeft'),
           tooltip: l10n.commonBack,
@@ -566,7 +576,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
         title: Text(l10n.shoppingTripAppBarTitle),
         actions: [
           IconButton(
-            icon: const AppIcon(name: 'shoppingCart'),
+            icon: const AppIcon(name: 'storeOutline'),
             tooltip: l10n.shoppingTripChooseStore,
             onPressed: () => showStorePicker(context),
           ),
@@ -579,9 +589,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
               totalCount: _totalItems,
               totalCents: _checkedTotalCents,
               currency: _currency,
-              isSubmitting: _isSubmitting,
-              onDone:
-                  _checkedCount > 0 && !_isSubmitting ? _completeChecked : null,
+              onDone: _checkedCount > 0 ? _finishTrip : null,
             )
           : null,
     );
@@ -661,19 +669,17 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView.builder(
-        padding: const EdgeInsets.symmetric(
-            horizontal: MitlistSpacing.md, vertical: MitlistSpacing.sm),
+        padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
         itemCount: _itemsByList.length,
         itemBuilder: (context, index) {
           final listId = _itemsByList.keys.elementAt(index);
           final items = _itemsByList[listId]!;
           final listName = _listName(listId);
           return _ListSection(
-            listId: listId,
             listName: listName,
             items: items,
             checkedIds: _checkedItemIds,
-            categoryFor: _categoryFor,
+            currencySymbol: currencySymbol(_currency),
             onToggle: _toggleItem,
             onTapList: () => context
                 .pushNamed('listDetail', pathParameters: {'listId': listId}),
@@ -701,13 +707,17 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
         );
 
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(
-          horizontal: MitlistSpacing.md, vertical: MitlistSpacing.sm),
+      padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
       itemCount: groups.length + 1,
       itemBuilder: (context, index) {
         if (index == 0) {
           return Padding(
-            padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
+            padding: const EdgeInsets.fromLTRB(
+              MitlistSpacing.md,
+              0,
+              MitlistSpacing.md,
+              MitlistSpacing.sm,
+            ),
             child: Semantics(
               button: true,
               label: l10n.shoppingTripChooseStore,
@@ -718,7 +728,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
                   child: Row(
                     children: [
                       AppIcon(
-                        name: 'shoppingCart',
+                        name: 'storeOutline',
                         size: 18,
                         color: colorScheme.primary,
                       ),
@@ -754,7 +764,7 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
           aisle: group.aisle,
           items: group.items,
           checkedIds: _checkedItemIds,
-          categoryFor: _categoryFor,
+          currencySymbol: currencySymbol(_currency),
           onToggle: _toggleItem,
         );
       },
@@ -762,60 +772,38 @@ class _ShoppingTripScreenState extends ConsumerState<ShoppingTripScreen> {
   }
 
   Widget _buildSkeleton() {
-    return ListView.builder(
+    return ListView(
       padding: const EdgeInsets.all(MitlistSpacing.md),
-      itemCount: 3,
-      itemBuilder: (_, index) => Padding(
-        padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
-        child: AppCard(
-          variant: AppCardVariant.outlined,
-          padding: AppCardPadding.md,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const AppSkeleton(width: 140, height: 16),
-              const SizedBox(height: MitlistSpacing.sm),
-              Divider(color: Theme.of(context).colorScheme.outlineVariant),
-              const SizedBox(height: MitlistSpacing.sm),
-              for (var i = 0; i < 4; i++)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
-                  child: Row(
-                    children: [
-                      const AppSkeleton(width: 20, height: 20),
-                      const SizedBox(width: MitlistSpacing.sm),
-                      Expanded(
-                        child: AppSkeleton(
-                          width: double.infinity,
-                          height: 14,
-                        ),
-                      ),
-                      const SizedBox(width: MitlistSpacing.md),
-                      AppSkeleton(
-                        width: MitlistSpacing.space10,
-                        height: 14,
-                      ),
-                    ],
-                  ),
+      children: [
+        const AppSkeleton(width: 140, height: 16),
+        const SizedBox(height: MitlistSpacing.md),
+        for (var i = 0; i < 8; i++)
+          const Padding(
+            padding: EdgeInsets.only(bottom: MitlistSpacing.md),
+            child: Row(
+              children: [
+                AppSkeleton(width: 22, height: 22),
+                SizedBox(width: MitlistSpacing.md),
+                Expanded(
+                  child: AppSkeleton(width: double.infinity, height: 14),
                 ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ),
+      ],
     );
   }
 }
 
-/// Persistent bottom bar that frames the trip: a hard-edged progress fill, a
-/// rolling count of what's in the basket, an optional running total when items
-/// carry prices, and the primary "mark done" action within thumb reach.
+/// The bar under the trip: a thin progress line, how much is in the basket
+/// (and what it cost, when items carry prices), and "Finish trip" within
+/// thumb reach. Ticks are saved as they happen, so finishing is optional.
 class _BasketBar extends StatelessWidget {
   const _BasketBar({
     required this.checkedCount,
     required this.totalCount,
     required this.totalCents,
     required this.currency,
-    required this.isSubmitting,
     required this.onDone,
   });
 
@@ -823,7 +811,6 @@ class _BasketBar extends StatelessWidget {
   final int totalCount;
   final int totalCents;
   final String currency;
-  final bool isSubmitting;
   final VoidCallback? onDone;
 
   @override
@@ -832,76 +819,59 @@ class _BasketBar extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final disableAnimations = MediaQuery.of(context).disableAnimations;
-    final fillDuration =
-        disableAnimations ? Duration.zero : MitlistAnimations.medium;
-
     final fraction =
         totalCount == 0 ? 0.0 : (checkedCount / totalCount).clamp(0.0, 1.0);
-
     final countStyle = TextStyle(
       fontFamily: MitlistTypography.monoFamily,
-      fontSize: 22,
+      fontSize: 20,
       fontWeight: FontWeight.w700,
       height: 1.0,
       color:
           checkedCount > 0 ? colorScheme.primary : colorScheme.onSurfaceVariant,
     );
-
     final priceSuffix =
         totalCents > 0 ? '  ·  ${formatCurrency(totalCents, currency)}' : '';
 
     return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        border: Border(
-          top: BorderSide(color: colorScheme.outline, width: 2),
-        ),
-      ),
+      decoration: BoxDecoration(color: colorScheme.surface),
       child: SafeArea(
         top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            MitlistSpacing.md,
-            MitlistSpacing.sm + MitlistSpacing.xs,
-            MitlistSpacing.md,
-            MitlistSpacing.sm,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  // Border insets the content box by 2px on each side.
-                  final innerWidth = math.max(0.0, constraints.maxWidth - 4);
-                  return Container(
-                    height: 12,
-                    clipBehavior: Clip.hardEdge,
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest,
-                      border: Border.all(color: colorScheme.outline, width: 2),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Semantics(
+              label: l10n.listDetailProgress(checkedCount, totalCount),
+              child: SizedBox(
+                height: 4,
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: ColoredBox(color: colorScheme.outlineVariant),
                     ),
-                    child: Align(
+                    AnimatedFractionallySizedBox(
+                      duration: disableAnimations
+                          ? Duration.zero
+                          : MitlistAnimations.medium,
+                      curve: MitlistAnimations.easeEnter,
+                      widthFactor: fraction,
+                      heightFactor: 1,
                       alignment: Alignment.centerLeft,
-                      child: AnimatedContainer(
-                        duration: fillDuration,
-                        curve: MitlistAnimations.easeEnter,
-                        width: innerWidth * fraction,
-                        color: colorScheme.primary,
-                      ),
+                      child: ColoredBox(color: colorScheme.primary),
                     ),
-                  );
-                },
+                  ],
+                ),
               ),
-              const SizedBox(height: MitlistSpacing.sm),
-              Row(
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                MitlistSpacing.md,
+                MitlistSpacing.sm,
+                MitlistSpacing.md,
+                MitlistSpacing.sm,
+              ),
+              child: Row(
                 children: [
-                  AppIcon(
-                    name: 'shoppingBagOutline',
-                    size: 22,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: MitlistSpacing.sm),
                   MitlistOdometer(value: checkedCount, textStyle: countStyle),
                   const SizedBox(width: MitlistSpacing.xs),
                   Expanded(
@@ -916,155 +886,150 @@ class _BasketBar extends StatelessWidget {
                   ),
                   const SizedBox(width: MitlistSpacing.sm),
                   AppButton(
-                    text: l10n.shoppingTripMarkDone,
-                    icon: const AppIcon(name: 'checkCircleOutline'),
+                    key: const ValueKey('trip-finish'),
+                    text: l10n.shoppingTripFinish,
                     onPressed: onDone,
-                    isLoading: isSubmitting,
                   ),
                 ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
+/// A heading over a run of trip lines: a list's name (tap to open it) or a
+/// store aisle.
+class _TripHeading extends StatelessWidget {
+  const _TripHeading({required this.title, this.icon, this.onTap});
+
+  final String title;
+  final String? icon;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final row = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: MitlistSpacing.md),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 44),
+        child: Row(
+          children: [
+            if (icon != null) ...[
+              AppIcon(name: icon!, size: 16, color: scheme.onSurfaceVariant),
+              const SizedBox(width: MitlistSpacing.sm),
+            ],
+            Expanded(
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            if (onTap != null)
+              AppIcon(
+                name: 'chevronRight',
+                size: 18,
+                color: scheme.onSurfaceVariant,
+              ),
+          ],
+        ),
+      ),
+    );
+    if (onTap == null) return row;
+    return Semantics(
+      button: true,
+      child: InkWell(onTap: onTap, child: row),
+    );
+  }
+}
+
+/// Trip lines read like the list itself; on a trip the whole line is the
+/// target, since a hand holding a basket aims badly.
+List<Widget> _tripLines(
+  List<ListItem> items,
+  Set<String> checkedIds,
+  ValueChanged<String> onToggle,
+  String currencySymbol,
+) =>
+    [
+      for (final item in items)
+        ListItemLine(
+          key: ValueKey(item.id),
+          item: item,
+          checked: checkedIds.contains(item.id),
+          currencySymbol: currencySymbol,
+          onToggle: (_) => onToggle(item.id),
+          onEdit: () => onToggle(item.id),
+        ),
+    ];
+
 class _ListSection extends StatelessWidget {
-  final String listId;
   final String listName;
   final List<ListItem> items;
   final Set<String> checkedIds;
-  final String? Function(ListItem) categoryFor;
   final ValueChanged<String> onToggle;
   final VoidCallback onTapList;
+  final String currencySymbol;
 
   const _ListSection({
-    required this.listId,
     required this.listName,
     required this.items,
     required this.checkedIds,
-    required this.categoryFor,
     required this.onToggle,
     required this.onTapList,
+    required this.currencySymbol,
   });
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
     return Padding(
-      padding: const EdgeInsets.only(bottom: MitlistSpacing.lg),
+      padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Semantics(
-            button: true,
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: onTapList,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(minHeight: 44),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        listName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    const AppIcon(name: 'chevronRight', size: 18),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: MitlistSpacing.xs),
-          ...items.map((item) {
-            final isChecked = checkedIds.contains(item.id);
-            return Padding(
-              padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
-              child: ShoppingTripItemCard(
-                key: ValueKey(item.id),
-                item: item,
-                isChecked: isChecked,
-                groceryCategory: categoryFor(item),
-                onToggle: () => onToggle(item.id),
-              ),
-            );
-          }),
+          _TripHeading(title: listName, onTap: onTapList),
+          ..._tripLines(items, checkedIds, onToggle, currencySymbol),
         ],
       ),
     );
   }
 }
 
-/// A store-aisle section in shopping mode: a strong wayfinding heading over
-/// large one-handed item targets. Items may span several source lists.
+/// A store-aisle section, in shopping-path order. Items may span several
+/// source lists.
 class _AisleSection extends StatelessWidget {
   final String aisle;
   final List<ListItem> items;
   final Set<String> checkedIds;
-  final String? Function(ListItem) categoryFor;
   final ValueChanged<String> onToggle;
+  final String currencySymbol;
 
   const _AisleSection({
     required this.aisle,
     required this.items,
     required this.checkedIds,
-    required this.categoryFor,
     required this.onToggle,
+    required this.currencySymbol,
   });
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
     return Padding(
-      padding: const EdgeInsets.only(bottom: MitlistSpacing.lg),
+      padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 44),
-            child: Row(
-              children: [
-                AppIcon(
-                  name: 'tagOutline',
-                  size: 18,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(width: MitlistSpacing.sm),
-                Expanded(
-                  child: Text(
-                    aisle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: MitlistSpacing.xs),
-          ...items.map((item) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
-              child: ShoppingTripItemCard(
-                key: ValueKey(item.id),
-                item: item,
-                isChecked: checkedIds.contains(item.id),
-                groceryCategory: categoryFor(item),
-                onToggle: () => onToggle(item.id),
-              ),
-            );
-          }),
+          _TripHeading(title: aisle, icon: 'tagOutline'),
+          ..._tripLines(items, checkedIds, onToggle, currencySymbol),
         ],
       ),
     );

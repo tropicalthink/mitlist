@@ -298,6 +298,24 @@ func (s *OAuthService) processOAuthUser(
 		if err != nil && !isNotFound(err) {
 			return nil, fmt.Errorf("get user by email: %w", err)
 		}
+		if err != nil {
+			user = nil
+		}
+	}
+	if user != nil {
+		// The provider has proven the address. Joining its identity to an
+		// existing account is only safe when that account proved the same
+		// address too; otherwise whoever typed the address first (a pending
+		// registration, a guest mid-conversion, or a password account made on
+		// a server with no email provider) would be handed the provider's
+		// sign-in and everything its owner then puts in the account.
+		proven, err := s.emailProven(ctx, user)
+		if err != nil {
+			return nil, err
+		}
+		if !proven {
+			return nil, &api.ConflictError{Message: "an account with this email already exists but its address was never confirmed; sign in with its email and password instead"}
+		}
 	}
 
 	if user == nil {
@@ -335,6 +353,20 @@ func (s *OAuthService) processOAuthUser(
 		return nil, fmt.Errorf("link oauth account: %w", err)
 	}
 	return user, nil
+}
+
+// emailProven reports whether an account's address was shown to belong to
+// its owner: verified by an emailed code or by a provider, and not merely
+// claimed at a sign-up that had no way to send a code.
+func (s *OAuthService) emailProven(ctx context.Context, user *models.User) (bool, error) {
+	if !user.IsVerified || user.IsGuest {
+		return false, nil
+	}
+	unproven, err := s.authRepo.IsEmailUnproven(ctx, user.ID)
+	if err != nil {
+		return false, fmt.Errorf("check email proof: %w", err)
+	}
+	return !unproven, nil
 }
 
 func (s *OAuthService) CreateHandoff(ctx context.Context, userID uuid.UUID) (string, error) {

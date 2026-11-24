@@ -16,6 +16,7 @@ import '../../providers/recipe_provider.dart';
 import '../../repositories/outbox_error_classifier.dart';
 import '../../router.dart' show currentGroupIdProvider;
 import '../../services/scan/grocery_suggestion_service.dart';
+import '../../services/scan/recipe_text_parser.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../utils/haptics.dart';
@@ -31,6 +32,7 @@ import '../../widgets/chip.dart';
 import '../../widgets/mitlist_app_bar.dart';
 
 import '../../widgets/app_toast.dart';
+import '../scanner/document_photo_reader.dart';
 
 class RecipeCreationScreen extends ConsumerStatefulWidget {
   final String? initialTitle;
@@ -288,7 +290,10 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
       final title = _titleController.text.trim().isEmpty
           ? _titleFromUrl(url, l10n)
           : _titleController.text.trim();
-      final ingredients = await _buildEnrichedIngredients();
+      // Ingredients keep the words the person wrote. Swapping in the matched
+      // catalog name renamed "Kaffee" to "Coffee" and "cheese" to "Cheese
+      // Dip"; linking happens where the items land on a list instead.
+      final ingredients = _buildIngredients();
       final shareGroupId = _shareWithHousehold ? _activeGroupId() : null;
 
       await recipeRepo.createRecipeOfflineFirst(
@@ -367,6 +372,44 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
 
   static String _stripPrefix(String line) =>
       line.trim().replaceFirst(_listPrefixRe, '').trim();
+
+  /// Reads a photographed recipe card or cookbook page on the device and
+  /// fills the form with it. Like a link import, it only fills fields that
+  /// are still empty, so nothing typed is lost.
+  Future<void> _readFromPhoto() async {
+    final l10n = AppLocalizations.of(context)!;
+    final photo = await captureDocumentPhoto(
+      context,
+      ref,
+      title: l10n.recipePhotoTitle,
+      readingMessage: l10n.recipePhotoReading,
+      interpret: (lines) async => const RecipeTextParser().parse(lines),
+    );
+    if (photo == null || !mounted) return;
+    final draft = photo.result;
+    if (draft.isEmpty) {
+      AppToast.error(context, l10n.recipePhotoNothingFound);
+      return;
+    }
+    setState(() {
+      _mode = _RecipeEntryMode.manual;
+      if (draft.title != null && _titleController.text.trim().isEmpty) {
+        _titleController.text = draft.title!;
+      }
+      if (draft.ingredients.isNotEmpty &&
+          _ingredientsController.text.trim().isEmpty) {
+        _scrapedIngredients = [];
+        _ingredientsController.text = draft.ingredients.join('\n');
+      }
+      if (draft.steps.isNotEmpty && _stepsController.text.trim().isEmpty) {
+        _stepsController.text = draft.steps.join('\n');
+      }
+    });
+    AppToast.success(
+      context,
+      l10n.recipePhotoRead(draft.ingredients.length, draft.steps.length),
+    );
+  }
 
   // Clears scraped ingredients when the user manually edits the text area,
   // so that _buildIngredients() falls back to text parsing for their edits.
@@ -463,49 +506,6 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
 
   String? _activeGroupId() =>
       resolveActiveGroupId(_groups, ref.read(currentGroupIdProvider));
-
-  Future<List<CreateIngredientRequest>> _buildEnrichedIngredients() async {
-    final ingredients = _buildIngredients();
-    final groupId = resolveActiveGroupId(
-      _groups,
-      ref.read(currentGroupIdProvider),
-    );
-    if (groupId == null || ingredients.isEmpty) return ingredients;
-    try {
-      await ref.read(grocerySeedProvider.future);
-      final links = ref.read(canonicalLinkServiceProvider);
-      final context = <String>[];
-      final resolutionContext = await links.prepareContext(groupId);
-      final enriched = <CreateIngredientRequest>[];
-      for (final ingredient in ingredients) {
-        final result = await links.resolveHighConfidenceResult(
-          ingredient.name,
-          groupId,
-          listContext: context,
-          context: resolutionContext,
-        );
-        if (result?.canonicalItemId case final canonicalId?) {
-          context.add(canonicalId);
-        }
-        enriched.add(CreateIngredientRequest(
-          // Keep the original line in rawText, while giving recipe/list
-          // integrations the clean canonical label for matching and merging.
-          name: result == null
-              ? ingredient.name
-              : GrocerySuggestionService.labelForSelection(
-                  ingredient.name,
-                  result.displayName,
-                ),
-          quantity: ingredient.quantity,
-          unit: ingredient.unit,
-          rawText: ingredient.rawText,
-        ));
-      }
-      return enriched;
-    } catch (_) {
-      return ingredients;
-    }
-  }
 
   List<CreateStepRequest> _buildSteps() {
     final text = _stepsController.text.trim();
@@ -757,6 +757,17 @@ class _RecipeCreationScreenState extends ConsumerState<RecipeCreationScreen> {
               ? null
               : () => setState(() => _mode = _RecipeEntryMode.manual),
         ),
+        if (canReadDocumentPhotos) ...[
+          const SizedBox(height: MitlistSpacing.sm),
+          _buildEntryOption(
+            colorScheme: colorScheme,
+            icon: 'camera',
+            title: l10n.recipeCreationFromPhoto,
+            subtitle: l10n.recipeCreationFromPhotoDesc,
+            selected: false,
+            onTap: _isSaving ? null : _readFromPhoto,
+          ),
+        ],
         const SizedBox(height: MitlistSpacing.lg),
         if (_mode == _RecipeEntryMode.url) ...[
           AppInput(

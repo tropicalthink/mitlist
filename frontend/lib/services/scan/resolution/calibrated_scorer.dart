@@ -99,7 +99,7 @@ class CalibratedScorer {
   // starter eval set to reach 100% precision@auto-accept at baseline-equivalent
   // coverage; replaced by the build-time logistic fit once a real eval set
   // exists (intelligence/ml/eval/resolution_eval.py).
-  // aliasSim, nameSim, clsProb, embCos, agreement, hhAlias, freq, recency, cooc, exact
+  // aliasSim, nameSim, clsProb, embCos, agreement, hhAlias, freq, recency, cooc, exact, uniqueExact
   static const List<double> kDefaultWeights = [
     1.4, // aliasStringSim
     4.4, // canonicalNameSim  ← primary disambiguator (own name > secondary alias)
@@ -111,6 +111,7 @@ class CalibratedScorer {
     0.5, // recency
     1.4, // listCooccurrence
     0.4, // isExactAlias
+    2.0, // isUniqueExactAlias ← an unshared exact alias (brands, colloquial names)
   ];
 
   static const double kDefaultBias = -2.7;

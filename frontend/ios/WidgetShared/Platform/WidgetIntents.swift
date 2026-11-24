@@ -148,6 +148,11 @@ public struct ToggleListItemIntent: AppIntent {
   @available(iOS 26.0, *)
   public static var supportedModes: IntentModes { .background }
 
+  /// A widget's own button: run it in the widget extension, never by
+  /// launching the app (plan 047, D8).
+  @available(iOS 27.0, *)
+  public static var allowedExecutionTargets: IntentExecutionTargets { .widgetKitExtension }
+
   public func perform() async throws -> some IntentResult {
     await WidgetActions.checkItem(
       householdID: householdID, listID: listID, itemID: itemID, source: WidgetOpSource.widget)
@@ -174,6 +179,11 @@ public struct CompleteChoreIntent: AppIntent {
   @available(iOS 26.0, *)
   public static var supportedModes: IntentModes { .background }
 
+  /// A widget's own button: run it in the widget extension, never by
+  /// launching the app (plan 047, D8).
+  @available(iOS 27.0, *)
+  public static var allowedExecutionTargets: IntentExecutionTargets { .widgetKitExtension }
+
   public func perform() async throws -> some IntentResult {
     await WidgetActions.completeChore(householdID: householdID, choreID: choreID, source: WidgetOpSource.widget)
     return .result()
@@ -190,6 +200,11 @@ public struct RefreshWidgetsIntent: AppIntent {
 
   @available(iOS 26.0, *)
   public static var supportedModes: IntentModes { .background }
+
+  /// A widget's own button: run it in the widget extension, never by
+  /// launching the app (plan 047, D8).
+  @available(iOS 27.0, *)
+  public static var allowedExecutionTargets: IntentExecutionTargets { .widgetKitExtension }
 
   public func perform() async throws -> some IntentResult {
     WidgetStorage.shared?.refreshRequested = true

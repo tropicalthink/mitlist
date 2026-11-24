@@ -34,11 +34,14 @@ class ApiConfig {
   }
 
   /// The server the build ships with (dart-define, or the local Go backend in
-  /// debug). Empty when a release build was made without API_BASE_URL — such
-  /// builds are only usable once the user picks a server.
+  /// debug). A release web build made without API_BASE_URL talks to the
+  /// origin that served it: the self-host image's nginx proxies `/api` to the
+  /// backend, so one public URL serves both and the image needs no rebuild per
+  /// domain. A release native build without API_BASE_URL returns '' and is only
+  /// usable once the user picks a server.
   static String get defaultBaseUrl {
     if (_baseUrlOverride.isNotEmpty) return _baseUrlOverride;
-    if (kReleaseMode) return '';
+    if (kReleaseMode) return kIsWeb ? Uri.base.origin : '';
 
     // Debug-only fallback to the local Go backend.
     // On Android emulators, "localhost" points to the emulator itself.

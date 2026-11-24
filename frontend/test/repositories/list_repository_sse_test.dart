@@ -124,6 +124,43 @@ void main() {
       expect(rows.map((r) => r.id), ['item-a']);
     });
 
+    test('the late echo of an undone delete does not remove the restored row',
+        () async {
+      await db.upsertListItemsRows([_localRow('item-b', 'Back again')]);
+      final restored = (await repo.getItemsByListOnce(_listId)).single;
+      await repo.deleteItemOfflineFirst(_listId, 'item-b');
+      await repo.drainOutboxOnce();
+      // Undo after the delete synced: a restore op is queued.
+      await repo.restoreItemOfflineFirst(restored);
+      remote.itemsToReturn = const []; // the server has not restored it yet
+
+      events.add(_itemEvent('list:item_deleted', 'item-b'));
+      await Future<void>.delayed(Duration.zero);
+      await repo.flushPendingSseRefreshes();
+
+      final rows = await db.getItemsByListOnce(_listId);
+      expect(rows.map((r) => r.id), ['item-b']);
+    });
+
+    test('a housemate edit lands on a restored row once its restore syncs',
+        () async {
+      await db.upsertListItemsRows([_localRow('item-b', 'Bread')]);
+      final restored = (await repo.getItemsByListOnce(_listId)).single;
+      await repo.deleteItemOfflineFirst(_listId, 'item-b');
+      await repo.drainOutboxOnce();
+      await repo.restoreItemOfflineFirst(restored);
+      remote.restorableItems['item-b'] = _serverItem('item-b', 'Bread');
+      await repo.drainOutboxOnce();
+
+      remote.itemsToReturn = [_serverItem('item-b', 'Sourdough')];
+      events.add(_itemEvent('list:item_updated', 'item-b'));
+      await Future<void>.delayed(Duration.zero);
+      await repo.flushPendingSseRefreshes();
+
+      final rows = await db.getItemsByListOnce(_listId);
+      expect(rows.single.name, 'Sourdough');
+    });
+
     test('a burst of events for one list is coalesced into a single refetch',
         () async {
       remote.itemsToReturn = [_serverItem('item-a', 'A')];

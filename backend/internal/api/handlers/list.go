@@ -48,6 +48,7 @@ func (h *ListHandler) RegisterRoutes(r chi.Router) {
 	r.Post("/lists/{id}/items/remove", h.RemoveItemAmount)
 	r.Patch("/lists/{id}/items/{item_id}", h.UpdateItem)
 	r.Delete("/lists/{id}/items/{item_id}", h.DeleteItem)
+	r.Post("/lists/{id}/items/{item_id}/restore", h.RestoreItem)
 	r.Post("/lists/{id}/reorder", h.ReorderItems)
 	r.Get("/lists/{id}/cost-summary", h.GetCostSummary)
 	r.Post("/lists/{id}/generate-expense", h.GenerateExpense)
@@ -612,6 +613,33 @@ func (h *ListHandler) DeleteItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// RestoreItem handles POST /api/v1/lists/{id}/items/{item_id}/restore: puts a
+// deleted item back (the app's undo). Idempotent; 404 when the list has no
+// such item.
+func (h *ListHandler) RestoreItem(w http.ResponseWriter, r *http.Request) {
+	user, ok := userFromContext(r)
+	if !ok {
+		api.RespondError(w, api.ErrUnauthorized)
+		return
+	}
+	listID, err := parseUUIDParam(r, "id")
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	itemID, err := parseUUIDParam(r, "item_id")
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	item, err := h.service.RestoreItem(r.Context(), user, listID, itemID)
+	if err != nil {
+		api.RespondError(w, err)
+		return
+	}
+	api.RespondJSON(w, http.StatusOK, item)
 }
 
 // ReorderItems handles POST /api/v1/lists/{id}/reorder.

@@ -2,248 +2,145 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../services/scan/household_suggestion_engine.dart';
-import '../../theme/animations.dart';
-import '../../theme/list_tile_accent.dart';
 import '../../theme/spacing.dart';
-import '../../theme/typography.dart';
-import '../app_button.dart';
-import '../app_card.dart';
 import '../app_icon.dart';
+import 'list_suggestion_line.dart';
 
-class ListComposerBar extends StatelessWidget {
-  const ListComposerBar({
+/// The list's last line, where new items are written: a "+" where the
+/// checkbox would be and the words after it, like the next line of a note's
+/// checklist. Return adds the item and keeps the keyboard up for the next.
+/// "2 avocados" and "500 g flour" are read as amounts.
+class ListAddLine extends StatelessWidget {
+  const ListAddLine({
     super.key,
     required this.controller,
     required this.focusNode,
     required this.onAdd,
-    required this.onScan,
-    this.suggestions = const [],
-    this.showProductSuggestions = false,
-    this.onSuggestionSelected,
+    this.onScan,
   });
 
   final TextEditingController controller;
   final FocusNode focusNode;
   final VoidCallback onAdd;
-  final VoidCallback onScan;
-  final List<HouseholdSuggestion> suggestions;
-  final bool showProductSuggestions;
-  final ValueChanged<HouseholdSuggestion>? onSuggestionSelected;
 
-  Widget _buildSuggestions(BuildContext context) {
-    if (!showProductSuggestions) return const SizedBox.shrink();
-
-    final brightness = Theme.of(context).brightness;
-    final cards = suggestions
-        .map((suggestion) => _ComposerSuggestionCard(
-              suggestion: suggestion,
-              accent: ListTileAccent.fromSeed(
-                suggestion.canonicalItemId ?? suggestion.name,
-                brightness,
-              ),
-              onTap: () {
-                controller.text = suggestion.name;
-                onSuggestionSelected?.call(suggestion);
-                onAdd();
-              },
-            ))
-        .toList(growable: false);
-
-    // Reserve this slot at a fixed height for the whole time the composer is
-    // focused, whether or not cards have arrived yet — suggestions land in two
-    // independent async waves (fast local grocery/restock, then a slower
-    // network product-history fetch) that each rebuild this row, so sizing to
-    // checking `suggestions.isEmpty` made the bar resize per wave/keystroke
-    // settling once on focus.
-    return Padding(
-      padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
-      child: SizedBox(
-        height: MitlistSpacing.space16,
-        child: ListView.separated(
-          clipBehavior: Clip.none,
-          scrollDirection: Axis.horizontal,
-          itemCount: cards.length,
-          separatorBuilder: (_, __) => const SizedBox(width: MitlistSpacing.sm),
-          itemBuilder: (context, index) => cards[index],
-        ),
-      ),
-    );
-  }
+  /// Read a written or printed list from a photo; null hides the camera.
+  final VoidCallback? onScan;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final colorScheme = Theme.of(context).colorScheme;
-    // Bar sits on the base surface; the input uses an elevated surface token
-    // so its background contrasts with the (onSurface) text in both themes.
-    final barColor = colorScheme.surface;
-    final fieldFill = colorScheme.surfaceContainerHighest;
-
-    return SafeArea(
-      child: Container(
-        decoration: BoxDecoration(
-          color: barColor,
-          border: Border(
-            top: BorderSide(
-              color: Theme.of(context).colorScheme.outline,
-              width: 2,
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: MitlistSpacing.sm),
+      child: Row(
+        children: [
+          SizedBox(
+            width: MitlistSpacing.space11,
+            height: MitlistSpacing.space11,
+            child: Center(
+              child: AppIcon(
+                name: 'plus',
+                size: 22,
+                color: scheme.onSurfaceVariant,
+              ),
             ),
           ),
-        ),
-        padding: const EdgeInsets.fromLTRB(
-          MitlistSpacing.md,
-          MitlistSpacing.sm,
-          MitlistSpacing.md,
-          MitlistSpacing.md,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedSize(
-              duration: MitlistAnimations.micro,
-              curve: MitlistAnimations.easeEnter,
-              child: _buildSuggestions(context),
+          Expanded(
+            child: TextField(
+              key: const ValueKey('list-add-line'),
+              controller: controller,
+              focusNode: focusNode,
+              style: theme.textTheme.bodyLarge?.copyWith(height: 1.3),
+              textCapitalization: TextCapitalization.sentences,
+              textInputAction: TextInputAction.done,
+              // Return adds; the field stays focused for the next item.
+              onSubmitted: (_) => onAdd(),
+              onEditingComplete: () {},
+              decoration: InputDecoration(
+                hintText: l10n.composerAddItem,
+                isCollapsed: true,
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                filled: false,
+                contentPadding: const EdgeInsets.symmetric(
+                  vertical: MitlistSpacing.sm + 2,
+                ),
+              ),
             ),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: controller,
-                    focusNode: focusNode,
-                    textInputAction: TextInputAction.done,
-                    onSubmitted: (_) => onAdd(),
-                    minLines: 1,
-                    maxLines: 3,
-                    decoration: InputDecoration(
-                      labelText: l10n.composerNewItem,
-                      hintText: l10n.composerItemHint,
-                      filled: true,
-                      fillColor: fieldFill,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: MitlistSpacing.sm),
-                AppButton(
-                  icon: AppIcon(
-                    name: 'camera',
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                  variant: AppButtonVariant.outline,
-                  onPressed: onScan,
-                  size: AppButtonSize.lg,
-                  tooltip: l10n.composerScanList,
-                ),
-                const SizedBox(width: MitlistSpacing.sm),
-                AppButton(
-                  icon: AppIcon(
-                    name: 'plus',
-                    color: Theme.of(context).colorScheme.onPrimary,
-                  ),
-                  onPressed: onAdd,
-                  size: AppButtonSize.lg,
-                  tooltip: l10n.composerAddItem,
-                ),
-              ],
+          ),
+          if (onScan != null)
+            IconButton(
+              key: const ValueKey('list-add-scan'),
+              icon: AppIcon(name: 'camera', color: scheme.onSurfaceVariant),
+              tooltip: l10n.composerScanList,
+              onPressed: onScan,
             ),
-          ],
-        ),
+        ],
       ),
     );
   }
 }
 
-class _ComposerSuggestionCard extends StatelessWidget {
-  const _ComposerSuggestionCard({
-    required this.suggestion,
-    required this.accent,
-    required this.onTap,
+/// What matches the words being typed, as up to [maxLines] faint lines
+/// right under the add line. Tapping one adds it, linked to the item it
+/// names. A match already on the list says so, because tapping it brings a
+/// checked-off row back (or leaves an open one alone) instead of adding.
+class ListComposerSuggestions extends StatelessWidget {
+  const ListComposerSuggestions({
+    super.key,
+    required this.controller,
+    required this.onAdd,
+    this.suggestions = const [],
+    this.onSuggestionSelected,
+    this.maxLines = 4,
   });
 
-  final HouseholdSuggestion suggestion;
-  final ListTileAccent accent;
-  final VoidCallback onTap;
+  final TextEditingController controller;
+  final VoidCallback onAdd;
+  final List<HouseholdSuggestion> suggestions;
+  final int maxLines;
 
-  /// What the card says under the name. A row already on the list says so
-  /// instead of showing its category — that is the one fact that changes what
-  /// tapping the card does.
-  String _detail(AppLocalizations l10n) {
-    if (suggestion.isOnList) {
-      return suggestion.onListChecked
-          ? l10n.composerSuggestionCheckedOff
-          : l10n.composerSuggestionOnList;
-    }
-    return suggestion.category.isNotEmpty
-        ? suggestion.category
-        : suggestion.unit;
-  }
+  /// A suggestion was tapped; [typedQuery] is the text it replaced.
+  final void Function(HouseholdSuggestion suggestion, String typedQuery)?
+      onSuggestionSelected;
 
   @override
   Widget build(BuildContext context) {
-    final detail = _detail(AppLocalizations.of(context)!);
-    return SizedBox(
-      width: MitlistSpacing.space20 * 2,
-      height: MitlistSpacing.space14,
-      child: AppCard(
-        interactive: true,
-        padding: AppCardPadding.sm,
-        backgroundColor: accent.tileBackground,
-        semanticLabel: suggestion.name,
-        onTap: onTap,
-        child: Row(
-          children: [
-            AppIcon(
-              name: suggestion.isOnList
-                  ? (suggestion.onListChecked
-                      ? 'checkCircle'
-                      : 'listAltOutline')
-                  : (suggestion.hasIntelligence ? 'bolt' : 'inventoryOutline'),
-              size: MitlistSpacing.space5,
-              color: accent.iconColor,
-            ),
-            const SizedBox(width: MitlistSpacing.sm),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    suggestion.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          color: accent.titleColor,
-                          fontWeight: FontWeight.w700,
-                          height: 1.1,
-                        ),
-                  ),
-                  if (detail.isNotEmpty)
-                    Text(
-                      detail,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: MitlistTypography.labelXSmall(
-                        color: accent.snippetOnTile,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(width: MitlistSpacing.xs),
-            AppIcon(
-              name: switch (suggestion) {
-                // Tapping a checked-off row un-checks it; tapping one that is
-                // already open changes nothing. Neither is a "+".
-                _ when !suggestion.isOnList => 'plus',
-                _ when suggestion.onListChecked => 'removeDoneOutline',
-                _ => 'check',
-              },
-              size: MitlistSpacing.space4,
-              color: accent.iconColor,
-            ),
-          ],
-        ),
-      ),
+    if (suggestions.isEmpty) return const SizedBox.shrink();
+    final l10n = AppLocalizations.of(context)!;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final suggestion in suggestions.take(maxLines))
+          ListSuggestionLine(
+            key: ValueKey(
+                'suggestion-${suggestion.canonicalItemId ?? suggestion.name}'),
+            name: suggestion.name,
+            icon: !suggestion.isOnList
+                ? 'plus'
+                : suggestion.onListChecked
+                    ? 'removeDoneOutline'
+                    : 'check',
+            detail: suggestion.isOnList
+                ? (suggestion.onListChecked
+                    ? l10n.composerSuggestionCheckedOff
+                    : l10n.composerSuggestionOnList)
+                : suggestion.category.isNotEmpty
+                    ? suggestion.category
+                    : null,
+            onTap: () {
+              // What was typed ("nutella") is gone once the field takes the
+              // suggestion's name, so it travels with the pick.
+              final typed = controller.text;
+              controller.text = suggestion.name;
+              onSuggestionSelected?.call(suggestion, typed);
+              onAdd();
+            },
+          ),
+      ],
     );
   }
 }

@@ -34,6 +34,8 @@ type AuthRepo interface {
 	ConsumePasswordReset(ctx context.Context, tokenHash, passwordHash string) (uuid.UUID, error)
 	UpdatePasswordAndRevokeSessions(ctx context.Context, userID uuid.UUID, passwordHash string) error
 	CreateUnverifiedUser(ctx context.Context, user *models.User, tokenHash string, expiresAt time.Time) error
+	CreateUnprovenUser(ctx context.Context, user *models.User) error
+	IsEmailUnproven(ctx context.Context, userID uuid.UUID) (bool, error)
 	CreateEmailVerification(ctx context.Context, userID uuid.UUID, tokenHash string, expiresAt time.Time) error
 	ConsumeEmailVerification(ctx context.Context, tokenHash string) (uuid.UUID, error)
 	ReserveLoginAttempt(ctx context.Context, identifier string, limit int, window time.Duration) (bool, error)
@@ -111,6 +113,14 @@ type GroupRepo interface {
 	ListMemberEmailsByGroup(ctx context.Context, groupID uuid.UUID) (map[uuid.UUID]string, error)
 }
 
+// CheckedItemRef is a list item BulkMarkItemsChecked ticked, with the list
+// and household it belongs to.
+type CheckedItemRef struct {
+	ItemID  uuid.UUID
+	ListID  uuid.UUID
+	GroupID uuid.UUID
+}
+
 // ListRepo is the interface for list repository operations.
 type ListRepo interface {
 	CreateList(ctx context.Context, list *models.List) error
@@ -126,7 +136,7 @@ type ListRepo interface {
 	SetListArchived(ctx context.Context, id, actorID uuid.UUID, archived bool) error
 	CreateItem(ctx context.Context, item *models.ListItem) error
 	CreateItems(ctx context.Context, items []models.ListItem) error
-	BulkMarkItemsChecked(ctx context.Context, userID uuid.UUID, itemIDs []uuid.UUID) (int64, error)
+	BulkMarkItemsChecked(ctx context.Context, userID uuid.UUID, itemIDs []uuid.UUID) ([]CheckedItemRef, error)
 	GetItemByID(ctx context.Context, id uuid.UUID) (*models.ListItem, error)
 	GetItemByListNameUnit(ctx context.Context, listID uuid.UUID, name, unit string) (*models.ListItem, error)
 	ListItemsByList(ctx context.Context, listID uuid.UUID, limit, offset int) ([]models.ListItem, error)
@@ -135,6 +145,10 @@ type ListRepo interface {
 	HardDeleteItem(ctx context.Context, id uuid.UUID) error
 	SoftDeleteItem(ctx context.Context, id uuid.UUID) error
 	SoftDeleteItemsByList(ctx context.Context, listID uuid.UUID, onlyChecked bool) (int64, error)
+	// RestoreItem undoes a soft delete of an item of listID. restored is false
+	// when the item was not deleted (idempotent repeat); pgx.ErrNoRows when the
+	// list has no such item.
+	RestoreItem(ctx context.Context, listID, id uuid.UUID) (item *models.ListItem, restored bool, err error)
 	BatchUpdateItemPositions(ctx context.Context, items []models.ListItem) error
 	ClaimItem(ctx context.Context, listID, id, userID uuid.UUID) error
 	UnclaimItem(ctx context.Context, listID, id, actorID uuid.UUID) error
@@ -324,6 +338,36 @@ type CalendarListRepo interface {
 	// whose reminder falls in [from, to), ordered by remind_at.
 	ListListsByGroupAndRemindAtRange(ctx context.Context, groupID uuid.UUID, from, to time.Time) ([]models.List, error)
 }
+
+// ExternalCalendarRepo stores members' synced calendars, their household
+// shares, events and per-event overrides.
+type ExternalCalendarRepo interface {
+	CountConnections(ctx context.Context, userID uuid.UUID) (int, error)
+	GetConnection(ctx context.Context, id, userID uuid.UUID) (*models.CalendarConnection, error)
+	GetDeviceConnection(ctx context.Context, userID uuid.UUID, deviceID string) (*models.CalendarConnection, error)
+	ListConnections(ctx context.Context, userID uuid.UUID) ([]models.CalendarConnection, error)
+	CreateICSConnection(ctx context.Context, c *models.CalendarConnection, cal *models.ExternalCalendar, events []models.ExternalEvent) error
+	CreateDeviceConnection(ctx context.Context, c *models.CalendarConnection) error
+	UpdateConnectionName(ctx context.Context, id, userID uuid.UUID, name string) (bool, error)
+	DeleteConnection(ctx context.Context, id, userID uuid.UUID) (bool, error)
+	GetCalendar(ctx context.Context, id, userID uuid.UUID) (*models.ExternalCalendar, error)
+	ListCalendarIDs(ctx context.Context, connID uuid.UUID) ([]uuid.UUID, error)
+	ListShareGroupsForConnection(ctx context.Context, connID uuid.UUID) ([]uuid.UUID, error)
+	ListShareGroupsForCalendar(ctx context.Context, calendarID uuid.UUID) ([]uuid.UUID, error)
+	ReplaceShares(ctx context.Context, calendarID uuid.UUID, shares []models.CalendarShare) error
+	SetOverride(ctx context.Context, userID, calendarID uuid.UUID, externalUID string, visibility *string) error
+	ListOverrides(ctx context.Context, userID uuid.UUID) ([]models.EventOverride, error)
+	ReplaceCalendarEvents(ctx context.Context, connID, calendarID uuid.UUID, events []models.ExternalEvent, hash *string) error
+	DeviceSync(ctx context.Context, connID, userID uuid.UUID, calendars []models.ExternalCalendar, events []DeviceSyncEvent, hash string, syncedAt time.Time) error
+	RecordSyncResult(ctx context.Context, id uuid.UUID, rec ICSSyncRecord) error
+	ClaimAttempt(ctx context.Context, id uuid.UUID, now time.Time, minGap time.Duration) (bool, error)
+	ListDueICSConnections(ctx context.Context, now time.Time, limit int) ([]models.CalendarConnection, error)
+	ListOwnEvents(ctx context.Context, userID uuid.UUID, from, to time.Time) ([]models.OwnEvent, error)
+	ListHouseholdEvents(ctx context.Context, groupID uuid.UUID, from, to time.Time) ([]models.HouseholdExternalEvent, error)
+	TrimEvents(ctx context.Context, before, after time.Time) (int64, error)
+}
+
+var _ ExternalCalendarRepo = (*ExternalCalendarRepository)(nil)
 
 // AttachmentRepo is the interface for attachment repository operations.
 type AttachmentRepo interface {

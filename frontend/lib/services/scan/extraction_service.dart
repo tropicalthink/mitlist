@@ -16,11 +16,27 @@ class ExtractionService {
     'bottle', 'can', 'jar', 'bag', 'box',
   };
 
-  // e.g. "3.49", "€3,49", "3,49€", "$3.99"
+  // e.g. "3.49", "€3,49", "3,49€", "$3.99" — but not a date like "10.12.".
   static final _pricePattern = RegExp(
-    r'(?:€|\$|EUR)?\s*(\d+)[,.](\d{2})\s*(?:€|EUR)?',
+    r'(?<![\d.,])(?:€|\$|EUR)?\s*(\d+)[,.](\d{2})(?![\d.,])\s*(?:€|EUR)?',
     caseSensitive: false,
   );
+
+  // List furniture written before the item: bullets, dashes, check boxes.
+  static final _leadingBullet = RegExp(
+    r'^(?:[\-–—•·∙◦▪▫□☐■●○>+*~]+|\[\s?\]|\(\s?\))\s*',
+  );
+
+  // "1. Milch", "2) Eier": a layout number, not a quantity.
+  static final _listNumber = RegExp(r'^\d{1,2}[.)]\s*(?=\D)');
+
+  // Quantities written after the name: "milk x2", "Milch 2x", "Eier (10)",
+  // "Eier 10".
+  static final _qtySuffix = RegExp(
+    r'\s+(?:[xX×]\s?(\d{1,3})|(\d{1,3})\s?[xX×]|\((\d{1,3})\)|(\d{1,2}))$',
+  );
+
+  static final _leadingPunctuation = RegExp(r'^[\s.,:;)\]\-–—]+');
 
   // Simple strikethrough heuristic: OCR sometimes renders struck-out text with
   // dashes or brackets around it, e.g. "-milk-", "[milk]", "~~milk~~".
@@ -38,6 +54,11 @@ class ExtractionService {
       text = (crossMatch.group(1) ?? crossMatch.group(2) ?? text).trim();
       markStatus = MarkStatus.crossedOut;
     }
+
+    // Bullets and layout numbering carry no meaning, and a leading "-" or "•"
+    // defeats every lookup keyed on the item's first character.
+    text = text.replaceFirst(_leadingBullet, '');
+    text = text.replaceFirst(_listNumber, '').trim();
 
     // Price extraction (strip from text before further parsing).
     int? priceCents;
@@ -88,6 +109,23 @@ class ExtractionService {
       },
     ).trim();
 
+    if (quantity == 1 && unit.isEmpty) {
+      final suffix = _qtySuffix.firstMatch(text);
+      if (suffix != null) {
+        final raw = suffix.group(1) ??
+            suffix.group(2) ??
+            suffix.group(3) ??
+            suffix.group(4)!;
+        final parsed = double.tryParse(raw);
+        final remainder = text.substring(0, suffix.start).trim();
+        if (parsed != null && parsed > 0 && remainder.isNotEmpty) {
+          quantity = parsed;
+          text = remainder;
+        }
+      }
+    }
+
+    text = text.replaceFirst(_leadingPunctuation, '').trim();
     final itemName = text.isEmpty ? line.text.trim() : text;
 
     return ParsedItem(
@@ -98,6 +136,7 @@ class ExtractionService {
       unit: unit,
       priceCents: priceCents,
       markStatus: markStatus,
+      ocrConfidence: line.confidence,
       alternatives: [
         for (final alternative in line.alternatives)
           OcrAlternative(

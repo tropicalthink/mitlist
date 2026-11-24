@@ -1,219 +1,125 @@
+// Package storage stores attachment bytes (receipts, list item photos, pinwall
+// media, recipe images) behind one API with two backends:
+//
+//   - S3-compatible object storage (S3_BUCKET_NAME), used by the hosted
+//     service. Clients upload and download directly against the provider
+//     through presigned URLs.
+//   - Local disk (STORAGE_LOCAL_PATH), for a self-host without S3. The API
+//     serves the files itself, through URLs on its own public origin
+//     (PUBLIC_API_URL) signed with a key derived from SECRET_KEY; see local.go.
+//
+// S3 wins when both are configured. With neither, every method fails (or
+// returns an empty URL), and uploads report "storage not configured".
 package storage
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"io"
-	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	awsconfig "github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/rs/zerolog/log"
 
 	"github.com/mitlist-app/mitlist/internal/config"
 )
 
-// Service provides file storage backed by S3-compatible object storage.
+// backend is one storage implementation. The method contracts are the
+// exported ones on Service.
+type backend interface {
+	Upload(key string, data []byte, contentType string) error
+	Download(ctx context.Context, key string) ([]byte, error)
+	GetUploadURL(key string, contentType string, contentLength int64, expires time.Duration) string
+	HeadObjectSize(ctx context.Context, key string) (int64, error)
+	GetURL(key string) string
+	Delete(key string) error
+}
+
+// Service provides file storage backed by S3-compatible object storage or,
+// on a self-host, the local filesystem.
 type Service struct {
-	client *s3.Client
-	bucket string
+	b     backend
+	local *LocalStore
 }
 
 // New creates a storage service using the provided application config.
 func New(cfg *config.Config) *Service {
-	if cfg.S3BucketName == "" {
-		log.Warn().Msg("S3_BUCKET_NAME not set; storage service will fail on upload")
-		return &Service{bucket: ""}
+	if cfg.S3BucketName != "" {
+		return &Service{b: newS3Backend(cfg)}
 	}
-
-	region := cfg.AWSRegion
-	// Cloudflare R2 uses the S3-compatible API with region "auto".
-	// For compatibility, "us-east-1" aliases to "auto", but we prefer "auto"
-	// when we detect an R2 endpoint.
-	if cfg.S3EndpointURL != "" && strings.Contains(cfg.S3EndpointURL, ".r2.cloudflarestorage.com") {
-		region = "auto"
+	if cfg.StorageLocalPath != "" {
+		local, err := NewLocalStore(cfg.StorageLocalPath, []byte(cfg.SecretKey), cfg.PublicAPIURL, cfg.APIPrefix)
+		if err != nil {
+			log.Error().Err(err).Str("path", cfg.StorageLocalPath).
+				Msg("STORAGE_LOCAL_PATH is not usable; storage service will fail on upload")
+			return &Service{}
+		}
+		if cfg.PublicAPIURL == "" {
+			log.Error().Str("path", cfg.StorageLocalPath).
+				Msg("STORAGE_LOCAL_PATH is set but PUBLIC_API_URL is empty: local file storage serves uploads and downloads through the API's own public URL, so uploads will fail until PUBLIC_API_URL is set to the API's public origin")
+		}
+		return &Service{b: local, local: local}
 	}
-
-	awsCfg, err := awsconfig.LoadDefaultConfig(context.Background(),
-		awsconfig.WithRegion(region),
-	)
-	if err != nil {
-		log.Error().Err(err).Msg("failed to load AWS config; storage service may not work")
-		return &Service{bucket: cfg.S3BucketName}
-	}
-
-	var opts []func(*s3.Options)
-	opts = append(opts, func(o *s3.Options) {
-		o.UsePathStyle = true
-	})
-
-	if cfg.S3EndpointURL != "" {
-		opts = append(opts, func(o *s3.Options) {
-			o.BaseEndpoint = aws.String(cfg.S3EndpointURL)
-		})
-	}
-
-	if cfg.AWSAccessKeyID != "" && cfg.AWSSecretAccessKey != "" {
-		opts = append(opts, func(o *s3.Options) {
-			o.Credentials = credentials.NewStaticCredentialsProvider(
-				cfg.AWSAccessKeyID,
-				cfg.AWSSecretAccessKey,
-				"",
-			)
-		})
-	}
-
-	client := s3.NewFromConfig(awsCfg, opts...)
-
-	return &Service{
-		client: client,
-		bucket: cfg.S3BucketName,
-	}
+	log.Warn().Msg("S3_BUCKET_NAME not set; storage service will fail on upload (set STORAGE_LOCAL_PATH to store files on local disk)")
+	return &Service{}
 }
 
-// Upload stores data at the given key in the configured bucket. The content
-// type is stored as object metadata and echoed on downloads.
+// Local returns the local-disk store when that backend is active, so the API
+// can serve its signed file URLs; nil otherwise (S3 or unconfigured).
+func (s *Service) Local() *LocalStore {
+	if s == nil {
+		return nil
+	}
+	return s.local
+}
+
+// Upload stores data at the given key. The content type is stored with the
+// object and echoed on downloads.
 func (s *Service) Upload(key string, data []byte, contentType string) error {
-	if s.client == nil || s.bucket == "" {
+	if s.b == nil {
 		return fmt.Errorf("storage not configured")
 	}
-	if contentType == "" {
-		contentType = "application/octet-stream"
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{
-		Bucket:      aws.String(s.bucket),
-		Key:         aws.String(key),
-		Body:        bytes.NewReader(data),
-		ContentType: aws.String(contentType),
-	})
-	if err != nil {
-		return fmt.Errorf("upload to s3: %w", err)
-	}
-	return nil
+	return s.b.Upload(key, data, contentType)
 }
 
 // Download fetches the object at the given key into memory. Callers own
 // bounding the size (attachments are already capped at upload time).
 func (s *Service) Download(ctx context.Context, key string) ([]byte, error) {
-	if s.client == nil || s.bucket == "" {
+	if s.b == nil {
 		return nil, fmt.Errorf("storage not configured")
 	}
-
-	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
-	defer cancel()
-
-	out, err := s.client.GetObject(ctx, &s3.GetObjectInput{
-		Bucket: aws.String(s.bucket),
-		Key:    aws.String(key),
-	})
-	if err != nil {
-		return nil, fmt.Errorf("download from s3: %w", err)
-	}
-	defer out.Body.Close()
-
-	data, err := io.ReadAll(out.Body)
-	if err != nil {
-		return nil, fmt.Errorf("read s3 object body: %w", err)
-	}
-	return data, nil
+	return s.b.Download(ctx, key)
 }
 
-// GetUploadURL returns a presigned PUT URL for the given key.
-// The caller should upload bytes directly to the returned URL.
+// GetUploadURL returns a presigned PUT URL for the given key, or "" when
+// storage cannot issue one. The caller should upload bytes directly to the
+// returned URL with exactly contentLength bytes.
 func (s *Service) GetUploadURL(key string, contentType string, contentLength int64, expires time.Duration) string {
-	if s.client == nil || s.bucket == "" {
+	if s.b == nil {
 		return ""
 	}
-	if expires <= 0 {
-		expires = 15 * time.Minute
-	}
-	_ = contentType // recorded on the attachment at intent time; not signed (see below)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-
-	presignClient := s3.NewPresignClient(s.client)
-	// Content-Type is deliberately NOT part of the signature. Binding it means
-	// the client's PUT must echo the exact type the intent was signed with;
-	// shipped app versions send types the intent normalizes away (`image/*`),
-	// so their uploads fail with a signature mismatch. The type is validated
-	// and recorded at intent time; the signed Content-Length still pins the
-	// upload to the reserved size.
-	req, err := presignClient.PresignPutObject(ctx, &s3.PutObjectInput{
-		Bucket:        aws.String(s.bucket),
-		Key:           aws.String(key),
-		ContentLength: aws.Int64(contentLength),
-	}, s3.WithPresignExpires(expires))
-	if err != nil {
-		log.Error().Err(err).Str("key", key).Msg("failed to generate presigned upload URL")
-		return ""
-	}
-	return req.URL
+	return s.b.GetUploadURL(key, contentType, contentLength, expires)
 }
 
 // HeadObjectSize returns the persisted object size in bytes.
 func (s *Service) HeadObjectSize(ctx context.Context, key string) (int64, error) {
-	if s.client == nil || s.bucket == "" {
+	if s.b == nil {
 		return 0, fmt.Errorf("storage not configured")
 	}
-
-	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
-	defer cancel()
-
-	out, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{
-		Bucket: aws.String(s.bucket),
-		Key:    aws.String(key),
-	})
-	if err != nil {
-		return 0, fmt.Errorf("head object in s3: %w", err)
-	}
-	return aws.ToInt64(out.ContentLength), nil
+	return s.b.HeadObjectSize(ctx, key)
 }
 
-// GetURL returns a presigned URL for the given key.
+// GetURL returns a short-lived presigned download URL for the given key, or
+// "" when storage cannot issue one.
 func (s *Service) GetURL(key string) string {
-	if s.client == nil || s.bucket == "" {
+	if s.b == nil {
 		return ""
 	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-
-	presignClient := s3.NewPresignClient(s.client)
-	req, err := presignClient.PresignGetObject(ctx, &s3.GetObjectInput{
-		Bucket: aws.String(s.bucket),
-		Key:    aws.String(key),
-	}, s3.WithPresignExpires(15*time.Minute))
-	if err != nil {
-		log.Error().Err(err).Str("key", key).Msg("failed to generate presigned URL")
-		return ""
-	}
-	return req.URL
+	return s.b.GetURL(key)
 }
 
-// Delete removes the object at the given key from the configured bucket.
+// Delete removes the object at the given key.
 func (s *Service) Delete(key string) error {
-	if s.client == nil || s.bucket == "" {
+	if s.b == nil {
 		return fmt.Errorf("storage not configured")
 	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	_, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{
-		Bucket: aws.String(s.bucket),
-		Key:    aws.String(key),
-	})
-	if err != nil {
-		return fmt.Errorf("delete from s3: %w", err)
-	}
-	return nil
+	return s.b.Delete(key)
 }

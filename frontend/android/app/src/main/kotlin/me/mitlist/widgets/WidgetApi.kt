@@ -14,6 +14,9 @@ data class HttpResult(val status: Int, val body: String?, val retryAfter: String
  * unchanged, so the app's later replay hashes the same.
  */
 class WidgetApi(private val credential: WidgetCredential) {
+    /** The token this client sends, to tell a 401 on a replaced credential from a dead one. */
+    val token: String get() = credential.token
+
     /** Sends a queued op. Throws [IOException] when the server was not reached. */
     @Throws(IOException::class)
     fun send(op: PendingOp): HttpResult {

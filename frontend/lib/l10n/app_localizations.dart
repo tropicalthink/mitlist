@@ -2408,6 +2408,84 @@ abstract class AppLocalizations {
   /// **'Start with a title and add ingredients later'**
   String get recipeCreationTypeItInDesc;
 
+  /// Recipe creation entry card: read a recipe from a photo
+  ///
+  /// In en, this message translates to:
+  /// **'Read a photo'**
+  String get recipeCreationFromPhoto;
+
+  /// Card subtitle: photo of a recipe card or cookbook page, read on-device
+  ///
+  /// In en, this message translates to:
+  /// **'Snap a recipe card or cookbook page. It is read on your phone'**
+  String get recipeCreationFromPhotoDesc;
+
+  /// Capture screen title when photographing a recipe
+  ///
+  /// In en, this message translates to:
+  /// **'Photograph the recipe'**
+  String get recipePhotoTitle;
+
+  /// Progress message while a recipe photo is read
+  ///
+  /// In en, this message translates to:
+  /// **'Reading the recipe…'**
+  String get recipePhotoReading;
+
+  /// Error toast: no recipe text found in the photo
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t find a recipe in that photo. Try a closer, straighter shot.'**
+  String get recipePhotoNothingFound;
+
+  /// Toast after a recipe photo filled the form
+  ///
+  /// In en, this message translates to:
+  /// **'Read {ingredients, plural, =1{1 ingredient} other{{ingredients} ingredients}} and {steps, plural, =1{1 step} other{{steps} steps}}. Check them before saving.'**
+  String recipePhotoRead(int ingredients, int steps);
+
+  /// Capture screen title when photographing a receipt
+  ///
+  /// In en, this message translates to:
+  /// **'Photograph the receipt'**
+  String get receiptScanTitle;
+
+  /// Progress message while a receipt photo is read
+  ///
+  /// In en, this message translates to:
+  /// **'Reading the receipt…'**
+  String get receiptScanReading;
+
+  /// Toast: no total found on a scanned receipt
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t find a total on the receipt. Enter the amount yourself.'**
+  String get receiptScanNoTotal;
+
+  /// Toast: a scanned receipt's lines don't sum to its total
+  ///
+  /// In en, this message translates to:
+  /// **'The receipt lines don\'t add up to its total. Check the amount and notes.'**
+  String get receiptScanCheckTotal;
+
+  /// Expense sheet switch after a receipt scan: record its household items as purchases
+  ///
+  /// In en, this message translates to:
+  /// **'Remember what was bought'**
+  String get receiptRememberPurchases;
+
+  /// Subtitle of the remember-purchases switch
+  ///
+  /// In en, this message translates to:
+  /// **'Count {count, plural, =1{1 item} other{{count} items}} you usually buy as bought, for restock and suggestions'**
+  String receiptRememberPurchasesDesc(int count);
+
+  /// Expense sheet switch after a receipt scan: tick off the open shopping-list items the receipt shows were bought
+  ///
+  /// In en, this message translates to:
+  /// **'Tick off {count, plural, =1{1 item} other{{count} items}} on your lists'**
+  String receiptTickListItems(int count);
+
   /// Card title: scanning in progress
   ///
   /// In en, this message translates to:
@@ -3801,30 +3879,6 @@ abstract class AppLocalizations {
   /// **'Checked off'**
   String get listDetailCheckedOff;
 
-  /// Empty state when list has no items
-  ///
-  /// In en, this message translates to:
-  /// **'Nothing here yet'**
-  String get listDetailNothingHere;
-
-  /// Description for empty list
-  ///
-  /// In en, this message translates to:
-  /// **'Photograph a handwritten list, fridge note, or screenshot. We\'ll pull out the items.'**
-  String get listDetailNothingHereDesc;
-
-  /// CTA to scan list content
-  ///
-  /// In en, this message translates to:
-  /// **'Scan this list'**
-  String get listDetailScanThisList;
-
-  /// CTA to type an item manually
-  ///
-  /// In en, this message translates to:
-  /// **'Type an item'**
-  String get listDetailTypeItem;
-
   /// Search empty result for items
   ///
   /// In en, this message translates to:
@@ -3855,18 +3909,6 @@ abstract class AppLocalizations {
   /// **'Couldn\'t clear items. Please try again.'**
   String get listDetailCouldNotClear;
 
-  /// Snackbar when item is deleted
-  ///
-  /// In en, this message translates to:
-  /// **'{name} deleted'**
-  String listDetailItemDeleted(String name);
-
-  /// Snackbar when restore fails
-  ///
-  /// In en, this message translates to:
-  /// **'Couldn\'t restore item.'**
-  String get listDetailCouldNotRestore;
-
   /// Snackbar when reorder fails
   ///
   /// In en, this message translates to:
@@ -3884,12 +3926,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t start scan. Try again.'**
   String get listDetailCouldNotStartScan;
-
-  /// Dialog title for setting item price
-  ///
-  /// In en, this message translates to:
-  /// **'Set price'**
-  String get listDetailSetPrice;
 
   /// Input label for price
   ///
@@ -3918,7 +3954,7 @@ abstract class AppLocalizations {
   /// Dialog body for clearing list
   ///
   /// In en, this message translates to:
-  /// **'This will remove all {count} {count, plural, =1{item} other{items}}. This cannot be undone.'**
+  /// **'This will remove all {count} {count, plural, =1{item} other{items}}. You can take it back with the undo arrow until you leave the list.'**
   String listDetailClearBody(num count);
 
   /// Confirmation button to clear list
@@ -5187,11 +5223,11 @@ abstract class AppLocalizations {
   /// **'Sorted by {store} aisles'**
   String shoppingTripSortedByStoreAisles(String store);
 
-  /// Button to mark item as purchased
+  /// Button that ends a shopping trip; each tick was already saved
   ///
   /// In en, this message translates to:
-  /// **'Mark done'**
-  String get shoppingTripMarkDone;
+  /// **'Finish trip'**
+  String get shoppingTripFinish;
 
   /// Basket bar: collected count and price
   ///
@@ -6663,12 +6699,6 @@ abstract class AppLocalizations {
   /// **'Retry'**
   String get offlineBannerRetry;
 
-  /// Placeholder for the list composer input
-  ///
-  /// In en, this message translates to:
-  /// **'New item'**
-  String get composerNewItem;
-
   /// Tooltip for scanning a list from composer
   ///
   /// In en, this message translates to:
@@ -6687,12 +6717,6 @@ abstract class AppLocalizations {
   /// **'View photo'**
   String get listItemViewPhoto;
 
-  /// Action: replace attached photo
-  ///
-  /// In en, this message translates to:
-  /// **'Replace photo'**
-  String get listItemReplacePhoto;
-
   /// Action: add photo to item
   ///
   /// In en, this message translates to:
@@ -6705,41 +6729,11 @@ abstract class AppLocalizations {
   /// **'Remove photo'**
   String get listItemRemovePhoto;
 
-  /// Action: set price on item
-  ///
-  /// In en, this message translates to:
-  /// **'Set price'**
-  String get listItemSetPrice;
-
-  /// Action: change item quantity/unit
-  ///
-  /// In en, this message translates to:
-  /// **'Change quantity'**
-  String get listItemChangeQuantity;
-
   /// Input label for item quantity
   ///
   /// In en, this message translates to:
   /// **'Amount'**
   String get listItemQuantityAmount;
-
-  /// Input label for item unit
-  ///
-  /// In en, this message translates to:
-  /// **'Unit (optional)'**
-  String get listItemQuantityUnit;
-
-  /// Action: add a note to an item
-  ///
-  /// In en, this message translates to:
-  /// **'Add note'**
-  String get listItemAddNote;
-
-  /// Action: edit an item's note
-  ///
-  /// In en, this message translates to:
-  /// **'Edit note'**
-  String get listItemEditNote;
 
   /// Input label for item note
   ///
@@ -6777,12 +6771,6 @@ abstract class AppLocalizations {
   /// **'{name} added this'**
   String listItemAddedBy(String name);
 
-  /// Semantics label for reorder handle
-  ///
-  /// In en, this message translates to:
-  /// **'Reorder'**
-  String get listItemReorder;
-
   /// Semantics: mark item unchecked
   ///
   /// In en, this message translates to:
@@ -6807,11 +6795,125 @@ abstract class AppLocalizations {
   /// **'Failed to save — tap the sync bar to retry'**
   String get listItemFailedSave;
 
-  /// Accessibility hint for list item long press
+  /// Short label for the unit field (kg, l, pack) in the list item editor
   ///
   /// In en, this message translates to:
-  /// **'Long press for more options'**
-  String get listItemLongPressHint;
+  /// **'Unit'**
+  String get listItemUnit;
+
+  /// Screen-reader action that moves a list item one place up
+  ///
+  /// In en, this message translates to:
+  /// **'Move up'**
+  String get listItemMoveUp;
+
+  /// Screen-reader action that moves a list item one place down
+  ///
+  /// In en, this message translates to:
+  /// **'Move down'**
+  String get listItemMoveDown;
+
+  /// Screen-reader label of the row of controls pinned above the keyboard while a list line is edited
+  ///
+  /// In en, this message translates to:
+  /// **'Details for {name}'**
+  String listEditDetailsFor(String name);
+
+  /// Chip that opens the unit choices while a list line is edited
+  ///
+  /// In en, this message translates to:
+  /// **'Add a unit'**
+  String get listEditUnitAdd;
+
+  /// Tooltip of the unit chip when the item has a unit
+  ///
+  /// In en, this message translates to:
+  /// **'Unit: {unit}'**
+  String listEditUnitValue(String unit);
+
+  /// Chip that opens the price field while a list line is edited
+  ///
+  /// In en, this message translates to:
+  /// **'Add a price'**
+  String get listEditPriceAdd;
+
+  /// Tooltip of the price chip when the item has a price
+  ///
+  /// In en, this message translates to:
+  /// **'Price: {price}'**
+  String listEditPriceValue(String price);
+
+  /// Chip that opens the note field under the item name
+  ///
+  /// In en, this message translates to:
+  /// **'Add a note'**
+  String get listEditNoteAdd;
+
+  /// Tooltip of the note chip when the item has a note
+  ///
+  /// In en, this message translates to:
+  /// **'Note: {note}'**
+  String listEditNoteValue(String note);
+
+  /// Button that removes the unit of a list item
+  ///
+  /// In en, this message translates to:
+  /// **'Clear unit'**
+  String get listEditClearUnit;
+
+  /// Button that removes the price of a list item
+  ///
+  /// In en, this message translates to:
+  /// **'Clear price'**
+  String get listEditClearPrice;
+
+  /// Button that closes the unit or price field and shows the other details again
+  ///
+  /// In en, this message translates to:
+  /// **'Back to details'**
+  String get listEditBack;
+
+  /// Delete button in the edit controls of a list line
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {name}'**
+  String listEditDeleteItem(String name);
+
+  /// Short unit: pieces
+  ///
+  /// In en, this message translates to:
+  /// **'pcs'**
+  String get listEditUnitPieces;
+
+  /// Short unit: pack
+  ///
+  /// In en, this message translates to:
+  /// **'pack'**
+  String get listEditUnitPack;
+
+  /// Short unit: can
+  ///
+  /// In en, this message translates to:
+  /// **'can'**
+  String get listEditUnitCan;
+
+  /// Short unit: bottle
+  ///
+  /// In en, this message translates to:
+  /// **'bottle'**
+  String get listEditUnitBottle;
+
+  /// Tooltip on the minus button that lowers a list item's amount by one
+  ///
+  /// In en, this message translates to:
+  /// **'One less'**
+  String get listItemOneLess;
+
+  /// Tooltip on the plus button that raises a list item's amount by one
+  ///
+  /// In en, this message translates to:
+  /// **'One more'**
+  String get listItemOneMore;
 
   /// Smart capture review title for a list photo
   ///
@@ -7298,6 +7400,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'If that email exists, a reset code has been sent.'**
   String get authLoginResetCodeSent;
+
+  /// Shown instead of sending a reset code when the server has no email provider configured
+  ///
+  /// In en, this message translates to:
+  /// **'This server can\'t send email, so passwords can\'t be reset here. Ask whoever runs it for help.'**
+  String get authLoginResetUnavailable;
+
+  /// Sign-up error on a server without email when the address already has an account
+  ///
+  /// In en, this message translates to:
+  /// **'An account with this email already exists. Sign in instead.'**
+  String get authSignupEmailTaken;
 
   /// Validation: all reset fields required
   ///
@@ -9584,12 +9698,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t load the pinwall.'**
   String get pinwallCouldNotLoad;
-
-  /// Hint for list composer input
-  ///
-  /// In en, this message translates to:
-  /// **'e.g. Milk, 2 avocados, or 500g flour'**
-  String get composerItemHint;
 
   /// Fallback aisle name for uncategorized items
   ///
@@ -12272,6 +12380,1182 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{name} joined · {when}'**
   String activityMemberJoined(String name, String when);
+
+  /// First run, last step: question; the answers decide which tabs this person sees
+  ///
+  /// In en, this message translates to:
+  /// **'What will you use mitlist for?'**
+  String get authOnboardingAreasTitle;
+
+  /// First run, last step: line under the question
+  ///
+  /// In en, this message translates to:
+  /// **'Pick as many as you like. You\'ll only see those; turn the rest on any time under You.'**
+  String get authOnboardingAreasBody;
+
+  /// First run, last step: answer for the Kitchen tab
+  ///
+  /// In en, this message translates to:
+  /// **'Recipes and meals'**
+  String get authOnboardingAreasKitchen;
+
+  /// First run, last step: keeps every tab
+  ///
+  /// In en, this message translates to:
+  /// **'Show me everything'**
+  String get authOnboardingAreasAll;
+
+  /// You screen row and sheet title: which parts of the app (tabs) this person sees
+  ///
+  /// In en, this message translates to:
+  /// **'What you use'**
+  String get appAreasTitle;
+
+  /// Sheet explaining that hidden tabs keep their data and come back when something involves you
+  ///
+  /// In en, this message translates to:
+  /// **'Hiding a part keeps everything in it. If someone adds an expense with you or it\'s your turn for a chore, that part shows up for you anyway.'**
+  String get appAreasBody;
+
+  /// You screen row value when every part of the app is shown
+  ///
+  /// In en, this message translates to:
+  /// **'Everything'**
+  String get appAreasAll;
+
+  /// Home quick start: label before the other open steps, shown as small buttons under the next step
+  ///
+  /// In en, this message translates to:
+  /// **'Later:'**
+  String get hubChecklistLater;
+
+  /// Home pinwall in a household with nothing in it yet (no note box shown)
+  ///
+  /// In en, this message translates to:
+  /// **'Notes for the whole house go here. Open the board to pin one.'**
+  String get pinwallHubEmptyIntro;
+
+  /// Title of the Widgets page (You > Home screen widgets)
+  ///
+  /// In en, this message translates to:
+  /// **'Home screen widgets'**
+  String get widgetsPageTitle;
+
+  /// You screen: subtitle of the row that opens the Widgets page
+  ///
+  /// In en, this message translates to:
+  /// **'The list and chores at a glance'**
+  String get widgetsPageAccountRowValue;
+
+  /// Widgets page: intro under the title
+  ///
+  /// In en, this message translates to:
+  /// **'See the shopping list and today\'s chores without opening the app, and tick things off right from your home screen.'**
+  String get widgetsPageIntro;
+
+  /// Widgets page: heading of the numbered how-to steps
+  ///
+  /// In en, this message translates to:
+  /// **'How to add a widget'**
+  String get widgetsPageStepsTitle;
+
+  /// iOS how-to step 1
+  ///
+  /// In en, this message translates to:
+  /// **'Touch and hold an empty spot on your Home Screen, then tap Edit and Add Widget.'**
+  String get widgetsPageIosStep1;
+
+  /// iOS how-to step 2
+  ///
+  /// In en, this message translates to:
+  /// **'Search for “mitlist”.'**
+  String get widgetsPageIosStep2;
+
+  /// iOS how-to step 3
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a widget, swipe to the size you want and tap Add Widget.'**
+  String get widgetsPageIosStep3;
+
+  /// iOS how-to step 4
+  ///
+  /// In en, this message translates to:
+  /// **'To choose the household or list, touch and hold the widget and tap Edit Widget.'**
+  String get widgetsPageIosStep4;
+
+  /// Android how-to step 1
+  ///
+  /// In en, this message translates to:
+  /// **'Touch and hold an empty spot on your home screen.'**
+  String get widgetsPageAndroidStep1;
+
+  /// Android how-to step 2
+  ///
+  /// In en, this message translates to:
+  /// **'Tap Widgets and find mitlist.'**
+  String get widgetsPageAndroidStep2;
+
+  /// Android how-to step 3
+  ///
+  /// In en, this message translates to:
+  /// **'Touch and hold a widget and drag it where you want it.'**
+  String get widgetsPageAndroidStep3;
+
+  /// Android button under a widget preview: asks the launcher to pin it
+  ///
+  /// In en, this message translates to:
+  /// **'Add to home screen'**
+  String get widgetsPageAdd;
+
+  /// Badge on a widget that is already on the home screen
+  ///
+  /// In en, this message translates to:
+  /// **'Added'**
+  String get widgetsPageAdded;
+
+  /// Toast when the launcher could not pin a widget in one tap
+  ///
+  /// In en, this message translates to:
+  /// **'Your home screen couldn\'t add it directly. Follow the steps below.'**
+  String get widgetsPagePinFailed;
+
+  /// Name of the shopping list widget
+  ///
+  /// In en, this message translates to:
+  /// **'Shopping list'**
+  String get widgetsPageShoppingListName;
+
+  /// What the shopping list widget does
+  ///
+  /// In en, this message translates to:
+  /// **'Tick items off in the shop and add new ones with +.'**
+  String get widgetsPageShoppingListDesc;
+
+  /// Name of the chores widget
+  ///
+  /// In en, this message translates to:
+  /// **'Chores today'**
+  String get widgetsPageChoresName;
+
+  /// What the chores widget does
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s due today and whose turn it is. Mark a chore done in one tap.'**
+  String get widgetsPageChoresDesc;
+
+  /// Name of the quick add widget (Android)
+  ///
+  /// In en, this message translates to:
+  /// **'Quick add'**
+  String get widgetsPageQuickAddName;
+
+  /// What the quick add widget does
+  ///
+  /// In en, this message translates to:
+  /// **'One tap to put something on the list.'**
+  String get widgetsPageQuickAddDesc;
+
+  /// Name of the household today widget
+  ///
+  /// In en, this message translates to:
+  /// **'Household today'**
+  String get widgetsPageHouseholdName;
+
+  /// What the household today widget does
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s chores, the shopping list and tonight\'s meal in one place.'**
+  String get widgetsPageHouseholdDesc;
+
+  /// Screen reader label of a widget preview
+  ///
+  /// In en, this message translates to:
+  /// **'Preview of the {name} widget'**
+  String widgetsPagePreviewLabel(String name);
+
+  /// Sample household name in widget previews when the real one is unknown
+  ///
+  /// In en, this message translates to:
+  /// **'Our home'**
+  String get widgetsPageSampleHousehold;
+
+  /// Sample list name in widget previews
+  ///
+  /// In en, this message translates to:
+  /// **'Groceries'**
+  String get widgetsPageSampleListName;
+
+  /// Sample list item in widget previews
+  ///
+  /// In en, this message translates to:
+  /// **'Oat milk'**
+  String get widgetsPageSampleItem1;
+
+  /// Sample list item in widget previews
+  ///
+  /// In en, this message translates to:
+  /// **'Bananas'**
+  String get widgetsPageSampleItem2;
+
+  /// Sample list item in widget previews
+  ///
+  /// In en, this message translates to:
+  /// **'Coffee beans'**
+  String get widgetsPageSampleItem3;
+
+  /// Sample list item in widget previews
+  ///
+  /// In en, this message translates to:
+  /// **'Rice'**
+  String get widgetsPageSampleItem4;
+
+  /// Sample chore in widget previews
+  ///
+  /// In en, this message translates to:
+  /// **'Take out the bins'**
+  String get widgetsPageSampleChore1;
+
+  /// Sample chore in widget previews
+  ///
+  /// In en, this message translates to:
+  /// **'Water the plants'**
+  String get widgetsPageSampleChore2;
+
+  /// Sample tonight's meal line in the household widget preview
+  ///
+  /// In en, this message translates to:
+  /// **'Tonight: pasta bake'**
+  String get widgetsPageSampleMeal;
+
+  /// Placeholder text in the quick add widget preview
+  ///
+  /// In en, this message translates to:
+  /// **'Add to the list'**
+  String get widgetsPageSampleAddHint;
+
+  /// Caption above the list name in the iOS quick add widget preview ("Add to" / "Groceries")
+  ///
+  /// In en, this message translates to:
+  /// **'Add to'**
+  String get widgetsPageSampleAddTo;
+
+  /// Widget preview: how many list items are still open
+  ///
+  /// In en, this message translates to:
+  /// **'{count} left'**
+  String widgetsPageSampleLeft(int count);
+
+  /// Widget preview: how many chores are due
+  ///
+  /// In en, this message translates to:
+  /// **'{count} due'**
+  String widgetsPageSampleDue(int count);
+
+  /// Home promo sheet headline for home screen widgets (household benefit, not the feature)
+  ///
+  /// In en, this message translates to:
+  /// **'Your shopping list, on your home screen'**
+  String get widgetPromoHeadline;
+
+  /// Home promo sheet body for home screen widgets
+  ///
+  /// In en, this message translates to:
+  /// **'Tick things off in the shop without opening the app. Everyone at home sees it straight away.'**
+  String get widgetPromoBody;
+
+  /// Home promo sheet primary button on Android: pins the shopping list widget
+  ///
+  /// In en, this message translates to:
+  /// **'Add to home screen'**
+  String get widgetPromoAdd;
+
+  /// Home promo sheet primary button on iOS: opens the Widgets page
+  ///
+  /// In en, this message translates to:
+  /// **'Show me how'**
+  String get widgetPromoShowMe;
+
+  /// Home promo sheet: dismiss button
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get widgetPromoNotNow;
+
+  /// List screen app bar: undo the last change of this visit
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get listUndoUndoTooltip;
+
+  /// List screen app bar: redo the last undone change
+  ///
+  /// In en, this message translates to:
+  /// **'Redo'**
+  String get listUndoRedoTooltip;
+
+  /// Toast when an undo was skipped because a household member changed or removed the item meanwhile
+  ///
+  /// In en, this message translates to:
+  /// **'Someone else changed this, so it wasn\'t undone'**
+  String get listUndoChangedElsewhere;
+
+  /// Toast when a redo was skipped because a household member changed or removed the item meanwhile
+  ///
+  /// In en, this message translates to:
+  /// **'Someone else changed this, so it wasn\'t redone'**
+  String get listUndoRedoChangedElsewhere;
+
+  /// Toast after an undo put several removed list items back
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Restored 1 item} other{Restored {count} items}}'**
+  String listUndoRestoredItems(num count);
+
+  /// Toast when an undo could not be saved
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t undo that. Try again.'**
+  String get listUndoCouldNotUndo;
+
+  /// Toast when a redo could not be saved
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t redo that. Try again.'**
+  String get listUndoCouldNotRedo;
+
+  /// Sync status: a queued op putting a deleted list item back
+  ///
+  /// In en, this message translates to:
+  /// **'Restore item'**
+  String get listUndoOutboxRestoreItem;
+
+  /// A housemate's shared calendar event whose title is not shared
+  ///
+  /// In en, this message translates to:
+  /// **'Busy'**
+  String get calendarExternalBusy;
+
+  /// Shared calendar event lasting the whole day
+  ///
+  /// In en, this message translates to:
+  /// **'All day'**
+  String get calendarExternalAllDay;
+
+  /// Time range of a shared calendar event
+  ///
+  /// In en, this message translates to:
+  /// **'{start} – {end}'**
+  String calendarExternalTimeRange(String start, String end);
+
+  /// First day of an event that continues past midnight
+  ///
+  /// In en, this message translates to:
+  /// **'from {time}'**
+  String calendarExternalFrom(String time);
+
+  /// Last day of an event that began on an earlier day
+  ///
+  /// In en, this message translates to:
+  /// **'until {time}'**
+  String calendarExternalUntil(String time);
+
+  /// Marker for an event marked free (transparent) in its calendar
+  ///
+  /// In en, this message translates to:
+  /// **'free'**
+  String get calendarExternalFree;
+
+  /// The viewer, in place of their own name
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get calendarExternalYou;
+
+  /// A member whose name is not known yet
+  ///
+  /// In en, this message translates to:
+  /// **'A housemate'**
+  String get calendarExternalSomeone;
+
+  /// Screen reader label of a shared event
+  ///
+  /// In en, this message translates to:
+  /// **'{person}: {what}, {when}'**
+  String calendarExternalSemantics(String person, String what, String when);
+
+  /// Screen reader label of a shared event marked free
+  ///
+  /// In en, this message translates to:
+  /// **'{person}: {what}, {when}, marked free'**
+  String calendarExternalSemanticsFree(String person, String what, String when);
+
+  /// Heading of the who's-around summary for a day
+  ///
+  /// In en, this message translates to:
+  /// **'Who\'s around · {day}'**
+  String calendarWhosAroundTitle(String day);
+
+  /// Member has nothing busy that day
+  ///
+  /// In en, this message translates to:
+  /// **'Free'**
+  String get calendarWhosAroundFree;
+
+  /// Member has an all-day event
+  ///
+  /// In en, this message translates to:
+  /// **'Away all day'**
+  String get calendarWhosAroundAway;
+
+  /// Member is busy at these times
+  ///
+  /// In en, this message translates to:
+  /// **'Busy {times}'**
+  String calendarWhosAroundBusy(String times);
+
+  /// Screen reader hint on a day header
+  ///
+  /// In en, this message translates to:
+  /// **'Show who\'s around this day'**
+  String get calendarWhosAroundSelectDay;
+
+  /// First-run hint on the calendar
+  ///
+  /// In en, this message translates to:
+  /// **'See when everyone\'s around'**
+  String get calendarShareHintTitle;
+
+  /// First-run hint body
+  ///
+  /// In en, this message translates to:
+  /// **'Share your Google, Apple or Outlook calendar with the household, as busy times only or with titles. You choose what they see.'**
+  String get calendarShareHintBody;
+
+  /// Button to the shared calendars page
+  ///
+  /// In en, this message translates to:
+  /// **'Share my calendar'**
+  String get calendarShareHintAction;
+
+  /// Shared calendars page title
+  ///
+  /// In en, this message translates to:
+  /// **'Shared calendars'**
+  String get sharedCalendarsTitle;
+
+  /// Subtitle of the You screen row
+  ///
+  /// In en, this message translates to:
+  /// **'Show the household when you\'re busy'**
+  String get sharedCalendarsAccountRowValue;
+
+  /// Intro on the shared calendars page
+  ///
+  /// In en, this message translates to:
+  /// **'Connect your calendars so your household can see when you\'re busy or away. Nothing is shared until you choose it for a household below.'**
+  String get sharedCalendarsIntro;
+
+  /// Shown when the person has no household
+  ///
+  /// In en, this message translates to:
+  /// **'Join or create a household to share a calendar with it.'**
+  String get sharedCalendarsNoHouseholds;
+
+  /// Empty state
+  ///
+  /// In en, this message translates to:
+  /// **'No calendars connected yet.'**
+  String get sharedCalendarsEmpty;
+
+  /// Connection kind: this phone's calendars
+  ///
+  /// In en, this message translates to:
+  /// **'On this phone'**
+  String get sharedCalendarsKindThisPhone;
+
+  /// Connection kind: another phone's calendars
+  ///
+  /// In en, this message translates to:
+  /// **'On another phone'**
+  String get sharedCalendarsKindOtherPhone;
+
+  /// Connection kind: iCal link
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar link'**
+  String get sharedCalendarsKindLink;
+
+  /// Sync in progress
+  ///
+  /// In en, this message translates to:
+  /// **'Syncing…'**
+  String get sharedCalendarsSyncing;
+
+  /// Never synced
+  ///
+  /// In en, this message translates to:
+  /// **'Not synced yet'**
+  String get sharedCalendarsNeverSynced;
+
+  /// Last sync time
+  ///
+  /// In en, this message translates to:
+  /// **'Synced {time}'**
+  String sharedCalendarsSyncedAt(String time);
+
+  /// Tooltip of the sync button
+  ///
+  /// In en, this message translates to:
+  /// **'Sync now'**
+  String get sharedCalendarsSyncNow;
+
+  /// Sync refused because the last one was under a minute ago
+  ///
+  /// In en, this message translates to:
+  /// **'Already up to date. Try again in a minute.'**
+  String get sharedCalendarsSyncTooSoon;
+
+  /// Device upload failed
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t update this phone\'s calendars. We\'ll try again later.'**
+  String get sharedCalendarsSyncFailed;
+
+  /// Note on another phone's connection
+  ///
+  /// In en, this message translates to:
+  /// **'Read on another phone. Your choices here apply right away; its events update when that phone opens mitlist.'**
+  String get sharedCalendarsOtherPhoneNote;
+
+  /// Connection without calendars
+  ///
+  /// In en, this message translates to:
+  /// **'No calendars found yet.'**
+  String get sharedCalendarsNoCalendars;
+
+  /// Fallback name for an unnamed calendar
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar'**
+  String get sharedCalendarsUnnamed;
+
+  /// Share choice: time blocks only
+  ///
+  /// In en, this message translates to:
+  /// **'Busy only'**
+  String get sharedCalendarsShareBusy;
+
+  /// Share choice: titles too
+  ///
+  /// In en, this message translates to:
+  /// **'With titles'**
+  String get sharedCalendarsShareDetails;
+
+  /// Share choice: nothing
+  ///
+  /// In en, this message translates to:
+  /// **'Not shared'**
+  String get sharedCalendarsShareNone;
+
+  /// Plain explanation of busy-only sharing
+  ///
+  /// In en, this message translates to:
+  /// **'{household} sees when you\'re busy, never what it is.'**
+  String sharedCalendarsExplainBusy(String household);
+
+  /// Plain explanation of sharing with titles
+  ///
+  /// In en, this message translates to:
+  /// **'{household} sees your events\' titles and times. Events marked private still show as busy.'**
+  String sharedCalendarsExplainDetails(String household);
+
+  /// Plain explanation of not sharing
+  ///
+  /// In en, this message translates to:
+  /// **'{household} sees nothing from this calendar.'**
+  String sharedCalendarsExplainNone(String household);
+
+  /// Add section heading
+  ///
+  /// In en, this message translates to:
+  /// **'Add a calendar'**
+  String get sharedCalendarsAdd;
+
+  /// Add the phone's calendars
+  ///
+  /// In en, this message translates to:
+  /// **'Calendars on this phone'**
+  String get sharedCalendarsAddPhone;
+
+  /// Description of the phone option
+  ///
+  /// In en, this message translates to:
+  /// **'Every account on this phone: Google, iCloud, Outlook and more. Read on the phone; only what you share leaves it.'**
+  String get sharedCalendarsAddPhoneDesc;
+
+  /// Description of the link option
+  ///
+  /// In en, this message translates to:
+  /// **'Paste a private iCal link from Google, iCloud or Outlook. Works on every device.'**
+  String get sharedCalendarsAddLinkDesc;
+
+  /// After adding a link: it is not shared yet
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar added. Choose below what each household sees.'**
+  String get sharedCalendarsAddedNotShared;
+
+  /// Default name of the phone connection
+  ///
+  /// In en, this message translates to:
+  /// **'This phone'**
+  String get sharedCalendarsPhoneDefaultName;
+
+  /// Dialog title when permission is missing
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar access is off'**
+  String get sharedCalendarsPermissionDeniedTitle;
+
+  /// Dialog body when permission was denied
+  ///
+  /// In en, this message translates to:
+  /// **'To share calendars from this phone, allow mitlist to read your calendars in Settings. Or add a calendar link instead.'**
+  String get sharedCalendarsPermissionDeniedBody;
+
+  /// Dialog body when access is restricted
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar access is blocked on this phone (for example by Screen Time or device management). You can add a calendar link instead.'**
+  String get sharedCalendarsPermissionRestricted;
+
+  /// Open system settings
+  ///
+  /// In en, this message translates to:
+  /// **'Open Settings'**
+  String get sharedCalendarsOpenSettings;
+
+  /// Rename dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Rename calendar'**
+  String get sharedCalendarsRenameTitle;
+
+  /// Remove dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name}?'**
+  String sharedCalendarsRemoveTitle(String name);
+
+  /// Remove dialog body
+  ///
+  /// In en, this message translates to:
+  /// **'Its events disappear from every household calendar. Your calendar itself is not changed.'**
+  String get sharedCalendarsRemoveBody;
+
+  /// Upcoming section title
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming events'**
+  String get sharedCalendarsUpcomingTitle;
+
+  /// Upcoming section intro
+  ///
+  /// In en, this message translates to:
+  /// **'What housemates see of your next two weeks. Tap an event to hide it or show more or less of it. A repeating event counts as one.'**
+  String get sharedCalendarsUpcomingIntro;
+
+  /// Upcoming events failed to load
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load upcoming events.'**
+  String get sharedCalendarsUpcomingFailed;
+
+  /// No upcoming events
+  ///
+  /// In en, this message translates to:
+  /// **'No upcoming events in your shared calendars.'**
+  String get sharedCalendarsUpcomingEmpty;
+
+  /// Which households see an event with its title
+  ///
+  /// In en, this message translates to:
+  /// **'{households}: title and time'**
+  String sharedCalendarsSeesDetails(String households);
+
+  /// Which households see an event as busy
+  ///
+  /// In en, this message translates to:
+  /// **'{households}: busy only'**
+  String sharedCalendarsSeesBusy(String households);
+
+  /// Nobody sees this event
+  ///
+  /// In en, this message translates to:
+  /// **'Housemates don\'t see this'**
+  String get sharedCalendarsSeesNothing;
+
+  /// Event follows its calendar's sharing
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar\'s setting'**
+  String get sharedCalendarsOverrideCalendar;
+
+  /// Event hidden from everyone
+  ///
+  /// In en, this message translates to:
+  /// **'Hidden'**
+  String get sharedCalendarsOverrideHidden;
+
+  /// Event shown as busy
+  ///
+  /// In en, this message translates to:
+  /// **'Busy'**
+  String get sharedCalendarsOverrideBusy;
+
+  /// Event shown with its title
+  ///
+  /// In en, this message translates to:
+  /// **'With title'**
+  String get sharedCalendarsOverrideDetails;
+
+  /// Override option description
+  ///
+  /// In en, this message translates to:
+  /// **'Shown as this calendar is shared with each household.'**
+  String get sharedCalendarsOverrideCalendarDesc;
+
+  /// Override option description
+  ///
+  /// In en, this message translates to:
+  /// **'No household sees it at all.'**
+  String get sharedCalendarsOverrideHiddenDesc;
+
+  /// Override option description
+  ///
+  /// In en, this message translates to:
+  /// **'Households that see this calendar see a busy block, no title.'**
+  String get sharedCalendarsOverrideBusyDesc;
+
+  /// Override option description
+  ///
+  /// In en, this message translates to:
+  /// **'Households that see this calendar see the title, even if it\'s private in your calendar.'**
+  String get sharedCalendarsOverrideDetailsDesc;
+
+  /// Event without a title
+  ///
+  /// In en, this message translates to:
+  /// **'(No title)'**
+  String get sharedCalendarsEventNoTitle;
+
+  /// Event is private in its source calendar
+  ///
+  /// In en, this message translates to:
+  /// **'private'**
+  String get sharedCalendarsEventPrivate;
+
+  /// Event is marked free in its calendar
+  ///
+  /// In en, this message translates to:
+  /// **'marked free'**
+  String get sharedCalendarsEventFree;
+
+  /// Screen reader: the event's current choice
+  ///
+  /// In en, this message translates to:
+  /// **'Setting: {choice}'**
+  String sharedCalendarsEventChoice(String choice);
+
+  /// last_error fetch_failed
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load this calendar on the last try. We\'ll keep trying.'**
+  String get calendarConnectionErrorFetchFailed;
+
+  /// last_error not_calendar
+  ///
+  /// In en, this message translates to:
+  /// **'This link no longer returns a calendar. Remove it and add the current link.'**
+  String get calendarConnectionErrorNotCalendar;
+
+  /// last_error too_large
+  ///
+  /// In en, this message translates to:
+  /// **'This calendar is too big to sync. Try a link to a smaller calendar.'**
+  String get calendarConnectionErrorTooLarge;
+
+  /// last_error unauthorized
+  ///
+  /// In en, this message translates to:
+  /// **'This link no longer works. It may have been reset or removed; add the new link.'**
+  String get calendarConnectionErrorUnauthorized;
+
+  /// Unknown last_error
+  ///
+  /// In en, this message translates to:
+  /// **'This calendar couldn\'t sync.'**
+  String get calendarConnectionErrorOther;
+
+  /// Add link sheet title
+  ///
+  /// In en, this message translates to:
+  /// **'Add a calendar link'**
+  String get calendarLinkSheetTitle;
+
+  /// Button: add a calendar link
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar link'**
+  String get calendarLinkAddAction;
+
+  /// Name field hint
+  ///
+  /// In en, this message translates to:
+  /// **'Optional, e.g. Work'**
+  String get calendarLinkNameHint;
+
+  /// URL field label
+  ///
+  /// In en, this message translates to:
+  /// **'Private iCal link'**
+  String get calendarLinkUrlLabel;
+
+  /// URL field hint
+  ///
+  /// In en, this message translates to:
+  /// **'https:// or webcal://'**
+  String get calendarLinkUrlHint;
+
+  /// Privacy note under the URL field
+  ///
+  /// In en, this message translates to:
+  /// **'Treat this link like a password: anyone with it can read the calendar. mitlist keeps it encrypted and never shows it again.'**
+  String get calendarLinkPrivacyNote;
+
+  /// Invalid URL
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a link that starts with https:// or webcal://.'**
+  String get calendarLinkErrorUrl;
+
+  /// Server said not_calendar
+  ///
+  /// In en, this message translates to:
+  /// **'That link isn\'t a calendar. Copy the iCal (.ics) address, not the link to the calendar\'s web page.'**
+  String get calendarLinkErrorNotCalendar;
+
+  /// Server could not fetch the link
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t load that calendar. Check the link and that the calendar is still shared or published.'**
+  String get calendarLinkErrorFetch;
+
+  /// Steps heading
+  ///
+  /// In en, this message translates to:
+  /// **'Where to find the link'**
+  String get calendarLinkStepsTitle;
+
+  /// Provider name
+  ///
+  /// In en, this message translates to:
+  /// **'Google Calendar'**
+  String get calendarLinkStepsGoogleTitle;
+
+  /// Google steps
+  ///
+  /// In en, this message translates to:
+  /// **'On a computer, open Settings, pick your calendar under \"Settings for my calendars\", then copy \"Secret address in iCal format\" under Integrate calendar.'**
+  String get calendarLinkStepsGoogle;
+
+  /// Provider name
+  ///
+  /// In en, this message translates to:
+  /// **'Apple iCloud Calendar'**
+  String get calendarLinkStepsAppleTitle;
+
+  /// Apple steps
+  ///
+  /// In en, this message translates to:
+  /// **'In the Calendar app, tap Calendars, then the info button next to the calendar. Turn on Public Calendar and copy the link. Anyone with the link can see it; on this phone, \"Calendars on this phone\" is more private.'**
+  String get calendarLinkStepsApple;
+
+  /// Provider name
+  ///
+  /// In en, this message translates to:
+  /// **'Outlook'**
+  String get calendarLinkStepsOutlookTitle;
+
+  /// Outlook steps
+  ///
+  /// In en, this message translates to:
+  /// **'In Outlook on the web, open Settings > Calendar > Shared calendars, publish the calendar (\"Can view all details\" or \"Can view when I\'m busy\") and copy the ICS link.'**
+  String get calendarLinkStepsOutlook;
+
+  /// Shown at the 10-connection limit
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve connected 10 calendars, the most there can be. Remove one to add another.'**
+  String get sharedCalendarsLimitReached;
+
+  /// Who's around: nothing busy that day
+  ///
+  /// In en, this message translates to:
+  /// **'Free all day'**
+  String get calendarWhosAroundFreeAllDay;
+
+  /// Who's around: free after their last busy stretch
+  ///
+  /// In en, this message translates to:
+  /// **'Free from {time}'**
+  String calendarWhosAroundFreeFrom(String time);
+
+  /// Who's around, today: busy right now until
+  ///
+  /// In en, this message translates to:
+  /// **'Busy until {time}'**
+  String calendarWhosAroundBusyUntil(String time);
+
+  /// Who's around: busy from this time until midnight
+  ///
+  /// In en, this message translates to:
+  /// **'Busy from {time}'**
+  String calendarWhosAroundBusyFrom(String time);
+
+  /// Who's around: member who shares no calendar
+  ///
+  /// In en, this message translates to:
+  /// **'Doesn\'t share a calendar'**
+  String get calendarWhosAroundNotSharing;
+
+  /// Household summary: everyone free 18-23h
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone\'s free all evening'**
+  String get calendarWhosAroundEveningAll;
+
+  /// Household summary when some members share nothing
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone who shares is free all evening'**
+  String get calendarWhosAroundSharersEveningAll;
+
+  /// Household summary: everyone free from a time
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone\'s free from {time}'**
+  String calendarWhosAroundEveningFrom(String time);
+
+  /// Household summary (sharers only): free from
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone who shares is free from {time}'**
+  String calendarWhosAroundSharersEveningFrom(String time);
+
+  /// Household summary: everyone free during a stretch
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone\'s free {start} – {end}'**
+  String calendarWhosAroundEveningBetween(String start, String end);
+
+  /// Household summary (sharers only): free during a stretch
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone who shares is free {start} – {end}'**
+  String calendarWhosAroundSharersEveningBetween(String start, String end);
+
+  /// Household summary: no common free evening
+  ///
+  /// In en, this message translates to:
+  /// **'Not everyone\'s free in the evening'**
+  String get calendarWhosAroundEveningNone;
+
+  /// Household summary (sharers only): no common free evening
+  ///
+  /// In en, this message translates to:
+  /// **'Not everyone who shares is free in the evening'**
+  String get calendarWhosAroundSharersEveningNone;
+
+  /// Hint under the who's around card
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a day to check another one.'**
+  String get calendarWhosAroundTapHint;
+
+  /// Tour step 1, pointing at Home's calendar button
+  ///
+  /// In en, this message translates to:
+  /// **'New: see when everyone\'s around. Open the calendar.'**
+  String get calendarTourHome;
+
+  /// Tour step on the calendar, pointing at the shared calendars button
+  ///
+  /// In en, this message translates to:
+  /// **'Share your calendar here, so the household knows when you\'re busy.'**
+  String get calendarTourShare;
+
+  /// Tour step pointing at the add-a-calendar buttons
+  ///
+  /// In en, this message translates to:
+  /// **'Add your phone\'s calendars or a calendar link. Nothing is shared until you choose.'**
+  String get calendarTourAdd;
+
+  /// Tour step pointing at the per-household choice
+  ///
+  /// In en, this message translates to:
+  /// **'Choose what each household sees: busy only, or with titles.'**
+  String get calendarTourChoices;
+
+  /// Tour step pointing at Upcoming events
+  ///
+  /// In en, this message translates to:
+  /// **'Hide anything private, one event at a time.'**
+  String get calendarTourUpcoming;
+
+  /// Coach mark: next tip
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get coachMarkNext;
+
+  /// Coach mark: end the tour
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get coachMarkSkip;
+
+  /// Coach mark: last tip
+  ///
+  /// In en, this message translates to:
+  /// **'Got it'**
+  String get coachMarkDone;
+
+  /// Replays the shared calendars tour
+  ///
+  /// In en, this message translates to:
+  /// **'Show me how'**
+  String get sharedCalendarsShowMeHow;
+
+  /// iOS: no private flag on phone calendars
+  ///
+  /// In en, this message translates to:
+  /// **'iPhone can\'t tell which events are private, so events can show with titles. Hide any event below.'**
+  String get sharedCalendarsIosPrivateNote;
+
+  /// Tooltip: one tap hides an event
+  ///
+  /// In en, this message translates to:
+  /// **'Hide from housemates'**
+  String get sharedCalendarsHideEvent;
+
+  /// Tooltip: undo hiding an event
+  ///
+  /// In en, this message translates to:
+  /// **'Show again'**
+  String get sharedCalendarsShowAgain;
+
+  /// Upcoming: event is private at source
+  ///
+  /// In en, this message translates to:
+  /// **'Private in your calendar'**
+  String get sharedCalendarsEventPrivateNote;
+
+  /// Upcoming: event is marked free
+  ///
+  /// In en, this message translates to:
+  /// **'Marked free in your calendar'**
+  String get sharedCalendarsEventFreeNote;
+
+  /// Calendar shared with nobody
+  ///
+  /// In en, this message translates to:
+  /// **'No household sees this calendar.'**
+  String get sharedCalendarsNotSharedAnywhere;
+
+  /// Last sync under a minute ago
+  ///
+  /// In en, this message translates to:
+  /// **'Synced just now'**
+  String get sharedCalendarsSyncedJustNow;
+
+  /// Last sync yesterday
+  ///
+  /// In en, this message translates to:
+  /// **'Synced yesterday'**
+  String get sharedCalendarsSyncedYesterday;
+
+  /// Screen reader name of a coach mark
+  ///
+  /// In en, this message translates to:
+  /// **'Tip {step} of {total}'**
+  String coachMarkStepLabel(int step, int total);
+
+  /// Last sync minutes ago
+  ///
+  /// In en, this message translates to:
+  /// **'Synced {minutes} min ago'**
+  String sharedCalendarsSyncedMinutes(int minutes);
+
+  /// Last sync hours ago
+  ///
+  /// In en, this message translates to:
+  /// **'Synced {hours} h ago'**
+  String sharedCalendarsSyncedHours(int hours);
+
+  /// With titles, for iPhone calendars (no private flag)
+  ///
+  /// In en, this message translates to:
+  /// **'{household} sees your events\' titles and times.'**
+  String sharedCalendarsExplainDetailsNoPrivate(String household);
+
+  /// Tooltip: expand who's around
+  ///
+  /// In en, this message translates to:
+  /// **'Show everyone\'s times'**
+  String get calendarWhosAroundExpand;
+
+  /// Tooltip: collapse who's around
+  ///
+  /// In en, this message translates to:
+  /// **'Show less'**
+  String get calendarWhosAroundCollapse;
+
+  /// Calendar summary row
+  ///
+  /// In en, this message translates to:
+  /// **'{household}: busy only'**
+  String sharedCalendarsSummaryBusy(String household);
+
+  /// Calendar summary row
+  ///
+  /// In en, this message translates to:
+  /// **'{household}: with titles'**
+  String sharedCalendarsSummaryDetails(String household);
+
+  /// Calendar summary row
+  ///
+  /// In en, this message translates to:
+  /// **'{household}: not shared'**
+  String sharedCalendarsSummaryNone(String household);
+
+  /// Calendar shared with no household
+  ///
+  /// In en, this message translates to:
+  /// **'Not shared'**
+  String get sharedCalendarsSummaryNotShared;
+
+  /// Expand a calendar's choices
+  ///
+  /// In en, this message translates to:
+  /// **'Show sharing choices'**
+  String get sharedCalendarsShowChoices;
+
+  /// Collapse a calendar's choices
+  ///
+  /// In en, this message translates to:
+  /// **'Hide sharing choices'**
+  String get sharedCalendarsHideChoices;
 }
 
 class _AppLocalizationsDelegate

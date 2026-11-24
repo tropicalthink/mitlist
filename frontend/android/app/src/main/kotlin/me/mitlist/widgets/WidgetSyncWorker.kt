@@ -4,6 +4,8 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.os.Build
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
@@ -69,10 +71,36 @@ class WidgetSyncWorker(context: Context, params: WorkerParameters) : CoroutineWo
 }
 
 object WidgetSyncScheduler {
-    private const val UNIQUE_NOW = "mitlist_widget_sync"
-    private const val UNIQUE_PERIODIC = "mitlist_widget_periodic"
+    // v2: work enqueued by older builds needs a validated network and, on a
+    // network that never validates, never runs; new syncs appended to that
+    // chain would wait behind it forever. New names, and the old ones are
+    // cancelled (see [cancelLegacy]).
+    private const val UNIQUE_NOW = "mitlist_widget_sync_v2"
+    private const val UNIQUE_PERIODIC = "mitlist_widget_periodic_v2"
+    private val LEGACY = listOf("mitlist_widget_sync", "mitlist_widget_periodic")
 
-    private val network = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
+    /**
+     * Any network with internet, validated or not. WorkManager's plain
+     * CONNECTED becomes a JobScheduler request that also needs VALIDATED, so
+     * on Wi-Fi whose connectivity check fails (corporate proxies, captive
+     * portals, a self-hosted server on a LAN with no internet) a widget tick
+     * would never be sent, even though the server is reachable. Found on an
+     * emulator behind such a network. A request that cannot reach the
+     * server fails fast and is retried with backoff.
+     */
+    private val network: Constraints = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+        Constraints.Builder()
+            .setRequiredNetworkRequest(
+                NetworkRequest.Builder()
+                    .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                    .removeCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+                    .build(),
+                NetworkType.CONNECTED,
+            )
+            .build()
+    } else {
+        Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
+    }
 
     /**
      * Delivers queued ops and refreshes the snapshot as soon as there is
@@ -90,13 +118,43 @@ object WidgetSyncScheduler {
             .enqueueUniqueWork(UNIQUE_NOW, ExistingWorkPolicy.APPEND_OR_REPLACE, request)
     }
 
-    /** The hourly backstop (D6), kept while any widget is on a home screen. */
+    /**
+     * The periodic backstop (D6), kept while any widget is on a home screen.
+     * 15 minutes is WorkManager's minimum: until a push token is registered
+     * it is the only way other members' changes reach an idle phone. UPDATE
+     * (not KEEP) so installs that still hold the old hourly job move to the
+     * new interval without losing its schedule.
+     */
     fun ensurePeriodic(context: Context) {
-        val request = PeriodicWorkRequestBuilder<WidgetSyncWorker>(60, TimeUnit.MINUTES)
+        cancelLegacy(context)
+        val request = PeriodicWorkRequestBuilder<WidgetSyncWorker>(PERIODIC_MINUTES, TimeUnit.MINUTES)
             .setConstraints(network)
             .build()
         WorkManager.getInstance(context.applicationContext)
-            .enqueueUniquePeriodicWork(UNIQUE_PERIODIC, ExistingPeriodicWorkPolicy.KEEP, request)
+            .enqueueUniquePeriodicWork(UNIQUE_PERIODIC, ExistingPeriodicWorkPolicy.UPDATE, request)
+    }
+
+    /**
+     * Fetches now when there is a credential and the snapshot is missing or
+     * older than [STALE_FOR_REFRESH_MILLIS] (a widget was just placed, the
+     * phone rebooted, the app was updated).
+     */
+    fun refreshIfStale(context: Context, now: Long = System.currentTimeMillis()) {
+        val app = context.applicationContext
+        if (!CredentialStore.has(app)) return
+        val lastFetch = WidgetStateStore(app).lastFetchAt
+        val missing = WidgetFiles.snapshot(app).read() == null
+        if (missing || now - lastFetch > STALE_FOR_REFRESH_MILLIS) {
+            syncNow(app, forceFetch = true, expedited = missing)
+        }
+    }
+
+    const val PERIODIC_MINUTES = 15L
+    private const val STALE_FOR_REFRESH_MILLIS = 5L * 60 * 1000
+
+    private fun cancelLegacy(context: Context) {
+        val wm = WorkManager.getInstance(context.applicationContext)
+        LEGACY.forEach(wm::cancelUniqueWork)
     }
 
     fun cancelPeriodic(context: Context) {
@@ -107,5 +165,6 @@ object WidgetSyncScheduler {
         val wm = WorkManager.getInstance(context.applicationContext)
         wm.cancelUniqueWork(UNIQUE_NOW)
         wm.cancelUniqueWork(UNIQUE_PERIODIC)
+        LEGACY.forEach(wm::cancelUniqueWork)
     }
 }

@@ -14,9 +14,12 @@ import '../../config/api_config.dart';
 import '../../config/feedback_config.dart';
 import '../../models/auth_models.dart';
 import '../../models/group_models.dart';
+import '../../providers/app_areas_provider.dart';
+import '../../sheets/app_areas_sheet.dart';
 import '../../providers/auth_provider.dart'
     show authServiceProviderAsync, authStateProvider, isGuestProvider;
 import '../../providers/group_provider.dart';
+import '../../providers/home_widgets_provider.dart' show widgetBridgeProvider;
 import '../../providers/oauth_provider.dart';
 import '../../providers/onboarding_provider.dart';
 import '../../providers/theme_provider.dart';
@@ -705,6 +708,29 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     return AppCard(
       child: Column(
         children: [
+          _MenuRow(
+            icon: const AppIcon(name: 'squares2x2'),
+            label: l10n.appAreasTitle,
+            value: appAreasSummary(l10n, ref.watch(appAreasProvider)),
+            onTap: () => showAppAreasSheet(context),
+          ),
+          Divider(color: Theme.of(context).colorScheme.outlineVariant),
+          _MenuRow(
+            icon: const AppIcon(name: 'calendarDays'),
+            label: l10n.sharedCalendarsTitle,
+            value: l10n.sharedCalendarsAccountRowValue,
+            onTap: () => context.pushNamed('sharedCalendars'),
+          ),
+          Divider(color: Theme.of(context).colorScheme.outlineVariant),
+          if (ref.watch(widgetBridgeProvider).isSupported) ...[
+            _MenuRow(
+              icon: const AppIcon(name: 'devicePhoneMobile'),
+              label: l10n.widgetsPageTitle,
+              value: l10n.widgetsPageAccountRowValue,
+              onTap: () => context.pushNamed('widgets'),
+            ),
+            Divider(color: Theme.of(context).colorScheme.outlineVariant),
+          ],
           _MenuRow(
             icon: const AppIcon(name: 'inbox'),
             label: l10n.accountNotificationInbox,
@@ -1579,7 +1605,13 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
     final l10n = AppLocalizations.of(context)!;
     if (!_isGuest || !_isVerified) return const SizedBox.shrink();
     final providers = ref.watch(oauthProvidersProvider).valueOrNull ??
-        (google: false, apple: false, password: true, guest: false);
+        (
+          google: false,
+          apple: false,
+          password: true,
+          guest: false,
+          passwordReset: true,
+        );
     final hasOAuth = providers.google || providers.apple;
     if (!hasOAuth && !providers.password) return const SizedBox.shrink();
     final busy = _linkingProvider != null;
