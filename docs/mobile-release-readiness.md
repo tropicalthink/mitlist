@@ -162,6 +162,7 @@ project or release artifacts.
     provider processing in the store forms for the official build.
   - Sentry/GlitchTip crash reporting: only active when operator injects `GLITCHTIP_DSN` at build time; if the Play Store build omits the DSN define, this is not collected. Decide whether the published binary includes the DSN.
   - Expense CSV export: user-initiated, no automatic data collection.
+  - Shared calendars (`READ_CALENDAR`): "Calendar events" — collected, not shared with third parties, purpose "App functionality", optional, encrypted in transit, deletable (remove the connection or the account).
   - No location, contacts, microphone (camera used for OCR only, no upload to third parties).
 - [ ] **Internal testing → production track** — create an internal test track, upload first AAB, validate, then promote.
 - [ ] **Fastlane `Gemfile`** — add so `bundle exec fastlane` is reproducible; the current `store/fastlane/` has no `Gemfile`.
@@ -185,6 +186,7 @@ project or release artifacts.
   - Firebase App Check / Play Integrity / App Attest — integrity signals used
     for fraud and abuse prevention, not advertising or analytics.
   - Sentry/GlitchTip (Crash Data — if DSN baked into the IPA; decide before submission).
+  - Shared calendars: "User Content → Other User Content" (calendar events the person chooses to share) — linked to identity, purpose "App Functionality", not used for tracking.
   - No location, no contacts, no camera upload to third parties.
   - User-initiated data export doesn't trigger a disclosure.
 - [ ] **Screenshots per device size** — App Store requires at minimum 6.9" (iPhone 16 Pro Max: 1320×2868) and optionally 6.5" (1242×2688). No screenshots exist yet; spec is in `store/screenshot_spec.txt`.

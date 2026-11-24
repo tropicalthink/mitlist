@@ -6,7 +6,7 @@ published at <https://mitlist.me/privacy> (English) and
 so that people reading the source can see what the software does with data.
 When a provider, a feature, or a retention period changes, update all three.
 
-Last updated: 6 September 2026.
+Last updated: 24 November 2026.
 
 ## Two situations
 
@@ -40,6 +40,7 @@ service or on a server somebody operates themselves.
 | Sessions | Access and refresh token stored on the device / in browser storage | Invalidated on sign-out or password change |
 | Household content | Lists, chores, expenses and settlements, recipes, meal plans, pinwall notes, calendar, invitations, uploaded photos and receipts, plus timestamps and authorship | Visible to every member of the household. 1 GB per household, 10 MB per file, stored in Cloudflare R2 |
 | Scanner | Nothing leaves the device | Text recognition runs on-device in the iOS and Android apps; scanning is unavailable on web |
+| Shared calendars | Optional. Start and end times, the title where you chose to show it, private/free flags, and calendar names, from calendars you connect; for a calendar link, the link itself (encrypted) | Phone calendars are read on-device: unshared calendars' events and hidden events are never uploaded. A calendar link is fetched by the server about every 30 minutes and that calendar's events are stored from yesterday to 90 days ahead. Housemates receive only what you chose to show. Removing the connection deletes its events; leaving a household ends sharing with it |
 | Recipe import | The URL you paste is fetched by the server | The recipe site sees the server's address, not yours |
 | Push | Device token (FCM / APNs / Web Push) and the notification text | Optional; token deleted on sign-out |
 | Email | Address and message content, sent via Amazon SES (EU, Frankfurt) | Confirmation, password reset, invitations, optional weekly summary, and up to five getting-started tips in the first month after sign-up. The tips can be turned off in the app (You → Tips by email) or with the unsubscribe link in each one. No third-party marketing, no mailing list |

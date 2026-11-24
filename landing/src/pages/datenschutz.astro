@@ -5,7 +5,7 @@
 import LegalPage from "../components/LegalPage.astro";
 import { legal } from "../data/legal";
 const { operator } = legal;
-const lastUpdated = "14. September 2026";
+const lastUpdated = "24. November 2026";
 ---
 
 <LegalPage title="Datenschutz" description="Datenschutzerklärung für die mitlist-Website, die mitlist-Apps und den offiziell gehosteten mitlist-Dienst.">
@@ -56,6 +56,7 @@ const lastUpdated = "14. September 2026";
 
   <h2>7. Funktionen, die Daten an Dritte senden oder besonders verarbeiten</h2>
   <p><strong>Scanner für Belege, Listen und Rezepte.</strong> Die Texterkennung läuft vollständig auf Ihrem Gerät. Fotos, die Sie scannen, verlassen das Gerät nur, wenn Sie sie anschließend selbst als Anhang speichern. Es wird kein externer KI-Dienst eingebunden.</p>
+  <p><strong>Geteilte Kalender.</strong> Sie können Ihre eigenen Kalender verbinden, damit Ihr Haushalt sieht, wann Sie beschäftigt oder abwesend sind. Das ist freiwillig, und nichts wird geteilt, bevor Sie es für einen Haushalt auswählen. Für jeden Kalender und jeden Haushalt wählen Sie zwischen „nur beschäftigt“ und „mit Titeln“, und Sie können einzelne Termine ausblenden. <em>Kalender auf Ihrem Telefon</em> werden auf dem Gerät gelesen: Termine aus nicht geteilten Kalendern und ausgeblendete Termine werden nicht hochgeladen, und ein Titel wird nur hochgeladen, wenn Sie ihn anzeigen lassen. Die Namen der Kalender auf Ihrem Telefon werden hochgeladen, damit Sie zwischen ihnen wählen können; nur Sie sehen sie. Bei einem <em>Kalender-Link</em> (iCal) ruft unser Server den Link etwa alle 30 Minuten ab; der Kalenderanbieter sieht dabei die Adresse unseres Servers, nicht Ihre. Wir speichern den Link verschlüsselt und zeigen ihn nicht wieder an, und wir speichern die Termine dieses Kalenders für den Zeitraum von gestern bis 90 Tage im Voraus; Mitbewohner erhalten stets nur, was Sie freigegeben haben. Gespeichert werden Beginn und Ende, gegebenenfalls der Titel sowie die Angabe, ob ein Termin als privat oder frei markiert ist; keine Orte, Beschreibungen oder Gäste. Wenn Sie die Verbindung entfernen, werden ihre Termine gelöscht, und wenn Sie einen Haushalt verlassen, endet das Teilen mit ihm. Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO.</p>
   <p><strong>Rezept-Import per Link.</strong> Wenn Sie ein Rezept über eine Web-Adresse importieren, ruft unser Server diese Adresse ab und liest Titel, Zutaten und Schritte aus. Die Website des Rezepts sieht dabei die Adresse unseres Servers, nicht Ihre. Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO.</p>
   <p><strong>Einladungslinks.</strong> Einladungen in einen Haushalt und geteilte Rezepte sind Links mit einem zufälligen Token. Wer den Link erhält, kann das Ziel öffnen; geben Sie Einladungslinks nur an Personen weiter, die Sie in Ihrem Haushalt haben möchten.</p>
   <p><strong>Home-Assistant-Integration.</strong> Wenn Sie Ihre eigene Home-Assistant-Installation mit mitlist verbinden, greift diese mit einem von Ihnen erzeugten Zugangsschlüssel auf Ihre Haushaltsdaten zu. Sie können den Schlüssel jederzeit in der App widerrufen. Für die Home-Assistant-Installation sind Sie selbst verantwortlich.</p>

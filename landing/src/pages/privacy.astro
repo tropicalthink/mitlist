@@ -6,7 +6,7 @@
 import LegalPage from "../components/LegalPage.astro";
 import { legal } from "../data/legal";
 const { operator } = legal;
-const lastUpdated = "14 September 2026";
+const lastUpdated = "24 November 2026";
 ---
 
 <LegalPage title="Privacy" description="What data mitlist handles, where it goes, how long it stays, and what you can do about it — for the website, the apps, and the official hosted service.">
@@ -57,6 +57,7 @@ const lastUpdated = "14 September 2026";
 
   <h2>7. Features that send data somewhere or deserve a note</h2>
   <p><strong>Receipt, list, and recipe scanner.</strong> Text recognition runs entirely on your device. A photo you scan leaves the device only if you then save it as an attachment yourself. No external AI service is involved.</p>
+  <p><strong>Shared calendars.</strong> You can connect your own calendars so your household sees when you are busy or away. This is optional and nothing is shared until you choose it for a household. For each calendar and household you choose between busy times only and times with titles, and you can hide single events. <em>Calendars on your phone</em> are read on the device: events from calendars you do not share and events you hide are not uploaded, and a title is uploaded only if you chose to show it. The names of your phone's calendars are uploaded so you can choose among them; only you see them. With a <em>calendar link</em> (iCal), our server fetches the link about every 30 minutes; the calendar provider sees our server's address, not yours. We store the link encrypted and never display it again, and we store that calendar's events for the period from yesterday to 90 days ahead; housemates only ever receive what you chose to show. We store start and end times, the title where applicable, and whether an event is marked private or free; no locations, descriptions, or guests. Removing the connection deletes its events, and leaving a household ends sharing with it. Legal basis: Art. 6(1)(b) GDPR.</p>
   <p><strong>Recipe import from a link.</strong> When you import a recipe from a web address, our server fetches that address and extracts the title, ingredients, and steps. The recipe site sees our server's address, not yours. Legal basis: Art. 6(1)(b) GDPR.</p>
   <p><strong>Invite links.</strong> Household invitations and shared recipes are links containing a random token. Anyone who has the link can open its target, so share invite links only with people you want in your household.</p>
   <p><strong>Home Assistant integration.</strong> If you connect your own Home Assistant installation, it reads your household data with an access key you generate. You can revoke the key in the app at any time. You are responsible for the Home Assistant installation itself.</p>
