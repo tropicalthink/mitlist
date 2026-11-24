@@ -107,6 +107,8 @@ void main() {
                     userId: 'sam', displayName: 'Sam Lee', role: 'member'),
                 GroupMemberProfile(
                     userId: 'ana', displayName: 'Ana', role: 'member'),
+                GroupMemberProfile(
+                    userId: 'kim', displayName: 'Kim', role: 'member'),
               ]),
           currentUserIdProvider.overrideWith((ref) async => 'me'),
           calendarConnectionsProvider
@@ -255,26 +257,77 @@ void main() {
     expect(find.textContaining('· free'), findsOneWidget);
   });
 
-  testWidgets("who's around: free, busy with times, away all day",
-      (tester) async {
+  /// A day of the current week that is not today (statuses for today
+  /// depend on the clock).
+  DateTime otherDay() {
     final t = today0();
+    final ws = t.subtract(Duration(days: t.weekday % 7));
+    return t == ws ? ws.add(const Duration(days: 1)) : ws;
+  }
+
+  Future<void> selectDay(WidgetTester tester, DateTime day) async {
+    await tester.tap(find.text(DateFormat.EEEE('en').format(day)));
+    for (var i = 0; i < 4; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+  }
+
+  testWidgets("who's around: free from, away, not sharing, and the evening",
+      (tester) async {
+    final d = otherDay();
     await pumpCalendar(tester, events: [
       shared('ext:1', 'sam',
-          start: t.add(const Duration(hours: 18)),
-          end: t.add(const Duration(hours: 20))),
+          start: d.add(const Duration(hours: 18)),
+          end: d.add(const Duration(hours: 20))),
       shared('ext:2', 'ana',
-          start: t, end: t.add(const Duration(days: 1)), allDay: true),
+          start: d, end: d.add(const Duration(days: 1)), allDay: true),
     ]);
+    await selectDay(tester, d);
     final card = find.byKey(const ValueKey('calendar-whos-around'));
     expect(card, findsOneWidget);
     Finder inCard(String text) =>
         find.descendant(of: card, matching: find.textContaining(text));
     expect(inCard("Who's around"), findsOneWidget);
+    expect(inCard('Free from ${hm(20)}'), findsOneWidget);
     expect(inCard('Busy ${hm(18)} – ${hm(20)}'), findsOneWidget);
     expect(inCard('Away all day'), findsOneWidget);
-    // The viewer shares a calendar here too and has nothing on: free.
+    // The viewer shares a calendar here too and has nothing on.
     expect(inCard('You'), findsOneWidget);
-    expect(inCard('Free'), findsOneWidget);
+    expect(inCard('Free all day'), findsOneWidget);
+    // Kim shares nothing: never counted as free.
+    expect(inCard("Doesn't share a calendar"), findsOneWidget);
+    expect(inCard('Not everyone who shares is free in the evening'),
+        findsOneWidget);
+  });
+
+  testWidgets("who's around says when everyone who shares is free",
+      (tester) async {
+    final d = otherDay();
+    await pumpCalendar(tester, events: [
+      shared('ext:1', 'sam',
+          start: d.add(const Duration(hours: 17)),
+          end: d.add(const Duration(hours: 19))),
+    ]);
+    await selectDay(tester, d);
+    expect(find.text('Everyone who shares is free from ${hm(19)}'),
+        findsOneWidget);
+  });
+
+  testWidgets('the selected day is marked and announced as selected',
+      (tester) async {
+    final d = otherDay();
+    await pumpCalendar(tester, events: [
+      shared('ext:1', 'sam',
+          start: d.add(const Duration(hours: 9)),
+          end: d.add(const Duration(hours: 10))),
+    ]);
+    await selectDay(tester, d);
+    final header = find.ancestor(
+      of: find.text(DateFormat.EEEE('en').format(d)),
+      matching: find.byWidgetPredicate(
+          (w) => w is Semantics && (w.properties.selected ?? false)),
+    );
+    expect(header, findsWidgets);
   });
 
   testWidgets('a calendar:external_changed event refetches', (tester) async {

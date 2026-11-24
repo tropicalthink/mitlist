@@ -7897,7 +7897,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get calendarLinkStepsApple =>
-      'Tippe in der Kalender-App auf „Kalender“, dann auf ⓘ neben dem Kalender, aktiviere „Öffentlicher Kalender“ und kopiere den Link. Jeder mit dem Link kann ihn sehen. Auf diesem Handy ist „Kalender auf diesem Handy“ privater.';
+      'Tippe in der Kalender-App auf „Kalender“ und dann auf die Info-Taste neben dem Kalender. Aktiviere „Öffentlicher Kalender“ und kopiere den Link. Jeder mit dem Link kann ihn sehen; auf diesem Handy ist „Kalender auf diesem Handy“ privater.';
 
   @override
   String get calendarLinkStepsOutlookTitle => 'Outlook';
@@ -7909,4 +7909,141 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get sharedCalendarsLimitReached =>
       'Du hast 10 Kalender verbunden, mehr geht nicht. Entferne einen, um einen neuen hinzuzufügen.';
+
+  @override
+  String get calendarWhosAroundFreeAllDay => 'Den ganzen Tag frei';
+
+  @override
+  String calendarWhosAroundFreeFrom(String time) {
+    return 'Frei ab $time';
+  }
+
+  @override
+  String calendarWhosAroundBusyUntil(String time) {
+    return 'Beschäftigt bis $time';
+  }
+
+  @override
+  String calendarWhosAroundBusyFrom(String time) {
+    return 'Beschäftigt ab $time';
+  }
+
+  @override
+  String get calendarWhosAroundNotSharing => 'Teilt keinen Kalender';
+
+  @override
+  String get calendarWhosAroundEveningAll => 'Alle haben den ganzen Abend Zeit';
+
+  @override
+  String get calendarWhosAroundSharersEveningAll =>
+      'Alle, die teilen, haben den ganzen Abend Zeit';
+
+  @override
+  String calendarWhosAroundEveningFrom(String time) {
+    return 'Alle haben ab $time Zeit';
+  }
+
+  @override
+  String calendarWhosAroundSharersEveningFrom(String time) {
+    return 'Alle, die teilen, haben ab $time Zeit';
+  }
+
+  @override
+  String calendarWhosAroundEveningBetween(String start, String end) {
+    return 'Alle haben $start – $end Zeit';
+  }
+
+  @override
+  String calendarWhosAroundSharersEveningBetween(String start, String end) {
+    return 'Alle, die teilen, haben $start – $end Zeit';
+  }
+
+  @override
+  String get calendarWhosAroundEveningNone => 'Abends haben nicht alle Zeit';
+
+  @override
+  String get calendarWhosAroundSharersEveningNone =>
+      'Abends haben nicht alle, die teilen, Zeit';
+
+  @override
+  String get calendarWhosAroundTapHint =>
+      'Tippe auf einen Tag, um ihn zu prüfen.';
+
+  @override
+  String get calendarTourHome =>
+      'Neu: Sieh, wann alle da sind. Öffne den Kalender.';
+
+  @override
+  String get calendarTourShare =>
+      'Teile hier deinen Kalender, damit der Haushalt weiß, wann du beschäftigt bist.';
+
+  @override
+  String get calendarTourAdd =>
+      'Füge die Kalender deines Handys oder einen Kalenderlink hinzu. Geteilt wird erst, wenn du es auswählst.';
+
+  @override
+  String get calendarTourChoices =>
+      'Wähle, was jeder Haushalt sieht: nur beschäftigt oder mit Titeln.';
+
+  @override
+  String get calendarTourUpcoming => 'Blende Privates aus, Termin für Termin.';
+
+  @override
+  String get coachMarkNext => 'Weiter';
+
+  @override
+  String get coachMarkSkip => 'Überspringen';
+
+  @override
+  String get coachMarkDone => 'Verstanden';
+
+  @override
+  String get sharedCalendarsShowMeHow => 'Zeig mir, wie';
+
+  @override
+  String get sharedCalendarsIosPrivateNote =>
+      'Das iPhone erkennt keine privaten Termine, Termine können also mit Titel erscheinen. Blende einzelne Termine unten aus.';
+
+  @override
+  String get sharedCalendarsHideEvent => 'Vor dem Haushalt verbergen';
+
+  @override
+  String get sharedCalendarsShowAgain => 'Wieder zeigen';
+
+  @override
+  String get sharedCalendarsEventPrivateNote => 'Privat in deinem Kalender';
+
+  @override
+  String get sharedCalendarsEventFreeNote =>
+      'In deinem Kalender als frei markiert';
+
+  @override
+  String get sharedCalendarsNotSharedAnywhere =>
+      'Kein Haushalt sieht diesen Kalender.';
+
+  @override
+  String get sharedCalendarsSyncedJustNow => 'Gerade synchronisiert';
+
+  @override
+  String get sharedCalendarsSyncedYesterday => 'Gestern synchronisiert';
+
+  @override
+  String coachMarkStepLabel(int step, int total) {
+    return 'Tipp $step von $total';
+  }
+
+  @override
+  String sharedCalendarsSyncedMinutes(int minutes) {
+    return 'Vor $minutes Min. synchronisiert';
+  }
+
+  @override
+  String sharedCalendarsSyncedHours(int hours) {
+    return 'Vor $hours Std. synchronisiert';
+  }
+
+  @override
+  String sharedCalendarsExplainDetailsNoPrivate(String household) {
+    return '$household sieht Titel und Zeiten deiner Termine.';
+  }
 }

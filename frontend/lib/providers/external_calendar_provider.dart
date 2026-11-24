@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -12,6 +13,11 @@ final externalCalendarServiceProvider =
     FutureProvider<ExternalCalendarService>((ref) async {
   return ExternalCalendarService.build(ref);
 });
+
+/// The platform whose calendar rules apply (iPhone calendars carry no
+/// "private" flag). A provider so tests can pick one.
+final deviceCalendarPlatformProvider =
+    Provider<TargetPlatform>((ref) => defaultTargetPlatform);
 
 /// This phone's calendars; unsupported on web and desktop.
 final deviceCalendarSourceProvider =

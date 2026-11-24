@@ -1531,6 +1531,12 @@ FROM recipes_table;
         .getSingleOrNull();
   }
 
+  /// Every cached calendar window of [groupId].
+  Future<List<CalendarCache>> getCalendarRanges(String groupId) {
+    return (select(calendarCaches)..where((t) => t.groupId.equals(groupId)))
+        .get();
+  }
+
   Future<void> upsertCalendarRange({
     required String groupId,
     required String rangeKey,

@@ -18,19 +18,20 @@ import '../home_widget_preview.dart';
 enum WidgetPromoChoice { add, notNow }
 
 /// Offers the home screen widgets from Home when [WidgetPromoDecision]
-/// says so, and records the showing. [context] is Home's: nothing is shown
+/// says so, and records the showing. Returns whether it was shown (Home
+/// then shows nothing else this visit). [context] is Home's: nothing is shown
 /// while another route (a sheet, a dialog, a pushed page) is on top of it.
 ///
 /// [onboardingDone] is the caller's word that the person is past first run:
 /// Home passes true once it has loaded a household, which is only possible
 /// after sign-up and the household setup are finished.
-Future<void> maybeOfferHomeWidgets(
+Future<bool> maybeOfferHomeWidgets(
   BuildContext context,
   WidgetRef ref, {
   required bool onboardingDone,
 }) async {
   final bridge = ref.read(widgetBridgeProvider);
-  if (!bridge.isSupported || !ref.read(authStateProvider)) return;
+  if (!bridge.isSupported || !ref.read(authStateProvider)) return false;
   final lastShownAt = await WidgetPromoStore.lastShownAt();
   List<String>? installed;
   try {
@@ -46,15 +47,16 @@ Future<void> maybeOfferHomeWidgets(
     supported: bridge.isSupported,
     onboardingDone: onboardingDone,
   );
-  if (!show || !context.mounted) return;
+  if (!show || !context.mounted) return false;
   // Home is on screen and on top: not under a sheet, dialog or pushed page,
   // and not a shell tab left in the background.
-  if (!(ModalRoute.of(context)?.isCurrent ?? true)) return;
-  if (!TickerMode.valuesOf(context).enabled) return;
+  if (!(ModalRoute.of(context)?.isCurrent ?? true)) return false;
+  if (!TickerMode.valuesOf(context).enabled) return false;
   // Recorded before it opens: an app killed with the sheet up has shown it.
   await WidgetPromoStore.markShown(now);
-  if (!context.mounted) return;
+  if (!context.mounted) return true;
   await showWidgetPromoSheet(context, ref);
+  return true;
 }
 
 /// The promo sheet itself; "Add" then pins the shopping list widget

@@ -7862,7 +7862,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get calendarLinkStepsApple =>
-      'Tik in de Agenda-app op Agenda\'s, tik op ⓘ naast de agenda, zet Openbare agenda aan en kopieer de link. Iedereen met de link kan hem zien. Op deze telefoon is \'Agenda\'s op deze telefoon\' privéer.';
+      'Tik in de Agenda-app op Agenda\'s en daarna op de infoknop naast de agenda. Zet Openbare agenda aan en kopieer de link. Iedereen met de link kan hem zien; op deze telefoon is \'Agenda\'s op deze telefoon\' privéer.';
 
   @override
   String get calendarLinkStepsOutlookTitle => 'Outlook';
@@ -7874,4 +7874,141 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get sharedCalendarsLimitReached =>
       'Je hebt 10 agenda\'s gekoppeld, het maximum. Verwijder er een om een andere toe te voegen.';
+
+  @override
+  String get calendarWhosAroundFreeAllDay => 'Hele dag vrij';
+
+  @override
+  String calendarWhosAroundFreeFrom(String time) {
+    return 'Vrij vanaf $time';
+  }
+
+  @override
+  String calendarWhosAroundBusyUntil(String time) {
+    return 'Bezet tot $time';
+  }
+
+  @override
+  String calendarWhosAroundBusyFrom(String time) {
+    return 'Bezet vanaf $time';
+  }
+
+  @override
+  String get calendarWhosAroundNotSharing => 'Deelt geen agenda';
+
+  @override
+  String get calendarWhosAroundEveningAll => 'Iedereen is de hele avond vrij';
+
+  @override
+  String get calendarWhosAroundSharersEveningAll =>
+      'Iedereen die deelt is de hele avond vrij';
+
+  @override
+  String calendarWhosAroundEveningFrom(String time) {
+    return 'Iedereen is vrij vanaf $time';
+  }
+
+  @override
+  String calendarWhosAroundSharersEveningFrom(String time) {
+    return 'Iedereen die deelt is vrij vanaf $time';
+  }
+
+  @override
+  String calendarWhosAroundEveningBetween(String start, String end) {
+    return 'Iedereen is vrij van $start tot $end';
+  }
+
+  @override
+  String calendarWhosAroundSharersEveningBetween(String start, String end) {
+    return 'Iedereen die deelt is vrij van $start tot $end';
+  }
+
+  @override
+  String get calendarWhosAroundEveningNone =>
+      '\'s Avonds is niet iedereen vrij';
+
+  @override
+  String get calendarWhosAroundSharersEveningNone =>
+      '\'s Avonds is niet iedereen die deelt vrij';
+
+  @override
+  String get calendarWhosAroundTapHint => 'Tik op een dag om die te bekijken.';
+
+  @override
+  String get calendarTourHome =>
+      'Nieuw: zie wanneer iedereen er is. Open de agenda.';
+
+  @override
+  String get calendarTourShare =>
+      'Deel hier je agenda, zodat het huishouden weet wanneer je bezet bent.';
+
+  @override
+  String get calendarTourAdd =>
+      'Voeg de agenda\'s van je telefoon of een link toe. Er wordt niets gedeeld tot je kiest.';
+
+  @override
+  String get calendarTourChoices =>
+      'Kies wat elk huishouden ziet: alleen bezet of met titels.';
+
+  @override
+  String get calendarTourUpcoming =>
+      'Verberg wat privé is, afspraak voor afspraak.';
+
+  @override
+  String get coachMarkNext => 'Volgende';
+
+  @override
+  String get coachMarkSkip => 'Overslaan';
+
+  @override
+  String get coachMarkDone => 'Begrepen';
+
+  @override
+  String get sharedCalendarsShowMeHow => 'Laat zien hoe';
+
+  @override
+  String get sharedCalendarsIosPrivateNote =>
+      'Een iPhone weet niet welke afspraken privé zijn, dus ze kunnen met titel verschijnen. Verberg hieronder wat je wilt.';
+
+  @override
+  String get sharedCalendarsHideEvent => 'Verbergen voor huisgenoten';
+
+  @override
+  String get sharedCalendarsShowAgain => 'Weer tonen';
+
+  @override
+  String get sharedCalendarsEventPrivateNote => 'Privé in je agenda';
+
+  @override
+  String get sharedCalendarsEventFreeNote => 'Als vrij gemarkeerd in je agenda';
+
+  @override
+  String get sharedCalendarsNotSharedAnywhere =>
+      'Geen huishouden ziet deze agenda.';
+
+  @override
+  String get sharedCalendarsSyncedJustNow => 'Zojuist gesynchroniseerd';
+
+  @override
+  String get sharedCalendarsSyncedYesterday => 'Gisteren gesynchroniseerd';
+
+  @override
+  String coachMarkStepLabel(int step, int total) {
+    return 'Tip $step van $total';
+  }
+
+  @override
+  String sharedCalendarsSyncedMinutes(int minutes) {
+    return '$minutes min geleden gesynchroniseerd';
+  }
+
+  @override
+  String sharedCalendarsSyncedHours(int hours) {
+    return '$hours uur geleden gesynchroniseerd';
+  }
+
+  @override
+  String sharedCalendarsExplainDetailsNoPrivate(String household) {
+    return '$household ziet de titels en tijden van je afspraken.';
+  }
 }

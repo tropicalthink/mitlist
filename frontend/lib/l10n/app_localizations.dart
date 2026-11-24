@@ -13278,7 +13278,7 @@ abstract class AppLocalizations {
   /// Apple steps
   ///
   /// In en, this message translates to:
-  /// **'In the Calendar app, tap Calendars, tap ⓘ next to the calendar, turn on Public Calendar and copy the link. Anyone with the link can see it. On this phone, \"Calendars on this phone\" is more private.'**
+  /// **'In the Calendar app, tap Calendars, then the info button next to the calendar. Turn on Public Calendar and copy the link. Anyone with the link can see it; on this phone, \"Calendars on this phone\" is more private.'**
   String get calendarLinkStepsApple;
 
   /// Provider name
@@ -13298,6 +13298,216 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You\'ve connected 10 calendars, the most there can be. Remove one to add another.'**
   String get sharedCalendarsLimitReached;
+
+  /// Who's around: nothing busy that day
+  ///
+  /// In en, this message translates to:
+  /// **'Free all day'**
+  String get calendarWhosAroundFreeAllDay;
+
+  /// Who's around: free after their last busy stretch
+  ///
+  /// In en, this message translates to:
+  /// **'Free from {time}'**
+  String calendarWhosAroundFreeFrom(String time);
+
+  /// Who's around, today: busy right now until
+  ///
+  /// In en, this message translates to:
+  /// **'Busy until {time}'**
+  String calendarWhosAroundBusyUntil(String time);
+
+  /// Who's around: busy from this time until midnight
+  ///
+  /// In en, this message translates to:
+  /// **'Busy from {time}'**
+  String calendarWhosAroundBusyFrom(String time);
+
+  /// Who's around: member who shares no calendar
+  ///
+  /// In en, this message translates to:
+  /// **'Doesn\'t share a calendar'**
+  String get calendarWhosAroundNotSharing;
+
+  /// Household summary: everyone free 18-23h
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone\'s free all evening'**
+  String get calendarWhosAroundEveningAll;
+
+  /// Household summary when some members share nothing
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone who shares is free all evening'**
+  String get calendarWhosAroundSharersEveningAll;
+
+  /// Household summary: everyone free from a time
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone\'s free from {time}'**
+  String calendarWhosAroundEveningFrom(String time);
+
+  /// Household summary (sharers only): free from
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone who shares is free from {time}'**
+  String calendarWhosAroundSharersEveningFrom(String time);
+
+  /// Household summary: everyone free during a stretch
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone\'s free {start} – {end}'**
+  String calendarWhosAroundEveningBetween(String start, String end);
+
+  /// Household summary (sharers only): free during a stretch
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone who shares is free {start} – {end}'**
+  String calendarWhosAroundSharersEveningBetween(String start, String end);
+
+  /// Household summary: no common free evening
+  ///
+  /// In en, this message translates to:
+  /// **'Not everyone\'s free in the evening'**
+  String get calendarWhosAroundEveningNone;
+
+  /// Household summary (sharers only): no common free evening
+  ///
+  /// In en, this message translates to:
+  /// **'Not everyone who shares is free in the evening'**
+  String get calendarWhosAroundSharersEveningNone;
+
+  /// Hint under the who's around card
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a day to check another one.'**
+  String get calendarWhosAroundTapHint;
+
+  /// Tour step 1, pointing at Home's calendar button
+  ///
+  /// In en, this message translates to:
+  /// **'New: see when everyone\'s around. Open the calendar.'**
+  String get calendarTourHome;
+
+  /// Tour step on the calendar, pointing at the shared calendars button
+  ///
+  /// In en, this message translates to:
+  /// **'Share your calendar here, so the household knows when you\'re busy.'**
+  String get calendarTourShare;
+
+  /// Tour step pointing at the add-a-calendar buttons
+  ///
+  /// In en, this message translates to:
+  /// **'Add your phone\'s calendars or a calendar link. Nothing is shared until you choose.'**
+  String get calendarTourAdd;
+
+  /// Tour step pointing at the per-household choice
+  ///
+  /// In en, this message translates to:
+  /// **'Choose what each household sees: busy only, or with titles.'**
+  String get calendarTourChoices;
+
+  /// Tour step pointing at Upcoming events
+  ///
+  /// In en, this message translates to:
+  /// **'Hide anything private, one event at a time.'**
+  String get calendarTourUpcoming;
+
+  /// Coach mark: next tip
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get coachMarkNext;
+
+  /// Coach mark: end the tour
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get coachMarkSkip;
+
+  /// Coach mark: last tip
+  ///
+  /// In en, this message translates to:
+  /// **'Got it'**
+  String get coachMarkDone;
+
+  /// Replays the shared calendars tour
+  ///
+  /// In en, this message translates to:
+  /// **'Show me how'**
+  String get sharedCalendarsShowMeHow;
+
+  /// iOS: no private flag on phone calendars
+  ///
+  /// In en, this message translates to:
+  /// **'iPhone can\'t tell which events are private, so events can show with titles. Hide any event below.'**
+  String get sharedCalendarsIosPrivateNote;
+
+  /// Tooltip: one tap hides an event
+  ///
+  /// In en, this message translates to:
+  /// **'Hide from housemates'**
+  String get sharedCalendarsHideEvent;
+
+  /// Tooltip: undo hiding an event
+  ///
+  /// In en, this message translates to:
+  /// **'Show again'**
+  String get sharedCalendarsShowAgain;
+
+  /// Upcoming: event is private at source
+  ///
+  /// In en, this message translates to:
+  /// **'Private in your calendar'**
+  String get sharedCalendarsEventPrivateNote;
+
+  /// Upcoming: event is marked free
+  ///
+  /// In en, this message translates to:
+  /// **'Marked free in your calendar'**
+  String get sharedCalendarsEventFreeNote;
+
+  /// Calendar shared with nobody
+  ///
+  /// In en, this message translates to:
+  /// **'No household sees this calendar.'**
+  String get sharedCalendarsNotSharedAnywhere;
+
+  /// Last sync under a minute ago
+  ///
+  /// In en, this message translates to:
+  /// **'Synced just now'**
+  String get sharedCalendarsSyncedJustNow;
+
+  /// Last sync yesterday
+  ///
+  /// In en, this message translates to:
+  /// **'Synced yesterday'**
+  String get sharedCalendarsSyncedYesterday;
+
+  /// Screen reader name of a coach mark
+  ///
+  /// In en, this message translates to:
+  /// **'Tip {step} of {total}'**
+  String coachMarkStepLabel(int step, int total);
+
+  /// Last sync minutes ago
+  ///
+  /// In en, this message translates to:
+  /// **'Synced {minutes} min ago'**
+  String sharedCalendarsSyncedMinutes(int minutes);
+
+  /// Last sync hours ago
+  ///
+  /// In en, this message translates to:
+  /// **'Synced {hours} h ago'**
+  String sharedCalendarsSyncedHours(int hours);
+
+  /// With titles, for iPhone calendars (no private flag)
+  ///
+  /// In en, this message translates to:
+  /// **'{household} sees your events\' titles and times.'**
+  String sharedCalendarsExplainDetailsNoPrivate(String household);
 }
 
 class _AppLocalizationsDelegate

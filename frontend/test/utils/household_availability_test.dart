@@ -90,4 +90,135 @@ void main() {
     expect(around, hasLength(1));
     expect(around.single.status, AroundStatus.free);
   });
+
+  group('busy members: when they become free', () {
+    test('free from the end of the last busy stretch', () {
+      final m = whosAround(day, [
+        block('a', DateTime(2026, 12, 3, 9), DateTime(2026, 12, 3, 17)),
+      ], [
+        'a'
+      ]).single;
+      expect(m.freeFrom, DateTime(2026, 12, 3, 17));
+      expect(m.busyFrom, isNull);
+    });
+
+    test('busy past midnight: busy from, never free from', () {
+      final m = whosAround(day, [
+        block('a', DateTime(2026, 12, 3, 22), DateTime(2026, 12, 4, 2)),
+      ], [
+        'a'
+      ]).single;
+      expect(m.freeFrom, isNull);
+      expect(m.busyFrom, DateTime(2026, 12, 3, 22));
+    });
+
+    test('today: busy until the end of the stretch they are in now', () {
+      final m = whosAround(
+        day,
+        [
+          block('a', DateTime(2026, 12, 3, 18), DateTime(2026, 12, 3, 19)),
+          block('a', DateTime(2026, 12, 3, 19), DateTime(2026, 12, 3, 21, 30)),
+        ],
+        ['a'],
+        now: DateTime(2026, 12, 3, 18, 30),
+      ).single;
+      expect(m.busyUntil, DateTime(2026, 12, 3, 21, 30));
+    });
+
+    test('members who share nothing are listed as not sharing, never free', () {
+      final around = whosAround(day, const [], ['a'], members: ['a', 'b']);
+      expect(around.map((m) => m.status),
+          [AroundStatus.free, AroundStatus.notSharing]);
+    });
+  });
+
+  group('the household evening (18:00 to 23:00)', () {
+    HouseholdEvening? evening(List<CalendarEvent> events,
+            {List<String> sharers = const ['a', 'b'],
+            List<String> members = const [],
+            DateTime? now}) =>
+        householdEvening(
+            day, whosAround(day, events, sharers, members: members, now: now),
+            now: now);
+
+    test('everyone free all evening', () {
+      final e = evening([
+        block('a', DateTime(2026, 12, 3, 9), DateTime(2026, 12, 3, 17)),
+      ])!;
+      expect(e.kind, EveningKind.freeAllEvening);
+      expect(e.onlySharers, isFalse);
+    });
+
+    test('everyone free from the latest end of overlapping evening plans', () {
+      final e = evening([
+        block('a', DateTime(2026, 12, 3, 17), DateTime(2026, 12, 3, 19)),
+        block(
+            'a', DateTime(2026, 12, 3, 18, 30), DateTime(2026, 12, 3, 19, 30)),
+        block('b', DateTime(2026, 12, 3, 18), DateTime(2026, 12, 3, 19)),
+      ])!;
+      expect(e.kind, EveningKind.freeFrom);
+      expect(e.from, DateTime(2026, 12, 3, 19, 30));
+    });
+
+    test('someone busy across midnight: not everyone is free', () {
+      final e = evening([
+        block('b', DateTime(2026, 12, 3, 22), DateTime(2026, 12, 4, 1)),
+      ])!;
+      // 22:00 to 23:00 is taken: everyone is free 18:00 to 22:00.
+      expect(e.kind, EveningKind.freeBetween);
+      expect(e.from, DateTime(2026, 12, 3, 18));
+      expect(e.until, DateTime(2026, 12, 3, 22));
+      final late = evening([
+        block('b', DateTime(2026, 12, 3, 18), DateTime(2026, 12, 4, 1)),
+      ])!;
+      expect(late.kind, EveningKind.notEveryoneFree);
+    });
+
+    test('an event from the night before ending in the morning is fine', () {
+      final e = evening([
+        block('a', DateTime(2026, 12, 2, 22), DateTime(2026, 12, 3, 2)),
+      ])!;
+      expect(e.kind, EveningKind.freeAllEvening);
+    });
+
+    test('a gap shorter than 30 minutes is not announced', () {
+      final e = evening([
+        block('a', DateTime(2026, 12, 3, 18), DateTime(2026, 12, 3, 20)),
+        block('b', DateTime(2026, 12, 3, 20, 20), DateTime(2026, 12, 3, 23)),
+      ])!;
+      expect(e.kind, EveningKind.notEveryoneFree);
+    });
+
+    test('anyone away all day: not everyone is free', () {
+      final e = evening([
+        block('a', DateTime(2026, 12, 3), DateTime(2026, 12, 4), allDay: true),
+      ])!;
+      expect(e.kind, EveningKind.notEveryoneFree);
+    });
+
+    test('free (transparent) events do not take the evening', () {
+      final e = evening([
+        block('a', DateTime(2026, 12, 3, 18), DateTime(2026, 12, 3, 23),
+            free: true),
+      ])!;
+      expect(e.kind, EveningKind.freeAllEvening);
+    });
+
+    test('only speaks for people who share', () {
+      final e = evening(const [], sharers: ['a'], members: ['a', 'c'])!;
+      expect(e.kind, EveningKind.freeAllEvening);
+      expect(e.onlySharers, isTrue);
+    });
+
+    test('nobody shares: nothing to say', () {
+      expect(evening(const [], sharers: const [], members: ['c']), isNull);
+    });
+
+    test('today after the evening started: from now, rounded up', () {
+      final e = evening(const [], now: DateTime(2026, 12, 3, 19, 5))!;
+      expect(e.kind, EveningKind.freeFrom);
+      expect(e.from, DateTime(2026, 12, 3, 19, 15));
+      expect(evening(const [], now: DateTime(2026, 12, 3, 23, 10)), isNull);
+    });
+  });
 }

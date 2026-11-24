@@ -49,8 +49,10 @@ Finder _text(String s) => find.byWidgetPredicate(
 void main() {
   late FakeExternalCalendarService api;
   late FakeDeviceCalendarSource phone;
+  var platform = TargetPlatform.android;
 
   setUp(() {
+    platform = TargetPlatform.android;
     SharedPreferences.setMockInitialValues({});
     api = FakeExternalCalendarService();
     phone = FakeDeviceCalendarSource();
@@ -69,6 +71,7 @@ void main() {
       overrides: [
         externalCalendarServiceProvider.overrideWith((ref) async => api),
         deviceCalendarSourceProvider.overrideWithValue(phone),
+        deviceCalendarPlatformProvider.overrideWithValue(platform),
         deviceInstallIdProvider.overrideWith((ref) async => 'install'),
         currentUserIdProvider.overrideWith((ref) async => 'me'),
         cachedGroupsProvider.overrideWith((ref) async => [_home, _flat]),
@@ -139,8 +142,7 @@ void main() {
 
     expect(find.text('Work calendar'), findsOneWidget);
     expect(find.text(l10n.calendarConnectionErrorFetchFailed), findsOneWidget);
-    expect(find.text(l10n.sharedCalendarsExplainNone('Home')), findsOneWidget);
-    expect(find.text(l10n.sharedCalendarsExplainNone('Flat')), findsOneWidget);
+    expect(find.text(l10n.sharedCalendarsNotSharedAnywhere), findsOneWidget);
     // Busy only is the first choice offered.
     final chips = tester
         .widgetList<Semantics>(find.descendant(
@@ -158,8 +160,8 @@ void main() {
     expect(api.shareCalls.single.$2, const [
       CalendarShare(groupId: 'g1', visibility: ShareVisibility.busy),
     ]);
+    // One sentence, for the household that sees something.
     expect(find.text(l10n.sharedCalendarsExplainBusy('Home')), findsOneWidget);
-    expect(find.text(l10n.sharedCalendarsExplainNone('Flat')), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey('share-k1-g2-details')));
     await settle(tester);
@@ -168,7 +170,9 @@ void main() {
       CalendarShare(groupId: 'g2', visibility: ShareVisibility.details),
     ]);
     expect(
-        find.text(l10n.sharedCalendarsExplainDetails('Flat')), findsOneWidget);
+        find.text('${l10n.sharedCalendarsExplainBusy('Home')} '
+            '${l10n.sharedCalendarsExplainDetails('Flat')}'),
+        findsOneWidget);
   });
 
   testWidgets('upcoming events say what each household sees; overrides save',
@@ -270,7 +274,7 @@ void main() {
     expect(find.byKey(const ValueKey('calendar-connection-ics-1')),
         findsOneWidget);
     // Not shared until chosen.
-    expect(find.text(l10n.sharedCalendarsExplainNone('Home')), findsOneWidget);
+    expect(find.text(l10n.sharedCalendarsNotSharedAnywhere), findsOneWidget);
     expect(api.shareCalls, isEmpty);
   });
 
@@ -436,7 +440,10 @@ void main() {
     final l10n = lookupAppLocalizations(const Locale('en'));
     expect(find.text('Physio'), findsOneWidget);
     expect(find.text(l10n.sharedCalendarsSeesNothing), findsOneWidget);
-    expect(find.text(l10n.sharedCalendarsOverrideHidden), findsOneWidget);
+    expect(
+        find.text(l10n
+            .sharedCalendarsEventChoice(l10n.sharedCalendarsOverrideHidden)),
+        findsOneWidget);
   });
 
   testWidgets('phone events are not shown when the choices cannot be read',
@@ -475,5 +482,113 @@ void main() {
     final l10n = lookupAppLocalizations(const Locale('en'));
     expect(find.text('Physio'), findsNothing);
     expect(find.text(l10n.sharedCalendarsUpcomingFailed), findsOneWidget);
+  });
+
+  CalendarConnection phoneConnection() => const CalendarConnection(
+        id: 'dev-1',
+        kind: CalendarConnectionKind.device,
+        name: 'Phone',
+        deviceId: 'install',
+        calendars: [
+          ExternalCalendar(
+            id: 'srv-c1',
+            externalId: 'c1',
+            name: 'Personal',
+            shares: [
+              CalendarShare(groupId: 'g1', visibility: ShareVisibility.details),
+            ],
+          ),
+        ],
+      );
+
+  testWidgets(
+      'iPhone: says private events are not recognised, on the phone '
+      'connection and above Upcoming', (tester) async {
+    platform = TargetPlatform.iOS;
+    final soon = DateTime.now().add(const Duration(days: 1));
+    phone.eventList = [
+      DeviceCalendarEvent(
+        calendarId: 'c1',
+        uid: 'e1',
+        start: soon,
+        end: soon.add(const Duration(hours: 1)),
+        allDay: false,
+        title: 'Therapy',
+      ),
+    ];
+    api.connections = [phoneConnection()];
+    await pump(tester);
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    expect(find.byKey(const ValueKey('connection-ios-note')), findsOneWidget);
+    expect(find.byKey(const ValueKey('upcoming-ios-note')), findsOneWidget);
+    expect(find.text(l10n.sharedCalendarsIosPrivateNote), findsNWidgets(2));
+  });
+
+  testWidgets('Android: no iPhone note', (tester) async {
+    api.connections = [phoneConnection()];
+    await pump(tester);
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    expect(find.text(l10n.sharedCalendarsIosPrivateNote), findsNothing);
+  });
+
+  testWidgets('one tap hides an event from the Upcoming list, one shows it',
+      (tester) async {
+    api.connections = [
+      _work(shares: const [
+        CalendarShare(groupId: 'g1', visibility: ShareVisibility.details),
+      ]),
+    ];
+    final soon = DateTime.now().toUtc().add(const Duration(days: 1));
+    api.mine = [
+      MyExternalEvent(
+        calendarId: 'k1',
+        externalUid: 'u1',
+        startsAt: soon,
+        endsAt: soon.add(const Duration(hours: 1)),
+        allDay: false,
+        title: 'Therapy',
+        sourcePrivate: true,
+      ),
+    ];
+    await pump(tester);
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    // The private note is shown in full.
+    expect(find.text(l10n.sharedCalendarsEventPrivateNote), findsOneWidget);
+    await tester.tap(find.byTooltip(l10n.sharedCalendarsHideEvent));
+    await settle(tester);
+    expect(api.overrideCalls.single, ('k1', 'u1', EventOverride.hidden));
+    expect(find.text(l10n.sharedCalendarsSeesNothing), findsOneWidget);
+    await tester.tap(find.byTooltip(l10n.sharedCalendarsShowAgain));
+    await settle(tester);
+    expect(api.overrideCalls.last, ('k1', 'u1', null));
+  });
+
+  testWidgets('Show me how replays the page\'s steps', (tester) async {
+    api.connections = [_work()];
+    await pump(tester);
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    await tester
+        .tap(find.byKey(const ValueKey('shared-calendars-show-me-how')));
+    await settle(tester);
+    expect(find.text(l10n.calendarTourAdd), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('coachMark-next')));
+    await settle(tester);
+    // A calendar exists: the choices step follows.
+    expect(find.text(l10n.calendarTourChoices), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('coachMark-next')));
+    await settle(tester);
+    expect(find.text(l10n.calendarTourChoices), findsNothing);
+  });
+
+  test('sync times read like the rest of the app', () {
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    final now = DateTime(2026, 11, 24, 12);
+    String at(Duration ago) =>
+        syncedLabel(now.subtract(ago), l10n, 'en', now: now);
+    expect(at(const Duration(seconds: 20)), 'Synced just now');
+    expect(at(const Duration(minutes: 5)), 'Synced 5\u00A0min ago');
+    expect(at(const Duration(hours: 3)), 'Synced 3\u00A0h ago');
+    expect(at(const Duration(hours: 30)), 'Synced yesterday');
+    expect(at(const Duration(days: 4)), 'Synced Nov 20');
   });
 }

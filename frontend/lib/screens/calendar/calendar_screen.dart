@@ -20,6 +20,8 @@ import '../../providers/finance_provider.dart' show financeServiceProviderAsync;
 import '../../providers/group_provider.dart';
 import '../../router.dart' show currentGroupIdProvider;
 import '../../services/group_id_validator.dart';
+import '../../theme/colors.dart';
+import '../../theme/member_colors.dart';
 import '../../theme/spacing.dart';
 import '../../theme/typography.dart';
 import '../../theme/theme.dart';
@@ -39,6 +41,8 @@ import '../../sheets/chore_detail_sheet.dart';
 import '../../sheets/create_household_sheet.dart';
 
 import '../../widgets/app_toast.dart';
+import '../../widgets/calendar_tour.dart';
+import '../../services/calendar_tour.dart' show calendarTourProvider;
 
 enum _CalendarView { week, month, agenda }
 
@@ -147,7 +151,21 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   Timer? _liveDebounce;
   bool _shareHintDismissed = true;
 
-  static const _shareHintPref = 'calendar_share_hint_dismissed';
+  static const _shareHintPref = calendarShareHintPref;
+
+  final _shareButtonKey = GlobalKey(debugLabel: 'calendar-share-button');
+  bool _tourChecked = false;
+
+  /// Picks up the tour when Home just handed it over.
+  void _maybeContinueTour() {
+    if (_tourChecked) return;
+    _tourChecked = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(continueCalendarTourOnCalendar(context, ref,
+          shareButton: _shareButtonKey));
+    });
+  }
 
   // Who is who, for housemates' shared events (refreshed every build).
   Map<String, String> _memberNames = const {};
@@ -294,7 +312,14 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       // A sync can touch several households at once; refetch once.
       _liveDebounce?.cancel();
       _liveDebounce = Timer(const Duration(milliseconds: 400), () {
-        if (mounted) ref.invalidate(calendarEventsProvider);
+        if (!mounted) return;
+        // Drop what the cache knows about shared calendars first, so a
+        // refetch that fails (offline) cannot fall back to stale events.
+        final repo = ref.read(calendarRepositoryProvider).valueOrNull;
+        final forget = repo?.forgetExternal(groupId) ?? Future<void>.value();
+        unawaited(forget.catchError((Object _) {}).whenComplete(() {
+          if (mounted) ref.invalidate(calendarEventsProvider);
+        }));
       });
     });
   }
@@ -372,12 +397,46 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   }
 
   void _openWeekForDay(DateTime day) {
+    final d = DateTime(day.year, day.month, day.day);
     setState(() {
-      _weekAnchor = DateTime(day.year, day.month, day.day);
-      _selectedDay = DateTime(day.year, day.month, day.day);
+      _weekAnchor = d;
+      _selectedDay = d;
       _viewMode = _CalendarView.week;
     });
+    _scrollToDay(d);
   }
+
+  /// Selects [day] for "who's around" (pinned above the week) and brings
+  /// its card into view.
+  void _selectDay(DateTime day) {
+    unawaited(Haptics.light());
+    setState(() => _selectedDay = day);
+    _scrollToDay(day);
+  }
+
+  void _scrollToDay(DateTime day) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ctx = _dayKeys[day]?.currentContext;
+      if (ctx == null || !mounted) return;
+      unawaited(Scrollable.ensureVisible(
+        ctx,
+        alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+        duration: MediaQuery.of(context).disableAnimations
+            ? Duration.zero
+            : const Duration(milliseconds: 250),
+      ));
+      unawaited(Scrollable.ensureVisible(
+        ctx,
+        alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtStart,
+        duration: Duration.zero,
+      ));
+    });
+  }
+
+  final Map<DateTime, GlobalKey> _dayKeys = {};
+  GlobalKey _dayKey(DateTime day) => _dayKeys.putIfAbsent(day, GlobalKey.new);
+
+  List<String> get _roster => _memberNames.keys.toList();
 
   // ── Labels ─────────────────────────────────────────────────────────────────
 
@@ -435,6 +494,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         showStandardActions: false,
         actions: [
           IconButton(
+            key: _shareButtonKey,
             icon: const AppIcon(name: 'userGroup'),
             tooltip: l10n.sharedCalendarsTitle,
             onPressed: _openSharedCalendars,
@@ -490,8 +550,13 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     final refreshing = eventsAsync.isLoading;
     final anyoneShares =
         _lastEvents!.any((e) => e.type == CalendarEventType.externalEvent);
-    final showShareHint =
-        !_shareHintDismissed && iShare == false && !anyoneShares;
+    // The tour points at the same thing: never both.
+    final tourRunning = ref.read(calendarTourProvider.notifier).active;
+    final showShareHint = !_shareHintDismissed &&
+        !tourRunning &&
+        iShare == false &&
+        !anyoneShares;
+    _maybeContinueTour();
     return Column(
       children: [
         _buildViewToggle(),
@@ -714,45 +779,62 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     }
     final sharers = _sharers(_liveGroupId);
     final weekDays = [for (var i = 0; i < 7; i++) ws.add(Duration(days: i))];
-    final today = DateTime.now();
-    final todayDay = DateTime(today.year, today.month, today.day);
+    final now = DateTime.now();
+    final todayDay = DateTime(now.year, now.month, now.day);
     final selected = weekDays.contains(_selectedDay)
         ? _selectedDay
         : (weekDays.contains(todayDay) ? todayDay : ws);
     final hasAround = sharers.isNotEmpty;
+    final around = hasAround
+        ? whosAround(
+            selected,
+            _eventsByDay[selected] ?? const [],
+            sharers,
+            members: _memberNames.keys,
+            now: selected == todayDay ? now : null,
+          )
+        : const <MemberAround>[];
+    final screenHeight = MediaQuery.sizeOf(context).height;
     return Column(
       children: [
         _weekHeader(l10n),
+        if (hasAround)
+          // Pinned: picking a day further down keeps its summary in sight.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+                MitlistSpacing.md, 0, MitlistSpacing.md, MitlistSpacing.sm),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: screenHeight * 0.4),
+              child: SingleChildScrollView(
+                child: _WhosAroundCard(
+                  day: selected,
+                  around: around,
+                  evening: householdEvening(selected, around,
+                      now: selected == todayDay ? now : null),
+                  nameFor: (id) => _personName(id, l10n),
+                  roster: _roster,
+                ),
+              ),
+            ),
+          ),
         Expanded(
-          child: ListView.builder(
+          child: ListView(
             padding: const EdgeInsets.symmetric(horizontal: MitlistSpacing.md),
             physics: const AlwaysScrollableScrollPhysics(),
-            itemCount: 7 + (hasAround ? 1 : 0),
-            itemBuilder: (context, index) {
-              if (hasAround && index == 0) {
-                return _WhosAroundCard(
-                  day: selected,
-                  around: whosAround(
-                    selected,
-                    _eventsByDay[selected] ?? const [],
-                    sharers,
-                  ),
-                  nameFor: (id) => _personName(id, l10n),
-                );
-              }
-              final day = weekDays[index - (hasAround ? 1 : 0)];
-              final dayEvents = _eventsByDay[day] ?? const [];
-              return _DayCard(
-                day: day,
-                events: dayEvents,
-                isToday: _isToday(day),
-                isSelected: hasAround && day == selected,
-                onSelect:
-                    hasAround ? () => setState(() => _selectedDay = day) : null,
-                personName: (id) => _personName(id, l10n),
-                onEventTap: (e) => _showEventDetail(context, e),
-              );
-            },
+            children: [
+              for (final day in weekDays)
+                _DayCard(
+                  key: _dayKey(day),
+                  day: day,
+                  events: _eventsByDay[day] ?? const [],
+                  isToday: _isToday(day),
+                  isSelected: hasAround && day == selected,
+                  onSelect: hasAround ? () => _selectDay(day) : null,
+                  personName: (id) => _personName(id, l10n),
+                  roster: _roster,
+                  onEventTap: (e) => _showEventDetail(context, e),
+                ),
+            ],
           ),
         ),
       ],
@@ -1105,6 +1187,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             event: e,
             day: day,
             personName: _personName(e.external!.userId, l10n),
+            roster: _roster,
             onTap: () => _showEventDetail(context, e),
           ),
         );
@@ -1324,13 +1407,16 @@ class _DayCard extends StatelessWidget {
   /// Shows this day in the "who's around" summary; null when nobody shares.
   final VoidCallback? onSelect;
   final String Function(String userId) personName;
+  final List<String> roster;
   final void Function(CalendarEvent)? onEventTap;
 
   const _DayCard({
+    super.key,
     required this.day,
     required this.events,
     required this.isToday,
     required this.personName,
+    required this.roster,
     this.isSelected = false,
     this.onSelect,
     this.onEventTap,
@@ -1343,8 +1429,16 @@ class _DayCard extends StatelessWidget {
     final localeName = Localizations.localeOf(context).toString();
     final weekday = DateFormat.EEEE(localeName).format(day);
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
+    final cs = Theme.of(context).colorScheme;
+    // The selected day (the one "who's around" describes) carries a thick
+    // accent bar down its left edge.
+    return Container(
+      margin: const EdgeInsets.only(bottom: MitlistSpacing.sm),
+      padding: EdgeInsets.only(left: isSelected ? MitlistSpacing.sm : 0),
+      decoration: isSelected
+          ? BoxDecoration(
+              border: Border(left: BorderSide(color: cs.primary, width: 6)))
+          : null,
       child: AppCard(
         variant: isToday ? AppCardVariant.filled : AppCardVariant.outlined,
         padding: AppCardPadding.md,
@@ -1357,11 +1451,7 @@ class _DayCard extends StatelessWidget {
               Row(
                 children: [
                   if (isSelected) ...[
-                    AppIcon(
-                      name: 'userGroup',
-                      size: 16,
-                      color: Theme.of(context).colorScheme.tertiary,
-                    ),
+                    AppIcon(name: 'userGroup', size: 16, color: cs.primary),
                     const SizedBox(width: MitlistSpacing.xs),
                   ],
                   Text(
@@ -1421,6 +1511,7 @@ class _DayCard extends StatelessWidget {
                       event: e,
                       day: day,
                       personName: personName(e.external!.userId),
+                      roster: roster,
                       onTap: tap,
                     ),
                   );
@@ -1452,108 +1543,116 @@ class _DayCard extends StatelessWidget {
   }
 }
 
-/// A small initials badge for the person a shared event belongs to.
+/// A small initials badge for a household member, in their own colour
+/// (distinct within the household, see [MemberColors]).
 class _PersonBadge extends StatelessWidget {
-  const _PersonBadge({required this.userId, required this.name});
+  const _PersonBadge({
+    required this.userId,
+    required this.name,
+    required this.roster,
+  });
 
   final String userId;
   final String name;
+  final List<String> roster;
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final palette = [
-      (cs.primary, cs.onPrimary),
-      (cs.secondary, cs.onSecondary),
-      (cs.tertiary, cs.onTertiary),
-    ];
-    final (bg, fg) = palette[userId.hashCode.abs() % palette.length];
+    final theme = Theme.of(context);
+    final colors = MemberColors.of(userId, theme.brightness, roster);
     return ExcludeSemantics(
       child: Container(
         width: MitlistSpacing.space6,
         height: MitlistSpacing.space6,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: bg,
+          color: colors.background,
           shape: BoxShape.circle,
-          border: Border.all(color: cs.outline, width: 1),
+          border: Border.all(color: theme.colorScheme.outline, width: 1),
         ),
         child: Text(
           name.isEmpty ? '?' : avatarInitials(name),
           maxLines: 1,
-          style: MitlistTypography.labelXSmall(color: fg),
+          style: MitlistTypography.labelXSmall(color: colors.foreground)
+              .copyWith(fontWeight: FontWeight.w700),
         ),
       ),
     );
   }
 }
 
-/// A housemate's shared event: who, when, and the title only when the
-/// household may see it ("Busy" otherwise). Free events are drawn lighter.
+/// The "Busy" tag a busy-only block shows in place of a title.
+class _BusyTag extends StatelessWidget {
+  const _BusyTag();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: MitlistSpacing.sm,
+        vertical: MitlistSpacing.space0_5,
+      ),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest,
+        border: Border.all(color: cs.outline, width: 2),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AppIcon(name: 'lockClosed', size: 14, color: cs.onSurface),
+          const SizedBox(width: MitlistSpacing.xs),
+          Text(
+            l10n.calendarExternalBusy,
+            maxLines: 1,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: cs.onSurface,
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A housemate's shared event: the title (or a "Busy" tag when the
+/// household sees only that they are busy) on the first line, who and when
+/// on the second, so neither is squeezed. Events marked free are lighter.
 class _ExternalEventRow extends StatelessWidget {
   const _ExternalEventRow({
     required this.event,
     required this.day,
     required this.personName,
+    required this.roster,
     this.onTap,
   });
 
   final CalendarEvent event;
   final DateTime day;
   final String personName;
+  final List<String> roster;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final cs = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     final x = event.external!;
     final localeName = Localizations.localeOf(context).toString();
     final what = _externalEventText(event, l10n);
     final when = _externalTimeLabel(x, day, localeName, l10n);
-    final textColor = x.free ? cs.onSurfaceVariant : cs.onSurface;
+    final busyOnly = x.busyOnly || event.title.trim().isEmpty;
     final label = x.free
         ? l10n.calendarExternalSemanticsFree(personName, what, when)
         : l10n.calendarExternalSemantics(personName, what, when);
-
-    final row = Row(
-      children: [
-        _PersonBadge(userId: x.userId, name: personName),
-        const SizedBox(width: MitlistSpacing.sm),
-        Expanded(
-          child: Text.rich(
-            TextSpan(children: [
-              TextSpan(
-                text: '$personName · ',
-                style: TextStyle(color: cs.onSurfaceVariant),
-              ),
-              TextSpan(
-                text: what,
-                style: TextStyle(
-                  fontStyle: x.busyOnly ? FontStyle.italic : null,
-                ),
-              ),
-            ]),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: textColor,
-                  fontWeight: x.free ? FontWeight.w400 : FontWeight.w500,
-                ),
-          ),
-        ),
-        const SizedBox(width: MitlistSpacing.sm),
-        Flexible(
-          flex: 0,
-          child: Text(
-            x.free ? '$when · ${l10n.calendarExternalFree}' : when,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: MitlistTypography.labelXSmall(color: cs.onSurfaceVariant),
-          ),
-        ),
-      ],
-    );
+    final second = [
+      personName,
+      when,
+      if (x.free) l10n.calendarExternalFree,
+    ].join(' · ');
 
     return Semantics(
       label: label,
@@ -1561,17 +1660,51 @@ class _ExternalEventRow extends StatelessWidget {
       excludeSemantics: true,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(MitlistTheme.radiusSm),
-        child: Opacity(
-          opacity: x.free ? 0.7 : 1,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 44),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                vertical: MitlistSpacing.xs,
-                horizontal: MitlistSpacing.xs,
-              ),
-              child: row,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 44),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              vertical: MitlistSpacing.xs,
+              horizontal: MitlistSpacing.xs,
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: MitlistSpacing.space0_5),
+                  child: _PersonBadge(
+                      userId: x.userId, name: personName, roster: roster),
+                ),
+                const SizedBox(width: MitlistSpacing.sm),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (busyOnly)
+                        const _BusyTag()
+                      else
+                        Text(
+                          what,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: x.free ? cs.onSurfaceVariant : cs.onSurface,
+                            fontWeight:
+                                x.free ? FontWeight.w400 : FontWeight.w600,
+                          ),
+                        ),
+                      const SizedBox(height: MitlistSpacing.space0_5),
+                      Text(
+                        second,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: MitlistTypography.labelXSmall(
+                            color: cs.onSurfaceVariant),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -1580,18 +1713,36 @@ class _ExternalEventRow extends StatelessWidget {
   }
 }
 
-/// For the selected day: each member who shares a calendar, free, busy (with
-/// times) or away all day, so a free evening is easy to spot.
+/// The colour of a who's-around status marker (never the brand orange).
+Color _aroundColor(BuildContext context, AroundStatus status) {
+  final dark = Theme.of(context).brightness == Brightness.dark;
+  return switch (status) {
+    AroundStatus.free =>
+      dark ? MitlistColors.success300 : MitlistColors.success700,
+    AroundStatus.busy =>
+      dark ? MitlistColors.warning300 : MitlistColors.warning700,
+    AroundStatus.away => dark ? MitlistColors.error300 : MitlistColors.error700,
+    AroundStatus.notSharing => Theme.of(context).colorScheme.outline,
+  };
+}
+
+/// For the selected day: one line for the household's evening, then each
+/// member in a column: free all day, free from a time, busy until a time,
+/// away, or not sharing a calendar.
 class _WhosAroundCard extends StatelessWidget {
   const _WhosAroundCard({
     required this.day,
     required this.around,
+    required this.evening,
     required this.nameFor,
+    required this.roster,
   });
 
   final DateTime day;
   final List<MemberAround> around;
+  final HouseholdEvening? evening;
   final String Function(String userId) nameFor;
+  final List<String> roster;
 
   @override
   Widget build(BuildContext context) {
@@ -1602,71 +1753,182 @@ class _WhosAroundCard extends StatelessWidget {
     final fmt = DateFormat.jm(localeName);
     final dayLabel = DateFormat.MMMEd(localeName).format(day);
 
-    String statusText(MemberAround m) => switch (m.status) {
-          AroundStatus.free => l10n.calendarWhosAroundFree,
+    String status(MemberAround m) => switch (m.status) {
+          AroundStatus.free => l10n.calendarWhosAroundFreeAllDay,
           AroundStatus.away => l10n.calendarWhosAroundAway,
-          AroundStatus.busy => l10n.calendarWhosAroundBusy(m.busy
-              .map((r) => l10n.calendarExternalTimeRange(
-                  fmt.format(r.start), fmt.format(r.end)))
-              .join(', ')),
+          AroundStatus.notSharing => l10n.calendarWhosAroundNotSharing,
+          AroundStatus.busy => m.busyUntil != null
+              ? l10n.calendarWhosAroundBusyUntil(fmt.format(m.busyUntil!))
+              : m.freeFrom != null
+                  ? l10n.calendarWhosAroundFreeFrom(fmt.format(m.freeFrom!))
+                  : l10n.calendarWhosAroundBusyFrom(fmt.format(m.busyFrom!)),
         };
+    String? detail(MemberAround m) => m.status == AroundStatus.busy
+        ? l10n.calendarWhosAroundBusy(m.busy
+            .map((r) => l10n.calendarExternalTimeRange(
+                fmt.format(r.start), fmt.format(r.end)))
+            .join(', '))
+        : null;
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: MitlistSpacing.sm),
-      child: AppCard(
-        key: const ValueKey('calendar-whos-around'),
-        variant: AppCardVariant.outlined,
-        padding: AppCardPadding.md,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l10n.calendarWhosAroundTitle(dayLabel),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w600),
+    final e = evening;
+    final summary = e == null
+        ? null
+        : switch ((e.kind, e.onlySharers)) {
+            (EveningKind.freeAllEvening, false) =>
+              l10n.calendarWhosAroundEveningAll,
+            (EveningKind.freeAllEvening, true) =>
+              l10n.calendarWhosAroundSharersEveningAll,
+            (EveningKind.freeFrom, false) =>
+              l10n.calendarWhosAroundEveningFrom(fmt.format(e.from!)),
+            (EveningKind.freeFrom, true) =>
+              l10n.calendarWhosAroundSharersEveningFrom(fmt.format(e.from!)),
+            (EveningKind.freeBetween, false) =>
+              l10n.calendarWhosAroundEveningBetween(
+                  fmt.format(e.from!), fmt.format(e.until!)),
+            (EveningKind.freeBetween, true) =>
+              l10n.calendarWhosAroundSharersEveningBetween(
+                  fmt.format(e.from!), fmt.format(e.until!)),
+            (EveningKind.notEveryoneFree, false) =>
+              l10n.calendarWhosAroundEveningNone,
+            (EveningKind.notEveryoneFree, true) =>
+              l10n.calendarWhosAroundSharersEveningNone,
+          };
+    final eveningFree = e != null && e.kind != EveningKind.notEveryoneFree;
+
+    return AppCard(
+      key: const ValueKey('calendar-whos-around'),
+      variant: AppCardVariant.outlined,
+      padding: AppCardPadding.md,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.calendarWhosAroundTitle(dayLabel),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.titleSmall
+                ?.copyWith(fontWeight: FontWeight.w600),
+          ),
+          if (summary != null) ...[
+            const SizedBox(height: MitlistSpacing.xs),
+            Semantics(
+              liveRegion: true,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AppIcon(
+                    name: eveningFree ? 'checkCircle' : 'clockOutline',
+                    size: 18,
+                    color: _aroundColor(context,
+                        eveningFree ? AroundStatus.free : AroundStatus.busy),
+                  ),
+                  const SizedBox(width: MitlistSpacing.xs),
+                  Expanded(
+                    child: Text(
+                      summary,
+                      key: const ValueKey('calendar-whos-around-evening'),
+                      style: theme.textTheme.bodyMedium
+                          ?.copyWith(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            for (final m in around)
-              Padding(
+          ],
+          const SizedBox(height: MitlistSpacing.xs),
+          for (final m in around)
+            Semantics(
+              label: [
+                nameFor(m.userId),
+                status(m),
+                if (detail(m) != null) detail(m)
+              ].join(', '),
+              excludeSemantics: true,
+              child: Padding(
                 padding: const EdgeInsets.only(top: MitlistSpacing.sm),
-                child: Semantics(
-                  label: '${nameFor(m.userId)}: ${statusText(m)}',
-                  excludeSemantics: true,
-                  child: Row(
-                    children: [
-                      _PersonBadge(userId: m.userId, name: nameFor(m.userId)),
-                      const SizedBox(width: MitlistSpacing.sm),
-                      Expanded(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _PersonBadge(
+                        userId: m.userId,
+                        name: nameFor(m.userId),
+                        roster: roster),
+                    const SizedBox(width: MitlistSpacing.sm),
+                    Expanded(
+                      flex: 4,
+                      child: Padding(
+                        padding:
+                            const EdgeInsets.only(top: MitlistSpacing.space0_5),
                         child: Text(
                           nameFor(m.userId),
-                          maxLines: 1,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.bodyMedium,
                         ),
                       ),
-                      const SizedBox(width: MitlistSpacing.sm),
-                      Flexible(
-                        child: Text(
-                          statusText(m),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.end,
-                          style: MitlistTypography.labelXSmall(
-                            color: switch (m.status) {
-                              AroundStatus.free => cs.primary,
-                              AroundStatus.busy => cs.onSurfaceVariant,
-                              AroundStatus.away => cs.error,
-                            },
-                          ),
+                    ),
+                    const SizedBox(width: MitlistSpacing.sm),
+                    // The status column: every status starts at the same x.
+                    Expanded(
+                      flex: 5,
+                      child: Padding(
+                        padding:
+                            const EdgeInsets.only(top: MitlistSpacing.space0_5),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  width: MitlistSpacing.sm,
+                                  height: MitlistSpacing.sm,
+                                  color: _aroundColor(context, m.status),
+                                ),
+                                const SizedBox(width: MitlistSpacing.xs),
+                                Expanded(
+                                  child: Text(
+                                    status(m),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: m.status == AroundStatus.notSharing
+                                          ? cs.onSurfaceVariant
+                                          : cs.onSurface,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (detail(m) != null)
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                    left:
+                                        MitlistSpacing.sm + MitlistSpacing.xs),
+                                child: Text(
+                                  detail(m)!,
+                                  maxLines: 3,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: MitlistTypography.labelXSmall(
+                                      color: cs.onSurfaceVariant),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
-          ],
-        ),
+            ),
+          const SizedBox(height: MitlistSpacing.sm),
+          Text(
+            l10n.calendarWhosAroundTapHint,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: MitlistTypography.labelXSmall(color: cs.onSurfaceVariant),
+          ),
+        ],
       ),
     );
   }

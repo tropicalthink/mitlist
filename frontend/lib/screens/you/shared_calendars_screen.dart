@@ -24,7 +24,7 @@ import '../../widgets/app_dialog.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/app_input.dart';
 import '../../widgets/app_toast.dart';
-import '../../widgets/chip.dart';
+import '../../widgets/calendar_tour.dart';
 import '../../widgets/mitlist_app_bar.dart';
 import '../../widgets/skeleton.dart';
 
@@ -54,6 +54,25 @@ List<CalendarShare> sharesWith(
     if (choice == ShareChoice.details)
       CalendarShare(groupId: groupId, visibility: ShareVisibility.details),
   ];
+}
+
+/// "Synced just now / 5 min ago / 3 h ago / yesterday / on Nov 24", like
+/// the chores ledger's relative times.
+String syncedLabel(
+  DateTime syncedAt,
+  AppLocalizations l10n,
+  String localeName, {
+  DateTime? now,
+}) {
+  final t = syncedAt.toLocal();
+  final diff = (now ?? DateTime.now()).difference(t);
+  if (diff.inMinutes < 1) return l10n.sharedCalendarsSyncedJustNow;
+  if (diff.inHours < 1) {
+    return l10n.sharedCalendarsSyncedMinutes(diff.inMinutes);
+  }
+  if (diff.inHours < 24) return l10n.sharedCalendarsSyncedHours(diff.inHours);
+  if (diff.inHours < 48) return l10n.sharedCalendarsSyncedYesterday;
+  return l10n.sharedCalendarsSyncedAt(DateFormat.MMMd(localeName).format(t));
 }
 
 /// The friendly words for a connection's `last_error`.
@@ -148,6 +167,37 @@ class _SharedCalendarsScreenState extends ConsumerState<SharedCalendarsScreen> {
   final Set<String> _savingCalendars = {};
   final Set<String> _syncingConnections = {};
 
+  // Coach mark targets (the tour, and "Show me how").
+  final _addKey = GlobalKey(debugLabel: 'sharedCalendars-add');
+  final _choicesKey = GlobalKey(debugLabel: 'sharedCalendars-choices');
+  final _upcomingKey = GlobalKey(debugLabel: 'sharedCalendars-upcoming');
+  final _firstHideKey = GlobalKey(debugLabel: 'sharedCalendars-first-hide');
+  bool _tourChecked = false;
+
+  Future<void> _runTour({required bool replay}) async {
+    final connections = _connections ?? const <CalendarConnection>[];
+    final hasCalendar = connections.any((c) => c.calendars.isNotEmpty);
+    final hasUpcoming =
+        (_upcoming?.isNotEmpty ?? false) && _upcomingKey.currentContext != null;
+    await runSharedCalendarsTour(
+      context,
+      ref,
+      addButtons: _addKey,
+      choices: hasCalendar ? _choicesKey : null,
+      upcoming: hasUpcoming ? _firstHideKey : null,
+      replay: replay,
+    );
+  }
+
+  /// Picks up the tour when the calendar screen just handed it over.
+  void _maybeContinueTour() {
+    if (_tourChecked) return;
+    _tourChecked = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) unawaited(_runTour(replay: false));
+    });
+  }
+
   List<UpcomingSharedEvent>? _upcoming;
   bool _upcomingLoading = false;
   bool _upcomingFailed = false;
@@ -170,6 +220,7 @@ class _SharedCalendarsScreenState extends ConsumerState<SharedCalendarsScreen> {
       });
       unawaited(_rememberThisPhone(list));
       unawaited(_loadUpcoming());
+      _maybeContinueTour();
     } catch (e) {
       if (!mounted) return;
       setState(() => _loadError = e);
@@ -277,6 +328,8 @@ class _SharedCalendarsScreenState extends ConsumerState<SharedCalendarsScreen> {
       }
       if (!mounted) return;
       if (permission != DeviceCalendarPermission.granted) {
+        // Not "adding" any more: the button must not spin behind the dialog.
+        setState(() => _adding = false);
         await _explainPermission(permission);
         return;
       }
@@ -659,6 +712,18 @@ class _SharedCalendarsScreenState extends ConsumerState<SharedCalendarsScreen> {
         ref.watch(cachedGroupsProvider).valueOrNull ?? const <Group>[];
     final connections = _connections;
     final supportsPhone = ref.watch(deviceCalendarSourceProvider).isSupported;
+    // iPhone calendars have no "private" flag: nothing is turned into busy
+    // on its own there, so say so and point at hiding single events.
+    String? firstCalendarConnection;
+    for (final c in connections ?? const <CalendarConnection>[]) {
+      if (c.calendars.isNotEmpty) {
+        firstCalendarConnection = c.id;
+        break;
+      }
+    }
+    final showIosNote =
+        ref.watch(deviceCalendarPlatformProvider) == TargetPlatform.iOS &&
+            _thisPhone != null;
 
     Widget body;
     if (connections == null) {
@@ -677,63 +742,89 @@ class _SharedCalendarsScreenState extends ConsumerState<SharedCalendarsScreen> {
           connections.any((c) => c.calendars.any((cal) => cal.isShared));
       body = RefreshIndicator(
         onRefresh: _load,
-        child: ListView(
+        // Every section is built (not lazily), so coach marks can find and
+        // scroll to any of them.
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(MitlistSpacing.md),
           physics: const AlwaysScrollableScrollPhysics(),
-          children: [
-            Text(l10n.sharedCalendarsIntro, style: theme.textTheme.bodyMedium),
-            if (groups.isEmpty) ...[
-              const SizedBox(height: MitlistSpacing.sm),
-              Text(
-                l10n.sharedCalendarsNoHouseholds,
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: theme.colorScheme.error),
-              ),
-            ],
-            const SizedBox(height: MitlistSpacing.lg),
-            if (connections.isEmpty)
-              Padding(
-                padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
-                child: Text(
-                  l10n.sharedCalendarsEmpty,
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(l10n.sharedCalendarsIntro,
+                  style: theme.textTheme.bodyMedium),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: AppButton(
+                  key: const ValueKey('shared-calendars-show-me-how'),
+                  text: l10n.sharedCalendarsShowMeHow,
+                  icon: const AppIcon(name: 'lightbulb', size: 18),
+                  size: AppButtonSize.sm,
+                  variant: AppButtonVariant.ghost,
+                  onPressed: () => _runTour(replay: true),
                 ),
               ),
-            for (final c in connections) ...[
-              _ConnectionCard(
-                connection: c,
-                isThisPhone: _isThisPhone(c),
-                groups: groups,
-                savingCalendars: _savingCalendars,
-                syncing: _syncingConnections.contains(c.id),
-                onShare: (cal, groupId, choice) =>
-                    _setShare(c, cal, groupId, choice),
-                onRename: () => _rename(c),
-                onRemove: () => _remove(c),
-                onSync:
-                    (!c.isDevice || _isThisPhone(c)) ? () => _syncNow(c) : null,
-              ),
-              const SizedBox(height: MitlistSpacing.md),
-            ],
-            _AddCard(
-              showPhone: supportsPhone && _thisPhone == null,
-              busy: _adding,
-              onAddPhone: _addThisPhone,
-              onAddLink: _addLink,
-            ),
-            if (anyShared) ...[
+              if (groups.isEmpty) ...[
+                const SizedBox(height: MitlistSpacing.sm),
+                Text(
+                  l10n.sharedCalendarsNoHouseholds,
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: theme.colorScheme.error),
+                ),
+              ],
               const SizedBox(height: MitlistSpacing.lg),
-              _UpcomingSection(
-                events: _upcoming,
-                loading: _upcomingLoading,
-                failed: _upcomingFailed,
-                groups: groups,
-                onRetry: _loadUpcoming,
-                onChoose: _chooseOverride,
+              if (connections.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: MitlistSpacing.md),
+                  child: Text(
+                    l10n.sharedCalendarsEmpty,
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  ),
+                ),
+              for (final c in connections) ...[
+                _ConnectionCard(
+                  connection: c,
+                  isThisPhone: _isThisPhone(c),
+                  groups: groups,
+                  savingCalendars: _savingCalendars,
+                  syncing: _syncingConnections.contains(c.id),
+                  onShare: (cal, groupId, choice) =>
+                      _setShare(c, cal, groupId, choice),
+                  onRename: () => _rename(c),
+                  onRemove: () => _remove(c),
+                  onSync: (!c.isDevice || _isThisPhone(c))
+                      ? () => _syncNow(c)
+                      : null,
+                  iosNote: showIosNote && _isThisPhone(c),
+                  firstCalendarKey:
+                      c.id == firstCalendarConnection ? _choicesKey : null,
+                ),
+                const SizedBox(height: MitlistSpacing.md),
+              ],
+              _AddCard(
+                key: _addKey,
+                showPhone: supportsPhone && _thisPhone == null,
+                busy: _adding,
+                onAddPhone: _addThisPhone,
+                onAddLink: _addLink,
               ),
+              if (anyShared) ...[
+                const SizedBox(height: MitlistSpacing.lg),
+                _UpcomingSection(
+                  key: _upcomingKey,
+                  events: _upcoming,
+                  loading: _upcomingLoading,
+                  failed: _upcomingFailed,
+                  groups: groups,
+                  iosNote: showIosNote,
+                  onRetry: _loadUpcoming,
+                  onChoose: _chooseOverride,
+                  onQuickHide: _setOverride,
+                  firstHideKey: _firstHideKey,
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       );
     }
@@ -831,8 +922,14 @@ class _ConnectionCard extends StatelessWidget {
     required this.onRename,
     required this.onRemove,
     required this.onSync,
+    this.iosNote = false,
+    this.firstCalendarKey,
   });
 
+  /// Coach mark target: this connection's first calendar's choices.
+  final GlobalKey? firstCalendarKey;
+
+  final bool iosNote;
   final CalendarConnection connection;
   final bool isThisPhone;
   final List<Group> groups;
@@ -859,8 +956,7 @@ class _ConnectionCard extends StatelessWidget {
         ? l10n.sharedCalendarsSyncing
         : synced == null
             ? l10n.sharedCalendarsNeverSynced
-            : l10n.sharedCalendarsSyncedAt(
-                DateFormat.MMMd(localeName).add_jm().format(synced.toLocal()));
+            : syncedLabel(synced, l10n, localeName);
     final error = connection.error;
 
     return AppCard(
@@ -938,6 +1034,10 @@ class _ConnectionCard extends StatelessWidget {
                   ?.copyWith(color: cs.onSurfaceVariant),
             ),
           ],
+          if (iosNote) ...[
+            const SizedBox(height: MitlistSpacing.sm),
+            const IosPrivacyNote(key: ValueKey('connection-ios-note')),
+          ],
           if (connection.calendars.isEmpty) ...[
             const SizedBox(height: MitlistSpacing.sm),
             Text(
@@ -946,9 +1046,11 @@ class _ConnectionCard extends StatelessWidget {
                   ?.copyWith(color: cs.onSurfaceVariant),
             ),
           ],
-          for (final cal in connection.calendars) ...[
+          for (final (i, cal) in connection.calendars.indexed) ...[
             const SizedBox(height: MitlistSpacing.md),
             _CalendarShares(
+              key: i == 0 ? firstCalendarKey : null,
+              privateFlag: !iosNote,
               calendar: cal,
               groups: groups,
               saving: savingCalendars.contains(cal.id),
@@ -963,6 +1065,8 @@ class _ConnectionCard extends StatelessWidget {
 
 class _CalendarShares extends StatelessWidget {
   const _CalendarShares({
+    super.key,
+    this.privateFlag = true,
     required this.calendar,
     required this.groups,
     required this.saving,
@@ -974,18 +1078,29 @@ class _CalendarShares extends StatelessWidget {
   final bool saving;
   final void Function(String groupId, ShareChoice choice) onShare;
 
+  /// Whether the source marks private events (iPhone calendars do not, so
+  /// the "private events still show as busy" promise is left out there).
+  final bool privateFlag;
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    // One plain sentence per household that sees something; nothing for the
+    // ones that see nothing, unless no household sees anything.
+    final explanations = <String>[
+      for (final g in groups)
+        if (shareChoiceOf(calendar, g.id) != ShareChoice.none)
+          _explain(shareChoiceOf(calendar, g.id), g.name, l10n, privateFlag),
+    ];
     return Column(
       key: ValueKey('calendar-shares-${calendar.id}'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            AppIcon(name: 'calendarDays', size: 16, color: cs.tertiary),
+            AppIcon(name: 'calendarDays', size: 16, color: cs.onSurfaceVariant),
             const SizedBox(width: MitlistSpacing.xs),
             Expanded(
               child: Text(
@@ -999,64 +1114,141 @@ class _CalendarShares extends StatelessWidget {
             ),
           ],
         ),
-        for (final g in groups) ...[
-          const SizedBox(height: MitlistSpacing.sm),
-          Text(
-            g.name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.labelLarge,
-          ),
-          const SizedBox(height: MitlistSpacing.xs),
-          Wrap(
-            spacing: MitlistSpacing.sm,
-            runSpacing: MitlistSpacing.sm,
-            children: [
-              for (final choice in ShareChoice.values)
-                Semantics(
-                  button: true,
-                  selected: shareChoiceOf(calendar, g.id) == choice,
-                  label: '${g.name}: ${_choiceLabel(choice, l10n)}',
-                  excludeSemantics: true,
-                  child: AppChip(
-                    key:
-                        ValueKey('share-${calendar.id}-${g.id}-${choice.name}'),
-                    label: _choiceLabel(choice, l10n),
-                    selected: shareChoiceOf(calendar, g.id) == choice,
-                    onSelected: saving ? null : (_) => onShare(g.id, choice),
+        for (final g in groups)
+          Padding(
+            padding: const EdgeInsets.only(top: MitlistSpacing.sm),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 84,
+                  child: Text(
+                    g.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelLarge,
                   ),
                 ),
-            ],
+                const SizedBox(width: MitlistSpacing.sm),
+                Expanded(
+                  child: ShareSegmentedChoice(
+                    keyPrefix: 'share-${calendar.id}-${g.id}',
+                    household: g.name,
+                    value: shareChoiceOf(calendar, g.id),
+                    enabled: !saving,
+                    onChanged: (choice) => onShare(g.id, choice),
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: MitlistSpacing.xs),
-          Text(
-            _explain(shareChoiceOf(calendar, g.id), g.name, l10n),
-            style:
-                theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-          ),
-        ],
+        const SizedBox(height: MitlistSpacing.xs),
+        Text(
+          explanations.isEmpty
+              ? l10n.sharedCalendarsNotSharedAnywhere
+              : explanations.join(' '),
+          style:
+              theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+        ),
       ],
     );
   }
 
-  static String _choiceLabel(ShareChoice c, AppLocalizations l10n) =>
-      switch (c) {
-        ShareChoice.busy => l10n.sharedCalendarsShareBusy,
-        ShareChoice.details => l10n.sharedCalendarsShareDetails,
-        ShareChoice.none => l10n.sharedCalendarsShareNone,
-      };
-
-  static String _explain(
-          ShareChoice c, String household, AppLocalizations l10n) =>
+  static String _explain(ShareChoice c, String household, AppLocalizations l10n,
+          bool privateFlag) =>
       switch (c) {
         ShareChoice.busy => l10n.sharedCalendarsExplainBusy(household),
-        ShareChoice.details => l10n.sharedCalendarsExplainDetails(household),
+        ShareChoice.details => privateFlag
+            ? l10n.sharedCalendarsExplainDetails(household)
+            : l10n.sharedCalendarsExplainDetailsNoPrivate(household),
         ShareChoice.none => l10n.sharedCalendarsExplainNone(household),
       };
 }
 
+String shareChoiceLabel(ShareChoice c, AppLocalizations l10n) => switch (c) {
+      ShareChoice.busy => l10n.sharedCalendarsShareBusy,
+      ShareChoice.details => l10n.sharedCalendarsShareDetails,
+      ShareChoice.none => l10n.sharedCalendarsShareNone,
+    };
+
+/// Busy only / With titles / Not shared for one household, as one
+/// square segmented control (2px outline, the selected segment filled).
+class ShareSegmentedChoice extends StatelessWidget {
+  const ShareSegmentedChoice({
+    super.key,
+    required this.keyPrefix,
+    required this.household,
+    required this.value,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  final String keyPrefix;
+  final String household;
+  final ShareChoice value;
+  final bool enabled;
+  final ValueChanged<ShareChoice> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: cs.outline, width: 2),
+      ),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (final (i, choice) in ShareChoice.values.indexed) ...[
+              if (i > 0)
+                VerticalDivider(width: 2, thickness: 2, color: cs.outline),
+              Expanded(
+                child: Semantics(
+                  button: true,
+                  inMutuallyExclusiveGroup: true,
+                  selected: value == choice,
+                  label: '$household: ${shareChoiceLabel(choice, l10n)}',
+                  excludeSemantics: true,
+                  child: InkWell(
+                    key: ValueKey('$keyPrefix-${choice.name}'),
+                    onTap: enabled && value != choice
+                        ? () => onChanged(choice)
+                        : null,
+                    child: Container(
+                      constraints: const BoxConstraints(minHeight: 44),
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: MitlistSpacing.xs,
+                        vertical: MitlistSpacing.xs,
+                      ),
+                      color: value == choice ? cs.onSurface : null,
+                      child: Text(
+                        shareChoiceLabel(choice, l10n),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: value == choice ? cs.surface : cs.onSurface,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _AddCard extends StatelessWidget {
   const _AddCard({
+    super.key,
     required this.showPhone,
     required this.busy,
     required this.onAddPhone,
@@ -1115,20 +1307,30 @@ class _AddCard extends StatelessWidget {
 
 class _UpcomingSection extends StatelessWidget {
   const _UpcomingSection({
+    super.key,
     required this.events,
     required this.loading,
     required this.failed,
     required this.groups,
+    required this.iosNote,
     required this.onRetry,
     required this.onChoose,
+    required this.onQuickHide,
+    this.firstHideKey,
   });
 
+  /// Coach mark target: the first event's one-tap hide.
+  final GlobalKey? firstHideKey;
   final List<UpcomingSharedEvent>? events;
   final bool loading;
   final bool failed;
   final List<Group> groups;
+
+  /// iPhone calendars carry no "private" flag: say so here.
+  final bool iosNote;
   final Future<void> Function() onRetry;
   final void Function(UpcomingSharedEvent) onChoose;
+  final void Function(UpcomingSharedEvent, EventOverride?) onQuickHide;
 
   @override
   Widget build(BuildContext context) {
@@ -1148,6 +1350,10 @@ class _UpcomingSection extends StatelessWidget {
         ),
         const SizedBox(height: MitlistSpacing.xs),
         Text(l10n.sharedCalendarsUpcomingIntro, style: muted),
+        if (iosNote) ...[
+          const SizedBox(height: MitlistSpacing.sm),
+          IosPrivacyNote(key: const ValueKey('upcoming-ios-note')),
+        ],
         const SizedBox(height: MitlistSpacing.sm),
         if (failed)
           Row(
@@ -1168,25 +1374,68 @@ class _UpcomingSection extends StatelessWidget {
         else if (list != null && list.isEmpty && !failed)
           Text(l10n.sharedCalendarsUpcomingEmpty, style: muted)
         else if (list != null)
-          for (final e in list)
-            _UpcomingRow(event: e, groups: groups, onTap: () => onChoose(e)),
+          for (final (i, e) in list.indexed)
+            _UpcomingRow(
+              event: e,
+              groups: groups,
+              hideKey: i == 0 ? firstHideKey : null,
+              onTap: () => onChoose(e),
+              onQuickHide: (v) => onQuickHide(e, v),
+            ),
       ],
     );
   }
 }
 
-/// One upcoming event: when, which calendar, and in plain words what each
-/// household sees of it right now. Tapping it changes that.
+/// "iPhone can't tell which events are private. Hide any event below."
+class IosPrivacyNote extends StatelessWidget {
+  const IosPrivacyNote({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(MitlistSpacing.sm),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest,
+        border: Border.all(color: cs.outline, width: 2),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppIcon(name: 'informationCircle', size: 18, color: cs.onSurface),
+          const SizedBox(width: MitlistSpacing.sm),
+          Expanded(
+            child: Text(
+              l10n.sharedCalendarsIosPrivateNote,
+              style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurface),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One upcoming event: when, which calendar, what each household sees of it
+/// right now, and a one-tap hide (or show again). Tapping the row opens
+/// every choice.
 class _UpcomingRow extends StatelessWidget {
   const _UpcomingRow({
     required this.event,
     required this.groups,
     required this.onTap,
+    required this.onQuickHide,
+    this.hideKey,
   });
 
+  final GlobalKey? hideKey;
   final UpcomingSharedEvent event;
   final List<Group> groups;
   final VoidCallback onTap;
+  final ValueChanged<EventOverride?> onQuickHide;
 
   @override
   Widget build(BuildContext context) {
@@ -1219,76 +1468,110 @@ class _UpcomingRow extends StatelessWidget {
     final title =
         event.hasTitle ? event.title!.trim() : l10n.sharedCalendarsEventNoTitle;
     final notes = [
-      event.calendar.name,
-      if (event.sourcePrivate) l10n.sharedCalendarsEventPrivate,
-      if (event.free) l10n.sharedCalendarsEventFree,
-    ].where((s) => s.isNotEmpty).join(' · ');
+      if (event.sourcePrivate) l10n.sharedCalendarsEventPrivateNote,
+      if (event.free) l10n.sharedCalendarsEventFreeNote,
+    ];
+    final hidden = event.override == EventOverride.hidden;
+    final muted =
+        theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant);
 
-    return Semantics(
-      button: true,
-      label: '$title, $when. $sees. ${l10n.sharedCalendarsEventChoice(choice)}',
-      excludeSemantics: true,
-      child: InkWell(
-        key: ValueKey(
-            'upcoming-${event.calendar.id}-${event.uid}-${event.start.millisecondsSinceEpoch}'),
-        onTap: onTap,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 44),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                AppIcon(
-                  name: seeLines.isEmpty ? 'eyeSlash' : 'eye',
-                  size: 18,
-                  color: seeLines.isEmpty ? cs.onSurfaceVariant : cs.tertiary,
-                ),
-                const SizedBox(width: MitlistSpacing.sm),
-                Expanded(
-                  child: Column(
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Semantics(
+            button: true,
+            label: [
+              title,
+              when,
+              ...notes,
+              sees,
+              l10n.sharedCalendarsEventChoice(choice),
+            ].join('. '),
+            excludeSemantics: true,
+            child: InkWell(
+              key: ValueKey(
+                  'upcoming-${event.calendar.id}-${event.uid}-${event.start.millisecondsSinceEpoch}'),
+              onTap: onTap,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 44),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: MitlistSpacing.sm),
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodyMedium
-                            ?.copyWith(fontWeight: FontWeight.w600),
+                      AppIcon(
+                        name: seeLines.isEmpty ? 'eyeSlash' : 'eye',
+                        size: 18,
+                        color: seeLines.isEmpty
+                            ? cs.onSurfaceVariant
+                            : cs.onSurface,
                       ),
-                      Text(
-                        notes.isEmpty ? when : '$when · $notes',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall
-                            ?.copyWith(color: cs.onSurfaceVariant),
-                      ),
-                      Text(
-                        sees,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: seeLines.isEmpty
-                              ? cs.onSurfaceVariant
-                              : cs.onSurface,
+                      const SizedBox(width: MitlistSpacing.sm),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodyMedium
+                                  ?.copyWith(fontWeight: FontWeight.w600),
+                            ),
+                            Text(
+                              '$when · ${event.calendar.name}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: muted,
+                            ),
+                            // Never cut: the reason something is busy.
+                            for (final n in notes)
+                              Text(n,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                      color: cs.onSurface,
+                                      fontStyle: FontStyle.italic)),
+                            Text(
+                              sees,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: seeLines.isEmpty
+                                    ? cs.onSurfaceVariant
+                                    : cs.onSurface,
+                              ),
+                            ),
+                            Text(
+                              l10n.sharedCalendarsEventChoice(choice),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.labelMedium
+                                  ?.copyWith(color: cs.primary),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: MitlistSpacing.sm),
-                Text(
-                  choice,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style:
-                      theme.textTheme.labelMedium?.copyWith(color: cs.primary),
-                ),
-              ],
+              ),
             ),
           ),
         ),
-      ),
+        KeyedSubtree(
+          key: hideKey,
+          child: IconButton(
+            key: ValueKey('quick-hide-${event.calendar.id}-${event.uid}'),
+            tooltip: hidden
+                ? l10n.sharedCalendarsShowAgain
+                : l10n.sharedCalendarsHideEvent,
+            icon: AppIcon(
+              name: hidden ? 'eye' : 'eyeSlash',
+              color: cs.onSurface,
+            ),
+            onPressed: () => onQuickHide(hidden ? null : EventOverride.hidden),
+          ),
+        ),
+      ],
     );
   }
 }

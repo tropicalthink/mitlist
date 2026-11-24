@@ -38,6 +38,7 @@ import '../../widgets/hub/onboarding_card.dart';
 import '../../widgets/hub/pinwall_section.dart';
 import '../../widgets/hub/needs_you_section.dart';
 import '../../widgets/hub/quick_add_sheet.dart';
+import '../../widgets/calendar_tour.dart';
 import '../../widgets/hub/widget_promo_sheet.dart';
 import '../../providers/meal_plan_provider.dart';
 import '../../widgets/shell_trailing_actions.dart';
@@ -77,6 +78,8 @@ const Set<String> _kMembershipEvents = {
 };
 
 class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
+  /// The calendar button: the shared calendars tour starts there.
+  final _calendarButtonKey = GlobalKey(debugLabel: 'hub-calendar-button');
   bool _isLoading = true;
   Object? _error;
   Group? _data;
@@ -366,10 +369,26 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
     _widgetPromoChecked = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      unawaited(
-        maybeOfferHomeWidgets(context, ref, onboardingDone: true)
-            .catchError((Object _) {}),
-      );
+      // One thing per Home visit: the widget promo first; when it did not
+      // show, the shared calendars tour may (each waits for a later visit
+      // otherwise).
+      unawaited(() async {
+        var shown = false;
+        try {
+          shown =
+              await maybeOfferHomeWidgets(context, ref, onboardingDone: true);
+        } catch (_) {}
+        if (!mounted) return;
+        try {
+          await maybeStartCalendarTour(
+            context,
+            ref,
+            calendarButton: _calendarButtonKey,
+            onboardingDone: true,
+            otherPromoThisVisit: shown,
+          );
+        } catch (_) {}
+      }());
     });
   }
 
@@ -851,6 +870,7 @@ class _HouseholdHubScreenState extends ConsumerState<HouseholdHubScreen> {
                               title: _buildAppBarTitle(context),
                               actions: [
                                 IconButton(
+                                  key: _calendarButtonKey,
                                   tooltip: l10n.hubCalendarTooltip,
                                   icon: const AppIcon(name: 'calendarDays'),
                                   onPressed: () =>

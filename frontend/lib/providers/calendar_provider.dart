@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/calendar_models.dart';
 import '../repositories/calendar_repository.dart';
 import '../services/calendar_service.dart';
-import 'list_provider.dart' show appDatabaseProvider;
+import 'list_provider.dart' show appDatabaseProvider, sseServiceProvider;
 
 final calendarServiceProviderAsync =
     FutureProvider<CalendarService>((ref) async {
@@ -25,7 +25,15 @@ final calendarRepositoryProvider =
     FutureProvider<CalendarRepository>((ref) async {
   final db = ref.watch(appDatabaseProvider);
   final service = await ref.read(calendarServiceProviderAsync.future);
-  return CalendarRepository(db: db, remote: service);
+  final repo = CalendarRepository(db: db, remote: service);
+  // A housemate's shared calendar changed: cached windows must stop showing
+  // what they may no longer share, also while the calendar is not open.
+  final sub = ref.read(sseServiceProvider).events.listen((event) {
+    if (event.type != 'calendar:external_changed') return;
+    unawaited(repo.forgetExternal(event.groupId).catchError((Object _) {}));
+  });
+  ref.onDispose(sub.cancel);
+  return repo;
 });
 
 final calendarEventsProvider =
