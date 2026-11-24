@@ -49,7 +49,7 @@ func TestGuestCleanup_RetiresOnlyGuestsPastLockedGrace(t *testing.T) {
 		WillReturnResult(pgxmock.NewResult("UPDATE", 1))
 	for _, table := range []string{
 		"auth_sessions", "password_reset_tokens", "email_verification_tokens",
-		"push_subscriptions", "device_tokens", "oauth_accounts",
+		"push_subscriptions", "device_tokens", "oauth_accounts", "calendar_connections",
 	} {
 		pool.ExpectExec(`DELETE FROM ` + table + ` WHERE user_id = ANY\(\$1\)`).
 			WithArgs([]uuid.UUID{guestID}).

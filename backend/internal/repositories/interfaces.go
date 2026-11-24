@@ -339,6 +339,36 @@ type CalendarListRepo interface {
 	ListListsByGroupAndRemindAtRange(ctx context.Context, groupID uuid.UUID, from, to time.Time) ([]models.List, error)
 }
 
+// ExternalCalendarRepo stores members' synced calendars, their household
+// shares, events and per-event overrides.
+type ExternalCalendarRepo interface {
+	CountConnections(ctx context.Context, userID uuid.UUID) (int, error)
+	GetConnection(ctx context.Context, id, userID uuid.UUID) (*models.CalendarConnection, error)
+	GetDeviceConnection(ctx context.Context, userID uuid.UUID, deviceID string) (*models.CalendarConnection, error)
+	ListConnections(ctx context.Context, userID uuid.UUID) ([]models.CalendarConnection, error)
+	CreateICSConnection(ctx context.Context, c *models.CalendarConnection, cal *models.ExternalCalendar, events []models.ExternalEvent) error
+	CreateDeviceConnection(ctx context.Context, c *models.CalendarConnection) error
+	UpdateConnectionName(ctx context.Context, id, userID uuid.UUID, name string) (bool, error)
+	DeleteConnection(ctx context.Context, id, userID uuid.UUID) (bool, error)
+	GetCalendar(ctx context.Context, id, userID uuid.UUID) (*models.ExternalCalendar, error)
+	ListCalendarIDs(ctx context.Context, connID uuid.UUID) ([]uuid.UUID, error)
+	ListShareGroupsForConnection(ctx context.Context, connID uuid.UUID) ([]uuid.UUID, error)
+	ListShareGroupsForCalendar(ctx context.Context, calendarID uuid.UUID) ([]uuid.UUID, error)
+	ReplaceShares(ctx context.Context, calendarID uuid.UUID, shares []models.CalendarShare) error
+	SetOverride(ctx context.Context, userID, calendarID uuid.UUID, externalUID string, visibility *string) error
+	ListOverrides(ctx context.Context, userID uuid.UUID) ([]models.EventOverride, error)
+	ReplaceCalendarEvents(ctx context.Context, connID, calendarID uuid.UUID, events []models.ExternalEvent, hash *string) error
+	DeviceSync(ctx context.Context, connID, userID uuid.UUID, calendars []models.ExternalCalendar, events []DeviceSyncEvent, hash string, syncedAt time.Time) error
+	RecordSyncResult(ctx context.Context, id uuid.UUID, rec ICSSyncRecord) error
+	ClaimAttempt(ctx context.Context, id uuid.UUID, now time.Time, minGap time.Duration) (bool, error)
+	ListDueICSConnections(ctx context.Context, now time.Time, limit int) ([]models.CalendarConnection, error)
+	ListOwnEvents(ctx context.Context, userID uuid.UUID, from, to time.Time) ([]models.OwnEvent, error)
+	ListHouseholdEvents(ctx context.Context, groupID uuid.UUID, from, to time.Time) ([]models.HouseholdExternalEvent, error)
+	TrimEvents(ctx context.Context, before, after time.Time) (int64, error)
+}
+
+var _ ExternalCalendarRepo = (*ExternalCalendarRepository)(nil)
+
 // AttachmentRepo is the interface for attachment repository operations.
 type AttachmentRepo interface {
 	Reserve(ctx context.Context, a *models.Attachment, limitBytes int64) error

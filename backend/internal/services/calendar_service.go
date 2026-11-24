@@ -20,7 +20,24 @@ type CalendarService struct {
 	groupRepo    repositories.GroupRepo
 	pinwallRepo  repositories.CalendarPinwallRepo
 	listRepo     repositories.CalendarListRepo
+	external     ExternalEventSource
 }
+
+// ExternalEventSource supplies what a household may see of its members'
+// synced calendars (ExternalCalendarService).
+type ExternalEventSource interface {
+	HouseholdEvents(ctx context.Context, groupID uuid.UUID, from, to time.Time) ([]models.CalendarEvent, error)
+}
+
+// CalendarOptions selects optional parts of the calendar.
+type CalendarOptions struct {
+	// IncludeExternal adds members' synced calendar events. Only for
+	// interactive sessions of clients that know the external_event type.
+	IncludeExternal bool
+}
+
+// SetExternalEvents enables external events (GetCalendarWithOptions).
+func (s *CalendarService) SetExternalEvents(src ExternalEventSource) { s.external = src }
 
 func NewCalendarService(
 	mealPlanRepo repositories.MealPlanRepoIface,
@@ -48,7 +65,22 @@ func (s *CalendarService) requireMembership(ctx context.Context, userID, groupID
 	return requireGroupMember(ctx, s.groupRepo, groupID, userID)
 }
 
-// GetCalendar returns calendar events for a group in a date range.
+// GetCalendarWithOptions is GetCalendar plus the optional parts. External
+// events overlap [from, to+1 day): to is the last day shown.
+func (s *CalendarService) GetCalendarWithOptions(ctx context.Context, user *models.User, groupID uuid.UUID, from, to time.Time, opts CalendarOptions) ([]models.CalendarEvent, error) {
+	events, err := s.GetCalendar(ctx, user, groupID, from, to)
+	if err != nil || !opts.IncludeExternal || s.external == nil {
+		return events, err
+	}
+	external, err := s.external.HouseholdEvents(ctx, groupID, from, to.AddDate(0, 0, 1))
+	if err != nil {
+		return nil, err
+	}
+	return append(events, external...), nil
+}
+
+// GetCalendar returns calendar events for a group in a date range. It never
+// includes members' synced calendars (the iCal export uses it).
 func (s *CalendarService) GetCalendar(ctx context.Context, user *models.User, groupID uuid.UUID, from, to time.Time) ([]models.CalendarEvent, error) {
 	if err := s.requireMembership(ctx, user.ID, groupID); err != nil {
 		return nil, err

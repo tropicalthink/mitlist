@@ -139,6 +139,9 @@ type Container struct {
 	calendarServiceOnce sync.Once
 	calendarService     *services.CalendarService
 
+	externalCalendarServiceOnce sync.Once
+	externalCalendarService     *services.ExternalCalendarService
+
 	shareServiceOnce sync.Once
 	shareService     *services.ShareService
 
@@ -624,8 +627,27 @@ func (c *Container) MealPlanService() *services.MealPlanService {
 func (c *Container) CalendarService() *services.CalendarService {
 	c.calendarServiceOnce.Do(func() {
 		c.calendarService = services.NewCalendarService(c.MealPlanRepo(), c.RecipeRepo(), c.ChoreRepo(), c.FinanceRepo(), c.GroupRepo(), c.PinwallRepo(), c.ListRepo())
+		c.calendarService.SetExternalEvents(c.ExternalCalendarService())
 	})
 	return c.calendarService
+}
+
+// ExternalCalendarService returns the singleton service behind members'
+// synced calendars. The ICS URL key derives from SECRET_KEY.
+func (c *Container) ExternalCalendarService() *services.ExternalCalendarService {
+	c.externalCalendarServiceOnce.Do(func() {
+		svc, err := services.NewExternalCalendarService(
+			repositories.NewExternalCalendarRepository(c.db), c.GroupRepo(), c.cfg.SecretKey,
+		)
+		if err != nil {
+			// Only fails if AES or HKDF are unavailable: nothing to run without.
+			panic("external calendar service: " + err.Error())
+		}
+		svc.SetHub(c.SSEHub())
+		svc.SetLogger(c.logger)
+		c.externalCalendarService = svc
+	})
+	return c.externalCalendarService
 }
 
 // NotificationService returns the singleton notification service.

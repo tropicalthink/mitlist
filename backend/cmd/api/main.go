@@ -113,6 +113,7 @@ func main() {
 	} else {
 		log.Info().Bool("enabled", cfg.ReengagementEmailsEnabled).Bool("public_api_url_set", cfg.PublicAPIURL != "").Bool("email_configured", cfg.EmailConfigured()).Msg("reengagement emails disabled")
 	}
+	runner.RegisterExternalCalendarRefresh(jobs.NewExternalCalendarRefresh(cnt.ExternalCalendarService(), log))
 	runner.Start()
 
 	srv := server.New(cfg, cnt, runner)
@@ -328,6 +329,10 @@ func main() {
 			// Calendar
 			calendarHandler := handlers.NewCalendarHandler(cnt.CalendarService())
 			calendarHandler.RegisterRoutes(r)
+
+			// Members' synced calendars shared with their households
+			// (interactive sessions only, enforced inside)
+			handlers.NewExternalCalendarHandler(cnt.ExternalCalendarService()).RegisterRoutes(r)
 
 			// Grocery graph sync
 			groceryHandler := handlers.NewGroceryHandler(cnt.GroceryService())

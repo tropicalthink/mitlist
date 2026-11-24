@@ -152,6 +152,7 @@ func clearTables(t *testing.T) {
 		"pending_claims", "group_invites", "group_memberships", "groups",
 		"auth_access_revocations", "auth_login_limits", "oauth_handoffs", "email_verification_tokens", "auth_sessions",
 		"push_subscriptions", "oauth_accounts", "password_reset_tokens",
+		"external_event_overrides", "external_events", "external_calendar_shares", "external_calendars", "calendar_connections",
 		"users",
 	}
 	for _, table := range tables {
