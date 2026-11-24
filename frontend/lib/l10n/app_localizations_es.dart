@@ -7995,4 +7995,34 @@ class AppLocalizationsEs extends AppLocalizations {
   String sharedCalendarsExplainDetailsNoPrivate(String household) {
     return '$household ve los títulos y horas de tus eventos.';
   }
+
+  @override
+  String get calendarWhosAroundExpand => 'Ver los horarios de todos';
+
+  @override
+  String get calendarWhosAroundCollapse => 'Ver menos';
+
+  @override
+  String sharedCalendarsSummaryBusy(String household) {
+    return '$household: solo ocupado';
+  }
+
+  @override
+  String sharedCalendarsSummaryDetails(String household) {
+    return '$household: con títulos';
+  }
+
+  @override
+  String sharedCalendarsSummaryNone(String household) {
+    return '$household: no compartido';
+  }
+
+  @override
+  String get sharedCalendarsSummaryNotShared => 'No compartido';
+
+  @override
+  String get sharedCalendarsShowChoices => 'Mostrar opciones de compartir';
+
+  @override
+  String get sharedCalendarsHideChoices => 'Ocultar opciones de compartir';
 }

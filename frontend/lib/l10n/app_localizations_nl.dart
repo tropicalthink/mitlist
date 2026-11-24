@@ -8011,4 +8011,34 @@ class AppLocalizationsNl extends AppLocalizations {
   String sharedCalendarsExplainDetailsNoPrivate(String household) {
     return '$household ziet de titels en tijden van je afspraken.';
   }
+
+  @override
+  String get calendarWhosAroundExpand => 'Ieders tijden tonen';
+
+  @override
+  String get calendarWhosAroundCollapse => 'Minder tonen';
+
+  @override
+  String sharedCalendarsSummaryBusy(String household) {
+    return '$household: alleen bezet';
+  }
+
+  @override
+  String sharedCalendarsSummaryDetails(String household) {
+    return '$household: met titels';
+  }
+
+  @override
+  String sharedCalendarsSummaryNone(String household) {
+    return '$household: niet gedeeld';
+  }
+
+  @override
+  String get sharedCalendarsSummaryNotShared => 'Niet gedeeld';
+
+  @override
+  String get sharedCalendarsShowChoices => 'Deelkeuzes tonen';
+
+  @override
+  String get sharedCalendarsHideChoices => 'Deelkeuzes verbergen';
 }

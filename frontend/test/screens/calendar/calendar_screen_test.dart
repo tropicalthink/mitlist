@@ -16,6 +16,7 @@ import 'package:mitlist/providers/presence_provider.dart'
 import 'package:mitlist/services/sse_service.dart';
 import 'package:mitlist/providers/group_provider.dart';
 import 'package:mitlist/screens/calendar/calendar_screen.dart';
+import 'package:mitlist/widgets/app_card.dart';
 import 'package:mitlist/widgets/skeleton.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -285,6 +286,8 @@ void main() {
     await selectDay(tester, d);
     final card = find.byKey(const ValueKey('calendar-whos-around'));
     expect(card, findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('calendar-whos-around-toggle')));
+    await tester.pump();
     Finder inCard(String text) =>
         find.descendant(of: card, matching: find.textContaining(text));
     expect(inCard("Who's around"), findsOneWidget);
@@ -365,5 +368,71 @@ void main() {
           end: t.add(const Duration(hours: 20))),
     ]);
     expect(find.byKey(const ValueKey('calendar-share-hint')), findsNothing);
+  });
+
+  testWidgets("who's around is compact by default, badges say each status",
+      (tester) async {
+    final semantics = tester.ensureSemantics();
+    final d = otherDay();
+    await pumpCalendar(tester, events: [
+      shared('ext:1', 'sam',
+          start: d.add(const Duration(hours: 18)),
+          end: d.add(const Duration(hours: 20))),
+      shared('ext:2', 'ana',
+          start: d, end: d.add(const Duration(days: 1)), allDay: true),
+    ]);
+    await selectDay(tester, d);
+    final card = find.byKey(const ValueKey('calendar-whos-around'));
+    // Compact: no per-person rows, at most about 130dp for these members.
+    expect(find.descendant(of: card, matching: find.text('Sam Lee')),
+        findsNothing);
+    expect(tester.getSize(card).height, lessThanOrEqualTo(132));
+    String badgeLabel(String id) => tester
+        .getSemantics(find.byKey(ValueKey('whos-around-badge-$id')))
+        .label;
+    expect(badgeLabel('sam'), 'Sam Lee: Free from ${hm(20)}');
+    expect(badgeLabel('ana'), 'Ana: Away all day');
+    expect(badgeLabel('kim'), "Kim: Doesn't share a calendar");
+    expect(find.byTooltip("Show everyone's times"), findsOneWidget);
+
+    // Expand, then collapse again.
+    await tester.tap(find.byKey(const ValueKey('calendar-whos-around-toggle')));
+    await tester.pump();
+    expect(find.descendant(of: card, matching: find.text('Sam Lee')),
+        findsOneWidget);
+    expect(find.byTooltip('Show less'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('calendar-whos-around-toggle')));
+    await tester.pump();
+    expect(find.descendant(of: card, matching: find.text('Sam Lee')),
+        findsNothing);
+    semantics.dispose();
+  });
+
+  testWidgets('today is the badge only; the selected day is the filled card',
+      (tester) async {
+    final t = today0();
+    final d = otherDay();
+    await pumpCalendar(tester, events: [
+      shared('ext:1', 'sam',
+          start: t.add(const Duration(hours: 9)),
+          end: t.add(const Duration(hours: 10))),
+      shared('ext:2', 'sam',
+          start: d.add(const Duration(hours: 9)),
+          end: d.add(const Duration(hours: 10))),
+    ]);
+    AppCardVariant variantOf(DateTime day) => tester
+        .widget<AppCard>(find
+            .ancestor(
+                of: find.text(DateFormat.EEEE('en').format(day)),
+                matching: find.byType(AppCard))
+            .first)
+        .variant;
+    // Today selected (the default).
+    expect(variantOf(t), AppCardVariant.filled);
+    expect(find.text('Today'), findsWidgets);
+    // Another day selected: today goes back to an outlined card.
+    await selectDay(tester, d);
+    expect(variantOf(d), AppCardVariant.filled);
+    expect(variantOf(t), AppCardVariant.outlined);
   });
 }

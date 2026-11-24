@@ -6694,5 +6694,13 @@
   "coachMarkStepLabel": "Tip {step} van {total}",
   "sharedCalendarsSyncedMinutes": "{minutes} min geleden gesynchroniseerd",
   "sharedCalendarsSyncedHours": "{hours} uur geleden gesynchroniseerd",
-  "sharedCalendarsExplainDetailsNoPrivate": "{household} ziet de titels en tijden van je afspraken."
+  "sharedCalendarsExplainDetailsNoPrivate": "{household} ziet de titels en tijden van je afspraken.",
+  "calendarWhosAroundExpand": "Ieders tijden tonen",
+  "calendarWhosAroundCollapse": "Minder tonen",
+  "sharedCalendarsSummaryBusy": "{household}: alleen bezet",
+  "sharedCalendarsSummaryDetails": "{household}: met titels",
+  "sharedCalendarsSummaryNone": "{household}: niet gedeeld",
+  "sharedCalendarsSummaryNotShared": "Niet gedeeld",
+  "sharedCalendarsShowChoices": "Deelkeuzes tonen",
+  "sharedCalendarsHideChoices": "Deelkeuzes verbergen"
 }

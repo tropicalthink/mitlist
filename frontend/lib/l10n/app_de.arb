@@ -2778,5 +2778,13 @@
   "coachMarkStepLabel": "Tipp {step} von {total}",
   "sharedCalendarsSyncedMinutes": "Vor {minutes} Min. synchronisiert",
   "sharedCalendarsSyncedHours": "Vor {hours} Std. synchronisiert",
-  "sharedCalendarsExplainDetailsNoPrivate": "{household} sieht Titel und Zeiten deiner Termine."
+  "sharedCalendarsExplainDetailsNoPrivate": "{household} sieht Titel und Zeiten deiner Termine.",
+  "calendarWhosAroundExpand": "Zeiten aller anzeigen",
+  "calendarWhosAroundCollapse": "Weniger anzeigen",
+  "sharedCalendarsSummaryBusy": "{household}: nur beschäftigt",
+  "sharedCalendarsSummaryDetails": "{household}: mit Titeln",
+  "sharedCalendarsSummaryNone": "{household}: nicht geteilt",
+  "sharedCalendarsSummaryNotShared": "Nicht geteilt",
+  "sharedCalendarsShowChoices": "Freigaben anzeigen",
+  "sharedCalendarsHideChoices": "Freigaben ausblenden"
 }

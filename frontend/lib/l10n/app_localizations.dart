@@ -13508,6 +13508,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{household} sees your events\' titles and times.'**
   String sharedCalendarsExplainDetailsNoPrivate(String household);
+
+  /// Tooltip: expand who's around
+  ///
+  /// In en, this message translates to:
+  /// **'Show everyone\'s times'**
+  String get calendarWhosAroundExpand;
+
+  /// Tooltip: collapse who's around
+  ///
+  /// In en, this message translates to:
+  /// **'Show less'**
+  String get calendarWhosAroundCollapse;
+
+  /// Calendar summary row
+  ///
+  /// In en, this message translates to:
+  /// **'{household}: busy only'**
+  String sharedCalendarsSummaryBusy(String household);
+
+  /// Calendar summary row
+  ///
+  /// In en, this message translates to:
+  /// **'{household}: with titles'**
+  String sharedCalendarsSummaryDetails(String household);
+
+  /// Calendar summary row
+  ///
+  /// In en, this message translates to:
+  /// **'{household}: not shared'**
+  String sharedCalendarsSummaryNone(String household);
+
+  /// Calendar shared with no household
+  ///
+  /// In en, this message translates to:
+  /// **'Not shared'**
+  String get sharedCalendarsSummaryNotShared;
+
+  /// Expand a calendar's choices
+  ///
+  /// In en, this message translates to:
+  /// **'Show sharing choices'**
+  String get sharedCalendarsShowChoices;
+
+  /// Collapse a calendar's choices
+  ///
+  /// In en, this message translates to:
+  /// **'Hide sharing choices'**
+  String get sharedCalendarsHideChoices;
 }
 
 class _AppLocalizationsDelegate

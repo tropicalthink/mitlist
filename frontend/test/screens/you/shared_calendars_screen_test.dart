@@ -591,4 +591,70 @@ void main() {
     expect(at(const Duration(hours: 30)), 'Synced yesterday');
     expect(at(const Duration(days: 4)), 'Synced Nov 20');
   });
+
+  CalendarConnection threeCalendars() => const CalendarConnection(
+        id: 'dev-1',
+        kind: CalendarConnectionKind.device,
+        name: 'Phone',
+        deviceId: 'install',
+        calendars: [
+          ExternalCalendar(
+            id: 'k-personal',
+            externalId: 'p',
+            name: 'Personal',
+            shares: [
+              CalendarShare(groupId: 'g1', visibility: ShareVisibility.details),
+            ],
+          ),
+          ExternalCalendar(
+            id: 'k-work',
+            externalId: 'w',
+            name: 'Work',
+            shares: [
+              CalendarShare(groupId: 'g1', visibility: ShareVisibility.busy),
+              CalendarShare(groupId: 'g2', visibility: ShareVisibility.busy),
+            ],
+          ),
+          ExternalCalendar(id: 'k-family', externalId: 'f', name: 'Family'),
+        ],
+      );
+
+  testWidgets('several calendars: one summary row each, opened on tap',
+      (tester) async {
+    api.connections = [threeCalendars()];
+    await pump(tester);
+    expect(find.text('Home: with titles · Flat: not shared'), findsOneWidget);
+    expect(find.text('Home: busy only · Flat: busy only'), findsOneWidget);
+    expect(find.text('Not shared'), findsWidgets);
+    // Collapsed: no controls yet, for any of them.
+    expect(find.byKey(const ValueKey('share-k-work-g1-busy')), findsNothing);
+    expect(
+        find.byKey(const ValueKey('share-k-personal-g1-busy')), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('calendar-toggle-k-work')));
+    await settle(tester);
+    expect(find.byKey(const ValueKey('share-k-work-g1-busy')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('calendar-toggle-k-work')));
+    await settle(tester);
+    expect(find.byKey(const ValueKey('share-k-work-g1-busy')), findsNothing);
+  });
+
+  testWidgets('a single calendar starts open', (tester) async {
+    api.connections = [_work()];
+    await pump(tester);
+    expect(find.byKey(const ValueKey('share-k1-g1-busy')), findsOneWidget);
+  });
+
+  testWidgets('the replay opens the calendar it points at', (tester) async {
+    api.connections = [threeCalendars()];
+    await pump(tester);
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    await tester
+        .tap(find.byKey(const ValueKey('shared-calendars-show-me-how')));
+    await settle(tester);
+    await tester.tap(find.byKey(const ValueKey('coachMark-next')));
+    await settle(tester);
+    expect(find.text(l10n.calendarTourChoices), findsOneWidget);
+    expect(
+        find.byKey(const ValueKey('share-k-personal-g1-busy')), findsOneWidget);
+  });
 }

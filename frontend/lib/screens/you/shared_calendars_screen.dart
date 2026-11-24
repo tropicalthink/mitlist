@@ -24,6 +24,8 @@ import '../../widgets/app_dialog.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/app_input.dart';
 import '../../widgets/app_toast.dart';
+import '../../services/calendar_tour.dart'
+    show calendarTourProvider, CalendarTourStep;
 import '../../widgets/calendar_tour.dart';
 import '../../widgets/mitlist_app_bar.dart';
 import '../../widgets/skeleton.dart';
@@ -175,8 +177,20 @@ class _SharedCalendarsScreenState extends ConsumerState<SharedCalendarsScreen> {
   bool _tourChecked = false;
 
   Future<void> _runTour({required bool replay}) async {
+    // Not a replay: only when the calendar screen just handed the tour over.
+    if (!replay &&
+        ref.read(calendarTourProvider)?.step != CalendarTourStep.sharedAdd) {
+      return;
+    }
     final connections = _connections ?? const <CalendarConnection>[];
     final hasCalendar = connections.any((c) => c.calendars.isNotEmpty);
+    // The choices step points at the first calendar: open it first.
+    if (hasCalendar) {
+      final first = connections.firstWhere((c) => c.calendars.isNotEmpty);
+      setState(() => _calendarExpanded[first.calendars.first.id] = true);
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) return;
+    }
     final hasUpcoming =
         (_upcoming?.isNotEmpty ?? false) && _upcomingKey.currentContext != null;
     await runSharedCalendarsTour(
@@ -197,6 +211,16 @@ class _SharedCalendarsScreenState extends ConsumerState<SharedCalendarsScreen> {
       if (mounted) unawaited(_runTour(replay: false));
     });
   }
+
+  /// Calendars opened or closed by the person (by id); others follow the
+  /// default: open when the connection has a single calendar.
+  final Map<String, bool> _calendarExpanded = {};
+
+  bool _isExpanded(CalendarConnection c, ExternalCalendar cal) =>
+      _calendarExpanded[cal.id] ?? c.calendars.length == 1;
+
+  void _toggleCalendar(CalendarConnection c, ExternalCalendar cal) =>
+      setState(() => _calendarExpanded[cal.id] = !_isExpanded(c, cal));
 
   List<UpcomingSharedEvent>? _upcoming;
   bool _upcomingLoading = false;
@@ -410,6 +434,10 @@ class _SharedCalendarsScreenState extends ConsumerState<SharedCalendarsScreen> {
     if (created == null || !mounted) return;
     setState(() {
       _connections = [...?_connections, created];
+      // Just added: open, so the choices are right there.
+      for (final cal in created.calendars) {
+        _calendarExpanded[cal.id] = true;
+      }
     });
     AppToast.success(
         context, AppLocalizations.of(context)!.sharedCalendarsAddedNotShared);
@@ -783,6 +811,8 @@ class _SharedCalendarsScreenState extends ConsumerState<SharedCalendarsScreen> {
                 ),
               for (final c in connections) ...[
                 _ConnectionCard(
+                  isExpanded: _isExpanded,
+                  onToggleCalendar: _toggleCalendar,
                   connection: c,
                   isThisPhone: _isThisPhone(c),
                   groups: groups,
@@ -924,7 +954,12 @@ class _ConnectionCard extends StatelessWidget {
     required this.onSync,
     this.iosNote = false,
     this.firstCalendarKey,
+    required this.isExpanded,
+    required this.onToggleCalendar,
   });
+
+  final bool Function(CalendarConnection, ExternalCalendar) isExpanded;
+  final void Function(CalendarConnection, ExternalCalendar) onToggleCalendar;
 
   /// Coach mark target: this connection's first calendar's choices.
   final GlobalKey? firstCalendarKey;
@@ -1047,7 +1082,7 @@ class _ConnectionCard extends StatelessWidget {
             ),
           ],
           for (final (i, cal) in connection.calendars.indexed) ...[
-            const SizedBox(height: MitlistSpacing.md),
+            const SizedBox(height: MitlistSpacing.sm),
             _CalendarShares(
               key: i == 0 ? firstCalendarKey : null,
               privateFlag: !iosNote,
@@ -1055,6 +1090,8 @@ class _ConnectionCard extends StatelessWidget {
               groups: groups,
               saving: savingCalendars.contains(cal.id),
               onShare: (groupId, choice) => onShare(cal, groupId, choice),
+              expanded: isExpanded(connection, cal),
+              onToggle: () => onToggleCalendar(connection, cal),
             ),
           ],
         ],
@@ -1071,8 +1108,14 @@ class _CalendarShares extends StatelessWidget {
     required this.groups,
     required this.saving,
     required this.onShare,
+    required this.expanded,
+    required this.onToggle,
   });
 
+  /// Collapsed: one summary row. Expanded: the per-household controls and
+  /// the explanation.
+  final bool expanded;
+  final VoidCallback onToggle;
   final ExternalCalendar calendar;
   final List<Group> groups;
   final bool saving;
@@ -1094,61 +1137,106 @@ class _CalendarShares extends StatelessWidget {
         if (shareChoiceOf(calendar, g.id) != ShareChoice.none)
           _explain(shareChoiceOf(calendar, g.id), g.name, l10n, privateFlag),
     ];
+    final name =
+        calendar.name.isEmpty ? l10n.sharedCalendarsUnnamed : calendar.name;
+    final summary = calendarShareSummary(calendar, groups, l10n);
     return Column(
       key: ValueKey('calendar-shares-${calendar.id}'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            AppIcon(name: 'calendarDays', size: 16, color: cs.onSurfaceVariant),
-            const SizedBox(width: MitlistSpacing.xs),
-            Expanded(
-              child: Text(
-                calendar.name.isEmpty
-                    ? l10n.sharedCalendarsUnnamed
-                    : calendar.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.titleSmall,
+        Semantics(
+          button: true,
+          expanded: expanded,
+          label: '$name. $summary',
+          hint: expanded
+              ? l10n.sharedCalendarsHideChoices
+              : l10n.sharedCalendarsShowChoices,
+          excludeSemantics: true,
+          child: InkWell(
+            key: ValueKey('calendar-toggle-${calendar.id}'),
+            onTap: onToggle,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 44),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(vertical: MitlistSpacing.xs),
+                child: Row(
+                  children: [
+                    AppIcon(
+                        name: 'calendarDays',
+                        size: 16,
+                        color: cs.onSurfaceVariant),
+                    const SizedBox(width: MitlistSpacing.sm),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.titleSmall,
+                          ),
+                          // Wraps rather than cutting a household's setting.
+                          Text(
+                            summary,
+                            style: theme.textTheme.bodySmall
+                                ?.copyWith(color: cs.onSurfaceVariant),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Tooltip(
+                      message: expanded
+                          ? l10n.sharedCalendarsHideChoices
+                          : l10n.sharedCalendarsShowChoices,
+                      child: AppIcon(
+                          name: expanded ? 'chevronUp' : 'chevronDown',
+                          color: cs.onSurface),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ],
-        ),
-        for (final g in groups)
-          Padding(
-            padding: const EdgeInsets.only(top: MitlistSpacing.sm),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 84,
-                  child: Text(
-                    g.name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelLarge,
-                  ),
-                ),
-                const SizedBox(width: MitlistSpacing.sm),
-                Expanded(
-                  child: ShareSegmentedChoice(
-                    keyPrefix: 'share-${calendar.id}-${g.id}',
-                    household: g.name,
-                    value: shareChoiceOf(calendar, g.id),
-                    enabled: !saving,
-                    onChanged: (choice) => onShare(g.id, choice),
-                  ),
-                ),
-              ],
-            ),
           ),
-        const SizedBox(height: MitlistSpacing.xs),
-        Text(
-          explanations.isEmpty
-              ? l10n.sharedCalendarsNotSharedAnywhere
-              : explanations.join(' '),
-          style:
-              theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
         ),
+        if (expanded) ...[
+          for (final g in groups)
+            Padding(
+              padding: const EdgeInsets.only(top: MitlistSpacing.sm),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 84,
+                    child: Text(
+                      g.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelLarge,
+                    ),
+                  ),
+                  const SizedBox(width: MitlistSpacing.sm),
+                  Expanded(
+                    child: ShareSegmentedChoice(
+                      keyPrefix: 'share-${calendar.id}-${g.id}',
+                      household: g.name,
+                      value: shareChoiceOf(calendar, g.id),
+                      enabled: !saving,
+                      onChanged: (choice) => onShare(g.id, choice),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          const SizedBox(height: MitlistSpacing.xs),
+          Text(
+            explanations.isEmpty
+                ? l10n.sharedCalendarsNotSharedAnywhere
+                : explanations.join(' '),
+            style:
+                theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+          ),
+        ],
       ],
     );
   }
@@ -1162,6 +1250,23 @@ class _CalendarShares extends StatelessWidget {
             : l10n.sharedCalendarsExplainDetailsNoPrivate(household),
         ShareChoice.none => l10n.sharedCalendarsExplainNone(household),
       };
+}
+
+/// "Home: with titles · Flat: not shared", or "Not shared" when no
+/// household sees anything.
+String calendarShareSummary(
+    ExternalCalendar calendar, List<Group> groups, AppLocalizations l10n) {
+  if (!groups.any((g) => calendar.shareFor(g.id) != null)) {
+    return l10n.sharedCalendarsSummaryNotShared;
+  }
+  return [
+    for (final g in groups)
+      switch (shareChoiceOf(calendar, g.id)) {
+        ShareChoice.busy => l10n.sharedCalendarsSummaryBusy(g.name),
+        ShareChoice.details => l10n.sharedCalendarsSummaryDetails(g.name),
+        ShareChoice.none => l10n.sharedCalendarsSummaryNone(g.name),
+      },
+  ].join(' · ');
 }
 
 String shareChoiceLabel(ShareChoice c, AppLocalizations l10n) => switch (c) {

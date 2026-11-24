@@ -10245,5 +10245,21 @@
   "sharedCalendarsSyncedHours": "Synced {hours} h ago",
   "@sharedCalendarsSyncedHours": {"description":"Last sync hours ago","placeholders":{"hours":{"type":"int"}}},
   "sharedCalendarsExplainDetailsNoPrivate": "{household} sees your events' titles and times.",
-  "@sharedCalendarsExplainDetailsNoPrivate": {"description":"With titles, for iPhone calendars (no private flag)","placeholders":{"household":{"type":"String"}}}
+  "@sharedCalendarsExplainDetailsNoPrivate": {"description":"With titles, for iPhone calendars (no private flag)","placeholders":{"household":{"type":"String"}}},
+  "calendarWhosAroundExpand": "Show everyone's times",
+  "@calendarWhosAroundExpand": {"description":"Tooltip: expand who's around"},
+  "calendarWhosAroundCollapse": "Show less",
+  "@calendarWhosAroundCollapse": {"description":"Tooltip: collapse who's around"},
+  "sharedCalendarsSummaryBusy": "{household}: busy only",
+  "@sharedCalendarsSummaryBusy": {"description":"Calendar summary row","placeholders":{"household":{"type":"String"}}},
+  "sharedCalendarsSummaryDetails": "{household}: with titles",
+  "@sharedCalendarsSummaryDetails": {"description":"Calendar summary row","placeholders":{"household":{"type":"String"}}},
+  "sharedCalendarsSummaryNone": "{household}: not shared",
+  "@sharedCalendarsSummaryNone": {"description":"Calendar summary row","placeholders":{"household":{"type":"String"}}},
+  "sharedCalendarsSummaryNotShared": "Not shared",
+  "@sharedCalendarsSummaryNotShared": {"description":"Calendar shared with no household"},
+  "sharedCalendarsShowChoices": "Show sharing choices",
+  "@sharedCalendarsShowChoices": {"description":"Expand a calendar's choices"},
+  "sharedCalendarsHideChoices": "Hide sharing choices",
+  "@sharedCalendarsHideChoices": {"description":"Collapse a calendar's choices"}
 }

@@ -6694,5 +6694,13 @@
   "coachMarkStepLabel": "Consejo {step} de {total}",
   "sharedCalendarsSyncedMinutes": "Sincronizado hace {minutes} min",
   "sharedCalendarsSyncedHours": "Sincronizado hace {hours} h",
-  "sharedCalendarsExplainDetailsNoPrivate": "{household} ve los títulos y horas de tus eventos."
+  "sharedCalendarsExplainDetailsNoPrivate": "{household} ve los títulos y horas de tus eventos.",
+  "calendarWhosAroundExpand": "Ver los horarios de todos",
+  "calendarWhosAroundCollapse": "Ver menos",
+  "sharedCalendarsSummaryBusy": "{household}: solo ocupado",
+  "sharedCalendarsSummaryDetails": "{household}: con títulos",
+  "sharedCalendarsSummaryNone": "{household}: no compartido",
+  "sharedCalendarsSummaryNotShared": "No compartido",
+  "sharedCalendarsShowChoices": "Mostrar opciones de compartir",
+  "sharedCalendarsHideChoices": "Ocultar opciones de compartir"
 }

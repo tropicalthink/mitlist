@@ -813,6 +813,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       now: selected == todayDay ? now : null),
                   nameFor: (id) => _personName(id, l10n),
                   roster: _roster,
+                  expanded: ref.watch(whosAroundExpandedProvider),
+                  onToggle: () => ref
+                      .read(whosAroundExpandedProvider.notifier)
+                      .update((v) => !v),
                 ),
               ),
             ),
@@ -1430,8 +1434,9 @@ class _DayCard extends StatelessWidget {
     final weekday = DateFormat.EEEE(localeName).format(day);
 
     final cs = Theme.of(context).colorScheme;
-    // The selected day (the one "who's around" describes) carries a thick
-    // accent bar down its left edge.
+    // One cue each: today is the "Today" badge only; the selected day (the
+    // one "who's around" describes) is the accent bar down its left edge
+    // and a filled card.
     return Container(
       margin: const EdgeInsets.only(bottom: MitlistSpacing.sm),
       padding: EdgeInsets.only(left: isSelected ? MitlistSpacing.sm : 0),
@@ -1440,7 +1445,7 @@ class _DayCard extends StatelessWidget {
               border: Border(left: BorderSide(color: cs.primary, width: 6)))
           : null,
       child: AppCard(
-        variant: isToday ? AppCardVariant.filled : AppCardVariant.outlined,
+        variant: isSelected ? AppCardVariant.filled : AppCardVariant.outlined,
         padding: AppCardPadding.md,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1729,6 +1734,10 @@ Color _aroundColor(BuildContext context, AroundStatus status) {
 /// For the selected day: one line for the household's evening, then each
 /// member in a column: free all day, free from a time, busy until a time,
 /// away, or not sharing a calendar.
+/// Whether "who's around" shows everyone's times (true) or the compact row
+/// of badges; remembered for the session.
+final whosAroundExpandedProvider = StateProvider<bool>((ref) => false);
+
 class _WhosAroundCard extends StatelessWidget {
   const _WhosAroundCard({
     required this.day,
@@ -1736,8 +1745,12 @@ class _WhosAroundCard extends StatelessWidget {
     required this.evening,
     required this.nameFor,
     required this.roster,
+    required this.expanded,
+    required this.onToggle,
   });
 
+  final bool expanded;
+  final VoidCallback onToggle;
   final DateTime day;
   final List<MemberAround> around;
   final HouseholdEvening? evening;
@@ -1795,139 +1808,204 @@ class _WhosAroundCard extends StatelessWidget {
           };
     final eveningFree = e != null && e.kind != EveningKind.notEveryoneFree;
 
-    return AppCard(
-      key: const ValueKey('calendar-whos-around'),
-      variant: AppCardVariant.outlined,
-      padding: AppCardPadding.md,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
+    final header = Row(
+      children: [
+        Expanded(
+          child: Text(
             l10n.calendarWhosAroundTitle(dayLabel),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.titleSmall
                 ?.copyWith(fontWeight: FontWeight.w600),
           ),
-          if (summary != null) ...[
-            const SizedBox(height: MitlistSpacing.xs),
-            Semantics(
-              liveRegion: true,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AppIcon(
-                    name: eveningFree ? 'checkCircle' : 'clockOutline',
-                    size: 18,
-                    color: _aroundColor(context,
-                        eveningFree ? AroundStatus.free : AroundStatus.busy),
+        ),
+        IconButton(
+          key: const ValueKey('calendar-whos-around-toggle'),
+          tooltip: expanded
+              ? l10n.calendarWhosAroundCollapse
+              : l10n.calendarWhosAroundExpand,
+          constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+          icon: AppIcon(name: expanded ? 'chevronUp' : 'chevronDown'),
+          onPressed: onToggle,
+        ),
+      ],
+    );
+
+    final summaryLine = summary == null
+        ? null
+        : Semantics(
+            liveRegion: true,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AppIcon(
+                  name: eveningFree ? 'checkCircle' : 'clockOutline',
+                  size: 18,
+                  color: _aroundColor(context,
+                      eveningFree ? AroundStatus.free : AroundStatus.busy),
+                ),
+                const SizedBox(width: MitlistSpacing.xs),
+                Expanded(
+                  child: Text(
+                    summary,
+                    key: const ValueKey('calendar-whos-around-evening'),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium
+                        ?.copyWith(fontWeight: FontWeight.w600),
                   ),
-                  const SizedBox(width: MitlistSpacing.xs),
-                  Expanded(
-                    child: Text(
-                      summary,
-                      key: const ValueKey('calendar-whos-around-evening'),
-                      style: theme.textTheme.bodyMedium
-                          ?.copyWith(fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-          const SizedBox(height: MitlistSpacing.xs),
-          for (final m in around)
-            Semantics(
-              label: [
-                nameFor(m.userId),
-                status(m),
-                if (detail(m) != null) detail(m)
-              ].join(', '),
-              excludeSemantics: true,
-              child: Padding(
-                padding: const EdgeInsets.only(top: MitlistSpacing.sm),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          );
+
+    // Compact: one row of badges, each marked with its status colour and
+    // announced with the person's status.
+    final compact = InkWell(
+      onTap: onToggle,
+      excludeFromSemantics: true,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: MitlistSpacing.xs),
+        child: Wrap(
+          spacing: MitlistSpacing.sm,
+          runSpacing: MitlistSpacing.xs,
+          children: [
+            for (final m in around)
+              Semantics(
+                key: ValueKey('whos-around-badge-${m.userId}'),
+                container: true,
+                label: '${nameFor(m.userId)}: ${status(m)}',
+                excludeSemantics: true,
+                child: Stack(
+                  clipBehavior: Clip.none,
                   children: [
                     _PersonBadge(
                         userId: m.userId,
                         name: nameFor(m.userId),
                         roster: roster),
-                    const SizedBox(width: MitlistSpacing.sm),
-                    Expanded(
-                      flex: 4,
-                      child: Padding(
-                        padding:
-                            const EdgeInsets.only(top: MitlistSpacing.space0_5),
-                        child: Text(
-                          nameFor(m.userId),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodyMedium,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: MitlistSpacing.sm),
-                    // The status column: every status starts at the same x.
-                    Expanded(
-                      flex: 5,
-                      child: Padding(
-                        padding:
-                            const EdgeInsets.only(top: MitlistSpacing.space0_5),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  width: MitlistSpacing.sm,
-                                  height: MitlistSpacing.sm,
-                                  color: _aroundColor(context, m.status),
-                                ),
-                                const SizedBox(width: MitlistSpacing.xs),
-                                Expanded(
-                                  child: Text(
-                                    status(m),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: m.status == AroundStatus.notSharing
-                                          ? cs.onSurfaceVariant
-                                          : cs.onSurface,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            if (detail(m) != null)
-                              Padding(
-                                padding: const EdgeInsets.only(
-                                    left:
-                                        MitlistSpacing.sm + MitlistSpacing.xs),
-                                child: Text(
-                                  detail(m)!,
-                                  maxLines: 3,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: MitlistTypography.labelXSmall(
-                                      color: cs.onSurfaceVariant),
-                                ),
-                              ),
-                          ],
+                    Positioned(
+                      right: -3,
+                      bottom: -3,
+                      child: Container(
+                        width: 11,
+                        height: 11,
+                        decoration: BoxDecoration(
+                          color: _aroundColor(context, m.status),
+                          border: Border.all(color: cs.surface, width: 2),
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
+          ],
+        ),
+      ),
+    );
+
+    final full = <Widget>[
+      for (final m in around)
+        Semantics(
+          label: [
+            nameFor(m.userId),
+            status(m),
+            if (detail(m) != null) detail(m)
+          ].join(', '),
+          excludeSemantics: true,
+          child: Padding(
+            padding: const EdgeInsets.only(top: MitlistSpacing.sm),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _PersonBadge(
+                    userId: m.userId, name: nameFor(m.userId), roster: roster),
+                const SizedBox(width: MitlistSpacing.sm),
+                Expanded(
+                  flex: 4,
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.only(top: MitlistSpacing.space0_5),
+                    child: Text(
+                      nameFor(m.userId),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: MitlistSpacing.sm),
+                // The status column: every status starts at the same x.
+                Expanded(
+                  flex: 5,
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.only(top: MitlistSpacing.space0_5),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: MitlistSpacing.sm,
+                              height: MitlistSpacing.sm,
+                              color: _aroundColor(context, m.status),
+                            ),
+                            const SizedBox(width: MitlistSpacing.xs),
+                            Expanded(
+                              child: Text(
+                                status(m),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: m.status == AroundStatus.notSharing
+                                      ? cs.onSurfaceVariant
+                                      : cs.onSurface,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (detail(m) != null)
+                          Padding(
+                            padding: const EdgeInsets.only(
+                                left: MitlistSpacing.sm + MitlistSpacing.xs),
+                            child: Text(
+                              detail(m)!,
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                              style: MitlistTypography.labelXSmall(
+                                  color: cs.onSurfaceVariant),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-          const SizedBox(height: MitlistSpacing.sm),
-          Text(
-            l10n.calendarWhosAroundTapHint,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: MitlistTypography.labelXSmall(color: cs.onSurfaceVariant),
           ),
+        ),
+      const SizedBox(height: MitlistSpacing.sm),
+      Text(
+        l10n.calendarWhosAroundTapHint,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: MitlistTypography.labelXSmall(color: cs.onSurfaceVariant),
+      ),
+    ];
+
+    return AppCard(
+      key: const ValueKey('calendar-whos-around'),
+      variant: AppCardVariant.outlined,
+      padding: AppCardPadding.sm,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          header,
+          if (summaryLine != null) summaryLine,
+          const SizedBox(height: MitlistSpacing.xs),
+          if (expanded) ...full else compact,
         ],
       ),
     );
