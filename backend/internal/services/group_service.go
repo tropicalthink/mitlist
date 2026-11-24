@@ -488,6 +488,8 @@ func (s *GroupService) LeaveGroup(ctx context.Context, userID, groupID uuid.UUID
 	if err == nil {
 		s.syncMemberOrders(ctx, groupID)
 		publishDomainEvent(s.hub, "member:left", groupID, map[string]string{"user_id": userID.String()})
+		// Their calendar shares with the household ended with the membership.
+		publishDomainEvent(s.hub, EventCalendarExternalChanged, groupID, map[string]string{"user_id": userID.String()})
 	}
 	return err
 }
@@ -563,6 +565,8 @@ func (s *GroupService) RemoveMember(ctx context.Context, userID, groupID, target
 	if err == nil {
 		s.syncMemberOrders(ctx, groupID)
 		publishDomainEvent(s.hub, "member:removed", groupID, map[string]string{"user_id": targetUserID.String()})
+		// Their calendar shares with the household ended with the membership.
+		publishDomainEvent(s.hub, EventCalendarExternalChanged, groupID, map[string]string{"user_id": targetUserID.String()})
 	}
 	return err
 }

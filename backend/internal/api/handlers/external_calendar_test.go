@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -19,6 +20,7 @@ import (
 	"github.com/mitlist-app/mitlist/internal/models"
 	"github.com/mitlist-app/mitlist/internal/repositories"
 	"github.com/mitlist-app/mitlist/internal/services"
+	"github.com/mitlist-app/mitlist/internal/sse"
 )
 
 type stubICSFetcher struct {
@@ -531,4 +533,97 @@ func TestExternalCalendars_OverridesForUnstoredEventsAndListing(t *testing.T) {
 	rec = env.do(t, "GET", "/calendar/external/overrides", nil, otherTok)
 	requireStatus(t, rec, http.StatusOK)
 	assert.JSONEq(t, `{"overrides":[]}`, rec.Body.String())
+}
+
+// Leaving or being removed from a household ends that person's calendar
+// shares with it: rejoining shows nothing until they share again, and
+// their shares with other households stay.
+func TestExternalCalendars_EndingMembershipDropsSharesWithThatHousehold(t *testing.T) {
+	env := newExternalCalendarEnv(t)
+	ctx := context.Background()
+	groups := services.NewGroupService(newTestGroupRepo(), newTestUserRepo())
+	hub := sse.New()
+	var seen []sse.Event
+	var mu sync.Mutex
+	hub.OnPublish(func(e sse.Event) { mu.Lock(); seen = append(seen, e); mu.Unlock() })
+	groups.SetHub(hub)
+	calendarChanged := func(groupID, userID uuid.UUID) bool {
+		mu.Lock()
+		defer mu.Unlock()
+		for _, e := range seen {
+			if e.Type == services.EventCalendarExternalChanged && e.GroupID == groupID.String() && strings.Contains(string(e.Payload), userID.String()) {
+				return true
+			}
+		}
+		return false
+	}
+
+	admin, adminTok := uniqueUser(t, "admin")
+	sam, samTok := uniqueUser(t, "sam")
+	alex, alexTok := uniqueUser(t, "alex")
+	home := newHousehold(t, admin.ID, sam.ID, alex.ID)
+	other := newHousehold(t, admin.ID, sam.ID, alex.ID)
+
+	start := time.Now().UTC().Add(24 * time.Hour).Truncate(time.Hour)
+	share := func(tok string, deviceID string, title string) uuid.UUID {
+		rec := env.do(t, "POST", "/calendar/external/connections", map[string]any{"kind": "device", "name": "Phone", "device_id": deviceID}, tok)
+		require.Contains(t, []int{http.StatusOK, http.StatusCreated}, rec.Code, rec.Body.String())
+		var conn connectionJSON
+		parseJSONResponse(t, rec, &conn)
+		rec = env.do(t, "PUT", "/calendar/external/connections/"+conn.ID.String()+"/device-sync", map[string]any{
+			"calendars": []map[string]any{{"external_id": "c", "name": "C"}},
+			"events": []map[string]any{{"calendar_external_id": "c", "external_uid": "e", "starts_at": start, "ends_at": start.Add(time.Hour),
+				"all_day": false, "title": title, "source_private": false, "free": false}},
+		}, tok)
+		requireStatus(t, rec, http.StatusOK)
+		parseJSONResponse(t, rec, &conn)
+		calID := conn.Calendars[0].ID
+		rec = env.do(t, "PUT", "/calendar/external/calendars/"+calID.String()+"/shares", map[string]any{"shares": []map[string]any{
+			{"group_id": home, "visibility": "details"}, {"group_id": other, "visibility": "details"},
+		}}, tok)
+		requireStatus(t, rec, http.StatusOK)
+		return calID
+	}
+	samCal := share(samTok, "sam-phone", "Sam's gig")
+	alexCal := share(alexTok, "alex-phone", "Alex's match")
+	shareRows := func(calID, groupID uuid.UUID) int {
+		var n int
+		require.NoError(t, testDB.QueryRow(ctx, `SELECT count(*) FROM external_calendar_shares WHERE calendar_id = $1 AND group_id = $2`, calID, groupID).Scan(&n))
+		return n
+	}
+	assert.ElementsMatch(t, []string{"Sam's gig", "Alex's match"}, titles(env.externalEvents(t, home, adminTok)))
+
+	// Sam leaves: Sam's share with home goes, the one with other stays,
+	// and home is told to refresh.
+	require.NoError(t, groups.LeaveGroup(ctx, sam.ID, home))
+	assert.Equal(t, 0, shareRows(samCal, home))
+	assert.Equal(t, 1, shareRows(samCal, other))
+	assert.Equal(t, 1, shareRows(alexCal, home), "other members' shares are untouched")
+	assert.True(t, calendarChanged(home, sam.ID))
+	assert.Equal(t, []string{"Alex's match"}, titles(env.externalEvents(t, home, adminTok)))
+	assert.ElementsMatch(t, []string{"Sam's gig", "Alex's match"}, titles(env.externalEvents(t, other, adminTok)))
+
+	// Alex is removed by the admin: same.
+	require.NoError(t, groups.RemoveMember(ctx, admin.ID, home, alex.ID))
+	assert.Equal(t, 0, shareRows(alexCal, home))
+	assert.Equal(t, 1, shareRows(alexCal, other))
+	assert.True(t, calendarChanged(home, alex.ID))
+	assert.Empty(t, env.externalEvents(t, home, adminTok))
+
+	// Sam rejoins: nothing is shared until Sam shares again.
+	addTestMembership(t, home, sam.ID, "member")
+	assert.Empty(t, env.externalEvents(t, home, adminTok))
+	rec := env.do(t, "GET", "/calendar/external/connections", nil, samTok)
+	requireStatus(t, rec, http.StatusOK)
+	var list struct {
+		Connections []connectionJSON `json:"connections"`
+	}
+	parseJSONResponse(t, rec, &list)
+	assert.Equal(t, []models.CalendarShare{{GroupID: other, Visibility: "details"}}, list.Connections[0].Calendars[0].Shares)
+	rec = env.do(t, "PUT", "/calendar/external/calendars/"+samCal.String()+"/shares", map[string]any{"shares": []map[string]any{
+		{"group_id": home, "visibility": "busy"}, {"group_id": other, "visibility": "details"},
+	}}, samTok)
+	requireStatus(t, rec, http.StatusOK)
+	assert.Equal(t, []string{"busy:"}, titles(env.externalEvents(t, home, adminTok)))
+	assert.ElementsMatch(t, []string{"Sam's gig", "Alex's match"}, titles(env.externalEvents(t, other, adminTok)))
 }

@@ -188,6 +188,7 @@ and households have no member limit.
 Two things hold your data: the PostgreSQL database and the `uploads` volume.
 `.env` holds the keys; keep a copy somewhere safe, because losing `SECRET_KEY`
 and `SESSION_SECRET_KEY` signs everyone out.
+Changing `SECRET_KEY` also makes the stored calendar subscription links (shared household calendars) unreadable: each person has to add those calendars again.
 
 Back up (safe while running):
 
